@@ -1,0 +1,17 @@
+{
+  "name": "@ppe/api-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Typed client for the PPE-next2 API. Shared so every app speaks the same wire format.",
+  "exports": { ".": "./src/index.ts" },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

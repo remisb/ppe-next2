@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "make",
+      "runtimeArgs": ["run", "API_ADDR=:8081"],
+      "port": 8081
+    },
+    {
+      "name": "workwear",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/workwear", "dev"],
+      "port": 5173
+    }
+  ]
+}

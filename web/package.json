@@ -1,0 +1,16 @@
+{
+  "name": "@ppe/web",
+  "private": true,
+  "description": "Workspace root for the PPE-next2 frontends. Holds no application code.",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build"
+  }
+}

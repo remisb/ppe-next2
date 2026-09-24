@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ppe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ppe}
+      POSTGRES_DB: ${POSTGRES_DB:-ppe}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    # Postgres 18 images keep data in a versioned subdirectory
+    # (/var/lib/postgresql/18/docker), so the volume mounts the parent.
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:
