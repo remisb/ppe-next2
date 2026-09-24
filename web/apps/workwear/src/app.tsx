@@ -1,4 +1,4 @@
-import { ClipboardList, History as HistoryIcon, LogOut, Package, Shirt, Users } from 'lucide-react'
+import { ClipboardList, History as HistoryIcon, LogOut, Package, Shirt, UserRound, Users } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
@@ -6,6 +6,7 @@ import { type Route, pathOf, useRouter } from '@/lib/router'
 import { cn } from '@/lib/utils'
 import { basePath } from '@ppe/routing'
 
+import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
 import { CreateOrder } from './routes/create-order'
 import { Employees } from './routes/employees'
@@ -59,7 +60,22 @@ export function App() {
               </a>
             ))}
           </nav>
-          <span className="text-sm text-muted-foreground">{session.name}</span>
+          <a
+            href={basePath + pathOf({ name: 'account' })}
+            aria-current={route.name === 'account' ? 'page' : undefined}
+            title="Account and password"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate({ name: 'account' })
+            }}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md px-3 py-2 text-sm hover:bg-accent',
+              route.name === 'account' ? 'bg-accent font-medium' : 'text-muted-foreground',
+            )}
+          >
+            <UserRound aria-hidden className="size-4" />
+            {session.name}
+          </a>
           <Button size="sm" variant="ghost" onClick={signOut}>
             <LogOut aria-hidden /> Sign out
           </Button>
@@ -70,6 +86,7 @@ export function App() {
         {route.name === 'employees' ? <Employees /> : null}
         {route.name === 'catalogue' ? <Catalogue /> : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
+        {route.name === 'account' ? <Account /> : null}
         {route.name === 'history' ? <History onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} /> : null}
         {route.name === 'record' ? (
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={() => navigate({ name: 'history' })} />

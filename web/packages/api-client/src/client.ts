@@ -69,6 +69,9 @@ export function createClient(options: ClientOptions) {
     login: (email: string, password: string) =>
       request<LoginResponse>('POST', '/api/v1/auth/login', { email, password }),
     me: () => request<User>('GET', '/api/v1/users/me'),
+    /** Change the signed-in user's own password; the current one must be supplied. */
+    changeOwnPassword: (currentPassword: string, newPassword: string) =>
+      request<void>('PUT', '/api/v1/users/me/password', { current_password: currentPassword, new_password: newPassword }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
 

@@ -4,7 +4,7 @@ import { parsePath, pathOf } from './router'
 
 describe('router', () => {
   it('round-trips every route', () => {
-    for (const name of ['createOrder', 'employees', 'catalogue', 'itemSets', 'history'] as const) {
+    for (const name of ['createOrder', 'employees', 'catalogue', 'itemSets', 'history', 'account'] as const) {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })

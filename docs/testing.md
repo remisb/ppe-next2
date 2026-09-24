@@ -54,3 +54,4 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | Receipt from snapshot only, bilingual, € prices, stable hash (§8) | `TestReceiptIsSnapshotOnlyAndHashStable`; e2e public page and View Record |
 | Audit events commit with their change | `TestPostgresFailedWriteRecordsNoEvent`, catalogue price event, `order.ordered` / `order.given` counts; append-only trigger in `audit.TestAppendOnly` |
 | Route access per role | `cmd/api.TestRoutePolicy` (every route must be listed) |
+| Change own password (8–72 bytes, current one required) | `user.TestPasswords`; web `validatePasswordChange`; e2e *Account: change password* |

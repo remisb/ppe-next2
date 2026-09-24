@@ -8,6 +8,7 @@ export type Route =
   | { name: 'employees' }
   | { name: 'catalogue' }
   | { name: 'itemSets' }
+  | { name: 'account' }
   /** View Record; print opens the browser's print dialog once loaded (Print Record). */
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
@@ -19,6 +20,7 @@ const fixed = {
   employees: '/employees',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
+  account: '/account',
 } as const
 
 /** Unknown paths (stale bookmarks) land on Create Order, the app's main screen. */

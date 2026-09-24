@@ -36,6 +36,15 @@ describe('createClient', () => {
     expect(f.mock.calls[0]![1]?.body).toBe('{"token":"secret-token","confirmed":true}')
   })
 
+  it('changes the own password with the current one', async () => {
+    const f = fakeFetch(204, '')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    await expect(client.changeOwnPassword('old-pass-1', 'new-pass-1')).resolves.toBeUndefined()
+    expect(f.mock.calls[0]![0]).toBe('/api/v1/users/me/password')
+    expect(f.mock.calls[0]![1]?.method).toBe('PUT')
+    expect(f.mock.calls[0]![1]?.body).toBe('{"current_password":"old-pass-1","new_password":"new-pass-1"}')
+  })
+
   it('encodes path segments', async () => {
     const f = fakeFetch(200, '[]')
     const client = createClient({ getToken: () => null, fetch: f as unknown as typeof fetch })

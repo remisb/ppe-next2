@@ -254,3 +254,30 @@ test('paper confirmation: a second order signed on paper', async () => {
   await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
+
+test('Account: change password, then only the new one signs in', async () => {
+  const newPassword = 'e2e-new-password-456'
+  await page.getByRole('link', { name: admin.name }).click()
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
+
+  // Wrong current password is reported on its field.
+  await page.getByLabel('Current password').fill('not-the-password')
+  await page.getByLabel('New password', { exact: false }).first().fill(newPassword)
+  await page.getByLabel('Confirm new password').fill(newPassword)
+  await page.getByRole('button', { name: 'Change password' }).click()
+  await expect(page.getByText('The current password is incorrect.')).toBeVisible()
+
+  await page.getByLabel('Current password').fill(admin.password)
+  await page.getByRole('button', { name: 'Change password' }).click()
+  await expect(page.getByText('Password changed')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByLabel('Email').fill(admin.email)
+  await page.getByLabel('Password').fill(admin.password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByText('Wrong email or password.')).toBeVisible()
+
+  await page.getByLabel('Password').fill(newPassword)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByRole('link', { name: admin.name })).toBeVisible()
+})
