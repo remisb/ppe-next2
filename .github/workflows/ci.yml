@@ -19,7 +19,7 @@ env:
 jobs:
   go:
     name: Go (vet, migrations, tests)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:18-alpine
@@ -49,7 +49,7 @@ jobs:
 
   web:
     name: Web (typecheck, unit tests, build)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: web
@@ -70,7 +70,7 @@ jobs:
 
   e2e:
     name: End-to-end (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [go, web]
     services:
       postgres:
