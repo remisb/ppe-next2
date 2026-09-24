@@ -36,7 +36,7 @@ func WithLocation(loc *time.Location) Option      { return func(s *Service) { s.
 func WithConfirmTTL(d time.Duration) Option       { return func(s *Service) { s.confirmTTL = d } }
 
 func NewService(repo Repository, r Readers, opts ...Option) *Service {
-	s := &Service{repo: repo, read: r, now: func() time.Time { return time.Now().UTC() }, newID: uuid.New, loc: time.UTC, confirmTTL: DefaultConfirmTTL}
+	s := &Service{repo: repo, read: r, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New, loc: time.UTC, confirmTTL: DefaultConfirmTTL}
 	for _, o := range opts {
 		o(s)
 	}

@@ -21,7 +21,7 @@ func WithClock(now func() time.Time) Option       { return func(s *Service) { s.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 func NewService(repo Repository, catalog CatalogueChecker, opts ...Option) *Service {
-	s := &Service{repo: repo, catalog: catalog, now: func() time.Time { return time.Now().UTC() }, newID: uuid.New}
+	s := &Service{repo: repo, catalog: catalog, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
 		o(s)
 	}

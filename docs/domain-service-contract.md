@@ -63,7 +63,10 @@ Never let a storage error reach the client.
 
 ## Construction
 
-`NewService(repo, opts...)` defaults to `time.Now().UTC()` and `uuid.New`. `WithClock`
+`NewService(repo, opts...)` defaults to `time.Now().UTC().Truncate(time.Microsecond)` and
+`uuid.New`. The truncation matters: Postgres stores microseconds, so without it a service
+returns timestamps that differ from what it stored — invisible on macOS, whose clock is
+already microsecond-grained, and a test failure on Linux CI. `WithClock`
 and `WithIDGenerator` make tests deterministic; production callers pass no options.
 
 ## Actor attribution

@@ -35,7 +35,7 @@ func WithHasher(hash func(string) (string, error), verify func(hash, password st
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{
 		repo:   repo,
-		now:    func() time.Time { return time.Now().UTC() },
+		now:    func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
 		newID:  uuid.New,
 		hash:   bcryptHash,
 		verify: bcryptVerify,
