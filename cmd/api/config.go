@@ -46,7 +46,7 @@ type config struct {
 // Secrets (JWT secret, seed password) have no flag so they never appear in ps.
 func loadConfig(args []string) (config, error) {
 	c := config{
-		Addr:             env("API_ADDR", ":8080"),
+		Addr:             env("API_ADDR", ":8090"),
 		DBDSN:            env("API_DB_DSN", ""),
 		JWTSecret:        env("API_JWT_SECRET", ""),
 		JWTIssuer:        env("API_JWT_ISSUER", "ppe-next2"),
@@ -55,7 +55,7 @@ func loadConfig(args []string) (config, error) {
 		SeedUserName:     env("API_SEED_USER_NAME", "Administrator"),
 		AllowedOrigins:   splitList(env("API_ALLOWED_ORIGINS", "")),
 		OrgTimezone:      env("API_ORG_TIMEZONE", "Europe/Vilnius"),
-		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5173"), "/"),
+		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
 	}
 	var err error
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {

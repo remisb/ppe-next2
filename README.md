@@ -63,6 +63,20 @@ web/e2e/                 Playwright suite
 
 ## Getting started
 
+PPE-next2 uses its own ports so that it can run alongside the sibling PPE-next project
+without either one reaching the other's services:
+
+| Service | Port |
+|---|---|
+| Postgres | 5442 |
+| API | 8090 |
+| Web dev server | 5180 |
+| End-to-end tests | 18090 (API) and 5181 (web) |
+
+The Docker names are also separate: the compose project is `ppe-next2` and the data
+volume is `ppe-next2-pgdata`. The database user and names are `ppe2`, `ppe2` and
+`ppe2_test`.
+
 ```bash
 cp .env.example .env
 ```
@@ -91,8 +105,8 @@ Start the API:
 make run
 ```
 
-If port 8080 is taken, run `make run API_ADDR=:8081` and create
-`web/apps/workwear/.env.local` containing `VITE_API_TARGET=http://localhost:8081`.
+The API listens on port 8090. If that port is taken, run `make run API_ADDR=:8091` and
+create `web/apps/workwear/.env.local` containing `VITE_API_TARGET=http://localhost:8091`.
 
 In a second terminal, install the web dependencies and start the web app:
 
@@ -104,7 +118,7 @@ cd web && pnpm install
 pnpm --dir web/apps/workwear dev
 ```
 
-Open http://localhost:5173 and sign in with the seeded admin. The Vite dev server proxies
+Open http://localhost:5180 and sign in with the seeded admin. The Vite dev server proxies
 `/api` to the Go API, so no CORS setup is needed.
 
 `make help` lists every Make target.
@@ -146,11 +160,11 @@ cd web && pnpm typecheck && pnpm test && pnpm build
 
 One serial Playwright spec drives the whole order lifecycle through the real UI, the API
 and the `_test` database. The setup empties that database first. The suite starts its own
-API on port 18090 and Vite on port 5174.
+API on port 18090 and Vite on port 5181.
 
 To test the production setup instead, build the bundle with `pnpm build` and run with
 `E2E_WEB_SERVER=caddy`. The suite then serves the build through `deploy/Caddyfile` on port
-5174, as CI does. This needs `caddy` on your `PATH`.
+5181, as CI does. This needs `caddy` on your `PATH`.
 
 ```bash
 cd web/e2e && pnpm exec playwright install chromium
@@ -185,7 +199,7 @@ The API reads environment variables, and `.env` is exported by the Makefile. Onl
 
 | Variable | Default | Notes |
 |---|---|---|
-| `API_ADDR` | `:8080` | Listen address |
+| `API_ADDR` | `:8090` | Listen address |
 | `API_DB_DSN` | — | **Required.** Postgres connection string |
 | `API_DB_MAX_CONNS` | `10` | Pool size |
 | `API_JWT_SECRET` | — | **Required**, at least 32 bytes |
@@ -195,7 +209,7 @@ The API reads environment variables, and `.env` is exported by the Makefile. Onl
 | `API_REQUEST_TIMEOUT` / `API_SHUTDOWN_TIMEOUT` | `10s` / `10s` | |
 | `API_ALLOWED_ORIGINS` | empty | Comma-separated CORS origins. Leave empty when the web app is served from the same origin |
 | `API_ORG_TIMEZONE` | `Europe/Vilnius` | History date filters and usage time count days in this zone. Timestamps are stored in UTC |
-| `API_PUBLIC_BASE_URL` | `http://localhost:5173` | Where the web app is served. Confirmation links are `<this>/confirm/<token>` |
+| `API_PUBLIC_BASE_URL` | `http://localhost:5180` | Where the web app is served. Confirmation links are `<this>/confirm/<token>` |
 | `API_CONFIRM_TTL` | `168h` | How long a confirmation link stays valid (1m–2160h) |
 | `API_SEED_USER_EMAIL` / `_PASSWORD` / `_NAME` | — / — / `Administrator` | Used only by `-seed-admin` |
 | `API_TEST_DB_DSN` | — | Test database for the Postgres tests. It must differ from `API_DB_DSN` |
@@ -212,7 +226,7 @@ Postgres, the API binary, and the static web build behind one reverse proxy.
    pointing psql at the server:
 
    ```bash
-   make migrate PSQL='psql -d postgres://user:pass@host:5432/ppe -v ON_ERROR_STOP=1 -q'
+   make migrate PSQL='psql -d postgres://user:pass@host:5432/ppe2 -v ON_ERROR_STOP=1 -q'
    ```
 
    Each migration runs in its own transaction and is recorded in `schema_migrations`, so
@@ -253,7 +267,7 @@ Postgres, the API binary, and the static web build behind one reverse proxy.
    | Variable | Default | Notes |
    |---|---|---|
    | `SITE_ADDRESS` | `localhost` | The public domain, such as `workwear.example.com`. Use `http://host:port` for plain HTTP |
-   | `API_UPSTREAM` | `127.0.0.1:8080` | Where the API listens |
+   | `API_UPSTREAM` | `127.0.0.1:8090` | Where the API listens |
    | `WEB_ROOT` | `/srv/workwear/dist` | Where the web build is copied |
 
    Copy it to `/etc/caddy/Caddyfile`, and set the variables for the Caddy service (for

@@ -8,10 +8,10 @@
 	encode zstd gzip
 
 	handle /api/* {
-		reverse_proxy {$API_UPSTREAM:127.0.0.1:8080}
+		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
 	handle /health {
-		reverse_proxy {$API_UPSTREAM:127.0.0.1:8080}
+		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
 	handle {
 		root * {$WEB_ROOT:/srv/workwear/dist}

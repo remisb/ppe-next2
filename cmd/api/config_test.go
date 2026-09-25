@@ -10,7 +10,7 @@ func TestConfigValidate(t *testing.T) {
 	ok := config{
 		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
-		PublicBaseURL: "http://localhost:5173", ConfirmTTL: time.Hour,
+		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour,
 	}
 	if err := ok.validate(); err != nil {
 		t.Fatalf("valid config: %v", err)
@@ -55,7 +55,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if err := c.validate(); err != nil {
 		t.Fatalf("defaults do not validate: %v", err)
 	}
-	if c.PublicBaseURL != "http://localhost:5173" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" {
+	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" {
 		t.Errorf("defaults = %+v", c)
 	}
 	t.Setenv("API_PUBLIC_BASE_URL", "https://work.example.com/")

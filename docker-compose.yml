@@ -1,13 +1,17 @@
+# Pinned so containers, networks and the volume are ppe-next2's whatever the
+# checkout directory is called; nothing is shared with the PPE-next project.
+name: ppe-next2
+
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ppe}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ppe}
-      POSTGRES_DB: ${POSTGRES_DB:-ppe}
+      POSTGRES_USER: ${POSTGRES_USER:-ppe2}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ppe2}
+      POSTGRES_DB: ${POSTGRES_DB:-ppe2}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5442}:5432"
     # Postgres 18 images keep data in a versioned subdirectory
     # (/var/lib/postgresql/18/docker), so the volume mounts the parent.
     volumes:
@@ -20,3 +24,4 @@ services:
 
 volumes:
   pgdata:
+    name: ppe-next2-pgdata

@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url'
 
 export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
-export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe:ppe@localhost:5432/ppe_test?sslmode=disable'
+export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe2:ppe2@localhost:5442/ppe2_test?sslmode=disable'
 export const apiPort = 18090
-export const webPort = 5174
+export const webPort = 5181
 export const webURL = `http://localhost:${webPort}`
 
 // A test-only account created by global setup; not a real credential.

@@ -1,4 +1,5 @@
 # -include: a missing .env is not fatal; targets that need a variable fail on their own.
+# It also adds .env to MAKEFILE_LIST, so help reads only the first entry (this file).
 -include .env
 export
 
@@ -16,7 +17,7 @@ PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db 
 .PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin
 
 help: ## List targets
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
+	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
 
 build: ## Build the API binary
 	go build -o api ./cmd/api

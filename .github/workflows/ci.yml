@@ -11,9 +11,9 @@ concurrency:
 
 env:
   # The CI database is disposable; tests and e2e truncate it.
-  API_TEST_DB_DSN: postgres://ppe:ppe@localhost:5432/ppe_test?sslmode=disable
+  API_TEST_DB_DSN: postgres://ppe2:ppe2@localhost:5432/ppe2_test?sslmode=disable
   # The Makefile runs psql inside docker compose locally; CI talks to the service directly.
-  PSQL_CI: psql -d postgres://ppe:ppe@localhost:5432/ppe_test?sslmode=disable -v ON_ERROR_STOP=1 -q
+  PSQL_CI: psql -d postgres://ppe2:ppe2@localhost:5432/ppe2_test?sslmode=disable -v ON_ERROR_STOP=1 -q
   PGOPTIONS: -c client_min_messages=warning
 
 jobs:
@@ -24,12 +24,12 @@ jobs:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_USER: ppe
-          POSTGRES_PASSWORD: ppe
-          POSTGRES_DB: ppe_test
+          POSTGRES_USER: ppe2
+          POSTGRES_PASSWORD: ppe2
+          POSTGRES_DB: ppe2_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U ppe -d ppe_test"
+          --health-cmd "pg_isready -U ppe2 -d ppe2_test"
           --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
@@ -76,12 +76,12 @@ jobs:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_USER: ppe
-          POSTGRES_PASSWORD: ppe
-          POSTGRES_DB: ppe_test
+          POSTGRES_USER: ppe2
+          POSTGRES_PASSWORD: ppe2
+          POSTGRES_DB: ppe2_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U ppe -d ppe_test"
+          --health-cmd "pg_isready -U ppe2 -d ppe2_test"
           --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
@@ -111,7 +111,7 @@ jobs:
           caddy fmt --diff deploy/Caddyfile
           caddy validate --adapter caddyfile --config deploy/Caddyfile
         env:
-          SITE_ADDRESS: http://localhost:5174
+          SITE_ADDRESS: http://localhost:5181
       - run: make migrate PSQL="$PSQL_CI"
       - run: pnpm install --frozen-lockfile
         working-directory: web

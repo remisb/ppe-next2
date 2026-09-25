@@ -8,7 +8,7 @@ three layers (`.github/workflows/ci.yml`).
 | Go unit | `internal/**/service_test.go`, `*_test.go` with fakes | nothing |
 | Go + Postgres | `internal/**/postgres_test.go`, `cmd/api/api_postgres_test.go` | `API_TEST_DB_DSN` (skipped otherwise) |
 | Web unit | `web/**/src/**/*.test.ts` (Vitest) | nothing |
-| End-to-end | `web/e2e/tests/order-lifecycle.spec.ts` (Playwright) | a migrated `*_test` database; starts its own API (:18090) and Vite (:5174) |
+| End-to-end | `web/e2e/tests/order-lifecycle.spec.ts` (Playwright) | a migrated `*_test` database; starts its own API (:18090) and Vite (:5181) |
 
 Go Postgres tests and the e2e suite each empty the test database: never run them at the same
 time, and never point them at dev data (e2e refuses a database whose name does not end in

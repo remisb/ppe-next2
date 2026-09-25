@@ -42,12 +42,17 @@ make vet
 make test             # go test -p 1 ./... — Postgres tests skip without API_TEST_DB_DSN
 make db-test-create   # create + migrate the <POSTGRES_DB>_test database
 make test-db          # all tests incl. Postgres ones (refuses if test DSN == main DSN)
-make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5174
+make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
 go test ./internal/domain/user -run TestAuthenticate   # single test
 cd web/e2e && pnpm exec playwright test -g "paper confirmation"   # one e2e step (suite is serial)
 ```
 
-Any psql target can point at another DB: `make migrate DB=ppe_test`. Tests run with `-p 1`
+Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
+8080, 5173–5175): Postgres 5442, API 8090, Vite 5180, e2e 18090/5181, compose project
+`ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
+new ports out of PPE-next's range.
+
+Any psql target can point at another DB: `make migrate DB=ppe2_test`. Tests run with `-p 1`
 because Postgres tests truncate tables.
 
 ## Source-of-truth docs
@@ -132,13 +137,13 @@ shadcn/ui on Base UI. Follow `web/AGENTS.md`.
 ```bash
 cd web && pnpm install
 pnpm typecheck && pnpm test && pnpm build           # whole workspace
-pnpm --dir apps/workwear dev                         # http://localhost:5173, proxies /api
+pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 
-The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8080`; set it
-in `apps/workwear/.env.local`, e.g. `:8081`, when 8080 is taken). `.claude/launch.json`
-has `api` (port 8081) and `workwear` configs.
+The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
+in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `api` (port
+8090) and `workwear` (port 5180) configs.
 
 - `packages/api-client` is a **hand-written** typed client (`types.ts` mirrors the Go JSON);
   update it with every API change. `packages/routing` holds only the mount base path.
