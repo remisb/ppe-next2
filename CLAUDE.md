@@ -65,7 +65,25 @@ built app into the Caddy image; `deploy/Caddyfile`). Only Caddy publishes ports.
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
 `prod-seed-demo`; they run compose under `env -i` so `.env` values cannot leak in.
 The DigitalOcean droplet serves it at `admin.<ip>.sslip.io` (so `HSTS_MAX_AGE=0`) from
-`/opt/ppe-next2`.
+`/opt/ppe-next2`, a git checkout of this repository with `.env.prod` (chmod 600, never
+committed or printed) beside it. Deploy a pushed commit on the droplet:
+
+```bash
+cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
+```
+
+`prod-up` recreates only services whose image or config changed, and migrations run before
+the API starts. Compose has left Caddy running the previous web image after a rebuild: if
+`make prod-ps` shows the caddy image as a bare `sha256:` ID instead of `ppe-next2-web:latest`,
+recreate it (about a second of downtime; certificates live in the `caddy-data` volume):
+
+```bash
+env -i PATH=$PATH HOME=$HOME docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps caddy
+```
+
+Accounts need a password, so the first admin is created by a person: set
+`API_SEED_USER_EMAIL`/`_PASSWORD` in `.env.prod`, run `make prod-seed-admin`, then blank
+the password line. `make prod-seed-demo` needs only the email and refuses a non-empty database.
 
 ## Source-of-truth docs
 
