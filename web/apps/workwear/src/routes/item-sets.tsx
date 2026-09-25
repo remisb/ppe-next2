@@ -56,17 +56,8 @@ export function ItemSets() {
       ) : !sets.data || !catalogue.data ? (
         <Loading />
       ) : sets.data.length === 0 ? (
-        <EmptyState
-          action={
-            canManageItems ? (
-              <Button variant="outline" onClick={() => setEditing('new')}>
-                <Plus aria-hidden /> New Item Set
-              </Button>
-            ) : undefined
-          }
-        >
-          No item sets yet.
-        </EmptyState>
+        // The header's New Item Set is the next step; a second button would only repeat it.
+        <EmptyState>No item sets yet.</EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sets.data.map((s) => (

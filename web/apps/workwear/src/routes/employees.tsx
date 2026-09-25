@@ -64,16 +64,8 @@ export function Employees() {
       ) : employees.loading && !employees.data ? (
         <Loading />
       ) : shown.length === 0 ? (
-        <EmptyState
-          action={
-            filter ? undefined : (
-              <Button variant="outline" onClick={() => setEditing('new')}>
-                <Plus aria-hidden /> Add New Employee
-              </Button>
-            )
-          }
-        >
-          {filter ? `No employees match “${filter.trim()}”.` : 'No employees yet.'}
+        <EmptyState>
+          {filter ? `No employees match “${filter.trim()}”.` : 'No employees yet. Use Add New Employee to add the first.'}
         </EmptyState>
       ) : (
         // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.

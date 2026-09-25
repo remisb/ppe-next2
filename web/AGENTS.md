@@ -40,5 +40,7 @@ The workwear app is the reference.
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
   phone tab bar's height (0 from `md`).
+- **Empty states** give the next step in words and never repeat the header action as a
+  second button with the same name.
 - **Safe areas**: the viewport is `viewport-fit=cover`; bars pad with
   `env(safe-area-inset-*)`.
