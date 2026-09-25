@@ -15,15 +15,16 @@ type authHandler struct {
 }
 
 // registerAuthRoutes mounts the only unauthenticated API route: login. It is
-// rate-limited per client address to slow password guessing. The email is not
+// rate-limited per client address (middleware.ClientAddr, resolved by the
+// global ClientIP middleware) to slow password guessing. The email is not
 // part of the key: keying on it would let one address spread guesses across
 // many accounts unthrottled.
-func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, client clientAddr, limit int, interval time.Duration) {
+func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, limit int, interval time.Duration) {
 	h := &authHandler{users: users, tokens: tokens}
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
 		RequestsPerInterval: limit,
 		Interval:            interval,
-		KeyFunc:             client.key,
+		KeyFunc:             middleware.ClientAddr,
 	})
 	rt.public("POST /api/v1/auth/login", middleware.Chain(http.HandlerFunc(h.login), limiter))
 }

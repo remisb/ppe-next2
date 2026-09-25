@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -415,7 +416,7 @@ func TestLoginRateLimited(t *testing.T) {
 // proxy setting, every client behind it would share one.
 func TestLoginRateLimitPerClientBehindProxy(t *testing.T) {
 	api := newTestAPI(t)
-	trusted, _ := parsePrefixes([]string{"127.0.0.1"})
+	trusted, _ := middleware.ParseTrustedProxies([]string{"127.0.0.1"})
 	cfg := config{LoginRateLimit: 2, LoginRateInterval: time.Minute, RequestTimeout: 5 * time.Second, TrustedProxies: trusted}
 	api.handler = routes(cfg, api.svc, api.tokens, testLogger)
 	login := func(remote, xff string) int {

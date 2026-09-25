@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/remisb/muxstack/middleware"
 )
 
 type config struct {
@@ -62,7 +64,7 @@ func loadConfig(args []string) (config, error) {
 		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
 	}
 	var err error
-	if c.TrustedProxies, err = parsePrefixes(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
+	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
 		return c, fmt.Errorf("API_TRUSTED_PROXIES: %w", err)
 	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {

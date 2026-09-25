@@ -132,14 +132,13 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.authenticated("GET /api/v1/settings", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"timezone": cfg.OrgTimezone, "currency": "EUR"})
 	})
-	client := clientAddr{trusted: cfg.TrustedProxies}
-	registerAuthRoutes(rt, svc.users, tok, client, cfg.LoginRateLimit, cfg.LoginRateInterval)
+	registerAuthRoutes(rt, svc.users, tok, cfg.LoginRateLimit, cfg.LoginRateInterval)
 	registerUserRoutes(rt, svc.users)
 	registerEmployeeRoutes(rt, svc.employees)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
-	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL, client)
+	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	return rt
 }
 
@@ -149,6 +148,8 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 
 	global := []middleware.Middleware{
 		middleware.Recoverer(logger),
+		// Before Logger and the rate limiters, which read the client it resolves.
+		middleware.ClientIP(middleware.ClientIPConfig{TrustedProxies: cfg.TrustedProxies}),
 		middleware.Logger(logger),
 	}
 	if len(cfg.AllowedOrigins) > 0 {
