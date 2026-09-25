@@ -132,10 +132,12 @@ The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), 
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
 needs `caddy` on your `PATH`. CI pins the Caddy version and its SHA-512 checksum in
 `ci.yml`, so a Caddy upgrade must update both.
+The Vite web server is started from `apps/workwear/node_modules/.bin/vite`, not `pnpm exec`:
+pnpm 12 detaches the child, so Playwright could not stop it and the run hung after the last test.
 
 ## Frontend (`web/`)
 
-pnpm workspace (pnpm 11, Node ≥ 22), React 19, TypeScript 7, Vite 8, Vitest 5, Tailwind 4,
+pnpm workspace (pnpm 12, Node ≥ 22), React 19, TypeScript 7, Vite 8, Vitest 5, Tailwind 4,
 shadcn/ui on Base UI. Follow `web/AGENTS.md`.
 
 ```bash

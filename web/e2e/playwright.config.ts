@@ -14,7 +14,10 @@ if (caddy && !existsSync(join(webRoot, 'index.html'))) {
 }
 const webServerCommand = caddy
   ? `caddy run --adapter caddyfile --config ${join(repoRoot, 'deploy/Caddyfile')}`
-  : `pnpm --dir ../apps/workwear exec vite --port ${webPort} --strictPort`
+  : // The app's own vite binary, not `pnpm exec vite`: pnpm 12 starts the
+    // child in its own process group and exits, so Playwright's shutdown never
+    // reaches vite and the run hangs after the last test.
+    `${join(repoRoot, 'web/apps/workwear/node_modules/.bin/vite')} --port ${webPort} --strictPort`
 const webServerEnv: Record<string, string> = caddy
   ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot }
   : { VITE_API_TARGET: `http://localhost:${apiPort}` }
@@ -44,6 +47,7 @@ export default defineConfig({
     },
     {
       command: webServerCommand,
+      cwd: join(repoRoot, 'web/apps/workwear'),
       env: { ...(process.env as Record<string, string>), ...webServerEnv },
       url: webURL,
       reuseExistingServer: false,

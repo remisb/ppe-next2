@@ -58,7 +58,7 @@ web/e2e/                 Playwright suite
 
 - Go 1.27.1+ (the version in `go.mod`)
 - Docker with Compose (for local Postgres)
-- Node.js 22+ and pnpm 11 (`corepack enable` picks up the pinned version)
+- Node.js 22+ and pnpm 12 (`corepack enable` picks up the pinned version)
 - `make`
 
 ## Getting started
