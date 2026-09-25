@@ -51,7 +51,7 @@ export function Catalogue() {
         <Loading />
       ) : (
         // Where the table is narrow each item is a card: name and status, details, then the ordering values.
-        <Table stack="grid">
+        <Table stack="grid" stackBelow="lg">
           <TableHeader>
             <TableRow>
               <TableHead>Item</TableHead>

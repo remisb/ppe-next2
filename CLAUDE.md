@@ -159,5 +159,5 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
 - Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
-  `web/AGENTS.md`. The e2e step "phone: every screen fits 375px" fails if any screen or
-  table scrolls sideways on a phone.
+  `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if
+  any screen or table scrolls sideways at 375, 768, 920, 1100 or 1280px.

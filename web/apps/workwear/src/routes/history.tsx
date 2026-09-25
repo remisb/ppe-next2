@@ -144,7 +144,7 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
       ) : (
         <>
           {/* Where the table is narrow each order is a card: record and status, employee, details, then actions. */}
-          <Table stack>
+          <Table stack stackBelow="lg">
             <TableHeader>
               <TableRow>
                 <TableHead>Record</TableHead>
@@ -161,7 +161,7 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
                 <Fragment key={o.id}>
                   <TableRow className={cn(open.has(o.id) && 'stacked:rounded-b-none')}>
                     <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:text-base stacked:font-semibold">{o.record_number}</TableCell>
-                    <TableCell className="stacked:order-3 stacked:mb-1">
+                    <TableCell className="min-w-32 whitespace-normal stacked:order-3 stacked:mb-1">
                       {o.employee_first_name} {o.employee_last_name}
                       {o.employee_code ? <span className="text-muted-foreground"> · {o.employee_code}</span> : null}
                     </TableCell>

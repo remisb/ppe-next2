@@ -32,7 +32,9 @@ The workwear app is the reference.
   which would also match label lookups such as a field named "Item Set".
 - **Tables** that can run wider than a phone use `<Table stack>` (or `stack="grid"` for
   two cards to a row where they fit). Below 48rem *of the table's own width* each row
-  becomes a card; give every `TableCell` a `label` for its column. Restyle cards with the
+  becomes a card; give every `TableCell` a `label` for its column. A table whose columns
+  need more than 48rem side by side (History, Item Catalogue) adds `stackBelow="lg"` to
+  stack below 60rem instead; measure it beside the `md` rail. Restyle cards with the
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
   an A4 print and would print the receipt as cards. Never render a list twice (a table
   for desktop plus cards for phones).

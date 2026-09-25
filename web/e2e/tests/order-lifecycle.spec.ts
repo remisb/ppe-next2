@@ -255,7 +255,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
 
-test('phone: every screen fits 375px without sideways scrolling', async () => {
+test('phone and tablet: no screen scrolls sideways', async () => {
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
   // Neither the page nor any table (which scrolls inside its own box) runs sideways.
@@ -290,13 +290,29 @@ test('phone: every screen fits 375px without sideways scrolling', async () => {
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeInViewport()
   expect(await fits()).toBe(true)
-  page.once('dialog', (d) => void d.accept()) // Clear this order?
-  await page.getByRole('button', { name: 'New order' }).click()
+  // Left ORDERED, so History has a row with the widest action, Open Employee Confirmation.
+  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  await page.getByRole('button', { name: 'Start a new order' }).click()
 
   await openTab('History')
   await page.getByRole('button', { name: 'View Record' }).first().click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   expect(await fits(), 'the record scrolls sideways').toBe(true)
+
+  // Tablet and narrow-laptop widths, beside the side rail: a table either fits
+  // side by side or stacks, never scrolls. 920px left History 8rem too narrow.
+  for (const width of [768, 920, 1100, desktop.width]) {
+    await page.setViewportSize({ width, height: 900 })
+    for (const [tab, content] of [
+      ['History', recordNumber],
+      ['Employees', 'Ona Kazlauskienė'],
+      ['Item Catalogue', 'Protective gloves'],
+    ] as const) {
+      await openTab(tab)
+      await expect(page.getByText(content).first()).toBeVisible()
+      expect(await fits(), `${tab} scrolls sideways at ${width}px`).toBe(true)
+    }
+  }
 
   await page.setViewportSize(desktop)
 })

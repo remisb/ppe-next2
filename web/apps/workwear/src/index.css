@@ -11,13 +11,17 @@
  * `stacked:` is a table (see components/ui/table.tsx) with under 48rem of room:
  * a phone, a tablet beside the side rail, a narrow laptop window. It asks the
  * table's own container, not the viewport, because only the container knows
- * how much room the table has. `stacked-wide:` is the upper part of that range,
- * where cards sit two to a row. Screen only: an A4 page is under 48rem wide
- * too, and the Items Given Record must print as a table.
+ * how much room the table has. A table too wide for that (`stackBelow="lg"`,
+ * container `table-lg`) stacks under 60rem instead. `stacked-wide:` is the
+ * upper part of that range, where cards sit two to a row. Screen only: an A4
+ * page is under 48rem wide too, and the Items Given Record must print as a table.
  */
 @custom-variant stacked {
   @media screen {
     @container table (width < 48rem) {
+      @slot;
+    }
+    @container table-lg (width < 60rem) {
       @slot;
     }
   }
@@ -25,6 +29,9 @@
 @custom-variant stacked-wide {
   @media screen {
     @container table (36rem <= width < 48rem) {
+      @slot;
+    }
+    @container table-lg (36rem <= width < 60rem) {
       @slot;
     }
   }

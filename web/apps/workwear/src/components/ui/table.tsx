@@ -9,20 +9,22 @@ import { cn } from "@/lib/utils"
  * also puts the cards two to a row where they have the room (`stacked-wide:`).
  * It is one DOM at every width: the table keeps its semantics and nothing is
  * rendered twice. Cells restyle further with `stacked:` classes, which `cn`
- * merges over the defaults below.
+ * merges over the defaults below. `stackBelow="lg"` moves the threshold to
+ * 60rem, for a table whose columns need more than 48rem side by side.
  */
 const StackContext = React.createContext<boolean | "grid">(false)
 
 function Table({
   className,
   stack = false,
+  stackBelow = "md",
   ...props
-}: React.ComponentProps<"table"> & { stack?: boolean | "grid" }) {
+}: React.ComponentProps<"table"> & { stack?: boolean | "grid"; stackBelow?: "md" | "lg" }) {
   return (
     <StackContext value={stack}>
       <div
         data-slot="table-container"
-        className={cn("relative w-full overflow-x-auto", stack && "@container/table")}
+        className={cn("relative w-full overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : "@container/table"))}
       >
         <table
           data-slot="table"
