@@ -99,6 +99,22 @@ make seed-admin
 `make seed-admin` creates the first admin from `API_SEED_USER_*`. Change that password
 after signing in, on the **Account** page.
 
+To try the app with data, fill the empty database with demo content:
+
+```bash
+make seed-demo
+```
+
+`make seed-demo` goes through the same services as the app, as the seed admin. It adds:
+- 10 catalogue items, including one without a price and one inactive
+- 2 item sets
+- 6 employees, one without a shoe size and one without a clothing size
+- 6 orders over the last four months: three GIVEN (two on paper, one electronically) and
+  three ORDERED
+
+It refuses to run if any catalogue items or employees already exist. To seed again, reset
+the database first with `make migrate-down && make migrate && make seed-admin`.
+
 Start the API:
 
 ```bash

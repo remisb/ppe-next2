@@ -66,6 +66,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, svc.users, cfg, logger)
 	}
+	if cfg.SeedDemo {
+		return seedDemo(ctx, pool, svc.users, cfg, loc, logger)
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,

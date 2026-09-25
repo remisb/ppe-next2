@@ -14,7 +14,7 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin
+.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo
 
 help: ## List targets
 	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -76,3 +76,6 @@ migrate-status: ## List applied migrations
 
 seed-admin: ## Create the first admin from API_SEED_USER_* and exit
 	go run ./cmd/api -seed-admin
+
+seed-demo: ## Fill an empty database with demo data as the seed admin (run seed-admin first)
+	go run ./cmd/api -seed-demo

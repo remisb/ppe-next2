@@ -38,6 +38,14 @@ func TestConfigValidate(t *testing.T) {
 	if err := seed.validate(); err != nil {
 		t.Errorf("seed mode needs no JWT secret: %v", err)
 	}
+	demo := config{DBDSN: "postgres://x", DBMaxConns: 1, SeedDemo: true}
+	if demo.validate() == nil {
+		t.Error("seed-demo without API_SEED_USER_EMAIL should fail")
+	}
+	demo.SeedUserEmail = "a@example.com"
+	if err := demo.validate(); err != nil {
+		t.Errorf("seed-demo needs no JWT secret or password: %v", err)
+	}
 }
 
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the

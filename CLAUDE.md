@@ -37,6 +37,7 @@ make db-up            # Postgres 18 in Docker (docker-compose.yml), waits until 
 make migrate          # apply pending internal/db/migrations/*.up.sql via psql in the container
 make migrate-down     # revert all; make migrate-status lists applied files
 make seed-admin       # create the first admin from API_SEED_USER_*
+make seed-demo        # demo data via the services (cmd/api/seed-demo.go); refuses a non-empty DB
 make run              # go run ./cmd/api
 make vet
 make test             # go test -p 1 ./... — Postgres tests skip without API_TEST_DB_DSN

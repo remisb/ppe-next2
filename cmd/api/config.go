@@ -42,7 +42,9 @@ type config struct {
 	ConfirmTTL    time.Duration
 
 	// SeedAdmin runs Bootstrap with the API_SEED_USER_* values and exits.
-	SeedAdmin        bool
+	SeedAdmin bool
+	// SeedDemo fills an empty database with demo data as that admin and exits.
+	SeedDemo         bool
 	SeedUserEmail    string
 	SeedUserPassword string
 	SeedUserName     string
@@ -92,6 +94,7 @@ func loadConfig(args []string) (config, error) {
 	fs := flag.NewFlagSet("api", flag.ContinueOnError)
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address")
 	fs.BoolVar(&c.SeedAdmin, "seed-admin", false, "create the first admin from API_SEED_USER_* and exit")
+	fs.BoolVar(&c.SeedDemo, "seed-demo", false, "fill an empty database with demo data as the API_SEED_USER_EMAIL admin and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -109,6 +112,12 @@ func (c config) validate() error {
 	if c.SeedAdmin {
 		if c.SeedUserEmail == "" || c.SeedUserPassword == "" {
 			errs = append(errs, errors.New("-seed-admin needs API_SEED_USER_EMAIL and API_SEED_USER_PASSWORD"))
+		}
+		return errors.Join(errs...)
+	}
+	if c.SeedDemo {
+		if c.SeedUserEmail == "" {
+			errs = append(errs, errors.New("-seed-demo needs API_SEED_USER_EMAIL (the admin the data is created as)"))
 		}
 		return errors.Join(errs...)
 	}
