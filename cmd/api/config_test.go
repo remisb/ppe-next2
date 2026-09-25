@@ -43,7 +43,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_TRUSTED_PROXIES"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -58,6 +58,18 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" {
 		t.Errorf("defaults = %+v", c)
 	}
+	if len(c.TrustedProxies) != 0 {
+		t.Errorf("trusted proxies default = %v, want none", c.TrustedProxies)
+	}
+	t.Setenv("API_TRUSTED_PROXIES", "127.0.0.1, ::1")
+	if c, err = loadConfig(nil); err != nil || len(c.TrustedProxies) != 2 {
+		t.Errorf("trusted proxies = %v, %v", c.TrustedProxies, err)
+	}
+	t.Setenv("API_TRUSTED_PROXIES", "caddy")
+	if _, err = loadConfig(nil); err == nil {
+		t.Error("a host name in API_TRUSTED_PROXIES should fail")
+	}
+	t.Setenv("API_TRUSTED_PROXIES", "")
 	t.Setenv("API_PUBLIC_BASE_URL", "https://work.example.com/")
 	t.Setenv("API_ORG_TIMEZONE", "Europe/Riga")
 	c, _ = loadConfig(nil)

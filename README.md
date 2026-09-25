@@ -205,7 +205,8 @@ The API reads environment variables, and `.env` is exported by the Makefile. Onl
 | `API_JWT_SECRET` | — | **Required**, at least 32 bytes |
 | `API_JWT_ISSUER` | `ppe-next2` | |
 | `API_JWT_TTL` | `15m` | Between 1m and 24h |
-| `API_LOGIN_RATE_LIMIT` / `API_LOGIN_RATE_INTERVAL` | `5` / `1m` | Login attempts per IP |
+| `API_LOGIN_RATE_LIMIT` / `API_LOGIN_RATE_INTERVAL` | `5` / `1m` | Login attempts per client IP |
+| `API_TRUSTED_PROXIES` | empty | Comma-separated IPs or CIDRs of reverse proxies, such as Caddy. Requests from these addresses are counted by the client address in `X-Forwarded-For`. Set it when the API runs behind a proxy |
 | `API_REQUEST_TIMEOUT` / `API_SHUTDOWN_TIMEOUT` | `10s` / `10s` | |
 | `API_ALLOWED_ORIGINS` | empty | Comma-separated CORS origins. Leave empty when the web app is served from the same origin |
 | `API_ORG_TIMEZONE` | `Europe/Vilnius` | History date filters and usage time count days in this zone. Timestamps are stored in UTC |
@@ -240,7 +241,10 @@ Postgres, the API binary, and the static web build behind one reverse proxy.
 
    Run it as a service (for example with systemd) with the environment variables above.
    In production, use a random `API_JWT_SECRET` and set `API_PUBLIC_BASE_URL` to the
-   public URL of the web app. Create the first admin once with `./api -seed-admin`, then
+   public URL of the web app. With Caddy on the same host, set
+   `API_TRUSTED_PROXIES=127.0.0.1,::1`. Otherwise every request reaches the API from
+   Caddy's address, and all users share one login rate limit. Leave the API port
+   unreachable from outside, so that requests can only arrive through Caddy. Create the first admin once with `./api -seed-admin`, then
    remove the `API_SEED_USER_*` variables. `GET /health` returns 200 once the API is
    serving, which you can use for the proxy or orchestrator health check. The API shuts
    down gracefully on SIGINT or SIGTERM.

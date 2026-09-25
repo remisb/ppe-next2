@@ -411,6 +411,42 @@ func TestLoginRateLimited(t *testing.T) {
 	}
 }
 
+// Behind a trusted proxy each client has its own login budget; without the
+// proxy setting, every client behind it would share one.
+func TestLoginRateLimitPerClientBehindProxy(t *testing.T) {
+	api := newTestAPI(t)
+	trusted, _ := parsePrefixes([]string{"127.0.0.1"})
+	cfg := config{LoginRateLimit: 2, LoginRateInterval: time.Minute, RequestTimeout: 5 * time.Second, TrustedProxies: trusted}
+	api.handler = routes(cfg, api.svc, api.tokens, testLogger)
+	login := func(remote, xff string) int {
+		body := strings.NewReader(`{"email":"x@example.com","password":"password123"}`)
+		req := httptest.NewRequest("POST", "/api/v1/auth/login", body)
+		req.RemoteAddr = remote
+		if xff != "" {
+			req.Header.Set("X-Forwarded-For", xff)
+		}
+		rec := httptest.NewRecorder()
+		api.handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for range 2 {
+		login("127.0.0.1:40000", "203.0.113.1")
+	}
+	if code := login("127.0.0.1:40000", "203.0.113.1"); code != http.StatusTooManyRequests {
+		t.Fatalf("first client, third attempt = %d, want 429", code)
+	}
+	if code := login("127.0.0.1:40000", "203.0.113.2"); code == http.StatusTooManyRequests {
+		t.Fatal("a second client behind the proxy was limited by the first")
+	}
+	// An untrusted peer cannot dodge its own limit by inventing a header.
+	for range 2 {
+		login("198.51.100.9:5000", "")
+	}
+	if code := login("198.51.100.9:5000", "203.0.113.99"); code != http.StatusTooManyRequests {
+		t.Fatalf("spoofed X-Forwarded-For from an untrusted peer = %d, want 429", code)
+	}
+}
+
 func TestDeletedUserTokenIsUnauthenticated(t *testing.T) {
 	api := newTestAPI(t)
 	u, tok := api.userWith(t, user.RoleEmployee)

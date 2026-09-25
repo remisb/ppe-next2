@@ -21,7 +21,7 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 
 | Route | Access | Kind |
 | --- | --- | --- |
-| `POST /api/v1/auth/login` | public, rate-limited per client IP | returns `{access_token, token_type, expires_in, expires_at, user}` |
+| `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) | returns `{access_token, token_type, expires_in, expires_at, user}` |
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
 | `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}` |
 | `GET /api/v1/users` | admin, manager | list |

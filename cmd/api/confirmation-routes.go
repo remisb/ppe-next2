@@ -19,13 +19,13 @@ type confirmationHandler struct {
 // Record. Staff routes need a token; the two public routes are authorised by
 // the confirmation link alone. The link token travels in the request body, not
 // the path, so the request logger never records it.
-func registerConfirmationRoutes(rt *router, orders *order.Service, baseURL string) {
+func registerConfirmationRoutes(rt *router, orders *order.Service, baseURL string, client clientAddr) {
 	h := &confirmationHandler{orders: orders, baseURL: baseURL}
 	rt.authenticated("POST /api/v1/orders/{id}/confirmation-link", h.createLink)
 	rt.authenticated("POST /api/v1/orders/{id}/confirm-paper", h.confirmPaper)
 	rt.authenticated("GET /api/v1/orders/{id}/record", h.record)
 
-	limit := middleware.RateLimiter(middleware.RateLimitConfig{RequestsPerInterval: 20, Interval: time.Minute, KeyFunc: loginRateKey})
+	limit := middleware.RateLimiter(middleware.RateLimitConfig{RequestsPerInterval: 20, Interval: time.Minute, KeyFunc: client.key})
 	rt.public("POST /api/v1/confirmations/view", middleware.Chain(http.HandlerFunc(h.publicView), limit))
 	rt.public("POST /api/v1/confirmations/confirm", middleware.Chain(http.HandlerFunc(h.publicConfirm), limit))
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -25,6 +26,9 @@ type config struct {
 	LoginRateLimit    int
 	LoginRateInterval time.Duration
 	AllowedOrigins    []string
+	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
+	// X-Forwarded-For is believed when finding the client for rate limits.
+	TrustedProxies []netip.Prefix
 
 	// OrgTimezone is the organisation's IANA zone: History date filters and
 	// usage time count calendar days there. Timestamps are stored in UTC.
@@ -58,6 +62,9 @@ func loadConfig(args []string) (config, error) {
 		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
 	}
 	var err error
+	if c.TrustedProxies, err = parsePrefixes(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
+		return c, fmt.Errorf("API_TRUSTED_PROXIES: %w", err)
+	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {
 		return c, err
 	}

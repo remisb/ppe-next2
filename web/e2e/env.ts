@@ -23,6 +23,8 @@ export function apiEnv(): Record<string, string> {
     API_PUBLIC_BASE_URL: webURL,
     API_ORG_TIMEZONE: 'Europe/Vilnius',
     API_LOGIN_RATE_LIMIT: '100',
+    // As deployed behind Caddy; harmless with the Vite proxy.
+    API_TRUSTED_PROXIES: '127.0.0.1,::1',
     API_SEED_USER_EMAIL: admin.email,
     API_SEED_USER_PASSWORD: admin.password,
     API_SEED_USER_NAME: admin.name,

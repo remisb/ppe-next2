@@ -1,9 +1,7 @@
 package main
 
 import (
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/remisb/muxstack/middleware"
@@ -17,13 +15,15 @@ type authHandler struct {
 }
 
 // registerAuthRoutes mounts the only unauthenticated API route: login. It is
-// rate-limited per client address and email to slow password guessing.
-func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, limit int, interval time.Duration) {
+// rate-limited per client address to slow password guessing. The email is not
+// part of the key: keying on it would let one address spread guesses across
+// many accounts unthrottled.
+func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, client clientAddr, limit int, interval time.Duration) {
 	h := &authHandler{users: users, tokens: tokens}
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
 		RequestsPerInterval: limit,
 		Interval:            interval,
-		KeyFunc:             loginRateKey,
+		KeyFunc:             client.key,
 	})
 	rt.public("POST /api/v1/auth/login", middleware.Chain(http.HandlerFunc(h.login), limiter))
 }
@@ -65,14 +65,4 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt:   exp.UTC(),
 		User:        u,
 	})
-}
-
-// loginRateKey limits per client IP. The email is not part of the key: keying
-// on it would let one address spread guesses across many accounts unthrottled.
-func loginRateKey(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return strings.TrimSpace(r.RemoteAddr)
-	}
-	return host
 }

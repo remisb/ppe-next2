@@ -74,6 +74,9 @@ because Postgres tests truncate tables.
   Handlers get the actor with `actorID(r)` (`cmd/api/auth.go`).
 - **Composition**: `buildRouter()` in `cmd/api/main.go` mounts every
   `register<Name>Routes(rt, svc)`; `run()` builds the `services` struct.
+- **Client address**: rate limits key on `clientAddr.key` (`cmd/api/clientip.go`), which
+  believes `X-Forwarded-For` only from `API_TRUSTED_PROXIES`. Never key on `RemoteAddr` or
+  the raw header directly.
 - **Config**: every setting must be read in `loadConfig` *and* checked in `validate`;
   `TestLoadConfigDefaults` loads the real defaults to catch a field that is never read.
 - **Adding a route** requires an entry in the `policy` table in `cmd/api/routes_test.go`

@@ -132,13 +132,14 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.authenticated("GET /api/v1/settings", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"timezone": cfg.OrgTimezone, "currency": "EUR"})
 	})
-	registerAuthRoutes(rt, svc.users, tok, cfg.LoginRateLimit, cfg.LoginRateInterval)
+	client := clientAddr{trusted: cfg.TrustedProxies}
+	registerAuthRoutes(rt, svc.users, tok, client, cfg.LoginRateLimit, cfg.LoginRateInterval)
 	registerUserRoutes(rt, svc.users)
 	registerEmployeeRoutes(rt, svc.employees)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
-	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
+	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL, client)
 	return rt
 }
 
