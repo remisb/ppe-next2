@@ -119,6 +119,10 @@ because Postgres tests truncate tables.
 One serial spec drives the whole lifecycle through the real UI, API and a `*_test`
 database (global setup truncates it and seeds a test admin via `api -seed-admin`). Run
 `pnpm exec playwright install chromium` once. Do not run it while `make test-db` runs.
+The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
+the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
+needs `caddy` on your `PATH`. CI pins the Caddy version and its SHA-512 checksum in
+`ci.yml`, so a Caddy upgrade must update both.
 
 ## Frontend (`web/`)
 

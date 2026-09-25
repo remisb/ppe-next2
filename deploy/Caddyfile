@@ -1,0 +1,21 @@
+# Serves the built web app and proxies the API on one origin.
+#
+#   SITE_ADDRESS  public domain (Caddy obtains TLS automatically), or
+#                 http://host:port for plain HTTP, as CI does
+#   API_UPSTREAM  where the Go API listens
+#   WEB_ROOT      web/apps/workwear/dist from `pnpm build`
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy {$API_UPSTREAM:127.0.0.1:8080}
+	}
+	handle /health {
+		reverse_proxy {$API_UPSTREAM:127.0.0.1:8080}
+	}
+	handle {
+		root * {$WEB_ROOT:/srv/workwear/dist}
+		try_files {path} /index.html
+		file_server
+	}
+}
