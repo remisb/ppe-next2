@@ -3,7 +3,7 @@ import { ApiError } from '@ppe/api-client'
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
-import { ErrorState, Loading, PageHeader } from '@/components/states'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,19 +56,29 @@ export function ItemSets() {
       ) : !sets.data || !catalogue.data ? (
         <Loading />
       ) : sets.data.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">No item sets yet.</p>
+        <EmptyState
+          action={
+            canManageItems ? (
+              <Button variant="outline" onClick={() => setEditing('new')}>
+                <Plus aria-hidden /> New Item Set
+              </Button>
+            ) : undefined
+          }
+        >
+          No item sets yet.
+        </EmptyState>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sets.data.map((s) => (
             <Card key={s.id}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex flex-wrap items-center gap-2">
                   {s.name}
                   {s.active ? null : <Badge variant="outline">Inactive</Badge>}
                 </CardTitle>
                 {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-1 flex-col">
                 <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm">
                   {s.lines.map((l) => {
                     const item = itemsById.get(l.catalogue_item_id)
@@ -81,7 +91,7 @@ export function ItemSets() {
                   })}
                 </ol>
                 {canManageItems ? (
-                  <div className="flex gap-2">
+                  <div className="mt-auto flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
                       Edit
                     </Button>
@@ -192,38 +202,38 @@ function SetForm({
       <form id="set-form" onSubmit={submit} className="flex flex-col gap-4">
         <Field label="Name" required>{(p) => <Input {...controlProps(p)} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Description">{(p) => <Textarea {...controlProps(p)} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Create Order)
+        <label className="flex min-h-11 items-center gap-3 text-sm">
+          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Create Order)
         </label>
 
         <div>
           <p className="mb-2 text-sm font-medium">Items, in display order</p>
           <ul className="flex flex-col gap-2">
             {lines.map((l, i) => (
-              <li key={l.catalogue_item_id} className="flex items-center gap-2">
-                <span className="flex-1 text-sm">{nameOf(l.catalogue_item_id)}</span>
+              <li key={l.catalogue_item_id} className="flex items-center gap-1 rounded-md border border-border py-1 pr-1 pl-3 sm:gap-2">
+                <span className="min-w-0 flex-1 text-sm break-words">{nameOf(l.catalogue_item_id)}</span>
                 <Input
                   aria-label={`Default quantity for ${nameOf(l.catalogue_item_id)}`}
-                  className="w-20"
+                  className="w-16 shrink-0 sm:w-20"
                   inputMode="numeric"
                   invalid={!/^[1-9]\d*$/.test(l.default_quantity)}
                   value={l.default_quantity}
                   onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, default_quantity: e.target.value } : x)))}
                 />
-                <Button type="button" size="icon" variant="ghost" aria-label="Move up" onClick={() => move(i, -1)}>
+                <Button type="button" size="icon" variant="ghost" aria-label={`Move ${nameOf(l.catalogue_item_id)} up`} disabled={i === 0} onClick={() => move(i, -1)}>
                   <ArrowUp aria-hidden />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" aria-label="Move down" onClick={() => move(i, 1)}>
+                <Button type="button" size="icon" variant="ghost" aria-label={`Move ${nameOf(l.catalogue_item_id)} down`} disabled={i === lines.length - 1} onClick={() => move(i, 1)}>
                   <ArrowDown aria-hidden />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" aria-label="Remove" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
+                <Button type="button" size="icon" variant="ghost" aria-label={`Remove ${nameOf(l.catalogue_item_id)}`} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
                   <X aria-hidden />
                 </Button>
               </li>
             ))}
           </ul>
           <div className="mt-3 flex gap-2">
-            <Select aria-label="Item to add" value={adding} onChange={(e) => setAdding(e.target.value)}>
+            <Select aria-label="Item to add" className="min-w-0 flex-1" value={adding} onChange={(e) => setAdding(e.target.value)}>
               <option value="">Choose an item…</option>
               {available.map((i) => (
                 <option key={i.id} value={i.id}>

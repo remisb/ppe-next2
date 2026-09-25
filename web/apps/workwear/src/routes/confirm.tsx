@@ -40,7 +40,7 @@ export function ConfirmPage({ token }: { token: string }) {
   const expired = [view.error, error].some((e) => e instanceof ApiError && e.status === 410)
 
   return (
-    <main className="mx-auto max-w-4xl p-4 print:p-0">
+    <main className="mx-auto max-w-4xl px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-8 print:p-0">
       {expired ? (
         <Alert variant="destructive">
           <AlertTitle>This link has expired or was replaced / Срок действия ссылки истёк</AlertTitle>
@@ -71,9 +71,13 @@ export function ConfirmPage({ token }: { token: string }) {
           ) : null}
           <ReceiptDocument record={record} />
           {record.status === 'ORDERED' ? (
-            <section className="mx-auto mt-4 flex max-w-4xl flex-col gap-3 print:hidden">
-              <label className="flex items-start gap-3 text-sm">
-                <input type="checkbox" className="mt-1 size-4" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+            <section
+              aria-label="Confirm receipt / Подтверждение"
+              className="mx-auto mt-4 flex max-w-4xl flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:p-6 print:hidden"
+            >
+              {/* The whole label is the tap target, not just the small box. */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-md p-1 text-sm has-checked:text-foreground">
+                <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
                 <span>
                   I have received the items listed above and agree with the confirmation text.
                   <br />
@@ -85,7 +89,7 @@ export function ConfirmPage({ token }: { token: string }) {
                   {errorText(error)}
                 </p>
               ) : null}
-              <Button size="lg" disabled={!checked || busy} onClick={() => void confirm()}>
+              <Button size="lg" className="w-full sm:w-fit" disabled={!checked || busy} onClick={() => void confirm()}>
                 {busy ? '…' : 'Confirm Receipt / Подтвердить'}
               </Button>
             </section>

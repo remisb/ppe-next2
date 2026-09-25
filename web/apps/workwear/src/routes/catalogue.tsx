@@ -11,7 +11,7 @@ import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { errorText, useLoad } from '@/lib/use-load'
-import { formatEuro, formatMonths, parseEuro } from '@/lib/utils'
+import { cn, formatEuro, formatMonths, parseEuro } from '@/lib/utils'
 
 export const sizeGroupLabel: Record<SizeGroup, string> = { CLOTHING: 'Clothing', SHOES: 'Shoes', NONE: 'No size' }
 
@@ -50,7 +50,8 @@ export function Catalogue() {
       ) : items.loading && !items.data ? (
         <Loading />
       ) : (
-        <Table>
+        // Where the table is narrow each item is a card: name and status, details, then the ordering values.
+        <Table stack="grid">
           <TableHeader>
             <TableRow>
               <TableHead>Item</TableHead>
@@ -65,19 +66,21 @@ export function Catalogue() {
           <TableBody>
             {items.data?.map((i) => (
               <TableRow key={i.id} className={i.active ? undefined : 'text-muted-foreground'}>
-                <TableCell className="font-medium">{i.name}</TableCell>
-                <TableCell>{i.details || '—'}</TableCell>
-                <TableCell>{sizeGroupLabel[i.size_group]}</TableCell>
-                <TableCell className="text-right">{formatEuro(i.unit_price_cents)}</TableCell>
-                <TableCell>{formatMonths(i.service_period_months)}</TableCell>
-                <TableCell className="space-x-1">
+                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">{i.name}</TableCell>
+                <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>
+                  {i.details || '—'}
+                </TableCell>
+                <TableCell label="Size group" className="stacked:order-4">{sizeGroupLabel[i.size_group]}</TableCell>
+                <TableCell label="Unit price" className="text-right tabular-nums stacked:order-5">{formatEuro(i.unit_price_cents)}</TableCell>
+                <TableCell label="Service period" className="stacked:order-6">{formatMonths(i.service_period_months)}</TableCell>
+                <TableCell className="space-x-1 stacked:order-2 stacked:flex stacked:w-auto stacked:gap-1 stacked:space-x-0">
                   {i.active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
                   {i.unit_price_cents === null || i.service_period_months === null ? (
                     <Badge variant="destructive">Incomplete</Badge>
                   ) : null}
                 </TableCell>
                 {canManageItems ? (
-                  <TableCell className="space-x-1 text-right">
+                  <TableCell className="space-x-1 text-right stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2 stacked:space-x-0 stacked:*:flex-1">
                     <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
                       Edit
                     </Button>
@@ -185,13 +188,13 @@ function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'new' | nu
             </Select>
           )}
         </Field>
-        <Field label="Unit price (€)" error={priceError}>{(p) => <Input {...controlProps(p)} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
+        <Field label="Unit price (€)" error={priceError}>{(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
         <Field label="Service period (months)" error={periodError}>{(p) => <Input {...controlProps(p)} inputMode="numeric" value={period} onChange={(e) => setPeriod(e.target.value)} />}</Field>
         <Field label="Display order" hint="Lower comes first in Add Item." error={rankError}>
           {(p) => <Input {...controlProps(p)} inputMode="numeric" value={rank} onChange={(e) => setRank(e.target.value)} />}
         </Field>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Add Item)
+        <label className="flex min-h-11 items-center gap-3 text-sm sm:col-span-2">
+          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Add Item)
         </label>
         {error ? <p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p> : null}
       </form>

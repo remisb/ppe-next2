@@ -1,5 +1,5 @@
 import { ApiError } from '@ppe/api-client'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, LogOut } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { PageHeader } from '@/components/states'
@@ -13,8 +13,11 @@ import { errorText } from '@/lib/use-load'
 
 const empty: PasswordChange = { current: '', next: '', confirm: '' }
 
-/** Account: change the signed-in user's own password. */
-export function Account() {
+/**
+ * Account: change the signed-in user's own password. On a phone Sign out is
+ * here, since the bottom bar holds only the sections; from md it is in the sidebar.
+ */
+export function Account({ onSignOut }: { onSignOut: () => void }) {
   const { client } = useApi()
   const session = useSession()
   const [form, setForm] = useState<PasswordChange>(empty)
@@ -55,7 +58,7 @@ export function Account() {
   return (
     <>
       <PageHeader title="Account" description={`Signed in as ${session.name}.`} />
-      <Card className="max-w-md">
+      <Card className="md:max-w-md">
         <CardHeader>
           <CardTitle>Change password</CardTitle>
         </CardHeader>
@@ -82,12 +85,15 @@ export function Account() {
                 {serverError}
               </p>
             ) : null}
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" className="w-full sm:w-fit" disabled={busy}>
               {busy ? 'Changing…' : 'Change password'}
             </Button>
           </form>
         </CardContent>
       </Card>
+      <Button variant="outline" className="mt-6 w-full md:hidden" onClick={onSignOut}>
+        <LogOut aria-hidden /> Sign out
+      </Button>
     </>
   )
 }

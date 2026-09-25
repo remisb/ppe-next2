@@ -3,14 +3,14 @@ import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
-import { ErrorState, Loading, PageHeader } from '@/components/states'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { errorText, useLoad } from '@/lib/use-load'
-import { formatSize } from '@/lib/utils'
+import { cn, formatSize } from '@/lib/utils'
 
 export function Employees() {
   const { client } = useApi()
@@ -48,16 +48,36 @@ export function Employees() {
           </Button>
         }
       />
-      <div className="mb-4 max-w-sm">
-        <Input placeholder="Search by name or code" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Search employees" />
+      <div className="mb-4 md:max-w-sm">
+        <Input
+          type="search"
+          enterKeyHint="search"
+          placeholder="Search by name or code"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          aria-label="Search employees"
+        />
       </div>
       {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
       {employees.error ? (
         <ErrorState error={employees.error} onRetry={employees.reload} />
       ) : employees.loading && !employees.data ? (
         <Loading />
+      ) : shown.length === 0 ? (
+        <EmptyState
+          action={
+            filter ? undefined : (
+              <Button variant="outline" onClick={() => setEditing('new')}>
+                <Plus aria-hidden /> Add New Employee
+              </Button>
+            )
+          }
+        >
+          {filter ? `No employees match “${filter.trim()}”.` : 'No employees yet.'}
+        </EmptyState>
       ) : (
-        <Table>
+        // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.
+        <Table stack="grid">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -70,13 +90,15 @@ export function Employees() {
           </TableHeader>
           <TableBody>
             {shown.map((e) => (
-              <TableRow key={e.id}>
-                <TableCell className="font-medium">{e.full_name}</TableCell>
-                <TableCell>{e.code ?? '—'}</TableCell>
-                <TableCell>{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
-                <TableCell>{formatSize(e.clothing_size)}</TableCell>
-                <TableCell>{formatSize(e.shoe_size)}</TableCell>
-                <TableCell className="space-x-1 text-right">
+              <TableRow key={e.id} className={stackedBreak}>
+                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">{e.full_name}</TableCell>
+                <TableCell label="Code" className={cn('stacked:order-1 stacked:w-auto', !e.code && 'stacked:hidden')}>
+                  {e.code ?? '—'}
+                </TableCell>
+                <TableCell label="Height" className={sizeCell}>{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
+                <TableCell label="Clothing" className={sizeCell}>{formatSize(e.clothing_size)}</TableCell>
+                <TableCell label="Shoes" className={sizeCell}>{formatSize(e.shoe_size)}</TableCell>
+                <TableCell className="space-x-1 text-right stacked:order-3 stacked:mt-2 stacked:flex stacked:flex-wrap stacked:justify-start stacked:gap-2 stacked:space-x-0 stacked:*:flex-auto">
                   <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
                     Edit Sizes
                   </Button>
@@ -91,13 +113,6 @@ export function Employees() {
                 </TableCell>
               </TableRow>
             ))}
-            {shown.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                  No employees found.
-                </TableCell>
-              </TableRow>
-            ) : null}
           </TableBody>
         </Table>
       )}
@@ -123,6 +138,9 @@ export function Employees() {
     </>
   )
 }
+
+/** Card: height, clothing and shoe size in three columns, label above value. */
+const sizeCell = 'stacked:order-3 stacked:w-[calc((100%-2rem)/3)] stacked:flex-col stacked:items-start stacked:gap-0 stacked:pt-2 stacked:text-left stacked:font-medium'
 
 /** Edit Sizes: changes defaults for future resolutions only. */
 function EditSizes({
@@ -183,7 +201,7 @@ function EditSizes({
       }
     >
       <form id="sizes-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
-        <Field label="Height (cm)">{(p) => <Input {...controlProps(p)} inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
+        <Field label="Height (cm)">{(p) => <Input {...controlProps(p)} inputMode="numeric" enterKeyHint="next" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
         <Field label="Clothing size">
           {(p) => (
             <Select {...controlProps(p)} value={clothing} onChange={(e) => setClothing(e.target.value)}>

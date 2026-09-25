@@ -157,3 +157,7 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
   Default, validation, sessionStorage draft). Screens in `src/routes/` only wire events.
 - Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
+- Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
+  with the screen-only `stacked:` container-query variant, 44px touch targets) are in
+  `web/AGENTS.md`. The e2e step "phone: every screen fits 375px" fails if any screen or
+  table scrolls sideways on a phone.

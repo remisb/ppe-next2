@@ -1,6 +1,6 @@
 import type { Employee } from '@ppe/api-client'
 import { Search, UserPlus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/field'
 import { useApi } from '@/lib/api'
@@ -55,13 +55,33 @@ export function EmployeePicker({
     }
   }, [q, open, client])
 
+  // pointerdown, not mousedown: one event for mouse, touch and pen.
   useEffect(() => {
-    const close = (e: MouseEvent) => {
+    const close = (e: PointerEvent) => {
       if (box.current && !box.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
   }, [])
+
+  /** Escape closes; the arrow keys move between the input and the choices. */
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape' && open) {
+      e.preventDefault()
+      e.stopPropagation() // inside a FormSheet, close the list, not the sheet
+      setOpen(false)
+      box.current?.querySelector('input')?.focus()
+      return
+    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const items = Array.from(box.current?.querySelectorAll<HTMLElement>('[role=listbox] button') ?? [])
+    if (items.length === 0) return
+    e.preventDefault()
+    const at = items.indexOf(document.activeElement as HTMLElement)
+    const next = e.key === 'ArrowDown' ? Math.min(at + 1, items.length - 1) : at - 1
+    if (next < 0) box.current?.querySelector('input')?.focus()
+    else items[next]?.focus()
+  }
 
   const selectedLabel = useMemo(
     () => (selected ? `${selected.full_name}${selected.code ? ` · ${selected.code}` : ''}` : ''),
@@ -69,11 +89,13 @@ export function EmployeePicker({
   )
 
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className="relative" onKeyDown={onKeyDown}>
       <div className="relative">
         <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           role="combobox"
+          autoComplete="off"
+          enterKeyHint="search"
           aria-expanded={open}
           aria-label={label}
           className="pl-9"
@@ -88,12 +110,15 @@ export function EmployeePicker({
         />
       </div>
       {open ? (
-        <ul role="listbox" className="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
+        <ul
+          role="listbox"
+          className="absolute z-40 mt-1 max-h-[min(18rem,50dvh)] w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 shadow-md"
+        >
           {onAddNew ? (
             <li>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm font-medium text-primary hover:bg-accent"
+                className="flex min-h-11 w-full items-center gap-2 rounded px-2 py-2 text-left text-sm font-medium text-primary outline-none hover:bg-accent focus-visible:bg-accent"
                 onClick={() => {
                   setOpen(false)
                   onAddNew()
@@ -107,7 +132,7 @@ export function EmployeePicker({
             <li>
               <button
                 type="button"
-                className="w-full rounded px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent"
+                className="flex min-h-11 w-full items-center rounded px-2 py-2 text-left text-sm text-muted-foreground outline-none hover:bg-accent focus-visible:bg-accent"
                 onClick={() => {
                   setOpen(false)
                   onClear()
@@ -122,7 +147,7 @@ export function EmployeePicker({
             <li key={e.id} role="option" aria-selected={selected?.id === e.id}>
               <button
                 type="button"
-                className="flex w-full justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                className="flex min-h-11 w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
                 onClick={() => {
                   setOpen(false)
                   onSelect(e)

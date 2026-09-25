@@ -1,12 +1,12 @@
 import type { HistoryQuery, ListedOrder, OrderStatus } from '@ppe/api-client'
-import { ChevronDown, ChevronUp, FileText, Link2, Printer } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileText, Link2, Printer, SlidersHorizontal } from 'lucide-react'
 import { Fragment, useState } from 'react'
 
 import { ConfirmationSheet } from '@/components/confirmation-sheet'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderLinesTable } from '@/components/order-lines'
-import { ErrorState, Loading, PageHeader } from '@/components/states'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/field'
@@ -15,7 +15,7 @@ import { WhatsAppButton } from '@/components/whatsapp-button'
 import { useApi } from '@/lib/api'
 import { activityAt, formatDateTime, formatUsage, historyActions, statusLabel } from '@/lib/history'
 import { useLoad } from '@/lib/use-load'
-import { formatEuro } from '@/lib/utils'
+import { cn, formatEuro } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
 
 const PAGE_SIZE = 20
@@ -39,6 +39,8 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
   const [filters, setFilters] = useState<Filters>(noFilters)
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState<Set<string>>(new Set())
+  // Phone only: the filters fold away so the orders start at the top of the screen.
+  const [showFilters, setShowFilters] = useState(false)
   const settings = useLoad(() => client.settings())
 
   const query: HistoryQuery = {
@@ -67,13 +69,26 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
 
   const tz = settings.data?.timezone
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
+  const activeFilters = [filters.employee, filters.status, filters.from, filters.to].filter(Boolean).length
   const dateError = filters.from && filters.to && filters.from > filters.to ? 'From must not be after To.' : undefined
 
   return (
     <>
-      <PageHeader title="History" description="Stored orders, newest activity first. Values are as they were when ordered." />
+      <PageHeader
+        title="History"
+        description="Stored orders, newest activity first. Values are as they were when ordered."
+        actions={
+          <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
+            <SlidersHorizontal aria-hidden /> Filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
+          </Button>
+        }
+      />
 
-      <section className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section
+        id="history-filters"
+        aria-label="Filters"
+        className={cn('mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto]', !showFilters && 'max-md:hidden')}
+      >
         <div>
           <p className="mb-1.5 text-sm font-medium">Employee</p>
           <EmployeePicker
@@ -86,11 +101,11 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm font-medium">
             From
-            <Input type="date" className="mt-1.5" value={filters.from} onChange={(e) => setFilter('from', e.target.value)} />
+            <Input type="date" className="mt-1.5" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
           </label>
           <label className="text-sm font-medium">
             To
-            <Input type="date" className="mt-1.5" value={filters.to} onChange={(e) => setFilter('to', e.target.value)} />
+            <Input type="date" className="mt-1.5" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
           </label>
         </div>
         <label className="text-sm font-medium">
@@ -102,7 +117,7 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
           </Select>
         </label>
         <div className="flex items-end">
-          <Button variant="ghost" onClick={() => { setFilters(noFilters); setPage(1) }}>
+          <Button variant="ghost" className="w-full sm:w-auto" disabled={activeFilters === 0} onClick={() => { setFilters(noFilters); setPage(1) }}>
             Clear filters
           </Button>
         </div>
@@ -115,12 +130,21 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
       ) : !orders.data ? (
         <Loading />
       ) : orders.data.orders.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-          No orders match these filters.
-        </p>
+        <EmptyState
+          action={
+            activeFilters > 0 ? (
+              <Button variant="outline" size="sm" onClick={() => { setFilters(noFilters); setPage(1) }}>
+                Clear filters
+              </Button>
+            ) : undefined
+          }
+        >
+          {activeFilters > 0 ? 'No orders match these filters.' : 'No orders yet. Orders appear here after Mark as Ordered.'}
+        </EmptyState>
       ) : (
         <>
-          <Table>
+          {/* Where the table is narrow each order is a card: record and status, employee, details, then actions. */}
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>Record</TableHead>
@@ -135,19 +159,21 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
             <TableBody>
               {orders.data.orders.map((o) => (
                 <Fragment key={o.id}>
-                  <TableRow>
-                    <TableCell className="font-medium">{o.record_number}</TableCell>
-                    <TableCell>
+                  <TableRow className={cn(open.has(o.id) && 'stacked:rounded-b-none')}>
+                    <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:text-base stacked:font-semibold">{o.record_number}</TableCell>
+                    <TableCell className="stacked:order-3 stacked:mb-1">
                       {o.employee_first_name} {o.employee_last_name}
                       {o.employee_code ? <span className="text-muted-foreground"> · {o.employee_code}</span> : null}
                     </TableCell>
-                    <TableCell>{formatDateTime(activityAt(o), tz)}</TableCell>
-                    <TableCell>
+                    <TableCell label="Date" className="tabular-nums stacked:order-4">{formatDateTime(activityAt(o), tz)}</TableCell>
+                    <TableCell className="stacked:order-2 stacked:ml-auto stacked:w-auto">
                       <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
                     </TableCell>
-                    <TableCell>{formatUsage(o.usage_months) || '—'}</TableCell>
-                    <TableCell className="text-right">{formatEuro(o.total_cents)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell label="Usage time" className={cn('stacked:order-5', o.usage_months === null && 'stacked:hidden')}>
+                      {formatUsage(o.usage_months) || '—'}
+                    </TableCell>
+                    <TableCell label="Total value" className="text-right font-medium tabular-nums stacked:order-6">{formatEuro(o.total_cents)}</TableCell>
+                    <TableCell className="text-right stacked:order-7 stacked:mt-2">
                       <RowActions
                         order={o}
                         open={open.has(o.id)}
@@ -158,8 +184,8 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
                     </TableCell>
                   </TableRow>
                   {open.has(o.id) ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="bg-muted/30">
+                    <TableRow className="stacked:-mt-3 stacked:rounded-t-none stacked:border-t-0 stacked:bg-muted/30">
+                      <TableCell colSpan={7} className="bg-muted/30 whitespace-normal stacked:block stacked:bg-transparent">
                         <p className="mb-2 text-xs text-muted-foreground">
                           Ordered {formatDateTime(o.ordered_at, tz)} by {o.prepared_by_name}
                           {o.given_at ? ` · given ${formatDateTime(o.given_at, tz)} by ${o.given_by_name ?? ''}` : ''}
@@ -178,7 +204,7 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
               ))}
             </TableBody>
           </Table>
-          <nav className="mt-4 flex items-center justify-between text-sm" aria-label="Pages">
+          <nav className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm" aria-label="Pages">
             <span className="text-muted-foreground">
               {orders.data.total} order{orders.data.total === 1 ? '' : 's'} · page {page} of {pages}
             </span>
@@ -226,7 +252,7 @@ function RowActions({
 }) {
   const actions = historyActions(order.status)
   return (
-    <div className="flex flex-wrap justify-end gap-1">
+    <div className="flex flex-wrap justify-end gap-1 stacked:w-full stacked:gap-2 stacked:*:flex-auto">
       {actions.includes('viewItems') ? (
         <Button size="sm" variant="outline" aria-expanded={open} onClick={onToggle}>
           {open ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}

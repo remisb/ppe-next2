@@ -1,6 +1,7 @@
 import type { OrderRecord } from '@ppe/api-client'
 
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDateTime, statusLabel } from '@/lib/history'
 import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
 
@@ -13,14 +14,14 @@ import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
 export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; timeZone?: string | undefined }) {
   const r = record.receipt
   const given = record.status === 'GIVEN'
-  const th = 'border-b border-border px-2 py-1.5 text-left font-medium print:border-black'
-  const td = 'border-b border-border px-2 py-1.5 align-top print:border-black/40'
+  const th = 'h-auto border-b border-border px-2 py-1.5 text-left font-medium whitespace-normal print:border-black'
+  const td = 'border-b border-border px-2 py-1.5 align-top whitespace-normal print:border-black/40 stacked:border-b-0'
 
   return (
-    <article className="receipt mx-auto max-w-4xl rounded-lg border border-border bg-card p-6 text-card-foreground print:max-w-none print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
+    <article className="receipt mx-auto max-w-4xl rounded-lg border border-border bg-card p-4 text-card-foreground sm:p-6 print:max-w-none print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">Items Given Record / Акт выдачи</h1>
+          <h1 className="text-lg font-semibold sm:text-xl">Items Given Record / Акт выдачи</h1>
           <p className="text-sm text-muted-foreground print:text-black">Record / Номер: {r.record_number}</p>
         </div>
         <Badge variant={given ? 'default' : 'secondary'} className="print:hidden">
@@ -40,42 +41,43 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         <Info label="Prepared by / Подготовил">{r.prepared_by_name}</Info>
       </dl>
 
-      <table className="mb-4 w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className={th}>Item / Предмет</th>
-            <th className={th}>Size / Размер</th>
-            <th className={cn(th, 'text-right')}>Qty / Кол-во</th>
-            <th className={cn(th, 'text-right')}>Unit price / Цена</th>
-            <th className={cn(th, 'text-right')}>Total / Сумма</th>
-            <th className={th}>Service period / Срок службы</th>
-          </tr>
-        </thead>
-        <tbody>
+      {/* A table on paper and wider screens; bilingual cards where it is narrow, as on a phone (Table `stack`, screen only). */}
+      <Table stack className="mb-4 border-collapse">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className={th}>Item / Предмет</TableHead>
+            <TableHead className={th}>Size / Размер</TableHead>
+            <TableHead className={cn(th, 'text-right')}>Qty / Кол-во</TableHead>
+            <TableHead className={cn(th, 'text-right')}>Unit price / Цена</TableHead>
+            <TableHead className={cn(th, 'text-right')}>Total / Сумма</TableHead>
+            <TableHead className={th}>Service period / Срок службы</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {r.lines.map((l) => (
-            <tr key={l.line_no}>
-              <td className={td}>
+            <TableRow key={l.line_no} className="hover:bg-transparent">
+              <TableCell className={cn(td, 'stacked:mb-1')}>
                 <div className="font-medium">{l.item_name}</div>
                 {l.item_details ? <div className="text-xs text-muted-foreground print:text-black/70">{l.item_details}</div> : null}
-              </td>
-              <td className={td}>{formatSize(l.size)}</td>
-              <td className={cn(td, 'text-right')}>{l.quantity}</td>
-              <td className={cn(td, 'text-right')}>{formatEuro(l.unit_price_cents)}</td>
-              <td className={cn(td, 'text-right')}>{formatEuro(l.total_cents)}</td>
-              <td className={td}>{formatMonths(l.service_period_months)}</td>
-            </tr>
+              </TableCell>
+              <TableCell label="Size / Размер" className={td}>{formatSize(l.size)}</TableCell>
+              <TableCell label="Qty / Кол-во" className={cn(td, 'text-right tabular-nums')}>{l.quantity}</TableCell>
+              <TableCell label="Unit price / Цена" className={cn(td, 'text-right tabular-nums')}>{formatEuro(l.unit_price_cents)}</TableCell>
+              <TableCell label="Total / Сумма" className={cn(td, 'text-right font-medium tabular-nums')}>{formatEuro(l.total_cents)}</TableCell>
+              <TableCell label="Service period / Срок службы" className={td}>{formatMonths(l.service_period_months)}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={4} className="px-2 py-2 text-right font-medium">
+        </TableBody>
+        <TableFooter className="border-t-0 bg-transparent">
+          <TableRow className="hover:bg-transparent stacked:flex-nowrap stacked:justify-between stacked:bg-muted/50">
+            <TableCell colSpan={4} className="px-2 py-2 text-right font-medium stacked:w-auto stacked:text-left">
               Total value / Общая стоимость
-            </td>
-            <td className="px-2 py-2 text-right font-semibold">{formatEuro(r.total_cents)}</td>
-            <td />
-          </tr>
-        </tfoot>
-      </table>
+            </TableCell>
+            <TableCell className="px-2 py-2 text-right font-semibold tabular-nums stacked:w-auto">{formatEuro(r.total_cents)}</TableCell>
+            <TableCell className="stacked:hidden" />
+          </TableRow>
+        </TableFooter>
+      </Table>
 
       <section className="mb-4 grid gap-4 sm:grid-cols-2 print:grid-cols-2">
         <div className="rounded-md border border-border p-3 print:border-black/40">

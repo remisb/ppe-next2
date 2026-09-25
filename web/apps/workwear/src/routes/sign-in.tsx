@@ -1,3 +1,4 @@
+import { HardHat } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -27,15 +28,21 @@ export function SignIn() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-muted/40 px-4 py-[max(1.5rem,env(safe-area-inset-top))]">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <HardHat aria-hidden className="size-6" />
+        </span>
+        <h1 className="text-xl font-semibold tracking-tight">Workwear &amp; Equipment</h1>
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Workwear &amp; Equipment</CardTitle>
+          <CardTitle>Sign in</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="flex flex-col gap-4">
             <Field label="Email" required>
-              {(p) => <Input {...controlProps(p)} type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />}
+              {(p) => <Input {...controlProps(p)} type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}
             </Field>
             <Field label="Password" required error={error}>
               {(p) => (

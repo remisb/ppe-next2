@@ -255,6 +255,52 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
 
+test('phone: every screen fits 375px without sideways scrolling', async () => {
+  const desktop = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  // Neither the page nor any table (which scrolls inside its own box) runs sideways.
+  const fits = () =>
+    page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        [...document.querySelectorAll('[data-slot=table-container]')].every((t) => t.scrollWidth <= t.clientWidth),
+    )
+
+  // Each screen is measured once its data is in: a table measured while loading always fits.
+  for (const [tab, content] of [
+    ['History', recordNumber],
+    ['Employees', 'Ona Kazlauskienė'],
+    ['Item Catalogue', 'Protective gloves'],
+    ['Item Sets', 'Starter kit'],
+  ] as const) {
+    // The same Main navigation, now a bottom tab bar.
+    await openTab(tab)
+    await expect(page.getByRole('heading', { name: tab })).toBeVisible()
+    await expect(page.getByText(content).first()).toBeVisible()
+    expect(await fits(), `${tab} scrolls sideways`).toBe(true)
+  }
+
+  // The order's actions stay in reach however long the order is.
+  await openTab('Create Order')
+  await page.getByRole('combobox', { name: 'Assigned to' }).click()
+  await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  await page.getByLabel('Item Set').selectOption({ label: 'Starter kit' })
+  await page.getByRole('button', { name: 'Apply Item Set' }).click()
+  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeInViewport()
+  expect(await fits()).toBe(true)
+  page.once('dialog', (d) => void d.accept()) // Clear this order?
+  await page.getByRole('button', { name: 'New order' }).click()
+
+  await openTab('History')
+  await page.getByRole('button', { name: 'View Record' }).first().click()
+  await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
+  expect(await fits(), 'the record scrolls sideways').toBe(true)
+
+  await page.setViewportSize(desktop)
+})
+
 test('Account: change password, then only the new one signs in', async () => {
   const newPassword = 'e2e-new-password-456'
   await page.getByRole('link', { name: admin.name }).click()

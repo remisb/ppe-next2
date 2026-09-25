@@ -7,7 +7,7 @@ import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
 import { OrderLinesTable } from '@/components/order-lines'
 import { WhatsAppButton } from '@/components/whatsapp-button'
-import { ErrorState, Loading, PageHeader } from '@/components/states'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -201,8 +201,8 @@ export function CreateOrder() {
         )
       ) : null}
 
-      <section className="mb-6 grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+      <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="md:col-span-2 lg:col-span-1">
           <p className="mb-1.5 text-sm font-medium">Assigned to</p>
           <EmployeePicker
             label="Assigned to"
@@ -215,7 +215,7 @@ export function CreateOrder() {
         <div>
           <p className="mb-1.5 text-sm font-medium">Item Set</p>
           <div className="flex gap-2">
-            <Select aria-label="Item Set" value={setId} onChange={(e) => setSetId(e.target.value)} disabled={!order.employee}>
+            <Select aria-label="Item Set" className="min-w-0 flex-1" value={setId} onChange={(e) => setSetId(e.target.value)} disabled={!order.employee}>
               <option value="">Choose an item set…</option>
               {itemSets.data?.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -223,7 +223,7 @@ export function CreateOrder() {
                 </option>
               ))}
             </Select>
-            <Button variant="outline" disabled={!order.employee || !setId || busy} onClick={applySet}>
+            <Button variant="outline" className="shrink-0" disabled={!order.employee || !setId || busy} onClick={applySet}>
               Apply Item Set
             </Button>
           </div>
@@ -249,6 +249,10 @@ export function CreateOrder() {
           </Select>
         </div>
       </section>
+
+      {!order.employee ? (
+        <p className="mb-4 text-sm text-muted-foreground">Choose who the order is for first: sizes are resolved from their saved defaults.</p>
+      ) : null}
 
       {conflicts.length > 0 ? (
         <Alert className="mb-4">
@@ -321,25 +325,44 @@ export function CreateOrder() {
         <LinesTable order={order} sizes={sizes.data} problems={v.lineProblems} onSize={chooseSize} onChange={setOrder} />
       )}
 
-      <section className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        {v.valid ? (
-          <p className="text-sm text-muted-foreground">The order is complete.</p>
-        ) : (
-          <ul className="list-disc pl-5 text-sm text-muted-foreground">
-            {v.orderProblems.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-            {v.lineProblems.size > 0 ? <li>Resolve the highlighted lines.</li> : null}
-          </ul>
+      {!v.valid && order.lines.length > 0 ? (
+        <ul className="mt-4 list-disc pl-5 text-sm text-muted-foreground">
+          {v.orderProblems.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+          {v.lineProblems.size > 0 ? <li>Resolve the highlighted lines.</li> : null}
+        </ul>
+      ) : null}
+
+      {/*
+        Sticky above the phone tab bar (and at the bottom from md), so the
+        total and the two actions stay in reach however long the order is.
+      */}
+      <section
+        aria-label="Order actions"
+        className={cn(
+          'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+          '-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-10 lg:px-10 print:hidden',
         )}
-        <div className="flex flex-wrap items-start gap-2">
-          <WhatsAppButton
-            disabled={!v.valid || busy}
-            text={formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))}
-          />
-          <Button disabled={!v.valid || busy} onClick={() => void markAsOrdered()}>
-            {busy ? 'Working…' : 'Mark as Ordered'}
-          </Button>
+      >
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="flex items-baseline justify-between gap-3 text-sm md:justify-start">
+            <span className="text-muted-foreground">
+              {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'}
+              {v.valid ? ' · complete' : order.lines.length > 0 ? ' · not ready' : ''}
+            </span>
+            <span className="text-base font-semibold tabular-nums">{formatEuro(totalCents(order))}</span>
+          </p>
+          {/* Side by side while both labels fit; stacked on the narrowest phones. */}
+          <div className="flex flex-wrap items-start gap-2 *:flex-auto md:*:flex-none">
+            <WhatsAppButton
+              disabled={!v.valid || busy}
+              text={formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))}
+            />
+            <Button disabled={!v.valid || busy} onClick={() => void markAsOrdered()}>
+              {busy ? 'Working…' : 'Mark as Ordered'}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -383,9 +406,11 @@ function OrderedPanel({ order, onNew }: { order: Order; onNew: () => void }) {
           <p className="text-sm text-muted-foreground">
             This record can no longer be edited. It changes to Given when the employee confirms receipt.
           </p>
-          <div className="flex flex-wrap items-start gap-2">
-            <WhatsAppButton text={formatWhatsApp(messageFromOrder(order))} />
-            <Button onClick={onNew}>Start a new order</Button>
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
+            <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} />
+            <Button className="w-full sm:w-auto" onClick={onNew}>
+              Start a new order
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -412,14 +437,12 @@ function LinesTable({
   onChange: (f: (o: WorkingOrder) => WorkingOrder) => void
 }) {
   if (order.lines.length === 0) {
-    return (
-      <p className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
-        No items yet. Use Add Item or Apply Item Set.
-      </p>
-    )
+    return <EmptyState>No items yet. Use Add Item or Apply Item Set.</EmptyState>
   }
+  // Where the table is narrow each line is a card: item and remove on top,
+  // size and quantity side by side, then price, service period and line total.
   return (
-    <Table>
+    <Table stack="grid">
       <TableHeader>
         <TableRow>
           <TableHead>Item</TableHead>
@@ -437,8 +460,11 @@ function LinesTable({
         {order.lines.map((l) => {
           const lineProblems = problems.get(l.catalogueItemId)
           return (
-            <TableRow key={l.catalogueItemId} className={cn(lineProblems && 'bg-destructive/5')}>
-              <TableCell className="align-top">
+            <TableRow
+              key={l.catalogueItemId}
+              className={cn('stacked:relative stacked:grid stacked:grid-cols-2 stacked:gap-x-3 stacked:gap-y-3', lineProblems && 'bg-destructive/5 stacked:border-destructive/40')}
+            >
+              <TableCell className="align-top whitespace-normal stacked:col-span-2 stacked:block stacked:pr-12">
                 <div className="font-medium">{l.itemName || 'Unknown item'}</div>
                 {l.itemDetails ? <div className="text-xs text-muted-foreground">{l.itemDetails}</div> : null}
                 {lineProblems?.map((p) => (
@@ -447,14 +473,15 @@ function LinesTable({
                   </div>
                 ))}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell label="Size" className={cn('align-top', controlCell)}>
                 <SizeControl line={l} sizes={sizes} onChange={(s) => onSize(l, s)} />
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell label="Quantity" className={cn('align-top', controlCell)}>
                 <Input
                   aria-label={`Quantity of ${l.itemName}`}
                   inputMode="numeric"
-                  className="w-20"
+                  enterKeyHint="done"
+                  className="w-20 stacked:w-full"
                   invalid={!Number.isInteger(l.quantity) || l.quantity < 1}
                   value={Number.isNaN(l.quantity) ? '' : String(l.quantity)}
                   onChange={(e) => {
@@ -463,12 +490,16 @@ function LinesTable({
                   }}
                 />
               </TableCell>
-              <TableCell className="text-right align-top">{formatEuro(l.unitPriceCents)}</TableCell>
-              <TableCell className="align-top">{formatMonths(l.servicePeriodMonths)}</TableCell>
-              <TableCell className="text-right align-top">
+              <TableCell label="Unit price" className={cn('text-right align-top tabular-nums', infoCell)}>
+                {formatEuro(l.unitPriceCents)}
+              </TableCell>
+              <TableCell label="Service period" className={cn('align-top', infoCell)}>
+                {formatMonths(l.servicePeriodMonths)}
+              </TableCell>
+              <TableCell label="Total" className="text-right align-top font-medium tabular-nums stacked:col-span-2 stacked:border-t stacked:pt-2">
                 {l.unitPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.unitPriceCents * l.quantity) : '—'}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className="align-top stacked:absolute stacked:top-1.5 stacked:right-1.5 stacked:w-auto">
                 <Button size="icon" variant="ghost" aria-label={`Remove ${l.itemName}`} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>
                   <X aria-hidden />
                 </Button>
@@ -477,12 +508,13 @@ function LinesTable({
           )
         })}
       </TableBody>
-      <TableFooter>
+      {/* Cards have no footer row; the sticky action bar shows the total. */}
+      <TableFooter className="stacked:hidden">
         <TableRow>
           <TableCell colSpan={5} className="text-right font-medium">
             Total value
           </TableCell>
-          <TableCell className="text-right font-semibold">{formatEuro(totalCents(order))}</TableCell>
+          <TableCell className="text-right font-semibold tabular-nums">{formatEuro(totalCents(order))}</TableCell>
           <TableCell />
         </TableRow>
       </TableFooter>
@@ -490,9 +522,19 @@ function LinesTable({
   )
 }
 
+/** Card cells: the label above the control or value, half the card wide. */
+const controlCell = 'stacked:flex-col stacked:items-stretch stacked:gap-1 stacked:text-left'
+const infoCell = 'stacked:flex-col stacked:items-start stacked:gap-0.5 stacked:text-left'
+
+
 /** Size control per size_group (manual §4.4). No-size items show an en dash. */
 function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Sizes | undefined; onChange: (s: string | null) => void }) {
-  if (line.sizeGroup === 'NONE' || line.sizeGroup === '') return <span aria-label="No size">–</span>
+  if (line.sizeGroup === 'NONE' || line.sizeGroup === '')
+    return (
+      <span aria-label="No size" className="stacked:flex stacked:h-11 stacked:items-center">
+        –
+      </span>
+    )
   const options =
     line.sizeGroup === 'CLOTHING'
       ? (sizes?.clothing ?? []).map((s) => ({ value: s.code, label: `${s.code} (${s.min_cm}–${s.max_cm} cm)` }))
@@ -502,7 +544,7 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
     <div className="flex flex-col gap-1">
       <Select
         aria-label={`Size of ${line.itemName}`}
-        className="w-40"
+        className="w-40 stacked:w-full"
         invalid={missing}
         value={line.size ?? ''}
         onChange={(e) => onChange(e.target.value || null)}

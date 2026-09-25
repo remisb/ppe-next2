@@ -1,6 +1,6 @@
-import { ClipboardList, History as HistoryIcon, LogOut, Package, Shirt, UserRound, Users } from 'lucide-react'
+import { ClipboardList, HardHat, History as HistoryIcon, LogOut, Package, Shirt, UserRound, Users } from 'lucide-react'
+import type { MouseEvent } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
 import { type Route, pathOf, useRouter } from '@/lib/router'
 import { cn } from '@/lib/utils'
@@ -16,13 +16,40 @@ import { ItemSets } from './routes/item-sets'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
 
-const tabs: { route: Route; label: string; icon: typeof Users }[] = [
-  { route: { name: 'createOrder' }, label: 'Create Order', icon: ClipboardList },
-  { route: { name: 'history' }, label: 'History', icon: HistoryIcon },
-  { route: { name: 'employees' }, label: 'Employees', icon: Users },
-  { route: { name: 'catalogue' }, label: 'Item Catalogue', icon: Shirt },
-  { route: { name: 'itemSets' }, label: 'Item Sets', icon: Package },
+const tabs: { route: Route; label: string; short: string; icon: typeof Users }[] = [
+  { route: { name: 'createOrder' }, label: 'Create Order', short: 'Order', icon: ClipboardList },
+  { route: { name: 'history' }, label: 'History', short: 'History', icon: HistoryIcon },
+  { route: { name: 'employees' }, label: 'Employees', short: 'Employees', icon: Users },
+  { route: { name: 'catalogue' }, label: 'Item Catalogue', short: 'Catalogue', icon: Shirt },
+  { route: { name: 'itemSets' }, label: 'Item Sets', short: 'Sets', icon: Package },
 ]
+
+/** A record is opened from History, so History stays the current section. */
+function isCurrent(current: Route['name'], tab: Route['name']): boolean {
+  return current === tab || (current === 'record' && tab === 'history')
+}
+
+/*
+ * One navigation, three layouts:
+ *   phone (< md)   top bar with the account; the sections are a bottom tab bar
+ *                  within thumb reach, above the home bar
+ *   tablet (md)    a 5.5rem side rail: icon over a short label
+ *   desktop (lg)   a 15rem sidebar: icon beside the full label
+ * The link's accessible name is always the full label, from its (visually
+ * hidden) text rather than aria-label, which would also turn up in label
+ * lookups such as a field's "Item Set".
+ */
+const navItem = cn(
+  'group flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
+  'h-16 focus-visible:ring-2 focus-visible:ring-ring md:h-auto md:rounded-lg md:py-2',
+  'lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-2.5 lg:text-sm',
+  'hover:text-foreground aria-[current=page]:text-foreground lg:hover:bg-accent lg:aria-[current=page]:bg-accent',
+)
+/** The icon's pill is the phone and rail's active marker; the sidebar highlights the whole row. */
+const navIcon = cn(
+  'flex h-8 w-14 items-center justify-center rounded-full transition-colors lg:h-auto lg:w-auto',
+  'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent lg:group-hover:bg-transparent lg:group-aria-[current=page]:bg-transparent',
+)
 
 export function App() {
   const { session, signOut } = useApi()
@@ -33,65 +60,119 @@ export function App() {
   if (route.name === 'confirm') return <ConfirmPage token={route.token} />
   if (!session) return <SignIn />
 
+  const link = (to: Route) => ({
+    href: basePath + pathOf(to),
+    onClick: (e: MouseEvent) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return // new tab keeps working
+      e.preventDefault()
+      navigate(to)
+      window.scrollTo({ top: 0 })
+    },
+  })
+
   return (
-    <div className="min-h-dvh">
-      <header className="border-b border-border print:hidden">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
-          <span className="mr-4 font-semibold">Workwear &amp; Equipment</span>
-          <nav className="flex flex-1 flex-wrap gap-1" aria-label="Main">
-            {tabs.map(({ route: r, label, icon: Icon }) => (
-              <a
-                key={r.name}
-                href={basePath + pathOf(r)}
-                aria-current={route.name === r.name || (route.name === 'record' && r.name === 'history') ? 'page' : undefined}
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate(r)
-                }}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-md px-3 py-2 text-sm',
-                  route.name === r.name || (route.name === 'record' && r.name === 'history')
-                    ? 'bg-accent font-medium'
-                    : 'text-muted-foreground hover:bg-accent',
-                )}
-              >
-                <Icon aria-hidden className="size-4" />
-                {label}
-              </a>
-            ))}
-          </nav>
+    <div className="min-h-dvh md:grid md:grid-cols-[5.5rem_minmax(0,1fr)] lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-md bg-background px-4 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
+      >
+        Skip to content
+      </a>
+
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden print:hidden">
+        <div className="flex h-14 items-center justify-between gap-2 px-4">
+          <Brand />
           <a
-            href={basePath + pathOf({ name: 'account' })}
+            {...link({ name: 'account' })}
             aria-current={route.name === 'account' ? 'page' : undefined}
-            title="Account and password"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate({ name: 'account' })
-            }}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-2 text-sm hover:bg-accent',
-              route.name === 'account' ? 'bg-accent font-medium' : 'text-muted-foreground',
-            )}
+            aria-label={`${session.name}, account`}
+            className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
           >
-            <UserRound aria-hidden className="size-4" />
-            {session.name}
+            <UserRound aria-hidden className="size-5" />
           </a>
-          <Button size="sm" variant="ghost" onClick={signOut}>
-            <LogOut aria-hidden /> Sign out
-          </Button>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 print:max-w-none print:p-0">
+
+      <aside className="print:hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:border-r md:border-border md:bg-sidebar">
+        <div className="hidden h-16 shrink-0 items-center justify-center px-3 md:flex lg:justify-start lg:px-5">
+          <Brand />
+        </div>
+        <nav
+          aria-label="Main"
+          className={cn(
+            'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
+            'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none lg:p-3',
+          )}
+        >
+          {tabs.map(({ route: r, label, short, icon: Icon }) => (
+            <a
+              key={r.name}
+              {...link(r)}
+              aria-current={isCurrent(route.name, r.name) ? 'page' : undefined}
+              className={navItem}
+            >
+              <span className={navIcon}>
+                <Icon aria-hidden className="size-5 lg:size-4" />
+              </span>
+              <span aria-hidden className="lg:hidden">
+                {short}
+              </span>
+              <span className="sr-only lg:not-sr-only">{label}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex lg:p-3">
+          <a
+            {...link({ name: 'account' })}
+            aria-current={route.name === 'account' ? 'page' : undefined}
+            title="Account and password"
+            className={navItem}
+          >
+            <span className={navIcon}>
+              <UserRound aria-hidden className="size-5 lg:size-4" />
+            </span>
+            <span className="lg:hidden">Account</span>
+            <span className="hidden truncate lg:inline">{session.name}</span>
+          </a>
+          <button type="button" onClick={signOut} className={cn(navItem, 'w-full cursor-pointer')}>
+            <span className={navIcon}>
+              <LogOut aria-hidden className="size-5 lg:size-4" />
+            </span>
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main
+        id="main"
+        tabIndex={-1}
+        className={cn(
+          'mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none',
+          'md:px-6 md:py-8 lg:px-10 print:max-w-none print:p-0',
+        )}
+      >
         {route.name === 'createOrder' ? <CreateOrder /> : null}
         {route.name === 'employees' ? <Employees /> : null}
         {route.name === 'catalogue' ? <Catalogue /> : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
-        {route.name === 'account' ? <Account /> : null}
+        {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'history' ? <History onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} /> : null}
         {route.name === 'record' ? (
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={() => navigate({ name: 'history' })} />
         ) : null}
       </main>
     </div>
+  )
+}
+
+/** The app mark; the name shows where there is room for it (phone bar, desktop sidebar). */
+function Brand() {
+  return (
+    <span className="flex items-center gap-2 font-semibold">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <HardHat aria-hidden className="size-4.5" />
+      </span>
+      <span className="leading-tight md:sr-only lg:not-sr-only">Workwear &amp; Equipment</span>
+    </span>
   )
 }

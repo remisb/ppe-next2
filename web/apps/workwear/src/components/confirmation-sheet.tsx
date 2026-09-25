@@ -68,9 +68,10 @@ export function ConfirmationSheet({
           {link ? (
             <>
               <div className="flex gap-2">
-                <Input readOnly aria-label="Confirmation link" value={link.url} onFocus={(e) => e.target.select()} />
+                <Input readOnly aria-label="Confirmation link" className="min-w-0 flex-1" value={link.url} onFocus={(e) => e.target.select()} />
                 <Button
                   variant="outline"
+                  className="shrink-0"
                   onClick={() =>
                     void navigator.clipboard.writeText(link.url).then(
                       () => setCopied(true),
@@ -84,23 +85,24 @@ export function ConfirmationSheet({
               <p className="text-xs text-muted-foreground">
                 Valid until {formatDateTime(link.expires_at, undefined)}. This link is shown once; creating another replaces it.
               </p>
-              <div className="flex flex-wrap items-start gap-2">
+              <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-11 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-accent"
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted"
                 >
                   <ExternalLink aria-hidden className="size-4" /> Open on this device
                 </a>
                 <WhatsAppButton
+                  className="sm:w-auto"
                   label="Share link via WhatsApp"
                   text={`${name}, please confirm receipt of your workwear (${order.record_number}):\n${link.url}`}
                 />
               </div>
             </>
           ) : (
-            <Button className="w-fit" disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
+            <Button className="w-full sm:w-fit" disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
               Create confirmation link
             </Button>
           )}
@@ -111,7 +113,7 @@ export function ConfirmationSheet({
           <p className="text-sm text-muted-foreground">
             Print the record, have the employee sign it, then record that the signed copy was received.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 sm:flex sm:flex-wrap">
             <Button variant="outline" onClick={() => onPrint(order.id)}>
               Print Record
             </Button>

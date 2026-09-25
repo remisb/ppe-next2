@@ -8,6 +8,29 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * `stacked:` is a table (see components/ui/table.tsx) with under 48rem of room:
+ * a phone, a tablet beside the side rail, a narrow laptop window. It asks the
+ * table's own container, not the viewport, because only the container knows
+ * how much room the table has. `stacked-wide:` is the upper part of that range,
+ * where cards sit two to a row. Screen only: an A4 page is under 48rem wide
+ * too, and the Items Given Record must print as a table.
+ */
+@custom-variant stacked {
+  @media screen {
+    @container table (width < 48rem) {
+      @slot;
+    }
+  }
+}
+@custom-variant stacked-wide {
+  @media screen {
+    @container table (36rem <= width < 48rem) {
+      @slot;
+    }
+  }
+}
+
+/*
  * Tailwind v4: the theme is CSS, not a JS config file. These are the shadcn
  * token names, so a component copied from shadcn's registry works unmodified.
  *
@@ -163,13 +186,42 @@
     @apply border-border outline-ring/50;
   }
 
+  /*
+   * --bottom-nav is the height of the phone tab bar, home bar included; it is
+   * 0 from md, where navigation is a side rail. Sticky action bars sit on it
+   * and scroll-padding keeps a focused field from hiding behind them.
+   */
+  :root {
+    --bottom-nav: calc(4rem + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(var(--bottom-nav) + 6rem);
+  }
+  @media (width >= 48rem) {
+    :root {
+      --bottom-nav: 0px;
+    }
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    /* The bottom nav sits above the home bar on a notched phone. */
-    padding-bottom: env(safe-area-inset-bottom);
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     @apply bg-background text-foreground;
+  }
+
+  /* No double-tap-to-zoom delay on buttons, links and fields. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* A modal FormSheet stops the page behind it from scrolling (iOS scrolls it otherwise). */
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
 
   /*

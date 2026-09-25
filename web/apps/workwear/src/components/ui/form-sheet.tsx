@@ -64,14 +64,19 @@ export function FormSheet({ open, onClose, title, description, children, footer 
       className={cn(
         // The phone form: full width, pinned to the bottom, rounded at the top.
         'w-full max-w-none m-0 mt-auto rounded-t-lg bg-card p-0 text-card-foreground',
-        'max-h-[92dvh] backdrop:bg-black/50',
+        'max-h-[92dvh] shadow-xl backdrop:bg-black/50',
+        // Slides up on a phone, fades and scales in from md; still for reduced motion.
+        'open:animate-in open:duration-200 open:slide-in-from-bottom md:open:slide-in-from-bottom-0 md:open:fade-in-0 md:open:zoom-in-95',
+        'motion-reduce:open:animate-none',
         // From md: a centred dialog of bounded width.
         'md:m-auto md:max-w-2xl md:rounded-lg md:max-h-[85dvh]',
       )}
     >
+      {/* A grab handle: the phone's cue that this is a sheet over the page. */}
+      <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30 md:hidden" />
       {/* h-full + min-h-0 so the body scrolls rather than the footer sliding off. */}
       <div className="flex max-h-[inherit] flex-col">
-        <header className="flex items-start justify-between gap-4 border-b border-border p-4">
+        <header className="flex items-start justify-between gap-4 border-b border-border px-4 pt-2 pb-3 md:p-4">
           <div className="flex flex-col gap-1">
             <h2 id={titleId} className="text-lg font-semibold">
               {title}
@@ -85,7 +90,7 @@ export function FormSheet({ open, onClose, title, description, children, footer 
           </Button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
 
         {footer ? (
           <footer
