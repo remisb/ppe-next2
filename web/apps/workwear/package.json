@@ -2,7 +2,7 @@
   "name": "@ppe/workwear",
   "private": true,
   "version": "0.0.0",
-  "description": "Workwear & Equipment app: Create Order, Employees, Item Catalogue, Item Sets.",
+  "description": "Workwear & Equipment app: Create Order, Employees, Item Catalogue, Item Sets, Users.",
   "type": "module",
   "scripts": {
     "dev": "vite",

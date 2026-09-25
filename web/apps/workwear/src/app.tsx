@@ -1,4 +1,4 @@
-import { ClipboardList, HardHat, History as HistoryIcon, LogOut, Package, Shirt, UserRound, Users } from 'lucide-react'
+import { ClipboardList, HardHat, History as HistoryIcon, LogOut, Package, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import type { MouseEvent } from 'react'
 
 import { useApi } from '@/lib/api'
@@ -15,6 +15,7 @@ import { ConfirmPage } from './routes/confirm'
 import { ItemSets } from './routes/item-sets'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
+import { UsersPage } from './routes/users'
 
 const tabs: { route: Route; label: string; short: string; icon: typeof Users }[] = [
   { route: { name: 'createOrder' }, label: 'Create Order', short: 'Order', icon: ClipboardList },
@@ -23,6 +24,8 @@ const tabs: { route: Route; label: string; short: string; icon: typeof Users }[]
   { route: { name: 'catalogue' }, label: 'Item Catalogue', short: 'Catalogue', icon: Shirt },
   { route: { name: 'itemSets' }, label: 'Item Sets', short: 'Sets', icon: Package },
 ]
+/** Shown to administrators only, after the everyday sections. */
+const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
 /** A record is opened from History, so History stays the current section. */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
@@ -59,6 +62,7 @@ export function App() {
   // visitor is an employee with a link, not a signed-in user.
   if (route.name === 'confirm') return <ConfirmPage token={route.token} />
   if (!session) return <SignIn />
+  const shownTabs = session.canManageUsers ? [...tabs, usersTab] : tabs
 
   const link = (to: Route) => ({
     href: basePath + pathOf(to),
@@ -100,11 +104,13 @@ export function App() {
         <nav
           aria-label="Main"
           className={cn(
-            'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
+            'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none lg:p-3',
+            // One column per section: six for an administrator, whose extra tab is Users.
+            shownTabs.length > 5 ? 'grid-cols-6' : 'grid-cols-5',
           )}
         >
-          {tabs.map(({ route: r, label, short, icon: Icon }) => (
+          {shownTabs.map(({ route: r, label, short, icon: Icon }) => (
             <a
               key={r.name}
               {...link(r)}
@@ -155,6 +161,7 @@ export function App() {
         {route.name === 'employees' ? <Employees /> : null}
         {route.name === 'catalogue' ? <Catalogue /> : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
+        {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'history' ? <History onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} /> : null}
         {route.name === 'record' ? (

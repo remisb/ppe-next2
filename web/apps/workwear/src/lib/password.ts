@@ -15,13 +15,19 @@ export interface PasswordChange {
 
 export type PasswordErrors = Partial<Record<keyof PasswordChange, string>>
 
+/** The length rule alone, for any new password: own change, a new user, an admin reset. */
+export function passwordProblem(pw: string): string | undefined {
+  if (pw.length < MIN_PASSWORD_LENGTH) return `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+  if (new TextEncoder().encode(pw).length > MAX_PASSWORD_BYTES) return 'That password is too long.'
+  return undefined
+}
+
 export function validatePasswordChange(p: PasswordChange): PasswordErrors {
   const errors: PasswordErrors = {}
   if (!p.current) errors.current = 'Enter your current password.'
-  if (p.next.length < MIN_PASSWORD_LENGTH) {
-    errors.next = `Use at least ${MIN_PASSWORD_LENGTH} characters.`
-  } else if (new TextEncoder().encode(p.next).length > MAX_PASSWORD_BYTES) {
-    errors.next = 'That password is too long.'
+  const problem = passwordProblem(p.next)
+  if (problem) {
+    errors.next = problem
   } else if (p.next === p.current) {
     errors.next = 'Choose a password different from the current one.'
   }

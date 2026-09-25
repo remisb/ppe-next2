@@ -1,6 +1,6 @@
-import { type Page, expect, test } from '@playwright/test'
+import { type Browser, type Page, expect, test } from '@playwright/test'
 
-import { admin } from '../env.ts'
+import { admin, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -272,6 +272,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Employees', 'Ona Kazlauskienė'],
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
+    ['Users', admin.email],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
@@ -307,6 +308,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['History', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
+      ['Users', admin.email],
     ] as const) {
       await openTab(tab)
       await expect(page.getByText(content).first()).toBeVisible()
@@ -315,6 +317,91 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   }
 
   await page.setViewportSize(desktop)
+})
+
+/** Signs in as someone else in a fresh browser context (its own sessionStorage); returns its page. */
+async function signInElsewhere(browser: Browser, email: string, password: string) {
+  const other = await (await browser.newContext()).newPage()
+  await other.goto(webURL + '/')
+  await other.getByLabel('Email').fill(email)
+  await other.getByLabel('Password').fill(password)
+  await other.getByRole('button', { name: 'Sign in' }).click()
+  return other
+}
+
+test('Users: an administrator adds, edits, deactivates and resets a user', async ({ browser }) => {
+  const mia = { name: 'Mia Manager', email: 'mia@example.com', password: 'mia-password-1' }
+  await openTab('Users')
+  await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(admin.name) })).toContainText('You')
+
+  // Add User: an employee by default; made a manager instead.
+  await page.getByRole('button', { name: 'Add User' }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill(mia.name)
+  await dialog.getByLabel('Email').fill(mia.email)
+  await dialog.getByRole('checkbox', { name: /^Manager/ }).check()
+  await dialog.getByRole('checkbox', { name: /^Employee/ }).uncheck()
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill('short')
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  await expect(dialog.getByText('Use at least 8 characters.')).toBeVisible()
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill(mia.password)
+  await dialog.getByLabel('Confirm password').fill(mia.password)
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  const row = page.getByRole('row', { name: new RegExp(mia.name) })
+  await expect(row).toContainText('Manager')
+  await expect(row).toContainText('Active')
+
+  // The same email twice is refused on its field.
+  await page.getByRole('button', { name: 'Add User' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill('Someone Else')
+  await dialog.getByLabel('Email').fill(mia.email.toUpperCase())
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill(mia.password)
+  await dialog.getByLabel('Confirm password').fill(mia.password)
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  await expect(dialog.getByText('Another user already has this email address.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+  // The own account cannot be deactivated or lose Administrator.
+  await page.getByRole('button', { name: `Edit ${admin.name}` }).click()
+  dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('checkbox', { name: /^Active/ })).toBeDisabled()
+  await expect(dialog.getByRole('checkbox', { name: /^Administrator/ })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+  // A manager signs in and has no Users tab.
+  let other = await signInElsewhere(browser, mia.email, mia.password)
+  const nav = other.getByRole('navigation', { name: 'Main' })
+  await expect(nav.getByRole('link', { name: 'Item Catalogue' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Users' })).toHaveCount(0)
+  await other.context().close()
+
+  // Deactivated: can no longer sign in.
+  await page.getByRole('button', { name: `Edit ${mia.name}` }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('checkbox', { name: /^Active/ }).uncheck()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(row).toContainText('Inactive')
+  other = await signInElsewhere(browser, mia.email, mia.password)
+  await expect(other.getByText('Wrong email or password.')).toBeVisible()
+  await other.context().close()
+
+  // Reactivated with a password reset: only the new password works.
+  await page.getByRole('button', { name: `Edit ${mia.name}` }).click()
+  await page.getByRole('dialog').getByRole('checkbox', { name: /^Active/ }).check()
+  await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
+  await expect(row).not.toContainText('Inactive')
+  await page.getByRole('button', { name: `Reset password for ${mia.name}` }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('textbox', { name: /^New password/ }).fill('mia-password-2')
+  await dialog.getByLabel('Confirm new password').fill('mia-password-2')
+  await dialog.getByRole('button', { name: 'Set password' }).click()
+  await expect(dialog.getByText(`The password for ${mia.name} has been changed.`)).toBeVisible()
+  await dialog.getByRole('button', { name: 'Done' }).click()
+  other = await signInElsewhere(browser, mia.email, 'mia-password-2')
+  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  await other.context().close()
 })
 
 test('Account: change password, then only the new one signs in', async () => {

@@ -8,6 +8,8 @@ export type Route =
   | { name: 'employees' }
   | { name: 'catalogue' }
   | { name: 'itemSets' }
+  /** User accounts; administrators only. */
+  | { name: 'users' }
   | { name: 'account' }
   /** View Record; print opens the browser's print dialog once loaded (Print Record). */
   | { name: 'record'; id: string; print?: boolean }
@@ -20,6 +22,7 @@ const fixed = {
   employees: '/employees',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
+  users: '/users',
   account: '/account',
 } as const
 

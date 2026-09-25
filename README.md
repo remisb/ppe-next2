@@ -97,7 +97,8 @@ make seed-admin
 ```
 
 `make seed-admin` creates the first admin from `API_SEED_USER_*`. Change that password
-after signing in, on the **Account** page.
+after signing in, on the **Account** page. Other accounts are added under **Users**, which
+only administrators see.
 
 To try the app with data, fill the empty database with demo content:
 

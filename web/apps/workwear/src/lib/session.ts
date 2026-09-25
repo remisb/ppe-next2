@@ -11,6 +11,8 @@ export interface Session {
   roles: readonly Role[]
   /** "Manage Items and Prices": catalogue and item sets. */
   canManageItems: boolean
+  /** Administrators manage user accounts (the Users screen). */
+  canManageUsers: boolean
 }
 
 export function sessionFromToken(token: string, name: string): Session | null {
@@ -22,6 +24,7 @@ export function sessionFromToken(token: string, name: string): Session | null {
     name,
     roles: claims.roles,
     canManageItems: hasAnyRole(claims.roles, 'admin', 'manager'),
+    canManageUsers: hasAnyRole(claims.roles, 'admin'),
   }
 }
 

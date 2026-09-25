@@ -19,6 +19,8 @@ import type {
   Settings,
   Sizes,
   User,
+  UserCreateInput,
+  UserUpdateInput,
 } from './types.ts'
 
 export interface ClientOptions {
@@ -74,6 +76,15 @@ export function createClient(options: ClientOptions) {
       request<void>('PUT', '/api/v1/users/me/password', { current_password: currentPassword, new_password: newPassword }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
+
+    /** User accounts: listing is admin or manager, every change admin only. */
+    users: {
+      list: () => request<User[]>('GET', '/api/v1/users'),
+      create: (input: UserCreateInput) => request<User>('POST', '/api/v1/users', input),
+      update: (id: string, input: UserUpdateInput) => request<User>('PUT', `/api/v1/users/${seg(id)}`, input),
+      /** Admin reset: replaces the password without the old one. */
+      setPassword: (id: string, password: string) => request<void>('PUT', `/api/v1/users/${seg(id)}/password`, { password }),
+    },
 
     employees: {
       list: () => request<Employee[]>('GET', '/api/v1/employees'),

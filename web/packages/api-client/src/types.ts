@@ -14,6 +14,22 @@ export interface User {
   updated_at: string
 }
 
+/** POST /api/v1/users. Password rules as in internal/domain/user: 8–72 bytes. */
+export interface UserCreateInput {
+  email: string
+  name: string
+  password: string
+  roles: Role[]
+}
+
+/** PUT /api/v1/users/{id}: a full replace, so is_active is always sent. */
+export interface UserUpdateInput {
+  email: string
+  name: string
+  roles: Role[]
+  is_active: boolean
+}
+
 export interface LoginResponse {
   access_token: string
   token_type: 'Bearer'
