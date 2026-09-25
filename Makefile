@@ -14,7 +14,8 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo
+.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo \
+	prod-build prod-up prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo
 
 help: ## List targets
 	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -79,3 +80,30 @@ seed-admin: ## Create the first admin from API_SEED_USER_* and exit
 
 seed-demo: ## Fill an empty database with demo data as the seed admin (run seed-admin first)
 	go run ./cmd/api -seed-demo
+
+# The deployment stack (docker-compose.prod.yml, .env.prod). `env -i` because
+# compose reads ${VAR} from the environment before --env-file, and this Makefile
+# exports every development value from .env.
+PROD_ENV_FILE ?= .env.prod
+PROD := env -i PATH="$$PATH" HOME="$$HOME" DOCKER_HOST="$$DOCKER_HOST" docker compose -f docker-compose.prod.yml --env-file $(PROD_ENV_FILE)
+
+prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
+	$(PROD) build
+
+prod-up: ## Start or update the deployment stack; migrations run before the API starts
+	$(PROD) up -d
+
+prod-down: ## Stop the deployment stack (volumes are kept)
+	$(PROD) down
+
+prod-ps: ## Deployment stack status
+	$(PROD) ps -a
+
+prod-logs: ## Follow the deployment stack's logs
+	$(PROD) logs -f --tail=100
+
+prod-seed-admin: ## Create the first admin from API_SEED_USER_* in .env.prod and exit
+	$(PROD) run --rm --no-deps api -seed-admin
+
+prod-seed-demo: ## Fill an empty deployment database with demo data as that admin
+	$(PROD) run --rm --no-deps api -seed-demo

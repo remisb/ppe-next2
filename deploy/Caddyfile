@@ -4,6 +4,8 @@
 #                 http://host:port for plain HTTP, as CI does
 #   API_UPSTREAM  where the Go API listens
 #   WEB_ROOT      web/apps/workwear/dist from `pnpm build`
+#   HSTS_MAX_AGE  seconds; set 0 on a shared zone such as sslip.io, where a pin
+#                 would outlive the demo and cannot be taken back
 {$SITE_ADDRESS:localhost} {
 	encode zstd gzip
 
@@ -15,7 +17,20 @@
 	}
 	handle {
 		root * {$WEB_ROOT:/srv/workwear/dist}
+		# Hashed file names never change content; index.html points at them,
+		# so it must never be cached.
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		header / Cache-Control "no-cache"
+		header /index.html Cache-Control "no-cache"
 		try_files {path} /index.html
 		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:31536000}"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
 	}
 }

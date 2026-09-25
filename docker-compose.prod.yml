@@ -1,0 +1,99 @@
+# The deployment stack: Caddy (TLS, the built app, /api proxy) -> API -> Postgres.
+#
+#   make prod-build && make prod-up      # reads .env.prod (see .env.prod.example)
+#
+# docker-compose.yml is the development database only. This file is separate and
+# its project name differs, so the two never share containers or volumes.
+# Only Caddy publishes ports; the API and the database stay on the compose network.
+name: ppe-next2-prod
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env.prod}
+    # Postgres 18 keeps the cluster in a versioned subdirectory; mount the parent.
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Applies pending migrations (deploy/migrate.sh, the counterpart to
+  # `make migrate`) and exits; the API starts only after it succeeds.
+  migrate:
+    image: postgres:18-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - ./internal/db/migrations:/migrations:ro
+      - ./deploy/migrate.sh:/migrate.sh:ro
+    entrypoint: ["/bin/sh", "/migrate.sh"]
+    restart: "no"
+
+  api:
+    build: .
+    image: ppe-next2-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      API_ADDR: :8090
+      # sslmode=disable only because this connection never leaves the host.
+      API_DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
+      API_JWT_TTL: ${API_JWT_TTL:-15m}
+      API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
+      API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
+      # Confirmation links must point at the host Caddy serves; derived from it.
+      API_PUBLIC_BASE_URL: https://${SITE_HOST}
+      # Same origin behind Caddy: nothing is cross-origin.
+      API_ALLOWED_ORIGINS: ""
+      # The API publishes no port, so every peer is a container on this network
+      # and the one forwarding requests is Caddy. Publish the port and this must
+      # narrow to Caddy's address.
+      API_TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7
+      # Read only by `make prod-seed-admin` / `prod-seed-demo`.
+      API_SEED_USER_EMAIL: ${API_SEED_USER_EMAIL:-}
+      API_SEED_USER_NAME: ${API_SEED_USER_NAME:-Administrator}
+      API_SEED_USER_PASSWORD: ${API_SEED_USER_PASSWORD:-}
+
+  caddy:
+    build: web
+    image: ppe-next2-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_HOST:?set SITE_HOST in .env.prod}
+      API_UPSTREAM: api:8090
+      WEB_ROOT: /srv/workwear/dist
+      # 0 on a shared zone such as sslip.io; see deploy/Caddyfile.
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and the ACME account key: keep this volume, or the next
+      # start re-issues against Let's Encrypt's rate limit.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

@@ -56,6 +56,17 @@ new ports out of PPE-next's range.
 Any psql target can point at another DB: `make migrate DB=ppe2_test`. Tests run with `-p 1`
 because Postgres tests truncate tables.
 
+## Deployment
+
+`docker-compose.prod.yml` (project `ppe-next2-prod`, env file `.env.prod` from
+`.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
+→ api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
+built app into the Caddy image; `deploy/Caddyfile`). Only Caddy publishes ports.
+`make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
+`prod-seed-demo`; they run compose under `env -i` so `.env` values cannot leak in.
+The DigitalOcean droplet serves it at `admin.<ip>.sslip.io` (so `HSTS_MAX_AGE=0`) from
+`/opt/ppe-next2`.
+
 ## Source-of-truth docs
 
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
