@@ -90,8 +90,12 @@ PROD := env -i PATH="$$PATH" HOME="$$HOME" DOCKER_HOST="$$DOCKER_HOST" docker co
 prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
 	$(PROD) build
 
+# Compose has kept api or caddy on the previous image after a rebuild, so both
+# are always recreated (about a second of downtime). db is recreated only when
+# its config changes; the first `up` runs migrate before the API starts.
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
 	$(PROD) up -d
+	$(PROD) up -d --force-recreate --no-deps api caddy
 
 prod-down: ## Stop the deployment stack (volumes are kept)
 	$(PROD) down

@@ -73,14 +73,10 @@ committed or printed) beside it. Deploy a pushed commit on the droplet:
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 ```
 
-`prod-up` recreates only services whose image or config changed, and migrations run before
-the API starts. Compose has left Caddy running the previous web image after a rebuild: if
-`make prod-ps` shows the caddy image as a bare `sha256:` ID instead of `ppe-next2-web:latest`,
-recreate it (about a second of downtime; certificates live in the `caddy-data` volume):
-
-```bash
-env -i PATH=$PATH HOME=$HOME docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps caddy
-```
+`prod-up` runs migrations before the API starts and then always recreates `api` and `caddy`
+(about a second of downtime; certificates live in the `caddy-data` volume), because compose
+has left either running the previous image after a rebuild. `db` is recreated only when its
+config changes.
 
 Accounts need a password, so the first admin is created by a person: set
 `API_SEED_USER_EMAIL`/`_PASSWORD` in `.env.prod`, run `make prod-seed-admin`, then blank
