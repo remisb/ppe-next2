@@ -255,6 +255,37 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
 
+test('columns sort: History on the server across pages, other lists in place', async () => {
+  await openTab('History')
+  const records = async () => (await page.getByRole('row').filter({ hasText: /WE-\d{6}/ }).allTextContents()).map((t) => /WE-\d{6}/.exec(t)![0])
+  const byRecord = page.getByRole('columnheader', { name: 'Record' })
+  await expect(page.getByRole('columnheader', { name: 'Date' })).toHaveAttribute('aria-sort', 'descending')
+  await byRecord.getByRole('button').click()
+  await expect(byRecord).toHaveAttribute('aria-sort', 'ascending')
+  await expect.poll(async () => (await records())[0]).toBe(recordNumber)
+  const ascending = await records()
+  expect(ascending).toEqual([...ascending].sort())
+  await byRecord.getByRole('button').click()
+  await expect(byRecord).toHaveAttribute('aria-sort', 'descending')
+  await expect.poll(records).toEqual([...ascending].reverse())
+
+  // Item Catalogue has a natural order (display order) that a third click returns to.
+  await openTab('Item Catalogue')
+  const names = async () => (await page.locator('tbody tr td:first-child').allTextContents()).map((t) => t.trim())
+  const byItem = page.getByRole('columnheader', { name: 'Item' })
+  await expect(byItem).toHaveAttribute('aria-sort', 'none')
+  const displayOrder = await names()
+  expect(displayOrder).toEqual(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  await byItem.getByRole('button').click()
+  await expect(byItem).toHaveAttribute('aria-sort', 'ascending')
+  expect(await names()).toEqual(['Protective gloves', 'Safety helmet', 'Safety shoes', 'Work jacket'])
+  await byItem.getByRole('button').click()
+  expect(await names()).toEqual(['Work jacket', 'Safety shoes', 'Safety helmet', 'Protective gloves'])
+  await byItem.getByRole('button').click()
+  await expect(byItem).toHaveAttribute('aria-sort', 'none')
+  expect(await names()).toEqual(displayOrder)
+})
+
 test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {
   await openTab('Employees')
   // Anywhere on the row opens it, not only the name.

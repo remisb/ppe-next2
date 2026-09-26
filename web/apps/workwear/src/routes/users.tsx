@@ -3,6 +3,7 @@ import { ApiError } from '@ppe/api-client'
 import { KeyRound, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,9 +11,22 @@ import { Field, Input, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
 import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleLabel, roles, sortRoles, validateNewPassword, validateUser } from '@/lib/users'
 import { cn } from '@/lib/utils'
+
+type UserSort = 'name' | 'email' | 'roles' | 'status'
+
+const columns: SortColumn<UserSort>[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'roles', label: 'Roles' },
+  { key: 'status', label: 'Status' },
+]
+
+/** By the most powerful role: administrators, then managers, then employees. */
+const roleRank = (u: User) => Math.min(...u.roles.map((r) => roles.findIndex((x) => x.role === r)).filter((i) => i >= 0), roles.length)
 
 /**
  * Users: the accounts that sign in to this app. Administrators only; the
@@ -26,11 +40,25 @@ export function UsersPage() {
   const [editing, setEditing] = useState<User | 'new' | null>(null)
   const [resetting, setResetting] = useState<User | null>(null)
 
+  const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
+  const sortProps = { sort, onSort: setSort }
+
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    const all = [...(users.data ?? [])].sort((a, b) => a.name.localeCompare(b.name))
-    return all.filter((u) => !q || `${u.name} ${u.email}`.toLowerCase().includes(q))
-  }, [users.data, filter])
+    const matching = (users.data ?? []).filter((u) => !q || `${u.name} ${u.email}`.toLowerCase().includes(q))
+    return sortRows(matching, sort, (u, key) => {
+      switch (key) {
+        case 'name':
+          return u.name
+        case 'email':
+          return u.email
+        case 'roles':
+          return roleRank(u)
+        case 'status':
+          return u.is_active ? 0 : 1
+      }
+    })
+  }, [users.data, filter, sort])
 
   if (!session.canManageUsers) {
     return (
@@ -70,13 +98,12 @@ export function UsersPage() {
         <EmptyState>{filter ? `No users match “${filter.trim()}”.` : 'No users yet.'}</EmptyState>
       ) : (
         // Where the table is narrow each user is a card: name and status, email, roles, then actions.
-        <Table stack="grid">
+        <Table stack="grid" sortControl={<SortControl columns={columns} {...sortProps} />}>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Status</TableHead>
+              {columns.map((c) => (
+                <SortableHead key={c.key} column={c} {...sortProps} />
+              ))}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

@@ -182,9 +182,9 @@ func TestPostgresHistory(t *testing.T) {
 		VALUES ($1, 'Ona', 'K', now(), now(), $2, $2)`, other, f.actor); err != nil {
 		t.Fatal(err)
 	}
-	mark := func(emp uuid.UUID, orderedAt time.Time, givenAt *time.Time) Order {
+	mark := func(emp uuid.UUID, orderedAt time.Time, givenAt *time.Time, qty int) Order {
 		t.Helper()
-		o, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{emp, []LineParams{{f.gloves, 2, nil}}}, f.actor)
+		o, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{emp, []LineParams{{f.gloves, qty, nil}}}, f.actor)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,10 +200,10 @@ func TestPostgresHistory(t *testing.T) {
 		return o
 	}
 	utc := func(d, h int) time.Time { return time.Date(2026, 9, d, h, 0, 0, 0, time.UTC) }
-	g := utc(23, 22)                  // 01:00 on the 24th in Vilnius
-	a := mark(f.emp, utc(20, 9), nil) // activity 20th
-	b := mark(f.emp, utc(21, 9), &g)  // activity 23rd 22:00 UTC = 24th Vilnius
-	c := mark(other, utc(22, 9), nil) // activity 22nd
+	g := utc(23, 22)                     // 01:00 on the 24th in Vilnius
+	a := mark(f.emp, utc(20, 9), nil, 2) // activity 20th
+	b := mark(f.emp, utc(21, 9), &g, 2)  // activity 23rd 22:00 UTC = 24th Vilnius
+	c := mark(other, utc(22, 9), nil, 5) // activity 22nd; the largest total
 
 	ids := func(res ListResult) []uuid.UUID {
 		out := make([]uuid.UUID, len(res.Orders))
@@ -256,6 +256,41 @@ func TestPostgresHistory(t *testing.T) {
 	p2, _ := f.svc.List(ctx, ListParams{Page: 2, PageSize: 2})
 	if !same(ids(p2), a.ID) || p2.Total != 3 {
 		t.Errorf("page 2 = %v total %d", ids(p2), p2.Total)
+	}
+
+	// Sorting: a, b and c were created in that order, so their record numbers
+	// ascend. Ties fall back to newest activity first.
+	for _, tc := range []struct {
+		sort, dir string
+		want      []uuid.UUID
+	}{
+		{"record", "asc", []uuid.UUID{a.ID, b.ID, c.ID}},
+		{"record", "desc", []uuid.UUID{c.ID, b.ID, a.ID}},
+		{"date", "asc", []uuid.UUID{a.ID, c.ID, b.ID}},
+		{"status", "asc", []uuid.UUID{b.ID, c.ID, a.ID}}, // GIVEN before ORDERED, then newest activity
+		{"total", "desc", []uuid.UUID{c.ID, b.ID, a.ID}}, // c has 5 gloves; a and b tie, newest activity first
+		{"total", "asc", []uuid.UUID{b.ID, a.ID, c.ID}},
+		// Only b is GIVEN; the ORDERED orders have no usage time and stay last in both directions.
+		{"usage", "asc", []uuid.UUID{b.ID, c.ID, a.ID}},
+		{"usage", "desc", []uuid.UUID{b.ID, c.ID, a.ID}},
+	} {
+		res, err := f.svc.List(ctx, ListParams{Sort: tc.sort, Dir: tc.dir})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !same(ids(res), tc.want...) {
+			t.Errorf("sort %s %s = %v, want %v", tc.sort, tc.dir, ids(res), tc.want)
+		}
+	}
+	names := map[string][]uuid.UUID{}
+	for _, dir := range []string{"asc", "desc"} {
+		res, _ := f.svc.List(ctx, ListParams{Sort: "employee", Dir: dir})
+		names[dir] = ids(res)
+	}
+	// Ona K has one order (c); the fixture employee has a and b. Whichever name sorts
+	// first, c is at one end and flips to the other when the direction flips.
+	if (names["asc"][0] == c.ID) == (names["desc"][0] == c.ID) {
+		t.Errorf("employee sort does not flip: asc %v desc %v", names["asc"], names["desc"])
 	}
 }
 

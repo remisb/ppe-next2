@@ -355,11 +355,12 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 
 	type page struct {
 		Orders []struct {
-			RecordNumber string           `json:"record_number"`
-			EmployeeID   string           `json:"employee_id"`
-			Status       string           `json:"status"`
-			UsageMonths  *float64         `json:"usage_months"`
-			Lines        []map[string]any `json:"lines"`
+			RecordNumber      string           `json:"record_number"`
+			EmployeeID        string           `json:"employee_id"`
+			EmployeeFirstName string           `json:"employee_first_name"`
+			Status            string           `json:"status"`
+			UsageMonths       *float64         `json:"usage_months"`
+			Lines             []map[string]any `json:"lines"`
 		} `json:"orders"`
 		Page, PageSize, Total int
 	}
@@ -376,10 +377,16 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	if p.Total != 2 || len(p.Orders) != 1 || p.Orders[0].EmployeeID != emps[0] {
 		t.Errorf("filtered = %s", rec.Body)
 	}
-	for _, bad := range []string{"?status=DRAFT", "?from=yesterday", "?page=x", "?employee_id=nope", "?sort=asc"} {
+	for _, bad := range []string{"?status=DRAFT", "?from=yesterday", "?page=x", "?employee_id=nope", "?sort=asc", "?sort=total&dir=up", "?order=total"} {
 		if rec := api.do(t, "GET", "/api/v1/orders"+bad, staff, nil); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s = %d, want 400", bad, rec.Code)
 		}
+	}
+	// Ona sorts after Jonas, so she comes first when descending.
+	if rec := api.do(t, "GET", "/api/v1/orders?sort=employee&dir=desc", staff, nil); rec.Code != http.StatusOK {
+		t.Errorf("sorted = %d %s", rec.Code, rec.Body)
+	} else if p := decode[page](t, rec.Body.Bytes()); len(p.Orders) == 0 || p.Orders[0].EmployeeFirstName != "Ona" || p.Orders[len(p.Orders)-1].EmployeeFirstName != "Jonas" {
+		t.Errorf("employee desc = %s", rec.Body)
 	}
 	rec = api.do(t, "GET", "/api/v1/orders?status=GIVEN", staff, nil)
 	if rec.Code != http.StatusOK || decode[page](t, rec.Body.Bytes()).Total != 0 {

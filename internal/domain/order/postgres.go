@@ -161,6 +161,34 @@ func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Order, erro
 // activity is the History sort and date-filter key; orders_activity_idx covers it.
 const activity = `coalesce(given_at, ordered_at)`
 
+// sortColumns maps each History sort to its SQL, ascending. Only these fixed
+// strings reach the query. Usage time grows as given_at recedes, so it sorts
+// on given_at reversed; the NULLs of ORDERED orders go last either way.
+var sortColumns = map[SortKey]struct {
+	expr    string
+	reverse bool
+}{
+	SortDate:     {expr: activity},
+	SortRecord:   {expr: `record_seq`},
+	SortEmployee: {expr: `lower(employee_first_name || ' ' || employee_last_name)`},
+	SortStatus:   {expr: `status`},
+	SortUsage:    {expr: `given_at`, reverse: true},
+	SortTotal:    {expr: `(SELECT sum(l.unit_price_cents * l.quantity) FROM order_lines l WHERE l.order_id = orders.id)`},
+}
+
+// orderBy is the ORDER BY clause for f: its sort, then newest activity first.
+func orderBy(f ListFilter) string {
+	col, ok := sortColumns[f.Sort]
+	if !ok {
+		col = sortColumns[SortDate]
+	}
+	dir := "ASC"
+	if f.Desc != col.reverse {
+		dir = "DESC"
+	}
+	return col.expr + " " + dir + " NULLS LAST, " + activity + " DESC, id DESC"
+}
+
 func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Order, int, error) {
 	where := `TRUE`
 	var args []any
@@ -186,7 +214,7 @@ func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Order, i
 		return nil, 0, err
 	}
 	rows, err := r.pool.Query(ctx, fmt.Sprintf(`SELECT `+orderColumns+` FROM orders WHERE `+where+`
-		ORDER BY `+activity+` DESC, id DESC LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2),
+		ORDER BY `+orderBy(f)+` LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2),
 		append(args, f.Limit, f.Offset)...)
 	if err != nil {
 		return nil, 0, err

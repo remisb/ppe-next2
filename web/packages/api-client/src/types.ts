@@ -225,12 +225,19 @@ export interface OrderPage {
   total: number
 }
 
+export type HistorySort = 'date' | 'record' | 'employee' | 'status' | 'usage' | 'total'
+export type SortDir = 'asc' | 'desc'
+
 /** History filters; omitted fields do not filter. Dates are YYYY-MM-DD in the organisation timezone. */
 export interface HistoryQuery {
   employee_id?: string
   status?: OrderStatus
   from?: string
   to?: string
+  /** Column to order by; the default is date, newest activity first. */
+  sort?: HistorySort
+  /** Omitted: descending for date, ascending otherwise. Ties fall back to newest activity. */
+  dir?: SortDir
   page?: number
   page_size?: number
 }

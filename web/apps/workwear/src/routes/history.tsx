@@ -1,4 +1,4 @@
-import type { HistoryQuery, ListedOrder, OrderStatus } from '@ppe/api-client'
+import type { HistoryQuery, HistorySort, ListedOrder, OrderStatus } from '@ppe/api-client'
 import { ChevronDown, ChevronUp, FileText, Link2, Printer, SlidersHorizontal } from 'lucide-react'
 import { Fragment, useState } from 'react'
 
@@ -6,6 +6,7 @@ import { ConfirmationSheet } from '@/components/confirmation-sheet'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderLinesTable } from '@/components/order-lines'
+import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { useApi } from '@/lib/api'
 import { activityAt, formatDateTime, formatUsage, historyActions, statusLabel } from '@/lib/history'
+import type { SortColumn, SortState } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatEuro } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
@@ -29,6 +31,17 @@ interface Filters {
 
 const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
 
+// History is paged, so the API sorts it (the whole history, not one page).
+const columns: SortColumn<HistorySort>[] = [
+  { key: 'record', label: 'Record' },
+  { key: 'employee', label: 'Employee' },
+  { key: 'date', label: 'Date', firstDir: 'desc' },
+  { key: 'status', label: 'Status' },
+  { key: 'usage', label: 'Usage time' },
+  { key: 'total', label: 'Total value' },
+]
+const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
+
 /**
  * History (manual §3.5): stored orders and snapshots, newest activity first.
  * Changing any filter reloads page 1.
@@ -38,6 +51,7 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
   const [confirming, setConfirming] = useState<ListedOrder | null>(null)
   const [filters, setFilters] = useState<Filters>(noFilters)
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<SortState<HistorySort>>(newestFirst)
   const [open, setOpen] = useState<Set<string>>(new Set())
   // Phone only: the filters fold away so the orders start at the top of the screen.
   const [showFilters, setShowFilters] = useState(false)
@@ -48,11 +62,22 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.from ? { from: filters.from } : {}),
     ...(filters.to ? { to: filters.to } : {}),
+    sort: sort.key,
+    dir: sort.dir,
     page,
     page_size: PAGE_SIZE,
   }
   const key = JSON.stringify(query)
   const orders = useLoad(() => client.orders.list(query), [key])
+
+  // History has no unsorted order: a third click on a column starts over rather than clearing.
+  const sortProps = {
+    sort,
+    onSort: (next: SortState<HistorySort> | null) => {
+      setSort(next ?? newestFirst)
+      setPage(1)
+    },
+  }
 
   const setFilter = <K extends keyof Filters>(k: K, v: Filters[K]) => {
     setFilters((f) => ({ ...f, [k]: v }))
@@ -144,15 +169,12 @@ export function History({ onOpenRecord }: { onOpenRecord: (id: string, print: bo
       ) : (
         <>
           {/* Where the table is narrow each order is a card: record and status, employee, details, then actions. */}
-          <Table stack stackBelow="lg">
+          <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} {...sortProps} />}>
             <TableHeader>
               <TableRow>
-                <TableHead>Record</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Usage time</TableHead>
-                <TableHead className="text-right">Total value</TableHead>
+                {columns.map((c) => (
+                  <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} {...sortProps} />
+                ))}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>

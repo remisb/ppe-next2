@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils"
  * rendered twice. Cells restyle further with `stacked:` classes, which `cn`
  * merges over the defaults below. `stackBelow="lg"` moves the threshold to
  * 60rem, for a table whose columns need more than 48rem side by side.
+ * `sortControl` (a SortControl) shows above the cards only while stacked,
+ * standing in for the sortable headers the stacked table hides.
  */
 const StackContext = React.createContext<boolean | "grid">(false)
 
@@ -18,14 +20,16 @@ function Table({
   className,
   stack = false,
   stackBelow = "md",
+  sortControl,
   ...props
-}: React.ComponentProps<"table"> & { stack?: boolean | "grid"; stackBelow?: "md" | "lg" }) {
+}: React.ComponentProps<"table"> & { stack?: boolean | "grid"; stackBelow?: "md" | "lg"; sortControl?: React.ReactNode }) {
   return (
     <StackContext value={stack}>
       <div
         data-slot="table-container"
         className={cn("relative w-full overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : "@container/table"))}
       >
+        {stack && sortControl ? <div className="mb-3 hidden stacked:block">{sortControl}</div> : null}
         <table
           data-slot="table"
           className={cn("w-full caption-bottom text-sm", stack && "stacked:block", className)}

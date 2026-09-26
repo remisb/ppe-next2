@@ -1,8 +1,9 @@
 import type { CatalogueItem, CatalogueItemInput, SizeGroup } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { Plus } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { SortControl, SortableHead } from '@/components/sortable'
 import { ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,10 +11,27 @@ import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths, parseEuro } from '@/lib/utils'
 
 export const sizeGroupLabel: Record<SizeGroup, string> = { CLOTHING: 'Clothing', SHOES: 'Shoes', NONE: 'No size' }
+
+type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status'
+
+const columns: SortColumn<CatalogueSort>[] = [
+  { key: 'name', label: 'Item' },
+  { key: 'details', label: 'Details' },
+  { key: 'group', label: 'Size group' },
+  { key: 'price', label: 'Unit price' },
+  { key: 'period', label: 'Service period' },
+  { key: 'status', label: 'Status' },
+]
+
+/** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
+function statusRank(i: CatalogueItem): number {
+  return (i.active ? 0 : 2) + (i.unit_price_cents === null || i.service_period_months === null ? 1 : 0)
+}
 
 export function Catalogue() {
   const { client } = useApi()
@@ -21,6 +39,29 @@ export function Catalogue() {
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
   const [actionError, setActionError] = useState<unknown>()
+  // null is the catalogue's display order, the order Add Item lists items in.
+  const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
+  const sortProps = { sort, onSort: setSort, allowNone: true }
+  const shown = useMemo(
+    () =>
+      sortRows(items.data ?? [], sort, (i, key) => {
+        switch (key) {
+          case 'name':
+            return i.name
+          case 'details':
+            return i.details
+          case 'group':
+            return sizeGroupLabel[i.size_group]
+          case 'price':
+            return i.unit_price_cents
+          case 'period':
+            return i.service_period_months
+          case 'status':
+            return statusRank(i)
+        }
+      }),
+    [items.data, sort],
+  )
 
   const toggle = async (i: CatalogueItem) => {
     try {
@@ -51,20 +92,17 @@ export function Catalogue() {
         <Loading />
       ) : (
         // Where the table is narrow each item is a card: name and status, details, then the ordering values.
-        <Table stack="grid" stackBelow="lg">
+        <Table stack="grid" stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
           <TableHeader>
             <TableRow>
-              <TableHead>Item</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead>Size group</TableHead>
-              <TableHead className="text-right">Unit price</TableHead>
-              <TableHead>Service period</TableHead>
-              <TableHead>Status</TableHead>
+              {columns.map((c) => (
+                <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
+              ))}
               {canManageItems ? <TableHead className="text-right">Actions</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.data?.map((i) => (
+            {shown.map((i) => (
               <TableRow key={i.id} className={i.active ? undefined : 'text-muted-foreground'}>
                 <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">{i.name}</TableCell>
                 <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>

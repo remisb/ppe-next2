@@ -38,6 +38,11 @@ The workwear app is the reference.
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
   an A4 print and would print the receipt as cards. Never render a list twice (a table
   for desktop plus cards for phones).
+- **Sorting**: sortable columns use `SortableHead` (`components/sortable.tsx`, `aria-sort`
+  on the header) and the same state in a `SortControl` passed as the Table's
+  `sortControl`, which shows only while the table is stacked and its header hidden.
+  Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
+  vocabulary via `rankIn`); a paged list (History) sends `sort`/`dir` to the API.
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the

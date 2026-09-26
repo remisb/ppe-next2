@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
+import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
@@ -10,8 +11,19 @@ import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { type Route, linkTo } from '@/lib/router'
+import { type SortColumn, type SortState, rankIn, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn, formatSize } from '@/lib/utils'
+
+type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
+
+const columns: SortColumn<EmployeeSort>[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'code', label: 'Code' },
+  { key: 'height', label: 'Height' },
+  { key: 'clothing', label: 'Clothing' },
+  { key: 'shoes', label: 'Shoes' },
+]
 
 export function Employees({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
@@ -22,11 +34,29 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const [actionError, setActionError] = useState<unknown>()
+  const [sort, setSort] = useState<SortState<EmployeeSort> | null>({ key: 'name', dir: 'asc' })
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    return (employees.data ?? []).filter((e) => !q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q))
-  }, [employees.data, filter])
+    const clothing = sizes.data?.clothing.map((s) => s.code) ?? []
+    const matching = (employees.data ?? []).filter((e) => !q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q))
+    // Clothing sizes sort S, M, L … 3XL, not alphabetically; shoe sizes are numbers.
+    return sortRows(matching, sort, (e, key) => {
+      switch (key) {
+        case 'name':
+          return e.full_name
+        case 'code':
+          return e.code
+        case 'height':
+          return e.height_cm
+        case 'clothing':
+          return rankIn(clothing, e.clothing_size)
+        case 'shoes':
+          return e.shoe_size ? Number(e.shoe_size) : null
+      }
+    })
+  }, [employees.data, sizes.data, filter, sort])
+  const sortProps = { sort, onSort: setSort }
 
   const remove = async (e: Employee) => {
     if (!window.confirm(`Delete ${e.full_name}? Their past orders are kept.`)) return
@@ -70,14 +100,12 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
         </EmptyState>
       ) : (
         // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.
-        <Table stack="grid">
+        <Table stack="grid" sortControl={<SortControl columns={columns} {...sortProps} />}>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Height</TableHead>
-              <TableHead>Clothing</TableHead>
-              <TableHead>Shoes</TableHead>
+              {columns.map((c) => (
+                <SortableHead key={c.key} column={c} {...sortProps} />
+              ))}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

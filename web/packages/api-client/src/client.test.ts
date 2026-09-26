@@ -103,5 +103,6 @@ describe('historyQueryString', () => {
   it('leaves out empty filters', () => {
     expect(historyQueryString({})).toBe('')
     expect(historyQueryString({ status: 'GIVEN', from: '', page: 2 })).toBe('?status=GIVEN&page=2')
+    expect(historyQueryString({ sort: 'total', dir: 'desc' })).toBe('?sort=total&dir=desc')
   })
 })

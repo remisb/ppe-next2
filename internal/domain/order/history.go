@@ -13,14 +13,33 @@ const (
 	dateLayout      = "2006-01-02"
 )
 
+// SortKey is a History column the list can be ordered by.
+type SortKey string
+
+const (
+	// SortDate is the activity time, coalesce(given_at, ordered_at): the default, newest first.
+	SortDate     SortKey = "date"
+	SortRecord   SortKey = "record"
+	SortEmployee SortKey = "employee"
+	SortStatus   SortKey = "status"
+	// SortUsage is usage time, so ascending means most recently given first;
+	// ORDERED orders have none and always come last.
+	SortUsage SortKey = "usage"
+	SortTotal SortKey = "total"
+)
+
+var sortKeys = map[SortKey]bool{SortDate: true, SortRecord: true, SortEmployee: true, SortStatus: true, SortUsage: true, SortTotal: true}
+
 // ListFilter is a History query in storage terms: UTC instants, To exclusive.
-// Dates match an order's activity time, coalesce(given_at, ordered_at), which
-// is also the sort key (newest activity first).
+// Dates match an order's activity time, coalesce(given_at, ordered_at). Ties
+// in Sort fall back to newest activity first, so pages are stable.
 type ListFilter struct {
 	EmployeeID *uuid.UUID
 	Status     *Status
 	From       *time.Time
 	To         *time.Time
+	Sort       SortKey
+	Desc       bool
 	Limit      int
 	Offset     int
 }
@@ -32,6 +51,8 @@ type ListParams struct {
 	Status     string // "", ORDERED or GIVEN
 	FromDate   string // YYYY-MM-DD, inclusive
 	ToDate     string // YYYY-MM-DD, inclusive
+	Sort       string // a SortKey; "" means date
+	Dir        string // "asc" or "desc"; "" means desc for date, asc otherwise
 	Page       int    // 1-based; 0 means 1
 	PageSize   int    // 0 means DefaultPageSize
 }
@@ -68,6 +89,21 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 		return f, 0, 0, fieldError("page_size", "must be between 1 and 100")
 	}
 	f.EmployeeID = p.EmployeeID
+	f.Sort = SortKey(p.Sort)
+	if f.Sort == "" {
+		f.Sort = SortDate
+	}
+	if !sortKeys[f.Sort] {
+		return f, 0, 0, fieldError("sort", "must be date, record, employee, status, usage or total")
+	}
+	switch p.Dir {
+	case "":
+		f.Desc = f.Sort == SortDate
+	case "asc", "desc":
+		f.Desc = p.Dir == "desc"
+	default:
+		return f, 0, 0, fieldError("dir", "must be asc or desc")
+	}
 	switch Status(p.Status) {
 	case "":
 	case StatusOrdered, StatusGiven:
@@ -99,7 +135,8 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 	return f, page, size, nil
 }
 
-// List is History: stored orders and their snapshots, newest activity first.
+// List is History: stored orders and their snapshots, newest activity first
+// unless another sort is asked for.
 // It never reads live catalogue or employee data.
 func (s *Service) List(ctx context.Context, p ListParams) (ListResult, error) {
 	f, page, size, err := p.filter(s.loc)

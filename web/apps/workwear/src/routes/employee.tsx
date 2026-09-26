@@ -3,14 +3,16 @@ import { ArrowLeft, FileText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
+import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
 import { type EmployeeItem, employeeItems } from '@/lib/employee-items'
 import { formatDateTime, formatUsage } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
+import { type SortColumn, type SortState, type SortValue, rankIn, sortRows } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
 import { formatMonths, formatSize } from '@/lib/utils'
 
@@ -42,6 +44,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
 
   const items = useMemo(() => employeeItems(orders.data ?? []), [orders.data])
   const tz = settings.data?.timezone
+  const clothing = useMemo(() => sizes.data?.clothing.map((s) => s.code) ?? [], [sizes.data])
   const e = employee.data
 
   return (
@@ -96,7 +99,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             ) : items.given.length === 0 ? (
               <EmptyState>No items have been given to {e.first_name} yet.</EmptyState>
             ) : (
-              <ItemsTable items={items.given} dateLabel="Given" tz={tz} navigate={navigate} />
+              <ItemsTable items={items.given} dateLabel="Given" tz={tz} clothing={clothing} navigate={navigate} />
             )}
           </section>
 
@@ -106,7 +109,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 Ordered, not yet given
               </h2>
               <p className="mb-3 text-sm text-muted-foreground">Waiting for the employee to confirm receipt.</p>
-              <ItemsTable items={items.ordered} dateLabel="Ordered" tz={tz} navigate={navigate} />
+              <ItemsTable items={items.ordered} dateLabel="Ordered" tz={tz} clothing={clothing} navigate={navigate} />
             </section>
           ) : null}
 
@@ -144,37 +147,81 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
+type ItemSort = 'item' | 'size' | 'quantity' | 'date' | 'usage' | 'period' | 'record'
+
+/**
+ * Sizes in size order: clothing S … 3XL by the vocabulary, then shoe sizes by
+ * number, rather than by spelling (which puts L before M before S).
+ */
+function sizeValue(size: string | null, clothing: readonly string[]): SortValue {
+  if (!size) return null
+  const n = Number(size)
+  return Number.isFinite(n) ? 1000 + n : rankIn(clothing, size)
+}
+
 /**
  * Given items link to their receipt (View Record). An ORDERED order has no
- * receipt yet (manual §6), so its record number is plain text.
+ * receipt yet (manual §6), so its record number is plain text. Each table
+ * sorts on its own; with no sort it keeps newest activity first.
  */
 function ItemsTable({
   items,
   dateLabel,
   tz,
+  clothing,
   navigate,
 }: {
   items: EmployeeItem[]
   dateLabel: string
   tz: string | undefined
+  clothing: readonly string[]
   navigate: (to: Route) => void
 }) {
   const given = dateLabel === 'Given'
+  const [sort, setSort] = useState<SortState<ItemSort> | null>(null)
+  const sortProps = { sort, onSort: setSort, allowNone: true }
+  const columns: SortColumn<ItemSort>[] = [
+    { key: 'item', label: 'Item' },
+    { key: 'size', label: 'Size' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'date', label: dateLabel, firstDir: 'desc' },
+    ...(given ? [{ key: 'usage', label: 'Usage time' } as const] : []),
+    { key: 'period', label: 'Service period' },
+    { key: 'record', label: given ? 'Receipt' : 'Record' },
+  ]
+  const shown = useMemo(
+    () =>
+      sortRows(items, sort, (i, key) => {
+        switch (key) {
+          case 'item':
+            return i.itemName
+          case 'size':
+            return sizeValue(i.size, clothing)
+          case 'quantity':
+            return i.quantity
+          case 'date':
+            return i.at
+          case 'usage':
+            return i.usageMonths
+          case 'period':
+            return i.servicePeriodMonths
+          case 'record':
+            return i.recordNumber
+        }
+      }),
+    [items, sort, clothing],
+  )
   return (
-    <Table stack>
+    <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Newest first" {...sortProps} />}>
       <TableHeader>
         <TableRow>
-          <TableHead>Item</TableHead>
-          <TableHead>Size</TableHead>
-          <TableHead className="text-right">Quantity</TableHead>
-          <TableHead>{dateLabel}</TableHead>
-          {given ? <TableHead>Usage time</TableHead> : null}
-          <TableHead>Service period</TableHead>
-          <TableHead>{given ? 'Receipt' : 'Record'}</TableHead>
+          {columns.map((c) => (
+            <SortableHead key={c.key} column={c} align={c.key === 'quantity' ? 'right' : 'left'} {...sortProps} />
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {items.map((i) => (
+        {shown.map((i) => (
           <TableRow key={i.key}>
             <TableCell className="min-w-40 whitespace-normal stacked:order-1 stacked:mb-1">
               <span className="font-medium">{i.itemName}</span>

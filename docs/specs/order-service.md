@@ -56,6 +56,8 @@ optional; anything else is a 400:
 | `employee_id` | One employee's orders |
 | `status` | `ORDERED` or `GIVEN`; omitted = all statuses |
 | `from`, `to` | `YYYY-MM-DD`, inclusive, matched against the activity time as a calendar day in the organisation timezone (`API_ORG_TIMEZONE`, default `Europe/Vilnius`); timestamps stay UTC |
+| `sort` | `date` (default), `record`, `employee`, `status`, `usage` or `total`; sorts the whole history before paging. `usage` ascending is most recently given first, and ORDERED orders (no usage time) come last in both directions |
+| `dir` | `asc` or `desc`; omitted = `desc` for `date`, `asc` otherwise. Ties fall back to newest activity |
 | `page`, `page_size` | 1-based page, size 1–100 (default 20) |
 
 Response: `{orders, page, page_size, total}`. Each order carries its lines, `record_number`,
