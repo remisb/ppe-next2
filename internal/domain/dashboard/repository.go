@@ -10,4 +10,7 @@ type Repository interface {
 	// ReadManager returns the manager's figures for w from one consistent
 	// snapshot, Months as in Read; the derived fields and Sizes are left empty.
 	ReadManager(ctx context.Context, w ManagerWindow) (ManagerFigures, error)
+	// ReadEmployee returns the order preparer's figures for w from one
+	// consistent snapshot, Months as in Read; the derived fields are left empty.
+	ReadEmployee(ctx context.Context, w EmployeeWindow) (EmployeeOverview, error)
 }

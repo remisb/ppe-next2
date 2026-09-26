@@ -1,17 +1,16 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, Panel, formatDate, inlineLink } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, Panel, ReplacementsPanel, formatDate, inlineLink } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { changeText, formatDays, monthLabel, plural, share } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatSize } from '@/lib/utils'
+import { cn, formatEuro } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 
@@ -22,7 +21,7 @@ type Navigate = (to: Route) => void
  */
 export function Dashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
-  const { isManager } = useSession()
+  const { isManager, isEmployee } = useSession()
   const board = useLoad(() => client.dashboard())
   const d = board.data
 
@@ -37,10 +36,15 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
         }
         actions={
           <>
-            {/* An administrator who is also a manager reaches the manager's dashboard from here, not from a tab. */}
+            {/* An administrator who also holds another role reaches its dashboard from here, not from a tab. */}
             {isManager ? (
               <Button variant="ghost" onClick={() => navigate({ name: 'managerDashboard' })}>
                 Manager Dashboard <ArrowRight aria-hidden />
+              </Button>
+            ) : null}
+            {isEmployee ? (
+              <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
+                Employee Dashboard <ArrowRight aria-hidden />
               </Button>
             ) : null}
             <Button variant="outline" onClick={board.reload} disabled={board.loading}>
@@ -61,7 +65,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
             <ConfirmationCard d={d} />
           </div>
           <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <ReplacementsCard d={d} navigate={navigate} />
+            <ReplacementsPanel replacements={d.replacements} timezone={d.timezone} navigate={navigate} />
             <WaitingCard d={d} navigate={navigate} />
           </div>
           <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
@@ -194,61 +198,6 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
         )}
         <p className="text-xs text-muted-foreground">Median wait is the time from Mark as Ordered to the employee's confirmation.</p>
       </div>
-    </Panel>
-  )
-}
-
-function ReplacementsCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
-  const r = d.replacements
-  const more = r.overdue + r.due_soon - r.next.length
-  return (
-    <Panel
-      title="Replacements due"
-      description={`Items whose service period has ended or ends within ${r.due_soon_days} days, counted from the date given and not already on an open order.`}
-    >
-      {r.next.length === 0 ? (
-        <EmptyState>Nothing is due for replacement.</EmptyState>
-      ) : (
-        <Table stack>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Item</TableHead>
-              <TableHead>Due</TableHead>
-              <TableHead>Receipt</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {r.next.map((x) => (
-              <TableRow key={`${x.employee_id}-${x.catalogue_item_id}`}>
-                <TableCell className="stacked:mb-1">
-                  <a {...linkTo({ name: 'employee', id: x.employee_id }, navigate)} className={inlineLink}>
-                    {x.employee_name}
-                  </a>
-                  {x.employee_code ? <span className="block text-xs text-muted-foreground">{x.employee_code}</span> : null}
-                </TableCell>
-                <TableCell label="Item" className="whitespace-normal">
-                  {x.item_name}
-                  {x.size ? <span className="text-muted-foreground"> · {formatSize(x.size)}</span> : null}
-                </TableCell>
-                <TableCell label="Due" className="tabular-nums">
-                  <span className="inline-flex flex-wrap items-center gap-2">
-                    {formatDate(x.due_at, d.timezone)}
-                    <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? 'Overdue' : 'Due soon'}</Badge>
-                  </span>
-                </TableCell>
-                <TableCell label="Receipt">
-                  <a {...linkTo({ name: 'record', id: x.order_id }, navigate)} aria-label={`Receipt ${x.record_number}`} className={inlineLink}>
-                    {x.record_number}
-                  </a>
-                  <span className="block text-xs text-muted-foreground">given {formatDate(x.given_at, d.timezone)}</span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      {more > 0 ? <p className="mt-3 text-xs text-muted-foreground">And {more} more, due later.</p> : null}
     </Panel>
   )
 }

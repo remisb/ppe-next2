@@ -65,6 +65,8 @@ describe('createClient', () => {
     expect(f.mock.calls[0]![1]?.method).toBe('GET')
     await client.managerDashboard()
     expect(f.mock.calls[1]![0]).toBe('/api/v1/dashboard/manager')
+    await client.employeeDashboard()
+    expect(f.mock.calls[2]![0]).toBe('/api/v1/dashboard/employee')
   })
 
   it('encodes path segments', async () => {

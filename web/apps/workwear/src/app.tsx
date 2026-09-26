@@ -9,6 +9,7 @@ import { Catalogue } from './routes/catalogue'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
 import { EmployeePage } from './routes/employee'
+import { EmployeeDashboard } from './routes/employee-dashboard'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
 import { ConfirmPage } from './routes/confirm'
@@ -32,18 +33,22 @@ const dashboardTab = { route: { name: 'dashboard' }, label: 'Dashboard', short: 
  * manager keeps the one Dashboard tab and reaches this one from the Dashboard.
  */
 const managerTab = { route: { name: 'managerDashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
+/** The employee role's start screen, first in their tabs, as for managers. */
+const employeeTab = { route: { name: 'employeeDashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
 const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
 /**
  * A record belongs to History and an employee to Employees, so those stay the
- * current section; so does the Dashboard for the Manager Dashboard opened from it.
+ * current section; so does a user's one Dashboard tab for another role's
+ * dashboard opened from it.
  */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
   return (
     current === tab ||
     (current === 'record' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
-    (current === 'managerDashboard' && tab === 'dashboard')
+    (current === 'managerDashboard' && tab === 'dashboard') ||
+    (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard'))
   )
 }
 
@@ -82,7 +87,13 @@ export function App() {
   if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
   if (!session) return <SignIn />
   const route = startRoute(asked, session)
-  const shownTabs = session.isAdmin ? [dashboardTab, ...tabs, usersTab] : session.isManager ? [managerTab, ...tabs] : tabs
+  const shownTabs = session.isAdmin
+    ? [dashboardTab, ...tabs, usersTab]
+    : session.isManager
+      ? [managerTab, ...tabs]
+      : session.isEmployee
+        ? [employeeTab, ...tabs]
+        : tabs
 
   const link = (to: Route) => linkTo(to, navigate)
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
@@ -120,7 +131,7 @@ export function App() {
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none lg:p-3',
-            // Seven for an administrator (Dashboard and Users), six for a manager (their Dashboard).
+            // Seven for an administrator (Dashboard and Users), six for a manager or the employee role (their Dashboard).
             columns[shownTabs.length],
           )}
         >
@@ -173,6 +184,7 @@ export function App() {
       >
         {route.name === 'dashboard' ? <Dashboard navigate={navigate} /> : null}
         {route.name === 'managerDashboard' ? <ManagerDashboard navigate={navigate} /> : null}
+        {route.name === 'employeeDashboard' ? <EmployeeDashboard navigate={navigate} /> : null}
         {route.name === 'createOrder' ? <CreateOrder /> : null}
         {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}

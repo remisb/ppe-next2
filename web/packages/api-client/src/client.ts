@@ -4,6 +4,7 @@ import type {
   CatalogueItemInput,
   ConfirmationLink,
   Dashboard,
+  EmployeeDashboard,
   ManagerDashboard,
   Employee,
   EmployeeInput,
@@ -82,6 +83,8 @@ export function createClient(options: ClientOptions) {
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
     /** The manager's dashboard; managers only. */
     managerDashboard: () => request<ManagerDashboard>('GET', '/api/v1/dashboard/manager'),
+    /** The employee role's dashboard, for the signed-in user; that role only. */
+    employeeDashboard: () => request<EmployeeDashboard>('GET', '/api/v1/dashboard/employee'),
 
     /** User accounts: listing is admin or manager, every change admin only. */
     users: {

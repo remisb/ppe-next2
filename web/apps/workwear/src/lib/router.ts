@@ -9,6 +9,8 @@ export type Route =
   | { name: 'dashboard' }
   /** The manager's dashboard. */
   | { name: 'managerDashboard' }
+  /** The employee role's dashboard: the user's own orders and what to order next. */
+  | { name: 'employeeDashboard' }
   | { name: 'createOrder' }
   | { name: 'history' }
   | { name: 'employees' }
@@ -28,6 +30,7 @@ const fixed = {
   home: '/',
   dashboard: '/dashboard',
   managerDashboard: '/manager',
+  employeeDashboard: '/my-orders',
   createOrder: '/orders/new',
   history: '/history',
   employees: '/employees',
@@ -113,14 +116,22 @@ export function linkTo(to: Route, navigate: (to: Route) => void) {
 
 /**
  * The screen to show for route. The root is the start screen: the Dashboard
- * for administrators (also when they are managers), the Manager Dashboard for
- * managers, Create Order for everyone else. Each dashboard belongs to its role
- * alone, so anyone else asking for it gets their own start screen.
+ * for administrators, the Manager Dashboard for managers, the Employee
+ * Dashboard for the employee role, in that order when a user holds several;
+ * Create Order for anyone else. Each dashboard belongs to its role alone, so
+ * anyone else asking for it gets their own start screen.
  */
-export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: boolean }): Route {
-  const home: Route = roles.isAdmin ? { name: 'dashboard' } : roles.isManager ? { name: 'managerDashboard' } : { name: 'createOrder' }
+export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: boolean; isEmployee: boolean }): Route {
+  const home: Route = roles.isAdmin
+    ? { name: 'dashboard' }
+    : roles.isManager
+      ? { name: 'managerDashboard' }
+      : roles.isEmployee
+        ? { name: 'employeeDashboard' }
+        : { name: 'createOrder' }
   if (route.name === 'home') return home
   if (route.name === 'dashboard' && !roles.isAdmin) return home
   if (route.name === 'managerDashboard' && !roles.isManager) return home
+  if (route.name === 'employeeDashboard' && !roles.isEmployee) return home
   return route
 }

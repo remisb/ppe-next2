@@ -2,8 +2,11 @@ package dashboard
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type fakeRepo struct {
@@ -11,6 +14,8 @@ type fakeRepo struct {
 	out    Overview
 	gotMgr ManagerWindow
 	outMgr ManagerFigures
+	gotEmp EmployeeWindow
+	outEmp EmployeeOverview
 }
 
 func (f *fakeRepo) Read(_ context.Context, w Window) (Overview, error) {
@@ -21,6 +26,11 @@ func (f *fakeRepo) Read(_ context.Context, w Window) (Overview, error) {
 func (f *fakeRepo) ReadManager(_ context.Context, w ManagerWindow) (ManagerFigures, error) {
 	f.gotMgr = w
 	return f.outMgr, nil
+}
+
+func (f *fakeRepo) ReadEmployee(_ context.Context, w EmployeeWindow) (EmployeeOverview, error) {
+	f.gotEmp = w
+	return f.outEmp, nil
 }
 
 func utc(s string) time.Time {
@@ -157,5 +167,43 @@ func TestManagerDerivedFields(t *testing.T) {
 	if len(s.Clothing) != 6 || s.Clothing[0].Size != "S" || count(s.Clothing, "M") != 3 || count(s.Clothing, "2XL") != 1 ||
 		s.Suggested != 1 || s.NoClothing != 1 || count(s.Shoes, "42") != 2 || count(s.Shoes, "45") != 1 || s.NoShoes != 2 || len(s.Shoes) != 8 {
 		t.Errorf("sizes = %+v", s)
+	}
+}
+
+func TestEmployeeDerivedFields(t *testing.T) {
+	now := utc("2026-09-15T10:00:00Z")
+	me := uuid.New()
+	repo := &fakeRepo{outEmp: EmployeeOverview{
+		Months: make([]MyMonth, Months),
+		Awaiting: MyAwaiting{Orders: 1, Longest: []MyWaiting{
+			{Waiting: Waiting{RecordSeq: 12, OrderedAt: utc("2026-09-12T08:00:00Z")}, Link: LinkNone},
+		}},
+		RecentlyGiven: []GivenOrder{{RecordSeq: 5}},
+		Replacements:  Replacements{Next: []Replacement{{RecordSeq: 3, DueAt: now.Add(-time.Hour)}}},
+	}}
+	svc := NewService(repo, WithClock(func() time.Time { return now }))
+
+	if _, err := svc.Employee(context.Background(), uuid.Nil); !errors.Is(err, ErrInvalid) {
+		t.Errorf("no user: %v, want ErrInvalid", err)
+	}
+	o, err := svc.Employee(context.Background(), me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := repo.gotEmp; w.UserID != me || !w.Now.Equal(now) || !w.DueBy.Equal(now.AddDate(0, 0, DueSoonDays)) ||
+		len(w.MonthStarts) != Months+1 || !w.MonthStarts[0].Equal(utc("2025-10-01T00:00:00Z")) || w.Limit != ListLimit {
+		t.Errorf("window = %+v", w)
+	}
+	if o.Months[11].Month != "2026-09" || o.Timezone != "UTC" || !o.GeneratedAt.Equal(now) {
+		t.Errorf("months/meta = %q %q %v", o.Months[11].Month, o.Timezone, o.GeneratedAt)
+	}
+	if l := o.Awaiting.Longest[0]; l.RecordNumber != "WE-000012" || l.Days != 3 || *o.Awaiting.OldestDays != 3 {
+		t.Errorf("awaiting = %+v", o.Awaiting)
+	}
+	if o.RecentlyGiven[0].RecordNumber != "WE-000005" {
+		t.Errorf("recently given = %+v", o.RecentlyGiven)
+	}
+	if r := o.Replacements; r.DueSoonDays != DueSoonDays || !r.Next[0].Overdue || r.Next[0].RecordNumber != "WE-000003" {
+		t.Errorf("replacements = %+v", r)
 	}
 }

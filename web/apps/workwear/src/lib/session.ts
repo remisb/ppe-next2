@@ -17,6 +17,8 @@ export interface Session {
   isAdmin: boolean
   /** Managers have their own dashboard, which only they can see. */
   isManager: boolean
+  /** So do users with the employee role, who prepare orders. */
+  isEmployee: boolean
 }
 
 export function sessionFromToken(token: string, name: string): Session | null {
@@ -31,6 +33,7 @@ export function sessionFromToken(token: string, name: string): Session | null {
     canManageUsers: hasAnyRole(claims.roles, 'admin'),
     isAdmin: hasAnyRole(claims.roles, 'admin'),
     isManager: hasAnyRole(claims.roles, 'manager'),
+    isEmployee: hasAnyRole(claims.roles, 'employee'),
   }
 }
 

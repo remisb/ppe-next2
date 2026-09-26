@@ -2,14 +2,18 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
-// Service computes the administrator's dashboard.
+// Service computes the dashboards of the administrator, the manager and the
+// employee role (the staff who prepare orders).
 type Service struct {
 	repo Repository
 	now  func() time.Time
@@ -78,12 +82,7 @@ func (s *Service) Overview(ctx context.Context) (Overview, error) {
 		o.Confirmation.MedianDays = &d
 	}
 
-	o.Replacements.DueSoonDays = DueSoonDays
-	for i := range o.Replacements.Next {
-		r := &o.Replacements.Next[i]
-		r.RecordNumber = order.FormatRecordNumber(r.RecordSeq)
-		r.Overdue = !r.DueAt.After(now)
-	}
+	s.replacements(&o.Replacements, now)
 	return o, nil
 }
 
@@ -118,6 +117,54 @@ func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
 	o.Forecast = forecast(o.Forecast.Lines, s.limit)
 	o.Sizes = spread(f.SizeGroups)
 	return o, nil
+}
+
+// Employee is the dashboard of the employee role for userID, the signed-in
+// user: their own orders, and what the organisation needs ordered next.
+func (s *Service) Employee(ctx context.Context, userID uuid.UUID) (EmployeeOverview, error) {
+	if userID == uuid.Nil {
+		return EmployeeOverview{}, fmt.Errorf("%w: user is required", ErrInvalid)
+	}
+	now := s.now()
+	w := s.window(now)
+	o, err := s.repo.ReadEmployee(ctx, EmployeeWindow{
+		Now:         now,
+		UserID:      userID,
+		MonthStarts: w.MonthStarts,
+		DueBy:       w.DueBy,
+		Limit:       s.limit,
+	})
+	if err != nil {
+		return EmployeeOverview{}, err
+	}
+	o.GeneratedAt, o.Timezone = now, s.loc.String()
+	for i := range o.Months {
+		o.Months[i].Month = w.MonthStarts[i].In(s.loc).Format("2006-01")
+	}
+	for i := range o.Awaiting.Longest {
+		l := &o.Awaiting.Longest[i]
+		l.RecordNumber = order.FormatRecordNumber(l.RecordSeq)
+		l.Days = s.days(l.OrderedAt, now)
+	}
+	if len(o.Awaiting.Longest) > 0 {
+		d := o.Awaiting.Longest[0].Days
+		o.Awaiting.OldestDays = &d
+	}
+	for i := range o.RecentlyGiven {
+		o.RecentlyGiven[i].RecordNumber = order.FormatRecordNumber(o.RecentlyGiven[i].RecordSeq)
+	}
+	s.replacements(&o.Replacements, now)
+	return o, nil
+}
+
+// replacements fills the derived fields of r at now.
+func (s *Service) replacements(r *Replacements, now time.Time) {
+	r.DueSoonDays = DueSoonDays
+	for i := range r.Next {
+		x := &r.Next[i]
+		x.RecordNumber = order.FormatRecordNumber(x.RecordSeq)
+		x.Overdue = !x.DueAt.After(now)
+	}
 }
 
 // spread counts employees by the size Create Order would use for them.

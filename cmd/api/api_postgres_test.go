@@ -523,4 +523,22 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 			t.Errorf("manager body lacks %s: %s", want, body)
 		}
 	}
+
+	// So is the employee role's; it covers the signed-in user.
+	_, employeeTok := api.userWith(t, user.RoleEmployee)
+	for _, tok := range []string{adminTok, managerTok} {
+		if code := api.do(t, "GET", "/api/v1/dashboard/employee", tok, nil).Code; code != http.StatusForbidden {
+			t.Errorf("other role on the employee dashboard: %d, want 403", code)
+		}
+	}
+	rec = api.do(t, "GET", "/api/v1/dashboard/employee", employeeTok, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("employee: %d %s", rec.Code, rec.Body)
+	}
+	body = rec.Body.String()
+	for _, want := range []string{`"longest":[]`, `"recently_given":[]`, `"next":[]`, `"list":[]`, `"no_link":0`, `"oldest_days":null`, `"due_soon_days":30`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("employee body lacks %s: %s", want, body)
+		}
+	}
 }

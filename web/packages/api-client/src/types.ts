@@ -368,6 +368,54 @@ export interface DashboardReplacement {
   overdue: boolean
 }
 
+/**
+ * The employee role's dashboard (GET /api/v1/dashboard/employee, that role
+ * only): the signed-in user's own orders, and what to order next.
+ */
+export interface EmployeeDashboard {
+  generated_at: string
+  timezone: string
+  /** The user's ORDERED orders. */
+  awaiting: {
+    orders: number
+    items: number
+    value_cents: number
+    /** Orders whose employee has no usable confirmation link: never created, or expired or revoked. */
+    no_link: number
+    link_expired: number
+    oldest_days: number | null
+    /** The longest waiting, oldest first. */
+    longest: EmployeeDashboardWaiting[]
+  }
+  /** The user's orders per month, oldest first: ordered by date ordered, given by date given. */
+  months: { month: string; ordered: number; given: number; given_items: number }[]
+  /** The user's orders most recently given, newest first. */
+  recently_given: {
+    order_id: string
+    record_number: string
+    employee_id: string
+    employee_name: string
+    given_at: string
+    method: 'ELECTRONIC' | 'PAPER'
+    items: number
+    value_cents: number
+  }[]
+  /** Organisation-wide, as on the administrator's dashboard. */
+  replacements: Dashboard['replacements']
+  /** Live employees without a shoe size, or without both a clothing size and a height. */
+  missing_sizes: {
+    employees: number
+    list: { employee_id: string; employee_name: string; employee_code: string | null; clothing: boolean; shoes: boolean }[]
+  }
+}
+
+export interface EmployeeDashboardWaiting extends DashboardWaiting {
+  items: number
+  link: 'NONE' | 'ACTIVE' | 'EXPIRED'
+  /** Set for an active link. */
+  link_expires_at: string | null
+}
+
 /** The manager's dashboard (GET /api/v1/dashboard/manager, managers only): items, prices and purchasing. */
 export interface ManagerDashboard {
   generated_at: string

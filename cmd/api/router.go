@@ -15,6 +15,8 @@ var (
 	admins   = []string{user.RoleAdmin}
 	// managerRole is the manager role alone: its dashboard is not the administrator's.
 	managerRole = []string{user.RoleManager}
+	// employeeRole is the employee role alone, for its own dashboard.
+	employeeRole = []string{user.RoleEmployee}
 )
 
 // access is a route's authorization rule. roles nil with public false means

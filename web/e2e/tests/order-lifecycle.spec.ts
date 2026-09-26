@@ -277,6 +277,10 @@ test('Dashboard: the figures follow the orders', async () => {
   await page.goto('/manager')
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Manager Dashboard' })).toHaveCount(0)
+  // So is the Employee Dashboard.
+  await page.goto('/my-orders')
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Employee Dashboard' })).toHaveCount(0)
 })
 
 test('columns sort: History on the server across pages, other lists in place', async () => {
@@ -487,6 +491,39 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   ).toBe(true)
   await other.goto(webURL + '/dashboard')
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
+  await other.context().close()
+
+  // Add User with the default role: the employee role starts on the Employee
+  // Dashboard, covering only their own orders; the other dashboards are not theirs.
+  const eli = { name: 'Eli Employee', email: 'eli@example.com', password: 'eli-password-1' }
+  await page.getByRole('button', { name: 'Add User' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill(eli.name)
+  await dialog.getByLabel('Email').fill(eli.email)
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill(eli.password)
+  await dialog.getByLabel('Confirm password').fill(eli.password)
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(eli.name) })).toContainText('Employee')
+  other = await signInElsewhere(browser, eli.email, eli.password)
+  await expect(other.getByRole('heading', { name: 'Employee Dashboard' })).toBeVisible()
+  const eliNav = other.getByRole('navigation', { name: 'Main' })
+  await expect(eliNav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
+  await expect(eliNav.getByRole('link', { name: 'Users' })).toHaveCount(0)
+  await expect(other.getByText('None of your orders is waiting.')).toBeVisible()
+  await expect(other.getByRole('list', { name: 'Key figures' }).getByRole('listitem').filter({ hasText: 'Replacements due' })).toBeVisible()
+  await other.setViewportSize({ width: 375, height: 812 })
+  expect(
+    await other.evaluate(
+      () =>
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        [...document.querySelectorAll('[data-slot=table-container]')].every((t) => t.scrollWidth <= t.clientWidth),
+    ),
+    'the Employee Dashboard scrolls sideways',
+  ).toBe(true)
+  for (const path of ['/dashboard', '/manager']) {
+    await other.goto(webURL + path)
+    await expect(other.getByRole('heading', { name: 'Employee Dashboard' })).toBeVisible()
+  }
   await other.context().close()
 
   // Deactivated: can no longer sign in.

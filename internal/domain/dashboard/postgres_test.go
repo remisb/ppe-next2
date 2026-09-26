@@ -269,3 +269,102 @@ func TestPostgresManager(t *testing.T) {
 		t.Errorf("sizes = %+v", s)
 	}
 }
+
+// TestPostgresEmployee checks the order preparer's figures: only their own
+// orders, each waiting one with its link state, and the shared lists.
+func TestPostgresEmployee(t *testing.T) {
+	d := seedPG(t)
+	ctx := context.Background()
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		if _, err := d.pool.Exec(ctx, sql, args...); err != nil {
+			t.Fatalf("%s: %v", sql, err)
+		}
+	}
+	var manager uuid.UUID
+	if err := d.pool.QueryRow(ctx, `SELECT id FROM users WHERE email = 'm@example.com'`).Scan(&manager); err != nil {
+		t.Fatal(err)
+	}
+	order := func(emp, by uuid.UUID, orderedAt string, qty int, cents int64) uuid.UUID {
+		t.Helper()
+		id := uuid.New()
+		exec(`INSERT INTO orders (id, employee_id, employee_first_name, employee_last_name, status, ordered_at,
+				prepared_by_user_id, prepared_by_name, updated_at)
+			VALUES ($1, $2, 'Ona', 'X', 'ORDERED', $3, $4, 'Someone', $3)`, id, emp, utc(orderedAt), by)
+		exec(`INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity,
+				unit_price_cents, currency, service_period_months)
+			VALUES ($1, $2, 1, $3, 'Helmet', '', 'NONE', NULL, $4, $5, 'EUR', 24)`, uuid.New(), id, d.draft, qty, cents)
+		return id
+	}
+	helmet := order(d.ona, d.admin, "2026-09-12T08:00:00Z", 1, 3000)
+	order(d.ona, manager, "2026-09-13T08:00:00Z", 2, 3000) // someone else's
+	link := func(orderID uuid.UUID, created, expires string, revoked bool) {
+		t.Helper()
+		var rev *time.Time
+		if revoked {
+			r := utc(created).Add(time.Hour)
+			rev = &r
+		}
+		exec(`INSERT INTO order_confirmations (id, order_id, method, token_hash, expires_at, revoked_at, created_at, created_by_user_id)
+			VALUES ($1, $2, 'ELECTRONIC', $3, $4, $5, $6, $7)`, uuid.New(), orderID, uuid.NewString(), utc(expires), rev, utc(created), d.admin)
+	}
+	link(helmet, "2026-09-12T09:00:00Z", "2026-09-14T09:00:00Z", false) // expired
+	var onaGloves uuid.UUID
+	if err := d.pool.QueryRow(ctx, `SELECT id FROM orders WHERE status = 'ORDERED' AND employee_id = $1 AND prepared_by_user_id = $2
+		AND id <> $3`, d.ona, d.admin, helmet).Scan(&onaGloves); err != nil {
+		t.Fatal(err)
+	}
+	link(onaGloves, "2026-09-14T09:00:00Z", "2026-09-21T09:00:00Z", true)  // revoked for the next one
+	link(onaGloves, "2026-09-14T10:00:00Z", "2026-09-21T10:00:00Z", false) // active
+
+	svc := NewService(NewPostgresRepository(d.pool), WithClock(func() time.Time { return d.now }))
+	o, err := svc.Employee(ctx, d.admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	a := o.Awaiting
+	if a.Orders != 3 || a.Items != 7 || a.ValueCents != 9000 || a.NoLink != 1 || a.LinkExpired != 1 || *a.OldestDays != 5 || len(a.Longest) != 3 {
+		t.Fatalf("awaiting = %+v", a)
+	}
+	if l := a.Longest[0]; l.OrderID != d.waitOld || l.Link != LinkNone || l.LinkExpiresAt != nil || l.Items != 1 {
+		t.Errorf("first waiting = %+v", l)
+	}
+	if l := a.Longest[1]; l.OrderID != helmet || l.Link != LinkExpired || l.LinkExpiresAt != nil || l.ValueCents != 3000 {
+		t.Errorf("second waiting = %+v", l)
+	}
+	if l := a.Longest[2]; l.OrderID != onaGloves || l.Link != LinkActive || !l.LinkExpiresAt.Equal(utc("2026-09-21T10:00:00Z")) {
+		t.Errorf("third waiting = %+v", l)
+	}
+
+	if len(o.Months) != Months {
+		t.Fatalf("months = %d", len(o.Months))
+	}
+	sep, aug, jul := o.Months[11], o.Months[10], o.Months[9]
+	if sep != (MyMonth{Month: "2026-09", Ordered: 3, Given: 1, GivenItems: 10}) || aug != (MyMonth{Month: "2026-08", Ordered: 1}) ||
+		jul != (MyMonth{Month: "2026-07", Ordered: 2, Given: 2, GivenItems: 5}) || o.Months[0] != (MyMonth{Month: "2025-10"}) {
+		t.Errorf("months = %+v", o.Months)
+	}
+
+	if g := o.RecentlyGiven; len(g) != 5 || g[0].EmployeeID != d.ona || g[0].Method != "ELECTRONIC" || g[0].Items != 10 || g[0].ValueCents != 2000 ||
+		!g[4].GivenAt.Equal(utc("2024-01-12T08:00:00Z")) {
+		t.Errorf("recently given = %+v", g)
+	}
+	if r := o.Replacements; r.Overdue != 1 || r.DueSoon != 1 || len(r.Next) != 2 || r.Next[0].EmployeeID != d.jonas {
+		t.Errorf("replacements = %+v", r)
+	}
+	if m := o.MissingSizes; m.Employees != 1 || len(m.List) != 1 || m.List[0] != (EmployeeMissingSize{
+		EmployeeID: d.jonas, EmployeeName: "Jonas Petraitis", Shoes: true,
+	}) {
+		t.Errorf("missing sizes = %+v", m)
+	}
+
+	// Someone else sees only their own order.
+	o, err = svc.Employee(ctx, manager)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.Awaiting.Orders != 1 || o.Awaiting.Items != 2 || len(o.RecentlyGiven) != 0 || o.Months[11].Ordered != 1 {
+		t.Errorf("other user = %+v", o.Awaiting)
+	}
+}

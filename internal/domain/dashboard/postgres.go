@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -120,9 +121,15 @@ func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	return err
 }
 
-// readReplacements takes each live employee's most recent GIVEN line per item
-// and keeps those due before w.DueBy that are not already on an ORDERED order.
 func readReplacements(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
+	var err error
+	o.Replacements, err = queryReplacements(ctx, tx, w.Now, w.DueBy, w.Limit)
+	return err
+}
+
+// queryReplacements takes each live employee's most recent GIVEN line per item
+// and keeps those due before dueBy that are not already on an ORDERED order.
+func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, limit int) (Replacements, error) {
 	rows, err := tx.Query(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (o.employee_id, l.catalogue_item_id)
@@ -140,11 +147,11 @@ func readReplacements(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 		)
 		SELECT employee_id, name, code, catalogue_item_id, item_name, size, order_id, record_seq, given_at, due_at,
 			count(*) FILTER (WHERE due_at <= $2) OVER (), count(*) FILTER (WHERE due_at > $2) OVER ()
-		FROM due ORDER BY due_at, name, item_name LIMIT $3`, w.DueBy, w.Now, w.Limit)
+		FROM due ORDER BY due_at, name, item_name LIMIT $3`, dueBy, now, limit)
 	if err != nil {
-		return err
+		return Replacements{}, err
 	}
-	r := &o.Replacements
+	var r Replacements
 	r.Next, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (Replacement, error) {
 		var x Replacement
 		err := row.Scan(&x.EmployeeID, &x.EmployeeName, &x.EmployeeCode, &x.CatalogueItemID, &x.ItemName, &x.Size,
@@ -152,7 +159,7 @@ func readReplacements(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 		x.GivenAt, x.DueAt = x.GivenAt.UTC(), x.DueAt.UTC()
 		return x, err
 	})
-	return err
+	return r, err
 }
 
 func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
@@ -363,6 +370,125 @@ func readSizeGroups(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerF
 	f.SizeGroups, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (EmployeeSizes, error) {
 		var x EmployeeSizes
 		err := row.Scan(&x.ClothingSize, &x.HeightCm, &x.ShoeSize, &x.Employees)
+		return x, err
+	})
+	return err
+}
+
+// ReadEmployee runs the order preparer's queries in one read-only REPEATABLE READ transaction.
+func (r *PostgresRepository) ReadEmployee(ctx context.Context, w EmployeeWindow) (EmployeeOverview, error) {
+	var o EmployeeOverview
+	err := pgx.BeginTxFunc(ctx, r.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		for _, read := range []func(context.Context, pgx.Tx, EmployeeWindow, *EmployeeOverview) error{
+			readMyAwaiting, readMyMonths, readRecentlyGiven, readMissingSizes,
+		} {
+			if err := read(ctx, tx, w, &o); err != nil {
+				return err
+			}
+		}
+		var err error
+		o.Replacements, err = queryReplacements(ctx, tx, w.Now, w.DueBy, w.Limit)
+		return err
+	})
+	return o, err
+}
+
+// readMyAwaiting reads the user's ORDERED orders with the state of each one's
+// latest electronic confirmation link.
+func readMyAwaiting(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
+	rows, err := tx.Query(ctx, `
+		WITH mine AS (
+			SELECT o.id, o.record_seq, o.employee_id, o.employee_first_name || ' ' || o.employee_last_name AS name, o.ordered_at,
+				(SELECT coalesce(sum(l.quantity), 0) FROM order_lines l WHERE l.order_id = o.id) AS items,
+				`+lineTotal+` AS cents,
+				(SELECT c.expires_at FROM order_confirmations c
+					WHERE c.order_id = o.id AND c.method = 'ELECTRONIC' AND c.revoked_at IS NULL AND c.expires_at > $2
+					ORDER BY c.created_at DESC LIMIT 1) AS expires_at,
+				EXISTS (SELECT 1 FROM order_confirmations c WHERE c.order_id = o.id AND c.method = 'ELECTRONIC') AS linked
+			FROM orders o WHERE o.status = 'ORDERED' AND o.prepared_by_user_id = $1
+		)
+		SELECT id, record_seq, employee_id, name, ordered_at, items, cents,
+			CASE WHEN expires_at IS NOT NULL THEN 'ACTIVE' WHEN linked THEN 'EXPIRED' ELSE 'NONE' END, expires_at,
+			count(*) OVER (), coalesce(sum(items) OVER (), 0), coalesce(sum(cents) OVER (), 0)::bigint,
+			count(*) FILTER (WHERE NOT linked) OVER (), count(*) FILTER (WHERE linked AND expires_at IS NULL) OVER ()
+		FROM mine ORDER BY ordered_at, id LIMIT $3`, w.UserID, w.Now, w.Limit)
+	if err != nil {
+		return err
+	}
+	a := &o.Awaiting
+	a.Longest, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (MyWaiting, error) {
+		var x MyWaiting
+		err := row.Scan(&x.OrderID, &x.RecordSeq, &x.EmployeeID, &x.EmployeeName, &x.OrderedAt, &x.Items, &x.ValueCents,
+			&x.Link, &x.LinkExpiresAt, &a.Orders, &a.Items, &a.ValueCents, &a.NoLink, &a.LinkExpired)
+		x.OrderedAt = x.OrderedAt.UTC()
+		if x.LinkExpiresAt != nil {
+			t := x.LinkExpiresAt.UTC()
+			x.LinkExpiresAt = &t
+		}
+		return x, err
+	})
+	return err
+}
+
+// readMyMonths buckets the user's orders into the window's months: ordered by
+// ordered_at, given by given_at. Every month gets a row.
+func readMyMonths(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
+	n := len(w.MonthStarts) - 1
+	rows, err := tx.Query(ctx, `
+		WITH m AS (
+			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
+		), t AS (
+			SELECT o.ordered_at, o.given_at, (SELECT sum(l.quantity) FROM order_lines l WHERE l.order_id = o.id) AS qty
+			FROM orders o
+			WHERE o.prepared_by_user_id = $4 AND (o.ordered_at >= $3 OR o.given_at >= $3)
+		)
+		SELECT
+			(SELECT count(*) FROM t WHERE t.ordered_at >= m.s AND t.ordered_at < m.e),
+			(SELECT count(*) FROM t WHERE t.given_at >= m.s AND t.given_at < m.e),
+			(SELECT coalesce(sum(qty), 0)::bigint FROM t WHERE t.given_at >= m.s AND t.given_at < m.e)
+		FROM m ORDER BY m.i`, w.MonthStarts[:n], w.MonthStarts[1:], w.MonthStarts[0], w.UserID)
+	if err != nil {
+		return err
+	}
+	o.Months, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (MyMonth, error) {
+		var x MyMonth
+		err := row.Scan(&x.Ordered, &x.Given, &x.GivenItems)
+		return x, err
+	})
+	return err
+}
+
+func readRecentlyGiven(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
+	rows, err := tx.Query(ctx, `SELECT o.id, o.record_seq, o.employee_id, o.employee_first_name || ' ' || o.employee_last_name,
+			o.given_at, o.confirmation_method,
+			(SELECT coalesce(sum(l.quantity), 0) FROM order_lines l WHERE l.order_id = o.id), `+lineTotal+`
+		FROM orders o WHERE o.status = 'GIVEN' AND o.prepared_by_user_id = $1
+		ORDER BY o.given_at DESC, o.id LIMIT $2`, w.UserID, w.Limit)
+	if err != nil {
+		return err
+	}
+	o.RecentlyGiven, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (GivenOrder, error) {
+		var x GivenOrder
+		err := row.Scan(&x.OrderID, &x.RecordSeq, &x.EmployeeID, &x.EmployeeName, &x.GivenAt, &x.Method, &x.Items, &x.ValueCents)
+		x.GivenAt = x.GivenAt.UTC()
+		return x, err
+	})
+	return err
+}
+
+func readMissingSizes(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
+	rows, err := tx.Query(ctx, `SELECT id, first_name || ' ' || last_name, code,
+			clothing_size IS NULL AND height_cm IS NULL, shoe_size IS NULL, count(*) OVER ()
+		FROM employees
+		WHERE deleted_at IS NULL AND (shoe_size IS NULL OR (clothing_size IS NULL AND height_cm IS NULL))
+		ORDER BY lower(last_name), lower(first_name), id LIMIT $1`, w.Limit)
+	if err != nil {
+		return err
+	}
+	m := &o.MissingSizes
+	m.List, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (EmployeeMissingSize, error) {
+		var x EmployeeMissingSize
+		err := row.Scan(&x.EmployeeID, &x.EmployeeName, &x.EmployeeCode, &x.Clothing, &x.Shoes, &m.Employees)
 		return x, err
 	})
 	return err

@@ -8,6 +8,7 @@ describe('router', () => {
       'home',
       'dashboard',
       'managerDashboard',
+      'employeeDashboard',
       'createOrder',
       'employees',
       'catalogue',
@@ -29,20 +30,27 @@ describe('router', () => {
     expect(parsePath('/confirm/')).toEqual({ name: 'home' })
   })
   it('starts each role on its own dashboard, and keeps each dashboard to its role', () => {
-    const admin = { isAdmin: true, isManager: false }
-    const manager = { isAdmin: false, isManager: true }
-    const both = { isAdmin: true, isManager: true }
-    const employee = { isAdmin: false, isManager: false }
+    const admin = { isAdmin: true, isManager: false, isEmployee: false }
+    const manager = { isAdmin: false, isManager: true, isEmployee: false }
+    const employee = { isAdmin: false, isManager: false, isEmployee: true }
+    const both = { isAdmin: true, isManager: true, isEmployee: false }
+    const managerEmployee = { isAdmin: false, isManager: true, isEmployee: true }
+    const none = { isAdmin: false, isManager: false, isEmployee: false }
     expect(startRoute({ name: 'home' }, admin)).toEqual({ name: 'dashboard' })
     expect(startRoute({ name: 'home' }, manager)).toEqual({ name: 'managerDashboard' })
+    expect(startRoute({ name: 'home' }, employee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'home' }, both)).toEqual({ name: 'dashboard' })
-    expect(startRoute({ name: 'home' }, employee)).toEqual({ name: 'createOrder' })
+    expect(startRoute({ name: 'home' }, managerEmployee)).toEqual({ name: 'managerDashboard' })
+    expect(startRoute({ name: 'home' }, none)).toEqual({ name: 'createOrder' })
 
     expect(startRoute({ name: 'dashboard' }, manager)).toEqual({ name: 'managerDashboard' })
-    expect(startRoute({ name: 'dashboard' }, employee)).toEqual({ name: 'createOrder' })
+    expect(startRoute({ name: 'dashboard' }, employee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'managerDashboard' }, admin)).toEqual({ name: 'dashboard' })
-    expect(startRoute({ name: 'managerDashboard' }, employee)).toEqual({ name: 'createOrder' })
+    expect(startRoute({ name: 'managerDashboard' }, employee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'managerDashboard' }, both)).toEqual({ name: 'managerDashboard' })
+    expect(startRoute({ name: 'employeeDashboard' }, admin)).toEqual({ name: 'dashboard' })
+    expect(startRoute({ name: 'employeeDashboard' }, manager)).toEqual({ name: 'managerDashboard' })
+    expect(startRoute({ name: 'employeeDashboard' }, managerEmployee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'history' }, employee)).toEqual({ name: 'history' })
   })
 })

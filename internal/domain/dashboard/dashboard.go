@@ -1,6 +1,6 @@
-// Package dashboard is the administrator's overview: read-only figures over
-// orders, employees, the catalogue, item sets and users. It owns no table and
-// writes nothing. Money, items and names of past orders come from the order
+// Package dashboard holds the role dashboards (administrator, manager, employee):
+// read-only figures over orders, employees, the catalogue, item sets and users.
+// It owns no table and writes nothing. Money, items and names of past orders come from the order
 // snapshots, as in History; only the setup counts read live master data.
 package dashboard
 

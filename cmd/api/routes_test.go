@@ -187,6 +187,9 @@ type stubDashboard struct{}
 func (stubDashboard) Read(context.Context, dashboard.Window) (dashboard.Overview, error) {
 	return dashboard.Overview{}, nil
 }
+func (stubDashboard) ReadEmployee(context.Context, dashboard.EmployeeWindow) (dashboard.EmployeeOverview, error) {
+	return dashboard.EmployeeOverview{}, nil
+}
 func (stubDashboard) ReadManager(context.Context, dashboard.ManagerWindow) (dashboard.ManagerFigures, error) {
 	return dashboard.ManagerFigures{}, nil
 }
@@ -301,6 +304,7 @@ var policy = map[string]string{
 	"GET /api/v1/orders/{id}":                       "any",
 	"GET /api/v1/dashboard":                         "admins",
 	"GET /api/v1/dashboard/manager":                 "manager",
+	"GET /api/v1/dashboard/employee":                "employee",
 }
 
 var allowedRoles = map[string][]string{
@@ -308,6 +312,7 @@ var allowedRoles = map[string][]string{
 	"managers": {user.RoleAdmin, user.RoleManager},
 	"admins":   {user.RoleAdmin},
 	"manager":  {user.RoleManager},
+	"employee": {user.RoleEmployee},
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)

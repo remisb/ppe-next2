@@ -1,14 +1,18 @@
+import type { Dashboard } from '@ppe/api-client'
 import { AlertTriangle } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { EmptyState } from '@/components/states'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { barPercent, monthLabel, niceCeiling } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
-import { cn } from '@/lib/utils'
+import { type Route, linkTo } from '@/lib/router'
+import { cn, formatSize } from '@/lib/utils'
 
 /*
- * Building blocks shared by the administrator's and the manager's
- * dashboards. Charts are plain elements drawn for the eye (aria-hidden); each
+ * Building blocks shared by the dashboards. Charts are plain elements drawn for the eye (aria-hidden); each
  * carries its figures as text or a visually hidden table for screen readers.
  */
 
@@ -185,5 +189,71 @@ export function BarList({ items }: { items: { key: string; label: string; value:
         </li>
       ))}
     </ol>
+  )
+}
+
+/**
+ * Items due for replacement, soonest first, with the employee and the receipt
+ * they were given on. Shared by the administrator's and the employee role's dashboards.
+ */
+export function ReplacementsPanel({
+  replacements: r,
+  timezone,
+  navigate,
+}: {
+  replacements: Dashboard['replacements']
+  timezone: string
+  navigate: (to: Route) => void
+}) {
+  const more = r.overdue + r.due_soon - r.next.length
+  return (
+    <Panel
+      title="Replacements due"
+      description={`Items whose service period has ended or ends within ${r.due_soon_days} days, counted from the date given and not already on an open order.`}
+    >
+      {r.next.length === 0 ? (
+        <EmptyState>Nothing is due for replacement.</EmptyState>
+      ) : (
+        <Table stack>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Due</TableHead>
+              <TableHead>Receipt</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {r.next.map((x) => (
+              <TableRow key={`${x.employee_id}-${x.catalogue_item_id}`}>
+                <TableCell className="stacked:mb-1">
+                  <a {...linkTo({ name: 'employee', id: x.employee_id }, navigate)} className={inlineLink}>
+                    {x.employee_name}
+                  </a>
+                  {x.employee_code ? <span className="block text-xs text-muted-foreground">{x.employee_code}</span> : null}
+                </TableCell>
+                <TableCell label="Item" className="whitespace-normal">
+                  {x.item_name}
+                  {x.size ? <span className="text-muted-foreground"> · {formatSize(x.size)}</span> : null}
+                </TableCell>
+                <TableCell label="Due" className="tabular-nums">
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    {formatDate(x.due_at, timezone)}
+                    <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? 'Overdue' : 'Due soon'}</Badge>
+                  </span>
+                </TableCell>
+                <TableCell label="Receipt">
+                  <a {...linkTo({ name: 'record', id: x.order_id }, navigate)} aria-label={`Receipt ${x.record_number}`} className={inlineLink}>
+                    {x.record_number}
+                  </a>
+                  <span className="block text-xs text-muted-foreground">given {formatDate(x.given_at, timezone)}</span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {more > 0 ? <p className="mt-3 text-xs text-muted-foreground">And {more} more, due later.</p> : null}
+    </Panel>
   )
 }

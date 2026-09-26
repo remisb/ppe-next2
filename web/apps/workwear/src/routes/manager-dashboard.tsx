@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useApi } from '@/lib/api'
+import { useApi, useSession } from '@/lib/api'
 import { changeText, monthLabel, percentChange, plural } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
@@ -23,6 +23,7 @@ type Navigate = (to: Route) => void
  */
 export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
+  const { isEmployee } = useSession()
   const board = useLoad(() => client.managerDashboard())
   const d = board.data
 
@@ -36,9 +37,17 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
             : 'Items, prices and what will need buying.'
         }
         actions={
-          <Button variant="outline" onClick={board.reload} disabled={board.loading}>
-            <RefreshCw aria-hidden className={cn(board.loading && 'animate-spin')} /> Refresh
-          </Button>
+          <>
+            {/* A manager who also prepares orders reaches that dashboard from here, not from a tab. */}
+            {isEmployee ? (
+              <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
+                Employee Dashboard <ArrowRight aria-hidden />
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={board.reload} disabled={board.loading}>
+              <RefreshCw aria-hidden className={cn(board.loading && 'animate-spin')} /> Refresh
+            </Button>
+          </>
         }
       />
       {board.error ? (
