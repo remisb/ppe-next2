@@ -20,6 +20,7 @@ describe('router', () => {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
     expect(parsePath(pathOf({ name: 'employee', id: 'a/b' }))).toEqual({ name: 'employee', id: 'a/b' })
+    expect(parsePath(pathOf({ name: 'catalogueItem', id: 'x/y' }))).toEqual({ name: 'catalogueItem', id: 'x/y' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
   })

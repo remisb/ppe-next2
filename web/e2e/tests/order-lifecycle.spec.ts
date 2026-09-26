@@ -76,6 +76,30 @@ test('Item Sets: a set of item references and default quantities', async () => {
   await expect(page.getByText('Protective gloves × 10')).toBeVisible()
 })
 
+test('Item Catalogue: a row opens the item at its own address', async () => {
+  await openTab('Item Catalogue')
+  // Anywhere on the row opens it, not only the name's link.
+  await page.getByRole('row', { name: /Protective gloves/ }).getByRole('cell', { name: 'Nitrile' }).click()
+  await expect(page).toHaveURL(/\/catalogue\/[^/]+$/)
+  await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Item Catalogue' })).toHaveAttribute('aria-current', 'page')
+  const details = page.getByRole('definition')
+  await expect(details.filter({ hasText: '€2.50' })).toBeVisible()
+  await expect(details.filter({ hasText: 'No size' })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Starter kit' })).toContainText('× 10')
+  // The address works on its own (a bookmark or a reload).
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
+
+  // An item missing its price says why it cannot be ordered.
+  await page.getByRole('button', { name: 'Item Catalogue' }).click()
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  await expect(page.getByRole('note')).toContainText('cannot be ordered')
+  await expect(page.getByText('No item set holds this item.')).toBeVisible()
+  await page.getByRole('button', { name: 'Item Catalogue' }).click()
+  await expect(page.getByRole('heading', { name: 'Item Catalogue' })).toBeVisible()
+})
+
 test('Create Order: add a new employee from Assigned to and apply the set', async () => {
   await openTab('Create Order')
   await expect(page.getByRole('button', { name: 'Apply Item Set' })).toBeDisabled()
@@ -371,6 +395,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
   await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
   expect(await fits(), 'the employee page scrolls sideways').toBe(true)
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Safety shoes' }).click()
+  await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
+  expect(await fits(), 'the item page scrolls sideways').toBe(true)
 
   // The order's actions stay in reach however long the order is.
   await openTab('Create Order')
@@ -410,6 +438,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
     await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
     expect(await fits(), `the employee page scrolls sideways at ${width}px`).toBe(true)
+    await openTab('Item Catalogue')
+    await page.getByRole('link', { name: 'Safety shoes' }).click()
+    await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
+    expect(await fits(), `the item page scrolls sideways at ${width}px`).toBe(true)
   }
 
   await page.setViewportSize(desktop)

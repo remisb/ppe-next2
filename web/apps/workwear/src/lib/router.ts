@@ -17,6 +17,8 @@ export type Route =
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
   | { name: 'catalogue' }
+  /** One catalogue item: its current values and the item sets that hold it. */
+  | { name: 'catalogueItem'; id: string }
   | { name: 'itemSets' }
   /** User accounts; administrators only. */
   | { name: 'users' }
@@ -48,6 +50,8 @@ export function parsePath(pathname: string): Route {
   }
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
+  const item = /^\/catalogue\/([^/]+)$/.exec(path)
+  if (item?.[1]) return { name: 'catalogueItem', id: decodeURIComponent(item[1]) }
   const record = /^\/orders\/([^/]+)\/record$/.exec(path)
   if (record?.[1]) return { name: 'record', id: decodeURIComponent(record[1]) }
   const confirm = /^\/confirm\/([^/]+)$/.exec(path)
@@ -59,6 +63,8 @@ export function pathOf(route: Route): string {
   switch (route.name) {
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
+    case 'catalogueItem':
+      return `/catalogue/${encodeURIComponent(route.id)}`
     case 'record':
       return `/orders/${encodeURIComponent(route.id)}/record`
     case 'confirm':

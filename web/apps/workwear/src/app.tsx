@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
+import { CatalogueItemPage } from './routes/catalogue-item'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
 import { EmployeePage } from './routes/employee'
@@ -38,7 +39,8 @@ const employeeTab = { route: { name: 'employeeDashboard' }, label: 'Dashboard', 
 const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
 /**
- * A record belongs to History and an employee to Employees, so those stay the
+ * A record belongs to History, an employee to Employees and an item to Item
+ * Catalogue, so those stay the
  * current section; so does a user's one Dashboard tab for another role's
  * dashboard opened from it.
  */
@@ -47,6 +49,7 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
     current === tab ||
     (current === 'record' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
+    (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
     (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard'))
   )
@@ -188,7 +191,10 @@ export function App() {
         {route.name === 'createOrder' ? <CreateOrder /> : null}
         {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
-        {route.name === 'catalogue' ? <Catalogue /> : null}
+        {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
+        {route.name === 'catalogueItem' ? (
+          <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />
+        ) : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}

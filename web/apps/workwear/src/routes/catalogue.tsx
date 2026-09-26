@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths, parseEuro } from '@/lib/utils'
@@ -33,7 +34,7 @@ function statusRank(i: CatalogueItem): number {
   return (i.active ? 0 : 2) + (i.unit_price_cents === null || i.service_period_months === null ? 1 : 0)
 }
 
-export function Catalogue() {
+export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const { canManageItems } = useSession()
   const items = useLoad(() => client.catalogue.list())
@@ -103,8 +104,21 @@ export function Catalogue() {
           </TableHeader>
           <TableBody>
             {shown.map((i) => (
-              <TableRow key={i.id} className={i.active ? undefined : 'text-muted-foreground'}>
-                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">{i.name}</TableCell>
+              <TableRow
+                key={i.id}
+                className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50', !i.active && 'text-muted-foreground')}
+                // The whole row opens the item; the name is the real link, for keyboards,
+                // screen readers and "open in new tab". The row's own buttons keep their action.
+                onClick={(ev) => {
+                  if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                  navigate({ name: 'catalogueItem', id: i.id })
+                }}
+              >
+                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+                  <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                    {i.name}
+                  </a>
+                </TableCell>
                 <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>
                   {i.details || '—'}
                 </TableCell>
@@ -144,7 +158,8 @@ export function Catalogue() {
   )
 }
 
-function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'new' | null; onClose: () => void; onSaved: () => void }) {
+/** Add Item and Edit Item; also used on the item's own page. */
+export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'new' | null; onClose: () => void; onSaved: () => void }) {
   const { client } = useApi()
   const existing = item !== 'new' && item !== null ? item : undefined
   const [name, setName] = useState('')

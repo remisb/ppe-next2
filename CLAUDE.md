@@ -12,7 +12,7 @@ catalogue, item sets, orders + snapshot lines, confirmations), `internal/audit`,
 Slice 2 — employee and catalogue services with routes and audit events — and Slice 3:
 item sets, Create Order resolution (`order/resolve.go`, read-only), and the
 `web/apps/workwear` app (Create Order, Employees with a per-employee page of items given,
-Item Catalogue, Item Sets, and Users for admins) — and
+Item Catalogue with a per-item page, Item Sets, and Users for admins) — and
 Slice 4: Mark as Ordered (`POST /api/v1/orders`, snapshot copy in one transaction) and
 Copy for WhatsApp — and Slice 5: History (`GET /api/v1/orders`, query-parameter filters
 in the organisation timezone `API_ORG_TIMEZONE`, server-computed `usage_months`).
