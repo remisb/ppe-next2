@@ -47,7 +47,9 @@ test('sign in', async () => {
   await page.getByLabel('Email').fill(admin.email)
   await page.getByLabel('Password').fill(admin.password)
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  // An administrator starts on the Dashboard; an empty database still gives a whole one.
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByText('No order is waiting for confirmation.')).toBeVisible()
 })
 
 test('Item Catalogue: items with and without a price', async () => {
@@ -255,6 +257,24 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
 
+test('Dashboard: the figures follow the orders', async () => {
+  await openTab('Dashboard')
+  await page.getByRole('button', { name: 'Refresh' }).click()
+  const figures = page.getByRole('list', { name: 'Key figures' })
+  // Both orders are given: €114.98 + €59.99, 13 items (1 + 1 + 10, then 1).
+  await expect(figures.getByRole('listitem').filter({ hasText: 'Awaiting confirmation' })).toContainText('Every order is confirmed.')
+  await expect(figures.getByRole('listitem').filter({ hasText: /^Given in/ })).toContainText('€174.97')
+  await expect(figures.getByRole('listitem').filter({ hasText: /^Given in/ })).toContainText('13 items in 2 orders')
+  await expect(page.getByRole('table', { name: 'Value ordered and given per month' })).toContainText('€174.97 in 2 orders')
+  await expect(page.getByText('Electronic 1 (50%)')).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Protective gloves' })).toContainText('10 · €25.00')
+  // Safety helmet has no price, which Mark as Ordered refuses; the row leads to the catalogue.
+  const catalogue = page.getByRole('link', { name: /Catalogue items/ })
+  await expect(catalogue).toContainText('1 without a price or service period')
+  await catalogue.click()
+  await expect(page.getByRole('heading', { name: 'Item Catalogue' })).toBeVisible()
+})
+
 test('columns sort: History on the server across pages, other lists in place', async () => {
   await openTab('History')
   const records = async () => (await page.getByRole('row').filter({ hasText: /WE-\d{6}/ }).allTextContents()).map((t) => /WE-\d{6}/.exec(t)![0])
@@ -326,6 +346,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
 
   // Each screen is measured once its data is in: a table measured while loading always fits.
   for (const [tab, content] of [
+    ['Dashboard', 'Spending by month'],
     ['History', recordNumber],
     ['Employees', 'Ona Kazlauskienė'],
     ['Item Catalogue', 'Protective gloves'],
@@ -367,6 +388,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   for (const width of [768, 920, 1100, desktop.width]) {
     await page.setViewportSize({ width, height: 900 })
     for (const [tab, content] of [
+      ['Dashboard', 'Spending by month'],
       ['History', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
@@ -436,11 +458,16 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(dialog.getByRole('checkbox', { name: /^Administrator/ })).toBeDisabled()
   await dialog.getByRole('button', { name: 'Cancel' }).click()
 
-  // A manager signs in and has no Users tab.
+  // A manager signs in on Create Order and has no Users or Dashboard tab; the
+  // Dashboard's address shows Create Order too.
   let other = await signInElsewhere(browser, mia.email, mia.password)
   const nav = other.getByRole('navigation', { name: 'Main' })
+  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Item Catalogue' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Users' })).toHaveCount(0)
+  await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveCount(0)
+  await other.goto(webURL + '/dashboard')
+  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
   await other.context().close()
 
   // Deactivated: can no longer sign in.

@@ -19,7 +19,9 @@ in the organisation timezone `API_ORG_TIMEZONE`, server-computed `usage_months`)
 — and Slice 6: confirmation links (hashed tokens, sent in request bodies), paper
 confirmation, idempotent ORDERED → GIVEN, and the locked bilingual receipt with document
 hash and A4 print (`order/confirmation.go`, `order/receipt.go`, `web/.../routes/confirm.tsx`).
-The public `/confirm/<token>` page renders before the sign-in gate. Slice 7 added the
+The public `/confirm/<token>` page renders before the sign-in gate. An administrator starts on the
+Dashboard (`internal/domain/dashboard`, read-only figures, `GET /api/v1/dashboard`, admins
+only; spec `docs/specs/dashboard-service.md`); everyone else starts on Create Order. Slice 7 added the
 Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/testing.md`,
 which maps every manual §7 rule and status transition to its tests.
 

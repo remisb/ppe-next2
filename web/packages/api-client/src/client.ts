@@ -3,6 +3,7 @@ import type {
   CatalogueItem,
   CatalogueItemInput,
   ConfirmationLink,
+  Dashboard,
   Employee,
   EmployeeInput,
   EmployeeSizesInput,
@@ -76,6 +77,8 @@ export function createClient(options: ClientOptions) {
       request<void>('PUT', '/api/v1/users/me/password', { current_password: currentPassword, new_password: newPassword }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
+    /** The administrator's dashboard; admins only. */
+    dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
 
     /** User accounts: listing is admin or manager, every change admin only. */
     users: {

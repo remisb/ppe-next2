@@ -57,6 +57,14 @@ describe('createClient', () => {
     expect(f.mock.calls[1]![1]?.body).toBe('{"password":"new-pass-1"}')
   })
 
+  it('reads the dashboard', async () => {
+    const f = fakeFetch(200, '{"months":[]}')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    await client.dashboard()
+    expect(f.mock.calls[0]![0]).toBe('/api/v1/dashboard')
+    expect(f.mock.calls[0]![1]?.method).toBe('GET')
+  })
+
   it('encodes path segments', async () => {
     const f = fakeFetch(200, '[]')
     const client = createClient({ getToken: () => null, fetch: f as unknown as typeof fetch })

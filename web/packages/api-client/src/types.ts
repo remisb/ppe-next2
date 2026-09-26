@@ -293,3 +293,77 @@ export interface ConfirmationLink {
   url: string
   expires_at: string
 }
+
+/** The administrator's dashboard (GET /api/v1/dashboard, admins only). Money and items come from order snapshots. */
+export interface Dashboard {
+  generated_at: string
+  /** The organisation's timezone; months and day counts follow its calendar. */
+  timezone: string
+  awaiting: {
+    /** ORDERED orders: ordered, receipt not yet confirmed. */
+    orders: number
+    value_cents: number
+    oldest_days: number | null
+    /** The longest waiting, oldest first. */
+    longest: DashboardWaiting[]
+  }
+  /** Twelve calendar months, oldest first; the last is the current month. */
+  months: DashboardMonth[]
+  confirmation: {
+    window_days: number
+    given: number
+    electronic: number
+    paper: number
+    /** Median days from ordered to given, one decimal; null when none were given. */
+    median_days: number | null
+  }
+  /** Items by quantity given over the twelve months. */
+  top_items: { catalogue_item_id: string; item_name: string; quantity: number; value_cents: number }[]
+  /** Items whose service period has ended or ends within due_soon_days, and not already reordered. */
+  replacements: { due_soon_days: number; overdue: number; due_soon: number; next: DashboardReplacement[] }
+  setup: {
+    employees: number
+    /** No shoe size, or neither a clothing size nor a height. */
+    employees_missing_sizes: number
+    catalogue_active: number
+    /** Active items without a price or service period: Mark as Ordered refuses them. */
+    catalogue_unpriced: number
+    item_sets_active: number
+    users: number
+    admins: number
+  }
+}
+
+export interface DashboardWaiting {
+  order_id: string
+  record_number: string
+  employee_id: string
+  employee_name: string
+  ordered_at: string
+  days: number
+  value_cents: number
+}
+
+export interface DashboardMonth {
+  /** YYYY-MM */
+  month: string
+  ordered_orders: number
+  ordered_cents: number
+  given_orders: number
+  given_items: number
+  given_cents: number
+}
+
+export interface DashboardReplacement {
+  employee_id: string
+  employee_name: string
+  employee_code: string | null
+  catalogue_item_id: string
+  item_name: string
+  size: string | null
+  order_id: string
+  record_number: string
+  given_at: string
+  due_at: string
+  overdue: boolean
+}

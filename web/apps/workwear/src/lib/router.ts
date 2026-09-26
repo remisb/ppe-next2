@@ -3,6 +3,10 @@ import { type MouseEvent, useCallback, useEffect, useState } from 'react'
 import { basePath, stripBase } from '@ppe/routing'
 
 export type Route =
+  /** The root: the signed-in user's start screen, the Dashboard for administrators and Create Order for everyone else. */
+  | { name: 'home' }
+  /** The administrator's dashboard. */
+  | { name: 'dashboard' }
   | { name: 'createOrder' }
   | { name: 'history' }
   | { name: 'employees' }
@@ -19,6 +23,8 @@ export type Route =
   | { name: 'confirm'; token: string }
 
 const fixed = {
+  home: '/',
+  dashboard: '/dashboard',
   createOrder: '/orders/new',
   history: '/history',
   employees: '/employees',
@@ -28,7 +34,7 @@ const fixed = {
   account: '/account',
 } as const
 
-/** Unknown paths (stale bookmarks) land on Create Order, the app's main screen. */
+/** Unknown paths (stale bookmarks) land on the start screen, as the root does. */
 export function parsePath(pathname: string): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
   for (const [name, p] of Object.entries(fixed)) {
@@ -40,7 +46,7 @@ export function parsePath(pathname: string): Route {
   if (record?.[1]) return { name: 'record', id: decodeURIComponent(record[1]) }
   const confirm = /^\/confirm\/([^/]+)$/.exec(path)
   if (confirm?.[1]) return { name: 'confirm', token: decodeURIComponent(confirm[1]) }
-  return { name: 'createOrder' }
+  return { name: 'home' }
 }
 
 export function pathOf(route: Route): string {
@@ -100,4 +106,16 @@ export function linkTo(to: Route, navigate: (to: Route) => void) {
       navigate(to)
     },
   }
+}
+
+/**
+ * The screen to show for route. The root is the start screen: the Dashboard
+ * for administrators, Create Order for everyone else. The Dashboard is
+ * administrators' only, so anyone else asking for it gets their start screen.
+ */
+export function startRoute(route: Route, isAdmin: boolean): Route {
+  if (route.name === 'home' || (route.name === 'dashboard' && !isAdmin)) {
+    return isAdmin ? { name: 'dashboard' } : { name: 'createOrder' }
+  }
+  return route
 }

@@ -1,12 +1,13 @@
-import { ClipboardList, HardHat, History as HistoryIcon, LogOut, Package, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { ClipboardList, HardHat, History as HistoryIcon, LayoutDashboard, LogOut, Package, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 
 import { useApi } from '@/lib/api'
-import { type Route, canGoBack, linkTo, useRouter } from '@/lib/router'
+import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
 import { cn } from '@/lib/utils'
 
 import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
 import { CreateOrder } from './routes/create-order'
+import { Dashboard } from './routes/dashboard'
 import { EmployeePage } from './routes/employee'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
@@ -23,7 +24,8 @@ const tabs: { route: Route; label: string; short: string; icon: typeof Users }[]
   { route: { name: 'catalogue' }, label: 'Item Catalogue', short: 'Catalogue', icon: Shirt },
   { route: { name: 'itemSets' }, label: 'Item Sets', short: 'Sets', icon: Package },
 ]
-/** Shown to administrators only, after the everyday sections. */
+/** Administrators only: the Dashboard first, as their start screen, and Users after the everyday sections. */
+const dashboardTab = { route: { name: 'dashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
 const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
 /** A record belongs to History and an employee to Employees, so those stay the current section. */
@@ -49,19 +51,21 @@ const navItem = cn(
 )
 /** The icon's pill is the phone and rail's active marker; the sidebar highlights the whole row. */
 const navIcon = cn(
-  'flex h-8 w-14 items-center justify-center rounded-full transition-colors lg:h-auto lg:w-auto',
+  // w-full up to w-14: an administrator's seven phone tabs are narrower than the pill.
+  'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-colors lg:h-auto lg:w-auto lg:max-w-none',
   'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent lg:group-hover:bg-transparent lg:group-aria-[current=page]:bg-transparent',
 )
 
 export function App() {
   const { session, signOut } = useApi()
-  const { route, navigate } = useRouter()
+  const { route: asked, navigate } = useRouter()
 
   // The public confirmation page is checked before the session gate: its
   // visitor is an employee with a link, not a signed-in user.
-  if (route.name === 'confirm') return <ConfirmPage token={route.token} />
+  if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
   if (!session) return <SignIn />
-  const shownTabs = session.canManageUsers ? [...tabs, usersTab] : tabs
+  const route = startRoute(asked, session.isAdmin)
+  const shownTabs = session.isAdmin ? [dashboardTab, ...tabs, usersTab] : tabs
 
   const link = (to: Route) => linkTo(to, navigate)
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
@@ -99,8 +103,8 @@ export function App() {
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none lg:p-3',
-            // One column per section: six for an administrator, whose extra tab is Users.
-            shownTabs.length > 5 ? 'grid-cols-6' : 'grid-cols-5',
+            // One column per section: seven for an administrator, whose extra tabs are Dashboard and Users.
+            shownTabs.length > 5 ? 'grid-cols-7' : 'grid-cols-5',
           )}
         >
           {shownTabs.map(({ route: r, label, short, icon: Icon }) => (
@@ -113,7 +117,7 @@ export function App() {
               <span className={navIcon}>
                 <Icon aria-hidden className="size-5 lg:size-4" />
               </span>
-              <span aria-hidden className="lg:hidden">
+              <span aria-hidden className="max-w-full truncate px-0.5 lg:hidden">
                 {short}
               </span>
               <span className="sr-only lg:not-sr-only">{label}</span>
@@ -150,6 +154,7 @@ export function App() {
           'md:px-6 md:py-8 lg:px-10 print:max-w-none print:p-0',
         )}
       >
+        {route.name === 'dashboard' ? <Dashboard navigate={navigate} /> : null}
         {route.name === 'createOrder' ? <CreateOrder /> : null}
         {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}

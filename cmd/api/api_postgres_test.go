@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
@@ -42,6 +44,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
+		dashboard.NewPostgresRepository(pool),
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123")
 	if err != nil {
@@ -474,5 +477,35 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 	pool.QueryRow(context.Background(), `SELECT count(*) FROM order_confirmations WHERE token_hash = $1`, token).Scan(&n)
 	if n != 0 {
 		t.Error("plaintext token stored")
+	}
+}
+
+// An empty database gives a complete dashboard: twelve zero months and empty
+// lists (never null), so the page needs no special case for a new install.
+func TestPostgresDashboardHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, adminTok := api.userWith(t, user.RoleAdmin)
+	_, managerTok := api.userWith(t, user.RoleManager)
+
+	if code := api.do(t, "GET", "/api/v1/dashboard", managerTok, nil).Code; code != http.StatusForbidden {
+		t.Errorf("manager: %d, want 403", code)
+	}
+	rec := api.do(t, "GET", "/api/v1/dashboard", adminTok, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("admin: %d %s", rec.Code, rec.Body)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{`"longest":[]`, `"top_items":[]`, `"next":[]`, `"timezone":"UTC"`, `"oldest_days":null`, `"users":3`, `"admins":2`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %s: %s", want, body)
+		}
+	}
+	var out struct {
+		Months []struct {
+			Month string `json:"month"`
+		} `json:"months"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil || len(out.Months) != 12 || out.Months[11].Month != time.Now().UTC().Format("2006-01") {
+		t.Errorf("months = %+v (%v)", out.Months, err)
 	}
 }

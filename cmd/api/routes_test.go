@@ -20,6 +20,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
@@ -181,6 +182,12 @@ func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, 
 	return order.Confirmation{}, order.ErrNotFound
 }
 
+type stubDashboard struct{}
+
+func (stubDashboard) Read(context.Context, dashboard.Window) (dashboard.Overview, error) {
+	return dashboard.Overview{}, nil
+}
+
 var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 func testConfig() config {
@@ -202,7 +209,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{})
+	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{})
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
@@ -289,6 +296,7 @@ var policy = map[string]string{
 	"POST /api/v1/confirmations/view":               "public",
 	"POST /api/v1/confirmations/confirm":            "public",
 	"GET /api/v1/orders/{id}":                       "any",
+	"GET /api/v1/dashboard":                         "admins",
 }
 
 var allowedRoles = map[string][]string{

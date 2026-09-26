@@ -17,6 +17,7 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
@@ -61,6 +62,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
+		dashboard.NewPostgresRepository(pool),
 	)
 
 	if cfg.SeedAdmin {
@@ -106,15 +108,17 @@ type services struct {
 	catalogue *catalogue.Service
 	itemSets  *itemset.Service
 	orders    *order.Service
+	dashboard *dashboard.Service
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository) services {
 	s := services{
 		users:     users,
 		employees: employee.NewService(employees),
 		catalogue: catalogue.NewService(items),
+		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -142,6 +146,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
+	registerDashboardRoutes(rt, svc.dashboard)
 	return rt
 }
 
