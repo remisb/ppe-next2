@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useState } from 'react'
 
 import { basePath, stripBase } from '@ppe/routing'
 
@@ -6,6 +6,8 @@ export type Route =
   | { name: 'createOrder' }
   | { name: 'history' }
   | { name: 'employees' }
+  /** One employee: details, sizes and the items issued to them. */
+  | { name: 'employee'; id: string }
   | { name: 'catalogue' }
   | { name: 'itemSets' }
   /** User accounts; administrators only. */
@@ -32,6 +34,8 @@ export function parsePath(pathname: string): Route {
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
+  const employee = /^\/employees\/([^/]+)$/.exec(path)
+  if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const record = /^\/orders\/([^/]+)\/record$/.exec(path)
   if (record?.[1]) return { name: 'record', id: decodeURIComponent(record[1]) }
   const confirm = /^\/confirm\/([^/]+)$/.exec(path)
@@ -41,6 +45,8 @@ export function parsePath(pathname: string): Route {
 
 export function pathOf(route: Route): string {
   switch (route.name) {
+    case 'employee':
+      return `/employees/${encodeURIComponent(route.id)}`
     case 'record':
       return `/orders/${encodeURIComponent(route.id)}/record`
     case 'confirm':
@@ -65,10 +71,33 @@ export function useRouter(): Router {
   }, [])
 
   const navigate = useCallback((to: Route) => {
-    window.history.pushState(null, '', basePath + pathOf(to))
+    window.history.pushState(inApp, '', basePath + pathOf(to))
     setRoute(to)
     window.scrollTo(0, 0)
   }, [])
 
   return { route, navigate }
+}
+
+/** Marks history entries pushed by navigate, so Back can return within the app. */
+const inApp = { inApp: true }
+
+/** True when the previous history entry is a screen of this app, not another site or a fresh tab. */
+export function canGoBack(): boolean {
+  return (window.history.state as typeof inApp | null)?.inApp === true
+}
+
+/**
+ * Props for an <a> that navigates in the app. A real href keeps "open in new
+ * tab", middle click and copy link working; a plain click stays in the app.
+ */
+export function linkTo(to: Route, navigate: (to: Route) => void) {
+  return {
+    href: basePath + pathOf(to),
+    onClick: (e: MouseEvent) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+      e.preventDefault()
+      navigate(to)
+    },
+  }
 }

@@ -30,7 +30,7 @@ export function RecordPage({ id, autoPrint, onBack }: { id: string; autoPrint: b
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2 print:hidden">
         <Button variant="ghost" className="-ml-3" onClick={onBack}>
-          <ArrowLeft aria-hidden /> History
+          <ArrowLeft aria-hidden /> Back
         </Button>
         {record.data ? (
           <div className="flex flex-wrap items-start gap-2">

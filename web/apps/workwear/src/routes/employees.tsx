@@ -9,10 +9,11 @@ import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { type Route, linkTo } from '@/lib/router'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn, formatSize } from '@/lib/utils'
 
-export function Employees() {
+export function Employees({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
   const employees = useLoad(() => client.employees.list())
@@ -82,8 +83,21 @@ export function Employees() {
           </TableHeader>
           <TableBody>
             {shown.map((e) => (
-              <TableRow key={e.id} className={stackedBreak}>
-                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">{e.full_name}</TableCell>
+              <TableRow
+                key={e.id}
+                className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50')}
+                // The whole row opens the employee; the name is the real link, for keyboards,
+                // screen readers and "open in new tab". The row's own buttons keep their action.
+                onClick={(ev) => {
+                  if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                  navigate({ name: 'employee', id: e.id })
+                }}
+              >
+                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+                  <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                    {e.full_name}
+                  </a>
+                </TableCell>
                 <TableCell label="Code" className={cn('stacked:order-1 stacked:w-auto', !e.code && 'stacked:hidden')}>
                   {e.code ?? '—'}
                 </TableCell>
@@ -135,7 +149,7 @@ export function Employees() {
 const sizeCell = 'stacked:order-3 stacked:w-[calc((100%-2rem)/3)] stacked:flex-col stacked:items-start stacked:gap-0 stacked:pt-2 stacked:text-left stacked:font-medium'
 
 /** Edit Sizes: changes defaults for future resolutions only. */
-function EditSizes({
+export function EditSizes({
   employee,
   sizes,
   onClose,

@@ -7,6 +7,7 @@ describe('router', () => {
     for (const name of ['createOrder', 'employees', 'catalogue', 'itemSets', 'users', 'history', 'account'] as const) {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
+    expect(parsePath(pathOf({ name: 'employee', id: 'a/b' }))).toEqual({ name: 'employee', id: 'a/b' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
   })

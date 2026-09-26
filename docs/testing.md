@@ -56,3 +56,4 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | Route access per role | `cmd/api.TestRoutePolicy` (every route must be listed) |
 | Change own password (8–72 bytes, current one required) | `user.TestPasswords`; web `validatePasswordChange`; e2e *Account: change password* |
 | Users screen (admin only): add, edit, deactivate, reset password; no self-deactivation or self-demotion | `user` service tests, `TestRoutePolicy`; web `users` tests; e2e *Users: an administrator adds, edits, deactivates and resets a user* |
+| Employee page at `/employees/<id>`: items given (from order snapshots) with a link to each receipt, items ordered but not yet given | web `employee-items`, `router` tests; e2e *Employees: a row opens the employee at its own address, with the items given and their receipts* |

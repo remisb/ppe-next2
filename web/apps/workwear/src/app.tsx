@@ -1,14 +1,13 @@
 import { ClipboardList, HardHat, History as HistoryIcon, LogOut, Package, Shirt, UserCog, UserRound, Users } from 'lucide-react'
-import type { MouseEvent } from 'react'
 
 import { useApi } from '@/lib/api'
-import { type Route, pathOf, useRouter } from '@/lib/router'
+import { type Route, canGoBack, linkTo, useRouter } from '@/lib/router'
 import { cn } from '@/lib/utils'
-import { basePath } from '@ppe/routing'
 
 import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
 import { CreateOrder } from './routes/create-order'
+import { EmployeePage } from './routes/employee'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
 import { ConfirmPage } from './routes/confirm'
@@ -27,9 +26,9 @@ const tabs: { route: Route; label: string; short: string; icon: typeof Users }[]
 /** Shown to administrators only, after the everyday sections. */
 const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
-/** A record is opened from History, so History stays the current section. */
+/** A record belongs to History and an employee to Employees, so those stay the current section. */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
-  return current === tab || (current === 'record' && tab === 'history')
+  return current === tab || (current === 'record' && tab === 'history') || (current === 'employee' && tab === 'employees')
 }
 
 /*
@@ -64,15 +63,9 @@ export function App() {
   if (!session) return <SignIn />
   const shownTabs = session.canManageUsers ? [...tabs, usersTab] : tabs
 
-  const link = (to: Route) => ({
-    href: basePath + pathOf(to),
-    onClick: (e: MouseEvent) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return // new tab keeps working
-      e.preventDefault()
-      navigate(to)
-      window.scrollTo({ top: 0 })
-    },
-  })
+  const link = (to: Route) => linkTo(to, navigate)
+  /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
+  const back = (fallback: Route) => () => (canGoBack() ? window.history.back() : navigate(fallback))
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[5.5rem_minmax(0,1fr)] lg:grid-cols-[15rem_minmax(0,1fr)]">
@@ -158,14 +151,15 @@ export function App() {
         )}
       >
         {route.name === 'createOrder' ? <CreateOrder /> : null}
-        {route.name === 'employees' ? <Employees /> : null}
+        {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
+        {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
         {route.name === 'catalogue' ? <Catalogue /> : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'history' ? <History onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} /> : null}
         {route.name === 'record' ? (
-          <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={() => navigate({ name: 'history' })} />
+          <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />
         ) : null}
       </main>
     </div>

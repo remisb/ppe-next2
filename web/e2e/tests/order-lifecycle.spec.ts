@@ -255,6 +255,33 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
 })
 
+test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {
+  await openTab('Employees')
+  // Anywhere on the row opens it, not only the name.
+  await page.getByRole('row', { name: /Ona Kazlauskienė/ }).getByRole('cell').nth(2).click()
+  await expect(page).toHaveURL(/\/employees\/[0-9a-f-]{36}$/)
+  const employeeURL = page.url()
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page')
+
+  // Both her orders are GIVEN; the first was bought before the price change and still shows €49.99 on its receipt.
+  const given = page.getByRole('region', { name: 'Items given' })
+  await expect(given.getByRole('row', { name: /Safety shoes/ })).toHaveCount(2)
+  await expect(page.getByRole('region', { name: 'Ordered, not yet given' })).toHaveCount(0)
+  await given.getByRole('link', { name: `Receipt ${recordNumber}` }).first().click()
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}\/record$/)
+  await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
+  await expect(page.getByRole('cell', { name: '€49.99' }).first()).toBeVisible()
+
+  // Back returns to the employee, and the address works on its own (a bookmark or a shared link).
+  await page.getByRole('button', { name: 'Back' }).click()
+  await expect(page).toHaveURL(employeeURL)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  await page.getByRole('button', { name: 'Employees' }).click()
+  await expect(page.getByRole('heading', { name: 'Employees' })).toBeVisible()
+})
+
 test('phone and tablet: no screen scrolls sideways', async () => {
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
@@ -280,6 +307,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await expect(page.getByText(content).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
   }
+  await openTab('Employees')
+  await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
+  await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
+  expect(await fits(), 'the employee page scrolls sideways').toBe(true)
 
   // The order's actions stay in reach however long the order is.
   await openTab('Create Order')
@@ -314,6 +345,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       await expect(page.getByText(content).first()).toBeVisible()
       expect(await fits(), `${tab} scrolls sideways at ${width}px`).toBe(true)
     }
+    await openTab('Employees')
+    await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
+    await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
+    expect(await fits(), `the employee page scrolls sideways at ${width}px`).toBe(true)
   }
 
   await page.setViewportSize(desktop)
