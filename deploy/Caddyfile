@@ -18,10 +18,12 @@
 	handle {
 		root * {$WEB_ROOT:/srv/workwear/dist}
 		# Hashed file names never change content; index.html points at them,
-		# so it must never be cached.
+		# so it must never be cached. Headers match the requested path, before
+		# try_files rewrites an app route such as /users to index.html, so
+		# everything outside /assets is no-cache, not just / and /index.html.
+		@unhashed not path /assets/*
 		header /assets/* Cache-Control "public, max-age=31536000, immutable"
-		header / Cache-Control "no-cache"
-		header /index.html Cache-Control "no-cache"
+		header @unhashed Cache-Control "no-cache"
 		try_files {path} /index.html
 		file_server
 	}
