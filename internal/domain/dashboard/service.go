@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
 // Service computes the administrator's dashboard.
@@ -14,6 +15,8 @@ type Service struct {
 	now  func() time.Time
 	// loc is the organisation's timezone: months and day counts follow its calendar.
 	loc *time.Location
+	// limit caps the dashboards' lists.
+	limit int
 }
 
 type Option func(*Service)
@@ -22,7 +25,7 @@ func WithClock(now func() time.Time) Option  { return func(s *Service) { s.now =
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
 func NewService(repo Repository, opts ...Option) *Service {
-	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, loc: time.UTC}
+	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, loc: time.UTC, limit: ListLimit}
 	for _, o := range opts {
 		o(s)
 	}
@@ -42,7 +45,7 @@ func (s *Service) window(now time.Time) Window {
 		MonthStarts:  starts,
 		DueBy:        now.AddDate(0, 0, DueSoonDays),
 		ConfirmSince: now.AddDate(0, 0, -ConfirmWindowDays),
-		Limit:        ListLimit,
+		Limit:        s.limit,
 	}
 }
 
@@ -91,4 +94,82 @@ func (s *Service) days(t, now time.Time) int {
 	da := time.Date(a.Year(), a.Month(), a.Day(), 0, 0, 0, 0, time.UTC)
 	db := time.Date(b.Year(), b.Month(), b.Day(), 0, 0, 0, 0, time.UTC)
 	return max(0, int(db.Sub(da).Hours()/24))
+}
+
+// Manager is the manager's dashboard.
+func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
+	now := s.now()
+	months := s.window(now).MonthStarts
+	f, err := s.repo.ReadManager(ctx, ManagerWindow{
+		Now:               now,
+		MonthStarts:       months,
+		ForecastBy:        now.AddDate(0, 0, ForecastDays),
+		PriceChangesSince: months[0],
+		Limit:             ListLimit,
+	})
+	if err != nil {
+		return ManagerOverview{}, err
+	}
+	o := f.ManagerOverview
+	o.GeneratedAt, o.Timezone = now, s.loc.String()
+	for i := range o.Months {
+		o.Months[i].Month = months[i].In(s.loc).Format("2006-01")
+	}
+	o.Forecast = forecast(o.Forecast.Lines, s.limit)
+	o.Sizes = spread(f.SizeGroups)
+	return o, nil
+}
+
+// spread counts employees by the size Create Order would use for them.
+func spread(groups []EmployeeSizes) SizeSpread {
+	clothing := map[string]int{}
+	shoes := map[string]int{}
+	var out SizeSpread
+	for _, g := range groups {
+		r := size.Resolve(size.GroupClothing, size.Defaults{ClothingSize: g.ClothingSize, HeightCm: g.HeightCm})
+		if r.Size == nil {
+			out.NoClothing += g.Employees
+		} else {
+			clothing[*r.Size] += g.Employees
+			if r.Suggested {
+				out.Suggested += g.Employees
+			}
+		}
+		if g.ShoeSize == nil {
+			out.NoShoes += g.Employees
+		} else {
+			shoes[*g.ShoeSize] += g.Employees
+		}
+	}
+	for _, c := range size.Clothing() {
+		out.Clothing = append(out.Clothing, SizeCount{Size: c.Code, Employees: clothing[c.Code]})
+	}
+	for _, c := range size.Shoes() {
+		out.Shoes = append(out.Shoes, SizeCount{Size: c.Code, Employees: shoes[c.Code]})
+	}
+	return out
+}
+
+// forecast totals the replacement demand over every line, costs each line at
+// its current price, and keeps the largest limit lines.
+func forecast(lines []ForecastLine, limit int) Forecast {
+	f := Forecast{Days: ForecastDays, Lines: lines}
+	for i := range f.Lines {
+		l := &f.Lines[i]
+		f.Items += l.Quantity
+		if l.UnitPriceCents == nil {
+			f.Unpriced += l.Quantity
+			continue
+		}
+		c := *l.UnitPriceCents * int64(l.Quantity)
+		l.EstimatedCents = &c
+		f.EstimatedCents += c
+	}
+	if len(f.Lines) > limit {
+		f.Lines = f.Lines[:limit]
+	}
+	if f.Lines == nil {
+		f.Lines = []ForecastLine{}
+	}
+	return f
 }

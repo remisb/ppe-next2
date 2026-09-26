@@ -367,3 +367,63 @@ export interface DashboardReplacement {
   due_at: string
   overdue: boolean
 }
+
+/** The manager's dashboard (GET /api/v1/dashboard/manager, managers only): items, prices and purchasing. */
+export interface ManagerDashboard {
+  generated_at: string
+  timezone: string
+  /** Everything on ORDERED orders: ordered, not yet given out. */
+  on_order: { orders: number; items: number; value_cents: number }
+  /** Twelve calendar months by ordered_at, oldest first; the last is the current month. */
+  months: { month: string; orders: number; items: number; value_cents: number }[]
+  /** Items by value ordered over the twelve months. */
+  spend_by_item: { catalogue_item_id: string; item_name: string; quantity: number; value_cents: number }[]
+  /** Replacements due within `days` (overdue included) and not already on order, costed at current prices. */
+  forecast: {
+    days: number
+    items: number
+    estimated_cents: number
+    /** Quantity whose item has no current price (or is inactive), left out of estimated_cents. */
+    unpriced: number
+    lines: ManagerForecastLine[]
+  }
+  price_changes: ManagerPriceChange[]
+  catalogue: {
+    active: number
+    inactive: number
+    unpriced: { id: string; name: string }[]
+    /** Active, priced items on no order in the twelve months. */
+    not_ordered: { id: string; name: string }[]
+  }
+  /** Active item sets with lines Apply Item Set will flag. */
+  item_sets: { id: string; name: string; inactive: number; unpriced: number }[]
+  /** Live employees by the size Create Order would use (saved, or suggested from height). */
+  sizes: {
+    clothing: { size: string; employees: number }[]
+    shoes: { size: string; employees: number }[]
+    no_clothing: number
+    no_shoes: number
+    suggested: number
+  }
+}
+
+export interface ManagerForecastLine {
+  catalogue_item_id: string
+  item_name: string
+  quantity: number
+  employees: number
+  unit_price_cents: number | null
+  estimated_cents: number | null
+  overdue: number
+}
+
+export interface ManagerPriceChange {
+  catalogue_item_id: string
+  item_name: string
+  at: string
+  by_name: string | null
+  before_cents: number | null
+  after_cents: number | null
+  before_service_months: number | null
+  after_service_months: number | null
+}

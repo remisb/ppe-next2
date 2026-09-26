@@ -13,6 +13,7 @@ import { Employees } from './routes/employees'
 import { History } from './routes/history'
 import { ConfirmPage } from './routes/confirm'
 import { ItemSets } from './routes/item-sets'
+import { ManagerDashboard } from './routes/manager-dashboard'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
 import { UsersPage } from './routes/users'
@@ -26,12 +27,28 @@ const tabs: { route: Route; label: string; short: string; icon: typeof Users }[]
 ]
 /** Administrators only: the Dashboard first, as their start screen, and Users after the everyday sections. */
 const dashboardTab = { route: { name: 'dashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
+/**
+ * Managers' start screen, first in their tabs. An administrator who is also a
+ * manager keeps the one Dashboard tab and reaches this one from the Dashboard.
+ */
+const managerTab = { route: { name: 'managerDashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
 const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
 
-/** A record belongs to History and an employee to Employees, so those stay the current section. */
+/**
+ * A record belongs to History and an employee to Employees, so those stay the
+ * current section; so does the Dashboard for the Manager Dashboard opened from it.
+ */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
-  return current === tab || (current === 'record' && tab === 'history') || (current === 'employee' && tab === 'employees')
+  return (
+    current === tab ||
+    (current === 'record' && tab === 'history') ||
+    (current === 'employee' && tab === 'employees') ||
+    (current === 'managerDashboard' && tab === 'dashboard')
+  )
 }
+
+/** One phone tab-bar column per section (literal class names, for Tailwind). */
+const columns: Record<number, string> = { 5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7' }
 
 /*
  * One navigation, three layouts:
@@ -64,8 +81,8 @@ export function App() {
   // visitor is an employee with a link, not a signed-in user.
   if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
   if (!session) return <SignIn />
-  const route = startRoute(asked, session.isAdmin)
-  const shownTabs = session.isAdmin ? [dashboardTab, ...tabs, usersTab] : tabs
+  const route = startRoute(asked, session)
+  const shownTabs = session.isAdmin ? [dashboardTab, ...tabs, usersTab] : session.isManager ? [managerTab, ...tabs] : tabs
 
   const link = (to: Route) => linkTo(to, navigate)
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
@@ -103,8 +120,8 @@ export function App() {
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none lg:p-3',
-            // One column per section: seven for an administrator, whose extra tabs are Dashboard and Users.
-            shownTabs.length > 5 ? 'grid-cols-7' : 'grid-cols-5',
+            // Seven for an administrator (Dashboard and Users), six for a manager (their Dashboard).
+            columns[shownTabs.length],
           )}
         >
           {shownTabs.map(({ route: r, label, short, icon: Icon }) => (
@@ -155,6 +172,7 @@ export function App() {
         )}
       >
         {route.name === 'dashboard' ? <Dashboard navigate={navigate} /> : null}
+        {route.name === 'managerDashboard' ? <ManagerDashboard navigate={navigate} /> : null}
         {route.name === 'createOrder' ? <CreateOrder /> : null}
         {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}

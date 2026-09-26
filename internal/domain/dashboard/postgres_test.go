@@ -10,9 +10,20 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TestPostgresOverview seeds orders directly, as the order service would have
-// stored them, and checks every figure against the fixed "now".
-func TestPostgresOverview(t *testing.T) {
+// pgData is the fixture shared by the dashboard tests.
+type pgData struct {
+	pool                 *pgxpool.Pool
+	now                  time.Time
+	admin                uuid.UUID
+	ona, jonas           uuid.UUID
+	shoes, gloves, draft uuid.UUID
+	o1, waitOld          uuid.UUID
+}
+
+// seedPG empties the database and seeds orders directly, as the order
+// service would have stored them, around a fixed "now" of 15 September 2026.
+func seedPG(t *testing.T) pgData {
+	t.Helper()
 	dsn := os.Getenv("API_TEST_DB_DSN")
 	if dsn == "" {
 		t.Skip("API_TEST_DB_DSN not set")
@@ -102,6 +113,14 @@ func TestPostgresOverview(t *testing.T) {
 	waitOld := order(jonas, "Jonas", utc("2026-09-10T08:00:00Z"), nil, "", shoeLine(1))
 	order(ona, "Ona", utc("2026-09-14T08:00:00Z"), nil, "", gloveLine(5))
 
+	return pgData{pool: pool, now: now, admin: admin, ona: ona, jonas: jonas, shoes: shoes, gloves: gloves, draft: draft, o1: o1, waitOld: waitOld}
+}
+
+// TestPostgresOverview checks every administrator figure against the fixture.
+func TestPostgresOverview(t *testing.T) {
+	d := seedPG(t)
+	ctx := context.Background()
+	pool, now, jonas, gloves, o1, waitOld := d.pool, d.now, d.jonas, d.gloves, d.o1, d.waitOld
 	svc := NewService(NewPostgresRepository(pool), WithClock(func() time.Time { return now }))
 	o, err := svc.Overview(ctx)
 	if err != nil {
@@ -158,5 +177,95 @@ func TestPostgresOverview(t *testing.T) {
 	if s.Employees != 2 || s.EmployeesMissingSizes != 1 || s.CatalogueActive != 3 || s.CatalogueUnpriced != 1 ||
 		s.ItemSetsActive != 1 || s.Users != 2 || s.Admins != 1 {
 		t.Errorf("setup = %+v", s)
+	}
+}
+
+// TestPostgresManager checks the manager's figures against the same fixture,
+// plus a price change, an inactive and an unordered item, and two item sets.
+func TestPostgresManager(t *testing.T) {
+	d := seedPG(t)
+	ctx := context.Background()
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		if _, err := d.pool.Exec(ctx, sql, args...); err != nil {
+			t.Fatalf("%s: %v", sql, err)
+		}
+	}
+	vest, plugs := uuid.New(), uuid.New()
+	exec(`INSERT INTO catalogue_items (id, name, size_group, unit_price_cents, service_period_months, active, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'Old vest', 'CLOTHING', 1500, 12, FALSE, now(), now(), $3, $3),
+		       ($2, 'Ear plugs', 'NONE', 50, 1, TRUE, now(), now(), $3, $3)`, vest, plugs, d.admin)
+	price := func(at string, before, after int64) {
+		exec(`INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after)
+			VALUES ($1, $2, 'catalogue.price_changed', 'catalogue_item', $3, $4,
+				jsonb_build_object('unit_price_cents', $5::bigint, 'currency', 'EUR', 'service_period_months', 12),
+				jsonb_build_object('unit_price_cents', $6::bigint, 'currency', 'EUR', 'service_period_months', 18))`,
+			uuid.New(), d.admin, d.shoes, utc(at), before, after)
+	}
+	price("2025-01-01T08:00:00Z", 3500, 4000) // before the twelve months
+	price("2026-06-01T08:00:00Z", 4000, 5000)
+	starter, clean := uuid.New(), uuid.New()
+	exec(`INSERT INTO item_sets (id, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'Clean', now(), now(), $2, $2)`, clean, d.admin)
+	exec(`INSERT INTO item_set_lines (item_set_id, catalogue_item_id, default_quantity, display_order)
+		VALUES ($1, $2, 1, 0)`, clean, d.gloves)
+	if err := d.pool.QueryRow(ctx, `SELECT id FROM item_sets WHERE name = 'Starter'`).Scan(&starter); err != nil {
+		t.Fatal(err)
+	}
+	exec(`INSERT INTO item_set_lines (item_set_id, catalogue_item_id, default_quantity, display_order)
+		VALUES ($1, $2, 1, 0), ($1, $3, 1, 1), ($1, $4, 1, 2)`, starter, d.shoes, d.draft, vest)
+
+	svc := NewService(NewPostgresRepository(d.pool), WithClock(func() time.Time { return d.now }))
+	o, err := svc.Manager(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if o.OnOrder != (OnOrder{Orders: 2, Items: 6, ValueCents: 6000}) {
+		t.Errorf("on order = %+v", o.OnOrder)
+	}
+	if len(o.Months) != Months {
+		t.Fatalf("months = %d", len(o.Months))
+	}
+	sep, aug, jul := o.Months[11], o.Months[10], o.Months[9]
+	if sep != (OrderedMonth{Month: "2026-09", Orders: 2, Items: 6, ValueCents: 6000}) ||
+		aug != (OrderedMonth{Month: "2026-08", Orders: 1, Items: 10, ValueCents: 2000}) ||
+		jul != (OrderedMonth{Month: "2026-07", Orders: 2, Items: 5, ValueCents: 1000}) || o.Months[0].Orders != 0 {
+		t.Errorf("months = %+v", o.Months)
+	}
+	// Since 1 October 2025: shoes 1 × €50 (the September 2025 pair is older), gloves 20 × €2.
+	if s := o.SpendByItem; len(s) != 2 || s[0].CatalogueItemID != d.shoes || s[0].ValueCents != 5000 || s[1].Quantity != 20 || s[1].ValueCents != 4000 {
+		t.Errorf("spend by item = %+v", s)
+	}
+
+	// Due by 14 December: Jonas's gloves (overdue) and Ona's shoes. Ona's gloves
+	// and Jonas's shoes are on order again; Gone is deleted.
+	f := o.Forecast
+	if f.Items != 5 || f.EstimatedCents != 4*200+5000 || f.Unpriced != 0 || len(f.Lines) != 2 {
+		t.Fatalf("forecast = %+v", f)
+	}
+	if l := f.Lines[0]; l.CatalogueItemID != d.gloves || l.Quantity != 4 || l.Overdue != 4 || l.Employees != 1 || *l.UnitPriceCents != 200 {
+		t.Errorf("gloves line = %+v", l)
+	}
+	if l := f.Lines[1]; l.CatalogueItemID != d.shoes || l.Overdue != 0 || *l.EstimatedCents != 5000 {
+		t.Errorf("shoes line = %+v", l)
+	}
+
+	if p := o.PriceChanges; len(p) != 1 || p[0].ItemName != "Safety shoes" || *p[0].BeforeCents != 4000 || *p[0].AfterCents != 5000 ||
+		*p[0].BeforeServiceMonths != 12 || *p[0].AfterServiceMonths != 18 || *p[0].ByName != "Admin" {
+		t.Errorf("price changes = %+v", p)
+	}
+
+	c := o.Catalogue
+	if c.Active != 4 || c.Inactive != 1 || len(c.Unpriced) != 1 || c.Unpriced[0].ID != d.draft ||
+		len(c.NotOrdered) != 1 || c.NotOrdered[0].ID != plugs {
+		t.Errorf("catalogue = %+v", c)
+	}
+	if s := o.ItemSets; len(s) != 1 || s[0].ID != starter || s[0].Inactive != 1 || s[0].Unpriced != 1 {
+		t.Errorf("item sets = %+v", s)
+	}
+	// Ona: M and 39. Jonas: 180 cm suggests a clothing size, no shoe size.
+	if s := o.Sizes; s.Suggested != 1 || s.NoClothing != 0 || s.NoShoes != 1 || s.Shoes[0] != (SizeCount{Size: "39", Employees: 1}) {
+		t.Errorf("sizes = %+v", s)
 	}
 }

@@ -273,6 +273,10 @@ test('Dashboard: the figures follow the orders', async () => {
   await expect(catalogue).toContainText('1 without a price or service period')
   await catalogue.click()
   await expect(page.getByRole('heading', { name: 'Item Catalogue' })).toBeVisible()
+  // The Manager Dashboard is the managers' alone: an administrator gets their own.
+  await page.goto('/manager')
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Manager Dashboard' })).toHaveCount(0)
 })
 
 test('columns sort: History on the server across pages, other lists in place', async () => {
@@ -458,16 +462,31 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(dialog.getByRole('checkbox', { name: /^Administrator/ })).toBeDisabled()
   await dialog.getByRole('button', { name: 'Cancel' }).click()
 
-  // A manager signs in on Create Order and has no Users or Dashboard tab; the
-  // Dashboard's address shows Create Order too.
+  // A manager starts on the Manager Dashboard and has no Users tab; the
+  // administrator's Dashboard address shows the manager's own.
   let other = await signInElsewhere(browser, mia.email, mia.password)
   const nav = other.getByRole('navigation', { name: 'Main' })
-  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Item Catalogue' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Users' })).toHaveCount(0)
-  await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveCount(0)
+  // Items, prices and purchasing: the price change made earlier, the unpriced helmet,
+  // the second pair of shoes not yet on order again.
+  const priceChange = other.getByRole('listitem').filter({ hasText: 'Safety shoes' }).filter({ hasText: '→' })
+  await expect(priceChange).toContainText('€49.99 → €59.99')
+  await expect(priceChange).toContainText('+20%')
+  await expect(other.getByRole('region', { name: 'Without a price or service period' })).toContainText('Safety helmet')
+  await expect(other.getByText('Size 42: 1 employee')).toBeAttached()
+  await other.setViewportSize({ width: 375, height: 812 })
+  expect(
+    await other.evaluate(
+      () =>
+        document.documentElement.scrollWidth <= window.innerWidth &&
+        [...document.querySelectorAll('[data-slot=table-container]')].every((t) => t.scrollWidth <= t.clientWidth),
+    ),
+    'the Manager Dashboard scrolls sideways',
+  ).toBe(true)
   await other.goto(webURL + '/dashboard')
-  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await other.context().close()
 
   // Deactivated: can no longer sign in.
@@ -493,7 +512,7 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(dialog.getByText(`The password for ${mia.name} has been changed.`)).toBeVisible()
   await dialog.getByRole('button', { name: 'Done' }).click()
   other = await signInElsewhere(browser, mia.email, 'mia-password-2')
-  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await other.context().close()
 })
 

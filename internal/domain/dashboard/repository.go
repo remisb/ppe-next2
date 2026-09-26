@@ -7,4 +7,7 @@ type Repository interface {
 	// Months has one entry per month of w (zeros included), oldest first; the
 	// derived fields are left empty.
 	Read(ctx context.Context, w Window) (Overview, error)
+	// ReadManager returns the manager's figures for w from one consistent
+	// snapshot, Months as in Read; the derived fields and Sizes are left empty.
+	ReadManager(ctx context.Context, w ManagerWindow) (ManagerFigures, error)
 }

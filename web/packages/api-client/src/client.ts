@@ -4,6 +4,7 @@ import type {
   CatalogueItemInput,
   ConfirmationLink,
   Dashboard,
+  ManagerDashboard,
   Employee,
   EmployeeInput,
   EmployeeSizesInput,
@@ -79,6 +80,8 @@ export function createClient(options: ClientOptions) {
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
+    /** The manager's dashboard; managers only. */
+    managerDashboard: () => request<ManagerDashboard>('GET', '/api/v1/dashboard/manager'),
 
     /** User accounts: listing is admin or manager, every change admin only. */
     users: {

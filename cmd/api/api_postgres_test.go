@@ -508,4 +508,19 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil || len(out.Months) != 12 || out.Months[11].Month != time.Now().UTC().Format("2006-01") {
 		t.Errorf("months = %+v (%v)", out.Months, err)
 	}
+
+	// The manager's dashboard is the manager's alone.
+	if code := api.do(t, "GET", "/api/v1/dashboard/manager", adminTok, nil).Code; code != http.StatusForbidden {
+		t.Errorf("admin on the manager dashboard: %d, want 403", code)
+	}
+	rec = api.do(t, "GET", "/api/v1/dashboard/manager", managerTok, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("manager: %d %s", rec.Code, rec.Body)
+	}
+	body = rec.Body.String()
+	for _, want := range []string{`"lines":[]`, `"spend_by_item":[]`, `"price_changes":[]`, `"item_sets":[]`, `"unpriced":[]`, `"days":90`, `{"size":"S","employees":0}`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("manager body lacks %s: %s", want, body)
+		}
+	}
 }

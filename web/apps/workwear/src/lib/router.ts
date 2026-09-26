@@ -3,10 +3,12 @@ import { type MouseEvent, useCallback, useEffect, useState } from 'react'
 import { basePath, stripBase } from '@ppe/routing'
 
 export type Route =
-  /** The root: the signed-in user's start screen, the Dashboard for administrators and Create Order for everyone else. */
+  /** The root: the signed-in user's start screen (see startRoute). */
   | { name: 'home' }
   /** The administrator's dashboard. */
   | { name: 'dashboard' }
+  /** The manager's dashboard. */
+  | { name: 'managerDashboard' }
   | { name: 'createOrder' }
   | { name: 'history' }
   | { name: 'employees' }
@@ -25,6 +27,7 @@ export type Route =
 const fixed = {
   home: '/',
   dashboard: '/dashboard',
+  managerDashboard: '/manager',
   createOrder: '/orders/new',
   history: '/history',
   employees: '/employees',
@@ -110,12 +113,14 @@ export function linkTo(to: Route, navigate: (to: Route) => void) {
 
 /**
  * The screen to show for route. The root is the start screen: the Dashboard
- * for administrators, Create Order for everyone else. The Dashboard is
- * administrators' only, so anyone else asking for it gets their start screen.
+ * for administrators (also when they are managers), the Manager Dashboard for
+ * managers, Create Order for everyone else. Each dashboard belongs to its role
+ * alone, so anyone else asking for it gets their own start screen.
  */
-export function startRoute(route: Route, isAdmin: boolean): Route {
-  if (route.name === 'home' || (route.name === 'dashboard' && !isAdmin)) {
-    return isAdmin ? { name: 'dashboard' } : { name: 'createOrder' }
-  }
+export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: boolean }): Route {
+  const home: Route = roles.isAdmin ? { name: 'dashboard' } : roles.isManager ? { name: 'managerDashboard' } : { name: 'createOrder' }
+  if (route.name === 'home') return home
+  if (route.name === 'dashboard' && !roles.isAdmin) return home
+  if (route.name === 'managerDashboard' && !roles.isManager) return home
   return route
 }

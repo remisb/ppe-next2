@@ -28,7 +28,8 @@ The workwear app is the reference.
 
 - **Navigation** is one `<nav aria-label="Main">` that changes shape: a bottom tab bar on
   a phone, an icon rail from `md`, a labelled sidebar from `lg`. An administrator has seven tabs
-  (Dashboard first, Users last), so phone labels truncate rather than widen a column. Links take their
+  (Dashboard first, Users last) and a manager six (their Dashboard first), so phone labels
+  truncate rather than widen a column. Links take their
   accessible name from their text (a visually hidden full label), never `aria-label`,
   which would also match label lookups such as a field named "Item Set".
 - **Tables** that can run wider than a phone use `<Table stack>` (or `stack="grid"` for

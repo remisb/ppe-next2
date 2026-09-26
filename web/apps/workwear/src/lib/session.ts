@@ -15,6 +15,8 @@ export interface Session {
   canManageUsers: boolean
   /** Administrators start on the Dashboard, which only they can see. */
   isAdmin: boolean
+  /** Managers have their own dashboard, which only they can see. */
+  isManager: boolean
 }
 
 export function sessionFromToken(token: string, name: string): Session | null {
@@ -28,6 +30,7 @@ export function sessionFromToken(token: string, name: string): Session | null {
     canManageItems: hasAnyRole(claims.roles, 'admin', 'manager'),
     canManageUsers: hasAnyRole(claims.roles, 'admin'),
     isAdmin: hasAnyRole(claims.roles, 'admin'),
+    isManager: hasAnyRole(claims.roles, 'manager'),
   }
 }
 

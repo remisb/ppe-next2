@@ -13,6 +13,8 @@ var (
 	// managers may manage items, prices and item sets ("Manage Items and Prices").
 	managers = []string{user.RoleAdmin, user.RoleManager}
 	admins   = []string{user.RoleAdmin}
+	// managerRole is the manager role alone: its dashboard is not the administrator's.
+	managerRole = []string{user.RoleManager}
 )
 
 // access is a route's authorization rule. roles nil with public false means
