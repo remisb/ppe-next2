@@ -226,6 +226,24 @@
     touch-action: manipulation;
   }
 
+  /*
+   * iOS/iPadOS Safari draws date fields natively: they ignore the control's
+   * height, keep an intrinsic minimum width wider than a half-column (so From
+   * overlapped To and To overlapped Status) and centre the value. Dropping the
+   * native appearance makes them size like every other field.
+   */
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: start;
+    min-height: 1lh;
+  }
+
   /* A modal FormSheet stops the page behind it from scrolling (iOS scrolls it otherwise). */
   html:has(dialog[open]) {
     overflow: hidden;
