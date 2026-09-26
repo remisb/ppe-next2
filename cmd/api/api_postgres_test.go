@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -394,6 +395,31 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	rec = api.do(t, "GET", "/api/v1/orders?status=GIVEN", staff, nil)
 	if rec.Code != http.StatusOK || decode[page](t, rec.Body.Bytes()).Total != 0 {
 		t.Errorf("no GIVEN yet = %s", rec.Body)
+	}
+
+	// The item page lists the orders holding an item, and its price history.
+	rec = api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Vest", "size_group": "NONE", "unit_price_cents": 900, "service_period_months": 12, "active": true})
+	vest := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	body := map[string]any{"employee_id": emps[1], "lines": []map[string]any{{"catalogue_item_id": vest, "quantity": 2}}}
+	if rec := api.do(t, "POST", "/api/v1/orders", staff, body); rec.Code != http.StatusCreated {
+		t.Fatalf("vest order = %d %s", rec.Code, rec.Body)
+	}
+	for item, want := range map[string]int{gloves: 3, vest: 1} {
+		rec = api.do(t, "GET", "/api/v1/orders?catalogue_item_id="+item, staff, nil)
+		if p := decode[page](t, rec.Body.Bytes()); rec.Code != http.StatusOK || p.Total != want {
+			t.Errorf("orders with %s = %s, want %d", item, rec.Body, want)
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/orders?catalogue_item_id=nope", staff, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("bad item id = %d, want 400", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/catalogue/"+vest+"/price-history", staff, nil)
+	if h := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(h) != 1 || h[0]["event"] != "catalogue.created" ||
+		h[0]["unit_price_cents"] != float64(900) || h[0]["before_cents"] != nil {
+		t.Errorf("price history = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/catalogue/"+uuid.NewString()+"/price-history", staff, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown item history = %d, want 404", rec.Code)
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
 	if decode[map[string]string](t, rec.Body.Bytes())["timezone"] != "Europe/Vilnius" {

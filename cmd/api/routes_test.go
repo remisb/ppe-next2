@@ -141,6 +141,9 @@ func (stubCatalogue) List(context.Context) ([]catalogue.Item, error) { return []
 func (stubCatalogue) ListActive(context.Context) ([]catalogue.Item, error) {
 	return []catalogue.Item{}, nil
 }
+func (stubCatalogue) PriceHistory(context.Context, uuid.UUID) ([]catalogue.PriceEntry, error) {
+	return []catalogue.PriceEntry{}, nil
+}
 func (stubCatalogue) Update(context.Context, uuid.UUID, catalogue.Mutation) (catalogue.Item, error) {
 	return catalogue.Item{}, catalogue.ErrNotFound
 }
@@ -275,14 +278,15 @@ var policy = map[string]string{
 	"PUT /api/v1/employees/{id}/sizes":  "any",
 	"DELETE /api/v1/employees/{id}":     "managers",
 
-	"GET /api/v1/catalogue":                  "any",
-	"GET /api/v1/catalogue/active":           "any",
-	"GET /api/v1/catalogue/{id}":             "any",
-	"POST /api/v1/catalogue":                 "managers",
-	"PUT /api/v1/catalogue/{id}":             "managers",
-	"POST /api/v1/catalogue/{id}/activate":   "managers",
-	"POST /api/v1/catalogue/{id}/deactivate": "managers",
-	"DELETE /api/v1/catalogue/{id}":          "managers",
+	"GET /api/v1/catalogue":                    "any",
+	"GET /api/v1/catalogue/active":             "any",
+	"GET /api/v1/catalogue/{id}":               "any",
+	"GET /api/v1/catalogue/{id}/price-history": "any",
+	"POST /api/v1/catalogue":                   "managers",
+	"PUT /api/v1/catalogue/{id}":               "managers",
+	"POST /api/v1/catalogue/{id}/activate":     "managers",
+	"POST /api/v1/catalogue/{id}/deactivate":   "managers",
+	"DELETE /api/v1/catalogue/{id}":            "managers",
 
 	"GET /api/v1/item-sets":                         "any",
 	"GET /api/v1/item-sets/active":                  "any",

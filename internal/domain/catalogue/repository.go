@@ -20,4 +20,7 @@ type Repository interface {
 	// ListActive returns live, active items by display_rank then name.
 	ListActive(ctx context.Context) ([]Item, error)
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Item, error)
+	// PriceHistory returns the item's created and price-changed audit events
+	// as PriceEntry values, newest first.
+	PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error)
 }

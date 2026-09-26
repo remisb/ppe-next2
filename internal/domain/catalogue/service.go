@@ -162,3 +162,12 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	})
 	return err
 }
+
+// PriceHistory is the live item's price and service period over time, newest
+// first: each change, then the values it was created with.
+func (s *Service) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error) {
+	if _, err := s.repo.Get(ctx, id); err != nil {
+		return nil, err
+	}
+	return s.repo.PriceHistory(ctx, id)
+}

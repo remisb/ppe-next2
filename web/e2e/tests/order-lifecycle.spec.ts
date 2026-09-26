@@ -9,6 +9,8 @@ test.describe.configure({ mode: 'serial' })
 
 let page: Page
 let recordNumber = ''
+/** The second order, signed on paper after the price change. */
+let paperRecord = ''
 let confirmationURL = ''
 
 test.beforeAll(async ({ browser }) => {
@@ -270,7 +272,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await page.getByRole('button', { name: 'Mark as Ordered' }).click()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
-  const paperRecord = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
+  paperRecord = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
   // The new order was placed at the new price.
   await expect(page.getByRole('cell', { name: '€59.99' }).first()).toBeVisible()
 
@@ -279,6 +281,26 @@ test('paper confirmation: a second order signed on paper', async () => {
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
   await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
+})
+
+test('Item page: price history and the orders that hold the item', async () => {
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Safety shoes' }).click()
+  await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
+  // The change made earlier, newest first, then the price it was added at.
+  const steps = page.getByRole('list', { name: 'Price history' }).getByRole('listitem')
+  await expect(steps).toHaveCount(2)
+  await expect(steps.first()).toContainText('Price changed')
+  await expect(steps.first()).toContainText('€49.99 → €59.99')
+  await expect(steps.first()).toContainText('+20%')
+  await expect(steps.last()).toContainText('Added')
+  await expect(steps.last()).toContainText('€49.99')
+  // Each order at the price it was placed at: the paper order at the new one.
+  await expect(page.getByText('2 orders: 2 given, 0 on order.')).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('€59.99')
+  await expect(page.getByRole('row', { name: new RegExp(recordNumber) })).toContainText('€49.99')
+  await page.getByRole('link', { name: `Receipt ${recordNumber}` }).click()
+  await expect(page).toHaveURL(new RegExp(`/orders/[^/]+/record$`))
 })
 
 test('Dashboard: the figures follow the orders', async () => {

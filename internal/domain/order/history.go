@@ -35,26 +35,29 @@ var sortKeys = map[SortKey]bool{SortDate: true, SortRecord: true, SortEmployee: 
 // in Sort fall back to newest activity first, so pages are stable.
 type ListFilter struct {
 	EmployeeID *uuid.UUID
-	Status     *Status
-	From       *time.Time
-	To         *time.Time
-	Sort       SortKey
-	Desc       bool
-	Limit      int
-	Offset     int
+	// CatalogueItemID keeps orders with a line for that item.
+	CatalogueItemID *uuid.UUID
+	Status          *Status
+	From            *time.Time
+	To              *time.Time
+	Sort            SortKey
+	Desc            bool
+	Limit           int
+	Offset          int
 }
 
 // ListParams is a History query as the user states it: calendar dates in the
 // organisation's timezone. Empty fields do not filter.
 type ListParams struct {
-	EmployeeID *uuid.UUID
-	Status     string // "", ORDERED or GIVEN
-	FromDate   string // YYYY-MM-DD, inclusive
-	ToDate     string // YYYY-MM-DD, inclusive
-	Sort       string // a SortKey; "" means date
-	Dir        string // "asc" or "desc"; "" means desc for date, asc otherwise
-	Page       int    // 1-based; 0 means 1
-	PageSize   int    // 0 means DefaultPageSize
+	EmployeeID      *uuid.UUID
+	CatalogueItemID *uuid.UUID
+	Status          string // "", ORDERED or GIVEN
+	FromDate        string // YYYY-MM-DD, inclusive
+	ToDate          string // YYYY-MM-DD, inclusive
+	Sort            string // a SortKey; "" means date
+	Dir             string // "asc" or "desc"; "" means desc for date, asc otherwise
+	Page            int    // 1-based; 0 means 1
+	PageSize        int    // 0 means DefaultPageSize
 }
 
 // Listed is a stored order plus its usage time (algorithm D), which is only
@@ -88,7 +91,7 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 	case size < 1 || size > MaxPageSize:
 		return f, 0, 0, fieldError("page_size", "must be between 1 and 100")
 	}
-	f.EmployeeID = p.EmployeeID
+	f.EmployeeID, f.CatalogueItemID = p.EmployeeID, p.CatalogueItemID
 	f.Sort = SortKey(p.Sort)
 	if f.Sort == "" {
 		f.Sort = SortDate

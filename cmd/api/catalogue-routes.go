@@ -19,6 +19,7 @@ func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	// The literal /active outranks the /{id} wildcard in ServeMux.
 	rt.authenticated("GET /api/v1/catalogue/active", h.listActive)
 	rt.authenticated("GET /api/v1/catalogue/{id}", h.get)
+	rt.authenticated("GET /api/v1/catalogue/{id}/price-history", h.priceHistory)
 	rt.restricted("POST /api/v1/catalogue", h.create, managers...)
 	rt.restricted("PUT /api/v1/catalogue/{id}", h.update, managers...)
 	rt.restricted("POST /api/v1/catalogue/{id}/activate", h.activate, managers...)
@@ -77,6 +78,22 @@ func (h *catalogueHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
+}
+
+// priceHistory lists the item's price and service period changes, newest
+// first, ending with the values it was created with.
+func (h *catalogueHandler) priceHistory(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	history, err := h.items.PriceHistory(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, history)
 }
 
 func (h *catalogueHandler) create(w http.ResponseWriter, r *http.Request) {

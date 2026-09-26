@@ -116,6 +116,24 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+func (r *PostgresRepository) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error) {
+	rows, err := r.pool.Query(ctx, `SELECT a.occurred_at, a.event, u.name,
+			(a.after ->> 'unit_price_cents')::bigint, (a.after ->> 'service_period_months')::int,
+			(a.before ->> 'unit_price_cents')::bigint, (a.before ->> 'service_period_months')::int
+		FROM audit_events a LEFT JOIN users u ON u.id = a.actor_user_id
+		WHERE a.entity_type = $1 AND a.entity_id = $2 AND a.event IN ($3, $4)
+		ORDER BY a.occurred_at DESC, a.id DESC`, auditEntity, id, EventCreated, EventPriceChanged)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (PriceEntry, error) {
+		var e PriceEntry
+		err := row.Scan(&e.At, &e.Event, &e.ByName, &e.UnitPriceCents, &e.ServicePeriodMonths, &e.BeforeCents, &e.BeforeServiceMonths)
+		e.At = e.At.UTC()
+		return e, err
+	})
+}
+
 func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 	if ev == nil {
 		return nil

@@ -27,6 +27,7 @@ An item missing a price or service period is valid in the catalogue but not *ord
 | `GET /api/v1/catalogue` | any authenticated (all live items, incl. inactive) |
 | `GET /api/v1/catalogue/active` | any authenticated (Add Item selector) |
 | `GET /api/v1/catalogue/{id}` | any authenticated |
+| `GET /api/v1/catalogue/{id}/price-history` | any authenticated; the live item's `catalogue.created` and `catalogue.price_changed` events as `{at, event, by_name, unit_price_cents, service_period_months, before_cents, before_service_months}`, newest first (404 for an unknown or deleted item) |
 | `POST /api/v1/catalogue` | admin, manager |
 | `PUT /api/v1/catalogue/{id}` | admin, manager (full replace) |
 | `POST /api/v1/catalogue/{id}/activate`, `/deactivate` | admin, manager |

@@ -2,6 +2,7 @@ package catalogue
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -53,6 +54,25 @@ func (f *fakeRepo) Get(_ context.Context, id uuid.UUID) (Item, error) {
 		return Item{}, ErrNotFound
 	}
 	return i, nil
+}
+
+func (f *fakeRepo) PriceHistory(_ context.Context, id uuid.UUID) ([]PriceEntry, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := []PriceEntry{}
+	for _, ev := range slices.Backward(f.events) {
+		if ev.EntityID != id || (ev.Event != EventCreated && ev.Event != EventPriceChanged) {
+			continue
+		}
+		var before, after priceSnapshot
+		json.Unmarshal(ev.After, &after)
+		e := PriceEntry{At: ev.OccurredAt, Event: ev.Event, UnitPriceCents: after.UnitPriceCents, ServicePeriodMonths: after.ServicePeriodMonths}
+		if len(ev.Before) > 0 && json.Unmarshal(ev.Before, &before) == nil {
+			e.BeforeCents, e.BeforeServiceMonths = before.UnitPriceCents, before.ServicePeriodMonths
+		}
+		out = append(out, e)
+	}
+	return out, nil
 }
 
 func (f *fakeRepo) list(activeOnly bool) []Item {
@@ -208,5 +228,28 @@ func TestDelete(t *testing.T) {
 	}
 	if _, err := svc.Create(ctx, Params{Name: "gloves", SizeGroup: size.GroupNone}, testActor); err != nil {
 		t.Errorf("name reuse after delete: %v", err)
+	}
+}
+
+func TestPriceHistory(t *testing.T) {
+	svc, _ := newTestService()
+	ctx := context.Background()
+	p := Params{Name: "Gloves", SizeGroup: size.GroupNone, UnitPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
+	i, _ := svc.Create(ctx, p, testActor)
+	p.UnitPriceCents = i64(250)
+	svc.Update(ctx, i.ID, p, testActor)
+	p.Details = "Nitrile" // not a price change
+	svc.Update(ctx, i.ID, p, testActor)
+
+	h, err := svc.PriceHistory(ctx, i.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(h) != 2 || h[0].Event != EventPriceChanged || *h[0].UnitPriceCents != 250 || *h[0].BeforeCents != 200 ||
+		h[1].Event != EventCreated || *h[1].UnitPriceCents != 200 || h[1].BeforeCents != nil {
+		t.Errorf("history = %+v", h)
+	}
+	if _, err := svc.PriceHistory(ctx, uuid.New()); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown item: %v, want ErrNotFound", err)
 	}
 }

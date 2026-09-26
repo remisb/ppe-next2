@@ -199,6 +199,9 @@ func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Order, i
 	if f.EmployeeID != nil {
 		add(`employee_id = $%d`, *f.EmployeeID)
 	}
+	if f.CatalogueItemID != nil {
+		add(`EXISTS (SELECT 1 FROM order_lines l WHERE l.order_id = orders.id AND l.catalogue_item_id = $%d)`, *f.CatalogueItemID)
+	}
 	if f.Status != nil {
 		add(`status = $%d`, string(*f.Status))
 	}

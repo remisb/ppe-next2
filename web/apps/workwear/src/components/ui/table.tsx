@@ -58,7 +58,8 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
       data-slot="table-body"
       className={cn(
         "[&_tr:last-child]:border-0",
-        stack && "stacked:flex stacked:flex-col stacked:gap-3",
+        // A card keeps its border when it is the last row.
+        stack && "stacked:flex stacked:flex-col stacked:gap-3 stacked:[&_tr:last-child]:border",
         stack === "grid" && "stacked-wide:grid stacked-wide:grid-cols-2",
         className
       )}

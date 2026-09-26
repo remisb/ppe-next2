@@ -116,5 +116,6 @@ describe('historyQueryString', () => {
     expect(historyQueryString({})).toBe('')
     expect(historyQueryString({ status: 'GIVEN', from: '', page: 2 })).toBe('?status=GIVEN&page=2')
     expect(historyQueryString({ sort: 'total', dir: 'desc' })).toBe('?sort=total&dir=desc')
+    expect(historyQueryString({ catalogue_item_id: 'i1', page_size: 100 })).toBe('?catalogue_item_id=i1&page_size=100')
   })
 })

@@ -95,6 +95,19 @@ export interface CatalogueItem {
   updated_at: string
 }
 
+/** One step of an item's price history (GET /api/v1/catalogue/{id}/price-history), newest first. */
+export interface PriceEntry {
+  at: string
+  event: 'catalogue.created' | 'catalogue.price_changed'
+  by_name: string | null
+  /** The values from `at` on. */
+  unit_price_cents: number | null
+  service_period_months: number | null
+  /** The values replaced; null for catalogue.created. */
+  before_cents: number | null
+  before_service_months: number | null
+}
+
 export interface CatalogueItemInput {
   name: string
   details: string
@@ -231,6 +244,8 @@ export type SortDir = 'asc' | 'desc'
 /** History filters; omitted fields do not filter. Dates are YYYY-MM-DD in the organisation timezone. */
 export interface HistoryQuery {
   employee_id?: string
+  /** Orders with a line for this catalogue item. */
+  catalogue_item_id?: string
   status?: OrderStatus
   from?: string
   to?: string

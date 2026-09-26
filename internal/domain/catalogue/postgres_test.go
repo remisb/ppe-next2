@@ -68,6 +68,15 @@ func TestPostgresCatalogue(t *testing.T) {
 	if before != "2500" || after != "2750" {
 		t.Errorf("price event %s -> %s", before, after)
 	}
+	h, err := svc.PriceHistory(ctx, i.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(h) != 2 || h[0].Event != EventPriceChanged || *h[0].BeforeCents != 2500 || *h[0].UnitPriceCents != 2750 ||
+		*h[0].ServicePeriodMonths != 12 || *h[0].ByName != "Actor" || h[1].Event != EventCreated || *h[1].UnitPriceCents != 2500 ||
+		h[1].BeforeCents != nil || h[0].At.Before(h[1].At) {
+		t.Errorf("price history = %+v", h)
+	}
 
 	if _, err := svc.SetActive(ctx, draft.ID, false, actor); err != nil {
 		t.Fatal(err)

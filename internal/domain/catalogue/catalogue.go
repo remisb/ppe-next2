@@ -43,6 +43,20 @@ type Item struct {
 	DeletedByUserID     *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
+// PriceEntry is one step of an item's price history, from its audit events:
+// the price and service period it was created with, then each change.
+type PriceEntry struct {
+	At     time.Time `json:"at"`
+	Event  string    `json:"event"`   // EventCreated or EventPriceChanged
+	ByName *string   `json:"by_name"` // the user's current name; nil if unknown
+	// UnitPriceCents and ServicePeriodMonths are the values from At on.
+	UnitPriceCents      *int64 `json:"unit_price_cents"`
+	ServicePeriodMonths *int   `json:"service_period_months"`
+	// Before* are the values replaced; both nil for EventCreated.
+	BeforeCents         *int64 `json:"before_cents"`
+	BeforeServiceMonths *int   `json:"before_service_months"`
+}
+
 func (i Item) Deleted() bool { return i.DeletedAt != nil }
 
 // Orderable reports whether the item can go on a new order: live, active, and

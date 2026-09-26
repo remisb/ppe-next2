@@ -54,6 +54,7 @@ optional; anything else is a 400:
 | Parameter | Meaning |
 | --- | --- |
 | `employee_id` | One employee's orders |
+| `catalogue_item_id` | Orders with a line for that catalogue item (the item page) |
 | `status` | `ORDERED` or `GIVEN`; omitted = all statuses |
 | `from`, `to` | `YYYY-MM-DD`, inclusive, matched against the activity time as a calendar day in the organisation timezone (`API_ORG_TIMEZONE`, default `Europe/Vilnius`); timestamps stay UTC |
 | `sort` | `date` (default), `record`, `employee`, `status`, `usage` or `total`; sorts the whole history before paging. `usage` ascending is most recently given first, and ORDERED orders (no usage time) come last in both directions |
