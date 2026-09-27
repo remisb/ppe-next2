@@ -4,7 +4,16 @@ UX research report for Workwear & Equipment (PPE-next2). It reviews all 15 scree
 phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each problem area there are two or three
 design options, each with a sample screen, pros and cons, and a recommendation.
 
-27 Sep 2026 · build `1ff7a0c` · demo data · roles: admin, manager, employee
+27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
+status: phases 1–3 shipped (`a663ce0`)
+
+> **Status, updated 27 Sep 2026.** Phases 1–3 are built and live at the production site:
+> every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
+> in `aee8829` and phase 3 in `a663ce0`, each with its e2e steps (30 in total, all
+> passing). The findings, figures and "today" samples in this report describe the app as
+> reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
+> lists what shipped in each phase, where it differs from the proposal, and what is still
+> open.
 
 > The sample screens are drawn in [`workwear-ux-review.html`](workwear-ux-review.html).
 > Open it in a browser to see them. This Markdown version keeps the full text, and gives
@@ -22,7 +31,7 @@ design options, each with a sample screen, pros and cons, and a recommendation.
 7. [Employee confirmation](#7-employee-confirmation)
 8. [Tablet](#8-tablet)
 9. [Desktop power layer](#9-desktop-power-layer)
-10. [Roadmap](#10-roadmap)
+10. [Roadmap: phases 1–3 shipped](#10-roadmap-phases-13-shipped)
 11. [References](#11-references)
 
 ---
@@ -50,20 +59,20 @@ undone, yet it runs on a single tap with no review.
 
 ### Top recommendations
 
-| # | Change | Screen | Platform | Impact | Effort |
-|---|---|---|---|---|---|
-| 1 | Add a review sheet before Mark as Ordered, and show the next steps after it (confirmation link, WhatsApp, print) | Create Order | Both | High | S |
-| 2 | Phone bar with four tabs plus More. Move Catalogue, Item Sets, Users and Account into More | App shell | Phone | High | S |
-| 3 | Compact order lines: size chip and a −/+ quantity stepper on one 64 px row, with price details on tap | Create Order | Phone | High | M |
-| 4 | Apply an item set with one tap on a chip (today it takes a select plus Apply). Add items from a search field | Create Order | Both | High | S |
-| 5 | History status tabs (Awaiting · Given · All) with counts, a "days waiting" chip, and 64 px rows that open the record | History | Phone | High | M |
-| 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M |
-| 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M |
-| 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S |
-| 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S |
-| 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M |
-| 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S |
-| 12 | One-column rows in portrait, list and detail in landscape, chosen by container width | Lists, History | Tablet | Med | M |
+| # | Change | Screen | Platform | Impact | Effort | Status |
+|---|---|---|---|---|---|---|
+| 1 | Add a review sheet before Mark as Ordered, and show the next steps after it (confirmation link, WhatsApp, print) | Create Order | Both | High | S | Done (Phase 1) |
+| 2 | Phone bar with four tabs plus More. Move Catalogue, Item Sets, Users and Account into More | App shell | Phone | High | S | Done (Phase 1) |
+| 3 | Compact order lines: size chip and a −/+ quantity stepper on one 64 px row, with price details on tap | Create Order | Phone | High | M | Done (Phase 2) |
+| 4 | Apply an item set with one tap on a chip (today it takes a select plus Apply). Add items from a search field | Create Order | Both | High | S | Done (Phases 1–2) |
+| 5 | History status tabs (Awaiting · Given · All) with counts, a "days waiting" chip, and 64 px rows that open the record | History | Phone | High | M | Done (Phase 2) |
+| 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M | Done (Phase 2) |
+| 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M | Done (Phases 1–2) |
+| 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1) |
+| 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2) |
+| 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M | Done (Phase 3) |
+| 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S | Done (Phase 1) |
+| 12 | One-column rows in portrait, list and detail in landscape, chosen by container width | Lists, History | Tablet | Med | M | Done (Phase 2) |
 
 ---
 
@@ -780,43 +789,66 @@ Kazlauskienė ↵; Reorder gloves for Ona Kazlauskienė (overdue)), Employees (O
 
 ---
 
-## 10. Roadmap
+## 10. Roadmap: phases 1–3 shipped
 
-### Phase 1: quick wins (safety and orientation)
+### Phase 1: quick wins (safety and orientation) — done, `3c76945`
 
-- Review sheet before Mark as Ordered
-- Success screen with Send link, WhatsApp and Print
-- Phone bar with four tabs plus More, badge on History
-- Icon rail kept until 1280 px for landscape tablets
-- One-tap item set chips
-- Delete and Deactivate moved into ⋯ with a confirmation
-- Missing-size chips in the Employees list
-- Compare with the same days of last month on the dashboard
+- [x] Review sheet before Mark as Ordered
+- [x] Success screen with Send link, WhatsApp and Print
+- [x] Phone bar with four tabs plus More, badge on History
+- [x] Icon rail kept until 1280 px for landscape tablets
+- [x] One-tap item set chips
+- [x] Delete and Deactivate moved into ⋯ with a confirmation
+- [x] Missing-size chips in the Employees list
+- [x] Compare with the same days of last month on the dashboard
 
-### Phase 2: density (lists and composer)
+**As built:** the account moved from the phone's top bar into More. Deactivate asks with
+the browser's confirm dialog, like the existing Delete. The month comparison needed a small
+API addition (`previous_to_date`, `through_day`).
 
-- Compact order lines with steppers and size chips
-- Searchable Add item combobox
-- History status tabs, aging chips, order page
-- History list and detail pane on desktop
-- Attention-first dashboards with a prefilled Reorder
-- Confirmation page with the summary first and pinned consent
-- Tablet: one-column rows in portrait, list and detail in landscape
+### Phase 2: density (lists and composer) — done, `aee8829`
 
-### Phase 3: delight (speed for power users)
+- [x] Compact order lines with steppers and size chips
+- [x] Searchable Add item combobox
+- [x] History status tabs, aging chips, order page
+- [x] History list and detail pane on desktop
+- [x] Attention-first dashboards with a prefilled Reorder
+- [x] Confirmation page with the summary first and pinned consent
+- [x] Tablet: one-column rows in portrait, list and detail in landscape
 
-- ⌘K palette and keyboard shortcuts
-- "Due now" suggestions in Create Order
-- Due-date bars on the employee page
-- Item pictograms, and later the shop grid
-- Drafts that survive a closed tab (localStorage or the server)
-- Hand-over mode on the counter tablet, once the product owner agrees
+**As built:** the History tabs still open on All; Awaiting is one tap away. The
+confirmation page keeps the full bilingual record visible below the summary rather than
+collapsing it, which avoids the legal question raised in section 7. Reorder uses the
+quantity given last time, which the API now returns with each replacement.
 
-Each change touches the e2e suite and `web/AGENTS.md`. The responsive rules still hold:
-one Main nav, 44 px touch targets, sticky actions above `--bottom-nav`, and no sideways
-scrolling at 375–1280 px (re-baseline the 1100 px check if the rail stays until 1280). A "row list" variant needs adding next to `<Table stack>`. Run a
-five-user hallway test of the phone Create Order (Phase 2) before building it, timing
-"apply the starter kit, change one size, send".
+### Phase 3: delight (speed for power users) — done, `a663ce0`
+
+- [x] ⌘K palette and keyboard shortcuts
+- [x] "Due now" suggestions in Create Order
+- [x] Due-date bars on the employee page
+- [x] Item pictograms
+- [x] Drafts that survive a closed tab
+- [x] Hand-over mode on the counter tablet
+
+**As built:** hand-over records a new confirmation method, `IN_PERSON` (migration 0009),
+with the staff member as giver; the manual defines only electronic and paper. Pictograms
+are an icon field on each item (migration 0008), guessed from existing names. Drafts are
+kept in localStorage per user on the device, cleared by Sign out.
+
+### Still open
+
+- **Shop grid** in Create Order: deferred until the catalogue passes about 30 items, as
+  section 3 recommends. The pictograms it needs are in place.
+- **Search by record number** in the ⌘K palette: the API has no record-number search yet.
+- **Hallway test**: the five-user test of the phone Create Order, timing "apply the
+  starter kit, change one size, send", was not run before building. Running it now would
+  measure the new flow.
+- **Product owner sign-off** for in-person confirmation, which goes beyond the manual; and
+  iPad Guided Access on any tablet left at a counter.
+
+Each phase updated the e2e suite, `web/AGENTS.md` and `docs/testing.md`. The responsive
+rules still hold: one Main nav, 44 px touch targets, sticky actions above `--bottom-nav`,
+and no sideways scrolling at 375, 768, 920, 1100 and 1280 px.
 
 ---
 
