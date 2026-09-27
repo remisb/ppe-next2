@@ -5,12 +5,12 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped (`a663ce0`)
+status: phases 1–3 shipped, plus follow-ups (`13214e8`)
 
 > **Status, updated 27 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
-> in `aee8829` and phase 3 in `a663ce0`, each with its e2e steps (30 in total, all
-> passing). The findings, figures and "today" samples in this report describe the app as
+> in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
+> figures followed in `13214e8`. Each came with its e2e steps (32 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -835,11 +835,20 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
+### Since phase 3 — done, `13214e8`
+
+- [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
+  order first, and Enter opens it in History (History's new `record` filter)
+- [x] Dashboard figures with a list behind them are tappable: Awaiting and On order open
+  History on the Awaiting tab, Replacements due jumps to its rows in Needs you, Missing
+  sizes opens Employees filtered
+- [x] Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe
+  size") instead of "1 employee to measure"
+
 ### Still open
 
 - **Shop grid** in Create Order: deferred until the catalogue passes about 30 items, as
   section 3 recommends. The pictograms it needs are in place.
-- **Search by record number** in the ⌘K palette: the API has no record-number search yet.
 - **Hallway test**: the five-user test of the phone Create Order, timing "apply the
   starter kit, change one size, send", was not run before building. Running it now would
   measure the new flow.
