@@ -179,10 +179,11 @@ func TestPostgresOverview(t *testing.T) {
 	if r.Overdue != 1 || r.DueSoon != 1 || len(r.Next) != 2 {
 		t.Fatalf("replacements = %+v", r)
 	}
-	if n := r.Next[0]; n.EmployeeID != jonas || n.CatalogueItemID != gloves || !n.Overdue || !n.DueAt.Equal(utc("2026-08-02T08:00:00Z")) {
+	// Quantity is the quantity given last time, which a reorder starts from.
+	if n := r.Next[0]; n.EmployeeID != jonas || n.CatalogueItemID != gloves || !n.Overdue || !n.DueAt.Equal(utc("2026-08-02T08:00:00Z")) || n.Quantity != 4 {
 		t.Errorf("first replacement = %+v", n)
 	}
-	if n := r.Next[1]; n.OrderID != o1 || *n.Size != "39" || n.Overdue || n.EmployeeCode == nil || *n.EmployeeCode != "W-1" || n.RecordNumber != "WE-000001" {
+	if n := r.Next[1]; n.OrderID != o1 || *n.Size != "39" || n.Quantity != 1 || n.Overdue || n.EmployeeCode == nil || *n.EmployeeCode != "W-1" || n.RecordNumber != "WE-000001" {
 		t.Errorf("last replacement = %+v", n)
 	}
 

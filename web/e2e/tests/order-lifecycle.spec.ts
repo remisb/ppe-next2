@@ -35,6 +35,18 @@ async function openTab(name: string) {
   await link.click()
 }
 
+/** Add Item is a search: type part of the name, then choose the item. */
+async function addItem(search: string, name: RegExp) {
+  await page.getByRole('combobox', { name: 'Add Item' }).fill(search)
+  await page.getByRole('option', { name }).click()
+}
+
+/** Opens an order from the History list; its detail and actions show beside the list (or instead of it on a phone). */
+async function openOrder(record: string) {
+  await page.getByRole('link', { name: record, exact: true }).click()
+  return page.getByRole('complementary', { name: 'Order' })
+}
+
 /** Mark as Ordered asks for a review first; confirm it there. */
 async function markAsOrdered() {
   await page.getByRole('button', { name: 'Mark as Ordered' }).click()
@@ -61,7 +73,7 @@ test('sign in', async () => {
   await page.getByRole('button', { name: 'Sign in' }).click()
   // An administrator starts on the Dashboard; an empty database still gives a whole one.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
-  await expect(page.getByText('No order is waiting for confirmation.')).toBeVisible()
+  await expect(page.getByText('Nothing needs you: every order is confirmed and nothing is due.')).toBeVisible()
 })
 
 test('Item Catalogue: items with and without a price', async () => {
@@ -155,7 +167,7 @@ test('missing size: choose it and Save as Employee Default', async () => {
 })
 
 test('missing catalogue price blocks Mark as Ordered', async () => {
-  await page.getByLabel('Add Item').selectOption({ label: 'Safety helmet — EN 397' })
+  await addItem('helmet', /^Safety helmet/)
   await expect(page.getByRole('alert').filter({ hasText: 'No price or service period' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
   await page.getByRole('button', { name: 'Remove Safety helmet' }).click()
@@ -175,7 +187,7 @@ test('quantity below 1 or not an integer is rejected at the field', async () => 
 
 test('network error keeps the form and offers Retry', async () => {
   await page.route('**/api/v1/orders/resolve', (route) => route.abort('failed'))
-  await page.getByLabel('Add Item').selectOption({ label: 'Protective gloves — Nitrile' })
+  await addItem('nitrile', /^Protective gloves/)
   await expect(page.getByText('That did not work')).toBeVisible()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
   await page.unroute('**/api/v1/orders/resolve')
@@ -216,18 +228,23 @@ test('History shows it ORDERED with the ORDERED actions', async () => {
   await openTab('History')
   // The navigation counts the orders waiting for confirmation.
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'History (1 waiting for confirmation)' })).toBeVisible()
+  // The status tabs count what is waiting and what was given.
+  await expect(page.getByRole('button', { name: 'Awaiting 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Ordered')
-  await expect(row.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
-  await expect(row.getByRole('button', { name: 'View Record' })).toHaveCount(0)
-  await row.getByRole('button', { name: 'View Items' }).click()
-  await expect(page.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
-  await row.getByRole('button', { name: 'Hide Items' }).click()
+  await expect(row).toContainText('today') // days waiting for confirmation
+
+  // The row opens the order at its own address, beside the list, with its items and ORDERED actions.
+  const order = await openOrder(recordNumber)
+  await expect(page).toHaveURL(/\/history\/[0-9a-f-]{36}$/)
+  await expect(order.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'View Record' })).toHaveCount(0)
 })
 
 test('Open Employee Confirmation creates a link', async () => {
-  const row = page.getByRole('row', { name: new RegExp(recordNumber) })
-  await row.getByRole('button', { name: 'Open Employee Confirmation' }).click()
+  await page.getByRole('complementary', { name: 'Order' }).getByRole('button', { name: 'Open Employee Confirmation' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: 'Create confirmation link' }).click()
   const link = dialog.getByLabel('Confirmation link')
@@ -242,11 +259,16 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   const employee = await ctx.newPage()
   await employee.goto(confirmationURL)
   await expect(employee.getByRole('navigation')).toHaveCount(0)
+  // First what is asked, in plain words, and the items; then the full record.
+  await expect(employee.getByRole('heading', { name: 'Ona, please confirm you received these 3 items' })).toBeVisible()
+  await expect(employee.getByRole('list', { name: 'Items / Предметы' }).getByRole('listitem')).toHaveCount(3)
   await expect(employee.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(employee.getByText('Подтверждение получения')).toBeVisible()
   await expect(employee.getByText('Confirmation of receipt')).toBeVisible()
 
   const confirm = employee.getByRole('button', { name: 'Confirm Receipt / Подтвердить' })
+  // The consent is pinned to the bottom of the screen: in reach without scrolling the record.
+  await expect(confirm).toBeInViewport()
   await expect(confirm).toBeDisabled()
   await employee.getByRole('checkbox').check()
   await confirm.click()
@@ -263,14 +285,20 @@ test('the employee confirms on the public page; a second confirmation is a no-op
 })
 
 test('History shows it GIVEN with usage time and the GIVEN actions', async () => {
+  // The order's address still opens it after a reload.
   await page.reload()
-  await page.getByLabel('Status').selectOption('GIVEN')
+  let order = page.getByRole('complementary', { name: 'Order' })
+  await expect(order).toContainText(recordNumber)
+  await order.getByRole('button', { name: 'Close order' }).click()
+  await page.getByRole('button', { name: /^Given/ }).click()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Given')
   await expect(row).toContainText('0.0 months')
-  await expect(row.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
-  await expect(row.getByRole('button', { name: 'View Record' })).toBeVisible()
-  await expect(row.getByRole('button', { name: 'Print Record' })).toBeVisible()
+  order = await openOrder(recordNumber)
+  await expect(order).toContainText('confirmed electronically')
+  await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
+  await expect(order.getByRole('button', { name: 'View Record' })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'Print Record' })).toBeVisible()
 })
 
 test('a later price change does not alter the stored record', async () => {
@@ -281,7 +309,7 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
 
   await openTab('History')
-  await page.getByRole('row', { name: new RegExp(recordNumber) }).getByRole('button', { name: 'View Record' }).click()
+  await (await openOrder(recordNumber)).getByRole('button', { name: 'View Record' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(page.getByRole('cell', { name: '€49.99' }).first()).toBeVisible()
   await expect(page.getByText('€59.99')).toHaveCount(0)
@@ -299,7 +327,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   // The shoe size saved earlier is now her default.
-  await page.getByLabel('Add Item').selectOption({ label: 'Safety shoes — S3 SRC' })
+  await addItem('shoes', /^Safety shoes/)
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await markAsOrdered()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
@@ -308,10 +336,12 @@ test('paper confirmation: a second order signed on paper', async () => {
   await expect(page.getByRole('cell', { name: '€59.99' }).first()).toBeVisible()
 
   await openTab('History')
-  await page.getByRole('row', { name: new RegExp(paperRecord) }).getByRole('button', { name: 'Open Employee Confirmation' }).click()
+  const order = await openOrder(paperRecord)
+  await order.getByRole('button', { name: 'Open Employee Confirmation' }).click()
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
-  await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('Given')
+  await expect(order).toContainText('signed on paper')
+  await expect(page.getByRole('button', { name: 'Awaiting 0' })).toBeVisible()
 })
 
 test('Item page: price history and the orders that hold the item', async () => {
@@ -344,7 +374,10 @@ test('Dashboard: the figures follow the orders', async () => {
   await expect(figures.getByRole('listitem').filter({ hasText: /^Given in/ })).toContainText('13 items in 2 orders')
   await expect(page.getByRole('table', { name: 'Value ordered and given per month' })).toContainText('€174.97 in 2 orders')
   await expect(page.getByText('Electronic 1 (50%)')).toBeVisible()
-  await expect(page.getByRole('listitem').filter({ hasText: 'Protective gloves' })).toContainText('10 · €25.00')
+  await expect(page.getByRole('region', { name: 'Most given items' }).getByRole('listitem').filter({ hasText: 'Protective gloves' })).toContainText('10 · €25.00')
+  // Needs you: the unpriced helmet stops ordering, with the way to fix it.
+  const needs = page.getByRole('list', { name: 'Needs you' })
+  await expect(needs.getByRole('listitem').filter({ hasText: '1 item without a price or service period' })).toBeVisible()
   // Safety helmet has no price, which Mark as Ordered refuses; the row leads to the catalogue.
   const catalogue = page.getByRole('link', { name: /Catalogue items/ })
   await expect(catalogue).toContainText('1 without a price or service period')
@@ -431,6 +464,33 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page.getByRole('heading', { name: 'Employees' })).toBeVisible()
 })
 
+test('a reorder link starts the order with the item at the quantity given; the stepper changes it', async () => {
+  // A dashboard's Reorder carries the employee, the item and the quantity given last time in the address.
+  await openTab('Employees')
+  await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
+  const employeeId = /\/employees\/([0-9a-f-]{36})$/.exec(page.url())![1]
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Protective gloves' }).click()
+  const itemId = /\/catalogue\/([0-9a-f-]{36})$/.exec(page.url())![1]
+
+  await page.goto(`/orders/new?employee=${employeeId}&item=${itemId}:10`)
+  await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
+  await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', /Ona Kazlauskienė/)
+  // The address drops the reorder, so a reload keeps the draft without adding the items again.
+  await expect(page).toHaveURL(/\/orders\/new$/)
+  await page.reload()
+  await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
+
+  await page.getByRole('button', { name: 'One more Protective gloves' }).click()
+  await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('11')
+  await page.getByRole('button', { name: 'One fewer Protective gloves' }).click()
+  await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
+
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: 'New order' }).click()
+  await expect(page.getByText('No items yet.')).toBeVisible()
+})
+
 test('phone and tablet: no screen scrolls sideways', async () => {
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
@@ -475,12 +535,16 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeInViewport()
   expect(await fits()).toBe(true)
-  // Left ORDERED, so History has a row with the widest action, Open Employee Confirmation.
+  // Left ORDERED, so History has a row waiting for confirmation.
   await markAsOrdered()
   await page.getByRole('button', { name: 'Start a new order' }).click()
 
+  // On a phone an order opens instead of the list, with the way back to it.
   await openTab('History')
-  await page.getByRole('button', { name: 'View Record' }).first().click()
+  await openOrder(recordNumber)
+  await expect(page.getByRole('heading', { name: 'History' })).toBeHidden()
+  expect(await fits(), 'an order scrolls sideways').toBe(true)
+  await page.getByRole('button', { name: 'View Record' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   expect(await fits(), 'the record scrolls sideways').toBe(true)
 
@@ -606,7 +670,8 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   const eliNav = other.getByRole('navigation', { name: 'Main' })
   await expect(eliNav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
   await expect(eliNav.getByRole('link', { name: 'Users' })).toHaveCount(0)
-  await expect(other.getByText('None of your orders is waiting.')).toBeVisible()
+  await expect(other.getByText('Every order of yours is confirmed.')).toBeVisible()
+  await expect(other.getByRole('region', { name: 'Needs you' }).getByRole('button', { name: /^Send link/ })).toHaveCount(0)
   await expect(other.getByRole('list', { name: 'Key figures' }).getByRole('listitem').filter({ hasText: 'Replacements due' })).toBeVisible()
   await other.setViewportSize({ width: 375, height: 812 })
   expect(

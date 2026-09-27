@@ -380,6 +380,8 @@ export interface DashboardReplacement {
   catalogue_item_id: string
   item_name: string
   size: string | null
+  /** The quantity given on that line; a reorder starts from it. */
+  quantity: number
   order_id: string
   record_number: string
   given_at: string

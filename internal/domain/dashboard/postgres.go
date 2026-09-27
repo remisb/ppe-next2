@@ -152,7 +152,7 @@ func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, lim
 	rows, err := tx.Query(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (o.employee_id, l.catalogue_item_id)
-				o.employee_id, l.catalogue_item_id, l.item_name, l.size, o.id AS order_id, o.record_seq, o.given_at,
+				o.employee_id, l.catalogue_item_id, l.item_name, l.size, l.quantity, o.id AS order_id, o.record_seq, o.given_at,
 				o.given_at + make_interval(months => l.service_period_months) AS due_at
 			FROM order_lines l JOIN orders o ON o.id = l.order_id
 			WHERE o.status = 'GIVEN'
@@ -164,7 +164,7 @@ func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, lim
 				SELECT 1 FROM orders p JOIN order_lines pl ON pl.order_id = p.id
 				WHERE p.status = 'ORDERED' AND p.employee_id = d.employee_id AND pl.catalogue_item_id = d.catalogue_item_id)
 		)
-		SELECT employee_id, name, code, catalogue_item_id, item_name, size, order_id, record_seq, given_at, due_at,
+		SELECT employee_id, name, code, catalogue_item_id, item_name, size, quantity, order_id, record_seq, given_at, due_at,
 			count(*) FILTER (WHERE due_at <= $2) OVER (), count(*) FILTER (WHERE due_at > $2) OVER ()
 		FROM due ORDER BY due_at, name, item_name LIMIT $3`, dueBy, now, limit)
 	if err != nil {
@@ -173,7 +173,7 @@ func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, lim
 	var r Replacements
 	r.Next, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (Replacement, error) {
 		var x Replacement
-		err := row.Scan(&x.EmployeeID, &x.EmployeeName, &x.EmployeeCode, &x.CatalogueItemID, &x.ItemName, &x.Size,
+		err := row.Scan(&x.EmployeeID, &x.EmployeeName, &x.EmployeeCode, &x.CatalogueItemID, &x.ItemName, &x.Size, &x.Quantity,
 			&x.OrderID, &x.RecordSeq, &x.GivenAt, &x.DueAt, &r.Overdue, &r.DueSoon)
 		x.GivenAt, x.DueAt = x.GivenAt.UTC(), x.DueAt.UTC()
 		return x, err

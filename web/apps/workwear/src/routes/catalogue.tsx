@@ -39,6 +39,9 @@ export function confirmActiveChange(i: CatalogueItem): boolean {
   return !i.active || window.confirm(`Deactivate ${i.name}? It will no longer be offered in Add Item. Orders that hold it keep it.`)
 }
 
+/** A card's labelled fact: a full line on a phone, one of three on a line from 36rem. */
+const fact = 'stacked-wide:w-auto stacked-wide:justify-start stacked-wide:gap-2 stacked-wide:pr-4'
+
 /** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
 function statusRank(i: CatalogueItem): number {
   return (i.active ? 0 : 2) + (i.unit_price_cents === null || i.service_period_months === null ? 1 : 0)
@@ -104,7 +107,8 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
         <Loading />
       ) : (
         // Where the table is narrow each item is a card: name and status, details, then the ordering values.
-        <Table stack="grid" stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
+        // From 36rem of room (a tablet in portrait) one card a row, actions beside the name.
+        <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
@@ -133,9 +137,10 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                 <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>
                   {i.details || '—'}
                 </TableCell>
-                <TableCell label="Size group" className="stacked:order-4">{sizeGroupLabel[i.size_group]}</TableCell>
-                <TableCell label="Unit price" className="text-right tabular-nums stacked:order-5">{formatEuro(i.unit_price_cents)}</TableCell>
-                <TableCell label="Service period" className="stacked:order-6">{formatMonths(i.service_period_months)}</TableCell>
+                {/* From 36rem of room the three facts share one line. */}
+                <TableCell label="Size group" className={cn('stacked:order-4', fact)}>{sizeGroupLabel[i.size_group]}</TableCell>
+                <TableCell label="Unit price" className={cn('text-right tabular-nums stacked:order-5', fact)}>{formatEuro(i.unit_price_cents)}</TableCell>
+                <TableCell label="Service period" className={cn('stacked:order-6', fact)}>{formatMonths(i.service_period_months)}</TableCell>
                 <TableCell className="space-x-1 stacked:order-2 stacked:flex stacked:w-auto stacked:gap-1 stacked:space-x-0">
                   {i.active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
                   {i.unit_price_cents === null || i.service_period_months === null ? (
@@ -143,8 +148,8 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                   ) : null}
                 </TableCell>
                 {canManageItems ? (
-                  <TableCell className="text-right whitespace-nowrap stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2">
-                    <Button size="sm" variant="outline" className="stacked:flex-1" onClick={() => setEditing(i)}>
+                  <TableCell className="text-right whitespace-nowrap stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2 stacked-wide:order-2 stacked-wide:mt-0 stacked-wide:w-auto">
+                    <Button size="sm" variant="outline" className="stacked:flex-1 stacked-wide:flex-none" onClick={() => setEditing(i)}>
                       Edit
                     </Button>{' '}
                     <MoreActions label={`More actions for ${i.name}`}>

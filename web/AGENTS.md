@@ -44,7 +44,14 @@ The workwear app is the reference.
   stack below 60rem instead; measure it beside the `md` rail. Restyle cards with the
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
   an A4 print and would print the receipt as cards. Never render a list twice (a table
-  for desktop plus cards for phones).
+  for desktop plus cards for phones). Lists people scan (History, Employees, Catalogue,
+  order lines) keep one compact card a row rather than `stack="grid"`: from 36rem of room
+  (`stacked-wide:`, a tablet in portrait) a card's actions move beside its title and its
+  facts share a line.
+- **List and detail**: a row that has more to show opens it at its own address (History:
+  `/history/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
+  list, which keeps its filters and page behind it. The row's actions live in the
+  detail, not in an Actions column.
 - **Sorting**: sortable columns use `SortableHead` (`components/sortable.tsx`, `aria-sort`
   on the header) and the same state in a `SortControl` passed as the Table's
   `sortControl`, which shows only while the table is stacked and its header hidden.

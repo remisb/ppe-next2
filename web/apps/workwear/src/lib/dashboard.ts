@@ -1,3 +1,5 @@
+import type { Route } from './router'
+
 /**
  * Display rules for the administrator's dashboard. The API computes every
  * figure; these only label, compare and scale them.
@@ -81,4 +83,22 @@ export function share(part: number, total: number): number {
 /** "1 order", "3 orders". */
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`
+}
+
+/** One thing a dashboard asks the user to do. */
+export interface Need {
+  key: string
+  /** Overdue, or waiting past the flag: shown first and in red. */
+  urgent: boolean
+  /** A short tag: "12 days", "Overdue", "Sizes". */
+  tag: string
+  title: string
+  detail: string
+  /** The one action; context completes its name for screen readers ("Reorder" + "Gloves for Ona"). */
+  action: { label: string; context: string; to: Route }
+}
+
+/** Urgent first; otherwise in the order given (each source is already oldest or soonest first). */
+export function sortNeeds(needs: readonly Need[]): Need[] {
+  return [...needs.filter((n) => n.urgent), ...needs.filter((n) => !n.urgent)]
 }

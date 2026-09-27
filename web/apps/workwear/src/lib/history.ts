@@ -48,6 +48,33 @@ export function formatDateTime(iso: string, timeZone: string | undefined): strin
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
 }
 
+/** The calendar date of iso in timeZone, as days since 1970 (for day differences). */
+function localDay(iso: string | Date, timeZone: string | undefined): number {
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(d)
+    .split('-')
+    .map(Number)
+  return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000
+}
+
+/**
+ * How many calendar days an ORDERED order has waited for the employee's
+ * confirmation, in the organisation's timezone, as the dashboards count it:
+ * an order placed yesterday evening is one day old this morning.
+ */
+export function waitingDays(orderedAt: string, now: Date, timeZone: string | undefined): number {
+  return Math.max(0, localDay(now, timeZone) - localDay(orderedAt, timeZone))
+}
+
+/** Waiting longer than this is flagged, as on the dashboards. */
+export const LONG_WAIT_DAYS = 14
+
+/** "today", "1 day", "12 days". */
+export function formatWaiting(days: number): string {
+  return days === 0 ? 'today' : days === 1 ? '1 day' : `${days} days`
+}
+
 /** The order's activity time: given if given, else ordered. History sorts on it. */
 export function activityAt(o: { given_at: string | null; ordered_at: string }): string {
   return o.given_at ?? o.ordered_at

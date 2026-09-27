@@ -249,7 +249,7 @@ export function App() {
         {route.name === 'dashboard' ? <Dashboard navigate={navigate} /> : null}
         {route.name === 'managerDashboard' ? <ManagerDashboard navigate={navigate} /> : null}
         {route.name === 'employeeDashboard' ? <EmployeeDashboard navigate={navigate} /> : null}
-        {route.name === 'createOrder' ? <CreateOrder navigate={navigate} /> : null}
+        {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
         {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
         {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
@@ -259,7 +259,9 @@ export function App() {
         {route.name === 'itemSets' ? <ItemSets /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
-        {route.name === 'history' ? <History onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} /> : null}
+        {route.name === 'history' ? (
+          <History selected={route.order} navigate={navigate} onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} />
+        ) : null}
         {route.name === 'record' ? (
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />
         ) : null}

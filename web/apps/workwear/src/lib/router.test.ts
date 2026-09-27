@@ -23,6 +23,18 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'catalogueItem', id: 'x/y' }))).toEqual({ name: 'catalogueItem', id: 'x/y' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
+    expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
+  })
+  it('carries a reorder in the Create Order address', () => {
+    const prefill = { employeeId: 'e1', items: [{ id: 'gloves', quantity: 10 }, { id: 'shoes', quantity: 1 }] }
+    const path = pathOf({ name: 'createOrder', prefill })
+    expect(path).toBe('/orders/new?employee=e1&item=gloves%3A10&item=shoes%3A1')
+    const [pathname, search] = path.split('?')
+    expect(parsePath(pathname!, `?${search}`)).toEqual({ name: 'createOrder', prefill })
+    // Malformed or empty: an ordinary new order.
+    expect(parsePath('/orders/new', '?employee=e1')).toEqual({ name: 'createOrder' })
+    expect(parsePath('/orders/new', '?employee=e1&item=gloves:0')).toEqual({ name: 'createOrder' })
+    expect(parsePath('/orders/new', '?item=gloves:2')).toEqual({ name: 'createOrder' })
   })
   it('sends unknown paths and the root to the start screen', () => {
     expect(parsePath('/')).toEqual({ name: 'home' })

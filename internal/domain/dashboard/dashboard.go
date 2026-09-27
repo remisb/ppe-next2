@@ -131,12 +131,14 @@ type Replacement struct {
 	CatalogueItemID uuid.UUID `json:"catalogue_item_id"`
 	ItemName        string    `json:"item_name"`
 	Size            *string   `json:"size"`
-	OrderID         uuid.UUID `json:"order_id"`
-	RecordSeq       int64     `json:"-"`
-	RecordNumber    string    `json:"record_number"` // derived
-	GivenAt         time.Time `json:"given_at"`
-	DueAt           time.Time `json:"due_at"`
-	Overdue         bool      `json:"overdue"` // derived
+	// Quantity is the quantity given on that line: a reorder starts from it.
+	Quantity     int       `json:"quantity"`
+	OrderID      uuid.UUID `json:"order_id"`
+	RecordSeq    int64     `json:"-"`
+	RecordNumber string    `json:"record_number"` // derived
+	GivenAt      time.Time `json:"given_at"`
+	DueAt        time.Time `json:"due_at"`
+	Overdue      bool      `json:"overdue"` // derived
 }
 
 // Setup counts live master data, and what in it stops or slows ordering.

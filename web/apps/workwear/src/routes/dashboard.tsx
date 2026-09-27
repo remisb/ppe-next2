@@ -1,12 +1,11 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, Panel, ReplacementsPanel, formatDate, inlineLink } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useApi, useSession } from '@/lib/api'
-import { changeText, formatDays, monthLabel, plural, share } from '@/lib/dashboard'
+import { type Need, changeText, formatDays, monthLabel, plural, share } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -15,9 +14,10 @@ import { cn, formatEuro } from '@/lib/utils'
 type Navigate = (to: Route) => void
 
 /**
- * The administrator's start screen: what is waiting, what was spent, what is
- * due for replacement and what in the master data blocks ordering. Figures
- * come from GET /api/v1/dashboard; nothing here changes data.
+ * The administrator's start screen: the headline figures, then what needs
+ * doing (orders waiting for confirmation, replacements due, setup gaps), each
+ * with its action, then spending and confirmation over time. Figures come
+ * from GET /api/v1/dashboard; nothing here changes data.
  */
 export function Dashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
@@ -61,17 +61,24 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
         <div className="flex flex-col gap-4 md:gap-6">
           <Kpis d={d} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+            <NeedsYouPanel
+              className="lg:col-span-2"
+              needs={needsOf(d)}
+              navigate={navigate}
+              empty="Nothing needs you: every order is confirmed and nothing is due."
+              footer={
+                d.awaiting.orders > d.awaiting.longest.length ? (
+                  <MoreLink label={`All ${d.awaiting.orders} waiting in History`} to={{ name: 'history' }} navigate={navigate} />
+                ) : null
+              }
+            />
+            <SetupCard d={d} navigate={navigate} />
+          </div>
+          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <MonthlyChart months={d.months} className="lg:col-span-2" />
             <ConfirmationCard d={d} />
           </div>
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <ReplacementsPanel replacements={d.replacements} timezone={d.timezone} navigate={navigate} />
-            <WaitingCard d={d} navigate={navigate} />
-          </div>
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <TopItemsCard d={d} />
-            <SetupCard d={d} navigate={navigate} />
-          </div>
+          <TopItemsCard d={d} />
         </div>
       )}
     </>
@@ -203,40 +210,53 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
   )
 }
 
-function WaitingCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
-  const a = d.awaiting
-  const more = a.orders - a.longest.length
-  return (
-    <Panel title="Longest waiting" description="Ordered, but the employee has not yet confirmed receipt.">
-      {a.longest.length === 0 ? (
-        <EmptyState>No order is waiting for confirmation.</EmptyState>
-      ) : (
-        <ul className="divide-y divide-border">
-          {a.longest.map((w) => (
-            <li key={w.order_id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-              <div className="min-w-0">
-                <a {...linkTo({ name: 'employee', id: w.employee_id }, navigate)} className={cn(inlineLink, 'block truncate')}>
-                  {w.employee_name}
-                </a>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {w.record_number} · ordered {formatDate(w.ordered_at, d.timezone)} · {formatEuro(w.value_cents)}
-                </span>
-              </div>
-              <Badge variant={w.days > 14 ? 'destructive' : 'outline'} className="tabular-nums">
-                {formatDays(w.days)}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        {more > 0 ? <p className="text-xs text-muted-foreground">And {more} more.</p> : <span />}
-        <Button variant="ghost" size="sm" onClick={() => navigate({ name: 'history' })}>
-          History <ArrowRight aria-hidden />
-        </Button>
-      </div>
-    </Panel>
-  )
+/**
+ * The administrator's to-do list: orders the employee has not confirmed
+ * (open the order to send a link), replacements due (reorder the same item
+ * and quantity for the same employee) and the setup gaps that stop ordering.
+ */
+function needsOf(d: DashboardData): Need[] {
+  const waiting = d.awaiting.longest.map<Need>((w) => ({
+    key: `wait-${w.order_id}`,
+    urgent: w.days > 14,
+    tag: formatDays(w.days),
+    title: w.employee_name,
+    detail: `${w.record_number} not confirmed · ordered ${formatDate(w.ordered_at, d.timezone)} · ${formatEuro(w.value_cents)}`,
+    action: { label: 'Send link', context: `for ${w.record_number}`, to: { name: 'history', order: w.order_id } },
+  }))
+  const due = d.replacements.next.map<Need>((x) => ({
+    key: `due-${x.employee_id}-${x.catalogue_item_id}`,
+    urgent: x.overdue,
+    tag: x.overdue ? 'Overdue' : 'Due soon',
+    title: x.employee_name,
+    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · due ${formatDate(x.due_at, d.timezone)}`,
+    action: {
+      label: 'Reorder',
+      context: `${x.item_name} for ${x.employee_name}`,
+      to: { name: 'createOrder', prefill: { employeeId: x.employee_id, items: [{ id: x.catalogue_item_id, quantity: x.quantity }] } },
+    },
+  }))
+  const s = d.setup
+  const setup: Need[] = []
+  if (s.employees_missing_sizes > 0)
+    setup.push({
+      key: 'sizes',
+      urgent: false,
+      tag: 'Sizes',
+      title: `${plural(s.employees_missing_sizes, 'employee')} missing a size`,
+      detail: 'Create Order will ask for it on every order',
+      action: { label: 'Add sizes', context: 'in Employees', to: { name: 'employees' } },
+    })
+  if (s.catalogue_unpriced > 0)
+    setup.push({
+      key: 'unpriced',
+      urgent: false,
+      tag: 'Items',
+      title: `${plural(s.catalogue_unpriced, 'item')} without a price or service period`,
+      detail: 'Mark as Ordered refuses them',
+      action: { label: 'Fix', context: 'in the Item Catalogue', to: { name: 'catalogue' } },
+    })
+  return [...waiting, ...due, ...setup]
 }
 
 function TopItemsCard({ d }: { d: DashboardData }) {

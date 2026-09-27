@@ -30,7 +30,7 @@ calendar (`API_ORG_TIMEZONE`); timestamps stay UTC.
 | `previous_to_date`, `through_day` | The same figures for the previous month from its first day to the same day and time of month as now (the whole month when it is shorter: on 31 March, all of February), and the last day that covers; `through_day` is 0 on the first instant of a month. The web app compares the current month so far with it ("+12% vs 1–27 Aug"), not with the whole previous month |
 | `confirmation` | Orders given in the last 90 days: count, electronic vs paper, median days from ordered to given (one decimal) |
 | `top_items` | The 8 items with the largest quantity given over the 12 months, by catalogue item, named as on their latest receipt |
-| `replacements` | For each live employee and item, the most recent GIVEN line, due at `given_at` + its service period. Listed when due within 30 days (`overdue` when due now or earlier), unless the item is already on an ORDERED order for that employee. Counts, and the 8 soonest due |
+| `replacements` | For each live employee and item, the most recent GIVEN line, due at `given_at` + its service period. Listed when due within 30 days (`overdue` when due now or earlier), unless the item is already on an ORDERED order for that employee. Counts, and the 8 soonest due, each with the `quantity` given on that line (the web app's Reorder starts from it) |
 | `setup` | Live employees and those missing a size (no shoe size, or neither a clothing size nor a height), active catalogue items and those without a price or service period (Mark as Ordered refuses them), active item sets, active users and administrators |
 
 Lists are `[]`, never null; an empty database gives a complete dashboard.

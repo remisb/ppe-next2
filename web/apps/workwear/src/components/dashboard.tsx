@@ -1,15 +1,13 @@
-import type { Dashboard } from '@ppe/api-client'
-import { AlertTriangle } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { type ReactNode, useId } from 'react'
 
-import { EmptyState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { barPercent, monthLabel, niceCeiling } from '@/lib/dashboard'
+import { type Need, barPercent, monthLabel, niceCeiling, sortNeeds } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
-import { type Route, linkTo } from '@/lib/router'
-import { cn, formatSize } from '@/lib/utils'
+import type { Route } from '@/lib/router'
+import { cn } from '@/lib/utils'
 
 /*
  * Building blocks shared by the dashboards. Charts are plain elements drawn for the eye (aria-hidden); each
@@ -21,7 +19,7 @@ export const formatDate = (iso: string, tz: string) => formatDateTime(iso, tz).s
 
 export const inlineLink = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 
-/** A dashboard section: a card whose title is a level-2 heading. */
+/** A dashboard section: a card whose title is a level-2 heading, and a region named by it. */
 export function Panel({
   title,
   description,
@@ -33,11 +31,12 @@ export function Panel({
   className?: string | undefined
   children: ReactNode
 }) {
+  const id = useId()
   return (
-    <Card className={className}>
+    <Card className={className} role="region" aria-labelledby={id}>
       <CardHeader>
         <CardTitle>
-          <h2>{title}</h2>
+          <h2 id={id}>{title}</h2>
         </CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
@@ -49,7 +48,8 @@ export function Panel({
 /** The row of headline figures. */
 export function KeyFigures({ children }: { children: ReactNode }) {
   return (
-    <ul aria-label="Key figures" className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:gap-4 lg:grid-cols-4">
+    // Two by two on a phone: the four figures fit in the first screen, with room for what needs doing.
+    <ul aria-label="Key figures" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {children}
     </ul>
   )
@@ -193,67 +193,60 @@ export function BarList({ items }: { items: { key: string; label: string; value:
 }
 
 /**
- * Items due for replacement, soonest first, with the employee and the receipt
- * they were given on. Shared by the administrator's and the employee role's dashboards.
+ * What to do next, the most urgent first, each with the one action that does
+ * it: send a confirmation link, reorder a replacement, fill in a size. It
+ * turns a dashboard's lists into a to-do list; the figures come below it.
  */
-export function ReplacementsPanel({
-  replacements: r,
-  timezone,
+export function NeedsYouPanel({
+  needs,
   navigate,
+  empty,
+  footer,
+  className,
 }: {
-  replacements: Dashboard['replacements']
-  timezone: string
+  needs: Need[]
   navigate: (to: Route) => void
+  /** Shown when nothing needs doing. */
+  empty: string
+  footer?: ReactNode
+  className?: string
 }) {
-  const more = r.overdue + r.due_soon - r.next.length
+  const sorted = sortNeeds(needs)
   return (
-    <Panel
-      title="Replacements due"
-      description={`Items whose service period has ended or ends within ${r.due_soon_days} days, counted from the date given and not already on an open order.`}
-    >
-      {r.next.length === 0 ? (
-        <EmptyState>Nothing is due for replacement.</EmptyState>
+    <Panel title="Needs you" description="What to do next, most urgent first." className={className}>
+      {sorted.length === 0 ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CheckCircle2 aria-hidden className="size-4" /> {empty}
+        </p>
       ) : (
-        <Table stack>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Item</TableHead>
-              <TableHead>Due</TableHead>
-              <TableHead>Receipt</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {r.next.map((x) => (
-              <TableRow key={`${x.employee_id}-${x.catalogue_item_id}`}>
-                <TableCell className="stacked:mb-1">
-                  <a {...linkTo({ name: 'employee', id: x.employee_id }, navigate)} className={inlineLink}>
-                    {x.employee_name}
-                  </a>
-                  {x.employee_code ? <span className="block text-xs text-muted-foreground">{x.employee_code}</span> : null}
-                </TableCell>
-                <TableCell label="Item" className="whitespace-normal">
-                  {x.item_name}
-                  {x.size ? <span className="text-muted-foreground"> · {formatSize(x.size)}</span> : null}
-                </TableCell>
-                <TableCell label="Due" className="tabular-nums">
-                  <span className="inline-flex flex-wrap items-center gap-2">
-                    {formatDate(x.due_at, timezone)}
-                    <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? 'Overdue' : 'Due soon'}</Badge>
-                  </span>
-                </TableCell>
-                <TableCell label="Receipt">
-                  <a {...linkTo({ name: 'record', id: x.order_id }, navigate)} aria-label={`Receipt ${x.record_number}`} className={inlineLink}>
-                    {x.record_number}
-                  </a>
-                  <span className="block text-xs text-muted-foreground">given {formatDate(x.given_at, timezone)}</span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ul aria-label="Needs you" className="divide-y divide-border">
+          {sorted.map((n) => (
+            <li key={n.key} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+              <Badge variant={n.urgent ? 'destructive' : 'secondary'} className="w-18 shrink-0 justify-center tabular-nums">
+                {n.tag}
+              </Badge>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium">{n.title}</div>
+                <div className="line-clamp-2 text-xs text-muted-foreground">{n.detail}</div>
+              </div>
+              <Button size="sm" variant="outline" className="shrink-0" onClick={() => navigate(n.action.to)}>
+                {n.action.label}
+                <span className="sr-only"> {n.action.context}</span>
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
-      {more > 0 ? <p className="mt-3 text-xs text-muted-foreground">And {more} more, due later.</p> : null}
+      {footer ? <div className="mt-3 flex flex-wrap items-center justify-end gap-2">{footer}</div> : null}
     </Panel>
+  )
+}
+
+/** A quiet link to the screen that holds the whole list. */
+export function MoreLink({ label, to, navigate }: { label: string; to: Route; navigate: (to: Route) => void }) {
+  return (
+    <Button variant="ghost" size="sm" onClick={() => navigate(to)}>
+      {label} <ArrowRight aria-hidden />
+    </Button>
   )
 }

@@ -11,8 +11,10 @@ export type Route =
   | { name: 'managerDashboard' }
   /** The employee role's dashboard: the user's own orders and what to order next. */
   | { name: 'employeeDashboard' }
-  | { name: 'createOrder' }
-  | { name: 'history' }
+  /** Create Order; prefill starts it for an employee with these items (a reorder from a dashboard). */
+  | { name: 'createOrder'; prefill?: Prefill }
+  /** History; order opens one order beside the list, or on its own on a narrow screen. */
+  | { name: 'history'; order?: string }
   | { name: 'employees' }
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
@@ -27,6 +29,12 @@ export type Route =
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
   | { name: 'confirm'; token: string }
+
+/** Items to start an order with, each at the quantity given last time. */
+export interface Prefill {
+  employeeId: string
+  items: { id: string; quantity: number }[]
+}
 
 const fixed = {
   home: '/',
@@ -43,11 +51,17 @@ const fixed = {
 } as const
 
 /** Unknown paths (stale bookmarks) land on the start screen, as the root does. */
-export function parsePath(pathname: string): Route {
+export function parsePath(pathname: string, search = ''): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === fixed.createOrder) {
+    const prefill = parsePrefill(new URLSearchParams(search))
+    return prefill ? { name: 'createOrder', prefill } : { name: 'createOrder' }
+  }
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
+  const order = /^\/history\/([^/]+)$/.exec(path)
+  if (order?.[1]) return { name: 'history', order: decodeURIComponent(order[1]) }
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
@@ -59,8 +73,30 @@ export function parsePath(pathname: string): Route {
   return { name: 'home' }
 }
 
+/** ?employee=<id>&item=<id>:<quantity>&item=…; anything malformed is no prefill. */
+function parsePrefill(q: URLSearchParams): Prefill | undefined {
+  const employeeId = q.get('employee')
+  if (!employeeId) return undefined
+  const items: Prefill['items'] = []
+  for (const raw of q.getAll('item')) {
+    const [id, qty] = raw.split(':')
+    const quantity = Number(qty ?? '1')
+    if (!id || !Number.isInteger(quantity) || quantity < 1) return undefined
+    items.push({ id, quantity })
+  }
+  return items.length > 0 ? { employeeId, items } : undefined
+}
+
 export function pathOf(route: Route): string {
   switch (route.name) {
+    case 'createOrder': {
+      if (!route.prefill) return fixed.createOrder
+      const q = new URLSearchParams({ employee: route.prefill.employeeId })
+      for (const i of route.prefill.items) q.append('item', `${i.id}:${i.quantity}`)
+      return `${fixed.createOrder}?${q}`
+    }
+    case 'history':
+      return route.order ? `/history/${encodeURIComponent(route.order)}` : fixed.history
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':
@@ -74,24 +110,34 @@ export function pathOf(route: Route): string {
   }
 }
 
+/**
+ * replace: change the address without a new history entry (a consumed
+ * prefill). scroll: false keeps the scroll position (a list beside its detail).
+ */
+export interface NavigateOptions {
+  replace?: boolean
+  scroll?: boolean
+}
+
 export interface Router {
   route: Route
-  navigate: (to: Route) => void
+  navigate: (to: Route, options?: NavigateOptions) => void
 }
 
 export function useRouter(): Router {
-  const [route, setRoute] = useState<Route>(() => parsePath(stripBase(window.location.pathname)))
+  const [route, setRoute] = useState<Route>(() => parsePath(stripBase(window.location.pathname), window.location.search))
 
   useEffect(() => {
-    const onPop = () => setRoute(parsePath(stripBase(window.location.pathname)))
+    const onPop = () => setRoute(parsePath(stripBase(window.location.pathname), window.location.search))
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const navigate = useCallback((to: Route) => {
-    window.history.pushState(inApp, '', basePath + pathOf(to))
+  const navigate = useCallback((to: Route, { replace = false, scroll = true }: NavigateOptions = {}) => {
+    if (replace) window.history.replaceState(window.history.state, '', basePath + pathOf(to))
+    else window.history.pushState(inApp, '', basePath + pathOf(to))
     setRoute(to)
-    window.scrollTo(0, 0)
+    if (scroll) window.scrollTo(0, 0)
   }, [])
 
   return { route, navigate }

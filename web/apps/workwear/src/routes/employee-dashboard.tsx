@@ -1,12 +1,11 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
-import { ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 
-import { KeyFigures, Kpi, MonthChart, Panel, ReplacementsPanel, formatDate, inlineLink } from '@/components/dashboard'
+import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, inlineLink } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
-import { changeText, formatDays, monthLabel, plural } from '@/lib/dashboard'
+import { type Need, changeText, formatDays, monthLabel, plural } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -15,11 +14,12 @@ import { cn, formatEuro } from '@/lib/utils'
 type Navigate = (to: Route) => void
 
 /**
- * The start screen of the employee role, the staff who prepare orders: their
- * own orders still waiting for the employee's confirmation (and whether a
- * usable link was sent), their orders by month and recently given, and for the
+ * The start screen of the employee role, the staff who prepare orders. First
+ * what needs doing, each with its action: their own orders still waiting for
+ * the employee's confirmation (and whether a usable link was sent), and for the
  * whole organisation what is due for replacement and whose sizes are missing.
- * Figures come from GET /api/v1/dashboard/employee.
+ * Then their orders by month and recently given. Figures come from
+ * GET /api/v1/dashboard/employee.
  */
 export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
@@ -51,14 +51,17 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
           <Kpis d={d} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <WaitingCard d={d} navigate={navigate} />
-            <ReplacementsPanel replacements={d.replacements} timezone={d.timezone} navigate={navigate} />
-          </div>
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <ActivityChart d={d} className="lg:col-span-2" />
-            <MissingSizesCard d={d} navigate={navigate} />
-          </div>
+          <NeedsYouPanel
+            needs={needsOf(d)}
+            navigate={navigate}
+            empty="Nothing needs you right now."
+            footer={
+              d.awaiting.orders > d.awaiting.longest.length ? (
+                <MoreLink label={`All ${d.awaiting.orders} of yours waiting in History`} to={{ name: 'history' }} navigate={navigate} />
+              ) : null
+            }
+          />
+          <ActivityChart d={d} />
           <RecentlyGivenCard d={d} navigate={navigate} />
         </div>
       )}
@@ -109,58 +112,53 @@ function Kpis({ d }: { d: Data }) {
   )
 }
 
-function LinkBadge({ w, timezone }: { w: EmployeeDashboardWaiting; timezone: string }) {
+/** Whether the employee can confirm electronically: a link was sent and is still usable. */
+function linkText(w: EmployeeDashboardWaiting, timezone: string): string {
   switch (w.link) {
     case 'ACTIVE':
-      return <Badge variant="secondary">Link until {w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '—'}</Badge>
+      return `link valid until ${w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '—'}`
     case 'EXPIRED':
-      return <Badge variant="destructive">Link expired</Badge>
+      return 'link expired'
     default:
-      return <Badge variant="outline">No link sent</Badge>
+      return 'no link sent'
   }
 }
 
-/** The user's orders waiting for the employee's confirmation, oldest first. */
-function WaitingCard({ d, navigate }: { d: Data; navigate: Navigate }) {
-  const a = d.awaiting
-  const more = a.orders - a.longest.length
-  return (
-    <Panel
-      title="Waiting for confirmation"
-      description="Orders you marked as ordered that the employee has not yet confirmed. Without a usable link they cannot confirm electronically: open the order in History to send one, or confirm on paper."
-    >
-      {a.longest.length === 0 ? (
-        <EmptyState>None of your orders is waiting.</EmptyState>
-      ) : (
-        <ul className="divide-y divide-border">
-          {a.longest.map((w) => (
-            <li key={w.order_id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-              <div className="min-w-0">
-                <a {...linkTo({ name: 'employee', id: w.employee_id }, navigate)} className={cn(inlineLink, 'block truncate')}>
-                  {w.employee_name}
-                </a>
-                <span className="block text-xs text-muted-foreground tabular-nums">
-                  {w.record_number} · ordered {formatDate(w.ordered_at, d.timezone)} · {plural(w.items, 'item')} · {formatEuro(w.value_cents)}
-                </span>
-                <span className="mt-1 flex">
-                  <LinkBadge w={w} timezone={d.timezone} />
-                </span>
-              </div>
-              <Badge variant={w.days > 14 ? 'destructive' : 'outline'} className="shrink-0 tabular-nums">
-                {formatDays(w.days)}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        {more > 0 ? <p className="text-xs text-muted-foreground">And {more} more.</p> : <span />}
-        <Button variant="ghost" size="sm" onClick={() => navigate({ name: 'history' })}>
-          History <ArrowRight aria-hidden />
-        </Button>
-      </div>
-    </Panel>
-  )
+/**
+ * The preparer's to-do list: their orders waiting for the employee (open the
+ * order to send a link; an expired link or a long wait is urgent), what is due
+ * for replacement (reorder it) and whose sizes are missing (fill them in).
+ */
+function needsOf(d: Data): Need[] {
+  const waiting = d.awaiting.longest.map<Need>((w) => ({
+    key: `wait-${w.order_id}`,
+    urgent: w.days > 14 || w.link === 'EXPIRED',
+    tag: formatDays(w.days),
+    title: w.employee_name,
+    detail: `${w.record_number} · ${plural(w.items, 'item')} · ${linkText(w, d.timezone)}`,
+    action: { label: w.link === 'ACTIVE' ? 'Open' : 'Send link', context: `for ${w.record_number}`, to: { name: 'history', order: w.order_id } },
+  }))
+  const due = d.replacements.next.map<Need>((x) => ({
+    key: `due-${x.employee_id}-${x.catalogue_item_id}`,
+    urgent: x.overdue,
+    tag: x.overdue ? 'Overdue' : 'Due soon',
+    title: x.employee_name,
+    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · due ${formatDate(x.due_at, d.timezone)}`,
+    action: {
+      label: 'Reorder',
+      context: `${x.item_name} for ${x.employee_name}`,
+      to: { name: 'createOrder', prefill: { employeeId: x.employee_id, items: [{ id: x.catalogue_item_id, quantity: x.quantity }] } },
+    },
+  }))
+  const sizes = d.missing_sizes.list.map<Need>((e) => ({
+    key: `size-${e.employee_id}`,
+    urgent: false,
+    tag: 'Size',
+    title: e.employee_name,
+    detail: [e.clothing ? 'no clothing size or height' : '', e.shoes ? 'no shoe size' : ''].filter(Boolean).join(', '),
+    action: { label: 'Add sizes', context: `for ${e.employee_name}`, to: { name: 'employee', id: e.employee_id } },
+  }))
+  return [...waiting, ...due, ...sizes]
 }
 
 /** The user's orders placed and given per month, as paired bars. */
@@ -187,36 +185,6 @@ function ActivityChart({ d, className }: { d: Data; className?: string }) {
           return s.label === 'Ordered' ? plural(m.ordered, 'order') : `${plural(m.given, 'order')}, ${plural(m.given_items, 'item')}`
         }}
       />
-    </Panel>
-  )
-}
-
-/** Employees whose missing sizes Create Order will flag, with a link to fill them in. */
-function MissingSizesCard({ d, navigate }: { d: Data; navigate: Navigate }) {
-  const m = d.missing_sizes
-  const more = m.employees - m.list.length
-  return (
-    <Panel title="Missing sizes" description="Create Order flags these employees' clothing or shoe lines until a size is saved.">
-      {m.list.length === 0 ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <CheckCircle2 aria-hidden className="size-4" /> Every employee has their sizes.
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {m.list.map((e) => (
-            <li key={e.employee_id} className="py-2 first:pt-0 last:pb-0">
-              <a {...linkTo({ name: 'employee', id: e.employee_id }, navigate)} className={cn(inlineLink, 'block truncate')}>
-                {e.employee_name}
-              </a>
-              <span className="text-xs text-muted-foreground">
-                {e.employee_code ? `${e.employee_code} · ` : ''}
-                {[e.clothing ? 'no clothing size or height' : '', e.shoes ? 'no shoe size' : ''].filter(Boolean).join(', ')}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {more > 0 ? <p className="mt-3 text-xs text-muted-foreground">And {more} more.</p> : null}
     </Panel>
   )
 }

@@ -119,7 +119,8 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
         </EmptyState>
       ) : (
         // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.
-        <Table stack="grid" sortControl={<SortControl columns={columns} {...sortProps} />}>
+        // From 36rem of room (a tablet in portrait) one card a row, actions beside the name: never two squeezed cards.
+        <Table stack sortControl={<SortControl columns={columns} {...sortProps} />}>
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
@@ -157,8 +158,8 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
                   <TableCell label="Shoes" className={sizeCell}>
                     {missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap stacked:order-3 stacked:mt-2 stacked:flex stacked:gap-2">
-                    <Button size="sm" variant="outline" className="stacked:flex-1" onClick={() => setSizing(e)}>
+                  <TableCell className="text-right whitespace-nowrap stacked:order-3 stacked:mt-2 stacked:flex stacked:gap-2 stacked-wide:order-1 stacked-wide:mt-0 stacked-wide:w-auto">
+                    <Button size="sm" variant="outline" className="stacked:flex-1 stacked-wide:flex-none" onClick={() => setSizing(e)}>
                       Edit Sizes
                     </Button>{' '}
                     <MoreActions label={`More actions for ${e.full_name}`}>
@@ -212,7 +213,8 @@ function MissingBadge() {
 }
 
 /** Card: height, clothing and shoe size in three columns, label above value. */
-const sizeCell = 'stacked:order-3 stacked:w-[calc((100%-2rem)/3)] stacked:flex-col stacked:items-start stacked:gap-0 stacked:pt-2 stacked:text-left stacked:font-medium'
+const sizeCell =
+  'stacked:order-3 stacked:w-[calc((100%-2rem)/3)] stacked:flex-col stacked:items-start stacked:gap-0 stacked:pt-2 stacked:text-left stacked:font-medium stacked-wide:w-28'
 
 /** Edit Sizes: changes defaults for future resolutions only. */
 export function EditSizes({

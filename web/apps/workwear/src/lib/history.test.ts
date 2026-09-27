@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { activityAt, formatDateTime, formatUsage, historyActions } from './history'
+import { activityAt, formatDateTime, formatUsage, formatWaiting, historyActions, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
@@ -24,5 +24,22 @@ describe('display', () => {
   it('uses given_at as activity when present', () => {
     expect(activityAt({ given_at: 'g', ordered_at: 'o' })).toBe('g')
     expect(activityAt({ given_at: null, ordered_at: 'o' })).toBe('o')
+  })
+})
+
+describe('waiting for confirmation', () => {
+  it('counts calendar days in the organisation timezone', () => {
+    const now = new Date('2026-09-27T06:00:00Z') // 09:00 in Vilnius
+    expect(waitingDays('2026-09-15T06:30:00Z', now, 'Europe/Vilnius')).toBe(12)
+    // 23:30 yesterday in Vilnius, 20:30 UTC: one day, though under nine hours ago.
+    expect(waitingDays('2026-09-26T20:30:00Z', now, 'Europe/Vilnius')).toBe(1)
+    // 00:30 today in Vilnius is still 26 September in UTC.
+    expect(waitingDays('2026-09-26T21:30:00Z', now, 'Europe/Vilnius')).toBe(0)
+    expect(waitingDays('2026-09-26T21:30:00Z', now, 'UTC')).toBe(1)
+  })
+  it('says it in words', () => {
+    expect(formatWaiting(0)).toBe('today')
+    expect(formatWaiting(1)).toBe('1 day')
+    expect(formatWaiting(12)).toBe('12 days')
   })
 })

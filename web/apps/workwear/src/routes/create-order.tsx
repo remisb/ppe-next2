@@ -1,23 +1,25 @@
 import type { CatalogueItem, Employee, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 import { ConfirmationSheet } from '@/components/confirmation-sheet'
 import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
+import { ItemPicker } from '@/components/item-picker'
 import { OrderLinesTable } from '@/components/order-lines'
+import { QuantityStepper } from '@/components/quantity-stepper'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/field'
+import { Select } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
-import type { Route } from '@/lib/router'
+import type { NavigateOptions, Prefill, Route } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
@@ -63,7 +65,14 @@ interface PendingDefault {
  * Create Order (manual §3.1). Everything here is working state: nothing is
  * stored on the server until Mark as Ordered.
  */
-export function CreateOrder({ navigate }: { navigate: (to: Route) => void }) {
+export function CreateOrder({
+  prefill,
+  navigate,
+}: {
+  /** A reorder from a dashboard: start the order for this employee with these items. */
+  prefill?: Prefill | undefined
+  navigate: (to: Route, options?: NavigateOptions) => void
+}) {
   const { client } = useApi()
   const session = useSession()
   const itemSetLabel = useId()
@@ -82,6 +91,31 @@ export function CreateOrder({ navigate }: { navigate: (to: Route) => void }) {
   const itemSets = useLoad(() => client.itemSets.listActive())
 
   useEffect(() => saveDraft(order), [order])
+
+  /*
+   * A reorder arrives once: the address loses its query (a reload must not add
+   * the items again) and the ref keeps StrictMode's second run from repeating
+   * it. It joins an order in progress for the same employee, and replaces one
+   * for someone else only when the user agrees.
+   */
+  const consumed = useRef<Prefill | null>(null)
+  useEffect(() => {
+    if (!prefill || consumed.current === prefill) return
+    consumed.current = prefill
+    navigate({ name: 'createOrder' }, { replace: true, scroll: false })
+    const same = order.employee?.id === prefill.employeeId
+    if (order.lines.length > 0 && !same && !window.confirm(`Replace the order in progress for ${order.employee?.full_name ?? 'no one yet'} with this reorder?`)) return
+    void run(async () => {
+      const res = await client.orders.resolve({
+        employee_id: prefill.employeeId,
+        lines: prefill.items.map((i) => ({ catalogue_item_id: i.id, quantity: i.quantity })),
+      })
+      setOrder((o) => (same ? addLines(o, res.lines) : reassign(emptyOrder, res.employee, res.lines).order))
+      setConflicts([])
+      setPendingDefault(null)
+    })
+    // Runs for a new prefill only; order is read as it is when the reorder arrives.
+  }, [prefill])
 
   /** Run a server call; on failure keep all state and offer Retry. */
   const run = async (action: () => Promise<void>) => {
@@ -235,23 +269,7 @@ export function CreateOrder({ navigate }: { navigate: (to: Route) => void }) {
         </div>
         <div>
           <p className="mb-1.5 text-sm font-medium">Add Item</p>
-          <Select
-            aria-label="Add Item"
-            value=""
-            disabled={busy || !catalogue.data}
-            onChange={(e) => {
-              const item = catalogue.data?.find((i) => i.id === e.target.value)
-              if (item) addItem(item)
-            }}
-          >
-            <option value="">Choose an item to add…</option>
-            {catalogue.data?.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.name}
-                {i.details ? ` — ${i.details}` : ''}
-              </option>
-            ))}
-          </Select>
+          <ItemPicker items={catalogue.data} disabled={busy} onPick={addItem} />
         </div>
       </section>
 
@@ -535,15 +553,18 @@ function LinesTable({
   if (order.lines.length === 0) {
     return <EmptyState>No items yet. Use Add Item, or choose an Item Set.</EmptyState>
   }
-  // Where the table is narrow each line is a card: item and remove on top,
-  // size and quantity side by side, then price, service period and line total.
+  /*
+   * Where the table is narrow each line is a compact row: the item with its
+   * price and service period, the line total and Remove, then size and
+   * quantity. From 36rem of room (a tablet in portrait) it is all one line.
+   */
   return (
-    <Table stack="grid">
+    <Table stack>
       <TableHeader>
         <TableRow>
           <TableHead>Item</TableHead>
           <TableHead>Size</TableHead>
-          <TableHead className="w-24">Quantity</TableHead>
+          <TableHead>Quantity</TableHead>
           <TableHead className="text-right">Unit price</TableHead>
           <TableHead>Service period</TableHead>
           <TableHead className="text-right">Total</TableHead>
@@ -552,51 +573,46 @@ function LinesTable({
           </TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBody className="stacked:gap-2">
         {order.lines.map((l) => {
           const lineProblems = problems.get(l.catalogueItemId)
           return (
             <TableRow
               key={l.catalogueItemId}
-              className={cn('stacked:relative stacked:grid stacked:grid-cols-2 stacked:gap-x-3 stacked:gap-y-3', lineProblems && 'bg-destructive/5 stacked:border-destructive/40')}
+              className={cn(
+                stackedBreak,
+                'stacked:gap-x-3 stacked:gap-y-2 stacked:py-2.5 stacked-wide:flex-nowrap stacked-wide:after:hidden',
+                lineProblems && 'bg-destructive/5 stacked:border-destructive/40',
+              )}
             >
-              <TableCell className="align-top whitespace-normal stacked:col-span-2 stacked:block stacked:pr-12">
+              <TableCell className="align-top whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
                 <div className="font-medium">{l.itemName || 'Unknown item'}</div>
-                {l.itemDetails ? <div className="text-xs text-muted-foreground">{l.itemDetails}</div> : null}
+                {l.itemDetails ? <div className="text-xs text-muted-foreground stacked:hidden">{l.itemDetails}</div> : null}
+                {/* The unit price and service period columns are hidden in a row: shown here instead. */}
+                <div className="hidden text-xs text-muted-foreground tabular-nums stacked:block">
+                  {formatEuro(l.unitPriceCents)} · {formatMonths(l.servicePeriodMonths)}
+                </div>
                 {lineProblems?.map((p) => (
                   <div key={p} role="alert" className="mt-1 text-xs text-destructive">
                     {p}
                   </div>
                 ))}
               </TableCell>
-              <TableCell label="Size" className={cn('align-top', controlCell)}>
+              {/* A no-size item's dash says nothing in a row, and there it would push the quantity along. */}
+              <TableCell className={cn('align-top stacked:order-3 stacked:w-auto', (l.sizeGroup === 'NONE' || l.sizeGroup === '') && 'stacked:hidden')}>
                 <SizeControl line={l} sizes={sizes} onChange={(s) => onSize(l, s)} />
               </TableCell>
-              <TableCell label="Quantity" className={cn('align-top', controlCell)}>
-                <Input
-                  aria-label={`Quantity of ${l.itemName}`}
-                  inputMode="numeric"
-                  enterKeyHint="done"
-                  className="w-20 stacked:w-full"
-                  invalid={!Number.isInteger(l.quantity) || l.quantity < 1}
-                  value={Number.isNaN(l.quantity) ? '' : String(l.quantity)}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim()
-                    onChange((o) => setQuantity(o, l.catalogueItemId, raw === '' ? Number.NaN : Number(raw)))
-                  }}
-                />
+              <TableCell className="align-top stacked:order-3 stacked:w-auto">
+                <QuantityStepper value={l.quantity} itemName={l.itemName} onChange={(q) => onChange((o) => setQuantity(o, l.catalogueItemId, q))} />
               </TableCell>
-              <TableCell label="Unit price" className={cn('text-right align-top tabular-nums', infoCell)}>
-                {formatEuro(l.unitPriceCents)}
-              </TableCell>
-              <TableCell label="Service period" className={cn('align-top', infoCell)}>
-                {formatMonths(l.servicePeriodMonths)}
-              </TableCell>
-              <TableCell label="Total" className="text-right align-top font-medium tabular-nums stacked:col-span-2 stacked:border-t stacked:pt-2">
+              <TableCell className="text-right align-top tabular-nums stacked:hidden">{formatEuro(l.unitPriceCents)}</TableCell>
+              <TableCell className="align-top stacked:hidden">{formatMonths(l.servicePeriodMonths)}</TableCell>
+              {/* In a narrow row the total sits beside the item, leaving the second line to the controls. */}
+              <TableCell className="text-right align-top font-medium tabular-nums stacked:order-1 stacked:w-auto stacked:self-start stacked-wide:order-3 stacked-wide:self-center">
                 {l.unitPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.unitPriceCents * l.quantity) : '—'}
               </TableCell>
-              <TableCell className="align-top stacked:absolute stacked:top-1.5 stacked:right-1.5 stacked:w-auto">
-                <Button size="icon" variant="ghost" aria-label={`Remove ${l.itemName}`} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>
+              <TableCell className="align-top stacked:order-1 stacked:w-auto stacked:-my-1.5 stacked:-mr-2 stacked-wide:order-4 stacked-wide:my-0">
+                <Button size="icon-sm" variant="ghost" aria-label={`Remove ${l.itemName}`} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>
                   <X aria-hidden />
                 </Button>
               </TableCell>
@@ -604,7 +620,7 @@ function LinesTable({
           )
         })}
       </TableBody>
-      {/* Cards have no footer row; the sticky action bar shows the total. */}
+      {/* Rows have no footer; the sticky action bar shows the total. */}
       <TableFooter className="stacked:hidden">
         <TableRow>
           <TableCell colSpan={5} className="text-right font-medium">
@@ -618,16 +634,11 @@ function LinesTable({
   )
 }
 
-/** Card cells: the label above the control or value, half the card wide. */
-const controlCell = 'stacked:flex-col stacked:items-stretch stacked:gap-1 stacked:text-left'
-const infoCell = 'stacked:flex-col stacked:items-start stacked:gap-0.5 stacked:text-left'
-
-
 /** Size control per size_group (manual §4.4). No-size items show an en dash. */
 function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Sizes | undefined; onChange: (s: string | null) => void }) {
   if (line.sizeGroup === 'NONE' || line.sizeGroup === '')
     return (
-      <span aria-label="No size" className="stacked:flex stacked:h-11 stacked:items-center">
+      <span aria-label="No size" className="flex h-9 items-center text-muted-foreground pointer-coarse:h-11 stacked:px-2">
         –
       </span>
     )
@@ -640,7 +651,7 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
     <div className="flex flex-col gap-1">
       <Select
         aria-label={`Size of ${line.itemName}`}
-        className="w-40 stacked:w-full"
+        className="h-9 w-40 pointer-coarse:h-11 stacked:w-auto stacked:max-w-40"
         invalid={missing}
         value={line.size ?? ''}
         onChange={(e) => onChange(e.target.value || null)}

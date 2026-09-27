@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { barPercent, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share } from './dashboard'
+import { type Need, barPercent, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share, sortNeeds } from './dashboard'
 
 describe('dashboard display rules', () => {
   it('labels months short or with the year', () => {
@@ -54,5 +54,20 @@ describe('dashboard display rules', () => {
     expect(share(1, 0)).toBe(0)
     expect(plural(1, 'order')).toBe('1 order')
     expect(plural(2, 'item')).toBe('2 items')
+  })
+})
+
+describe('needs you', () => {
+  const need = (key: string, urgent: boolean): Need => ({
+    key,
+    urgent,
+    tag: '',
+    title: key,
+    detail: '',
+    action: { label: 'Open', context: key, to: { name: 'history' } },
+  })
+  it('puts the urgent first and keeps each group in its given order', () => {
+    const sorted = sortNeeds([need('wait 3d', false), need('wait 20d', true), need('due soon', false), need('overdue', true)])
+    expect(sorted.map((n) => n.key)).toEqual(['wait 20d', 'overdue', 'wait 3d', 'due soon'])
   })
 })
