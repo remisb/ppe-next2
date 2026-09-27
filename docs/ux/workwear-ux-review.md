@@ -1,7 +1,7 @@
 # Workwear UX Review
 
 UX research report for Workwear & Equipment (PPE-next2). It reviews all 15 screens at
-phone (375 px) and desktop (1280 px) widths. For each problem area there are two or three
+phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each problem area there are two or three
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · build `1ff7a0c` · demo data · roles: admin, manager, employee
@@ -20,9 +20,10 @@ design options, each with a sample screen, pros and cons, and a recommendation.
 5. [Dashboards](#5-dashboards)
 6. [Records lists](#6-records-lists)
 7. [Employee confirmation](#7-employee-confirmation)
-8. [Desktop power layer](#8-desktop-power-layer)
-9. [Roadmap](#9-roadmap)
-10. [References](#10-references)
+8. [Tablet](#8-tablet)
+9. [Desktop power layer](#9-desktop-power-layer)
+10. [Roadmap](#10-roadmap)
+11. [References](#11-references)
 
 ---
 
@@ -45,8 +46,9 @@ undone, yet it runs on a single tap with no review.
 | **2.4** | History orders visible per phone screen (cards are 254–282 px tall) |
 | **28%** | of the phone screen on Create Order used by fixed bars (57 + 105 + 65 px) |
 | **0** | review steps before an order becomes immutable |
+| **704 px** | of content on a 1024 px landscape iPad, so every table still shows as phone cards |
 
-### Top ten recommendations
+### Top recommendations
 
 | # | Change | Screen | Platform | Impact | Effort |
 |---|---|---|---|---|---|
@@ -60,13 +62,16 @@ undone, yet it runs on a single tap with no review.
 | 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S |
 | 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S |
 | 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M |
+| 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S |
+| 12 | One-column rows in portrait, list and detail in landscape, chosen by container width | Lists, History | Tablet | Med | M |
 
 ---
 
 ## 1. Method
 
 - **Walkthrough.** Every route was opened as an administrator against the local demo data,
-  at 375×812 and 1280×800. Create Order was run end to end: pick an employee, apply
+  at 375×812, 1280×800 and four tablet sizes (768×1024, 1024×768, 1180×820 and
+  1366×1024). Create Order was run end to end: pick an employee, apply
   "Warehouse starter kit", then review.
 - **Measurement.** Row and card heights, page heights and the height of the fixed bars were
   measured in the DOM, so the density findings are numbers rather than impressions.
@@ -558,7 +563,194 @@ Draw a signature on the screen, like a courier delivery.
 
 ---
 
-## 8. Desktop power layer
+## 8. Tablet
+
+**Tablet, 768–1366 px: use the width the iPad actually has.**
+
+A tablet is likely to sit on the stores counter where workwear is handed out, or travel
+with a manager around the site. It is a touch device with a desktop-class width, it
+rotates, and on iPad it can share the screen with another app. The app handles most of
+this well, because tables decide whether to become cards from their own width, not the
+device's. The weak spot is where the sidebar starts.
+
+| Device | Viewport | Navigation | Content width | How tables show |
+|---|---|---|---|---|
+| iPad, portrait | 768 × 1024 | Icon rail, 88 px | 632 px | Cards everywhere: two per row for Employees, Catalogue and Create Order, one per row for History |
+| iPad, landscape | 1024 × 768 | Labelled sidebar, 240 px | **704 px** | **Cards everywhere**, with Create Order lines 248 px tall and History cards 194 px |
+| iPad Air, landscape | 1180 × 820 | Labelled sidebar | 860 px | Tables for Employees and Create Order; cards for History and Catalogue |
+| iPad Pro 12.9″, landscape | 1366 × 1024 | Labelled sidebar | 1046 px | Tables everywhere |
+
+### Findings
+
+- **High. Landscape iPads get a phone layout next to a desktop sidebar.** The labelled
+  sidebar starts at 1024 px, which is exactly iPad landscape. It takes 240 px (23% of the
+  width) and leaves 704 px, below the 768 px a table needs, so every screen falls back to
+  cards.
+- **Med. Two-up order cards squeeze the controls in portrait.** Each Create Order card is
+  half-width, so the size select cuts off ("S (160–167 cn") and the quantity field is about
+  70 px wide. A 5-line set becomes three rows of 248 px cards.
+- **Med. History in portrait starts with filters.** Employee, From, To, Status and Sort
+  take the top 398 px before the first order, and each card is full-width with two
+  full-width buttons.
+- **Med. Hover ideas don't carry over.** An iPad has no hover unless a trackpad is
+  attached. Any desktop affordance that appears on hover (a ⋯ menu, a record preview) must
+  stay visible on touch screens, using `@media (hover: none)`.
+- **Good.** Container-query stacking means layouts follow the actual window, including iPad
+  Split View and Slide Over, so the app never needs to detect the device. Buttons grow to
+  44 px on touch screens, and the phone tab bar is gone from 768 px, which frees the bottom
+  of the screen.
+
+### App shell on a landscape tablet
+
+#### Baseline: sidebar from 1024 px (current)
+
+*Sample: at 1024 × 768 the labelled sidebar sits beside Create Order shown as two-up
+cards; the Item Set select is squeezed to "Choo…" and the size select to "S (160–167 c".*
+
+| Pros | Cons |
+|---|---|
+| Full section names are always visible | Content is 704 px, so every table shows as cards |
+| Same sidebar as on a laptop | The Item Set select is squeezed to "Choo…" |
+| | Only 4 of 5 order lines are visible above the action bar |
+
+#### A. Keep the rail until 1280 px (recommended)
+
+Move the labelled sidebar from `lg` (1024 px) to `xl` (1280 px). A landscape iPad keeps
+the 88 px icon rail and gets 888 px of content instead of 704. Employees and Create Order
+become tables again, and Create Order has room for the summary panel.
+
+```
+┌───────┬─────────────────────────────────────────────────────────────────┐
+│ ⛑     │ Create Order                                             Clear  │
+│ Home  │ [ Add an item…            ] [✓ Starter kit] [+ Visitor]         │
+│ Order │ Item               Size  Qty       Total │ (OK) Ona K.          │
+│ Hist³ │ Safety shoes       [39▾] [− 1 +]  €54.90 │ S · 39 · 165 cm      │
+│ Empl. │ Work jacket        [S▾]  [− 1 +]  €79.00 │ Gloves overdue ·     │
+│ Cat.  │ Work trousers      [S▾]  [− 2 +]  €91.00 │ in this order ✓      │
+│ Sets  │ Protective gloves   —   [− 10 +]  €32.00 │ 5 lines · complete   │
+│ Users │ Safety helmet       —    [− 1 +]  €18.00 │ Total  €274.90       │
+│       │                                          │ [ Review ]           │
+│       │                                          │ [ WhatsApp ]         │
+└───────┴─────────────────────────────────────────────────────────────────┘
+```
+
+| Pros | Cons |
+|---|---|
+| 184 px more content width on the most common tablet width | Laptop users between 1024 and 1279 px lose the full names |
+| A one-breakpoint change in `app.tsx` and the AGENTS.md rule | History and Catalogue need 960 px; they still need the list-and-detail layout or a column dropped to become tables |
+| The rail still labels every icon, so nothing becomes a guessing game | The e2e "no sideways scrolling" check at 1100 px must be re-baselined |
+| Laptops with narrow windows benefit too | |
+
+#### B. Collapsible sidebar (alternative)
+
+Keep the sidebar at 1024 px, add a collapse button, and remember the choice per device.
+
+| Pros | Cons |
+|---|---|
+| People choose between labels and space | A default still has to be chosen, and most people never change defaults |
+| A common pattern (Gmail, Notion, Linear) | One more control and one more stored preference |
+
+#### C. Separate tablet layouts (not recommended)
+
+Detect touch and orientation, and serve tablet-specific screens.
+
+| Pros | Cons |
+|---|---|
+| Each device could be tuned exactly | Breaks in Split View, and when a keyboard or trackpad is attached |
+| | Works against the container-query approach the app already uses |
+| | Two layouts to test and keep in sync |
+
+### Screens on a tablet
+
+#### Portrait: one-column rows, not two-up cards (recommended)
+
+At 632 px a list row has room for name, record, value and status on one line, so rows beat
+half-width cards. This applies to History, Employees (sizes as small columns) and
+Catalogue (price and service period on the right). Create Order uses the compact line rows
+from section 3 at full width.
+
+```
+┌───────┬──────────────────────────────────────────────┐
+│ ⛑     │ History                            [Filters] │
+│ Home  │ [ Employee or record…                      ] │
+│ Order │ [Awaiting · 3]    Given · 3     All · 6      │
+│ Hist³ │ Jonas Petraitis          €32.00   3 days   › │
+│ Empl. │  WE-000006 · ordered 24 Sep                  │
+│ Cat.  │ Tomas Jankauskas         €34.40   4 days   › │
+│ Sets  │  WE-000005 · ordered 23 Sep                  │
+│ Users │ Aleksandr Ivanov        €224.90  12 days   › │
+│       │  WE-000004 · ordered 15 Sep                  │
+│       │                                              │
+└───────┴──────────────────────────────────────────────┘
+```
+
+| Pros | Cons |
+|---|---|
+| About 12 orders on the first portrait screen instead of 3 | Two-up cards look fuller on a large empty screen |
+| The first order starts about 200 px down instead of 398 | Active filters must show as chips, or people forget a filter is on |
+| Size selects get full width, so labels are no longer cut off | |
+| Reuses the phone's row list, so no new component | |
+
+#### Landscape: list and detail (recommended)
+
+The desktop list-and-detail layout from section 4 needs about 860 px of content, so with
+the rail it fits a landscape iPad. Tap a row and its lines and actions open beside the
+list. A container query, not a device check, decides when the pane appears.
+
+*Sample: rail, status tabs, three waiting orders on the left with WE-000004 selected, and
+a pane on the right with its lines, total €224.90, "Hand over now", "Send link", "Print"
+and "Paper…".*
+
+| Pros | Cons |
+|---|---|
+| Chase several waiting orders without leaving the list | The detail pane is narrow; long item names need to wrap |
+| The same component as on desktop | The selected order must be kept in the URL across rotation |
+| Rotating to portrait falls back to the order page, with no special code | |
+
+### Idea: hand over at the counter
+
+#### Hand-over mode on the storekeeper's tablet (needs a product decision)
+
+At the counter the storekeeper taps "Hand over now" on a waiting order. The tablet
+switches to a full-screen view with no navigation, built from the same content as the
+public confirmation page, and is turned to the employee. The employee ticks and confirms;
+the order becomes GIVEN on the spot. The storekeeper gets the tablet back with a long press
+or by signing in again.
+
+```
+┌──────────────────────────────────────────────────────┐
+│ [EN] RU                         Hand back · hold 2 s │
+│ Ona, please check your items and confirm             │
+│ you received them                                    │
+│ Order WE-000002 · prepared by Administrator          │
+│  Safety shoes · 39                                ×1 │
+│  Work jacket · S                                  ×1 │
+│  Work trousers · S                                ×2 │
+│  Protective gloves                               ×10 │
+│  Safety helmet                                    ×1 │
+│ [ Read the full record ]                             │
+├──────────────────────────────────────────────────────┤
+│ [ ] I have received the items listed and             │
+│     agree with the confirmation text.                │
+│ [               Confirm receipt                  ]   │
+└──────────────────────────────────────────────────────┘
+```
+
+| Pros | Cons |
+|---|---|
+| Closes the loop in seconds, with no WhatsApp link to chase and no paper to file | A third confirmation channel ("in person on a staff device") must be recorded on the receipt and in the audit trail, which is a change to the manual |
+| Fits how gear is actually handed out: face to face, at a counter | The employee must not be able to leave the view; iPad Guided Access is advisable |
+| Reuses the confirmation page, its consent text and the receipt | It proves the employee was present less strongly than a signature does; check this with whoever owns the legal wording |
+| Large type and 44 px rows suit people in gloves or without their glasses | |
+
+> **Recommendation.** Keep the rail until 1280 px first. It is a one-line change and fixes
+> landscape iPads on every screen. Then use one-column rows in portrait and list-and-detail
+> in landscape, both driven by container width. Take hand-over mode to the product owner:
+> it fits counter work best, but it changes how confirmation is recorded.
+
+---
+
+## 9. Desktop power layer
 
 **A power layer for people who use it all day.**
 
@@ -581,19 +773,21 @@ Kazlauskienė ↵; Reorder gloves for Ona Kazlauskienė (overdue)), Employees (O
 - **Density:** a Comfortable/Compact switch for tables, saved per user. Compact rows are
   32 px, and targets stay 24 px or more (WCAG 2.5.8) on pointer devices.
 - **Hover previews:** hovering a record number such as WE-000004 shows its lines and
-  status, so users don't have to navigate away.
+  status, so users don't have to navigate away. On touch screens (`hover: none`) the ⋯
+  menus stay visible and previews open on tap.
 - **Relative dates:** show "3 days ago" in lists with the exact time in a tooltip.
   Receipts keep absolute dates.
 
 ---
 
-## 9. Roadmap
+## 10. Roadmap
 
 ### Phase 1: quick wins (safety and orientation)
 
 - Review sheet before Mark as Ordered
 - Success screen with Send link, WhatsApp and Print
 - Phone bar with four tabs plus More, badge on History
+- Icon rail kept until 1280 px for landscape tablets
 - One-tap item set chips
 - Delete and Deactivate moved into ⋯ with a confirmation
 - Missing-size chips in the Employees list
@@ -607,6 +801,7 @@ Kazlauskienė ↵; Reorder gloves for Ona Kazlauskienė (overdue)), Employees (O
 - History list and detail pane on desktop
 - Attention-first dashboards with a prefilled Reorder
 - Confirmation page with the summary first and pinned consent
+- Tablet: one-column rows in portrait, list and detail in landscape
 
 ### Phase 3: delight (speed for power users)
 
@@ -615,16 +810,17 @@ Kazlauskienė ↵; Reorder gloves for Ona Kazlauskienė (overdue)), Employees (O
 - Due-date bars on the employee page
 - Item pictograms, and later the shop grid
 - Drafts that survive a closed tab (localStorage or the server)
+- Hand-over mode on the counter tablet, once the product owner agrees
 
 Each change touches the e2e suite and `web/AGENTS.md`. The responsive rules still hold:
 one Main nav, 44 px touch targets, sticky actions above `--bottom-nav`, and no sideways
-scrolling at 375–1280 px. A "row list" variant needs adding next to `<Table stack>`. Run a
+scrolling at 375–1280 px (re-baseline the 1100 px check if the rail stays until 1280). A "row list" variant needs adding next to `<Table stack>`. Run a
 five-user hallway test of the phone Create Order (Phase 2) before building it, timing
 "apply the starter kit, change one size, send".
 
 ---
 
-## 10. References
+## 11. References
 
 1. Apple Human Interface Guidelines,
    [Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars):

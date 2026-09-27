@@ -256,6 +256,37 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
 .panel{background:var(--m-card);border:1px solid var(--m-line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:9px;min-height:0}
 .hint{font-size:10px;color:var(--m-muted);display:flex;gap:10px;flex-wrap:wrap}
 .hint .kbd{margin-left:0}
+/* tablet mockup */
+.tab{border:12px solid #101214;border-radius:26px;background:var(--m-bg);font-family:var(--app);color:var(--m-ink);font-size:12px;line-height:1.35;overflow:hidden;position:relative;display:grid;grid-template-rows:18px minmax(0,1fr);flex:none;box-shadow:0 1px 0 #0000000d,0 14px 30px -16px #0007}
+.tab *{box-sizing:border-box}
+.tab.port{width:410px;height:560px}
+.tab.land{width:620px;height:465px}
+.tab .sbar{font-size:9px;font-weight:600;display:flex;justify-content:space-between;padding:3px 16px 0;background:var(--m-card)}
+.tab .app{display:grid;grid-template-columns:58px minmax(0,1fr);min-height:0}
+.tab .app.side-on{grid-template-columns:142px minmax(0,1fr)}
+.tab .app.full{grid-template-columns:1fr}
+.tab .rail{background:#F5F5F5;border-right:1px solid var(--m-line);display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0}
+.tab .rail .logo{width:26px;height:26px;border-radius:7px;background:var(--m-primary);color:#fff;display:grid;place-items:center;margin-bottom:6px}
+.tab .rail .logo .i{width:13px;height:13px}
+.tab .rail a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;font-weight:500;color:#666;width:52px;padding:3px 0;text-decoration:none;position:relative}
+.tab .rail a .pill{width:36px;height:22px;border-radius:11px;display:grid;place-items:center}
+.tab .rail a .i{width:15px;height:15px}
+.tab .rail a.on{color:var(--m-ink)}
+.tab .rail a.on .pill{background:#E4E4E4}
+.tab .rail .badge{position:absolute;top:0;left:32px;background:var(--m-red);color:#fff;font-size:8px;font-weight:700;border-radius:8px;padding:0 4px;line-height:13px}
+.tab .side{background:#F5F5F5;border-right:1px solid var(--m-line);padding:10px 8px;display:flex;flex-direction:column;gap:2px;min-height:0}
+.tab .side .brand{display:flex;align-items:center;gap:6px;font-weight:600;font-size:10.5px;margin-bottom:8px;line-height:1.15}
+.tab .side .logo{width:22px;height:22px;border-radius:6px;background:var(--m-primary);color:#fff;display:grid;place-items:center;flex:none}
+.tab .side .logo .i{width:12px;height:12px}
+.tab .side a{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px;color:#525252;text-decoration:none;font-size:10.5px}
+.tab .side a .i{width:13px;height:13px}
+.tab .side a.on{background:#E8E8E8;color:var(--m-ink);font-weight:500}
+.tab .main{padding:14px 16px;overflow:hidden;display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0;position:relative}
+.tab .h{font-size:17px;font-weight:650}
+.tab .grid2 .mcard{padding:8px}
+.tab .lab{font-size:9.5px;color:var(--m-muted)}
+.tab .fld{height:24px;border:1px solid var(--m-line);border-radius:6px;background:#fff;display:flex;align-items:center;padding:0 6px;font-size:10.5px;white-space:nowrap;overflow:hidden}
+.tab .bar{position:absolute;left:0;right:0;bottom:0;background:var(--m-card);border-top:1px solid var(--m-line);padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .palette{position:absolute;left:50%;top:70px;transform:translateX(-50%);width:420px;background:#fff;border:1px solid var(--m-line);border-radius:12px;box-shadow:0 24px 50px -14px #0006;overflow:hidden}
 .palette .q{height:42px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--m-line);font-size:13px}
 .palette .g{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#9a9a9a;font-weight:600;padding:8px 14px 3px}
@@ -306,7 +337,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
     <div class="vest" aria-hidden="true"><i></i><i></i><i></i></div>
     <p class="eyebrow">UX research report · Workwear &amp; Equipment (PPE-next2)</p>
     <h1>Workwear UX Review</h1>
-    <p class="lede">A review of all 15 screens at phone (375&nbsp;px) and desktop (1280&nbsp;px) widths. For each problem area there are two or three design options, each with a sample screen, pros and cons, and a recommendation.</p>
+    <p class="lede">A review of all 15 screens at phone (375&nbsp;px), tablet (768–1366&nbsp;px) and desktop (1280&nbsp;px) widths. For each problem area there are two or three design options, each with a sample screen, pros and cons, and a recommendation.</p>
     <div class="meta"><span>27 Sep 2026</span><span>Build 1ff7a0c · demo data</span><span>Roles: admin, manager, employee</span></div>
   </header>
 
@@ -321,9 +352,10 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
         <li><a href="#dash"><span>05</span>Dashboards</a></li>
         <li><a href="#lists"><span>06</span>Records lists</a></li>
         <li><a href="#confirm"><span>07</span>Employee confirmation</a></li>
-        <li><a href="#desktop"><span>08</span>Desktop power layer</a></li>
-        <li><a href="#roadmap"><span>09</span>Roadmap</a></li>
-        <li><a href="#refs"><span>10</span>References</a></li>
+        <li><a href="#tablet"><span>08</span>Tablet</a></li>
+        <li><a href="#desktop"><span>09</span>Desktop power layer</a></li>
+        <li><a href="#roadmap"><span>10</span>Roadmap</a></li>
+        <li><a href="#refs"><span>11</span>References</a></li>
       </ol>
     </nav>
 
@@ -340,9 +372,10 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
           <div class="metric"><strong class="num">2.4</strong><span>History orders visible per phone screen (cards are 254–282&nbsp;px tall)</span></div>
           <div class="metric"><strong class="num">28%</strong><span>of the phone screen on Create Order used by fixed bars (57 + 105 + 65&nbsp;px)</span></div>
           <div class="metric"><strong class="num">0</strong><span>review steps before an order becomes immutable</span></div>
+          <div class="metric"><strong class="num">704&nbsp;px</strong><span>of content on a 1024&nbsp;px landscape iPad, so every table still shows as phone cards</span></div>
         </div>
-        <div class="inline-toc"><p class="eyebrow">Contents</p><ol><li><a href="#method">Method</a></li><li><a href="#nav">Navigation</a></li><li><a href="#order">Create Order</a></li><li><a href="#history">History</a></li><li><a href="#dash">Dashboards</a></li><li><a href="#lists">Records lists</a></li><li><a href="#confirm">Employee confirmation</a></li><li><a href="#desktop">Desktop power layer</a></li><li><a href="#roadmap">Roadmap</a></li><li><a href="#refs">References</a></li></ol></div>
-        <h3>Top ten recommendations</h3>
+        <div class="inline-toc"><p class="eyebrow">Contents</p><ol><li><a href="#method">Method</a></li><li><a href="#nav">Navigation</a></li><li><a href="#order">Create Order</a></li><li><a href="#history">History</a></li><li><a href="#dash">Dashboards</a></li><li><a href="#lists">Records lists</a></li><li><a href="#confirm">Employee confirmation</a></li><li><a href="#tablet">Tablet</a></li><li><a href="#desktop">Desktop power layer</a></li><li><a href="#roadmap">Roadmap</a></li><li><a href="#refs">References</a></li></ol></div>
+        <h3>Top recommendations</h3>
         <div class="tbl-wrap">
           <table class="plan">
             <thead><tr><th>#</th><th>Change</th><th>Screen</th><th>Platform</th><th>Impact</th><th>Effort</th></tr></thead>
@@ -357,6 +390,8 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
               <tr><td>8</td><td>List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list</td><td>Employees, Catalogue</td><td>Both</td><td><span class="lvl">Med</span></td><td><span class="lvl">S</span></td></tr>
               <tr><td>9</td><td>Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen</td><td>Employee confirmation</td><td>Phone</td><td><span class="lvl h">High</span></td><td><span class="lvl">S</span></td></tr>
               <tr><td>10</td><td>A ⌘K command palette and keyboard shortcuts in Create Order</td><td>All</td><td>Desktop</td><td><span class="lvl">Med</span></td><td><span class="lvl">M</span></td></tr>
+              <tr><td>11</td><td>Keep the icon rail until 1280&nbsp;px, so a landscape iPad gets 888&nbsp;px of content and real tables</td><td>App shell</td><td>Tablet</td><td><span class="lvl h">High</span></td><td><span class="lvl">S</span></td></tr>
+              <tr><td>12</td><td>One-column rows in portrait, list and detail in landscape, chosen by container width</td><td>Lists, History</td><td>Tablet</td><td><span class="lvl">Med</span></td><td><span class="lvl">M</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -367,7 +402,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
         <header><p class="eyebrow">01 · Method</p><h2>How the review was done</h2></header>
         <div class="prose">
           <ul>
-            <li><b>Walkthrough.</b> Every route was opened as an administrator against the local demo data, at 375×812 and 1280×800. Create Order was run end to end: pick an employee, apply "Warehouse starter kit", then review.</li>
+            <li><b>Walkthrough.</b> Every route was opened as an administrator against the local demo data, at 375×812, 1280×800 and four tablet sizes (768×1024, 1024×768, 1180×820 and 1366×1024). Create Order was run end to end: pick an employee, apply "Warehouse starter kit", then review.</li>
             <li><b>Measurement.</b> Row and card heights, page heights and the height of the fixed bars were measured in the DOM, so the density findings are numbers rather than impressions.</li>
             <li><b>Heuristics.</b> Nielsen's 10 usability heuristics, Apple HIG tab bars, the Material 3 navigation bar, and WCAG 2.2 target size (2.5.8 minimum 24&nbsp;px, 2.5.5 enhanced 44&nbsp;px).</li>
             <li><b>Patterns.</b> List-detail, progressive disclosure, a review step before irreversible commits, thumb-zone placement, and command palettes (as in Linear, GitHub and Slack).</li>
@@ -1126,9 +1161,265 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
         </div>
       </section>
 
+      <!-- ============ TABLET ============ -->
+      <section class="part" id="tablet">
+        <header><p class="eyebrow">08 · Tablet, 768–1366 px</p><h2>Tablet: use the width the iPad actually has</h2></header>
+        <div class="prose">
+          <p>A tablet is likely to sit on the stores counter where workwear is handed out, or travel with a manager around the site. It is a touch device with a desktop-class width, it rotates, and on iPad it can share the screen with another app. The app handles most of this well, because tables decide whether to become cards from their own width, not the device's. The weak spot is where the sidebar starts.</p>
+        </div>
+        <div class="tbl-wrap">
+          <table class="plan">
+            <thead><tr><th>Device</th><th>Viewport</th><th>Navigation</th><th>Content width</th><th>How tables show</th></tr></thead>
+            <tbody>
+              <tr><td>iPad, portrait</td><td class="num">768 × 1024</td><td>Icon rail, 88&nbsp;px</td><td class="num">632&nbsp;px</td><td>Cards everywhere: two per row for Employees, Catalogue and Create Order, one per row for History</td></tr>
+              <tr><td>iPad, landscape</td><td class="num">1024 × 768</td><td>Labelled sidebar, 240&nbsp;px</td><td class="num"><b>704&nbsp;px</b></td><td><b>Cards everywhere</b>, with Create Order lines 248&nbsp;px tall and History cards 194&nbsp;px</td></tr>
+              <tr><td>iPad Air, landscape</td><td class="num">1180 × 820</td><td>Labelled sidebar</td><td class="num">860&nbsp;px</td><td>Tables for Employees and Create Order; cards for History and Catalogue</td></tr>
+              <tr><td>iPad Pro 12.9″, landscape</td><td class="num">1366 × 1024</td><td>Labelled sidebar</td><td class="num">1046&nbsp;px</td><td>Tables everywhere</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="findings">
+          <div class="finding"><span class="sev hi">High</span><p><b>Landscape iPads get a phone layout next to a desktop sidebar.</b> The labelled sidebar starts at 1024&nbsp;px, which is exactly iPad landscape. It takes 240&nbsp;px (23% of the width) and leaves 704&nbsp;px, below the 768&nbsp;px a table needs, so every screen falls back to cards.</p></div>
+          <div class="finding"><span class="sev md">Med</span><p><b>Two-up order cards squeeze the controls in portrait.</b> Each Create Order card is half-width, so the size select cuts off ("S (160–167 cn") and the quantity field is about 70&nbsp;px wide. A 5-line set becomes three rows of 248&nbsp;px cards.</p></div>
+          <div class="finding"><span class="sev md">Med</span><p><b>History in portrait starts with filters.</b> Employee, From, To, Status and Sort take the top 398&nbsp;px before the first order, and each card is full-width with two full-width buttons.</p></div>
+          <div class="finding"><span class="sev md">Med</span><p><b>Hover ideas don't carry over.</b> An iPad has no hover unless a trackpad is attached. Any desktop affordance that appears on hover (a ⋯ menu, a record preview) must stay visible on touch screens, using <code>@media (hover: none)</code>.</p></div>
+          <div class="finding"><span class="sev ok">Good</span><p>Container-query stacking means layouts follow the actual window, including iPad Split View and Slide Over, so the app never needs to detect the device. Buttons grow to 44&nbsp;px on touch screens, and the phone tab bar is gone from 768&nbsp;px, which frees the bottom of the screen.</p></div>
+        </div>
+
+        <h3>App shell on a landscape tablet</h3>
+        <div class="options">
+          <article class="opt">
+            <div class="stage"><div class="shot">
+              <div class="tab land">
+                <div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+                <div class="app side-on">
+                  <aside class="side">
+                    <div class="brand"><span class="logo"><svg class="i"><use href="#i-hat"/></svg></span>Workwear &amp; Equipment</div>
+                    <a><svg class="i"><use href="#i-home"/></svg>Dashboard</a>
+                    <a class="on"><svg class="i"><use href="#i-order"/></svg>Create Order</a>
+                    <a><svg class="i"><use href="#i-history"/></svg>History</a>
+                    <a><svg class="i"><use href="#i-users"/></svg>Employees</a>
+                    <a><svg class="i"><use href="#i-shirt"/></svg>Item Catalogue</a>
+                    <a><svg class="i"><use href="#i-package"/></svg>Item Sets</a>
+                    <a><svg class="i"><use href="#i-usercog"/></svg>Users</a>
+                  </aside>
+                  <div class="main" style="gap:8px">
+                    <div class="mh"><span class="h">Create Order</span><span class="mbtn">New order</span></div>
+                    <div style="display:grid;grid-template-columns:1.2fr .8fr 1fr;gap:6px"><div><div class="lab">Assigned to</div><div class="fld">Ona Kazlauskienė · W-00…</div></div><div><div class="lab">Item Set</div><div class="fld hl">Choo…</div></div><div><div class="lab">Add Item</div><div class="fld">Choose an item…</div></div></div>
+                    <div class="grid2">
+                      <div class="mcard"><b>Safety shoes</b><div class="lab">S3 SRC, steel toe cap</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div class="fld">39</div><div class="fld">1</div></div><div class="kv" style="margin-top:6px"><span class="lab">€54.90 · 12 months</span><b>€54.90</b></div></div>
+                      <div class="mcard"><b>Work jacket</b><div class="lab">Polyester/cotton</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div class="fld hl">S (160–167 c</div><div class="fld">1</div></div><div class="kv" style="margin-top:6px"><span class="lab">€79.00 · 24 months</span><b>€79.00</b></div></div>
+                      <div class="mcard"><b>Work trousers</b><div class="lab">Knee-pad pockets</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div class="fld">S (160–167 c</div><div class="fld">2</div></div><div class="kv" style="margin-top:6px"><span class="lab">€45.50 · 12 months</span><b>€91.00</b></div></div>
+                      <div class="mcard"><b>Protective gloves</b><div class="lab">Nitrile-coated, pair</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px"><div class="fld">—</div><div class="fld">10</div></div><div class="kv" style="margin-top:6px"><span class="lab">€3.20 · 1 month</span><b>€32.00</b></div></div>
+                    </div>
+                    <div class="bar"><span><span class="lab">5 lines · complete</span> <b>€274.90</b></span><span style="display:flex;gap:6px"><span class="mbtn">Copy for WhatsApp</span><span class="mbtn p">Mark as Ordered</span></span></div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">Today · 1024 × 768: desktop sidebar, phone cards</p>
+            </div></div>
+            <div class="opt-body">
+              <div class="opt-head"><h4>Baseline: sidebar from 1024&nbsp;px</h4><span class="tag">Current</span></div>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>Full section names are always visible</li><li>Same sidebar as on a laptop</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Content is 704&nbsp;px, so every table shows as cards</li><li>The Item Set select is squeezed to "Choo…"</li><li>Only 4 of 5 order lines are visible above the action bar</li></ul></div></div>
+            </div>
+          </article>
+
+          <article class="opt rec">
+            <div class="stage"><div class="shot">
+              <div class="tab land">
+                <div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+                <div class="app">
+                  <nav class="rail">
+                    <span class="logo"><svg class="i"><use href="#i-hat"/></svg></span>
+                    <a><span class="pill"><svg class="i"><use href="#i-home"/></svg></span>Home</a>
+                    <a class="on"><span class="pill"><svg class="i"><use href="#i-order"/></svg></span>Order</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-history"/></svg></span>History<span class="badge">3</span></a>
+                    <a><span class="pill"><svg class="i"><use href="#i-users"/></svg></span>Employees</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-shirt"/></svg></span>Catalogue</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-package"/></svg></span>Sets</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-usercog"/></svg></span>Users</a>
+                  </nav>
+                  <div class="main" style="gap:8px">
+                    <div class="mh"><span class="h">Create Order</span><span class="mbtn g">Clear</span></div>
+                    <div class="split" style="grid-template-columns:minmax(0,1fr) 170px;gap:10px">
+                      <div style="display:flex;flex-direction:column;gap:7px;min-width:0">
+                        <div style="display:flex;gap:6px;align-items:center"><div class="minput" style="flex:1;height:28px"><svg class="i"><use href="#i-search"/></svg>Add an item…</div><span class="chip on"><svg class="i"><use href="#i-check"/></svg>Starter kit</span><span class="chip">+ Visitor</span></div>
+                        <table class="dtbl" style="font-size:10.5px">
+                          <tr><th>Item</th><th>Size</th><th>Qty</th><th class="r">Total</th></tr>
+                          <tr><td><b>Safety shoes</b><div class="lab">€54.90 · 12 mo</div></td><td><span class="sz">39<svg class="i"><use href="#i-down"/></svg></span></td><td><span class="stp"><b><svg class="i"><use href="#i-minus"/></svg></b><span>1</span><b><svg class="i"><use href="#i-plus"/></svg></b></span></td><td class="r">€54.90</td></tr>
+                          <tr><td><b>Work jacket</b><div class="lab">€79.00 · 24 mo</div></td><td><span class="sz">S<svg class="i"><use href="#i-down"/></svg></span></td><td><span class="stp"><b><svg class="i"><use href="#i-minus"/></svg></b><span>1</span><b><svg class="i"><use href="#i-plus"/></svg></b></span></td><td class="r">€79.00</td></tr>
+                          <tr><td><b>Work trousers</b><div class="lab">€45.50 · 12 mo</div></td><td><span class="sz">S<svg class="i"><use href="#i-down"/></svg></span></td><td><span class="stp"><b><svg class="i"><use href="#i-minus"/></svg></b><span>2</span><b><svg class="i"><use href="#i-plus"/></svg></b></span></td><td class="r">€91.00</td></tr>
+                          <tr><td><b>Protective gloves</b><div class="lab">€3.20 · 1 mo</div></td><td class="mmuted">—</td><td><span class="stp"><b><svg class="i"><use href="#i-minus"/></svg></b><span>10</span><b><svg class="i"><use href="#i-plus"/></svg></b></span></td><td class="r">€32.00</td></tr>
+                          <tr><td><b>Safety helmet</b><div class="lab">€18.00 · 36 mo</div></td><td class="mmuted">—</td><td><span class="stp"><b><svg class="i"><use href="#i-minus"/></svg></b><span>1</span><b><svg class="i"><use href="#i-plus"/></svg></b></span></td><td class="r">€18.00</td></tr>
+                        </table>
+                      </div>
+                      <div class="panel" style="padding:9px;gap:7px">
+                        <div style="display:flex;gap:7px;align-items:center"><span class="av">OK</span><div style="min-width:0"><div style="font-weight:600;font-size:11px">Ona Kazlauskienė</div><div class="lab">S · 39 · 165 cm</div></div></div>
+                        <div class="lab" style="background:var(--m-amber-soft);color:var(--m-amber);border-radius:6px;padding:5px 6px">Gloves overdue · in this order ✓</div>
+                        <div style="border-top:1px solid var(--m-line);padding-top:6px"><div class="kv"><span class="lab">5 lines</span><span class="lab">complete</span></div><div class="kv" style="font-weight:650;font-size:13px"><span>Total</span><span class="num">€274.90</span></div></div>
+                        <div style="margin-top:auto;display:grid;gap:5px"><span class="mbtn p">Review</span><span class="mbtn"><svg class="i"><use href="#i-msg"/></svg>WhatsApp</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">A · rail up to 1280&nbsp;px: 888&nbsp;px of content, table and summary side by side</p>
+            </div></div>
+            <div class="opt-body">
+              <div class="opt-head"><h4>A. Keep the rail until 1280&nbsp;px</h4><span class="tag rec">Recommended</span></div>
+              <p>Move the labelled sidebar from <code>lg</code> (1024&nbsp;px) to <code>xl</code> (1280&nbsp;px). A landscape iPad keeps the 88&nbsp;px icon rail and gets 888&nbsp;px of content instead of 704. Employees and Create Order become tables again, and Create Order has room for the summary panel.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>184&nbsp;px more content width on the most common tablet width</li><li>A one-breakpoint change in <code>app.tsx</code> and the AGENTS.md rule</li><li>The rail still labels every icon, so nothing becomes a guessing game</li><li>Laptops with narrow windows benefit too</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Laptop users between 1024 and 1279&nbsp;px lose the full names</li><li>History and Catalogue need 960&nbsp;px; they still need the list-and-detail layout or a column dropped to become tables</li><li>The e2e "no sideways scrolling" check at 1100&nbsp;px must be re-baselined</li></ul></div></div>
+            </div>
+          </article>
+
+          <article class="opt">
+            <div class="opt-body" style="padding-top:18px">
+              <div class="opt-head"><h4>B. Collapsible sidebar</h4><span class="tag">Alternative</span></div>
+              <p>Keep the sidebar at 1024&nbsp;px, add a collapse button, and remember the choice per device.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>People choose between labels and space</li><li>A common pattern (Gmail, Notion, Linear)</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>A default still has to be chosen, and most people never change defaults</li><li>One more control and one more stored preference</li></ul></div></div>
+            </div>
+            <div class="opt-body" style="border-top:1px solid var(--line)">
+              <div class="opt-head"><h4>C. Separate tablet layouts</h4><span class="tag">Not recommended</span></div>
+              <p>Detect touch and orientation, and serve tablet-specific screens.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>Each device could be tuned exactly</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Breaks in Split View, and when a keyboard or trackpad is attached</li><li>Works against the container-query approach the app already uses</li><li>Two layouts to test and keep in sync</li></ul></div></div>
+            </div>
+          </article>
+        </div>
+
+        <h3>Screens on a tablet</h3>
+        <div class="options">
+          <article class="opt rec">
+            <div class="stage"><div class="shot">
+              <div class="tab port">
+                <div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+                <div class="app">
+                  <nav class="rail">
+                    <span class="logo"><svg class="i"><use href="#i-hat"/></svg></span>
+                    <a><span class="pill"><svg class="i"><use href="#i-home"/></svg></span>Home</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-order"/></svg></span>Order</a>
+                    <a class="on"><span class="pill"><svg class="i"><use href="#i-history"/></svg></span>History<span class="badge">3</span></a>
+                    <a><span class="pill"><svg class="i"><use href="#i-users"/></svg></span>Employees</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-shirt"/></svg></span>Catalogue</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-package"/></svg></span>Sets</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-usercog"/></svg></span>Users</a>
+                  </nav>
+                  <div class="main">
+                    <div class="mh"><span class="h">History</span><span class="mbtn"><svg class="i"><use href="#i-filter"/></svg>Filters</span></div>
+                    <div style="display:flex;gap:6px;align-items:center"><div class="minput" style="flex:1;height:28px"><svg class="i"><use href="#i-search"/></svg>Employee or record…</div></div>
+                    <div class="seg"><span class="on">Awaiting · 3</span><span>Given · 3</span><span>All · 6</span></div>
+                    <div class="rows">
+                      <div class="row"><div class="main"><div class="t1">Jonas Petraitis</div><div class="t2">WE-000006 · ordered 24 Sep</div></div><span class="end"><b>€32.00</b></span><span class="pillst">3 days</span><span class="chev"><svg class="i"><use href="#i-right"/></svg></span></div>
+                      <div class="row"><div class="main"><div class="t1">Tomas Jankauskas</div><div class="t2">WE-000005 · ordered 23 Sep</div></div><span class="end"><b>€34.40</b></span><span class="pillst">4 days</span><span class="chev"><svg class="i"><use href="#i-right"/></svg></span></div>
+                      <div class="row"><div class="main"><div class="t1">Aleksandr Ivanov</div><div class="t2">WE-000004 · ordered 15 Sep</div></div><span class="end"><b>€224.90</b></span><span class="pillst late">12 days</span><span class="chev"><svg class="i"><use href="#i-right"/></svg></span></div>
+                    </div>
+                    <div class="lab">Given · August</div>
+                    <div class="rows ghost">
+                      <div class="row"><div class="main"><div class="t1">Mindaugas Vasiliauskas</div><div class="t2">WE-000003 · given 28 Aug</div></div><span class="end"><b>€170.00</b></span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">Portrait · History as one-line rows; filters behind a button</p>
+            </div></div>
+            <div class="opt-body">
+              <div class="opt-head"><h4>Portrait: one-column rows, not two-up cards</h4><span class="tag rec">Recommended</span></div>
+              <p>At 632&nbsp;px a list row has room for name, record, value and status on one line, so rows beat half-width cards. This applies to History, Employees (sizes as small columns) and Catalogue (price and service period on the right). Create Order uses the compact line rows from section 03 at full width.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>About 12 orders on the first portrait screen instead of 3</li><li>The first order starts about 200&nbsp;px down instead of 398</li><li>Size selects get full width, so labels are no longer cut off</li><li>Reuses the phone's row list, so no new component</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Two-up cards look fuller on a large empty screen</li><li>Active filters must show as chips, or people forget a filter is on</li></ul></div></div>
+            </div>
+          </article>
+
+          <article class="opt rec">
+            <div class="stage"><div class="shot">
+              <div class="tab land">
+                <div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+                <div class="app">
+                  <nav class="rail">
+                    <span class="logo"><svg class="i"><use href="#i-hat"/></svg></span>
+                    <a><span class="pill"><svg class="i"><use href="#i-home"/></svg></span>Home</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-order"/></svg></span>Order</a>
+                    <a class="on"><span class="pill"><svg class="i"><use href="#i-history"/></svg></span>History<span class="badge">3</span></a>
+                    <a><span class="pill"><svg class="i"><use href="#i-users"/></svg></span>Employees</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-shirt"/></svg></span>Catalogue</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-package"/></svg></span>Sets</a>
+                    <a><span class="pill"><svg class="i"><use href="#i-usercog"/></svg></span>Users</a>
+                  </nav>
+                  <div class="main" style="gap:8px">
+                    <div class="mh"><span class="h">History</span><div class="seg" style="width:230px"><span class="on">Awaiting 3</span><span>Given 3</span><span>All</span></div></div>
+                    <div class="split" style="grid-template-columns:minmax(0,1fr) 215px;gap:10px">
+                      <div class="rows" style="align-self:start">
+                        <div class="row"><div class="main"><div class="t1">Jonas Petraitis</div><div class="t2">WE-000006 · 24 Sep · €32.00</div></div><span class="pillst">3 d</span></div>
+                        <div class="row"><div class="main"><div class="t1">Tomas Jankauskas</div><div class="t2">WE-000005 · 23 Sep · €34.40</div></div><span class="pillst">4 d</span></div>
+                        <div class="row" style="background:#F1F1F1"><div class="main"><div class="t1">Aleksandr Ivanov</div><div class="t2">WE-000004 · 15 Sep · €224.90</div></div><span class="pillst late">12 d</span></div>
+                      </div>
+                      <div class="panel" style="padding:10px;gap:7px">
+                        <div style="display:flex;justify-content:space-between;align-items:center"><b>WE-000004</b><span class="pillst late">Waiting 12 d</span></div>
+                        <div class="lab">Aleksandr Ivanov · W-006 · 15 Sep 09:30</div>
+                        <div style="display:grid;gap:3px;font-size:10.5px">
+                          <div class="kv"><span>Safety shoes · 46</span><span class="num">€54.90</span></div>
+                          <div class="kv"><span>Work jacket · 2XL</span><span class="num">€79.00</span></div>
+                          <div class="kv"><span>Work trousers · 2XL ×2</span><span class="num">€91.00</span></div>
+                          <div class="kv" style="font-weight:650;border-top:1px solid var(--m-line);padding-top:4px"><span>Total</span><span class="num">€224.90</span></div>
+                        </div>
+                        <div style="margin-top:auto;display:grid;gap:5px"><span class="mbtn p"><svg class="i"><use href="#i-hat"/></svg>Hand over now</span><span class="mbtn"><svg class="i"><use href="#i-link"/></svg>Send link</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><span class="mbtn"><svg class="i"><use href="#i-print"/></svg>Print</span><span class="mbtn">Paper…</span></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="cap">Landscape · History as list and detail, from about 860&nbsp;px of content</p>
+            </div></div>
+            <div class="opt-body">
+              <div class="opt-head"><h4>Landscape: list and detail</h4><span class="tag rec">Recommended</span></div>
+              <p>The desktop list-and-detail layout from section 04 needs about 860&nbsp;px of content, so with the rail it fits a landscape iPad. Tap a row and its lines and actions open beside the list. A container query, not a device check, decides when the pane appears.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>Chase several waiting orders without leaving the list</li><li>The same component as on desktop</li><li>Rotating to portrait falls back to the order page, with no special code</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>The detail pane is narrow; long item names need to wrap</li><li>The selected order must be kept in the URL across rotation</li></ul></div></div>
+            </div>
+          </article>
+        </div>
+
+        <h3>Idea: hand over at the counter</h3>
+        <div class="options">
+          <article class="opt">
+            <div class="stage">
+              <div class="shot">
+                <div class="tab port">
+                  <div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+                  <div class="app full">
+                    <div class="main" style="padding:22px 26px 90px;gap:12px">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span class="seg" style="width:96px;padding:2px"><span class="on" style="padding:3px">EN</span><span style="padding:3px">RU</span></span><span class="lab">Hand back · hold 2 s</span></div>
+                      <div style="font-size:19px;font-weight:650;line-height:1.2">Ona, please check your items and confirm you received them</div>
+                      <div class="lab" style="font-size:11px">Order WE-000002 · prepared by Administrator</div>
+                      <div class="rows">
+                        <div class="row" style="min-height:44px"><svg class="i" style="color:#888;width:18px;height:18px"><use href="#i-boot"/></svg><div class="main"><div class="t1" style="font-size:13px">Safety shoes · 39</div></div><span class="end" style="font-size:13px">×1</span></div>
+                        <div class="row" style="min-height:44px"><svg class="i" style="color:#888;width:18px;height:18px"><use href="#i-shirt"/></svg><div class="main"><div class="t1" style="font-size:13px">Work jacket · S</div></div><span class="end" style="font-size:13px">×1</span></div>
+                        <div class="row" style="min-height:44px"><svg class="i" style="color:#888;width:18px;height:18px"><use href="#i-shirt"/></svg><div class="main"><div class="t1" style="font-size:13px">Work trousers · S</div></div><span class="end" style="font-size:13px">×2</span></div>
+                        <div class="row" style="min-height:44px"><svg class="i" style="color:#888;width:18px;height:18px"><use href="#i-glove"/></svg><div class="main"><div class="t1" style="font-size:13px">Protective gloves</div></div><span class="end" style="font-size:13px">×10</span></div>
+                        <div class="row" style="min-height:44px"><svg class="i" style="color:#888;width:18px;height:18px"><use href="#i-hat"/></svg><div class="main"><div class="t1" style="font-size:13px">Safety helmet</div></div><span class="end" style="font-size:13px">×1</span></div>
+                      </div>
+                      <span class="mbtn" style="justify-self:start"><svg class="i"><use href="#i-file"/></svg>Read the full record</span>
+                    </div>
+                    <div class="bar" style="flex-direction:column;align-items:stretch;padding:10px 26px 14px;gap:8px">
+                      <label style="display:flex;gap:9px;align-items:center;font-size:11.5px"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid #a3a3a3;flex:none"></span>I have received the items listed and agree with the confirmation text.</label>
+                      <span class="mbtn p lg" style="opacity:.45;height:42px">Confirm receipt</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="cap">Hand-over mode · the tablet is turned to the employee</p>
+              </div>
+            </div>
+            <div class="opt-body">
+              <div class="opt-head"><h4>Hand-over mode on the storekeeper's tablet</h4><span class="tag">Idea · needs a product decision</span></div>
+              <p>At the counter the storekeeper taps "Hand over now" on a waiting order. The tablet switches to a full-screen view with no navigation, built from the same content as the public confirmation page, and is turned to the employee. The employee ticks and confirms; the order becomes GIVEN on the spot. The storekeeper gets the tablet back with a long press or by signing in again.</p>
+              <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>Closes the loop in seconds, with no WhatsApp link to chase and no paper to file</li><li>Fits how gear is actually handed out: face to face, at a counter</li><li>Reuses the confirmation page, its consent text and the receipt</li><li>Large type and 44&nbsp;px rows suit people in gloves or without their glasses</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>A third confirmation channel ("in person on a staff device") must be recorded on the receipt and in the audit trail, which is a change to the manual</li><li>The employee must not be able to leave the view; iPad Guided Access is advisable</li><li>It proves the employee was present less strongly than a signature does; check this with whoever owns the legal wording</li></ul></div></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="verdict"><p class="eyebrow">Recommendation</p><p>Keep the rail until 1280&nbsp;px first. It is a one-line change and fixes landscape iPads on every screen. Then use one-column rows in portrait and list-and-detail in landscape, both driven by container width. Take hand-over mode to the product owner: it fits counter work best, but it changes how confirmation is recorded.</p></div>
+      </section>
+
       <!-- ============ DESKTOP POWER ============ -->
       <section class="part" id="desktop">
-        <header><p class="eyebrow">08 · Desktop</p><h2>A power layer for people who use it all day</h2></header>
+        <header><p class="eyebrow">09 · Desktop</p><h2>A power layer for people who use it all day</h2></header>
         <div class="prose"><p>The desktop layout is a well-behaved responsive version of the phone. Office users who prepare many orders a week benefit from features a phone does not need: keyboard shortcuts, jump-to search and denser tables.</p></div>
         <div class="wide">
           <div class="stage"><div class="shot">
@@ -1161,7 +1452,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
           <ul>
             <li><b>Keyboard shortcuts:</b> <code>/</code> focuses search or Add item; <code>N</code> starts a new order; <code>J</code>/<code>K</code> moves through lists; <code>⌘↵</code> opens the review; <code>?</code> shows all shortcuts.</li>
             <li><b>Density:</b> a Comfortable/Compact switch for tables, saved per user. Compact rows are 32&nbsp;px, and targets stay 24&nbsp;px or more (WCAG 2.5.8) on pointer devices.</li>
-            <li><b>Hover previews:</b> hovering a record number such as WE-000004 shows its lines and status, so users don't have to navigate away.</li>
+            <li><b>Hover previews:</b> hovering a record number such as WE-000004 shows its lines and status, so users don't have to navigate away. On touch screens (<code>hover: none</code>) the ⋯ menus stay visible and previews open on tap.</li>
             <li><b>Relative dates:</b> show "3 days ago" in lists with the exact time in a tooltip. Receipts keep absolute dates.</li>
           </ul>
         </div>
@@ -1169,18 +1460,18 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
 
       <!-- ============ ROADMAP ============ -->
       <section class="part" id="roadmap">
-        <header><p class="eyebrow">09 · Sequencing</p><h2>Roadmap</h2></header>
+        <header><p class="eyebrow">10 · Sequencing</p><h2>Roadmap</h2></header>
         <div class="phases">
-          <div class="phase"><p class="eyebrow">Phase 1 · quick wins</p><h4>Safety and orientation</h4><ul><li>Review sheet before Mark as Ordered</li><li>Success screen with Send link, WhatsApp and Print</li><li>Phone bar with four tabs plus More, badge on History</li><li>One-tap item set chips</li><li>Delete and Deactivate moved into ⋯ with a confirmation</li><li>Missing-size chips in the Employees list</li><li>Compare with the same days of last month on the dashboard</li></ul></div>
-          <div class="phase"><p class="eyebrow">Phase 2 · density</p><h4>Lists and composer</h4><ul><li>Compact order lines with steppers and size chips</li><li>Searchable Add item combobox</li><li>History status tabs, aging chips, order page</li><li>History list and detail pane on desktop</li><li>Attention-first dashboards with a prefilled Reorder</li><li>Confirmation page with the summary first and pinned consent</li></ul></div>
-          <div class="phase"><p class="eyebrow">Phase 3 · delight</p><h4>Speed for power users</h4><ul><li>⌘K palette and keyboard shortcuts</li><li>"Due now" suggestions in Create Order</li><li>Due-date bars on the employee page</li><li>Item pictograms, and later the shop grid</li><li>Drafts that survive a closed tab (localStorage or the server)</li></ul></div>
+          <div class="phase"><p class="eyebrow">Phase 1 · quick wins</p><h4>Safety and orientation</h4><ul><li>Review sheet before Mark as Ordered</li><li>Success screen with Send link, WhatsApp and Print</li><li>Phone bar with four tabs plus More, badge on History</li><li>Icon rail kept until 1280&nbsp;px for landscape tablets</li><li>One-tap item set chips</li><li>Delete and Deactivate moved into ⋯ with a confirmation</li><li>Missing-size chips in the Employees list</li><li>Compare with the same days of last month on the dashboard</li></ul></div>
+          <div class="phase"><p class="eyebrow">Phase 2 · density</p><h4>Lists and composer</h4><ul><li>Compact order lines with steppers and size chips</li><li>Searchable Add item combobox</li><li>History status tabs, aging chips, order page</li><li>History list and detail pane on desktop</li><li>Attention-first dashboards with a prefilled Reorder</li><li>Confirmation page with the summary first and pinned consent</li><li>Tablet: one-column rows in portrait, list and detail in landscape</li></ul></div>
+          <div class="phase"><p class="eyebrow">Phase 3 · delight</p><h4>Speed for power users</h4><ul><li>⌘K palette and keyboard shortcuts</li><li>"Due now" suggestions in Create Order</li><li>Due-date bars on the employee page</li><li>Item pictograms, and later the shop grid</li><li>Drafts that survive a closed tab (localStorage or the server)</li><li>Hand-over mode on the counter tablet, once the product owner agrees</li></ul></div>
         </div>
-        <div class="prose"><p style="color:var(--muted);font-size:.95rem">Each change touches the e2e suite and <code>web/AGENTS.md</code>. The responsive rules still hold: one Main nav, 44&nbsp;px touch targets, sticky actions above <code>--bottom-nav</code>, and no sideways scrolling at 375–1280&nbsp;px. A "row list" variant needs adding next to <code>&lt;Table stack&gt;</code>. Run a five-user hallway test of the phone Create Order (Phase 2) before building it, timing "apply the starter kit, change one size, send".</p></div>
+        <div class="prose"><p style="color:var(--muted);font-size:.95rem">Each change touches the e2e suite and <code>web/AGENTS.md</code>. The responsive rules still hold: one Main nav, 44&nbsp;px touch targets, sticky actions above <code>--bottom-nav</code>, and no sideways scrolling at 375–1280&nbsp;px (re-baseline the 1100&nbsp;px check if the rail stays until 1280). A "row list" variant needs adding next to <code>&lt;Table stack&gt;</code>. Run a five-user hallway test of the phone Create Order (Phase 2) before building it, timing "apply the starter kit, change one size, send".</p></div>
       </section>
 
       <!-- ============ REFERENCES ============ -->
       <section class="part" id="refs">
-        <header><p class="eyebrow">10 · Grounding</p><h2>References</h2></header>
+        <header><p class="eyebrow">11 · Grounding</p><h2>References</h2></header>
         <ol class="refs">
           <li>Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/tab-bars">Tab bars</a>: keep tabs few, with short full labels.</li>
           <li>Material Design 3, <a href="https://m3.material.io/components/navigation-bar/guidelines">Navigation bar</a>: 3–5 destinations; use other navigation beyond that.</li>
