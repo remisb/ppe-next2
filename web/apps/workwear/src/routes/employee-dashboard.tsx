@@ -203,7 +203,7 @@ function RecentlyGivenCard({ d, navigate }: { d: Data; navigate: Navigate }) {
                   {g.employee_name}
                 </a>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  given {formatDate(g.given_at, d.timezone)} · {g.method === 'PAPER' ? 'paper' : 'electronic'} · {plural(g.items, 'item')} ·{' '}
+                  given {formatDate(g.given_at, d.timezone)} · {g.method === 'PAPER' ? 'paper' : g.method === 'IN_PERSON' ? 'in person' : 'electronic'} · {plural(g.items, 'item')} ·{' '}
                   {formatEuro(g.value_cents)}
                 </span>
               </div>

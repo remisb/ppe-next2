@@ -29,6 +29,9 @@ type Method string
 const (
 	MethodElectronic Method = "ELECTRONIC"
 	MethodPaper      Method = "PAPER"
+	// MethodInPerson is the employee confirming on a staff member's device at
+	// the counter (hand-over mode): no link, the staff member as giver.
+	MethodInPerson Method = "IN_PERSON"
 )
 
 // Order is an immutable business record. Employee and user names are

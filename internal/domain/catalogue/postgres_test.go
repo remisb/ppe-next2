@@ -52,8 +52,18 @@ func TestPostgresCatalogue(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, _ := svc.Get(ctx, draft.ID)
-	if got.UnitPriceCents != nil || got.ServicePeriodMonths != nil || got.Orderable() {
+	if got.UnitPriceCents != nil || got.ServicePeriodMonths != nil || got.Orderable() || got.Icon != IconOther {
 		t.Errorf("draft item = %+v", got)
+	}
+	// The pictogram is stored and read back; the database refuses one the app cannot draw.
+	if _, err := svc.Update(ctx, draft.ID, Params{Name: "Helmet", SizeGroup: size.GroupNone, Active: true, Icon: IconHelmet}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := svc.Get(ctx, draft.ID); got.Icon != IconHelmet {
+		t.Errorf("icon = %q", got.Icon)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = 'boot' WHERE id = $1`, draft.ID); err == nil {
+		t.Error("the database accepted an unknown icon")
 	}
 
 	p.UnitPriceCents = i64(2750)

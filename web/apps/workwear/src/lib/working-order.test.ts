@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   acceptResolvedSize,
   addLines,
+  clearDraft,
   applySavedDefault,
   emptyOrder,
   lineFromCatalogue,
@@ -143,20 +144,47 @@ describe('validate', () => {
 })
 
 describe('draft persistence', () => {
-  it('round-trips and clears when empty', () => {
+  const memory = () => {
     const store = new Map<string, string>()
     const storage = {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => void store.set(k, v),
       removeItem: (k: string) => void store.delete(k),
     } as Storage
+    return { store, storage }
+  }
+
+  it('round-trips per user and clears when empty', () => {
+    const { store, storage } = memory()
+    const { storage: none } = memory()
     const o = addLines({ employee: ona, lines: [] }, [line('a')])
-    saveDraft(o, storage)
-    expect(loadDraft(storage)).toEqual(o)
-    saveDraft(emptyOrder, storage)
+    saveDraft(o, 'u1', storage)
+    expect(loadDraft('u1', storage, none)).toEqual(o)
+    // Another user on the same device starts empty.
+    expect(loadDraft('u2', storage, none)).toEqual(emptyOrder)
+    saveDraft(emptyOrder, 'u1', storage)
     expect(store.size).toBe(0)
-    storage.setItem('workwear.createOrder.v1', '{broken')
-    expect(loadDraft(storage)).toEqual(emptyOrder)
+    storage.setItem('workwear.createOrder.v2.u1', '{broken')
+    expect(loadDraft('u1', storage, none)).toEqual(emptyOrder)
+  })
+
+  it('clears one user\'s draft', () => {
+    const { storage } = memory()
+    saveDraft(addLines(emptyOrder, [line('a')]), 'u1', storage)
+    saveDraft(addLines(emptyOrder, [line('b')]), 'u2', storage)
+    clearDraft('u1', storage)
+    expect(loadDraft('u1', storage, memory().storage)).toEqual(emptyOrder)
+    expect(loadDraft('u2', storage, memory().storage).lines).toHaveLength(1)
+  })
+
+  it('moves a draft kept per tab by the earlier version over once', () => {
+    const { storage } = memory()
+    const { store: tab, storage: legacy } = memory()
+    const o = addLines({ employee: ona, lines: [] }, [line('a')])
+    legacy.setItem('workwear.createOrder.v1', JSON.stringify(o))
+    expect(loadDraft('u1', storage, legacy)).toEqual(o)
+    expect(tab.size).toBe(0)
+    expect(loadDraft('u1', storage, legacy)).toEqual(o)
   })
 })
 
@@ -164,7 +192,7 @@ describe('lineFromCatalogue', () => {
   it('builds an unresolved line from catalogue data', () => {
     const l = lineFromCatalogue({
       id: 'i', name: 'Safety shoes', details: 'S3', size_group: 'SHOES', unit_price_cents: null, currency: 'EUR',
-      service_period_months: 12, active: true, display_rank: 1, created_at: '', updated_at: '',
+      service_period_months: 12, active: true, display_rank: 1, icon: 'shoes', created_at: '', updated_at: '',
     })
     expect(l).toMatchObject({ size: null, size_missing: true, price_missing: true, unavailable: false, quantity: 1 })
     const o = addLines(emptyOrder, [l])

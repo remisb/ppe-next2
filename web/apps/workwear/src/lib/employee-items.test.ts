@@ -1,7 +1,7 @@
 import type { ListedOrder, OrderLine } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { employeeItems } from './employee-items'
+import { addMonths, employeeItems, replacementsDue } from './employee-items'
 
 function line(no: number, name: string): OrderLine {
   return {
@@ -61,5 +61,38 @@ describe('employeeItems', () => {
 
   it('returns empty lists for no orders', () => {
     expect(employeeItems([])).toEqual({ given: [], ordered: [] })
+  })
+})
+
+describe('replacements due', () => {
+  it('adds months as Postgres does, ending a short month on its last day', () => {
+    expect(addMonths('2026-01-31T10:00:00Z', 1).toISOString()).toBe('2026-02-28T10:00:00.000Z')
+    expect(addMonths('2028-01-31T10:00:00Z', 1).toISOString()).toBe('2028-02-29T10:00:00.000Z')
+    expect(addMonths('2026-07-30T08:00:00Z', 12).toISOString()).toBe('2027-07-30T08:00:00.000Z')
+  })
+
+  it('takes the latest given line per item, and says how far through its service period it is', () => {
+    // Order 1 gave gloves on 1 February; order 2 gave gloves again and a helmet on 2 February.
+    const gloves = { ...line(1, 'gloves'), service_period_months: 1 }
+    const helmet = { ...line(2, 'helmet'), service_period_months: 12 }
+    const orders = [order('2', 'GIVEN', [gloves, helmet]), order('1', 'GIVEN', [{ ...gloves, id: 'old-gloves' }])]
+    const due = replacementsDue(orders, new Date('2026-03-15T08:00:00Z'))
+    expect(due.map((d) => d.item.itemName)).toEqual(['gloves', 'helmet'])
+    const [g, h] = due
+    expect(g?.item.key).toBe('line-gloves') // the later line, from order 2
+    expect(g?.dueAt.toISOString()).toBe('2026-03-02T08:00:00.000Z')
+    expect(g?.overdue).toBe(true)
+    expect(g?.used).toBe(1)
+    expect(h?.overdue).toBe(false)
+    expect(h?.dueSoon).toBe(false)
+    expect(h?.used).toBeCloseTo(41 / 365, 2)
+  })
+
+  it('marks an item already on an ORDERED order as reordered', () => {
+    const gloves = { ...line(1, 'gloves'), service_period_months: 1 }
+    const orders = [order('3', 'ORDERED', [{ ...gloves, id: 'new-gloves' }]), order('1', 'GIVEN', [gloves])]
+    const [g] = replacementsDue(orders, new Date('2026-03-15T08:00:00Z'))
+    expect(g?.reordered).toBe(true)
+    expect(g?.dueSoon).toBe(true)
   })
 })

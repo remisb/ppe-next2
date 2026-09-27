@@ -1,8 +1,11 @@
-import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, LayoutDashboard, LogOut, Package, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { CommandPalette, type PaletteSection } from '@/components/command-palette'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi } from '@/lib/api'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
+import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
 
@@ -95,12 +98,42 @@ export function App() {
   const { session, signOut, client } = useApi()
   const { route: asked, navigate } = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const morePanel = useRef<HTMLDivElement>(null)
   // Orders waiting for the employee's confirmation, as a count on History;
   // refreshed on every navigation, so it follows Mark as Ordered and confirmations.
   const awaiting = useLoad(
     () => (session ? client.orders.list({ status: 'ORDERED', page_size: 1 }).then((p) => p.total) : Promise.resolve(0)),
     [asked, session?.token],
+  )
+
+  // "G then a letter" goes to a section the user has; D is their start screen.
+  const goTo: Record<GoTarget, Route> = {
+    d: { name: 'home' },
+    o: { name: 'createOrder' },
+    h: { name: 'history' },
+    e: { name: 'employees' },
+    c: { name: 'catalogue' },
+    s: { name: 'itemSets' },
+    u: { name: 'users' },
+  }
+  useShortcuts(
+    {
+      palette: () => setPaletteOpen(true),
+      // The screen's own search or Add Item field; the palette where there is none.
+      search: () => {
+        const field = document.querySelector<HTMLElement>('[data-shortcut=search]')
+        if (field) field.focus()
+        else setPaletteOpen(true)
+      },
+      newOrder: () => navigate({ name: 'createOrder' }),
+      go: (k) => {
+        if (k !== 'u' || session?.isAdmin) navigate(goTo[k])
+      },
+      help: () => setHelpOpen(true),
+    },
+    session !== null,
   )
 
   // More closes when a section is chosen (any navigation) and on Escape.
@@ -126,6 +159,10 @@ export function App() {
         ? [employeeTab, ...tabs]
         : tabs
 
+  const sections: PaletteSection[] = [
+    ...shownTabs.map((t) => ({ route: t.route, label: t.label, icon: t.icon })),
+    { route: { name: 'account' }, label: 'Account and password', icon: UserRound },
+  ]
   const primary = shownTabs.slice(0, phoneTabs)
   const more = shownTabs.slice(phoneTabs)
   const moreCurrent = route.name === 'account' || more.some((t) => isCurrent(route.name, t.route.name))
@@ -153,6 +190,24 @@ export function App() {
       <aside className="print:hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:border-r md:border-border md:bg-sidebar">
         <div className="hidden h-16 shrink-0 items-center justify-center px-3 md:flex xl:justify-start xl:px-5">
           <Brand />
+        </div>
+        {/* The palette's way in for the mouse: an icon in the rail, a search field look in the sidebar. */}
+        <div className="hidden px-2 pb-1 md:block xl:px-3">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className={cn(
+              navItem,
+              'w-full cursor-pointer xl:justify-between xl:border xl:border-border xl:bg-background xl:py-2 xl:text-muted-foreground xl:hover:bg-background',
+            )}
+          >
+            <span className={navIcon}>
+              <Search aria-hidden className="size-5 xl:size-4" />
+            </span>
+            <span className="xl:hidden">Search</span>
+            <span className="hidden flex-1 text-left xl:inline">Search…</span>
+            <kbd className="hidden rounded border border-border px-1.5 font-mono text-[0.625rem] xl:inline">⌘K</kbd>
+          </button>
         </div>
         {/* A phone's More panel dims the page; a tap outside closes it. */}
         {moreOpen ? <div aria-hidden className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setMoreOpen(false)} /> : null}
@@ -193,6 +248,19 @@ export function App() {
               'md:contents',
             )}
           >
+            <button
+              type="button"
+              onClick={() => {
+                setMoreOpen(false)
+                setPaletteOpen(true)
+              }}
+              className={cn(moreItem, 'w-full cursor-pointer md:hidden')}
+            >
+              <span className={moreIcon}>
+                <Search aria-hidden className="size-5" />
+              </span>
+              Search
+            </button>
             {more.map((t) => (
               <NavLink key={t.route.name} tab={t} current={isCurrent(route.name, t.route.name)} link={link} item={moreItem} icon={moreIcon} />
             ))}
@@ -217,6 +285,13 @@ export function App() {
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex xl:p-3">
+          <button type="button" onClick={() => setHelpOpen(true)} className={cn(navItem, 'w-full cursor-pointer pointer-coarse:hidden')}>
+            <span className={navIcon}>
+              <Keyboard aria-hidden className="size-5 xl:size-4" />
+            </span>
+            <span className="xl:hidden">Keys</span>
+            <span className="hidden xl:inline">Keyboard shortcuts</span>
+          </button>
           <a
             {...link({ name: 'account' })}
             aria-current={route.name === 'account' ? 'page' : undefined}
@@ -266,6 +341,19 @@ export function App() {
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />
         ) : null}
       </main>
+      <CommandPalette open={paletteOpen} sections={sections} onClose={() => setPaletteOpen(false)} navigate={navigate} />
+      <FormSheet open={helpOpen} onClose={() => setHelpOpen(false)} title="Keyboard shortcuts" description="Letters work anywhere except while typing in a field.">
+        <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[auto_1fr]">
+          {shortcutList.map((s) => (
+            <div key={s.keys} className="contents">
+              <dt>
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">{s.keys}</kbd>
+              </dt>
+              <dd className="text-muted-foreground max-sm:mb-2">{s.does}</dd>
+            </div>
+          ))}
+        </dl>
+      </FormSheet>
     </div>
   )
 }

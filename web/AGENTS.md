@@ -62,6 +62,10 @@ The workwear app is the reference.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
   phone tab bar's height (0 from `md`). An action that cannot be undone (Mark as Ordered)
   opens a review of what it will store, confirmed there.
+- **Keyboard**: shortcuts live in `lib/shortcuts.ts` and never fire while typing in a
+  field (⌘K / Ctrl+K excepted) or while a dialog is open. A screen's main search field
+  carries `data-shortcut="search"` so `/` reaches it. Every shortcut has a visible way to do
+  the same with a pointer; the ⌘K palette also opens from Search in the sidebar and More.
 - **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
   Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
   (Delete, Deactivate). The ⋯ button is always shown, never revealed on hover: touch

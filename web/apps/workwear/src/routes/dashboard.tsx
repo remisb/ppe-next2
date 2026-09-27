@@ -165,7 +165,14 @@ function MonthlyChart({ months, className }: { months: DashboardMonth[]; classNa
 
 function ConfirmationCard({ d }: { d: DashboardData }) {
   const c = d.confirmation
+  // The three methods' shares; in person takes the remainder so the bar and figures add up to 100.
   const electronic = share(c.electronic, c.given)
+  const paper = share(c.paper, c.given)
+  const methods = [
+    { label: 'Electronic', count: c.electronic, pct: electronic, className: 'bg-foreground/80' },
+    { label: 'Paper', count: c.paper, pct: paper, className: 'bg-foreground/45' },
+    { label: 'In person', count: c.in_person, pct: c.in_person > 0 ? 100 - electronic - paper : 0, className: 'bg-foreground/25' },
+  ]
   return (
     <Panel title="Confirmation" description={`Orders given in the last ${c.window_days} days.`}>
       <div className="flex flex-col gap-5">
@@ -183,22 +190,22 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
         </dl>
         {c.given > 0 ? (
           <div>
-            <div aria-hidden className="flex h-2.5 overflow-hidden rounded-full bg-foreground/15">
-              <div className="bg-foreground/80" style={{ width: `${electronic}%` }} />
+            <div aria-hidden className="flex h-2.5 overflow-hidden rounded-full bg-foreground/10">
+              {methods.map((m) => (
+                <div key={m.label} className={m.className} style={{ width: `${m.pct}%` }} />
+              ))}
             </div>
-            <dl className="mt-2 flex justify-between gap-2 text-xs">
-              <div>
-                <dt className="inline text-muted-foreground">Electronic </dt>
-                <dd className="inline font-medium tabular-nums">
-                  {c.electronic} ({electronic}%)
-                </dd>
-              </div>
-              <div className="text-right">
-                <dt className="inline text-muted-foreground">Paper </dt>
-                <dd className="inline font-medium tabular-nums">
-                  {c.paper} ({100 - electronic}%)
-                </dd>
-              </div>
+            <dl className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs">
+              {methods
+                .filter((m) => m.label !== 'In person' || m.count > 0)
+                .map((m) => (
+                  <div key={m.label}>
+                    <dt className="inline text-muted-foreground">{m.label} </dt>
+                    <dd className="inline font-medium tabular-nums">
+                      {m.count} ({m.pct}%)
+                    </dd>
+                  </div>
+                ))}
             </dl>
           </div>
         ) : (

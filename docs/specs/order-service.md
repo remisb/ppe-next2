@@ -76,6 +76,7 @@ the filters use.
 | --- | --- |
 | `POST /api/v1/orders/{id}/confirmation-link` | Open Employee Confirmation. ORDERED only (409 otherwise). Returns `{url, expires_at}` once; `url` is `API_PUBLIC_BASE_URL/confirm/<token>`. Earlier unused links for the order are revoked. TTL `API_CONFIRM_TTL` (default 7 days). |
 | `POST /api/v1/orders/{id}/confirm-paper` | Record a signed paper Items Given Record: GIVEN with method `PAPER`, the actor as giver. Idempotent. |
+| `POST /api/v1/orders/{id}/confirm-in-person` `{confirmed: true}` | Hand-over mode: the employee read the record and ticked the confirmation text on the signed-in staff member's device. `confirmed` must be true (400). GIVEN with method `IN_PERSON`, the actor as giver, open links revoked, evidence (employee name, document hash) as for the other methods. Idempotent. An addition to the manual, which defines only electronic and paper confirmation (migration `0009`). |
 | `GET /api/v1/orders/{id}/record` | View Record / Print Record. |
 
 ### Public routes (token only, rate-limited 20/min per IP)

@@ -86,7 +86,7 @@ type GivenOrder struct {
 	EmployeeID   uuid.UUID `json:"employee_id"`
 	EmployeeName string    `json:"employee_name"`
 	GivenAt      time.Time `json:"given_at"`
-	Method       string    `json:"method"` // ELECTRONIC or PAPER
+	Method       string    `json:"method"` // ELECTRONIC, PAPER or IN_PERSON
 	Items        int       `json:"items"`
 	ValueCents   int64     `json:"value_cents"`
 }

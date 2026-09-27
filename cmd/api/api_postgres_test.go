@@ -498,6 +498,16 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 		t.Errorf("paper = %d %s", rec.Code, rec.Body)
 	}
 
+	// In person (hand-over mode): refused without the tick, then GIVEN.
+	id3 := place()
+	if rec = api.do(t, "POST", "/api/v1/orders/"+id3+"/confirm-in-person", staff, map[string]any{"confirmed": false}); rec.Code != http.StatusBadRequest {
+		t.Errorf("unticked in person = %d, want 400", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/orders/"+id3+"/confirm-in-person", staff, map[string]any{"confirmed": true})
+	if r := decode[record](t, rec.Body.Bytes()); rec.Code != http.StatusOK || r.Status != "GIVEN" || r.Confirmation["method"] != "IN_PERSON" {
+		t.Errorf("in person = %d %s", rec.Code, rec.Body)
+	}
+
 	// The token never reaches a URL the API logs.
 	var n int
 	pool.QueryRow(context.Background(), `SELECT count(*) FROM order_confirmations WHERE token_hash = $1`, token).Scan(&n)

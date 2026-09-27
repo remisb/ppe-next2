@@ -117,9 +117,10 @@ func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 	return tx.QueryRow(ctx, `SELECT count(*),
 			count(*) FILTER (WHERE confirmation_method = 'ELECTRONIC'),
 			count(*) FILTER (WHERE confirmation_method = 'PAPER'),
+			count(*) FILTER (WHERE confirmation_method = 'IN_PERSON'),
 			percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM given_at - ordered_at))
 		FROM orders WHERE status = 'GIVEN' AND given_at >= $1`, w.ConfirmSince).
-		Scan(&c.Given, &c.Electronic, &c.Paper, &c.MedianSeconds)
+		Scan(&c.Given, &c.Electronic, &c.Paper, &c.InPerson, &c.MedianSeconds)
 }
 
 func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {

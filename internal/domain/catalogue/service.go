@@ -75,7 +75,7 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Item, 
 	i := Item{
 		ID: s.newID(), Name: p.Name, Details: p.Details, SizeGroup: p.SizeGroup,
 		UnitPriceCents: p.UnitPriceCents, Currency: CurrencyEUR, ServicePeriodMonths: p.ServicePeriodMonths,
-		Active: p.Active, DisplayRank: *p.DisplayRank,
+		Active: p.Active, DisplayRank: *p.DisplayRank, Icon: p.Icon,
 		CreatedAt: now, UpdatedAt: now, CreatedByUserID: actor, UpdatedByUserID: actor,
 	}
 	ev, err := s.event(actor, EventCreated, i.ID, now, nil, priceOf(i))
@@ -109,7 +109,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 		next := cur
 		next.Name, next.Details, next.SizeGroup = p.Name, p.Details, p.SizeGroup
 		next.UnitPriceCents, next.ServicePeriodMonths = p.UnitPriceCents, p.ServicePeriodMonths
-		next.Active, next.DisplayRank = p.Active, *p.DisplayRank
+		next.Active, next.DisplayRank, next.Icon = p.Active, *p.DisplayRank, p.Icon
 		return s.touch(cur, next, actor)
 	})
 }

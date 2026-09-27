@@ -2,6 +2,7 @@ import type { ListedOrder, PriceEntry } from '@ppe/api-client'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { ItemTile } from '@/components/item-icon'
 import { MoreActions } from '@/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -74,6 +75,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
         <>
           <PageHeader
             title={i.name}
+            icon={<ItemTile icon={i.icon} className="size-10" />}
             {...(i.details ? { description: i.details } : {})}
             actions={
               canManageItems ? (

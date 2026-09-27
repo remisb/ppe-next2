@@ -146,6 +146,8 @@ export function createClient(options: ClientOptions) {
         request<ConfirmationLink>('POST', `/api/v1/orders/${seg(id)}/confirmation-link`),
       /** Record a signed paper Items Given Record. Idempotent. */
       confirmPaper: (id: string) => request<OrderRecord>('POST', `/api/v1/orders/${seg(id)}/confirm-paper`),
+      /** Hand-over mode: the employee ticked the confirmation text on this staff device. */
+      confirmInPerson: (id: string) => request<OrderRecord>('POST', `/api/v1/orders/${seg(id)}/confirm-in-person`, { confirmed: true }),
       /** View Record / Print Record: the locked receipt. */
       record: (id: string) => request<OrderRecord>('GET', `/api/v1/orders/${seg(id)}/record`),
     },

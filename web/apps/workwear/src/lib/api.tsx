@@ -2,6 +2,7 @@ import { type Client, createClient } from '@ppe/api-client'
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 import { type Session, clearSession, loadSession, sessionFromToken, storeSession } from './session'
+import { clearDraft } from './working-order'
 
 interface ApiContext {
   client: Client
@@ -18,7 +19,10 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef(session)
   sessionRef.current = session
 
+  // Sign out also drops the user's Create Order draft from this device. An
+  // expired session (onUnauthenticated below) keeps it for their next sign-in.
   const signOut = useCallback(() => {
+    if (sessionRef.current) clearDraft(sessionRef.current.userId)
     clearSession()
     setSession(null)
   }, [])

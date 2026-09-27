@@ -98,6 +98,8 @@ type Confirmation struct {
 	Given      int `json:"given"`
 	Electronic int `json:"electronic"`
 	Paper      int `json:"paper"`
+	// InPerson were confirmed on a staff device at the counter (hand-over mode).
+	InPerson int `json:"in_person"`
 	// MedianSeconds is the median time from ordered to given; MedianDays is
 	// the same in days to one decimal (derived). Both nil when none were given.
 	MedianSeconds *float64 `json:"-"`

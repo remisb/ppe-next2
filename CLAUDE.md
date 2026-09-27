@@ -17,7 +17,8 @@ Slice 4: Mark as Ordered (`POST /api/v1/orders`, snapshot copy in one transactio
 Copy for WhatsApp — and Slice 5: History (`GET /api/v1/orders`, query-parameter filters
 in the organisation timezone `API_ORG_TIMEZONE`, server-computed `usage_months`).
 — and Slice 6: confirmation links (hashed tokens, sent in request bodies), paper
-confirmation, idempotent ORDERED → GIVEN, and the locked bilingual receipt with document
+confirmation, in-person confirmation on a staff device (hand-over mode, method `IN_PERSON`,
+an addition to the manual), idempotent ORDERED → GIVEN, and the locked bilingual receipt with document
 hash and A4 print (`order/confirmation.go`, `order/receipt.go`, `web/.../routes/confirm.tsx`).
 The public `/confirm/<token>` page renders before the sign-in gate. An administrator starts on the
 Dashboard, a manager on the Manager Dashboard and the employee role on the Employee
@@ -185,7 +186,7 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
   update it with every API change. `packages/routing` holds only the mount base path.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
-  Default, validation, sessionStorage draft). Screens in `src/routes/` only wire events.
+  Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.
 - Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in

@@ -2,7 +2,7 @@ import type { OrderRecord } from '@ppe/api-client'
 
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatDateTime, statusLabel } from '@/lib/history'
+import { formatDateTime, methodText, statusLabel } from '@/lib/history'
 import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
 
 /**
@@ -92,7 +92,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
 
       {record.confirmation?.confirmed_at ? (
         <p className="mb-4 text-sm">
-          Confirmed {record.confirmation.method === 'ELECTRONIC' ? 'electronically' : 'on paper'} by{' '}
+          Confirmed {methodText[record.confirmation.method]} by{' '}
           <strong>{record.confirmation.confirmed_name}</strong> on {formatDateTime(record.confirmation.confirmed_at, timeZone)}.
         </p>
       ) : null}

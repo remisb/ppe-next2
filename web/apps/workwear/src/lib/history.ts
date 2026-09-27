@@ -2,7 +2,7 @@
  * History rules as pure functions: which actions each state shows (manual §6)
  * and how History values are displayed.
  */
-import type { OrderStatus } from '@ppe/api-client'
+import type { ConfirmationMethod, OrderStatus } from '@ppe/api-client'
 
 export type HistoryAction =
   | 'viewItems'
@@ -24,6 +24,13 @@ export function historyActions(status: OrderStatus): HistoryAction[] {
 }
 
 export const statusLabel: Record<OrderStatus, string> = { ORDERED: 'Ordered', GIVEN: 'Given' }
+
+/** How receipt was confirmed, as it completes "Confirmed …" and "given …, …". */
+export const methodText: Record<ConfirmationMethod, string> = {
+  ELECTRONIC: 'electronically',
+  PAPER: 'on paper',
+  IN_PERSON: 'in person on a staff device',
+}
 
 /** Usage time (algorithm D), shown for GIVEN orders only, e.g. "2.1 months". */
 export function formatUsage(months: number | null): string {

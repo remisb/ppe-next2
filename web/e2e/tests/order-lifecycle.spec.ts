@@ -14,7 +14,8 @@ let paperRecord = ''
 let confirmationURL = ''
 
 test.beforeAll(async ({ browser }) => {
-  page = await browser.newPage()
+  // Its own context, so a step can open a second tab in it (a tab closed and reopened shares localStorage).
+  page = await (await browser.newContext({ baseURL: webURL })).newPage()
   // Print Record opens the print dialog; record the call instead.
   await page.addInitScript(() => {
     window.print = () => {
@@ -24,7 +25,7 @@ test.beforeAll(async ({ browser }) => {
 })
 
 test.afterAll(async () => {
-  await page.close()
+  await page.context().close()
 })
 
 /** Opens a section from the Main navigation; on a phone the fifth and later are under More. */
@@ -202,6 +203,29 @@ test('the draft survives a reload', async () => {
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 })
 
+test('the draft survives a closed tab, for the same user only', async ({ browser }) => {
+  // A new tab has no session (it lives in the tab), but the draft stays on the device for this user.
+  const tab = await page.context().newPage()
+  await tab.goto('/')
+  await tab.getByLabel('Email').fill(admin.email)
+  await tab.getByLabel('Password').fill(admin.password)
+  await tab.getByRole('button', { name: 'Sign in' }).click()
+  await expect(tab.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await tab.goto('/orders/new')
+  await expect(tab.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
+  await tab.close()
+  // Another browser (another device) starts empty.
+  const other = await (await browser.newContext()).newPage()
+  await other.goto(webURL + '/')
+  await other.getByLabel('Email').fill(admin.email)
+  await other.getByLabel('Password').fill(admin.password)
+  await other.getByRole('button', { name: 'Sign in' }).click()
+  await expect(other.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await other.goto(webURL + '/orders/new')
+  await expect(other.getByText('No items yet.')).toBeVisible()
+  await other.context().close()
+})
+
 test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // The review lists each line with its size and the total, and changes nothing until confirmed.
   await page.getByRole('button', { name: 'Mark as Ordered' }).click()
@@ -304,6 +328,8 @@ test('History shows it GIVEN with usage time and the GIVEN actions', async () =>
 test('a later price change does not alter the stored record', async () => {
   await openTab('Item Catalogue')
   await page.getByRole('row', { name: /Safety shoes/ }).getByRole('button', { name: 'Edit' }).click()
+  // Its picture was guessed from its name when it was added.
+  await expect(page.getByRole('dialog').getByRole('radio', { name: 'Shoes' })).toBeChecked()
   await page.getByRole('dialog').getByLabel('Unit price (€)').fill('59.99')
   await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
@@ -340,7 +366,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   await order.getByRole('button', { name: 'Open Employee Confirmation' }).click()
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
-  await expect(order).toContainText('signed on paper')
+  await expect(order).toContainText('confirmed on paper')
   await expect(page.getByRole('button', { name: 'Awaiting 0' })).toBeVisible()
 })
 
@@ -391,6 +417,36 @@ test('Dashboard: the figures follow the orders', async () => {
   await page.goto('/my-orders')
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Employee Dashboard' })).toHaveCount(0)
+})
+
+test('hand-over: the employee confirms on this device, recorded in person', async () => {
+  await openTab('Create Order')
+  await page.getByRole('combobox', { name: 'Assigned to' }).click()
+  await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  await addItem('nitrile', /^Protective gloves/)
+  await markAsOrdered()
+  const heading = page.getByText(/Order WE-\d{6} is ordered/)
+  const handed = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
+  await page.getByRole('button', { name: 'Start a new order' }).click()
+
+  await openTab('History')
+  const order = await openOrder(handed)
+  await order.getByRole('button', { name: 'Hand over now' }).click()
+  // The device is turned to the employee: the same summary, record and consent as their own link.
+  const screen = page.getByRole('dialog', { name: 'Hand-over / Выдача' })
+  await expect(screen.getByRole('heading', { name: 'Ona, please confirm you received this item' })).toBeVisible()
+  const confirm = screen.getByRole('button', { name: 'Confirm Receipt / Подтвердить' })
+  await expect(confirm).toBeInViewport()
+  await expect(confirm).toBeDisabled()
+  await screen.getByRole('checkbox').check()
+  await confirm.click()
+  await expect(screen.getByText('Receipt confirmed / Получение подтверждено')).toBeVisible()
+  await screen.getByRole('button', { name: 'Done' }).click()
+
+  await expect(order).toContainText('confirmed in person on a staff device')
+  await order.getByRole('button', { name: 'View Record' }).click()
+  await expect(page.getByText(/Confirmed in person on a staff device by Ona Kazlauskienė/)).toBeVisible()
 })
 
 test('columns sort: History on the server across pages, other lists in place', async () => {
@@ -449,6 +505,9 @@ test('Employees: a row opens the employee at its own address, with the items giv
   // Both her orders are GIVEN; the first was bought before the price change and still shows €49.99 on its receipt.
   const given = page.getByRole('region', { name: 'Items given' })
   await expect(given.getByRole('row', { name: /Safety shoes/ })).toHaveCount(2)
+  // Each item's latest line shows when it is due for replacement; an older one is replaced.
+  await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: 'Replaced' })).toHaveCount(1)
+  await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: /Due \d{4}-\d{2}-\d{2}/ })).toHaveCount(1)
   await expect(page.getByRole('region', { name: 'Ordered, not yet given' })).toHaveCount(0)
   await given.getByRole('link', { name: `Receipt ${recordNumber}` }).first().click()
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}\/record$/)
@@ -489,6 +548,31 @@ test('a reorder link starts the order with the item at the quantity given; the s
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('button', { name: 'New order' }).click()
   await expect(page.getByText('No items yet.')).toBeVisible()
+})
+
+test('⌘K finds an employee and starts an order for them; G then H and ? work from the keyboard', async () => {
+  await openTab('Employees')
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  await palette.getByRole('combobox').fill('Kazlausk')
+  await expect(palette.getByRole('option', { name: 'New order for Ona Kazlauskienė' })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/\/orders\/new$/)
+  await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', /Ona Kazlauskienė/)
+
+  await page.getByRole('heading', { name: 'Create Order' }).click()
+  await page.keyboard.press('g')
+  await page.keyboard.press('h')
+  await expect(page.getByRole('heading', { name: 'History' })).toBeVisible()
+  await page.keyboard.press('?')
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeHidden()
+
+  // Leave Create Order empty for the steps after.
+  await openTab('Create Order')
+  await page.getByRole('button', { name: 'New order' }).click()
+  await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Search employees…')
 })
 
 test('phone and tablet: no screen scrolls sideways', async () => {

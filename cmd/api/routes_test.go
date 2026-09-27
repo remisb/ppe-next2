@@ -302,6 +302,7 @@ var policy = map[string]string{
 	"GET /api/v1/settings":                          "any",
 	"POST /api/v1/orders/{id}/confirmation-link":    "any",
 	"POST /api/v1/orders/{id}/confirm-paper":        "any",
+	"POST /api/v1/orders/{id}/confirm-in-person":    "any",
 	"GET /api/v1/orders/{id}/record":                "any",
 	"POST /api/v1/confirmations/view":               "public",
 	"POST /api/v1/confirmations/confirm":            "public",

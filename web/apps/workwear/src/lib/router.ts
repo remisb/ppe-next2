@@ -73,7 +73,7 @@ export function parsePath(pathname: string, search = ''): Route {
   return { name: 'home' }
 }
 
-/** ?employee=<id>&item=<id>:<quantity>&item=…; anything malformed is no prefill. */
+/** ?employee=<id>&item=<id>:<quantity>&item=… (items optional); anything malformed is no prefill. */
 function parsePrefill(q: URLSearchParams): Prefill | undefined {
   const employeeId = q.get('employee')
   if (!employeeId) return undefined
@@ -84,7 +84,8 @@ function parsePrefill(q: URLSearchParams): Prefill | undefined {
     if (!id || !Number.isInteger(quantity) || quantity < 1) return undefined
     items.push({ id, quantity })
   }
-  return items.length > 0 ? { employeeId, items } : undefined
+  // No items is a new order for the employee (New order on their page).
+  return { employeeId, items }
 }
 
 export function pathOf(route: Route): string {

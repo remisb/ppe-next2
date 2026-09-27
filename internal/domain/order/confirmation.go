@@ -132,6 +132,23 @@ func (s *Service) ConfirmByToken(ctx context.Context, token string, confirmed bo
 // ConfirmPaper records a signed paper receipt for an ORDERED order. The actor
 // is recorded as giver. Idempotent like electronic confirmation.
 func (s *Service) ConfirmPaper(ctx context.Context, orderID, actor uuid.UUID) (Record, error) {
+	return s.confirmWithoutLink(ctx, orderID, actor, MethodPaper)
+}
+
+// ConfirmInPerson is hand-over mode: the employee reads the record on the
+// signed-in staff member's device and ticks the confirmation text there. The
+// actor is recorded as giver and any open links are revoked, as for paper.
+// Idempotent like the other methods.
+func (s *Service) ConfirmInPerson(ctx context.Context, orderID, actor uuid.UUID, confirmed bool) (Record, error) {
+	if !confirmed {
+		return Record{}, fieldError("confirmed", "must be checked")
+	}
+	return s.confirmWithoutLink(ctx, orderID, actor, MethodInPerson)
+}
+
+// confirmWithoutLink gives an ORDERED order by a method with no token (paper,
+// in person), with the actor as giver.
+func (s *Service) confirmWithoutLink(ctx context.Context, orderID, actor uuid.UUID, method Method) (Record, error) {
 	if actor == uuid.Nil {
 		return Record{}, fieldError("actor", "is required")
 	}
@@ -140,8 +157,8 @@ func (s *Service) ConfirmPaper(ctx context.Context, orderID, actor uuid.UUID) (R
 			return ConfirmResult{Noop: true}, nil
 		}
 		now := s.now()
-		c := Confirmation{ID: s.newID(), OrderID: orderID, Method: MethodPaper, CreatedAt: now, CreatedByUserID: actor}
-		return s.give(snap, c, true, MethodPaper, actor, &actor, now)
+		c := Confirmation{ID: s.newID(), OrderID: orderID, Method: method, CreatedAt: now, CreatedByUserID: actor}
+		return s.give(snap, c, true, method, actor, &actor, now)
 	})
 	if err != nil {
 		return Record{}, err

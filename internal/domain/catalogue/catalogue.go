@@ -22,6 +22,34 @@ const (
 	DefaultDisplayRank = 1000
 )
 
+// Icon is an item's pictogram, from a fixed set the web app draws.
+type Icon string
+
+const (
+	IconShoes    Icon = "shoes"
+	IconJacket   Icon = "jacket"
+	IconTrousers Icon = "trousers"
+	IconVest     Icon = "vest"
+	IconGloves   Icon = "gloves"
+	IconHelmet   Icon = "helmet"
+	IconGlasses  Icon = "glasses"
+	IconEar      Icon = "ear"
+	IconMask     Icon = "mask"
+	IconOther    Icon = "other"
+)
+
+// Icons lists every Icon, in the order a picker offers them.
+var Icons = []Icon{IconShoes, IconJacket, IconTrousers, IconVest, IconGloves, IconHelmet, IconGlasses, IconEar, IconMask, IconOther}
+
+func (i Icon) Valid() bool {
+	for _, x := range Icons {
+		if i == x {
+			return true
+		}
+	}
+	return false
+}
+
 // Item is one orderable catalogue entry. UnitPriceCents and
 // ServicePeriodMonths may be nil while an item is being set up; Mark as Ordered
 // refuses such an item (see Orderable).
@@ -35,6 +63,7 @@ type Item struct {
 	ServicePeriodMonths *int       `json:"service_period_months"`
 	Active              bool       `json:"active"`
 	DisplayRank         int        `json:"display_rank"`
+	Icon                Icon       `json:"icon"`
 	CreatedAt           time.Time  `json:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at"`
 	DeletedAt           *time.Time `json:"deleted_at,omitempty"`
@@ -75,6 +104,8 @@ type Params struct {
 	ServicePeriodMonths *int
 	Active              bool
 	DisplayRank         *int
+	// Icon is the pictogram; empty is IconOther.
+	Icon Icon
 }
 
 func (p *Params) Normalize() {
@@ -84,6 +115,10 @@ func (p *Params) Normalize() {
 	if p.DisplayRank == nil {
 		r := DefaultDisplayRank
 		p.DisplayRank = &r
+	}
+	p.Icon = Icon(strings.ToLower(strings.TrimSpace(string(p.Icon))))
+	if p.Icon == "" {
+		p.Icon = IconOther
 	}
 }
 
@@ -104,6 +139,8 @@ func (p *Params) Validate() error {
 		return fieldError("service_period_months", "must be at least 1")
 	case *p.DisplayRank < 0:
 		return fieldError("display_rank", "must not be negative")
+	case !p.Icon.Valid():
+		return fieldError("icon", "is not a known pictogram")
 	}
 	return nil
 }

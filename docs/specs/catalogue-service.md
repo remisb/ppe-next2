@@ -16,6 +16,7 @@ migration `0004_catalogue_items`. Manual §3.3 and §4.3.
 | `service_period_months` | Optional while being set up; ≥ 1 |
 | `active` | Required in request bodies. Inactive items disappear from Add Item but stay in order snapshots |
 | `display_rank` | Add Item sort key (ascending, then name). Default 1000. Give Safety shoes, Work jacket, Work trousers, Protective gloves, Safety helmet ranks 1–5 to get the manual's default ordering |
+| `icon` | The item's pictogram: `shoes`, `jacket`, `trousers`, `vest`, `gloves`, `helmet`, `glasses`, `ear`, `mask` or `other` (default). Optional in request bodies, omitted is `other`; the database refuses any other value. Migration `0008` guessed it for existing items from their names. Live data only: order snapshots do not copy it |
 
 An item missing a price or service period is valid in the catalogue but not *orderable*
 (`Item.Orderable`): Mark as Ordered refuses it and directs an authorised user here.

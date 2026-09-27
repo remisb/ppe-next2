@@ -1,11 +1,13 @@
-import type { CatalogueItem, Employee, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
+import type { CatalogueIcon, CatalogueItem, Employee, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ConfirmationSheet } from '@/components/confirmation-sheet'
+import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
+import { ItemTile } from '@/components/item-icon'
 import { ItemPicker } from '@/components/item-picker'
 import { OrderLinesTable } from '@/components/order-lines'
 import { QuantityStepper } from '@/components/quantity-stepper'
@@ -19,6 +21,7 @@ import { Select } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import type { NavigateOptions, Prefill, Route } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths } from '@/lib/utils'
@@ -79,7 +82,7 @@ export function CreateOrder({
   const [placed, setPlaced] = useState<Order | null>(null)
   // Mark as Ordered cannot be undone, so it is confirmed on a summary first.
   const [reviewing, setReviewing] = useState(false)
-  const [order, setOrder] = useState<WorkingOrder>(loadDraft)
+  const [order, setOrder] = useState<WorkingOrder>(() => loadDraft(session.userId))
   const [conflicts, setConflicts] = useState<SizeConflict[]>([])
   const [pendingDefault, setPendingDefault] = useState<PendingDefault | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
@@ -90,7 +93,7 @@ export function CreateOrder({
   const catalogue = useLoad(() => client.catalogue.listActive())
   const itemSets = useLoad(() => client.itemSets.listActive())
 
-  useEffect(() => saveDraft(order), [order])
+  useEffect(() => saveDraft(order, session.userId), [order, session.userId])
 
   /*
    * A reorder arrives once: the address loses its query (a reload must not add
@@ -142,17 +145,37 @@ export function CreateOrder({
       setPendingDefault(null)
     })
 
-  const addItem = (item: CatalogueItem) => {
+  /** Adds items, each resolved for the employee (size, current price); quantities default to 1. */
+  const addItems = (items: { item: CatalogueItem; quantity?: number }[]) => {
     const employee = order.employee
     if (!employee) {
-      setOrder((o) => addLines(o, [lineFromCatalogue(item)]))
+      setOrder((o) => addLines(o, items.map(({ item, quantity }) => lineFromCatalogue(item, quantity))))
       return
     }
     void run(async () => {
-      const res = await client.orders.resolve({ employee_id: employee.id, lines: [{ catalogue_item_id: item.id, quantity: 1 }] })
+      const res = await client.orders.resolve({
+        employee_id: employee.id,
+        lines: items.map(({ item, quantity = 1 }) => ({ catalogue_item_id: item.id, quantity })),
+      })
       setOrder((o) => addLines(o, res.lines))
     })
   }
+  const addItem = (item: CatalogueItem) => addItems([{ item }])
+
+  // What the employee is due to have replaced (overdue or within 30 days), from
+  // their order history, and not already on this order or on another one.
+  const employeeId = order.employee?.id
+  const history = useLoad(() => (employeeId ? loadEmployeeOrders(client, employeeId) : Promise.resolve([])), [employeeId])
+  const settings = useLoad(() => client.settings())
+  const tz = settings.data?.timezone ?? 'UTC'
+  const dueNow = useMemo(() => {
+    const active = new Map(catalogue.data?.map((i) => [i.id, i]))
+    const onThisOrder = new Set(order.lines.map((l) => l.catalogueItemId))
+    return replacementsDue(employeeId ? (history.data ?? []) : [], new Date()).flatMap((d) => {
+      const item = active.get(d.item.catalogueItemId)
+      return item && d.dueSoon && !d.reordered && !onThisOrder.has(item.id) ? [{ due: d, item }] : []
+    })
+  }, [history.data, employeeId, catalogue.data, order.lines])
 
   const applySet = (setId: string) => {
     const employee = order.employee
@@ -193,7 +216,7 @@ export function CreateOrder({
   const markAsOrdered = () =>
     run(async () => {
       const o = await client.orders.markAsOrdered(toMarkAsOrderedInput(order))
-      clearDraft()
+      clearDraft(session.userId)
       setOrder(emptyOrder)
       setConflicts([])
       setPendingDefault(null)
@@ -202,7 +225,7 @@ export function CreateOrder({
 
   const reset = () => {
     if (order.lines.length > 0 && !window.confirm('Clear this order? Unsaved lines will be lost.')) return
-    clearDraft()
+    clearDraft(session.userId)
     setOrder(emptyOrder)
     setConflicts([])
     setPendingDefault(null)
@@ -211,6 +234,18 @@ export function CreateOrder({
 
   const v = validate(order)
   const loadError = sizes.error ?? catalogue.error ?? itemSets.error
+
+  // ⌘Enter / Ctrl+Enter opens the review, from anywhere on the screen, once the order is complete.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && v.valid && !busy && !placed && !document.querySelector('dialog[open]')) {
+        e.preventDefault()
+        setReviewing(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [v.valid, busy, placed])
 
   if (placed) return <OrderedPanel order={placed} navigate={navigate} onNew={() => setPlaced(null)} />
 
@@ -275,6 +310,37 @@ export function CreateOrder({
 
       {!order.employee ? (
         <p className="mb-4 text-sm text-muted-foreground">Choose who the order is for first: sizes are resolved from their saved defaults.</p>
+      ) : null}
+
+      {order.employee && dueNow.length > 0 ? (
+        <section aria-labelledby="due-now" className="mb-4 rounded-lg border border-border bg-muted/40 p-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 id="due-now" className="text-sm font-semibold">
+              Due for {order.employee.first_name}
+            </h2>
+            {dueNow.length > 1 ? (
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => addItems(dueNow.map((d) => ({ item: d.item, quantity: d.due.item.quantity })))}>
+                Add all {dueNow.length}
+              </Button>
+            ) : null}
+          </div>
+          <ul className="flex flex-col gap-2">
+            {dueNow.map(({ due, item }) => (
+              <li key={item.id} className="flex items-center gap-3">
+                <ItemTile icon={item.icon} className="size-8" />
+                <span className="min-w-0 flex-1 text-sm">
+                  <span className="font-medium">{item.name}</span> × {due.item.quantity}
+                  <span className={cn('block text-xs', due.overdue ? 'text-destructive' : 'text-muted-foreground')}>
+                    {due.overdue ? 'Overdue since' : 'Due'} {formatDate(due.dueAt.toISOString(), tz)} · last given {formatDate(due.item.at, tz)}
+                  </span>
+                </span>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => addItems([{ item, quantity: due.item.quantity }])}>
+                  <Plus aria-hidden /> Add<span className="sr-only"> {item.name}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {conflicts.length > 0 ? (
@@ -345,7 +411,14 @@ export function CreateOrder({
       {!catalogue.data && !loadError ? (
         <Loading />
       ) : (
-        <LinesTable order={order} sizes={sizes.data} problems={v.lineProblems} onSize={chooseSize} onChange={setOrder} />
+        <LinesTable
+          order={order}
+          sizes={sizes.data}
+          icons={new Map(catalogue.data?.map((i) => [i.id, i.icon]))}
+          problems={v.lineProblems}
+          onSize={chooseSize}
+          onChange={setOrder}
+        />
       )}
 
       {!v.valid && order.lines.length > 0 ? (
@@ -540,12 +613,15 @@ function validQty(q: number): number {
 function LinesTable({
   order,
   sizes,
+  icons,
   problems,
   onSize,
   onChange,
 }: {
   order: WorkingOrder
   sizes: Sizes | undefined
+  /** Pictograms by catalogue item, from the active catalogue. */
+  icons: Map<string, CatalogueIcon>
   problems: Map<string, string[]>
   onSize: (l: WorkingLine, size: string | null) => void
   onChange: (f: (o: WorkingOrder) => WorkingOrder) => void
@@ -586,17 +662,22 @@ function LinesTable({
               )}
             >
               <TableCell className="align-top whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
-                <div className="font-medium">{l.itemName || 'Unknown item'}</div>
-                {l.itemDetails ? <div className="text-xs text-muted-foreground stacked:hidden">{l.itemDetails}</div> : null}
-                {/* The unit price and service period columns are hidden in a row: shown here instead. */}
-                <div className="hidden text-xs text-muted-foreground tabular-nums stacked:block">
-                  {formatEuro(l.unitPriceCents)} · {formatMonths(l.servicePeriodMonths)}
-                </div>
-                {lineProblems?.map((p) => (
-                  <div key={p} role="alert" className="mt-1 text-xs text-destructive">
-                    {p}
+                <div className="flex items-start gap-3">
+                  <ItemTile icon={icons.get(l.catalogueItemId)} className="max-sm:hidden" />
+                  <div className="min-w-0">
+                    <div className="font-medium">{l.itemName || 'Unknown item'}</div>
+                    {l.itemDetails ? <div className="text-xs text-muted-foreground stacked:hidden">{l.itemDetails}</div> : null}
+                    {/* The unit price and service period columns are hidden in a row: shown here instead. */}
+                    <div className="hidden text-xs text-muted-foreground tabular-nums stacked:block">
+                      {formatEuro(l.unitPriceCents)} · {formatMonths(l.servicePeriodMonths)}
+                    </div>
+                    {lineProblems?.map((p) => (
+                      <div key={p} role="alert" className="mt-1 text-xs text-destructive">
+                        {p}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </TableCell>
               {/* A no-size item's dash says nothing in a row, and there it would push the quantity along. */}
               <TableCell className={cn('align-top stacked:order-3 stacked:w-auto', (l.sizeGroup === 'NONE' || l.sizeGroup === '') && 'stacked:hidden')}>

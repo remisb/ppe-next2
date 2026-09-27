@@ -1,8 +1,9 @@
-import type { CatalogueItem, CatalogueItemInput, SizeGroup } from '@ppe/api-client'
+import type { CatalogueIcon, CatalogueItem, CatalogueItemInput, SizeGroup } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { ErrorState, Loading, PageHeader } from '@/components/states'
@@ -13,6 +14,7 @@ import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { guessIcon } from '@/lib/items'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
@@ -130,9 +132,12 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                 }}
               >
                 <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
-                  <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                    {i.name}
-                  </a>
+                  <span className="flex items-center gap-3">
+                    <ItemTile icon={i.icon} className="size-8" />
+                    <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                      {i.name}
+                    </a>
+                  </span>
                 </TableCell>
                 <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>
                   {i.details || '—'}
@@ -187,6 +192,9 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   const [period, setPeriod] = useState('')
   const [rank, setRank] = useState('1000')
   const [active, setActive] = useState(true)
+  const [icon, setIcon] = useState<CatalogueIcon>('other')
+  // A new item's picture follows its name until someone picks one.
+  const [iconPicked, setIconPicked] = useState(false)
   const [error, setError] = useState<string>()
 
   useEffect(() => {
@@ -197,6 +205,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     setPeriod(existing?.service_period_months?.toString() ?? '')
     setRank(existing?.display_rank.toString() ?? '1000')
     setActive(existing?.active ?? true)
+    setIcon(existing?.icon ?? 'other')
+    setIconPicked(existing !== undefined)
     setError(undefined)
   }, [item, existing])
 
@@ -218,6 +228,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       service_period_months: months,
       active,
       display_rank: rankNum,
+      icon,
     }
     try {
       if (existing) await client.catalogue.update(existing.id, input)
@@ -246,7 +257,18 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       }
     >
       <form id="item-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Item name" required>{(p) => <Input {...controlProps(p)} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Field label="Item name" required>
+          {(p) => (
+            <Input
+              {...controlProps(p)}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (!iconPicked) setIcon(guessIcon(e.target.value))
+              }}
+            />
+          )}
+        </Field>
         <Field label="Manufacturer / model">{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
         <Field label="Size group" hint="Clothing and shoe items take the employee's size; no-size items (gloves, helmets) have none.">
           {(p) => (
@@ -264,6 +286,31 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
         <Field label="Display order" hint="Lower comes first in Add Item." error={rankError}>
           {(p) => <Input {...controlProps(p)} inputMode="numeric" value={rank} onChange={(e) => setRank(e.target.value)} />}
         </Field>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-1.5 text-sm font-medium">Picture</legend>
+          <div className="grid grid-cols-5 gap-2">
+            {iconChoices.map((c) => (
+              <label
+                key={c.icon}
+                className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-border p-1.5 text-center text-xs text-muted-foreground has-checked:border-primary has-checked:bg-accent has-checked:text-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring"
+              >
+                <input
+                  type="radio"
+                  name="item-icon"
+                  value={c.icon}
+                  checked={icon === c.icon}
+                  onChange={() => {
+                    setIcon(c.icon)
+                    setIconPicked(true)
+                  }}
+                  className="sr-only"
+                />
+                <ItemIcon icon={c.icon} className="size-5" />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <label className="flex min-h-11 items-center gap-3 text-sm sm:col-span-2">
           <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Add Item)
         </label>

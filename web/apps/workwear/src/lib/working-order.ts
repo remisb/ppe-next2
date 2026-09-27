@@ -227,34 +227,57 @@ function mapLine(order: WorkingOrder, id: string, f: (l: WorkingLine) => Working
   return { ...order, lines: order.lines.map((l) => (l.catalogueItemId === id ? f(l) : l)) }
 }
 
-// The working order survives reloads, validation errors and network errors
-// (manual §3.1). sessionStorage: it belongs to this tab's unfinished work.
-const DRAFT_KEY = 'workwear.createOrder.v1'
+// The working order survives reloads, validation errors, network errors
+// (manual §3.1) and a closed tab or browser: localStorage, one draft per user
+// on this device, so a colleague signing in here never sees it. Sign out
+// clears it; a session that simply expires does not, since signing back in
+// should find the work where it was left.
+const DRAFT_PREFIX = 'workwear.createOrder.v2.'
+/** Before drafts outlived the tab they were kept per tab; one found there is moved over once. */
+const LEGACY_KEY = 'workwear.createOrder.v1'
 
-export function saveDraft(order: WorkingOrder, storage: Storage | undefined = globalThis.sessionStorage): void {
+const draftKey = (userId: string) => DRAFT_PREFIX + userId
+
+export function saveDraft(order: WorkingOrder, userId: string, storage: Storage | undefined = globalThis.localStorage): void {
   try {
-    if (order.employee === null && order.lines.length === 0) storage?.removeItem(DRAFT_KEY)
-    else storage?.setItem(DRAFT_KEY, JSON.stringify(order))
+    if (order.employee === null && order.lines.length === 0) storage?.removeItem(draftKey(userId))
+    else storage?.setItem(draftKey(userId), JSON.stringify(order))
   } catch {
     // Storage unavailable (private mode, quota): the order stays in memory.
   }
 }
 
-export function loadDraft(storage: Storage | undefined = globalThis.sessionStorage): WorkingOrder {
+function parseDraft(raw: string | null | undefined): WorkingOrder | null {
+  if (!raw) return null
   try {
-    const raw = storage?.getItem(DRAFT_KEY)
-    if (!raw) return emptyOrder
     const parsed = JSON.parse(raw) as Partial<WorkingOrder>
-    if (!Array.isArray(parsed.lines)) return emptyOrder
+    if (!Array.isArray(parsed.lines)) return null
     return { employee: parsed.employee ?? null, lines: parsed.lines }
+  } catch {
+    return null
+  }
+}
+
+export function loadDraft(
+  userId: string,
+  storage: Storage | undefined = globalThis.localStorage,
+  legacy: Storage | undefined = globalThis.sessionStorage,
+): WorkingOrder {
+  try {
+    const own = parseDraft(storage?.getItem(draftKey(userId)))
+    if (own) return own
+    const old = parseDraft(legacy?.getItem(LEGACY_KEY))
+    legacy?.removeItem(LEGACY_KEY)
+    if (old) saveDraft(old, userId, storage)
+    return old ?? emptyOrder
   } catch {
     return emptyOrder
   }
 }
 
-export function clearDraft(storage: Storage | undefined = globalThis.sessionStorage): void {
+export function clearDraft(userId: string, storage: Storage | undefined = globalThis.localStorage): void {
   try {
-    storage?.removeItem(DRAFT_KEY)
+    storage?.removeItem(draftKey(userId))
   } catch {
     // Nothing to clear.
   }

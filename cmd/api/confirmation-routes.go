@@ -23,6 +23,7 @@ func registerConfirmationRoutes(rt *router, orders *order.Service, baseURL strin
 	h := &confirmationHandler{orders: orders, baseURL: baseURL}
 	rt.authenticated("POST /api/v1/orders/{id}/confirmation-link", h.createLink)
 	rt.authenticated("POST /api/v1/orders/{id}/confirm-paper", h.confirmPaper)
+	rt.authenticated("POST /api/v1/orders/{id}/confirm-in-person", h.confirmInPerson)
 	rt.authenticated("GET /api/v1/orders/{id}/record", h.record)
 
 	limit := middleware.RateLimiter(middleware.RateLimitConfig{RequestsPerInterval: 20, Interval: time.Minute, KeyFunc: middleware.ClientAddr})
@@ -99,6 +100,34 @@ func (h *confirmationHandler) confirmPaper(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	rec, err := h.orders.ConfirmPaper(r.Context(), id, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toRecordJSON(rec, true))
+}
+
+// confirmInPerson is hand-over mode: the employee confirmed on this staff
+// member's device. Body {"confirmed": true}, the ticked confirmation text.
+func (h *confirmationHandler) confirmInPerson(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req struct {
+		Confirmed bool `json:"confirmed"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	rec, err := h.orders.ConfirmInPerson(r.Context(), id, actor, req.Confirmed)
 	if err != nil {
 		writeError(w, r, err)
 		return

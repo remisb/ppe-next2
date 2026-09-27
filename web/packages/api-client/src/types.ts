@@ -81,6 +81,9 @@ export interface EmployeeSizesInput {
   shoe_size: string | null
 }
 
+/** An item's pictogram; the web app draws each one. */
+export type CatalogueIcon = 'shoes' | 'jacket' | 'trousers' | 'vest' | 'gloves' | 'helmet' | 'glasses' | 'ear' | 'mask' | 'other'
+
 export interface CatalogueItem {
   id: string
   name: string
@@ -91,6 +94,7 @@ export interface CatalogueItem {
   service_period_months: number | null
   active: boolean
   display_rank: number
+  icon: CatalogueIcon
   created_at: string
   updated_at: string
 }
@@ -116,6 +120,8 @@ export interface CatalogueItemInput {
   service_period_months: number | null
   active: boolean
   display_rank?: number
+  /** Omitted is 'other'. */
+  icon?: CatalogueIcon
 }
 
 export interface ItemSetLine {
@@ -182,7 +188,8 @@ export interface ResolveInput {
 }
 
 export type OrderStatus = 'ORDERED' | 'GIVEN'
-export type ConfirmationMethod = 'ELECTRONIC' | 'PAPER'
+/** IN_PERSON: confirmed by the employee on a staff member's device at the counter (hand-over mode). */
+export type ConfirmationMethod = 'ELECTRONIC' | 'PAPER' | 'IN_PERSON'
 
 /** An immutable snapshot line: every value as displayed at Mark as Ordered. */
 export interface OrderLine {
@@ -333,6 +340,8 @@ export interface Dashboard {
     given: number
     electronic: number
     paper: number
+    /** Confirmed on a staff device at the counter (hand-over mode). */
+    in_person: number
     /** Median days from ordered to given, one decimal; null when none were given. */
     median_days: number | null
   }
@@ -421,7 +430,7 @@ export interface EmployeeDashboard {
     employee_id: string
     employee_name: string
     given_at: string
-    method: 'ELECTRONIC' | 'PAPER'
+    method: ConfirmationMethod
     items: number
     value_cents: number
   }[]

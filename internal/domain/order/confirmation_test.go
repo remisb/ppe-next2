@@ -135,3 +135,30 @@ func TestPaperConfirmation(t *testing.T) {
 		t.Errorf("unknown order err = %v", err)
 	}
 }
+
+// Hand-over mode: the employee ticks the text on a staff device. It needs the
+// tick, records the staff member as giver and IN_PERSON as method, revokes the
+// open link like paper, and is idempotent.
+func TestInPersonConfirmation(t *testing.T) {
+	f, o, _ := orderedFixture(t)
+	ctx := context.Background()
+	token, _, _ := f.svc.CreateConfirmationLink(ctx, o.ID, f.actor)
+
+	if _, err := f.svc.ConfirmInPerson(ctx, o.ID, f.actor, false); !errors.Is(err, ErrInvalid) {
+		t.Errorf("unticked err = %v", err)
+	}
+	rec, err := f.svc.ConfirmInPerson(ctx, o.ID, f.actor, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *rec.Order.ConfirmationMethod != MethodInPerson || rec.Confirmation.Method != MethodInPerson || rec.Confirmation.TokenHash != nil ||
+		*rec.Order.GivenByUserID != f.actor || rec.Confirmation.ConfirmedName == nil {
+		t.Errorf("in-person record = %+v %+v", rec.Order, rec.Confirmation)
+	}
+	if again, err := f.svc.ConfirmByToken(ctx, token, true); err != nil || *again.Order.ConfirmationMethod != MethodInPerson {
+		t.Errorf("link after in person = %+v, %v", again.Order, err)
+	}
+	if again, err := f.svc.ConfirmInPerson(ctx, o.ID, f.actor, true); err != nil || !again.Order.GivenAt.Equal(*rec.Order.GivenAt) {
+		t.Errorf("second in-person confirm = %v", err)
+	}
+}

@@ -166,7 +166,7 @@ func TestPostgresOverview(t *testing.T) {
 
 	// Given in the last 90 days: orders 2 and both July ones; each took 1 or 2 days.
 	c := o.Confirmation
-	if c.Given != 3 || c.Electronic != 2 || c.Paper != 1 || c.MedianDays == nil || *c.MedianDays != 1 {
+	if c.Given != 3 || c.Electronic != 2 || c.Paper != 1 || c.InPerson != 0 || c.MedianDays == nil || *c.MedianDays != 1 {
 		t.Errorf("confirmation = %+v (median %v)", c, c.MedianDays)
 	}
 

@@ -2,6 +2,7 @@ import type { CatalogueItem } from '@ppe/api-client'
 import { Plus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 
+import { ItemTile } from '@/components/item-icon'
 import { Input } from '@/components/ui/field'
 import { matchItems } from '@/lib/items'
 import { cn, formatEuro } from '@/lib/utils'
@@ -78,6 +79,7 @@ export function ItemPicker({
         autoComplete="off"
         enterKeyHint="done"
         aria-label="Add Item"
+        data-shortcut="search"
         aria-expanded={open}
         aria-controls={listId}
         className="pl-9"
@@ -104,10 +106,11 @@ export function ItemPicker({
               <li key={i.id} role="option" aria-selected={false}>
                 <button
                   type="button"
-                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
+                  className="flex min-h-11 w-full items-center gap-3 rounded px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:bg-accent"
                   onClick={() => pick(i)}
                 >
-                  <span className="min-w-0">
+                  <ItemTile icon={i.icon} className="size-8" />
+                  <span className="min-w-0 flex-1">
                     <span className="block font-medium">{i.name}</span>
                     {i.details ? <span className="block truncate text-xs text-muted-foreground">{i.details}</span> : null}
                   </span>

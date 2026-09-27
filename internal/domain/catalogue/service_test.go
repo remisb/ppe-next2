@@ -146,6 +146,23 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+// An item's pictogram defaults to "other", is normalised, and must be one the app draws.
+func TestIcon(t *testing.T) {
+	svc, _ := newTestService()
+	ctx := context.Background()
+	i, err := svc.Create(ctx, Params{Name: "Ear plugs", SizeGroup: size.GroupNone}, testActor)
+	if err != nil || i.Icon != IconOther {
+		t.Fatalf("default icon %q, err %v", i.Icon, err)
+	}
+	u, err := svc.Update(ctx, i.ID, Params{Name: "Ear plugs", SizeGroup: size.GroupNone, Icon: " Ear "}, testActor)
+	if err != nil || u.Icon != IconEar {
+		t.Fatalf("updated icon %q, err %v", u.Icon, err)
+	}
+	if _, err := svc.Create(ctx, Params{Name: "Boots", SizeGroup: size.GroupShoes, Icon: "boot"}, testActor); !errors.Is(err, ErrInvalid) {
+		t.Errorf("unknown icon err = %v", err)
+	}
+}
+
 func TestPriceChangeAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()

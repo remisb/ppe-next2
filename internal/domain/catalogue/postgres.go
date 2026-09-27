@@ -25,14 +25,14 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const columns = `id, name, details, size_group, unit_price_cents, currency, service_period_months,
-	active, display_rank, created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
+	active, display_rank, icon, created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
 
 const selectorOrder = `ORDER BY display_rank, lower(name), id`
 
 func scan(row pgx.Row) (Item, error) {
 	var i Item
 	err := row.Scan(&i.ID, &i.Name, &i.Details, &i.SizeGroup, &i.UnitPriceCents, &i.Currency, &i.ServicePeriodMonths,
-		&i.Active, &i.DisplayRank, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt, &i.CreatedByUserID, &i.UpdatedByUserID, &i.DeletedByUserID)
+		&i.Active, &i.DisplayRank, &i.Icon, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt, &i.CreatedByUserID, &i.UpdatedByUserID, &i.DeletedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
 	}
@@ -64,10 +64,10 @@ func (r *PostgresRepository) Create(ctx context.Context, i Item, ev *audit.Event
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO catalogue_items (id, name, details, size_group, unit_price_cents, currency,
-				service_period_months, active, display_rank, created_at, updated_at, created_by_user_id, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+				service_period_months, active, display_rank, icon, created_at, updated_at, created_by_user_id, updated_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
 			i.ID, i.Name, i.Details, i.SizeGroup, i.UnitPriceCents, i.Currency, i.ServicePeriodMonths,
-			i.Active, i.DisplayRank, i.CreatedAt, i.UpdatedAt, i.CreatedByUserID, i.UpdatedByUserID); err != nil {
+			i.Active, i.DisplayRank, i.Icon, i.CreatedAt, i.UpdatedAt, i.CreatedByUserID, i.UpdatedByUserID); err != nil {
 			return err
 		}
 		return insertEvent(ctx, tx, ev)
@@ -101,10 +101,10 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 		if _, err := tx.Exec(ctx, `
 			UPDATE catalogue_items SET name = $2, details = $3, size_group = $4, unit_price_cents = $5,
 				service_period_months = $6, active = $7, display_rank = $8, updated_at = $9,
-				updated_by_user_id = $10, deleted_at = $11, deleted_by_user_id = $12
+				updated_by_user_id = $10, deleted_at = $11, deleted_by_user_id = $12, icon = $13
 			WHERE id = $1`,
 			id, next.Name, next.Details, next.SizeGroup, next.UnitPriceCents, next.ServicePeriodMonths,
-			next.Active, next.DisplayRank, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID); err != nil {
+			next.Active, next.DisplayRank, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID, next.Icon); err != nil {
 			return err
 		}
 		if err := insertEvent(ctx, tx, ev); err != nil {

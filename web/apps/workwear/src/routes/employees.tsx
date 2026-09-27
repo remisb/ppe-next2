@@ -96,6 +96,7 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           aria-label="Search employees"
+          data-shortcut="search"
           className="min-w-0 flex-1 md:max-w-sm md:flex-none"
         />
         {missingCount > 0 || onlyMissing ? (

@@ -1,6 +1,6 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { SlidersHorizontal } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderDetail } from '@/components/order-detail'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Table, TableBody, TableCell, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
+import { isTyping } from '@/lib/shortcuts'
 import { LONG_WAIT_DAYS, activityAt, formatDateTime, formatUsage, formatWaiting, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import type { SortColumn, SortState } from '@/lib/sort'
@@ -113,6 +114,24 @@ export function History({
 
   const open = (id: string) => navigate({ name: 'history', order: id }, { scroll: !wide() })
   const close = () => navigate({ name: 'history' }, { scroll: false })
+
+  // J and K: the next or previous order on this page, while one is open.
+  const shown = orders.data?.orders
+  useEffect(() => {
+    if (!selected || !shown) return
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      if ((key !== 'j' && key !== 'k') || e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || document.querySelector('dialog[open]')) return
+      const at = shown.findIndex((o) => o.id === selected)
+      const next = shown[at + (key === 'j' ? 1 : -1)]
+      if (next) {
+        e.preventDefault()
+        navigate({ name: 'history', order: next.id }, { scroll: false })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, shown, navigate])
 
   const tz = settings.data?.timezone
   const now = new Date()

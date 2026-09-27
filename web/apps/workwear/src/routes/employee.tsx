@@ -1,48 +1,45 @@
-import type { Client, ListedOrder } from '@ppe/api-client'
-import { ArrowLeft, FileText } from 'lucide-react'
+import { ArrowLeft, FileText, Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
-import { type EmployeeItem, employeeItems } from '@/lib/employee-items'
+import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatDateTime, formatUsage } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, type SortValue, rankIn, sortRows } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
-import { formatMonths, formatSize } from '@/lib/utils'
+import { cn, formatMonths, formatSize } from '@/lib/utils'
 
 import { EditSizes } from './employees'
 
-/** Every stored order of one employee; History pages hold at most 100. */
-async function allOrders(client: Client, employeeId: string): Promise<ListedOrder[]> {
-  const orders: ListedOrder[] = []
-  for (let page = 1; ; page++) {
-    const res = await client.orders.list({ employee_id: employeeId, page, page_size: 100 })
-    orders.push(...res.orders)
-    if (res.orders.length === 0 || orders.length >= res.total) return orders
-  }
-}
-
 /**
  * One employee (/employees/<id>): details and size defaults, the items given
- * to them with a link to each receipt, and items ordered but not yet given.
- * Items come from order snapshots, so they show what was actually issued.
+ * to them with a link to each receipt and when each is due for replacement,
+ * and items ordered but not yet given. Items come from order snapshots, so
+ * they show what was actually issued. New order and Reorder start Create
+ * Order for them.
  */
 export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
   const employee = useLoad(() => client.employees.get(id), [id])
-  const orders = useLoad(() => allOrders(client, id), [id])
+  const orders = useLoad(() => loadEmployeeOrders(client, id), [id])
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
   const [sizing, setSizing] = useState(false)
 
   const items = useMemo(() => employeeItems(orders.data ?? []), [orders.data])
+  const due = useMemo(() => replacementsDue(orders.data ?? [], new Date()), [orders.data])
+  // What a Reorder would order: due within 30 days (or overdue) and not on an order already.
+  const reorder = due.filter((d) => d.dueSoon && !d.reordered)
+  const dueByLine = useMemo(() => new Map(due.map((d) => [d.item.key, d])), [due])
   const tz = settings.data?.timezone
   const clothing = useMemo(() => sizes.data?.clothing.map((s) => s.code) ?? [], [sizes.data])
   const e = employee.data
@@ -63,6 +60,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             {...(e.code ? { description: `Code ${e.code}` } : {})}
             actions={
               <>
+                <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
+                  <Plus aria-hidden /> New order
+                </Button>
                 <Button variant="outline" onClick={() => setSizing(true)}>
                   Edit Sizes
                 </Button>
@@ -84,6 +84,33 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             ) : null}
           </dl>
 
+          {reorder.length > 0 ? (
+            <Alert className="mb-6">
+              <RotateCcw aria-hidden />
+              <AlertTitle>
+                {reorder.length === 1 ? '1 item is' : `${reorder.length} items are`} due for replacement
+              </AlertTitle>
+              <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  {reorder
+                    .map((d) => `${d.item.itemName}${d.overdue ? ' (overdue)' : ` (due ${formatDate(d.dueAt.toISOString(), tz ?? 'UTC')})`}`)
+                    .join(', ')}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    navigate({
+                      name: 'createOrder',
+                      prefill: { employeeId: e.id, items: reorder.map((d) => ({ id: d.item.catalogueItemId, quantity: d.item.quantity })) },
+                    })
+                  }
+                >
+                  Reorder {reorder.length === 1 ? 'it' : `all ${reorder.length}`}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <section aria-labelledby="items-given" className="mb-8">
             <h2 id="items-given" className="mb-1 text-lg font-semibold">
               Items given
@@ -99,7 +126,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             ) : items.given.length === 0 ? (
               <EmptyState>No items have been given to {e.first_name} yet.</EmptyState>
             ) : (
-              <ItemsTable items={items.given} dateLabel="Given" tz={tz} clothing={clothing} navigate={navigate} />
+              <ItemsTable items={items.given} dateLabel="Given" tz={tz} clothing={clothing} due={dueByLine} navigate={navigate} />
             )}
           </section>
 
@@ -147,7 +174,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
-type ItemSort = 'item' | 'size' | 'quantity' | 'date' | 'usage' | 'period' | 'record'
+type ItemSort = 'item' | 'size' | 'quantity' | 'date' | 'usage' | 'period' | 'due' | 'record'
 
 /**
  * Sizes in size order: clothing S … 3XL by the vocabulary, then shoe sizes by
@@ -169,12 +196,15 @@ function ItemsTable({
   dateLabel,
   tz,
   clothing,
+  due,
   navigate,
 }: {
   items: EmployeeItem[]
   dateLabel: string
   tz: string | undefined
   clothing: readonly string[]
+  /** For given items: when each item's latest line is due for replacement. Older lines are replaced. */
+  due?: Map<string, Due>
   navigate: (to: Route) => void
 }) {
   const given = dateLabel === 'Given'
@@ -187,6 +217,7 @@ function ItemsTable({
     { key: 'date', label: dateLabel, firstDir: 'desc' },
     ...(given ? [{ key: 'usage', label: 'Usage time' } as const] : []),
     { key: 'period', label: 'Service period' },
+    ...(due ? [{ key: 'due', label: 'Replacement' } as const] : []),
     { key: 'record', label: given ? 'Receipt' : 'Record' },
   ]
   const shown = useMemo(
@@ -205,11 +236,13 @@ function ItemsTable({
             return i.usageMonths
           case 'period':
             return i.servicePeriodMonths
+          case 'due':
+            return due?.get(i.key)?.dueAt.toISOString() ?? null
           case 'record':
             return i.recordNumber
         }
       }),
-    [items, sort, clothing],
+    [items, sort, clothing, due],
   )
   return (
     <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Newest first" {...sortProps} />}>
@@ -234,6 +267,11 @@ function ItemsTable({
               <TableCell label="Usage time" className="stacked:order-2">{formatUsage(i.usageMonths) || '—'}</TableCell>
             ) : null}
             <TableCell label="Service period" className="stacked:order-2">{formatMonths(i.servicePeriodMonths)}</TableCell>
+            {due ? (
+              <TableCell label="Replacement" className="stacked:order-2">
+                <DueCell due={due.get(i.key)} tz={tz} />
+              </TableCell>
+            ) : null}
             <TableCell label={given ? 'Receipt' : 'Record'} className="stacked:order-3">
               {given ? (
                 <a
@@ -254,5 +292,29 @@ function ItemsTable({
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+/**
+ * When the item is due for replacement, with a bar of how much of its service
+ * period has passed. An older line of an item given again since is replaced;
+ * one already on an order is reordered.
+ */
+function DueCell({ due, tz }: { due: Due | undefined; tz: string | undefined }) {
+  if (!due) return <span className="text-muted-foreground">Replaced</span>
+  if (due.reordered) return <Badge variant="secondary">Reordered</Badge>
+  const date = formatDate(due.dueAt.toISOString(), tz ?? 'UTC')
+  return (
+    <span className="flex min-w-36 flex-col items-start gap-1 stacked:items-end">
+      <span className={cn('tabular-nums', due.overdue ? 'font-medium text-destructive' : due.dueSoon && 'font-medium')}>
+        {due.overdue ? `Overdue since ${date}` : `Due ${date}`}
+      </span>
+      <span aria-hidden className="block h-1.5 w-32 overflow-hidden rounded-full bg-muted">
+        <span
+          className={cn('block h-full rounded-full', due.overdue ? 'bg-destructive' : due.dueSoon ? 'bg-foreground/70' : 'bg-foreground/35')}
+          style={{ width: `${Math.round(due.used * 100)}%` }}
+        />
+      </span>
+    </span>
   )
 }

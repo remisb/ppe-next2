@@ -88,6 +88,7 @@ export function UsersPage() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           aria-label="Search users"
+          data-shortcut="search"
         />
       </div>
       {users.error ? (

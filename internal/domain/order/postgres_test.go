@@ -360,6 +360,32 @@ func TestPostgresConfirmation(t *testing.T) {
 	}
 }
 
+// In person: stored as IN_PERSON with the staff member as giver, the open link revoked.
+func TestPostgresInPersonConfirmation(t *testing.T) {
+	f := newPGFixture(t)
+	ctx := context.Background()
+	o, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 2, nil}}}, f.actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.svc.CreateConfirmationLink(ctx, o.ID, f.actor)
+	rec, err := f.svc.ConfirmInPerson(ctx, o.ID, f.actor, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var method string
+	var giver uuid.UUID
+	f.pool.QueryRow(ctx, `SELECT confirmation_method, given_by_user_id FROM orders WHERE id = $1`, o.ID).Scan(&method, &giver)
+	if method != "IN_PERSON" || giver != f.actor || rec.Confirmation.Method != MethodInPerson || rec.DocumentHash == "" {
+		t.Errorf("stored %s by %v; record %+v", method, giver, rec.Confirmation)
+	}
+	var revoked int
+	f.pool.QueryRow(ctx, `SELECT count(*) FROM order_confirmations WHERE order_id = $1 AND method = 'ELECTRONIC' AND revoked_at IS NOT NULL`, o.ID).Scan(&revoked)
+	if revoked != 1 {
+		t.Errorf("outstanding link not revoked")
+	}
+}
+
 func TestPostgresPaperConfirmation(t *testing.T) {
 	f := newPGFixture(t)
 	ctx := context.Background()

@@ -35,6 +35,8 @@ type catalogueRequest struct {
 	ServicePeriodMonths *int       `json:"service_period_months"`
 	Active              *bool      `json:"active"`
 	DisplayRank         *int       `json:"display_rank"`
+	// Icon is optional: omitted is "other".
+	Icon catalogue.Icon `json:"icon"`
 }
 
 func (req catalogueRequest) params() (catalogue.Params, error) {
@@ -44,7 +46,7 @@ func (req catalogueRequest) params() (catalogue.Params, error) {
 	}
 	return catalogue.Params{
 		Name: req.Name, Details: req.Details, SizeGroup: req.SizeGroup, UnitPriceCents: req.UnitPriceCents,
-		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank,
+		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank, Icon: req.Icon,
 	}, nil
 }
 
