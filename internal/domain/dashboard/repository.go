@@ -1,6 +1,9 @@
 package dashboard
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Repository interface {
 	// Read returns the stored figures for w, all from one consistent snapshot.
@@ -13,4 +16,7 @@ type Repository interface {
 	// ReadEmployee returns the order preparer's figures for w from one
 	// consistent snapshot, Months as in Read; the derived fields are left empty.
 	ReadEmployee(ctx context.Context, w EmployeeWindow) (EmployeeOverview, error)
+	// ReadReplacements returns the replacements due before dueBy (counts, and
+	// the first limit soonest due), the derived fields left empty.
+	ReadReplacements(ctx context.Context, now, dueBy time.Time, limit int) (Replacements, error)
 }

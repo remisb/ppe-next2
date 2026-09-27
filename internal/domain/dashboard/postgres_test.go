@@ -154,6 +154,14 @@ func TestPostgresOverview(t *testing.T) {
 	if o.PreviousToDate != (Month{Month: "2026-08"}) || o.ThroughDay != 15 {
 		t.Errorf("previous to date = %+v through %d", o.PreviousToDate, o.ThroughDay)
 	}
+	// The Replacements due screen lists the same two as the dashboard, soonest first.
+	all, err := svc.Replacements(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if all.Overdue != 1 || all.DueSoon != 1 || len(all.Next) != 2 || all.Next[0].EmployeeID != jonas || !all.Next[0].Overdue || all.Next[1].OrderID != o1 {
+		t.Errorf("replacements screen = %+v", all)
+	}
 	// On 1 October at 09:00 it is 1 September to 09:00, which holds order 2's giving at 08:00.
 	oct := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
 	later, err := NewService(NewPostgresRepository(pool), WithClock(func() time.Time { return oct })).Overview(ctx)

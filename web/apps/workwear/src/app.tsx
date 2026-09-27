@@ -1,4 +1,4 @@
-import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
@@ -21,6 +21,7 @@ import { History } from './routes/history'
 import { ConfirmPage } from './routes/confirm'
 import { ItemSets } from './routes/item-sets'
 import { ManagerDashboard } from './routes/manager-dashboard'
+import { Replacements } from './routes/replacements'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
 import { UsersPage } from './routes/users'
@@ -56,7 +57,9 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
     (current === 'employee' && tab === 'employees') ||
     (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
-    (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard'))
+    (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard')) ||
+    // Replacements due is opened from a dashboard: the user's one Dashboard tab stays current.
+    (current === 'replacements' && (tab === 'dashboard' || tab === 'managerDashboard' || tab === 'employeeDashboard'))
   )
 }
 
@@ -161,6 +164,7 @@ export function App() {
 
   const sections: PaletteSection[] = [
     ...shownTabs.map((t) => ({ route: t.route, label: t.label, icon: t.icon })),
+    { route: { name: 'replacements' }, label: 'Replacements due', icon: RotateCcw },
     { route: { name: 'account' }, label: 'Account and password', icon: UserRound },
   ]
   const primary = shownTabs.slice(0, phoneTabs)
@@ -333,6 +337,7 @@ export function App() {
         ) : null}
         {route.name === 'itemSets' ? <ItemSets /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
+        {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'history' ? (
           <History

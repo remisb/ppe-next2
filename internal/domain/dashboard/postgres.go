@@ -182,6 +182,17 @@ func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, lim
 	return r, err
 }
 
+// ReadReplacements runs the replacements query on its own, in a read-only transaction.
+func (r *PostgresRepository) ReadReplacements(ctx context.Context, now, dueBy time.Time, limit int) (Replacements, error) {
+	var out Replacements
+	err := pgx.BeginTxFunc(ctx, r.pool, pgx.TxOptions{AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		var err error
+		out, err = queryReplacements(ctx, tx, now, dueBy, limit)
+		return err
+	})
+	return out, err
+}
+
 func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
 	s := &o.Setup
 	return tx.QueryRow(ctx, `SELECT

@@ -82,6 +82,8 @@ export function createClient(options: ClientOptions) {
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
+    /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */
+    replacements: () => request<Dashboard['replacements']>('GET', '/api/v1/replacements'),
     /** The manager's dashboard; managers only. */
     managerDashboard: () => request<ManagerDashboard>('GET', '/api/v1/dashboard/manager'),
     /** The employee role's dashboard, for the signed-in user; that role only. */

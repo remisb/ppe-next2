@@ -196,6 +196,9 @@ func (stubDashboard) ReadEmployee(context.Context, dashboard.EmployeeWindow) (da
 func (stubDashboard) ReadManager(context.Context, dashboard.ManagerWindow) (dashboard.ManagerFigures, error) {
 	return dashboard.ManagerFigures{}, nil
 }
+func (stubDashboard) ReadReplacements(context.Context, time.Time, time.Time, int) (dashboard.Replacements, error) {
+	return dashboard.Replacements{}, nil
+}
 
 var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -310,6 +313,7 @@ var policy = map[string]string{
 	"GET /api/v1/dashboard":                         "admins",
 	"GET /api/v1/dashboard/manager":                 "manager",
 	"GET /api/v1/dashboard/employee":                "employee",
+	"GET /api/v1/replacements":                      "any",
 }
 
 var allowedRoles = map[string][]string{

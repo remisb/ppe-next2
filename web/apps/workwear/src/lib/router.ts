@@ -29,6 +29,8 @@ export type Route =
   | { name: 'itemSets' }
   /** User accounts; administrators only. */
   | { name: 'users' }
+  /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
+  | { name: 'replacements' }
   | { name: 'account' }
   /** View Record; print opens the browser's print dialog once loaded (Print Record). */
   | { name: 'record'; id: string; print?: boolean }
@@ -52,6 +54,7 @@ const fixed = {
   catalogue: '/catalogue',
   itemSets: '/item-sets',
   users: '/users',
+  replacements: '/replacements',
   account: '/account',
 } as const
 

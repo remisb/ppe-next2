@@ -103,8 +103,8 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
         alert={r.overdue > 0}
-        onOpen={r.next.length > 0 ? () => jumpTo('[data-need^="due-"]') : undefined}
-        openHint="Show them in Needs you"
+        onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
+        openHint="Show them all in Replacements due"
       />
       <Kpi
         label="Missing sizes"

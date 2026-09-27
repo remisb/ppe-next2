@@ -16,6 +16,12 @@ type fakeRepo struct {
 	outMgr ManagerFigures
 	gotEmp EmployeeWindow
 	outEmp EmployeeOverview
+	// The Replacements due screen's arguments and result.
+	gotRepl struct {
+		now, dueBy time.Time
+		limit      int
+	}
+	outRepl Replacements
 }
 
 func (f *fakeRepo) Read(_ context.Context, w Window) (Overview, error) {
@@ -31,6 +37,11 @@ func (f *fakeRepo) ReadManager(_ context.Context, w ManagerWindow) (ManagerFigur
 func (f *fakeRepo) ReadEmployee(_ context.Context, w EmployeeWindow) (EmployeeOverview, error) {
 	f.gotEmp = w
 	return f.outEmp, nil
+}
+
+func (f *fakeRepo) ReadReplacements(_ context.Context, now, dueBy time.Time, limit int) (Replacements, error) {
+	f.gotRepl.now, f.gotRepl.dueBy, f.gotRepl.limit = now, dueBy, limit
+	return f.outRepl, nil
 }
 
 func utc(s string) time.Time {
@@ -232,5 +243,30 @@ func TestEmployeeDerivedFields(t *testing.T) {
 	}
 	if r := o.Replacements; r.DueSoonDays != DueSoonDays || !r.Next[0].Overdue || r.Next[0].RecordNumber != "WE-000003" {
 		t.Errorf("replacements = %+v", r)
+	}
+}
+
+// The Replacements due screen: the same rule and window as the dashboards, the
+// whole list up to ReplacementsLimit, with record numbers and overdue derived.
+func TestReplacementsScreen(t *testing.T) {
+	now := utc("2026-09-15T10:00:00Z")
+	repo := &fakeRepo{outRepl: Replacements{Overdue: 1, DueSoon: 1, Next: []Replacement{
+		{RecordSeq: 3, DueAt: now.Add(-time.Hour)},
+		{RecordSeq: 12, DueAt: now.AddDate(0, 0, 10)},
+	}}}
+	r, err := NewService(repo, WithClock(func() time.Time { return now })).Replacements(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g := repo.gotRepl; !g.now.Equal(now) || !g.dueBy.Equal(now.AddDate(0, 0, DueSoonDays)) || g.limit != ReplacementsLimit {
+		t.Errorf("asked for %+v", g)
+	}
+	if !r.Next[0].Overdue || r.Next[1].Overdue || r.Next[1].RecordNumber != "WE-000012" || r.DueSoonDays != DueSoonDays {
+		t.Errorf("replacements = %+v", r)
+	}
+	// Nothing due is an empty list, never null.
+	empty, _ := NewService(&fakeRepo{}).Replacements(context.Background())
+	if empty.Next == nil || len(empty.Next) != 0 {
+		t.Errorf("empty = %#v", empty.Next)
 	}
 }

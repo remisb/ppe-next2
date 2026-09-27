@@ -1,7 +1,7 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, jumpTo } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi, useSession } from '@/lib/api'
@@ -125,8 +125,8 @@ function Kpis({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
         alert={r.overdue > 0}
-        onOpen={r.next.length > 0 ? () => jumpTo('[data-need^="due-"]') : undefined}
-        openHint="Show them in Needs you"
+        onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
+        openHint="Show them all in Replacements due"
       />
     </KeyFigures>
   )

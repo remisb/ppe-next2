@@ -419,6 +419,15 @@ test('Dashboard: the figures follow the orders', async () => {
   await expect(page.getByRole('button', { name: 'Employee Dashboard' })).toHaveCount(0)
 })
 
+test('Replacements due: the whole list at its own address, under the Dashboard tab', async () => {
+  await page.goto('/replacements')
+  await expect(page.getByRole('heading', { name: 'Replacements due' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('group', { name: 'Show' }).getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('main').getByRole('button', { name: 'Dashboard' }).click()
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+})
+
 test('hand-over: the employee confirms on this device, recorded in person', async () => {
   await openTab('Create Order')
   await page.getByRole('combobox', { name: 'Assigned to' }).click()
@@ -632,6 +641,9 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.getByRole('link', { name: 'Safety shoes' }).click()
   await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
   expect(await fits(), 'the item page scrolls sideways').toBe(true)
+  await page.goto('/replacements')
+  await expect(page.getByRole('heading', { name: 'Replacements due' })).toBeVisible()
+  expect(await fits(), 'Replacements due scrolls sideways').toBe(true)
 
   // The order's actions stay in reach however long the order is.
   await openTab('Create Order')

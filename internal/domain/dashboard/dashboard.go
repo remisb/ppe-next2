@@ -20,6 +20,8 @@ const (
 	ConfirmWindowDays = 90
 	// ListLimit caps the dashboard's lists (longest waiting, replacements, top items).
 	ListLimit = 8
+	// ReplacementsLimit caps the Replacements due screen, which lists them all.
+	ReplacementsLimit = 500
 )
 
 // Window is what the repository reads for, in storage terms (UTC instants).

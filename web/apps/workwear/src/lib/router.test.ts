@@ -16,6 +16,7 @@ describe('router', () => {
       'users',
       'history',
       'account',
+      'replacements',
     ] as const) {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }

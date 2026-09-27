@@ -10,6 +10,7 @@ order lines, employees, catalogue items, item sets and users in one read-only
 | `GET /api/v1/dashboard` | admin |
 | `GET /api/v1/dashboard/manager` | manager (not admin: the administrator has their own) |
 | `GET /api/v1/dashboard/employee` | employee (not admin or manager); covers the signed-in user |
+| `GET /api/v1/replacements` | any authenticated: the Replacements due screen, `{due_soon_days, overdue, due_soon, next}` as in `replacements` below but with up to 500 rows, not 8 |
 
 In the web app each is its role's start screen: the Dashboard (`/dashboard`) for
 administrators, the Manager Dashboard (`/manager`) for managers, the Employee Dashboard

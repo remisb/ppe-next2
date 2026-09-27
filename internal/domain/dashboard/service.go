@@ -181,6 +181,22 @@ func (s *Service) Employee(ctx context.Context, userID uuid.UUID) (EmployeeOverv
 	return o, nil
 }
 
+// Replacements is the Replacements due screen: every replacement due within
+// DueSoonDays (overdue included), by the dashboards' rule, soonest first, up
+// to ReplacementsLimit. It is organisation-wide, like the dashboards' list.
+func (s *Service) Replacements(ctx context.Context) (Replacements, error) {
+	now := s.now()
+	r, err := s.repo.ReadReplacements(ctx, now, now.AddDate(0, 0, DueSoonDays), ReplacementsLimit)
+	if err != nil {
+		return Replacements{}, err
+	}
+	if r.Next == nil {
+		r.Next = []Replacement{}
+	}
+	s.replacements(&r, now)
+	return r, nil
+}
+
 // replacements fills the derived fields of r at now.
 func (s *Service) replacements(r *Replacements, now time.Time) {
 	r.DueSoonDays = DueSoonDays

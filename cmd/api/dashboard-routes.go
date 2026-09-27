@@ -40,4 +40,14 @@ func registerDashboardRoutes(rt *router, svc *dashboard.Service) {
 		}
 		writeJSON(w, http.StatusOK, o)
 	}, employeeRole...)
+	// The Replacements due screen: the whole list the dashboards show the start
+	// of. Any signed-in user, like History, which holds the same orders.
+	rt.authenticated("GET /api/v1/replacements", func(w http.ResponseWriter, r *http.Request) {
+		o, err := svc.Replacements(r.Context())
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, o)
+	})
 }
