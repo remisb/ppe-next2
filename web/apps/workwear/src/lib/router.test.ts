@@ -25,6 +25,14 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
   })
+  it('opens History on a status tab and Employees on the missing-size filter', () => {
+    expect(pathOf({ name: 'history', status: 'ORDERED' })).toBe('/history?status=ORDERED')
+    expect(parsePath('/history', '?status=ORDERED')).toEqual({ name: 'history', status: 'ORDERED' })
+    expect(parsePath('/history', '?status=DRAFT')).toEqual({ name: 'history' })
+    expect(pathOf({ name: 'employees', missing: true })).toBe('/employees?missing=1')
+    expect(parsePath('/employees', '?missing=1')).toEqual({ name: 'employees', missing: true })
+    expect(parsePath('/employees', '?missing=yes')).toEqual({ name: 'employees' })
+  })
   it('carries a reorder in the Create Order address', () => {
     const prefill = { employeeId: 'e1', items: [{ id: 'gloves', quantity: 10 }, { id: 'shoes', quantity: 1 }] }
     const path = pathOf({ name: 'createOrder', prefill })

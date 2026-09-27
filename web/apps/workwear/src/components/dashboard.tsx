@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react'
 import { type ReactNode, useId } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -24,16 +24,24 @@ export function Panel({
   title,
   description,
   className,
+  anchor,
   children,
 }: {
   title: string
   description?: ReactNode
   className?: string | undefined
+  /** A name to jump to it by (data-panel), for a tile that leads here. */
+  anchor?: string
   children: ReactNode
 }) {
   const id = useId()
   return (
-    <Card className={className} role="region" aria-labelledby={id}>
+    <Card
+      className={cn('transition-colors duration-700 data-flash:bg-accent/60', className)}
+      role="region"
+      aria-labelledby={id}
+      {...(anchor ? { 'data-panel': anchor } : {})}
+    >
       <CardHeader>
         <CardTitle>
           <h2 id={id}>{title}</h2>
@@ -55,24 +63,76 @@ export function KeyFigures({ children }: { children: ReactNode }) {
   )
 }
 
-export function Kpi({ label, value, detail, change, alert = false }: { label: string; value: string; detail: string; change?: string; alert?: boolean }) {
+/**
+ * A headline figure. With onOpen it is one button, the whole tile: it goes to
+ * the list behind the figure (the rows in Needs you, History, Employees), and
+ * a chevron says so. Without, it only reports.
+ */
+export function Kpi({
+  label,
+  value,
+  detail,
+  change,
+  alert = false,
+  onOpen,
+  openHint,
+}: {
+  label: string
+  value: string
+  detail: string
+  change?: string
+  alert?: boolean
+  onOpen?: (() => void) | undefined
+  /** Where the tile goes, for screen readers: "Show them in Needs you". */
+  openHint?: string
+}) {
+  const body = (
+    <Card size="sm" className={cn('h-full', onOpen && 'transition-colors group-hover:bg-accent/60')}>
+      <CardContent className="flex flex-col gap-1">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          {label}
+          {alert ? <AlertTriangle aria-label="Needs attention" className="size-3.5 text-destructive" /> : null}
+          {onOpen ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
+        </span>
+        <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
+        <span className="text-xs text-muted-foreground">
+          {detail}
+          {change ? <span className="block">{change}</span> : null}
+        </span>
+        {onOpen && openHint ? <span className="sr-only">. {openHint}</span> : null}
+      </CardContent>
+    </Card>
+  )
   return (
     <li>
-      <Card size="sm" className="h-full">
-        <CardContent className="flex flex-col gap-1">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            {label}
-            {alert ? <AlertTriangle aria-label="Needs attention" className="size-3.5 text-destructive" /> : null}
-          </span>
-          <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
-          <span className="text-xs text-muted-foreground">
-            {detail}
-            {change ? <span className="block">{change}</span> : null}
-          </span>
-        </CardContent>
-      </Card>
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="group block h-full w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {body}
+        </button>
+      ) : (
+        body
+      )}
     </li>
   )
+}
+
+/**
+ * Scrolls to the first element matching selector (a row in Needs you, a
+ * panel), flashes it so the eye finds it, and moves focus to its first button
+ * or link, so a keyboard user lands on the action.
+ */
+export function jumpTo(selector: string): void {
+  const el = document.querySelector<HTMLElement>(selector)
+  if (!el) return
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
+  el.querySelector<HTMLElement>('button, a')?.focus({ preventScroll: true })
+  el.dataset['flash'] = ''
+  setTimeout(() => delete el.dataset['flash'], 1600)
 }
 
 export interface Series {
@@ -221,7 +281,11 @@ export function NeedsYouPanel({
       ) : (
         <ul aria-label="Needs you" className="divide-y divide-border">
           {sorted.map((n) => (
-            <li key={n.key} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+            <li
+              key={n.key}
+              data-need={n.key}
+              className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors duration-700 data-flash:bg-accent"
+            >
               <Badge variant={n.urgent ? 'destructive' : 'secondary'} className="w-18 shrink-0 justify-center tabular-nums">
                 {n.tag}
               </Badge>

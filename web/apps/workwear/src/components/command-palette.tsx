@@ -1,9 +1,10 @@
-import type { CatalogueItem, Employee } from '@ppe/api-client'
-import { ClipboardList, CornerDownLeft, Search, UserRound, type LucideIcon } from 'lucide-react'
+import type { CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
+import { ClipboardList, CornerDownLeft, FileText, Search, UserRound, type LucideIcon } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
 import { useApi } from '@/lib/api'
+import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
 import { cn } from '@/lib/utils'
@@ -17,7 +18,7 @@ export interface PaletteSection {
 
 interface Entry {
   key: string
-  group: 'Actions' | 'Screens' | 'Employees' | 'Items'
+  group: 'Orders' | 'Actions' | 'Screens' | 'Employees' | 'Items'
   label: string
   hint?: string
   icon: ReactNode
@@ -28,9 +29,9 @@ interface Entry {
 const PER_GROUP = 5
 
 /**
- * ⌘K (Ctrl+K): one search box over the screens, employees and catalogue items,
- * with the action most often wanted on each: a new order for an employee, an
- * item's page, a screen. Arrow keys move, Enter goes, Escape closes. A modal
+ * ⌘K (Ctrl+K): one search box over record numbers, screens, employees and
+ * catalogue items, with the action most often wanted on each: an order opened
+ * in History, a new order for an employee, an item's page, a screen. Arrow keys move, Enter goes, Escape closes. A modal
  * dialog, so the page behind is inert while it is open.
  */
 export function CommandPalette({
@@ -51,6 +52,8 @@ export function CommandPalette({
   const [q, setQ] = useState('')
   const [at, setAt] = useState(0)
   const [employees, setEmployees] = useState<Employee[]>([])
+  // The order a record-number search finds, if any: "WE-000004", "we4", "4".
+  const [orders, setOrders] = useState<ListedOrder[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
 
   useEffect(() => {
@@ -85,6 +88,7 @@ export function CommandPalette({
     const term = q.trim()
     if (!term) {
       setEmployees([])
+      setOrders([])
       return
     }
     let current = true
@@ -93,6 +97,12 @@ export function CommandPalette({
         (r) => current && setEmployees(r),
         () => current && setEmployees([]),
       )
+      if (looksLikeRecord(term)) {
+        client.orders.list({ record: term, page_size: 1 }).then(
+          (p) => current && setOrders(p.orders),
+          () => current && setOrders([]),
+        )
+      } else setOrders([])
     }, 150)
     return () => {
       current = false
@@ -104,6 +114,17 @@ export function CommandPalette({
     const term = q.trim().toLowerCase()
     const has = (s: string) => s.toLowerCase().includes(term)
     const out: Entry[] = []
+    // A record number is the most specific thing typed: its order comes first.
+    for (const o of orders) {
+      out.push({
+        key: `order-${o.id}`,
+        group: 'Orders',
+        label: `${o.record_number} · ${o.employee_first_name} ${o.employee_last_name}`,
+        hint: statusLabel[o.status],
+        icon: <FileText aria-hidden className="size-4" />,
+        to: { name: 'history', order: o.id },
+      })
+    }
     if (!term || has('new order') || has('create order')) {
       out.push({ key: 'new', group: 'Actions', label: 'New order', icon: <ClipboardList aria-hidden className="size-4" />, to: { name: 'createOrder' } })
     }
@@ -136,7 +157,7 @@ export function CommandPalette({
       }
     }
     return out
-  }, [q, employees, items, sections])
+  }, [q, orders, employees, items, sections])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]
@@ -175,7 +196,7 @@ export function CommandPalette({
           aria-controls={listId}
           aria-activedescendant={selected ? `${listId}-${selected.key}` : undefined}
           aria-label="Search or jump to"
-          placeholder="Search employees, items and screens…"
+          placeholder="Search orders, employees, items and screens…"
           autoComplete="off"
           className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
           value={q}

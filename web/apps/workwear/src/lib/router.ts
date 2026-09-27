@@ -1,5 +1,6 @@
 import { type MouseEvent, useCallback, useEffect, useState } from 'react'
 
+import type { OrderStatus } from '@ppe/api-client'
 import { basePath, stripBase } from '@ppe/routing'
 
 export type Route =
@@ -13,9 +14,13 @@ export type Route =
   | { name: 'employeeDashboard' }
   /** Create Order; prefill starts it for an employee with these items (a reorder from a dashboard). */
   | { name: 'createOrder'; prefill?: Prefill }
-  /** History; order opens one order beside the list, or on its own on a narrow screen. */
-  | { name: 'history'; order?: string }
-  | { name: 'employees' }
+  /**
+   * History; order opens one order beside the list, or on its own on a narrow
+   * screen; status opens it on that tab (a dashboard's Awaiting tile).
+   */
+  | { name: 'history'; order?: string; status?: OrderStatus }
+  /** Employees; missing opens it filtered to those missing a size (a dashboard's Missing sizes tile). */
+  | { name: 'employees'; missing?: boolean }
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
   | { name: 'catalogue' }
@@ -53,10 +58,16 @@ const fixed = {
 /** Unknown paths (stale bookmarks) land on the start screen, as the root does. */
 export function parsePath(pathname: string, search = ''): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
+  const query = new URLSearchParams(search)
   if (path === fixed.createOrder) {
-    const prefill = parsePrefill(new URLSearchParams(search))
+    const prefill = parsePrefill(query)
     return prefill ? { name: 'createOrder', prefill } : { name: 'createOrder' }
   }
+  if (path === fixed.history) {
+    const status = query.get('status')
+    return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
+  }
+  if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
@@ -97,7 +108,10 @@ export function pathOf(route: Route): string {
       return `${fixed.createOrder}?${q}`
     }
     case 'history':
-      return route.order ? `/history/${encodeURIComponent(route.order)}` : fixed.history
+      if (route.order) return `/history/${encodeURIComponent(route.order)}`
+      return route.status ? `${fixed.history}?status=${route.status}` : fixed.history
+    case 'employees':
+      return route.missing ? `${fixed.employees}?missing=1` : fixed.employees
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':

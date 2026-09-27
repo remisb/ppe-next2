@@ -185,11 +185,11 @@ type orderPageJSON struct {
 // historyParams are the only query parameters History accepts. Its filters
 // combine freely, so they are query parameters rather than the nested path
 // segments the domain contract uses elsewhere (a documented exception).
-var historyParams = map[string]bool{"employee_id": true, "catalogue_item_id": true, "status": true, "from": true, "to": true, "sort": true, "dir": true, "page": true, "page_size": true}
+var historyParams = map[string]bool{"employee_id": true, "catalogue_item_id": true, "record": true, "status": true, "from": true, "to": true, "sort": true, "dir": true, "page": true, "page_size": true}
 
 // list is History: stored snapshots, newest activity first unless sorted.
 //
-//	GET /api/v1/orders?employee_id=&catalogue_item_id=&status=ORDERED|GIVEN&from=YYYY-MM-DD&to=YYYY-MM-DD
+//	GET /api/v1/orders?employee_id=&catalogue_item_id=&record=WE-000004&status=ORDERED|GIVEN&from=YYYY-MM-DD&to=YYYY-MM-DD
 //	    &sort=date|record|employee|status|usage|total&dir=asc|desc&page=&page_size=
 func (h *orderHandler) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -216,7 +216,7 @@ func (h *orderHandler) list(w http.ResponseWriter, r *http.Request) {
 		}
 		p.CatalogueItemID = &id
 	}
-	p.Status, p.FromDate, p.ToDate = q.Get("status"), q.Get("from"), q.Get("to")
+	p.Record, p.Status, p.FromDate, p.ToDate = q.Get("record"), q.Get("status"), q.Get("from"), q.Get("to")
 	p.Sort, p.Dir = q.Get("sort"), q.Get("dir")
 	for _, n := range []struct {
 		key string

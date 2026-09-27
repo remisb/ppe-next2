@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { activityAt, formatDateTime, formatUsage, formatWaiting, historyActions, waitingDays } from './history'
+import { activityAt, formatDateTime, formatUsage, formatWaiting, historyActions, looksLikeRecord, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
@@ -41,5 +41,12 @@ describe('waiting for confirmation', () => {
     expect(formatWaiting(0)).toBe('today')
     expect(formatWaiting(1)).toBe('1 day')
     expect(formatWaiting(12)).toBe('12 days')
+  })
+})
+
+describe('record number search', () => {
+  it('recognises a record number however it is typed', () => {
+    for (const q of ['WE-000004', 'we4', 'WE 12', ' 000123 ', '7']) expect(looksLikeRecord(q)).toBe(true)
+    for (const q of ['', 'WE-', 'Ona', 'WE-12a', 'gloves 10']) expect(looksLikeRecord(q)).toBe(false)
   })
 })

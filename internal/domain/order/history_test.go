@@ -46,6 +46,27 @@ func TestListParamsDatesUseOrganisationTimezone(t *testing.T) {
 	}
 }
 
+// A record number is found however it is typed; the filter keeps that one order.
+func TestParseRecordNumber(t *testing.T) {
+	for in, want := range map[string]int64{"WE-000004": 4, "we4": 4, "WE 12": 12, " 000123 ": 123, "7": 7} {
+		if got, ok := ParseRecordNumber(in); !ok || got != want {
+			t.Errorf("%q = %d %v, want %d", in, got, ok, want)
+		}
+	}
+	for _, in := range []string{"", "WE-", "WE-0", "WE-12a", "X-4", "-4", "1234567890123"} {
+		if _, ok := ParseRecordNumber(in); ok {
+			t.Errorf("%q parsed", in)
+		}
+	}
+	f, _, _, err := ListParams{Record: "we-4"}.filter(time.UTC)
+	if err != nil || f.RecordSeq == nil || *f.RecordSeq != 4 {
+		t.Errorf("record filter = %v, %v", f.RecordSeq, err)
+	}
+	if FormatRecordNumber(4) != "WE-000004" {
+		t.Error("format")
+	}
+}
+
 func TestListParamsRejections(t *testing.T) {
 	for name, p := range map[string]ListParams{
 		"bad status":    {Status: "DRAFT"},
@@ -55,6 +76,7 @@ func TestListParamsRejections(t *testing.T) {
 		"negative page": {Page: -1},
 		"unknown sort":  {Sort: "price"},
 		"bad direction": {Sort: "total", Dir: "down"},
+		"bad record":    {Record: "WE-12a"},
 	} {
 		if _, _, _, err := p.filter(time.UTC); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%s: err = %v", name, err)

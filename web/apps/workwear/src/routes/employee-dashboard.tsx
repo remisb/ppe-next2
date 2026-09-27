@@ -1,11 +1,11 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
 import { RefreshCw } from 'lucide-react'
 
-import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, inlineLink } from '@/components/dashboard'
+import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
-import { type Need, changeText, formatDays, monthLabel, plural } from '@/lib/dashboard'
+import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel, plural } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -50,7 +50,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
         <Loading />
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} />
+          <Kpis d={d} navigate={navigate} />
           <NeedsYouPanel
             needs={needsOf(d)}
             navigate={navigate}
@@ -69,7 +69,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
   )
 }
 
-function Kpis({ d }: { d: Data }) {
+function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
   const a = d.awaiting
   const cur = d.months.at(-1)
   // The same days of the previous month, not all of it.
@@ -87,6 +87,8 @@ function Kpis({ d }: { d: Data }) {
             : `${plural(a.items, 'item')} · oldest ${formatDays(a.oldest_days)}${unlinked > 0 ? ` · ${unlinked} without a usable link` : ''}`
         }
         alert={unlinked > 0 || (a.oldest_days ?? 0) > 14}
+        onOpen={a.orders > 0 ? () => jumpTo('[data-need^="wait-"]') : undefined}
+        openHint="Show them in Needs you"
       />
       {cur ? (
         <Kpi
@@ -101,12 +103,16 @@ function Kpis({ d }: { d: Data }) {
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
         alert={r.overdue > 0}
+        onOpen={r.next.length > 0 ? () => jumpTo('[data-need^="due-"]') : undefined}
+        openHint="Show them in Needs you"
       />
       <Kpi
         label="Missing sizes"
         value={String(d.missing_sizes.employees)}
-        detail={d.missing_sizes.employees === 0 ? 'Every employee has their sizes.' : `${plural(d.missing_sizes.employees, 'employee')} to measure`}
+        detail={missingSizesText(d.missing_sizes.employees, d.missing_sizes.list[0])}
         alert={d.missing_sizes.employees > 0}
+        onOpen={d.missing_sizes.employees > 0 ? () => navigate({ name: 'employees', missing: true }) : undefined}
+        openHint="Show them in Employees"
       />
     </KeyFigures>
   )
@@ -155,7 +161,7 @@ function needsOf(d: Data): Need[] {
     urgent: false,
     tag: 'Size',
     title: e.employee_name,
-    detail: [e.clothing ? 'no clothing size or height' : '', e.shoes ? 'no shoe size' : ''].filter(Boolean).join(', '),
+    detail: missingText(e),
     action: { label: 'Add sizes', context: `for ${e.employee_name}`, to: { name: 'employee', id: e.employee_id } },
   }))
   return [...waiting, ...due, ...sizes]

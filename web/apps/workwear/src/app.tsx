@@ -325,7 +325,7 @@ export function App() {
         {route.name === 'managerDashboard' ? <ManagerDashboard navigate={navigate} /> : null}
         {route.name === 'employeeDashboard' ? <EmployeeDashboard navigate={navigate} /> : null}
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
-        {route.name === 'employees' ? <Employees navigate={navigate} /> : null}
+        {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
         {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
         {route.name === 'catalogueItem' ? (
@@ -335,7 +335,12 @@ export function App() {
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'history' ? (
-          <History selected={route.order} navigate={navigate} onOpenRecord={(id, print) => navigate({ name: 'record', id, print })} />
+          <History
+            selected={route.order}
+            status={route.status}
+            navigate={navigate}
+            onOpenRecord={(id, print) => navigate({ name: 'record', id, print })}
+          />
         ) : null}
         {route.name === 'record' ? (
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />

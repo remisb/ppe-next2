@@ -86,3 +86,11 @@ export function formatWaiting(days: number): string {
 export function activityAt(o: { given_at: string | null; ordered_at: string }): string {
   return o.given_at ?? o.ordered_at
 }
+
+/**
+ * Whether a search looks like a record number, as the API reads one:
+ * "WE-000004", "we4", "WE 4" or just digits. The palette then asks for that order.
+ */
+export function looksLikeRecord(q: string): boolean {
+  return /^(we[-\s]*)?\d{1,12}$/i.test(q.trim())
+}

@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react'
  * never steals a keystroke meant for text.
  */
 export const shortcutList: { keys: string; does: string }[] = [
-  { keys: '⌘K / Ctrl+K', does: 'Search employees, items and screens, and jump to them' },
+  { keys: '⌘K / Ctrl+K', does: 'Search record numbers, employees, items and screens, and jump to them' },
   { keys: '/', does: 'Go to the search or Add Item field on this screen' },
   { keys: 'N', does: 'New order' },
   { keys: 'G then D, O, H, E, C, S, U', does: 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets, Users' },

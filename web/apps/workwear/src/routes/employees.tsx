@@ -29,14 +29,14 @@ const columns: SortColumn<EmployeeSort>[] = [
   { key: 'shoes', label: 'Shoes' },
 ]
 
-export function Employees({ navigate }: { navigate: (to: Route) => void }) {
+export function Employees({ missing = false, navigate }: { missing?: boolean; navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
   const employees = useLoad(() => client.employees.list())
   const sizes = useLoad(() => client.sizes())
   const [filter, setFilter] = useState('')
   // Only those Create Order would flag for a missing size.
-  const [onlyMissing, setOnlyMissing] = useState(false)
+  const [onlyMissing, setOnlyMissing] = useState(missing)
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const [actionError, setActionError] = useState<unknown>()

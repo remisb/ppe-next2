@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -61,6 +62,20 @@ func (o Order) RecordNumber() string { return FormatRecordNumber(o.RecordSeq) }
 
 // FormatRecordNumber renders a sequence value as a record number.
 func FormatRecordNumber(seq int64) string { return fmt.Sprintf("WE-%06d", seq) }
+
+// ParseRecordNumber reads a record number as people type it: "WE-000004",
+// "we4", "WE 4" or just "4". It reports false for anything else, or for 0.
+func ParseRecordNumber(s string) (int64, bool) {
+	s = strings.ToUpper(strings.TrimSpace(s))
+	if rest, ok := strings.CutPrefix(s, "WE"); ok {
+		s = strings.TrimLeft(rest, "- ")
+	}
+	if s == "" || len(s) > 12 || strings.Trim(s, "0123456789") != "" {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	return n, err == nil && n > 0
+}
 
 // ActivityAt is when the order last changed status: newest-first sort key.
 func (o Order) ActivityAt() time.Time {

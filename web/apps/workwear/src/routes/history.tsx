@@ -58,15 +58,18 @@ const wide = () => window.matchMedia('(min-width: 64rem)').matches
  */
 export function History({
   selected,
+  status,
   navigate,
   onOpenRecord,
 }: {
   selected: string | undefined
+  /** The tab to open on, from the address (a dashboard's Awaiting tile); later tab changes stay on the screen. */
+  status?: OrderStatus | undefined
   navigate: (to: Route, options?: NavigateOptions) => void
   onOpenRecord: (id: string, print: boolean) => void
 }) {
   const { client } = useApi()
-  const [filters, setFilters] = useState<Filters>(noFilters)
+  const [filters, setFilters] = useState<Filters>(() => ({ ...noFilters, status: status ?? '' }))
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState<HistorySort>>(newestFirst)
   // Phone only: the filters fold away so the orders start at the top of the screen.

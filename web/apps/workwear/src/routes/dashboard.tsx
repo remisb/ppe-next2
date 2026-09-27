@@ -1,7 +1,7 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi, useSession } from '@/lib/api'
@@ -59,7 +59,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
         <Loading />
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} />
+          <Kpis d={d} navigate={navigate} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <NeedsYouPanel
               className="lg:col-span-2"
@@ -85,7 +85,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
   )
 }
 
-function Kpis({ d }: { d: DashboardData }) {
+function Kpis({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
   const cur = d.months.at(-1)
   // The same days of the previous month, not all of it.
   const prev = d.previous_to_date
@@ -101,6 +101,8 @@ function Kpis({ d }: { d: DashboardData }) {
             : `${formatEuro(d.awaiting.value_cents)} · oldest ${formatDays(d.awaiting.oldest_days)}`
         }
         alert={(d.awaiting.oldest_days ?? 0) > 14}
+        onOpen={d.awaiting.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
+        openHint="Show them in History"
       />
       {cur ? (
         <Kpi
@@ -123,6 +125,8 @@ function Kpis({ d }: { d: DashboardData }) {
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
         alert={r.overdue > 0}
+        onOpen={r.next.length > 0 ? () => jumpTo('[data-need^="due-"]') : undefined}
+        openHint="Show them in Needs you"
       />
     </KeyFigures>
   )

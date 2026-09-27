@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -227,6 +228,16 @@ func TestPostgresHistory(t *testing.T) {
 	all, err := f.svc.List(ctx, ListParams{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// A record number finds its one order, however it is typed.
+	if res, err := f.svc.List(ctx, ListParams{Record: FormatRecordNumber(b.RecordSeq)}); err != nil || !same(ids(res), b.ID) || res.Total != 1 {
+		t.Errorf("by record = %v (%v)", ids(res), err)
+	}
+	if res, err := f.svc.List(ctx, ListParams{Record: strconv.FormatInt(c.RecordSeq, 10)}); err != nil || !same(ids(res), c.ID) {
+		t.Errorf("by bare number = %v (%v)", ids(res), err)
+	}
+	if res, _ := f.svc.List(ctx, ListParams{Record: "WE-999999"}); res.Total != 0 || len(res.Orders) != 0 {
+		t.Errorf("unknown record = %+v", res)
 	}
 	if !same(ids(all), b.ID, c.ID, a.ID) || all.Total != 3 || len(all.Orders[0].Lines) != 1 {
 		t.Errorf("newest activity first: %+v", ids(all))

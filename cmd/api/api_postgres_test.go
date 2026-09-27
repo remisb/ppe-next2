@@ -381,7 +381,13 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	if p.Total != 2 || len(p.Orders) != 1 || p.Orders[0].EmployeeID != emps[0] {
 		t.Errorf("filtered = %s", rec.Body)
 	}
-	for _, bad := range []string{"?status=DRAFT", "?from=yesterday", "?page=x", "?employee_id=nope", "?sort=asc", "?sort=total&dir=up", "?order=total"} {
+	// ?record= finds one order by its number, as typed.
+	last := all.Orders[2].RecordNumber
+	rec = api.do(t, "GET", "/api/v1/orders?record="+strings.ToLower(last), staff, nil)
+	if p := decode[page](t, rec.Body.Bytes()); rec.Code != http.StatusOK || p.Total != 1 || p.Orders[0].RecordNumber != last {
+		t.Errorf("by record = %d %s", rec.Code, rec.Body)
+	}
+	for _, bad := range []string{"?status=DRAFT", "?from=yesterday", "?page=x", "?employee_id=nope", "?sort=asc", "?sort=total&dir=up", "?order=total", "?record=WE-x"} {
 		if rec := api.do(t, "GET", "/api/v1/orders"+bad, staff, nil); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s = %d, want 400", bad, rec.Code)
 		}

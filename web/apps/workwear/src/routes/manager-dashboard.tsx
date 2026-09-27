@@ -1,7 +1,7 @@
 import type { ManagerDashboard as Data } from '@ppe/api-client'
 import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2, RefreshCw } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, Panel, formatDate, inlineLink } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, Panel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -56,7 +56,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
         <Loading />
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} />
+          <Kpis d={d} navigate={navigate} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <OrderedChart d={d} className="lg:col-span-2" />
             <SizesCard d={d} />
@@ -73,7 +73,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
   )
 }
 
-function Kpis({ d }: { d: Data }) {
+function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
   const cur = d.months.at(-1)
   // The same days of the previous month, not all of it.
   const prev = d.previous_to_date
@@ -89,6 +89,8 @@ function Kpis({ d }: { d: Data }) {
         label="On order"
         value={formatEuro(d.on_order.value_cents)}
         detail={`${plural(d.on_order.items, 'item')} in ${plural(d.on_order.orders, 'order')}, not yet given out`}
+        onOpen={d.on_order.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
+        openHint="Show them in History"
       />
       {cur ? (
         <Kpi
@@ -108,6 +110,8 @@ function Kpis({ d }: { d: Data }) {
             : `About ${formatEuro(f.estimated_cents)} at current prices${f.unpriced > 0 ? ` · ${f.unpriced} without a price` : ''}`
         }
         alert={f.unpriced > 0}
+        onOpen={f.items > 0 ? () => jumpTo('[data-panel="forecast"]') : undefined}
+        openHint="Show the replacement forecast"
       />
     </KeyFigures>
   )
@@ -187,6 +191,7 @@ function ForecastCard({ d }: { d: Data }) {
   const shown = f.lines.reduce((n, l) => n + l.quantity, 0)
   return (
     <Panel
+      anchor="forecast"
       title="Replacement forecast"
       description={`Items whose service period has ended or ends within ${f.days} days and that are not already on order: the same quantity again, at today's catalogue price.`}
     >

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type Need, barPercent, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share, sortNeeds } from './dashboard'
+import { type Need, barPercent, missingSizesText, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share, sortNeeds } from './dashboard'
 
 describe('dashboard display rules', () => {
   it('labels months short or with the year', () => {
@@ -69,5 +69,15 @@ describe('needs you', () => {
   it('puts the urgent first and keeps each group in its given order', () => {
     const sorted = sortNeeds([need('wait 3d', false), need('wait 20d', true), need('due soon', false), need('overdue', true)])
     expect(sorted.map((n) => n.key)).toEqual(['wait 20d', 'overdue', 'wait 3d', 'due soon'])
+  })
+})
+
+describe('missing sizes tile', () => {
+  it('names the one person and what they miss, or counts several', () => {
+    expect(missingSizesText(0)).toBe('Every employee has their sizes.')
+    expect(missingSizesText(1, { employee_name: 'Rasa Stankevičiūtė', clothing: false, shoes: true })).toBe('Rasa Stankevičiūtė: no shoe size')
+    expect(missingSizesText(1, { employee_name: 'Tomas J', clothing: true, shoes: false })).toBe('Tomas J: no clothing size or height')
+    expect(missingSizesText(1, { employee_name: 'Eli', clothing: true, shoes: true })).toBe('Eli: no shoe size, clothing size or height')
+    expect(missingSizesText(3, { employee_name: 'Eli', clothing: true, shoes: true })).toBe('3 employees without a size Create Order needs')
   })
 })

@@ -480,6 +480,14 @@ test('columns sort: History on the server across pages, other lists in place', a
   expect(await names()).toEqual(displayOrder)
 })
 
+test('Employees: the Missing sizes tile\'s address opens the list filtered', async () => {
+  await page.goto('/employees?missing=1')
+  await expect(page.getByRole('button', { name: /^Missing a size/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText('Every employee has the sizes Create Order needs.')).toBeVisible()
+  await page.getByRole('button', { name: /^Missing a size/ }).click()
+  await expect(page.getByRole('row', { name: /Ona Kazlauskienė/ })).toBeVisible()
+})
+
 test('Employees: less frequent and destructive actions are under ⋯', async () => {
   await openTab('Employees')
   const row = page.getByRole('row', { name: /Ona Kazlauskienė/ })
@@ -548,6 +556,21 @@ test('a reorder link starts the order with the item at the quantity given; the s
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('button', { name: 'New order' }).click()
   await expect(page.getByText('No items yet.')).toBeVisible()
+})
+
+test('⌘K finds an order by its record number, however it is typed', async () => {
+  await openTab('Employees')
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  // "WE-000001" typed as "we1": lower case, no dash, no leading zeros.
+  const typed = recordNumber.toLowerCase().replace('-', '').replace(/we0+/, 'we')
+  await palette.getByRole('combobox').fill(typed)
+  const option = palette.getByRole('option', { name: new RegExp(`^${recordNumber} · Ona Kazlauskienė`) })
+  await expect(option).toBeVisible()
+  await expect(option).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/\/history\/[0-9a-f-]{36}$/)
+  await expect(page.getByRole('complementary', { name: 'Order' })).toContainText(recordNumber)
 })
 
 test('⌘K finds an employee and starts an order for them; G then H and ? work from the keyboard', async () => {
@@ -725,6 +748,12 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(priceChange).toContainText('+20%')
   await expect(other.getByRole('region', { name: 'Without a price or service period' })).toContainText('Safety helmet')
   await expect(other.getByText('Size 42: 1 employee')).toBeAttached()
+  // A figure with a list behind it opens that list: On order opens History on its Awaiting tab.
+  await other.getByRole('list', { name: 'Key figures' }).getByRole('button', { name: /^On order/ }).click()
+  await expect(other.getByRole('heading', { name: 'History' })).toBeVisible()
+  await expect(other.getByRole('button', { name: /^Awaiting/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(other).toHaveURL(/\/history\?status=ORDERED$/)
+  await other.goBack()
   await other.setViewportSize({ width: 375, height: 812 })
   expect(
     await other.evaluate(

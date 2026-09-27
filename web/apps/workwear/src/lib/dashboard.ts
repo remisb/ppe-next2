@@ -102,3 +102,19 @@ export interface Need {
 export function sortNeeds(needs: readonly Need[]): Need[] {
   return [...needs.filter((n) => n.urgent), ...needs.filter((n) => !n.urgent)]
 }
+
+/** What a person is missing, as Create Order will ask: "no shoe size", "no clothing size or height". */
+export function missingText(m: { clothing: boolean; shoes: boolean }): string {
+  if (m.clothing && m.shoes) return 'no shoe size, clothing size or height'
+  return m.shoes ? 'no shoe size' : 'no clothing size or height'
+}
+
+/**
+ * The Missing sizes tile's line: who and what when it is one person, how many
+ * otherwise; never "to measure", since a shoe size needs asking, not measuring.
+ */
+export function missingSizesText(employees: number, first?: { employee_name: string; clothing: boolean; shoes: boolean }): string {
+  if (employees === 0) return 'Every employee has their sizes.'
+  if (employees === 1 && first) return `${first.employee_name}: ${missingText(first)}`
+  return `${employees} employees without a size Create Order needs`
+}

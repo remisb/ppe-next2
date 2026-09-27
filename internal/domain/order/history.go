@@ -37,13 +37,15 @@ type ListFilter struct {
 	EmployeeID *uuid.UUID
 	// CatalogueItemID keeps orders with a line for that item.
 	CatalogueItemID *uuid.UUID
-	Status          *Status
-	From            *time.Time
-	To              *time.Time
-	Sort            SortKey
-	Desc            bool
-	Limit           int
-	Offset          int
+	// RecordSeq keeps the one order with that record number.
+	RecordSeq *int64
+	Status    *Status
+	From      *time.Time
+	To        *time.Time
+	Sort      SortKey
+	Desc      bool
+	Limit     int
+	Offset    int
 }
 
 // ListParams is a History query as the user states it: calendar dates in the
@@ -51,6 +53,7 @@ type ListFilter struct {
 type ListParams struct {
 	EmployeeID      *uuid.UUID
 	CatalogueItemID *uuid.UUID
+	Record          string // a record number as typed: "WE-000004", "we4" or "4"
 	Status          string // "", ORDERED or GIVEN
 	FromDate        string // YYYY-MM-DD, inclusive
 	ToDate          string // YYYY-MM-DD, inclusive
@@ -92,6 +95,13 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 		return f, 0, 0, fieldError("page_size", "must be between 1 and 100")
 	}
 	f.EmployeeID, f.CatalogueItemID = p.EmployeeID, p.CatalogueItemID
+	if p.Record != "" {
+		seq, ok := ParseRecordNumber(p.Record)
+		if !ok {
+			return f, 0, 0, fieldError("record", "must be a record number like WE-000004")
+		}
+		f.RecordSeq = &seq
+	}
 	f.Sort = SortKey(p.Sort)
 	if f.Sort == "" {
 		f.Sort = SortDate

@@ -253,6 +253,8 @@ export interface HistoryQuery {
   employee_id?: string
   /** Orders with a line for this catalogue item. */
   catalogue_item_id?: string
+  /** The one order with this record number, as typed: "WE-000004", "we4" or "4". */
+  record?: string
   status?: OrderStatus
   from?: string
   to?: string
