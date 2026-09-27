@@ -57,3 +57,14 @@ email still runs a bcrypt comparison so timing does not reveal which accounts ex
 `make seed-admin` (`api -seed-admin`) creates an `admin` from `API_SEED_USER_EMAIL`,
 `API_SEED_USER_PASSWORD` and `API_SEED_USER_NAME`, attributed to itself. It is a no-op
 if the email already exists.
+
+## Data synchronization user
+
+Migration `0011_sync_user` adds the account that data synchronization writes as:
+id `5e5c0000-0000-4000-8000-000000000001`, `sync@system.invalid`, "Data synchronization",
+role `employee`. Rows a sync inserts or updates put this id in their `created_by_user_id` /
+`updated_by_user_id`, so synced changes are distinguishable from people's. It cannot sign
+in: it is inactive and its password hash (`!`) matches no password. It limits nothing
+itself; a sync that connects to the database directly has that connection's privileges.
+Its down migration fails while any row still names it as an actor. Postgres tests and the
+e2e suite truncate `users`, so it is absent from the test database after they run.
