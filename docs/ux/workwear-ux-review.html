@@ -350,7 +350,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
     <p class="eyebrow">UX research report · Workwear &amp; Equipment (PPE-next2)</p>
     <h1>Workwear UX Review</h1>
     <p class="lede">A review of all 15 screens at phone (375&nbsp;px), tablet (768–1366&nbsp;px) and desktop (1280&nbsp;px) widths. For each problem area there are two or three design options, each with a sample screen, pros and cons, and a recommendation.</p>
-    <div class="meta"><span>27 Sep 2026</span><span>Reviewed build 1ff7a0c · demo data</span><span>Roles: admin, manager, employee</span><span>Status: phases 1–3 shipped, plus follow-ups (13214e8)</span></div>
+    <div class="meta"><span>27 Sep 2026</span><span>Reviewed build 1ff7a0c · demo data</span><span>Roles: admin, manager, employee</span><span>Status: phases 1–3 shipped, plus follow-ups (65da1ad)</span></div>
   </header>
 
   <div class="layout">
@@ -377,7 +377,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
         <header><p class="eyebrow">00 · Summary</p><h2>A solid base that needs a denser phone layout and a safer order step</h2></header>
         <div class="status" role="note">
           <p class="eyebrow">Status · updated 27 Sep 2026</p>
-          <p><b>Phases 1–3 are built and live</b> at the production site: every recommendation in the table below is done. Phase 1 shipped in <code>3c76945</code>, phase 2 in <code>aee8829</code> and phase 3 in <code>a663ce0</code>; record-number search and tappable dashboard figures followed in <code>13214e8</code>. Each came with its e2e steps (32 in total, all passing).</p>
+          <p><b>Phases 1–3 are built and live</b> at the production site: every recommendation in the table below is done. Phase 1 shipped in <code>3c76945</code>, phase 2 in <code>aee8829</code> and phase 3 in <code>a663ce0</code>; record-number search and tappable dashboard figures followed in <code>13214e8</code>, and the Replacements due screen in <code>65da1ad</code>. Each came with its e2e steps (33 in total, all passing).</p>
           <p>The findings, figures and "today" samples in this report describe the app as reviewed, build <code>1ff7a0c</code>, before these changes. The <a href="#roadmap">roadmap</a> lists what shipped in each phase, where it differs from the proposal, and what is still open.</p>
         </div>
         <div class="prose">
@@ -1499,9 +1499,9 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
           </div>
         </div>
         <div class="phase">
-          <div class="opt-head"><p class="eyebrow">Since phase 3</p><span class="tag done">Done · 13214e8</span></div>
+          <div class="opt-head"><p class="eyebrow">Since phase 3</p><span class="tag done">Done · 13214e8, 65da1ad</span></div>
           <h4>Follow-ups</h4>
-          <ul class="shipped"><li>Search by record number in the ⌘K palette: <code>WE-000004</code>, <code>we4</code> or <code>4</code> lists that order first, and Enter opens it in History (History's new <code>record</code> filter)</li><li>Dashboard figures with a list behind them are tappable: Awaiting and On order open History on the Awaiting tab, Replacements due jumps to its rows in Needs you, Missing sizes opens Employees filtered</li><li>Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe size") instead of "1 employee to measure"</li></ul>
+          <ul class="shipped"><li>Search by record number in the ⌘K palette: <code>WE-000004</code>, <code>we4</code> or <code>4</code> lists that order first, and Enter opens it in History (History's new <code>record</code> filter)</li><li>Dashboard figures with a list behind them are tappable: Awaiting and On order open History on the Awaiting tab, Replacements due opens the Replacements due screen, Missing sizes opens Employees filtered</li><li>A <b>Replacements due</b> screen (<code>/replacements</code>): every replacement due within 30 days across all employees, not just the dashboards' first 8, with tabs All · Overdue · Due soon, the item, size and quantity given, the due date and receipt, and Reorder on each row. It restores, as its own screen, the full list that phase 2 folded into Needs you</li><li>Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe size") instead of "1 employee to measure"</li></ul>
         </div>
         <div class="open">
           <p class="eyebrow">Still open</p>

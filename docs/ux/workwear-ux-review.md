@@ -5,12 +5,13 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`13214e8`)
+status: phases 1–3 shipped, plus follow-ups (`65da1ad`)
 
 > **Status, updated 27 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
-> figures followed in `13214e8`. Each came with its e2e steps (32 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> figures followed in `13214e8`, and the Replacements due screen in `65da1ad`. Each came
+> with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -835,13 +836,18 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`
+### Since phase 3 — done, `13214e8`, `65da1ad`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
 - [x] Dashboard figures with a list behind them are tappable: Awaiting and On order open
-  History on the Awaiting tab, Replacements due jumps to its rows in Needs you, Missing
+  History on the Awaiting tab, Replacements due opens the Replacements due screen, Missing
   sizes opens Employees filtered
+- [x] A **Replacements due** screen (`/replacements`): every replacement due within 30
+  days across all employees, not just the dashboards' first 8, with tabs All · Overdue ·
+  Due soon, the item, size and quantity given, the due date and receipt, and Reorder on
+  each row. It restores, as its own screen, the full list that phase 2 folded into Needs
+  you
 - [x] Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe
   size") instead of "1 employee to measure"
 
