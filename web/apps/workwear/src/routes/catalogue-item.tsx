@@ -2,9 +2,11 @@ import type { ListedOrder, PriceEntry } from '@ppe/api-client'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { MoreActions } from '@/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { percentChange } from '@/lib/dashboard'
@@ -13,7 +15,7 @@ import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths } from '@/lib/utils'
 
-import { ItemForm, sizeGroupLabel } from './catalogue'
+import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
 
 /** How many of the item's orders the page lists, newest activity first. */
 const ORDERS_SHOWN = 100
@@ -48,7 +50,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
   const incomplete = i ? i.unit_price_cents === null || i.service_period_months === null : false
 
   const toggle = async () => {
-    if (!i) return
+    if (!i || !confirmActiveChange(i)) return
     setActionError(undefined)
     try {
       await client.catalogue.setActive(i.id, !i.active)
@@ -79,9 +81,11 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
                   <Button variant="outline" onClick={() => setEditing(true)}>
                     Edit
                   </Button>
-                  <Button variant="ghost" onClick={() => void toggle()}>
-                    {i.active ? 'Deactivate' : 'Activate'}
-                  </Button>
+                  <MoreActions label={`More actions for ${i.name}`}>
+                    <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle()}>
+                      {i.active ? 'Deactivate item…' : 'Activate item'}
+                    </DropdownMenuItem>
+                  </MoreActions>
                 </>
               ) : undefined
             }

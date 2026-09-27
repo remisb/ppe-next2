@@ -83,6 +83,10 @@ func TestOverviewWindowAndDerivedFields(t *testing.T) {
 	if o.Months[0].Month != "2025-04" || o.Months[Months-1].Month != "2026-03" {
 		t.Errorf("month labels %q … %q", o.Months[0].Month, o.Months[Months-1].Month)
 	}
+	// February 2026 has no 29th: the comparison period is the whole of February.
+	if !w.PreviousTo.Equal(utc("2026-02-28T22:00:00Z")) || o.PreviousToDate.Month != "2026-02" || o.ThroughDay != 28 {
+		t.Errorf("previous period to %v: %q through day %d", w.PreviousTo, o.PreviousToDate.Month, o.ThroughDay)
+	}
 	if l := o.Awaiting.Longest; l[0].Days != 1 || l[1].Days != 0 || l[0].RecordNumber != "WE-000007" {
 		t.Errorf("waiting = %+v", l)
 	}
@@ -97,6 +101,29 @@ func TestOverviewWindowAndDerivedFields(t *testing.T) {
 	}
 	if o.Timezone != "Europe/Vilnius" || !o.GeneratedAt.Equal(now) {
 		t.Errorf("timezone %q, generated %v", o.Timezone, o.GeneratedAt)
+	}
+}
+
+// The current month so far is compared with the same days of the previous month.
+func TestPreviousPeriod(t *testing.T) {
+	for _, c := range []struct {
+		now, to, month string
+		day            int
+	}{
+		{"2026-09-15T10:00:00Z", "2026-08-15T10:00:00Z", "2026-08", 15},
+		{"2026-03-31T08:00:00Z", "2026-03-01T00:00:00Z", "2026-02", 28}, // no 31 February: all of it
+		{"2026-01-10T00:00:00Z", "2025-12-10T00:00:00Z", "2025-12", 9},  // up to midnight: nine whole days
+		{"2026-09-01T00:00:00Z", "2026-08-01T00:00:00Z", "2026-08", 0},  // the first instant: nothing to compare
+	} {
+		now := utc(c.now)
+		repo := &fakeRepo{out: Overview{Months: make([]Month, Months)}}
+		o, err := NewService(repo, WithClock(func() time.Time { return now })).Overview(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !repo.got.PreviousTo.Equal(utc(c.to)) || o.PreviousToDate.Month != c.month || o.ThroughDay != c.day {
+			t.Errorf("at %s: to %v, %q through day %d; want %s, %q, %d", c.now, repo.got.PreviousTo, o.PreviousToDate.Month, o.ThroughDay, c.to, c.month, c.day)
+		}
 	}
 }
 

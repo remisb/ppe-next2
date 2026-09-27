@@ -18,23 +18,28 @@ type ManagerWindow struct {
 	ForecastBy time.Time
 	// PriceChangesSince bounds the price-change list (the Months period).
 	PriceChangesSince time.Time
-	Limit             int
+	// PreviousTo is as in Window.
+	PreviousTo time.Time
+	Limit      int
 }
 
 // ManagerOverview is the manager's dashboard: items, prices and what will
 // need buying. It reads order snapshots for what was ordered and given, and
 // the live catalogue for current prices, which the manager maintains.
 type ManagerOverview struct {
-	GeneratedAt  time.Time      `json:"generated_at"`
-	Timezone     string         `json:"timezone"`
-	OnOrder      OnOrder        `json:"on_order"`
-	Months       []OrderedMonth `json:"months"`
-	SpendByItem  []TopItem      `json:"spend_by_item"`
-	Forecast     Forecast       `json:"forecast"`
-	PriceChanges []PriceChange  `json:"price_changes"`
-	Catalogue    CatalogueCheck `json:"catalogue"`
-	ItemSets     []ItemSetIssue `json:"item_sets"`
-	Sizes        SizeSpread     `json:"sizes"`
+	GeneratedAt time.Time      `json:"generated_at"`
+	Timezone    string         `json:"timezone"`
+	OnOrder     OnOrder        `json:"on_order"`
+	Months      []OrderedMonth `json:"months"`
+	// PreviousToDate and ThroughDay are as in Overview.
+	PreviousToDate OrderedMonth   `json:"previous_to_date"`
+	ThroughDay     int            `json:"through_day"`
+	SpendByItem    []TopItem      `json:"spend_by_item"`
+	Forecast       Forecast       `json:"forecast"`
+	PriceChanges   []PriceChange  `json:"price_changes"`
+	Catalogue      CatalogueCheck `json:"catalogue"`
+	ItemSets       []ItemSetIssue `json:"item_sets"`
+	Sizes          SizeSpread     `json:"sizes"`
 }
 
 // OnOrder is everything on ORDERED orders: ordered, not yet given out.

@@ -21,11 +21,28 @@ export function percentChange(current: number, previous: number): number | null 
   return Math.round(((current - previous) / previous) * 100)
 }
 
-/** "+12% vs Aug", "−5% vs Aug", "same as Aug"; empty when there is no comparison. */
-export function changeText(current: number, previous: number, previousMonth: string): string {
+/**
+ * The days of the previous month a comparison covers: "1–27 Aug", or "Aug"
+ * when it covers the whole month.
+ */
+export function periodLabel(month: string, throughDay: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const days = new Date(Date.UTC(y ?? 0, m ?? 0, 0)).getUTCDate()
+  const name = monthLabel(month)
+  if (throughDay >= days) return name
+  return throughDay === 1 ? `1 ${name}` : `1–${throughDay} ${name}`
+}
+
+/**
+ * The current month so far against the same days of the previous month:
+ * "+12% vs 1–27 Aug", "−5% vs Aug", "same as 1–27 Aug". Empty when there is
+ * nothing to compare with: the period is empty or held nothing.
+ */
+export function changeText(current: number, previous: number, previousMonth: string, throughDay: number): string {
+  if (throughDay < 1) return ''
   const pct = percentChange(current, previous)
   if (pct === null) return ''
-  const vs = monthLabel(previousMonth)
+  const vs = periodLabel(previousMonth, throughDay)
   if (pct === 0) return `same as ${vs}`
   return `${pct > 0 ? '+' : '−'}${Math.abs(pct)}% vs ${vs}`
 }

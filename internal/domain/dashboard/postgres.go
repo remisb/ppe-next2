@@ -22,6 +22,21 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// buckets are the intervals the monthly figures count in: each month of
+// starts (Months+1 month starts), then the comparison period from the start of
+// the previous month to previousTo. The result has one row per bucket.
+func buckets(starts []time.Time, previousTo time.Time) (from, to []time.Time) {
+	n := len(starts) - 1
+	from = append(append(make([]time.Time, 0, n+1), starts[:n]...), starts[n-2])
+	to = append(append(make([]time.Time, 0, n+1), starts[1:]...), previousTo)
+	return from, to
+}
+
+// splitPrevious returns rows without its last, the comparison period, and that row.
+func splitPrevious[T any](rows []T) ([]T, T) {
+	return rows[:len(rows)-1], rows[len(rows)-1]
+}
+
 // lineTotal is an order's value from its snapshot lines.
 const lineTotal = `(SELECT coalesce(sum(l.unit_price_cents * l.quantity), 0)::bigint FROM order_lines l WHERE l.order_id = o.id)`
 
@@ -65,7 +80,7 @@ func readAwaiting(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 // readMonths buckets orders into the window's months: ordered figures by
 // ordered_at, given figures by given_at. Every month gets a row.
 func readMonths(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
-	n := len(w.MonthStarts) - 1
+	from, to := buckets(w.MonthStarts, w.PreviousTo)
 	rows, err := tx.Query(ctx, `
 		WITH m AS (
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
@@ -81,16 +96,20 @@ func readMonths(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 			(SELECT count(*) FROM t WHERE t.given_at >= m.s AND t.given_at < m.e),
 			(SELECT coalesce(sum(qty), 0)::bigint FROM t WHERE t.given_at >= m.s AND t.given_at < m.e),
 			(SELECT coalesce(sum(cents), 0)::bigint FROM t WHERE t.given_at >= m.s AND t.given_at < m.e)
-		FROM m ORDER BY m.i`, w.MonthStarts[:n], w.MonthStarts[1:], w.MonthStarts[0])
+		FROM m ORDER BY m.i`, from, to, w.MonthStarts[0])
 	if err != nil {
 		return err
 	}
-	o.Months, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (Month, error) {
+	months, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Month, error) {
 		var x Month
 		err := row.Scan(&x.OrderedOrders, &x.OrderedCents, &x.GivenOrders, &x.GivenItems, &x.GivenCents)
 		return x, err
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	o.Months, o.PreviousToDate = splitPrevious(months)
+	return nil
 }
 
 func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
@@ -201,7 +220,7 @@ func readOnOrder(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigu
 
 // readOrderedMonths buckets orders by ordered_at into the window's months.
 func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFigures) error {
-	n := len(w.MonthStarts) - 1
+	from, to := buckets(w.MonthStarts, w.PreviousTo)
 	rows, err := tx.Query(ctx, `
 		WITH m AS (
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
@@ -213,16 +232,20 @@ func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manag
 		)
 		SELECT count(t.ordered_at), coalesce(sum(t.qty), 0)::bigint, coalesce(sum(t.cents), 0)::bigint
 		FROM m LEFT JOIN t ON t.ordered_at >= m.s AND t.ordered_at < m.e
-		GROUP BY m.i ORDER BY m.i`, w.MonthStarts[:n], w.MonthStarts[1:], w.MonthStarts[0])
+		GROUP BY m.i ORDER BY m.i`, from, to, w.MonthStarts[0])
 	if err != nil {
 		return err
 	}
-	f.Months, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (OrderedMonth, error) {
+	months, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (OrderedMonth, error) {
 		var x OrderedMonth
 		err := row.Scan(&x.Orders, &x.Items, &x.ValueCents)
 		return x, err
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	f.Months, f.PreviousToDate = splitPrevious(months)
+	return nil
 }
 
 // readSpendByItem ranks items by the value ordered over the window, from the snapshots.
@@ -433,7 +456,7 @@ func readMyAwaiting(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *Employe
 // readMyMonths buckets the user's orders into the window's months: ordered by
 // ordered_at, given by given_at. Every month gets a row.
 func readMyMonths(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
-	n := len(w.MonthStarts) - 1
+	from, to := buckets(w.MonthStarts, w.PreviousTo)
 	rows, err := tx.Query(ctx, `
 		WITH m AS (
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
@@ -446,16 +469,20 @@ func readMyMonths(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeO
 			(SELECT count(*) FROM t WHERE t.ordered_at >= m.s AND t.ordered_at < m.e),
 			(SELECT count(*) FROM t WHERE t.given_at >= m.s AND t.given_at < m.e),
 			(SELECT coalesce(sum(qty), 0)::bigint FROM t WHERE t.given_at >= m.s AND t.given_at < m.e)
-		FROM m ORDER BY m.i`, w.MonthStarts[:n], w.MonthStarts[1:], w.MonthStarts[0], w.UserID)
+		FROM m ORDER BY m.i`, from, to, w.MonthStarts[0], w.UserID)
 	if err != nil {
 		return err
 	}
-	o.Months, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (MyMonth, error) {
+	months, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (MyMonth, error) {
 		var x MyMonth
 		err := row.Scan(&x.Ordered, &x.Given, &x.GivenItems)
 		return x, err
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	o.Months, o.PreviousToDate = splitPrevious(months)
+	return nil
 }
 
 func readRecentlyGiven(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {

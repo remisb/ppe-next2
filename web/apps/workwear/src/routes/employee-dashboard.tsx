@@ -69,7 +69,8 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
 function Kpis({ d }: { d: Data }) {
   const a = d.awaiting
   const cur = d.months.at(-1)
-  const prev = d.months.at(-2)
+  // The same days of the previous month, not all of it.
+  const prev = d.previous_to_date
   const r = d.replacements
   const unlinked = a.no_link + a.link_expired
   return (
@@ -89,7 +90,7 @@ function Kpis({ d }: { d: Data }) {
           label={`Given in ${monthLabel(cur.month)}`}
           value={String(cur.given)}
           detail={`${plural(cur.given, 'order')} of yours, ${plural(cur.given_items, 'item')}`}
-          change={prev ? changeText(cur.given, prev.given, prev.month) : ''}
+          change={changeText(cur.given, prev.given, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi

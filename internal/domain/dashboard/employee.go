@@ -24,7 +24,9 @@ type EmployeeWindow struct {
 	MonthStarts []time.Time
 	// DueBy is Now plus DueSoonDays, as in Window.
 	DueBy time.Time
-	Limit int
+	// PreviousTo is as in Window.
+	PreviousTo time.Time
+	Limit      int
 }
 
 // EmployeeOverview is the order preparer's dashboard: their own orders still
@@ -37,6 +39,9 @@ type EmployeeOverview struct {
 	Awaiting MyAwaiting `json:"awaiting"`
 	// Months counts the user's orders: ordered by ordered_at, given by given_at.
 	Months []MyMonth `json:"months"`
+	// PreviousToDate and ThroughDay are as in Overview.
+	PreviousToDate MyMonth `json:"previous_to_date"`
+	ThroughDay     int     `json:"through_day"`
 	// RecentlyGiven are the user's orders most recently given, newest first.
 	RecentlyGiven []GivenOrder `json:"recently_given"`
 	Replacements  Replacements `json:"replacements"`

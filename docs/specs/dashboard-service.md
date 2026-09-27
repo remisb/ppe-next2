@@ -27,6 +27,7 @@ calendar (`API_ORG_TIMEZONE`); timestamps stay UTC.
 | --- | --- |
 | `awaiting` | Every ORDERED order: count, value, age of the oldest in calendar days, and the 8 longest waiting |
 | `months` | 12 calendar months, oldest first, the current one last, zeros included. Ordered figures count orders by `ordered_at`, given figures by `given_at`, so one order can count in two months |
+| `previous_to_date`, `through_day` | The same figures for the previous month from its first day to the same day and time of month as now (the whole month when it is shorter: on 31 March, all of February), and the last day that covers; `through_day` is 0 on the first instant of a month. The web app compares the current month so far with it ("+12% vs 1–27 Aug"), not with the whole previous month |
 | `confirmation` | Orders given in the last 90 days: count, electronic vs paper, median days from ordered to given (one decimal) |
 | `top_items` | The 8 items with the largest quantity given over the 12 months, by catalogue item, named as on their latest receipt |
 | `replacements` | For each live employee and item, the most recent GIVEN line, due at `given_at` + its service period. Listed when due within 30 days (`overdue` when due now or earlier), unless the item is already on an ORDERED order for that employee. Counts, and the 8 soonest due |
@@ -43,6 +44,7 @@ the catalogue, item sets and sizes are live, since the manager maintains them.
 | --- | --- |
 | `on_order` | Every ORDERED order: orders, items and value, ordered but not yet given out |
 | `months` | 12 calendar months by `ordered_at`: orders, items, value |
+| `previous_to_date`, `through_day` | As on the administrator's dashboard |
 | `spend_by_item` | The 8 items with the largest value ordered over the 12 months |
 | `forecast` | Replacements due within 90 days, overdue included, by the same rule as the administrator's (latest GIVEN line per live employee and item, not already on an ORDERED order), grouped by item: the same quantity again, costed at the item's current price when it is active and complete. Totals cover every item; `lines` keeps the 8 largest |
 | `price_changes` | The 8 newest `catalogue.price_changed` audit events of the 12 months: price and service period before and after, who and when |
@@ -60,6 +62,7 @@ whole organisation, since any preparer may order for anyone.
 | --- | --- |
 | `awaiting` | The user's ORDERED orders: orders, items, value, oldest age; how many have no confirmation link (`no_link`) or only an expired or revoked one (`link_expired`); the 8 longest waiting, each with `link` `NONE`/`ACTIVE`/`EXPIRED` from its latest electronic confirmation row and the active link's expiry |
 | `months` | 12 calendar months of the user's orders: ordered by `ordered_at`, given (orders and items) by `given_at` |
+| `previous_to_date`, `through_day` | As on the administrator's dashboard |
 | `recently_given` | The user's 8 most recently given orders: employee, date, method, items, value, record number |
 | `replacements` | As on the administrator's dashboard |
 | `missing_sizes` | Live employees without a shoe size, or without both a clothing size and a height: the count and the first 8 by name, with what is missing |

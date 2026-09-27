@@ -80,7 +80,8 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
 
 function Kpis({ d }: { d: DashboardData }) {
   const cur = d.months.at(-1)
-  const prev = d.months.at(-2)
+  // The same days of the previous month, not all of it.
+  const prev = d.previous_to_date
   const r = d.replacements
   return (
     <KeyFigures>
@@ -99,7 +100,7 @@ function Kpis({ d }: { d: DashboardData }) {
           label={`Given in ${monthLabel(cur.month)}`}
           value={formatEuro(cur.given_cents)}
           detail={`${plural(cur.given_items, 'item')} in ${plural(cur.given_orders, 'order')}`}
-          change={prev ? changeText(cur.given_cents, prev.given_cents, prev.month) : ''}
+          change={changeText(cur.given_cents, prev.given_cents, prev.month, d.through_day)}
         />
       ) : null}
       {cur ? (
@@ -107,7 +108,7 @@ function Kpis({ d }: { d: DashboardData }) {
           label={`Ordered in ${monthLabel(cur.month)}`}
           value={formatEuro(cur.ordered_cents)}
           detail={plural(cur.ordered_orders, 'order')}
-          change={prev ? changeText(cur.ordered_cents, prev.ordered_cents, prev.month) : ''}
+          change={changeText(cur.ordered_cents, prev.ordered_cents, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi

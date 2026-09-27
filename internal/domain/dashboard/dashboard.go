@@ -32,20 +32,30 @@ type Window struct {
 	DueBy time.Time
 	// ConfirmSince is Now minus ConfirmWindowDays.
 	ConfirmSince time.Time
-	Limit        int
+	// PreviousTo ends the comparison period, which starts with the previous
+	// month (MonthStarts[Months-2]): the same day and time of month as Now,
+	// or the end of the previous month when it is shorter.
+	PreviousTo time.Time
+	Limit      int
 }
 
 // Overview is the whole dashboard. The repository fills the stored figures;
 // the service adds the fields marked derived.
 type Overview struct {
-	GeneratedAt  time.Time    `json:"generated_at"`
-	Timezone     string       `json:"timezone"`
-	Awaiting     Awaiting     `json:"awaiting"`
-	Months       []Month      `json:"months"`
-	Confirmation Confirmation `json:"confirmation"`
-	TopItems     []TopItem    `json:"top_items"`
-	Replacements Replacements `json:"replacements"`
-	Setup        Setup        `json:"setup"`
+	GeneratedAt time.Time `json:"generated_at"`
+	Timezone    string    `json:"timezone"`
+	Awaiting    Awaiting  `json:"awaiting"`
+	Months      []Month   `json:"months"`
+	// PreviousToDate is the previous month up to the same day and time of
+	// month as now (Window.PreviousTo), to compare the current month so far with.
+	PreviousToDate Month        `json:"previous_to_date"`
+	Confirmation   Confirmation `json:"confirmation"`
+	TopItems       []TopItem    `json:"top_items"`
+	Replacements   Replacements `json:"replacements"`
+	Setup          Setup        `json:"setup"`
+	// ThroughDay is the last day of the month that PreviousToDate covers
+	// (derived); 0 when it covers nothing, on the first instant of a month.
+	ThroughDay int `json:"through_day"`
 }
 
 // Awaiting is every ORDERED order: ordered, not yet confirmed as received.

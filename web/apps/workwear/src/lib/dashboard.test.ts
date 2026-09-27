@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { barPercent, changeText, formatDays, monthLabel, niceCeiling, percentChange, plural, share } from './dashboard'
+import { barPercent, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share } from './dashboard'
 
 describe('dashboard display rules', () => {
   it('labels months short or with the year', () => {
@@ -12,10 +12,20 @@ describe('dashboard display rules', () => {
     expect(percentChange(150, 100)).toBe(50)
     expect(percentChange(0, 100)).toBe(-100)
     expect(percentChange(10, 0)).toBeNull()
-    expect(changeText(112, 100, '2026-08')).toBe('+12% vs Aug')
-    expect(changeText(95, 100, '2026-08')).toBe('−5% vs Aug')
-    expect(changeText(100, 100, '2026-08')).toBe('same as Aug')
-    expect(changeText(100, 0, '2026-08')).toBe('')
+    expect(changeText(112, 100, '2026-08', 27)).toBe('+12% vs 1–27 Aug')
+    expect(changeText(95, 100, '2026-08', 31)).toBe('−5% vs Aug')
+    expect(changeText(100, 100, '2026-08', 27)).toBe('same as 1–27 Aug')
+    expect(changeText(100, 0, '2026-08', 27)).toBe('')
+    // The first instant of a month compares with nothing.
+    expect(changeText(100, 100, '2026-08', 0)).toBe('')
+  })
+
+  it('names the days of the previous month a comparison covers', () => {
+    expect(periodLabel('2026-08', 27)).toBe('1–27 Aug')
+    expect(periodLabel('2026-08', 1)).toBe('1 Aug')
+    expect(periodLabel('2026-02', 28)).toBe('Feb')
+    expect(periodLabel('2028-02', 28)).toBe('1–28 Feb') // a leap year
+    expect(periodLabel('2026-12', 31)).toBe('Dec')
   })
 
   it('rounds a chart scale up to 1, 2, 2.5 or 5 times a power of ten', () => {

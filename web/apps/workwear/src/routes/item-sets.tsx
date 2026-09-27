@@ -3,10 +3,12 @@ import { ApiError } from '@ppe/api-client'
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { MoreActions } from '@/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi, useSession } from '@/lib/api'
@@ -86,9 +88,11 @@ export function ItemSets() {
                     <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
                       Edit
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void remove(s)}>
-                      Delete
-                    </Button>
+                    <MoreActions label={`More actions for ${s.name}`}>
+                      <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
+                        Delete item set…
+                      </DropdownMenuItem>
+                    </MoreActions>
                   </div>
                 ) : null}
               </CardContent>

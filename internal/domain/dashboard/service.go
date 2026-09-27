@@ -44,13 +44,31 @@ func (s *Service) window(now time.Time) Window {
 	for i := range starts {
 		starts[i] = current.AddDate(0, i-(Months-1), 0).UTC()
 	}
+	// The same day and time a month earlier; AddDate normalises 31 March to
+	// 3 March, so a day the previous month lacks ends it instead.
+	previousTo := local.AddDate(0, -1, 0)
+	if previousTo.After(current) {
+		previousTo = current
+	}
 	return Window{
 		Now:          now,
 		MonthStarts:  starts,
 		DueBy:        now.AddDate(0, 0, DueSoonDays),
 		ConfirmSince: now.AddDate(0, 0, -ConfirmWindowDays),
+		PreviousTo:   previousTo.UTC(),
 		Limit:        s.limit,
 	}
+}
+
+// previous labels the comparison period of w: the previous month as YYYY-MM,
+// and the last day of it that the period covers (0 when it covers nothing).
+func (s *Service) previous(w Window) (month string, throughDay int) {
+	start := w.MonthStarts[Months-2]
+	month = start.In(s.loc).Format("2006-01")
+	if !w.PreviousTo.After(start) {
+		return month, 0
+	}
+	return month, w.PreviousTo.Add(-time.Nanosecond).In(s.loc).Day()
 }
 
 // Overview reads the figures and derives the labels, ages and rounding.
@@ -66,6 +84,7 @@ func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	for i := range o.Months {
 		o.Months[i].Month = w.MonthStarts[i].In(s.loc).Format("2006-01")
 	}
+	o.PreviousToDate.Month, o.ThroughDay = s.previous(w)
 	for i := range o.Awaiting.Longest {
 		l := &o.Awaiting.Longest[i]
 		l.RecordNumber = order.FormatRecordNumber(l.RecordSeq)
@@ -98,12 +117,14 @@ func (s *Service) days(t, now time.Time) int {
 // Manager is the manager's dashboard.
 func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
 	now := s.now()
-	months := s.window(now).MonthStarts
+	w := s.window(now)
+	months := w.MonthStarts
 	f, err := s.repo.ReadManager(ctx, ManagerWindow{
 		Now:               now,
 		MonthStarts:       months,
 		ForecastBy:        now.AddDate(0, 0, ForecastDays),
 		PriceChangesSince: months[0],
+		PreviousTo:        w.PreviousTo,
 		Limit:             ListLimit,
 	})
 	if err != nil {
@@ -114,6 +135,7 @@ func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
 	for i := range o.Months {
 		o.Months[i].Month = months[i].In(s.loc).Format("2006-01")
 	}
+	o.PreviousToDate.Month, o.ThroughDay = s.previous(w)
 	o.Forecast = forecast(o.Forecast.Lines, s.limit)
 	o.Sizes = spread(f.SizeGroups)
 	return o, nil
@@ -132,6 +154,7 @@ func (s *Service) Employee(ctx context.Context, userID uuid.UUID) (EmployeeOverv
 		UserID:      userID,
 		MonthStarts: w.MonthStarts,
 		DueBy:       w.DueBy,
+		PreviousTo:  w.PreviousTo,
 		Limit:       s.limit,
 	})
 	if err != nil {
@@ -141,6 +164,7 @@ func (s *Service) Employee(ctx context.Context, userID uuid.UUID) (EmployeeOverv
 	for i := range o.Months {
 		o.Months[i].Month = w.MonthStarts[i].In(s.loc).Format("2006-01")
 	}
+	o.PreviousToDate.Month, o.ThroughDay = s.previous(w)
 	for i := range o.Awaiting.Longest {
 		l := &o.Awaiting.Longest[i]
 		l.RecordNumber = order.FormatRecordNumber(l.RecordSeq)

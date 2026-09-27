@@ -3,13 +3,17 @@ import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
+import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, rankIn, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
@@ -31,6 +35,8 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
   const employees = useLoad(() => client.employees.list())
   const sizes = useLoad(() => client.sizes())
   const [filter, setFilter] = useState('')
+  // Only those Create Order would flag for a missing size.
+  const [onlyMissing, setOnlyMissing] = useState(false)
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const [actionError, setActionError] = useState<unknown>()
@@ -39,7 +45,9 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
     const clothing = sizes.data?.clothing.map((s) => s.code) ?? []
-    const matching = (employees.data ?? []).filter((e) => !q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q))
+    const matching = (employees.data ?? []).filter(
+      (e) => (!q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q)) && (!onlyMissing || isMissingASize(e)),
+    )
     // Clothing sizes sort S, M, L … 3XL, not alphabetically; shoe sizes are numbers.
     return sortRows(matching, sort, (e, key) => {
       switch (key) {
@@ -55,8 +63,9 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
           return e.shoe_size ? Number(e.shoe_size) : null
       }
     })
-  }, [employees.data, sizes.data, filter, sort])
+  }, [employees.data, sizes.data, filter, onlyMissing, sort])
   const sortProps = { sort, onSort: setSort }
+  const missingCount = (employees.data ?? []).filter(isMissingASize).length
 
   const remove = async (e: Employee) => {
     if (!window.confirm(`Delete ${e.full_name}? Their past orders are kept.`)) return
@@ -79,7 +88,7 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
           </Button>
         }
       />
-      <div className="mb-4 md:max-w-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
           type="search"
           enterKeyHint="search"
@@ -87,7 +96,13 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           aria-label="Search employees"
+          className="min-w-0 flex-1 md:max-w-sm md:flex-none"
         />
+        {missingCount > 0 || onlyMissing ? (
+          <Button variant={onlyMissing ? 'secondary' : 'outline'} aria-pressed={onlyMissing} onClick={() => setOnlyMissing((v) => !v)}>
+            Missing a size · {missingCount}
+          </Button>
+        ) : null}
       </div>
       {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
       {employees.error ? (
@@ -96,7 +111,11 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
         <Loading />
       ) : shown.length === 0 ? (
         <EmptyState>
-          {filter ? `No employees match “${filter.trim()}”.` : 'No employees yet. Use Add New Employee to add the first.'}
+          {onlyMissing && !filter
+            ? 'Every employee has the sizes Create Order needs.'
+            : filter
+              ? `No employees match “${filter.trim()}”.`
+              : 'No employees yet. Use Add New Employee to add the first.'}
         </EmptyState>
       ) : (
         // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.
@@ -110,43 +129,53 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shown.map((e) => (
-              <TableRow
-                key={e.id}
-                className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50')}
-                // The whole row opens the employee; the name is the real link, for keyboards,
-                // screen readers and "open in new tab". The row's own buttons keep their action.
-                onClick={(ev) => {
-                  if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                  navigate({ name: 'employee', id: e.id })
-                }}
-              >
-                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
-                  <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                    {e.full_name}
-                  </a>
-                </TableCell>
-                <TableCell label="Code" className={cn('stacked:order-1 stacked:w-auto', !e.code && 'stacked:hidden')}>
-                  {e.code ?? '—'}
-                </TableCell>
-                <TableCell label="Height" className={sizeCell}>{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
-                <TableCell label="Clothing" className={sizeCell}>{formatSize(e.clothing_size)}</TableCell>
-                <TableCell label="Shoes" className={sizeCell}>{formatSize(e.shoe_size)}</TableCell>
-                <TableCell className="space-x-1 text-right stacked:order-3 stacked:mt-2 stacked:flex stacked:flex-wrap stacked:justify-start stacked:gap-2 stacked:space-x-0 stacked:*:flex-auto">
-                  <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
-                    Edit Sizes
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(e)}>
-                    Edit
-                  </Button>
-                  {session.canManageItems ? (
-                    <Button size="sm" variant="ghost" onClick={() => void remove(e)}>
-                      Delete
-                    </Button>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))}
+            {shown.map((e) => {
+              const missing = missingSizes(e)
+              return (
+                <TableRow
+                  key={e.id}
+                  className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50')}
+                  // The whole row opens the employee; the name is the real link, for keyboards,
+                  // screen readers and "open in new tab". The row's own buttons keep their action.
+                  onClick={(ev) => {
+                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                    navigate({ name: 'employee', id: e.id })
+                  }}
+                >
+                  <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+                    <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                      {e.full_name}
+                    </a>
+                  </TableCell>
+                  <TableCell label="Code" className={cn('stacked:order-1 stacked:w-auto', !e.code && 'stacked:hidden')}>
+                    {e.code ?? '—'}
+                  </TableCell>
+                  <TableCell label="Height" className={sizeCell}>{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
+                  <TableCell label="Clothing" className={sizeCell}>
+                    {missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}
+                  </TableCell>
+                  <TableCell label="Shoes" className={sizeCell}>
+                    {missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap stacked:order-3 stacked:mt-2 stacked:flex stacked:gap-2">
+                    <Button size="sm" variant="outline" className="stacked:flex-1" onClick={() => setSizing(e)}>
+                      Edit Sizes
+                    </Button>{' '}
+                    <MoreActions label={`More actions for ${e.full_name}`}>
+                      <DropdownMenuItem onClick={() => setEditing(e)}>Edit details</DropdownMenuItem>
+                      {session.canManageItems ? (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                            Delete employee…
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
+                    </MoreActions>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       )}
@@ -170,6 +199,15 @@ export function Employees({ navigate }: { navigate: (to: Route) => void }) {
         }}
       />
     </>
+  )
+}
+
+/** A size Create Order will flag: set it before ordering clothing or shoes. */
+function MissingBadge() {
+  return (
+    <Badge variant="destructive" title="Create Order will ask for this size">
+      Missing
+    </Badge>
   )
 }
 

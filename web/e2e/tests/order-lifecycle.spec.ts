@@ -27,8 +27,18 @@ test.afterAll(async () => {
   await page.close()
 })
 
+/** Opens a section from the Main navigation; on a phone the fifth and later are under More. */
 async function openTab(name: string) {
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name }).click()
+  const nav = page.getByRole('navigation', { name: 'Main' })
+  const link = nav.getByRole('link', { name })
+  if (!(await link.isVisible())) await nav.getByRole('button', { name: 'More' }).click()
+  await link.click()
+}
+
+/** Mark as Ordered asks for a review first; confirm it there. */
+async function markAsOrdered() {
+  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  await page.getByRole('dialog', { name: 'Review order' }).getByRole('button', { name: 'Mark as Ordered' }).click()
 }
 
 async function addCatalogueItem(item: { name: string; details: string; group: string; price?: string; months?: string; rank: string }) {
@@ -62,6 +72,13 @@ test('Item Catalogue: items with and without a price', async () => {
   await addCatalogueItem({ name: 'Safety helmet', details: 'EN 397', group: 'NONE', rank: '5' })
   await expect(page.getByRole('row', { name: /Safety helmet/ })).toContainText('Incomplete')
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€49.99')
+
+  // Deactivate is under ⋯ and asks first; dismissing keeps the item active.
+  const shoes = page.getByRole('row', { name: /Safety shoes/ })
+  await shoes.getByRole('button', { name: 'More actions for Safety shoes' }).click()
+  page.once('dialog', (d) => void d.dismiss())
+  await page.getByRole('menuitem', { name: 'Deactivate item…' }).click()
+  await expect(shoes).not.toContainText('Inactive')
 })
 
 test('Item Sets: a set of item references and default quantities', async () => {
@@ -104,7 +121,8 @@ test('Item Catalogue: a row opens the item at its own address', async () => {
 
 test('Create Order: add a new employee from Assigned to and apply the set', async () => {
   await openTab('Create Order')
-  await expect(page.getByRole('button', { name: 'Apply Item Set' })).toBeDisabled()
+  // An item set is one tap, once the employee is chosen.
+  await expect(page.getByRole('button', { name: 'Apply Starter kit' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
 
   await page.getByRole('combobox', { name: 'Assigned to' }).click()
@@ -116,8 +134,7 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await dialog.getByRole('button', { name: 'Save and Select Employee' }).click()
   await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
 
-  await page.getByLabel('Item Set').selectOption({ label: 'Starter kit' })
-  await page.getByRole('button', { name: 'Apply Item Set' }).click()
+  await page.getByRole('button', { name: 'Apply Starter kit' }).click()
 
   // Clothing: suggested from 170 cm. Shoes: never inferred, so missing.
   await expect(page.getByLabel('Size of Work jacket')).toHaveValue('M')
@@ -173,18 +190,32 @@ test('the draft survives a reload', async () => {
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 })
 
-test('Mark as Ordered creates the ORDERED record', async () => {
+test('Mark as Ordered creates the ORDERED record after a review', async () => {
+  // The review lists each line with its size and the total, and changes nothing until confirmed.
   await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  const review = page.getByRole('dialog', { name: 'Review order' })
+  await expect(review).toContainText('Ona Kazlauskienė')
+  await expect(review.getByRole('listitem').filter({ hasText: 'Safety shoes' })).toContainText('42')
+  await expect(review).toContainText('€114.98') // 39.99 + 49.99 + 10 × 2.50
+  await review.getByRole('button', { name: 'Back to order' }).click()
+  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+
+  await markAsOrdered()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
   await expect(heading).toBeVisible()
   recordNumber = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
-  await expect(page.getByText('€114.98')).toBeVisible() // 39.99 + 49.99 + 10 × 2.50
+  await expect(page.getByText('€114.98')).toBeVisible()
+  // The next step is the employee's confirmation.
+  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Print record' })).toBeVisible()
   await page.getByRole('button', { name: 'Start a new order' }).click()
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
 })
 
 test('History shows it ORDERED with the ORDERED actions', async () => {
   await openTab('History')
+  // The navigation counts the orders waiting for confirmation.
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'History (1 waiting for confirmation)' })).toBeVisible()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Ordered')
   await expect(row.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
@@ -270,7 +301,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   // The shoe size saved earlier is now her default.
   await page.getByLabel('Add Item').selectOption({ label: 'Safety shoes — S3 SRC' })
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
-  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  await markAsOrdered()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
   paperRecord = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
   // The new order was placed at the new price.
@@ -360,6 +391,19 @@ test('columns sort: History on the server across pages, other lists in place', a
   expect(await names()).toEqual(displayOrder)
 })
 
+test('Employees: less frequent and destructive actions are under ⋯', async () => {
+  await openTab('Employees')
+  const row = page.getByRole('row', { name: /Ona Kazlauskienė/ })
+  await expect(row.getByRole('button', { name: 'Delete' })).toHaveCount(0)
+  await row.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
+  // A menu item acts; it does not also open the row's employee.
+  await page.getByRole('menuitem', { name: 'Edit details' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page).toHaveURL(/\/employees$/)
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
+})
+
 test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {
   await openTab('Employees')
   // Anywhere on the row opens it, not only the name.
@@ -427,13 +471,12 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.getByRole('combobox', { name: 'Assigned to' }).click()
   await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
-  await page.getByLabel('Item Set').selectOption({ label: 'Starter kit' })
-  await page.getByRole('button', { name: 'Apply Item Set' }).click()
+  await page.getByRole('button', { name: 'Apply Starter kit' }).click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeInViewport()
   expect(await fits()).toBe(true)
   // Left ORDERED, so History has a row with the widest action, Open Employee Confirmation.
-  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  await markAsOrdered()
   await page.getByRole('button', { name: 'Start a new order' }).click()
 
   await openTab('History')

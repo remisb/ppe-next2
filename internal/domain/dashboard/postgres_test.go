@@ -150,6 +150,19 @@ func TestPostgresOverview(t *testing.T) {
 	if first.Month != "2025-10" || first.OrderedOrders != 0 || first.GivenOrders != 0 {
 		t.Errorf("first month = %+v", first)
 	}
+	// 1–15 August, to compare with 1–15 September: the order of 30 August is after it.
+	if o.PreviousToDate != (Month{Month: "2026-08"}) || o.ThroughDay != 15 {
+		t.Errorf("previous to date = %+v through %d", o.PreviousToDate, o.ThroughDay)
+	}
+	// On 1 October at 09:00 it is 1 September to 09:00, which holds order 2's giving at 08:00.
+	oct := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	later, err := NewService(NewPostgresRepository(pool), WithClock(func() time.Time { return oct })).Overview(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if later.PreviousToDate != (Month{Month: "2026-09", GivenOrders: 1, GivenItems: 10, GivenCents: 2000}) || later.ThroughDay != 1 {
+		t.Errorf("previous to date on 1 October = %+v through %d", later.PreviousToDate, later.ThroughDay)
+	}
 
 	// Given in the last 90 days: orders 2 and both July ones; each took 1 or 2 days.
 	c := o.Confirmation
@@ -232,6 +245,9 @@ func TestPostgresManager(t *testing.T) {
 		aug != (OrderedMonth{Month: "2026-08", Orders: 1, Items: 10, ValueCents: 2000}) ||
 		jul != (OrderedMonth{Month: "2026-07", Orders: 2, Items: 5, ValueCents: 1000}) || o.Months[0].Orders != 0 {
 		t.Errorf("months = %+v", o.Months)
+	}
+	if o.PreviousToDate != (OrderedMonth{Month: "2026-08"}) || o.ThroughDay != 15 {
+		t.Errorf("previous to date = %+v through %d", o.PreviousToDate, o.ThroughDay)
 	}
 	// Since 1 October 2025: shoes 1 × €50 (the September 2025 pair is older), gloves 20 × €2.
 	if s := o.SpendByItem; len(s) != 2 || s[0].CatalogueItemID != d.shoes || s[0].ValueCents != 5000 || s[1].Quantity != 20 || s[1].ValueCents != 4000 {
@@ -344,6 +360,9 @@ func TestPostgresEmployee(t *testing.T) {
 	if sep != (MyMonth{Month: "2026-09", Ordered: 3, Given: 1, GivenItems: 10}) || aug != (MyMonth{Month: "2026-08", Ordered: 1}) ||
 		jul != (MyMonth{Month: "2026-07", Ordered: 2, Given: 2, GivenItems: 5}) || o.Months[0] != (MyMonth{Month: "2025-10"}) {
 		t.Errorf("months = %+v", o.Months)
+	}
+	if o.PreviousToDate != (MyMonth{Month: "2026-08"}) || o.ThroughDay != 15 {
+		t.Errorf("previous to date = %+v through %d", o.PreviousToDate, o.ThroughDay)
 	}
 
 	if g := o.RecentlyGiven; len(g) != 5 || g[0].EmployeeID != d.ona || g[0].Method != "ELECTRONIC" || g[0].Items != 10 || g[0].ValueCents != 2000 ||

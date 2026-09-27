@@ -324,6 +324,10 @@ export interface Dashboard {
   }
   /** Twelve calendar months, oldest first; the last is the current month. */
   months: DashboardMonth[]
+  /** The previous month up to the same day and time of month as now: what the current month so far is compared with. */
+  previous_to_date: DashboardMonth
+  /** The last day of the previous month that previous_to_date covers; 0 on the first instant of a month, when it covers nothing. */
+  through_day: number
   confirmation: {
     window_days: number
     given: number
@@ -403,7 +407,11 @@ export interface EmployeeDashboard {
     longest: EmployeeDashboardWaiting[]
   }
   /** The user's orders per month, oldest first: ordered by date ordered, given by date given. */
-  months: { month: string; ordered: number; given: number; given_items: number }[]
+  months: EmployeeDashboardMonth[]
+  /** The previous month up to the same day and time of month as now: what the current month so far is compared with. */
+  previous_to_date: EmployeeDashboardMonth
+  /** The last day of the previous month that previous_to_date covers; 0 on the first instant of a month, when it covers nothing. */
+  through_day: number
   /** The user's orders most recently given, newest first. */
   recently_given: {
     order_id: string
@@ -424,11 +432,27 @@ export interface EmployeeDashboard {
   }
 }
 
+export interface EmployeeDashboardMonth {
+  /** YYYY-MM */
+  month: string
+  ordered: number
+  given: number
+  given_items: number
+}
+
 export interface EmployeeDashboardWaiting extends DashboardWaiting {
   items: number
   link: 'NONE' | 'ACTIVE' | 'EXPIRED'
   /** Set for an active link. */
   link_expires_at: string | null
+}
+
+export interface ManagerDashboardMonth {
+  /** YYYY-MM */
+  month: string
+  orders: number
+  items: number
+  value_cents: number
 }
 
 /** The manager's dashboard (GET /api/v1/dashboard/manager, managers only): items, prices and purchasing. */
@@ -438,7 +462,11 @@ export interface ManagerDashboard {
   /** Everything on ORDERED orders: ordered, not yet given out. */
   on_order: { orders: number; items: number; value_cents: number }
   /** Twelve calendar months by ordered_at, oldest first; the last is the current month. */
-  months: { month: string; orders: number; items: number; value_cents: number }[]
+  months: ManagerDashboardMonth[]
+  /** The previous month up to the same day and time of month as now: what the current month so far is compared with. */
+  previous_to_date: ManagerDashboardMonth
+  /** The last day of the previous month that previous_to_date covers; 0 on the first instant of a month, when it covers nothing. */
+  through_day: number
   /** Items by value ordered over the twelve months. */
   spend_by_item: { catalogue_item_id: string; item_name: string; quantity: number; value_cents: number }[]
   /** Replacements due within `days` (overdue included) and not already on order, costed at current prices. */

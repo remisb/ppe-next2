@@ -3,10 +3,12 @@ import { ApiError } from '@ppe/api-client'
 import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
@@ -28,6 +30,14 @@ const columns: SortColumn<CatalogueSort>[] = [
   { key: 'period', label: 'Service period' },
   { key: 'status', label: 'Status' },
 ]
+
+/**
+ * Asks before an item is deactivated, which takes it out of Add Item;
+ * activating needs no confirmation.
+ */
+export function confirmActiveChange(i: CatalogueItem): boolean {
+  return !i.active || window.confirm(`Deactivate ${i.name}? It will no longer be offered in Add Item. Orders that hold it keep it.`)
+}
 
 /** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
 function statusRank(i: CatalogueItem): number {
@@ -65,6 +75,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   )
 
   const toggle = async (i: CatalogueItem) => {
+    if (!confirmActiveChange(i)) return
     try {
       await client.catalogue.setActive(i.id, !i.active)
       items.reload()
@@ -132,13 +143,15 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                   ) : null}
                 </TableCell>
                 {canManageItems ? (
-                  <TableCell className="space-x-1 text-right stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2 stacked:space-x-0 stacked:*:flex-1">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
+                  <TableCell className="text-right whitespace-nowrap stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2">
+                    <Button size="sm" variant="outline" className="stacked:flex-1" onClick={() => setEditing(i)}>
                       Edit
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void toggle(i)}>
-                      {i.active ? 'Deactivate' : 'Activate'}
-                    </Button>
+                    </Button>{' '}
+                    <MoreActions label={`More actions for ${i.name}`}>
+                      <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
+                        {i.active ? 'Deactivate item…' : 'Activate item'}
+                      </DropdownMenuItem>
+                    </MoreActions>
                   </TableCell>
                 ) : null}
               </TableRow>

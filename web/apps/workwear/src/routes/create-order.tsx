@@ -1,8 +1,9 @@
 import type { CatalogueItem, Employee, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { CheckCircle2, RotateCcw, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
 
+import { ConfirmationSheet } from '@/components/confirmation-sheet'
 import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
 import { OrderLinesTable } from '@/components/order-lines'
@@ -13,8 +14,10 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/field'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
+import type { Route } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
@@ -60,17 +63,19 @@ interface PendingDefault {
  * Create Order (manual §3.1). Everything here is working state: nothing is
  * stored on the server until Mark as Ordered.
  */
-export function CreateOrder() {
+export function CreateOrder({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
+  const itemSetLabel = useId()
   const [placed, setPlaced] = useState<Order | null>(null)
+  // Mark as Ordered cannot be undone, so it is confirmed on a summary first.
+  const [reviewing, setReviewing] = useState(false)
   const [order, setOrder] = useState<WorkingOrder>(loadDraft)
   const [conflicts, setConflicts] = useState<SizeConflict[]>([])
   const [pendingDefault, setPendingDefault] = useState<PendingDefault | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
   const [busy, setBusy] = useState(false)
   const [addingEmployee, setAddingEmployee] = useState(false)
-  const [setId, setSetId] = useState('')
 
   const sizes = useLoad(() => client.sizes())
   const catalogue = useLoad(() => client.catalogue.listActive())
@@ -115,9 +120,9 @@ export function CreateOrder() {
     })
   }
 
-  const applySet = () => {
+  const applySet = (setId: string) => {
     const employee = order.employee
-    if (!employee || !setId) return
+    if (!employee) return
     void run(async () => {
       const res = await client.itemSets.apply(setId, employee.id)
       setOrder((o) => addLines(o, res.lines))
@@ -173,7 +178,7 @@ export function CreateOrder() {
   const v = validate(order)
   const loadError = sizes.error ?? catalogue.error ?? itemSets.error
 
-  if (placed) return <OrderedPanel order={placed} onNew={() => setPlaced(null)} />
+  if (placed) return <OrderedPanel order={placed} navigate={navigate} onNew={() => setPlaced(null)} />
 
   return (
     <>
@@ -213,19 +218,19 @@ export function CreateOrder() {
           />
         </div>
         <div>
-          <p className="mb-1.5 text-sm font-medium">Item Set</p>
-          <div className="flex gap-2">
-            <Select aria-label="Item Set" className="min-w-0 flex-1" value={setId} onChange={(e) => setSetId(e.target.value)} disabled={!order.employee}>
-              <option value="">Choose an item set…</option>
-              {itemSets.data?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
-            <Button variant="outline" className="shrink-0" disabled={!order.employee || !setId || busy} onClick={applySet}>
-              Apply Item Set
-            </Button>
+          <p id={itemSetLabel} className="mb-1.5 text-sm font-medium">
+            Item Set
+          </p>
+          {/* One tap applies a set: its lines join the order, merged by item. */}
+          <div role="group" aria-labelledby={itemSetLabel} className="flex flex-wrap gap-2">
+            {itemSets.data?.map((s) => (
+              <Button key={s.id} size="sm" variant="outline" disabled={!order.employee || busy} onClick={() => applySet(s.id)}>
+                <Plus aria-hidden />
+                <span className="sr-only">Apply </span>
+                {s.name}
+              </Button>
+            ))}
+            {itemSets.data?.length === 0 ? <p className="text-sm text-muted-foreground">No item sets yet.</p> : null}
           </div>
         </div>
         <div>
@@ -342,7 +347,7 @@ export function CreateOrder() {
         aria-label="Order actions"
         className={cn(
           'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
-          '-mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-10 lg:px-10 print:hidden',
+          '-mx-4 px-4 md:-mx-6 md:px-6 xl:-mx-10 xl:px-10 print:hidden',
         )}
       >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -359,12 +364,24 @@ export function CreateOrder() {
               disabled={!v.valid || busy}
               text={formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))}
             />
-            <Button disabled={!v.valid || busy} onClick={() => void markAsOrdered()}>
-              {busy ? 'Working…' : 'Mark as Ordered'}
+            <Button disabled={!v.valid || busy} onClick={() => setReviewing(true)}>
+              {busy ? 'Working…' : 'Mark as Ordered…'}
             </Button>
           </div>
         </div>
       </section>
+
+      <ReviewSheet
+        open={reviewing}
+        order={order}
+        busy={busy}
+        onClose={() => setReviewing(false)}
+        onConfirm={() => {
+          // A failure shows on the page, with Retry, and keeps the order.
+          setReviewing(false)
+          void markAsOrdered()
+        }}
+      />
 
       <EmployeeForm
         open={addingEmployee}
@@ -381,10 +398,70 @@ export function CreateOrder() {
 }
 
 /**
- * Shown after Mark as Ordered: the stored, now immutable record, built only
- * from the server's snapshot.
+ * The summary confirmed before Mark as Ordered: who the order is for, each
+ * line with its size, quantity and price, and the total. Nothing is stored
+ * until Mark as Ordered here.
  */
-function OrderedPanel({ order, onNew }: { order: Order; onNew: () => void }) {
+function ReviewSheet({
+  open,
+  order,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean
+  order: WorkingOrder
+  busy: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <FormSheet
+      open={open}
+      onClose={onClose}
+      title="Review order"
+      description={`For ${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}. After Mark as Ordered this record cannot be changed.`}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Back to order
+          </Button>
+          <Button disabled={busy} onClick={onConfirm}>
+            Mark as Ordered
+          </Button>
+        </>
+      }
+    >
+      <ul aria-label="Order lines" className="flex flex-col divide-y divide-border text-sm">
+        {order.lines.map((l) => (
+          <li key={l.catalogueItemId} className="flex items-baseline justify-between gap-3 py-2">
+            <span className="min-w-0">
+              <span className="font-medium">{l.itemName}</span>
+              {l.size ? <span className="text-muted-foreground"> · {l.size}</span> : null}
+            </span>
+            <span className="shrink-0 text-right tabular-nums">
+              {l.quantity} × {formatEuro(l.unitPriceCents)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 flex items-baseline justify-between border-t border-border pt-3 font-semibold">
+        <span>Total</span>
+        <span className="text-base tabular-nums">{formatEuro(totalCents(order))}</span>
+      </p>
+    </FormSheet>
+  )
+}
+
+/**
+ * Shown after Mark as Ordered: the stored, now immutable record, built only
+ * from the server's snapshot, and the next step: the employee confirms receipt
+ * by a secure link or on the printed record.
+ */
+function OrderedPanel({ order, navigate, onNew }: { order: Order; navigate: (to: Route) => void; onNew: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  const [given, setGiven] = useState(false)
+  const name = `${order.employee_first_name} ${order.employee_last_name}`
   return (
     <>
       <PageHeader title="Create Order" />
@@ -393,10 +470,10 @@ function OrderedPanel({ order, onNew }: { order: Order; onNew: () => void }) {
           <CardTitle className="flex flex-wrap items-center gap-2">
             <CheckCircle2 aria-hidden className="size-5 text-primary" />
             Order {order.record_number} is ordered
-            <Badge variant="secondary">Ordered</Badge>
+            {given ? <Badge>Given</Badge> : <Badge variant="secondary">Ordered</Badge>}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {order.employee_first_name} {order.employee_last_name}
+            {name}
             {order.employee_code ? ` · ${order.employee_code}` : ''} · prepared by {order.prepared_by_name} ·{' '}
             {new Date(order.ordered_at).toLocaleString()}
           </p>
@@ -404,16 +481,35 @@ function OrderedPanel({ order, onNew }: { order: Order; onNew: () => void }) {
         <CardContent className="flex flex-col gap-4">
           <OrderLinesTable order={order} />
           <p className="text-sm text-muted-foreground">
-            This record can no longer be edited. It changes to Given when the employee confirms receipt.
+            {given
+              ? `${name}'s signed paper confirmation is recorded: the order is Given.`
+              : `This record can no longer be edited. Next, ${name} confirms receipt: send a secure link, or print the record for signing. It changes to Given when they confirm.`}
           </p>
           <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
+            {given ? null : (
+              <Button className="w-full sm:w-auto" onClick={() => setConfirming(true)}>
+                <LinkIcon aria-hidden /> Send confirmation link
+              </Button>
+            )}
             <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} />
-            <Button className="w-full sm:w-auto" onClick={onNew}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate({ name: 'record', id: order.id, print: true })}>
+              <Printer aria-hidden /> Print record
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={onNew}>
               Start a new order
             </Button>
           </div>
         </CardContent>
       </Card>
+      <ConfirmationSheet
+        order={confirming ? { ...order, usage_months: null } : null}
+        onClose={() => setConfirming(false)}
+        onGiven={() => {
+          setConfirming(false)
+          setGiven(true)
+        }}
+        onPrint={(id) => navigate({ name: 'record', id, print: true })}
+      />
     </>
   )
 }
@@ -437,7 +533,7 @@ function LinesTable({
   onChange: (f: (o: WorkingOrder) => WorkingOrder) => void
 }) {
   if (order.lines.length === 0) {
-    return <EmptyState>No items yet. Use Add Item or Apply Item Set.</EmptyState>
+    return <EmptyState>No items yet. Use Add Item, or choose an Item Set.</EmptyState>
   }
   // Where the table is narrow each line is a card: item and remove on top,
   // size and quantity side by side, then price, service period and line total.

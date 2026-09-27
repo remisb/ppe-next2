@@ -27,12 +27,16 @@ Mobile first: unprefixed classes are the phone layout, `sm:`/`md:`/`lg:` add to 
 The workwear app is the reference.
 
 - **Navigation** is one `<nav aria-label="Main">` that changes shape: a bottom tab bar on
-  a phone, an icon rail from `md`, a labelled sidebar from `lg`. An administrator has seven tabs
-  (Dashboard first, Users last) and a manager or the employee role six (their Dashboard
-  first), so phone labels
-  truncate rather than widen a column. Links take their
-  accessible name from their text (a visually hidden full label), never `aria-label`,
-  which would also match label lookups such as a field named "Item Set".
+  a phone, an icon rail from `md`, a labelled sidebar from `xl`. The rail stays up to `xl`
+  so a landscape tablet (1024px) keeps room for tables; the sidebar's 15rem there would
+  stack them. The phone bar holds the first four sections and More, which opens a panel
+  above it with the rest (Item Catalogue, Item Sets, Users), the account and Sign out; from
+  `md` those links flow on in the rail (`md:contents`), never a second list. An
+  administrator has seven sections (Dashboard first, Users last), a manager or the employee
+  role six (their Dashboard first). History shows the number of orders waiting for
+  confirmation. Links take their accessible name from their text (a visually hidden full
+  label), never `aria-label`, which would also match label lookups such as a field named
+  "Item Set".
 - **Tables** that can run wider than a phone use `<Table stack>` (or `stack="grid"` for
   two cards to a row where they fit). Below 48rem *of the table's own width* each row
   becomes a card; give every `TableCell` a `label` for its column. A table whose columns
@@ -49,7 +53,12 @@ The workwear app is the reference.
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
-  phone tab bar's height (0 from `md`).
+  phone tab bar's height (0 from `md`). An action that cannot be undone (Mark as Ordered)
+  opens a review of what it will store, confirmed there.
+- **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
+  Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
+  (Delete, Deactivate). The ⋯ button is always shown, never revealed on hover: touch
+  screens have no hover.
 - **Empty states** give the next step in words and never repeat the header action as a
   second button with the same name.
 - **Safe areas**: the viewport is `viewport-fit=cover`; bars pad with

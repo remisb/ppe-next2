@@ -75,7 +75,8 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
 
 function Kpis({ d }: { d: Data }) {
   const cur = d.months.at(-1)
-  const prev = d.months.at(-2)
+  // The same days of the previous month, not all of it.
+  const prev = d.previous_to_date
   const year = d.months.reduce((t, m) => ({ orders: t.orders + m.orders, items: t.items + m.items, value: t.value + m.value_cents }), {
     orders: 0,
     items: 0,
@@ -94,7 +95,7 @@ function Kpis({ d }: { d: Data }) {
           label={`Ordered in ${monthLabel(cur.month)}`}
           value={formatEuro(cur.value_cents)}
           detail={`${plural(cur.items, 'item')} in ${plural(cur.orders, 'order')}`}
-          change={prev ? changeText(cur.value_cents, prev.value_cents, prev.month) : ''}
+          change={changeText(cur.value_cents, prev.value_cents, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi label="Ordered, last 12 months" value={formatEuro(year.value)} detail={`${plural(year.items, 'item')} in ${plural(year.orders, 'order')}`} />
