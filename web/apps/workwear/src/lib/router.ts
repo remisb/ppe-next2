@@ -37,9 +37,13 @@ export type Route =
   /** The employee's public confirmation page; the token is its only credential. */
   | { name: 'confirm'; token: string }
 
-/** Items to start an order with, each at the quantity given last time. */
+/**
+ * Items to start an order with: a reorder (for the employee, each at the
+ * quantity given last time) or an item set's items (Use in new order, for
+ * whoever the order is for).
+ */
 export interface Prefill {
-  employeeId: string
+  employeeId?: string
   items: { id: string; quantity: number }[]
 }
 
@@ -87,10 +91,9 @@ export function parsePath(pathname: string, search = ''): Route {
   return { name: 'home' }
 }
 
-/** ?employee=<id>&item=<id>:<quantity>&item=… (items optional); anything malformed is no prefill. */
+/** ?employee=<id>&item=<id>:<quantity>&item=… (one of the two at least); anything malformed is no prefill. */
 function parsePrefill(q: URLSearchParams): Prefill | undefined {
   const employeeId = q.get('employee')
-  if (!employeeId) return undefined
   const items: Prefill['items'] = []
   for (const raw of q.getAll('item')) {
     const [id, qty] = raw.split(':')
@@ -98,7 +101,9 @@ function parsePrefill(q: URLSearchParams): Prefill | undefined {
     if (!id || !Number.isInteger(quantity) || quantity < 1) return undefined
     items.push({ id, quantity })
   }
-  // No items is a new order for the employee (New order on their page).
+  // No items is a new order for the employee (New order on their page);
+  // no employee, items for whoever the order is for (an item set's Use in new order).
+  if (!employeeId) return items.length > 0 ? { items } : undefined
   return { employeeId, items }
 }
 
@@ -106,7 +111,7 @@ export function pathOf(route: Route): string {
   switch (route.name) {
     case 'createOrder': {
       if (!route.prefill) return fixed.createOrder
-      const q = new URLSearchParams({ employee: route.prefill.employeeId })
+      const q = new URLSearchParams(route.prefill.employeeId ? { employee: route.prefill.employeeId } : {})
       for (const i of route.prefill.items) q.append('item', `${i.id}:${i.quantity}`)
       return `${fixed.createOrder}?${q}`
     }

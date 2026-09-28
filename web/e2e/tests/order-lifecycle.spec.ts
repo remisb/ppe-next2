@@ -103,6 +103,11 @@ test('Item Catalogue: items with and without a price', async () => {
   await addCatalogueItem({ name: 'Safety helmet', details: 'EN 397', group: 'NONE', rank: '5' })
   await expect(page.getByRole('row', { name: /Safety helmet/ })).toContainText('Incomplete')
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€49.99')
+  // One status per item: the chips count the items and show one status at a time.
+  await page.getByRole('button', { name: 'Incomplete · 1' }).click()
+  await expect(page.getByRole('row', { name: /Safety shoes/ })).toHaveCount(0)
+  await expect(page.getByRole('row', { name: /Safety helmet/ })).toBeVisible()
+  await page.getByRole('button', { name: 'All · 4' }).click()
 
   // Deactivate is under ⋯ and asks first; dismissing keeps the item active.
   const shoes = page.getByRole('row', { name: /Safety shoes/ })
@@ -124,6 +129,15 @@ test('Item Sets: a set of item references and default quantities', async () => {
   await dialog.getByLabel('Default quantity for Protective gloves').fill('10')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protective gloves × 10')).toBeVisible()
+  // A set says what it comes to at today's prices (39.99 + 49.99 + 10 × 2.50), and starts an order with its items.
+  await expect(page.getByText('3 items · €114.98')).toBeVisible()
+  await page.getByRole('link', { name: 'Use Starter kit in a new order' }).click()
+  await expect(page).toHaveURL(/\/orders\/new$/)
+  await expect(page.getByRole('button', { name: 'Apply Starter kit (on this order)' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(3)
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: 'New order' }).click()
+  await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(0)
 })
 
 test('Item Catalogue: a row opens the item at its own address', async () => {
@@ -567,6 +581,9 @@ test('columns sort: History on the server across pages, other lists in place', a
   await byItem.getByRole('button').click()
   await expect(byItem).toHaveAttribute('aria-sort', 'none')
   expect(await names()).toEqual(displayOrder)
+  // Sorted by size group, a heading starts each group.
+  await page.getByRole('columnheader', { name: 'Size group' }).getByRole('button').click()
+  for (const group of ['Clothing', 'No size', 'Shoes']) await expect(page.getByRole('row', { name: group, exact: true })).toBeVisible()
 })
 
 test('Employees: the Missing sizes tile\'s address opens the list filtered', async () => {
@@ -598,6 +615,10 @@ test('Employees: a row opens the employee at its own address, with the items giv
   const employeeURL = page.url()
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page')
+  // The page holds her actions: Delete, as in the table, is under ⋯.
+  await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
+  await page.keyboard.press('Escape')
 
   // Both her orders are GIVEN; the first was bought before the price change and still shows €49.99 on its receipt.
   const given = page.getByRole('region', { name: 'Items given' })
@@ -742,6 +763,16 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
   await expect(page.getByText(/Dates and times are shown in/)).toBeVisible()
   await page.getByRole('button', { name: /^Filters/ }).click()
+  // Records lists on a phone: short rows that open the record, whose page holds the actions.
+  await openTab('Employees')
+  const onaRow = page.getByRole('row', { name: /Ona Kazlauskienė/ })
+  expect((await onaRow.boundingBox())!.height, 'an Employees row on a phone').toBeLessThan(80)
+  await expect(onaRow.getByRole('button')).toHaveCount(0)
+  await openTab('Item Catalogue')
+  const helmetRow = page.getByRole('row', { name: /Safety helmet/ })
+  await expect(helmetRow).toContainText('Incomplete')
+  await expect(helmetRow.getByRole('button')).toHaveCount(0)
+  expect((await page.getByRole('row', { name: /Safety shoes/ }).boundingBox())!.height, 'a Catalogue row on a phone').toBeLessThan(80)
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
   await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
@@ -944,7 +975,9 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await page.getByRole('dialog').getByRole('checkbox', { name: /^Active/ }).check()
   await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
   await expect(row).not.toContainText('Inactive')
-  await page.getByRole('button', { name: `Reset password for ${mia.name}` }).click()
+  // Reset password is under ⋯, beside Edit.
+  await row.getByRole('button', { name: `More actions for ${mia.name}` }).click()
+  await page.getByRole('menuitem', { name: 'Reset password…' }).click()
   dialog = page.getByRole('dialog')
   await dialog.getByRole('textbox', { name: /^New password/ }).fill('mia-password-2')
   await dialog.getByLabel('Confirm new password').fill('mia-password-2')

@@ -1,12 +1,14 @@
 import type { Role, User } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { KeyRound, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -74,6 +76,7 @@ export function UsersPage() {
       <PageHeader
         title="Users"
         description="Who can sign in, and what they may do. Inactive users cannot sign in; their past work keeps their name."
+        descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
             <Plus aria-hidden /> Add User
@@ -98,8 +101,8 @@ export function UsersPage() {
       ) : shown.length === 0 ? (
         <EmptyState>{filter ? `No users match “${filter.trim()}”.` : 'No users yet.'}</EmptyState>
       ) : (
-        // Where the table is narrow each user is a card: name and status, email, roles, then actions.
-        <Table stack="grid" sortControl={<SortControl columns={columns} {...sortProps} />}>
+        // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
+        <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
@@ -110,8 +113,8 @@ export function UsersPage() {
           </TableHeader>
           <TableBody>
             {shown.map((u) => (
-              <TableRow key={u.id} className={u.is_active ? undefined : 'text-muted-foreground'}>
-                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+              <TableRow key={u.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground')}>
+                <TableCell className="font-medium stacked:col-start-1 stacked:row-start-1">
                   {u.name}
                   {u.id === session.userId ? (
                     <Badge variant="outline" className="ml-2 align-middle">
@@ -119,26 +122,32 @@ export function UsersPage() {
                     </Badge>
                   ) : null}
                 </TableCell>
-                <TableCell className="break-all whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1">{u.email}</TableCell>
-                <TableCell label="Roles" className="stacked:order-4">
-                  <span className="flex flex-wrap gap-1 stacked:justify-end">
+                <TableCell className="break-all whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">{u.email}</TableCell>
+                <TableCell className="stacked:col-start-1 stacked:row-start-3 stacked:pt-1">
+                  <span className="flex flex-wrap gap-1">
                     {sortRoles(u.roles).map((r) => (
                       <Badge key={r} variant={r === 'admin' ? 'default' : 'secondary'}>
                         {roleLabel(r)}
                       </Badge>
                     ))}
+                    {/* Stacked, an inactive account says so beside its roles; an active one needs no word. */}
+                    {u.is_active ? null : (
+                      <Badge variant="outline" className="hidden stacked:inline-flex">
+                        Inactive
+                      </Badge>
+                    )}
                   </span>
                 </TableCell>
-                <TableCell className="stacked:order-2 stacked:ml-auto stacked:w-auto">
+                <TableCell className="stacked:hidden">
                   <Badge variant={u.is_active ? 'outline' : 'secondary'}>{u.is_active ? 'Active' : 'Inactive'}</Badge>
                 </TableCell>
-                <TableCell className="space-x-1 text-right stacked:order-5 stacked:mt-2 stacked:flex stacked:gap-2 stacked:space-x-0 stacked:*:flex-1">
+                <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
                   <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={`Edit ${u.name}`}>
                     Edit
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setResetting(u)} aria-label={`Reset password for ${u.name}`}>
-                    <KeyRound aria-hidden /> Reset password
-                  </Button>
+                  </Button>{' '}
+                  <MoreActions label={`More actions for ${u.name}`}>
+                    <DropdownMenuItem onClick={() => setResetting(u)}>Reset password…</DropdownMenuItem>
+                  </MoreActions>
                 </TableCell>
               </TableRow>
             ))}

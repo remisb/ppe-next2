@@ -87,7 +87,7 @@ export function CreateOrder({
   prefill,
   navigate,
 }: {
-  /** A reorder from a dashboard: start the order for this employee with these items. */
+  /** A reorder (start the order for this employee with these items) or an item set's items. */
   prefill?: Prefill | undefined
   navigate: (to: Route, options?: NavigateOptions) => void
 }) {
@@ -116,20 +116,33 @@ export function CreateOrder({
    * A reorder arrives once: the address loses its query (a reload must not add
    * the items again) and the ref keeps StrictMode's second run from repeating
    * it. It joins an order in progress for the same employee, and replaces one
-   * for someone else only when the user agrees.
+   * for someone else only when the user agrees. Items with no employee (an
+   * item set's Use in new order) join the order in progress, whoever it is for.
    */
   const consumed = useRef<Prefill | null>(null)
   useEffect(() => {
     if (!prefill || consumed.current === prefill) return
     consumed.current = prefill
     navigate({ name: 'createOrder' }, { replace: true, scroll: false })
-    const same = order.employee?.id === prefill.employeeId
+    const lines = prefill.items.map((i) => ({ catalogue_item_id: i.id, quantity: i.quantity }))
+    const target = prefill.employeeId ?? order.employee?.id
+    if (!target) {
+      // No one chosen yet: the lines wait unresolved, as Add Item's do, until the employee is.
+      void run(async () => {
+        const active = new Map((await client.catalogue.listActive()).map((i) => [i.id, i]))
+        setOrder((o) =>
+          addLines(o, prefill.items.flatMap((i) => {
+            const item = active.get(i.id)
+            return item ? [lineFromCatalogue(item, i.quantity)] : []
+          })),
+        )
+      })
+      return
+    }
+    const same = order.employee?.id === target
     if (order.lines.length > 0 && !same && !window.confirm(`Replace the order in progress for ${order.employee?.full_name ?? 'no one yet'} with this reorder?`)) return
     void run(async () => {
-      const res = await client.orders.resolve({
-        employee_id: prefill.employeeId,
-        lines: prefill.items.map((i) => ({ catalogue_item_id: i.id, quantity: i.quantity })),
-      })
+      const res = await client.orders.resolve({ employee_id: target, lines })
       setOrder((o) => (same ? addLines(o, res.lines) : reassign(emptyOrder, res.employee, res.lines).order))
       setConflicts([])
       setPendingDefault(null)

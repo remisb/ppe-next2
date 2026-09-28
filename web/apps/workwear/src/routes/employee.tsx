@@ -1,39 +1,45 @@
+import type { Employee } from '@ppe/api-client'
 import { ArrowLeft, FileText, Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
+import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
-import { useApi } from '@/lib/api'
+import { useApi, useSession } from '@/lib/api'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatDateTime, formatUsage } from '@/lib/history'
+import { missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sizeRank, sortRows } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatMonths, formatSize } from '@/lib/utils'
 
-import { EditSizes } from './employees'
+import { EditSizes, MissingBadge } from './employees'
 
 /**
  * One employee (/employees/<id>): details and size defaults, the items given
  * to them with a link to each receipt and when each is due for replacement,
  * and items ordered but not yet given. Items come from order snapshots, so
  * they show what was actually issued. New order and Reorder start Create
- * Order for them.
+ * Order for them; Edit details and Delete are under ⋯.
  */
 export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
+  const session = useSession()
   const employee = useLoad(() => client.employees.get(id), [id])
   const orders = useLoad(() => loadEmployeeOrders(client, id), [id])
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
   const [sizing, setSizing] = useState(false)
+  const [actionError, setActionError] = useState<unknown>()
 
   const items = useMemo(() => employeeItems(orders.data ?? []), [orders.data])
   const due = useMemo(() => replacementsDue(orders.data ?? [], new Date()), [orders.data])
@@ -42,6 +48,19 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const dueByLine = useMemo(() => new Map(due.map((d) => [d.item.key, d])), [due])
   const tz = settings.data?.timezone
   const e = employee.data
+  const missing = e ? missingSizes(e) : { clothing: false, shoes: false }
+
+  // Delete is here and under ⋯ in the table, never on a list row a phone scrolls past.
+  const remove = async (emp: Employee) => {
+    if (!window.confirm(`Delete ${emp.full_name}? Their past orders are kept.`)) return
+    setActionError(undefined)
+    try {
+      await client.employees.remove(emp.id)
+      navigate({ name: 'employees' })
+    } catch (err) {
+      setActionError(err)
+    }
+  }
 
   return (
     <>
@@ -65,16 +84,24 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 <Button variant="outline" onClick={() => setSizing(true)}>
                   Edit Sizes
                 </Button>
-                <Button variant="ghost" onClick={() => setEditing(true)}>
-                  Edit
-                </Button>
+                <MoreActions label={`More actions for ${e.full_name}`}>
+                  <DropdownMenuItem onClick={() => setEditing(true)}>Edit details</DropdownMenuItem>
+                  {session.canManageItems ? (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                        Delete employee…
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </MoreActions>
               </>
             }
           />
           <dl className="mb-8 grid grid-cols-3 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-lg">
             <Fact label="Height">{e.height_cm ? `${e.height_cm} cm` : '—'}</Fact>
-            <Fact label="Clothing">{formatSize(e.clothing_size)}</Fact>
-            <Fact label="Shoes">{formatSize(e.shoe_size)}</Fact>
+            <Fact label="Clothing">{missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}</Fact>
+            <Fact label="Shoes">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</Fact>
             {e.notes ? (
               <div className="col-span-3">
                 <dt className="text-muted-foreground">Notes</dt>
@@ -109,6 +136,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               </AlertDescription>
             </Alert>
           ) : null}
+          {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
 
           <section aria-labelledby="items-given" className="mb-8">
             <h2 id="items-given" className="mb-1 text-lg font-semibold">

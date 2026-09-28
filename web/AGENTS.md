@@ -47,12 +47,16 @@ The workwear app is the reference.
   stack below 60rem instead; measure it beside the `md` rail. Restyle cards with the
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
   an A4 print and would print the receipt as cards. Never render a list twice (a table
-  for desktop plus cards for phones). Lists people scan (History, Employees, Catalogue,
-  order lines) keep one compact card a row rather than `stack="grid"`: from 36rem of room
+  for desktop plus cards for phones). Lists people scan to find a record (History,
+  Employees, Item Catalogue, Users) use `stack="list"`: stacked, they are one bordered list
+  of short rows, a title line and a facts line (a stacked row may lay its cells out on a
+  `stacked:grid` so a picture or avatar spans both lines, hiding the table-only cells with
+  `stacked:hidden`). A row that opens a page carries no buttons while stacked; its actions
+  live on that page. `TableGroupRow` heads a group of rows (History's months while sorted
+  by date, the Catalogue's size groups while sorted by size group). Other lists (order
+  lines) keep one compact card a row rather than `stack="grid"`: from 36rem of room
   (`stacked-wide:`, a tablet in portrait) a card's actions move beside its title and its
-  facts share a line. History goes further: stacked, its rows are one bordered list of
-  two-line rows (who and how long it has waited, then record · date · value), with a
-  heading row per month while it is sorted by date.
+  facts share a line.
 - **List and detail**: a row that has more to show opens it at its own address (History:
   `/history/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. The row's actions live in the
@@ -76,7 +80,8 @@ The workwear app is the reference.
   the same with a pointer; the ⌘K palette also opens from Search in the sidebar and More.
 - **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
   Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
-  (Delete, Deactivate). The ⋯ button is always shown, never revealed on hover: touch
+  (Delete, Deactivate, and Reset password on Users). A record with its own page (an
+  employee, a catalogue item) has the same ⋯ on that page, the only place a phone reaches it. The ⋯ button is always shown, never revealed on hover: touch
   screens have no hover.
 - **Empty states** give the next step in words and never repeat the header action as a
   second button with the same name.

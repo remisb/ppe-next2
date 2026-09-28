@@ -1,5 +1,5 @@
 import type { Employee, Sizes } from '@ppe/api-client'
-import { Plus } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
+import { employeeFacts, initials, missingLabel } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
-import { clothingBandValue, clothingBands, cn, formatSize } from '@/lib/utils'
+import { clothingBandValue, clothingBands, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
@@ -81,6 +82,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
       <PageHeader
         title="Employees"
         description="Size defaults used when preparing future orders. Editing sizes never changes past orders."
+        descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
             <Plus aria-hidden /> Add New Employee
@@ -96,12 +98,17 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
           onChange={(e) => setFilter(e.target.value)}
           aria-label="Search employees"
           data-shortcut="search"
-          className="min-w-0 flex-1 md:max-w-sm md:flex-none"
+          className="min-w-48 flex-1 md:max-w-sm md:flex-none"
         />
         {missingCount > 0 || onlyMissing ? (
-          <Button variant={onlyMissing ? 'secondary' : 'outline'} aria-pressed={onlyMissing} onClick={() => setOnlyMissing((v) => !v)}>
-            Missing a size · {missingCount}
-          </Button>
+          <div role="group" aria-label="Show" className="flex gap-2">
+            <Button variant={onlyMissing ? 'outline' : 'secondary'} aria-pressed={!onlyMissing} onClick={() => setOnlyMissing(false)}>
+              All · {employees.data?.length ?? 0}
+            </Button>
+            <Button variant={onlyMissing ? 'secondary' : 'outline'} aria-pressed={onlyMissing} onClick={() => setOnlyMissing((v) => !v)}>
+              Missing a size · {missingCount}
+            </Button>
+          </div>
         ) : null}
       </div>
       {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
@@ -118,9 +125,13 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
               : 'No employees yet. Use Add New Employee to add the first.'}
         </EmptyState>
       ) : (
-        // Where the table is narrow each employee is a card: name and code, the three sizes side by side, then actions.
-        // From 36rem of room (a tablet in portrait) one card a row, actions beside the name: never two squeezed cards.
-        <Table stack sortControl={<SortControl columns={columns} {...sortProps} />}>
+        /*
+          Where the table is narrow the employees are one list of two-line rows:
+          name (a missing size flagged beside it), then code and saved sizes.
+          A row opens the employee, whose page holds Edit Sizes, New order and
+          Delete; the table keeps Edit Sizes and ⋯ on each row.
+        */
+        <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
@@ -132,10 +143,11 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
           <TableBody>
             {shown.map((e) => {
               const missing = missingSizes(e)
+              const flag = missingLabel(e)
               return (
                 <TableRow
                   key={e.id}
-                  className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50')}
+                  className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50"
                   // The whole row opens the employee; the name is the real link, for keyboards,
                   // screen readers and "open in new tab". The row's own buttons keep their action.
                   onClick={(ev) => {
@@ -143,23 +155,32 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     navigate({ name: 'employee', id: e.id })
                   }}
                 >
-                  <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+                  <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
+                  </TableCell>
+                  <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
                     <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
                       {e.full_name}
                     </a>
+                    {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
+                    {flag ? (
+                      <Badge variant="destructive" title="Create Order will ask for this size" className="hidden shrink-0 stacked:inline-flex">
+                        {flag}
+                      </Badge>
+                    ) : null}
                   </TableCell>
-                  <TableCell label="Code" className={cn('stacked:order-1 stacked:w-auto', !e.code && 'stacked:hidden')}>
-                    {e.code ?? '—'}
+                  <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                    {employeeFacts(e) || 'No sizes saved'}
                   </TableCell>
-                  <TableCell label="Height" className={sizeCell}>{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
-                  <TableCell label="Clothing" className={sizeCell}>
-                    {missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}
+                  <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
+                  <TableCell className="stacked:hidden">{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
+                  <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}</TableCell>
+                  <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
+                  <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2]">
+                    <ChevronRight className="size-4 text-muted-foreground" />
                   </TableCell>
-                  <TableCell label="Shoes" className={sizeCell}>
-                    {missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap stacked:order-3 stacked:mt-2 stacked:flex stacked:gap-2 stacked-wide:order-1 stacked-wide:mt-0 stacked-wide:w-auto">
-                    <Button size="sm" variant="outline" className="stacked:flex-1 stacked-wide:flex-none" onClick={() => setSizing(e)}>
+                  <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                    <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
                       Edit Sizes
                     </Button>{' '}
                     <MoreActions label={`More actions for ${e.full_name}`}>
@@ -204,17 +225,13 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
 }
 
 /** A size Create Order will flag: set it before ordering clothing or shoes. */
-function MissingBadge() {
+export function MissingBadge() {
   return (
     <Badge variant="destructive" title="Create Order will ask for this size">
       Missing
     </Badge>
   )
 }
-
-/** Card: height, clothing and shoe size in three columns, label above value. */
-const sizeCell =
-  'stacked:order-3 stacked:w-[calc((100%-2rem)/3)] stacked:flex-col stacked:items-start stacked:gap-0 stacked:pt-2 stacked:text-left stacked:font-medium stacked-wide:w-28'
 
 /** Edit Sizes: changes defaults for future resolutions only. */
 export function EditSizes({

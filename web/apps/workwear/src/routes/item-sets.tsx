@@ -1,24 +1,29 @@
 import type { CatalogueItem, ItemSet } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { MoreActions } from '@/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi, useSession } from '@/lib/api'
+import { type SetTotal, setTotal } from '@/lib/records'
+import { type Route, linkTo } from '@/lib/router'
 import { errorText, useLoad } from '@/lib/use-load'
+import { formatEuro } from '@/lib/utils'
 
 /**
  * Item Sets: reusable lists of catalogue items with default quantities. A set
  * stores no sizes, prices or service periods; applying it resolves them fresh.
+ * Each card shows what the set comes to at today's prices, and Use in new
+ * order starts Create Order with its items.
  */
-export function ItemSets() {
+export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const { canManageItems } = useSession()
   const sets = useLoad(() => client.itemSets.list())
@@ -44,6 +49,7 @@ export function ItemSets() {
       <PageHeader
         title="Item Sets"
         description="Presets for Apply Item Set. Sizes and prices are resolved fresh each time a set is applied."
+        descriptionClassName="max-md:hidden"
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
@@ -70,6 +76,9 @@ export function ItemSets() {
                   {s.active ? null : <Badge variant="outline">Inactive</Badge>}
                 </CardTitle>
                 {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
+                <p className="text-sm font-medium tabular-nums">
+                  <SetTotalText total={setTotal(s, itemsById)} />
+                </p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col">
                 <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm">
@@ -83,18 +92,29 @@ export function ItemSets() {
                     )
                   })}
                 </ol>
-                {canManageItems ? (
-                  <div className="mt-auto flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
-                      Edit
-                    </Button>
-                    <MoreActions label={`More actions for ${s.name}`}>
-                      <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
-                        Delete item set…
-                      </DropdownMenuItem>
-                    </MoreActions>
-                  </div>
-                ) : null}
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {s.active ? (
+                    <a
+                      {...linkTo({ name: 'createOrder', prefill: { items: s.lines.map((l) => ({ id: l.catalogue_item_id, quantity: l.default_quantity })) } }, navigate)}
+                      aria-label={`Use ${s.name} in a new order`}
+                      className={buttonVariants({ size: 'sm' })}
+                    >
+                      <ClipboardList aria-hidden /> Use in new order
+                    </a>
+                  ) : null}
+                  {canManageItems ? (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
+                        Edit
+                      </Button>
+                      <MoreActions label={`More actions for ${s.name}`}>
+                        <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
+                          Delete item set…
+                        </DropdownMenuItem>
+                      </MoreActions>
+                    </>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -109,6 +129,17 @@ export function ItemSets() {
           sets.reload()
         }}
       />
+    </>
+  )
+}
+
+/** "3 items · €274.90 today"; an item without a price is left out, and the total says so. */
+function SetTotalText({ total }: { total: SetTotal }) {
+  const items = total.items === 1 ? '1 item' : `${total.items} items`
+  return (
+    <>
+      {items} · {formatEuro(total.cents)}
+      <span className="font-normal text-muted-foreground">{total.complete ? ' at today\'s prices' : ' without the items that have no price'}</span>
     </>
   )
 }

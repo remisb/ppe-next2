@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
-import { Table, TableBody, TableCell, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
 import { isTyping } from '@/lib/shortcuts'
 import { LONG_WAIT_DAYS, activityAt, formatDateTime, formatShortDate, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
@@ -255,7 +255,7 @@ export function History({
               under a heading per month.
             */}
             <Table
-              stack
+              stack="list"
               stackBelow="lg"
               sortControl={
                 <div className="max-md:hidden">
@@ -270,7 +270,7 @@ export function History({
                   ))}
                 </TableRow>
               </TableHeader>
-              <TableBody className="stacked:gap-0 stacked:overflow-hidden stacked:rounded-lg stacked:border stacked:bg-card stacked:[&_tr:last-child]:border-0">
+              <TableBody>
                 {orders.data.orders.map((o, i, list) => {
                   const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, now, tz) : 0
                   const month = monthOf(activityAt(o), tz)
@@ -278,19 +278,13 @@ export function History({
                   const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                   return (
                     <Fragment key={o.id}>
-                    {newMonth ? (
-                      <TableRow className="hover:bg-transparent stacked:rounded-none stacked:border-0 stacked:border-b stacked:bg-muted/50 stacked:px-4 stacked:py-1.5">
-                        <TableCell colSpan={columns.length} className="pt-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase stacked:pt-0">
-                          {month.label}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
+                    {newMonth ? <TableGroupRow colSpan={columns.length}>{month.label}</TableGroupRow> : null}
                     <TableRow
                       data-state={selected === o.id ? 'selected' : undefined}
                       aria-current={selected === o.id ? 'true' : undefined}
                       className={cn(
                         stackedBreak,
-                        'cursor-pointer stacked:gap-x-1.5 stacked:gap-y-0.5 stacked:rounded-none stacked:border-0 stacked:border-b stacked:px-4 stacked:py-2.5 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                        'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
                       )}
                       // The whole row opens the order; the record number is the real link,
                       // for keyboards, screen readers and "open in new tab".

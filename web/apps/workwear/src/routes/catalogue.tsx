@@ -1,20 +1,21 @@
 import type { CatalogueIcon, CatalogueItem, CatalogueItemInput, SizeGroup } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { Plus } from 'lucide-react'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { ChevronRight, Plus } from 'lucide-react'
+import { type FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
 
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { MoreActions } from '@/components/more-actions'
 import { SortControl, SortableHead } from '@/components/sortable'
-import { ErrorState, Loading, PageHeader } from '@/components/states'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { guessIcon } from '@/lib/items'
+import { type ItemStatus, itemStatus } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
@@ -41,8 +42,12 @@ export function confirmActiveChange(i: CatalogueItem): boolean {
   return !i.active || window.confirm(`Deactivate ${i.name}? It will no longer be offered in Add Item. Orders that hold it keep it.`)
 }
 
-/** A card's labelled fact: a full line on a phone, one of three on a line from 36rem. */
-const fact = 'stacked-wide:w-auto stacked-wide:justify-start stacked-wide:gap-2 stacked-wide:pr-4'
+const statusChips: { status: ItemStatus | 'all'; label: string }[] = [
+  { status: 'all', label: 'All' },
+  { status: 'active', label: 'Active' },
+  { status: 'incomplete', label: 'Incomplete' },
+  { status: 'inactive', label: 'Inactive' },
+]
 
 /** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
 function statusRank(i: CatalogueItem): number {
@@ -58,9 +63,18 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   // null is the catalogue's display order, the order Add Item lists items in.
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
+  const [status, setStatus] = useState<ItemStatus | 'all'>('all')
+  const counts = useMemo(() => {
+    const c: Record<ItemStatus | 'all', number> = { all: 0, active: 0, incomplete: 0, inactive: 0 }
+    for (const i of items.data ?? []) {
+      c.all++
+      c[itemStatus(i)]++
+    }
+    return c
+  }, [items.data])
   const shown = useMemo(
     () =>
-      sortRows(items.data ?? [], sort, (i, key) => {
+      sortRows((items.data ?? []).filter((i) => status === 'all' || itemStatus(i) === status), sort, (i, key) => {
         switch (key) {
           case 'name':
             return i.name
@@ -76,7 +90,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
             return statusRank(i)
         }
       }),
-    [items.data, sort],
+    [items.data, sort, status],
   )
 
   const toggle = async (i: CatalogueItem) => {
@@ -94,6 +108,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title="Item Catalogue"
         description="Current names, prices and service periods. Orders keep the values they were placed with."
+        descriptionClassName="max-md:hidden"
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
@@ -102,15 +117,34 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
           ) : undefined
         }
       />
+      {counts.all > 0 ? (
+        // One status per item; a chip with nothing in it is left out unless it is the one chosen.
+        // On a phone the chips scroll sideways in their own row rather than take two lines.
+        <div role="group" aria-label="Show" className="mb-4 flex gap-2 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none] md:flex-wrap">
+          {statusChips
+            .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
+            .map((c) => (
+              <Button key={c.status} className="shrink-0" variant={status === c.status ? 'secondary' : 'outline'} aria-pressed={status === c.status} onClick={() => setStatus(c.status)}>
+                {c.label} · {counts[c.status]}
+              </Button>
+            ))}
+        </div>
+      ) : null}
       {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
       {items.error ? (
         <ErrorState error={items.error} onRetry={items.reload} />
       ) : items.loading && !items.data ? (
         <Loading />
+      ) : shown.length === 0 ? (
+        <EmptyState>{status === 'all' ? 'No items yet.' : `No ${statusChips.find((c) => c.status === status)!.label.toLowerCase()} items.`}</EmptyState>
       ) : (
-        // Where the table is narrow each item is a card: name and status, details, then the ordering values.
-        // From 36rem of room (a tablet in portrait) one card a row, actions beside the name.
-        <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
+        /*
+          Where the table is narrow the items are one list of two-line rows:
+          name and price, then details, size group and service period, with
+          Incomplete or Inactive flagged. A row opens the item, whose page holds
+          Edit and Deactivate; the table keeps Edit and ⋯ on each row.
+        */
+        <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
@@ -120,52 +154,78 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shown.map((i) => (
-              <TableRow
-                key={i.id}
-                className={cn(stackedBreak, 'cursor-pointer hover:bg-muted/50', !i.active && 'text-muted-foreground')}
-                // The whole row opens the item; the name is the real link, for keyboards,
-                // screen readers and "open in new tab". The row's own buttons keep their action.
-                onClick={(ev) => {
-                  if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                  navigate({ name: 'catalogueItem', id: i.id })
-                }}
-              >
-                <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
-                  <span className="flex items-center gap-3">
-                    <ItemTile icon={i.icon} className="size-8" />
-                    <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                      {i.name}
-                    </a>
-                  </span>
-                </TableCell>
-                <TableCell className={cn('whitespace-normal stacked:order-3 stacked:-mt-1 stacked:mb-1 stacked:text-muted-foreground', !i.details && 'stacked:hidden')}>
-                  {i.details || '—'}
-                </TableCell>
-                {/* From 36rem of room the three facts share one line. */}
-                <TableCell label="Size group" className={cn('stacked:order-4', fact)}>{sizeGroupLabel[i.size_group]}</TableCell>
-                <TableCell label="Unit price" className={cn('text-right tabular-nums stacked:order-5', fact)}>{formatEuro(i.unit_price_cents)}</TableCell>
-                <TableCell label="Service period" className={cn('stacked:order-6', fact)}>{formatMonths(i.service_period_months)}</TableCell>
-                <TableCell className="space-x-1 stacked:order-2 stacked:flex stacked:w-auto stacked:gap-1 stacked:space-x-0">
-                  {i.active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
-                  {i.unit_price_cents === null || i.service_period_months === null ? (
-                    <Badge variant="destructive">Incomplete</Badge>
-                  ) : null}
-                </TableCell>
-                {canManageItems ? (
-                  <TableCell className="text-right whitespace-nowrap stacked:order-7 stacked:mt-2 stacked:flex stacked:gap-2 stacked-wide:order-2 stacked-wide:mt-0 stacked-wide:w-auto">
-                    <Button size="sm" variant="outline" className="stacked:flex-1 stacked-wide:flex-none" onClick={() => setEditing(i)}>
-                      Edit
-                    </Button>{' '}
-                    <MoreActions label={`More actions for ${i.name}`}>
-                      <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                        {i.active ? 'Deactivate item…' : 'Activate item'}
-                      </DropdownMenuItem>
-                    </MoreActions>
-                  </TableCell>
-                ) : null}
-              </TableRow>
-            ))}
+            {shown.map((i, n, list) => {
+              const incomplete = i.unit_price_cents === null || i.service_period_months === null
+              // Sorted by size group, a heading starts each group: the way sizes are resolved.
+              const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
+              return (
+                <Fragment key={i.id}>
+                  {newGroup ? <TableGroupRow colSpan={columns.length + (canManageItems ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
+                  <TableRow
+                    className={cn(
+                      'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50',
+                      !i.active && 'text-muted-foreground',
+                    )}
+                    // The whole row opens the item; the name is the real link, for keyboards,
+                    // screen readers and "open in new tab". The row's own buttons keep their action.
+                    onClick={(ev) => {
+                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      navigate({ name: 'catalogueItem', id: i.id })
+                    }}
+                  >
+                    <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
+                      <span className="flex items-center gap-3">
+                        <ItemTile icon={i.icon} className="size-8 stacked:hidden" />
+                        <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                          {i.name}
+                        </a>
+                      </span>
+                    </TableCell>
+                    {/* The stacked row's picture spans both lines; in the table it sits beside the name. */}
+                    <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
+                      <ItemTile icon={i.icon} className="size-9" />
+                    </TableCell>
+                    <TableCell className="whitespace-normal stacked:hidden">{i.details || '—'}</TableCell>
+                    <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                      {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
+                    </TableCell>
+                    <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>
+                    <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.unit_price_cents)}</TableCell>
+                    <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>
+                    <TableCell
+                      className={cn(
+                        'space-x-1 stacked:[grid-column:2/span_2] stacked:row-start-3 stacked:flex stacked:gap-1 stacked:space-x-0 stacked:pt-1',
+                        i.active && !incomplete && 'stacked:hidden',
+                      )}
+                    >
+                      {i.active ? (
+                        <Badge variant="secondary" className="stacked:hidden">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Inactive</Badge>
+                      )}
+                      {incomplete ? <Badge variant="destructive">Incomplete</Badge> : null}
+                    </TableCell>
+                    <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </TableCell>
+                    {canManageItems ? (
+                      <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                        <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
+                          Edit
+                        </Button>{' '}
+                        <MoreActions label={`More actions for ${i.name}`}>
+                          <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
+                            {i.active ? 'Deactivate item…' : 'Activate item'}
+                          </DropdownMenuItem>
+                        </MoreActions>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                </Fragment>
+              )
+            })}
           </TableBody>
         </Table>
       )}

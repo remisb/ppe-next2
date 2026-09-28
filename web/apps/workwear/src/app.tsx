@@ -358,7 +358,7 @@ export function App() {
         {route.name === 'catalogueItem' ? (
           <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />
         ) : null}
-        {route.name === 'itemSets' ? <ItemSets /> : null}
+        {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}

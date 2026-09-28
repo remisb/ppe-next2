@@ -11,10 +11,13 @@ import { cn } from "@/lib/utils"
  * rendered twice. Cells restyle further with `stacked:` classes, which `cn`
  * merges over the defaults below. `stackBelow="lg"` moves the threshold to
  * 60rem, for a table whose columns need more than 48rem side by side.
+ * `"list"` makes the cards one bordered list of short rows instead, for
+ * lists people scan to find a record (History, Employees, Item Catalogue).
  * `sortControl` (a SortControl) shows above the cards only while stacked,
  * standing in for the sortable headers the stacked table hides.
  */
-const StackContext = React.createContext<boolean | "grid">(false)
+type Stack = boolean | "grid" | "list"
+const StackContext = React.createContext<Stack>(false)
 
 function Table({
   className,
@@ -22,7 +25,7 @@ function Table({
   stackBelow = "md",
   sortControl,
   ...props
-}: React.ComponentProps<"table"> & { stack?: boolean | "grid"; stackBelow?: "md" | "lg"; sortControl?: React.ReactNode }) {
+}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "md" | "lg"; sortControl?: React.ReactNode }) {
   return (
     <StackContext value={stack}>
       <div
@@ -61,6 +64,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
         // A card keeps its border when it is the last row.
         stack && "stacked:flex stacked:flex-col stacked:gap-3 stacked:[&_tr:last-child]:border",
         stack === "grid" && "stacked-wide:grid stacked-wide:grid-cols-2",
+        stack === "list" && "stacked:gap-0 stacked:overflow-hidden stacked:rounded-lg stacked:border stacked:bg-card stacked:[&_tr:last-child]:border-0",
         className
       )}
       {...props}
@@ -87,6 +91,10 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
 const stackedRow =
   "stacked:flex stacked:flex-wrap stacked:items-center stacked:gap-x-4 stacked:gap-y-1 stacked:rounded-lg stacked:border stacked:bg-card stacked:px-4 stacked:py-3 stacked:hover:bg-card"
 
+/** A row of a stacked list: a divider below it rather than a card's border. */
+const stackedListRow =
+  "stacked:gap-x-1.5 stacked:gap-y-0.5 stacked:rounded-none stacked:border-0 stacked:border-b stacked:px-4 stacked:py-2.5"
+
 /**
  * A line break inside a stacked row: cells ordered before `order-2` (the row's
  * `::after`, a full-width flex item) share the first line, the rest wrap below
@@ -102,6 +110,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
         stack && stackedRow,
+        stack === "list" && stackedListRow,
         className
       )}
       {...props}
@@ -157,6 +166,21 @@ function TableCell({
   )
 }
 
+/**
+ * A heading row inside the body, for a group of the rows below it (History's
+ * months, the Catalogue's size groups): a caption line in the table, a shaded
+ * band in a stacked list.
+ */
+function TableGroupRow({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
+  return (
+    <TableRow className="hover:bg-transparent stacked:rounded-none stacked:border-0 stacked:border-b stacked:bg-muted/50 stacked:px-4 stacked:py-1.5 stacked:hover:bg-muted/50">
+      <TableCell colSpan={colSpan} className="pt-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase stacked:pt-0">
+        {children}
+      </TableCell>
+    </TableRow>
+  )
+}
+
 function TableCaption({
   className,
   ...props
@@ -179,5 +203,6 @@ export {
   TableHead,
   TableRow,
   TableCell,
+  TableGroupRow,
   TableCaption,
 }
