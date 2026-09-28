@@ -5,15 +5,16 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`1dcc4ed`)
+status: phases 1–3 shipped, plus follow-ups (`312676a`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
-> figures followed in `13214e8`, the Replacements due screen in `65da1ad`, and the
+> figures followed in `13214e8`, the Replacements due screen in `65da1ad`, the
 > employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
-> in section 3 in `acfc5b6`, and a one-page Print Record in `1dcc4ed`. Each came
-> with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
+> button in `c089c1a`, compact History rows in `7edcdcc`, and Show password in
+> `312676a`. Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -116,6 +117,7 @@ prices and sizes are the demo data.
   again below it. Together with the tab bar, 15% of every phone screen is fixed chrome.
 - **Good.** One `<nav>` that becomes a tab bar, a rail or a sidebar; hidden full labels
   for screen readers; safe-area padding; and the pill marking the active tab.
+- **Fixed, live since `3c76945` and `c089c1a`.** Phase 1 built option A: the phone bar holds four sections and More, with full labels and a count on History. `c089c1a` added option B on top of it: Create Order is the raised New order button in the middle of the bar. The brand bar still repeats above each phone page.
 
 ### Options
 
@@ -158,7 +160,7 @@ bar.
 | Account moves off the top bar, so the bar can hold the page title | Needs updates to the e2e nav steps and the AGENTS.md nav rule |
 | Works for all three roles without change | |
 
-#### B. Raised "New order" button (alternative)
+#### B. Raised "New order" button (alternative, built in `c089c1a`)
 
 The main job, preparing an order, gets a raised button in the centre of the bar, where
 the thumb rests. If a draft exists, the button reopens it and shows a line count.
@@ -168,6 +170,8 @@ the thumb rests. If a draft exists, the button reopens it and shows a line count
 | The primary task is visible and reachable from every screen | Can feel like a consumer app |
 | Common in field-service and logistics apps | An icon-only button needs a visible label or tooltip |
 | | Draft handling (resume or start new) makes the behaviour ambiguous |
+
+**As built:** Built in `c089c1a`, on top of option A rather than instead of it: the phone bar reads Home · History · New order · Employees · More, with Create Order as a raised button in the middle. It always carries a visible label, answering the icon-only con: "New order", or "Draft" with the line count while an unsent order is saved, which the button reopens. The bar reorders with CSS, so the rail and sidebar keep one order and are unchanged.
 
 #### Desktop sidebar
 
@@ -331,10 +335,11 @@ employee with sizes, a "Gloves overdue since 30 Aug · already in this order ✓
   already has "12 days").
 - **Med. Status is hidden in a filter select**, but "Awaiting vs Given" is the main way
   people split this list.
+- **Fixed, live since `aee8829` and `7edcdcc`.** Phase 2 added the status tabs with counts, the aging chips and the order page (beside the list on desktop). `7edcdcc` made the phone list dense: two-line rows of about 70 px instead of 254–282 px, a heading per month, and the first order at 222 px instead of 303 px.
 
 ### Options
 
-#### A. Status tabs, compact rows, order page (recommended on phone)
+#### A. Status tabs, compact rows, order page (recommended on phone, built in `aee8829`, `7edcdcc`)
 
 Tabs answer the main question. Rows show who, what and how long, and one tap opens a
 single order page where all actions live. Sort and date filters go into the filter sheet.
@@ -360,6 +365,8 @@ single order page where all actions live. Sort and date filters go into the filt
 | A red aging chip draws the eye to the overdue order | Tabs replace the status filter, so the filter sheet and API parameters must match |
 | One action model: list to navigate, page to act | A new order detail screen for ORDERED records (today only GIVEN records have one) |
 | A single order URL can be shared or bookmarked (the record route exists already) | |
+
+**As built:** Phase 2 built the tabs, aging chips and the order page; `7edcdcc` completed the rows. Where the table stacks, the orders are one bordered list of two-line rows: the employee and an aging pill (red after 14 days) or Given, then record · date · value, with a chevron. Sorted by date, a heading row per month groups them, on desktop too. On a phone the description is hidden and the sort order and time-zone note fold into Filters. The tabs still open on All, as phase 2 decided; Awaiting is one tap away.
 
 #### B. Slimmer cards: one action plus ⋯ (low-effort step)
 
@@ -851,7 +858,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -871,6 +878,9 @@ kept in localStorage per user on the device, cleared by Sign out.
   the receipt was recorded. Hand-over mode uses the same parts
 - [x] Create Order as option A in section 3, with the desktop summary panel: saved sizes under Assigned to, ✓ on sets already on the order, one Review button, WhatsApp and "Create the confirmation link as well" in the review, the link ready on the success screen, and ↑ / ↓ on quantities
 - [x] Print Record fits one A4 page: in print the app shell no longer keeps the navigation's narrow grid column, which had spread a five-line record over three pages; rows and the signature block no longer split across pages
+- [x] Phone navigation option B from section 2: a raised New order button in the middle of the bar, labelled Draft with the line count while a draft is saved
+- [x] History option A from section 4 completed: two-line rows under month headings on a phone, with the sort order and time-zone note moved into Filters
+- [x] Sign in: a Show / Hide password button inside the password field
 
 ### Still open
 
