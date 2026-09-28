@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`49a1ce3`)
+status: phases 1–3 shipped, plus follow-ups (`b9cda4d`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -13,8 +13,9 @@ status: phases 1–3 shipped, plus follow-ups (`49a1ce3`)
 > figures followed in `13214e8`, the Replacements due screen in `65da1ad`, the
 > employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
 > in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
-> button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, and
-> the shorter confirmation wording in `49a1ce3`. Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
+> shorter confirmation wording in `49a1ce3`, and compact phone dashboards in `b9cda4d`.
+> Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -408,10 +409,11 @@ pane with its lines, the total, "Send confirmation link", "Print", "Paper signed
   so far with all of August. Early in a month every figure looks like a collapse.
 - **Good.** Honest figures, the time zone stated, an accessible data table behind the
   chart, and the Setup panel that points to what blocks ordering.
+- **Fixed, live since `aee8829` and `b9cda4d`.** Phase 2 put Needs you ahead of the charts, with one action per item (Send link, Reorder, Add sizes, Fix); phase 1 compares with the same days of the previous month. `b9cda4d` fitted it to a phone: the figures take 184 px instead of 248 px and Needs you starts at 341 px instead of 449 px, with five actions on the first screen. The page is 2,223 px, down from 2,712 px.
 
 ### Options
 
-#### A. Attention first (recommended)
+#### A. Attention first (recommended, built in `aee8829`, `b9cda4d`)
 
 A 2×2 figure grid (about 150 px), then one "Needs you" list that merges waiting orders,
 due replacements and setup gaps. Each item has one verb. Charts follow below.
@@ -440,6 +442,8 @@ due replacements and setup gaps. Each item has one verb. Charts follow below.
 | Actions link straight into existing flows (Reorder opens Create Order prefilled) | The merged list needs a clear sort rule (by severity, then age) |
 | Month comparison uses the same days of the previous month | Analytics move lower, which may bother finance-minded admins |
 | The same layout serves the manager and employee dashboards with different items | |
+
+**As built:** Phase 2 built the layout: the figures, then one Needs you list merging waiting orders, due replacements and setup gaps, sorted by severity then age, with Reorder opening Create Order prefilled. `b9cda4d` completed the phone view. Each figure tile shows one fact beside the figure, such as “3 · oldest 13 days” or “€274.90 · +62% vs 1–28 Aug”; the full detail stays for screen readers and shows from tablet width. The header's description folds away, Refresh is an icon, and Needs you counts its items (“Needs you · 6”). The heading stays “Dashboard” rather than a greeting, and the manager and employee dashboards share the same parts with their own facts.
 
 #### B. Today / Trends / Setup tabs (alternative)
 
@@ -859,7 +863,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -883,6 +887,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] History option A from section 4 completed: two-line rows under month headings on a phone, with the sort order and time-zone note moved into Filters
 - [x] Sign in: a Show / Hide password button inside the password field
 - [x] Shorter confirmation wording for new orders (`2026-09-v2`), versioned per order so placed and confirmed records keep their text and hash; the printed record fills in the employee's name on the signature line
+- [x] Dashboards option A from section 5 completed on phones: compact figure tiles with one fact beside each figure, Refresh as an icon, and a counted Needs you on the first screen, on all three dashboards
 
 ### Still open
 
