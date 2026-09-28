@@ -1,4 +1,4 @@
-import type { Client, ListedOrder, OrderStatus } from '@ppe/api-client'
+import type { Client, ListedOrder, OrderStatus, SizeGroup } from '@ppe/api-client'
 
 /** One order line as it appears on an employee's page, with the order it belongs to. */
 export interface EmployeeItem {
@@ -11,6 +11,8 @@ export interface EmployeeItem {
   at: string
   itemName: string
   itemDetails: string
+  sizeGroup: SizeGroup
+  /** As stored on the line: a clothing size may be a letter from before EU numbers. */
   size: string | null
   quantity: number
   servicePeriodMonths: number
@@ -38,6 +40,7 @@ export function employeeItems(orders: readonly ListedOrder[]): { given: Employee
         at,
         itemName: l.item_name,
         itemDetails: l.item_details,
+        sizeGroup: l.size_group,
         size: l.size,
         quantity: l.quantity,
         servicePeriodMonths: l.service_period_months,

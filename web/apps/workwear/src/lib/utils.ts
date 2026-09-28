@@ -1,3 +1,4 @@
+import type { ClothingSize } from '@ppe/api-client'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -26,8 +27,13 @@ export function formatMonths(months: number | null | undefined): string {
 }
 
 /** A size for tables: no-size items show an en dash. */
-export function formatSize(size: string | null | undefined): string {
-  return size ?? '–'
+export function formatSize(size: string | number | null | undefined): string {
+  return size === null || size === undefined ? '–' : String(size)
+}
+
+/** A clothing size choice: "46 (160–167 cm)" for a size a height suggests, just "44" for the rest. */
+export function clothingSizeLabel(s: ClothingSize): string {
+  return s.min_cm === null || s.max_cm === null ? s.code : `${s.code} (${s.min_cm}–${s.max_cm} cm)`
 }
 
 /** Blank input as null, otherwise trimmed. */

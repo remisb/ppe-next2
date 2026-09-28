@@ -56,7 +56,8 @@ The workwear app is the reference.
   on the header) and the same state in a `SortControl` passed as the Table's
   `sortControl`, which shows only while the table is stacked and its header hidden.
   Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
-  vocabulary via `rankIn`); a paged list (History) sends `sort`/`dir` to the API.
+  their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
+  list (History) sends `sort`/`dir` to the API.
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the

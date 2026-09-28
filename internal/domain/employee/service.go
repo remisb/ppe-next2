@@ -41,7 +41,7 @@ func NewService(repo Repository, opts ...Option) *Service {
 // sizeSnapshot is what size audit events record.
 type sizeSnapshot struct {
 	HeightCm     *int    `json:"height_cm"`
-	ClothingSize *string `json:"clothing_size"`
+	ClothingSize *int    `json:"clothing_size"`
 	ShoeSize     *string `json:"shoe_size"`
 }
 

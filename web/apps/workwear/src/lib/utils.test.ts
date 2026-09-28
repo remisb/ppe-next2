@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatEuro, formatMonths, formatSize, parseEuro } from './utils'
+import { clothingSizeLabel, formatEuro, formatMonths, formatSize, parseEuro } from './utils'
 
 describe('money and display helpers', () => {
   it('formats euros with the € symbol', () => {
@@ -19,5 +19,11 @@ describe('money and display helpers', () => {
     expect(formatMonths(1)).toBe('1 month')
     expect(formatMonths(12)).toBe('12 months')
     expect(formatSize(null)).toBe('–')
+    expect(formatSize(54)).toBe('54')
+    expect(formatSize('L')).toBe('L')
+  })
+  it('labels a clothing size with its height range only when it has one', () => {
+    expect(clothingSizeLabel({ code: '46', min_cm: 160, max_cm: 167 })).toBe('46 (160–167 cm)')
+    expect(clothingSizeLabel({ code: '44', min_cm: null, max_cm: null })).toBe('44')
   })
 })

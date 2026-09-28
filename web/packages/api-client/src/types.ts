@@ -1,5 +1,8 @@
 // Wire types, mirroring the JSON the Go handlers write. Money is integer cents
-// (EUR); sizes are the vocabulary codes from GET /api/v1/sizes.
+// (EUR); sizes are the vocabulary codes from GET /api/v1/sizes, except an
+// employee's clothing size, which is the EU number itself (44–66, even). An
+// order line holds a clothing size as its code ("54"), or as a letter (S … 3XL)
+// when it was ordered before clothing sizes became numbers.
 
 export type Role = 'admin' | 'manager' | 'employee'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
@@ -38,10 +41,11 @@ export interface LoginResponse {
   user: User
 }
 
+/** A clothing size; six carry the height range a suggestion is made from, the rest null. */
 export interface ClothingSize {
   code: string
-  min_cm: number
-  max_cm: number
+  min_cm: number | null
+  max_cm: number | null
 }
 
 export interface Sizes {
@@ -56,7 +60,7 @@ export interface Employee {
   full_name: string
   code: string | null
   height_cm: number | null
-  clothing_size: string | null
+  clothing_size: number | null
   shoe_size: string | null
   notes: string
   created_at: string
@@ -69,7 +73,7 @@ export interface EmployeeInput {
   last_name: string
   code: string | null
   height_cm: number | null
-  clothing_size: string | null
+  clothing_size: number | null
   shoe_size: string | null
   notes: string
 }
@@ -77,7 +81,7 @@ export interface EmployeeInput {
 /** Body of PUT /employees/{id}/sizes: all three are replaced. */
 export interface EmployeeSizesInput {
   height_cm: number | null
-  clothing_size: string | null
+  clothing_size: number | null
   shoe_size: string | null
 }
 
@@ -155,7 +159,7 @@ export interface ResolvedEmployee {
   full_name: string
   code: string | null
   height_cm: number | null
-  clothing_size: string | null
+  clothing_size: number | null
   shoe_size: string | null
 }
 

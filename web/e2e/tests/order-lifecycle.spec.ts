@@ -149,8 +149,8 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
 
   await page.getByRole('button', { name: 'Apply Starter kit' }).click()
 
-  // Clothing: suggested from 170 cm. Shoes: never inferred, so missing.
-  await expect(page.getByLabel('Size of Work jacket')).toHaveValue('M')
+  // Clothing: 50 suggested from 170 cm. Shoes: never inferred, so missing.
+  await expect(page.getByLabel('Size of Work jacket')).toHaveValue('50')
   await expect(page.getByText('Suggested from height')).toBeVisible()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('')
   await expect(page.getByRole('alert').filter({ hasText: 'Select a size.' })).toBeVisible()

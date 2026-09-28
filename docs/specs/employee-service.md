@@ -2,7 +2,8 @@
 
 People workwear is ordered for, and their reusable size defaults. Package
 `internal/domain/employee`, routes in `cmd/api/employee-routes.go`, table from migration
-`0003_employees`. Manual §3.2 and §4.1.
+`0003_employees` (clothing size made numeric by `0012_numeric_clothing_size`). Manual §3.2
+and §4.1.
 
 ## Entity
 
@@ -11,7 +12,7 @@ People workwear is ordered for, and their reusable size defaults. Package
 | `first_name`, `last_name` | Required (Add New Employee needs nothing else) |
 | `code` | Optional; unique among live employees, case-insensitive |
 | `height_cm` | Optional, 100–250; used only to *suggest* a clothing size |
-| `clothing_size` | Optional: S, M, L, XL, 2XL, 3XL (input is upper-cased) |
+| `clothing_size` | Optional EU size, a JSON number: even, 44–66 (else 400 "is not a known clothing size"; a string is refused) |
 | `shoe_size` | Optional: 39–46 |
 | `notes` | Optional free text |
 | `full_name` | Derived, response only |
@@ -20,6 +21,11 @@ There is no glove size: gloves and similar PPE are no-size items.
 
 Sizes are **defaults for future orders**. Orders snapshot the size they used, so editing an
 employee never alters an existing order.
+
+Clothing sizes were letters (S … 3XL) until migration 0012, which converted saved sizes
+S→46, M→50, L→54, XL→58, 2XL→62, 3XL→66. Order lines are immutable and keep the letters
+they were ordered in; new lines hold the number as a string code (`"54"`). Audit events
+written before 0012 likewise keep `clothing_size` as a letter string.
 
 ## Routes
 

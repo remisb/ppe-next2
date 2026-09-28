@@ -4,8 +4,8 @@ An internal tool for ordering workwear, PPE and equipment for one employee at a 
 recording that the employee received it.
 
 1. **Create Order.** Pick the employee (*Assigned to*). Add items one by one or apply an
-   *Item Set*. Sizes are filled in from the employee's saved sizes, and clothing sizes can
-   be suggested from height.
+   *Item Set*. Sizes are filled in from the employee's saved sizes, and clothing sizes (EU
+   44–66, even) can be suggested from height.
 2. **Mark as Ordered.** The order becomes an immutable `ORDERED` record. Each line stores a
    snapshot of the item, size, quantity, price (EUR) and service period. Later changes to
    the catalogue or to employee sizes never change existing orders. *Copy for WhatsApp*
@@ -109,7 +109,8 @@ make seed-demo
 `make seed-demo` goes through the same services as the app, as the seed admin. It adds:
 - 10 catalogue items, including one without a price and one inactive
 - 2 item sets
-- 6 employees, one without a shoe size and one without a clothing size
+- 6 employees, one without a shoe size and one without a clothing size (190 cm, so 62 is
+  suggested)
 - 6 orders over the last four months: three GIVEN (two on paper, one electronically) and
   three ORDERED
 

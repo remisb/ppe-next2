@@ -45,7 +45,8 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | Rule | Covered by |
 | --- | --- |
 | Action visibility by state (§6) | web `historyActions` test; e2e ORDERED / GIVEN actions |
-| Size resolution (§4.4, algorithm A) | `size` and `order.TestResolve*`; e2e suggested M from 170 cm, shoes never inferred |
+| Size resolution (§4.4, algorithm A) | `size` and `order.TestResolve*`; e2e suggested 50 from 170 cm, shoes never inferred |
+| Clothing sizes are even EU numbers 44–66 (migration 0012), a height band on six of them; letter sizes stay on old order lines and still display and sort, but a new line cannot use one; a Create Order draft from before is dropped | `size.TestClothingVocabulary`, `TestClothingRangesContiguous`, `TestSuggestClothing`, `TestIsClothingNumber`, `TestFits`; `employee.TestParamsValidate`, `TestSizeChangesAudited`, `TestPostgresClothingSizeCheck`; `order.TestCheckSize`, `TestMarkAsOrderedRejections` "letter clothing size"; `TestPostgresEmployeeHTTPFlow` (numbers, the vocabulary); web `sort` (`sizeRank`), `utils` (`clothingSizeLabel`), `working-order` (drafts, Save as Employee Default) tests |
 | Apply Item Set uses fresh data (§3.4) | `TestApplyItemSet`, `TestPostgresCreateOrderResolution`, e2e |
 | Save as Employee Default | web `applySavedDefault`; e2e (the saved shoe size resolves on the next order) |
 | Usage time (algorithm D) | `TestUsageMonths`, `TestListAddsUsageTimeForGivenOnly`, e2e "0.0 months" |

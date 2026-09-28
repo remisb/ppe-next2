@@ -51,7 +51,7 @@ the catalogue, item sets and sizes are live, since the manager maintains them.
 | `price_changes` | The 8 newest `catalogue.price_changed` audit events of the 12 months: price and service period before and after, who and when |
 | `catalogue` | Active and inactive counts; active items without a price or service period; active, priced items on no order in the 12 months |
 | `item_sets` | Active sets with a line whose item is inactive, deleted, or has no price or service period |
-| `sizes` | Live employees per clothing size (saved, or suggested from height as in Create Order) and shoe size, in vocabulary order with zeros; how many have none, and how many clothing sizes are suggested |
+| `sizes` | Live employees per clothing size (saved, or suggested from height as in Create Order) and shoe size, in vocabulary order with zeros (12 clothing sizes, `"44"` … `"66"`; 8 shoe sizes); how many have none, and how many clothing sizes are suggested |
 
 ## Employee Dashboard
 

@@ -165,10 +165,11 @@ func TestManagerDerivedFields(t *testing.T) {
 	repo := &fakeRepo{outMgr: ManagerFigures{
 		ManagerOverview: ManagerOverview{Months: make([]OrderedMonth, Months), Forecast: Forecast{Lines: lines}},
 		SizeGroups: []EmployeeSizes{
-			{ClothingSize: sp("M"), ShoeSize: sp("42"), Employees: 2},
-			{HeightCm: ip(190), Employees: 1},                                            // suggested 2XL, no shoe size
-			{HeightCm: ip(120), Employees: 1},                                            // too short to suggest: no clothing size
-			{ClothingSize: sp("M"), HeightCm: ip(190), ShoeSize: sp("45"), Employees: 1}, // the saved size wins
+			{ClothingSize: ip(50), ShoeSize: sp("42"), Employees: 2},
+			{HeightCm: ip(190), Employees: 1},                                           // suggested 62, no shoe size
+			{HeightCm: ip(120), Employees: 1},                                           // too short to suggest: no clothing size
+			{ClothingSize: ip(50), HeightCm: ip(190), ShoeSize: sp("45"), Employees: 1}, // the saved size wins
+			{ClothingSize: ip(44), ShoeSize: sp("44"), Employees: 1},                    // 44 is a size in both groups
 		},
 	}}
 	svc := NewService(repo, WithClock(func() time.Time { return now }))
@@ -202,8 +203,10 @@ func TestManagerDerivedFields(t *testing.T) {
 		return -1
 	}
 	s := o.Sizes
-	if len(s.Clothing) != 6 || s.Clothing[0].Size != "S" || count(s.Clothing, "M") != 3 || count(s.Clothing, "2XL") != 1 ||
-		s.Suggested != 1 || s.NoClothing != 1 || count(s.Shoes, "42") != 2 || count(s.Shoes, "45") != 1 || s.NoShoes != 2 || len(s.Shoes) != 8 {
+	if len(s.Clothing) != 12 || s.Clothing[0].Size != "44" || s.Clothing[11].Size != "66" || count(s.Clothing, "44") != 1 ||
+		count(s.Clothing, "48") != 0 || count(s.Clothing, "50") != 3 || count(s.Clothing, "62") != 1 ||
+		s.Suggested != 1 || s.NoClothing != 1 || count(s.Shoes, "42") != 2 || count(s.Shoes, "44") != 1 || count(s.Shoes, "45") != 1 ||
+		s.NoShoes != 2 || len(s.Shoes) != 8 {
 		t.Errorf("sizes = %+v", s)
 	}
 }

@@ -97,12 +97,12 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	visitor := s.set("Visitor PPE", "Short-term site access",
 		vest, 1, glasses, 1, helmet, 1)
 
-	jonas := s.employee("Jonas", "Petraitis", "W-001", 184, "XL", "43", "")
-	ona := s.employee("Ona", "Kazlauskienė", "W-002", 165, "S", "39", "")
-	tomas := s.employee("Tomas", "Jankauskas", "W-003", 190, "", "45", "Clothing size not recorded yet; suggested from height")
-	rasa := s.employee("Rasa", "Stankevičiūtė", "W-004", 171, "M", "", "Shoe size missing")
-	mindaugas := s.employee("Mindaugas", "Vasiliauskas", "", 178, "L", "44", "")
-	aleksandr := s.employee("Aleksandr", "Ivanov", "W-006", 189, "2XL", "46", "Prefers Russian")
+	jonas := s.employee("Jonas", "Petraitis", "W-001", 184, 58, "43", "")
+	ona := s.employee("Ona", "Kazlauskienė", "W-002", 165, 46, "39", "")
+	tomas := s.employee("Tomas", "Jankauskas", "W-003", 190, 0, "45", "Clothing size not recorded yet; suggested from height")
+	rasa := s.employee("Rasa", "Stankevičiūtė", "W-004", 171, 50, "", "Shoe size missing")
+	mindaugas := s.employee("Mindaugas", "Vasiliauskas", "", 178, 54, "44", "")
+	aleksandr := s.employee("Aleksandr", "Ivanov", "W-006", 189, 62, "46", "Prefers Russian")
 	if s.err != nil {
 		return s.err
 	}
@@ -188,13 +188,15 @@ func (s *seeder) set(name, description string, pairs ...any) uuid.UUID {
 	return set.ID
 }
 
-func (s *seeder) employee(first, last, code string, heightCm int, clothing, shoe, notes string) employee.Employee {
+// employee adds an employee; a clothing size of 0 and an empty shoe size are
+// not recorded.
+func (s *seeder) employee(first, last, code string, heightCm, clothing int, shoe, notes string) employee.Employee {
 	if s.err != nil {
 		return employee.Employee{}
 	}
 	e, err := s.employees.Create(s.ctx, employee.Params{
 		FirstName: first, LastName: last, Code: optional(code), HeightCm: &heightCm,
-		ClothingSize: optional(clothing), ShoeSize: optional(shoe), Notes: notes,
+		ClothingSize: optionalInt(clothing), ShoeSize: optional(shoe), Notes: notes,
 	}, s.actor)
 	s.fail("employee "+first+" "+last, err)
 	return e
@@ -275,6 +277,13 @@ func optional(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func optionalInt(n int) *int {
+	if n == 0 {
+		return nil
+	}
+	return &n
 }
 
 func ptr[T any](v T) *T { return &v }

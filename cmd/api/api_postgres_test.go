@@ -86,15 +86,29 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	}
 
 	// Save as Employee Default.
-	rec = api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", staff, map[string]any{"height_cm": 180, "clothing_size": "l", "shoe_size": "43"})
+	rec = api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", staff, map[string]any{"height_cm": 180, "clothing_size": 54, "shoe_size": "43"})
 	if rec.Code != http.StatusOK {
 		t.Fatalf("sizes = %d %s", rec.Code, rec.Body)
 	}
-	if got := decode[map[string]any](t, rec.Body.Bytes()); got["clothing_size"] != "L" {
+	if got := decode[map[string]any](t, rec.Body.Bytes()); got["clothing_size"] != 54.0 {
 		t.Errorf("sizes = %v", got)
 	}
 	if rec := api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", staff, map[string]any{"shoe_size": "38"}); rec.Code != http.StatusBadRequest {
 		t.Errorf("bad shoe size = %d", rec.Code)
+	}
+	// Clothing sizes are even EU numbers; a letter or a string is refused.
+	for _, bad := range []any{55, 68, "L", "54"} {
+		if rec := api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", staff, map[string]any{"clothing_size": bad}); rec.Code != http.StatusBadRequest {
+			t.Errorf("clothing size %v = %d", bad, rec.Code)
+		}
+	}
+	// The vocabulary: 12 clothing sizes, a height band on six of them.
+	rec = api.do(t, "GET", "/api/v1/sizes", staff, nil)
+	for _, want := range []string{`{"code":"44","min_cm":null,"max_cm":null}`, `{"code":"46","min_cm":160,"max_cm":167}`,
+		`{"code":"66","min_cm":194,"max_cm":200}`} {
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("sizes = %d %s, want %s", rec.Code, rec.Body, want)
+		}
 	}
 
 	// Search is a filter: a miss is 200 [].
@@ -236,7 +250,7 @@ func TestPostgresCreateOrderResolution(t *testing.T) {
 	if len(res.Lines) != 3 || res.Lines[0].CatalogueItemID != jacket || res.Lines[2].Quantity != 10 {
 		t.Fatalf("apply lines = %+v", res.Lines)
 	}
-	if res.Lines[0].Size == nil || *res.Lines[0].Size != "M" || !res.Lines[0].SizeSuggested { // 170 cm → M
+	if res.Lines[0].Size == nil || *res.Lines[0].Size != "50" || !res.Lines[0].SizeSuggested { // 170 cm → 50
 		t.Errorf("jacket = %+v", res.Lines[0])
 	}
 	if !res.Lines[1].SizeMissing || res.Orderable { // no shoe size saved; never inferred
@@ -560,7 +574,7 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 		t.Fatalf("manager: %d %s", rec.Code, rec.Body)
 	}
 	body = rec.Body.String()
-	for _, want := range []string{`"lines":[]`, `"spend_by_item":[]`, `"price_changes":[]`, `"item_sets":[]`, `"unpriced":[]`, `"days":90`, `{"size":"S","employees":0}`} {
+	for _, want := range []string{`"lines":[]`, `"spend_by_item":[]`, `"price_changes":[]`, `"item_sets":[]`, `"unpriced":[]`, `"days":90`, `{"size":"44","employees":0}`, `{"size":"66","employees":0}`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("manager body lacks %s: %s", want, body)
 		}

@@ -28,7 +28,7 @@ type Employee struct {
 	LastName        string     `json:"last_name"`
 	Code            *string    `json:"code"`
 	HeightCm        *int       `json:"height_cm"`
-	ClothingSize    *string    `json:"clothing_size"`
+	ClothingSize    *int       `json:"clothing_size"` // EU size, even 44–66
 	ShoeSize        *string    `json:"shoe_size"`
 	Notes           string     `json:"notes"`
 	CreatedAt       time.Time  `json:"created_at"`
@@ -56,7 +56,7 @@ type Params struct {
 	LastName     string
 	Code         *string
 	HeightCm     *int
-	ClothingSize *string
+	ClothingSize *int
 	ShoeSize     *string
 	Notes        string
 }
@@ -65,7 +65,6 @@ func (p *Params) Normalize() {
 	p.FirstName = strings.TrimSpace(p.FirstName)
 	p.LastName = strings.TrimSpace(p.LastName)
 	p.Code = blankToNil(p.Code)
-	p.ClothingSize = upperBlankToNil(p.ClothingSize)
 	p.ShoeSize = blankToNil(p.ShoeSize)
 	p.Notes = strings.TrimSpace(p.Notes)
 }
@@ -93,12 +92,11 @@ func (p *Params) Validate() error {
 // SizesParams is Edit Sizes / Save as Employee Default: the size defaults only.
 type SizesParams struct {
 	HeightCm     *int
-	ClothingSize *string
+	ClothingSize *int
 	ShoeSize     *string
 }
 
 func (p *SizesParams) Normalize() {
-	p.ClothingSize = upperBlankToNil(p.ClothingSize)
 	p.ShoeSize = blankToNil(p.ShoeSize)
 }
 
@@ -107,7 +105,7 @@ func (p *SizesParams) Validate() error {
 	if p.HeightCm != nil && (*p.HeightCm < minHeightCm || *p.HeightCm > maxHeightCm) {
 		return fieldError("height_cm", "must be between 100 and 250")
 	}
-	if p.ClothingSize != nil && !size.IsClothing(*p.ClothingSize) {
+	if p.ClothingSize != nil && !size.IsClothingNumber(*p.ClothingSize) {
 		return fieldError("clothing_size", "is not a known clothing size")
 	}
 	if p.ShoeSize != nil && !size.IsShoe(*p.ShoeSize) {
@@ -125,12 +123,4 @@ func blankToNil(s *string) *string {
 		return nil
 	}
 	return &v
-}
-
-func upperBlankToNil(s *string) *string {
-	v := blankToNil(s)
-	if v != nil {
-		*v = strings.ToUpper(*v)
-	}
-	return v
 }

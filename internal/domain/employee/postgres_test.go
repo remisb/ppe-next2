@@ -64,11 +64,14 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 		t.Fatalf("get = %+v, %v", got, err)
 	}
 
-	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{HeightCm: ip(181), ClothingSize: sp2("L")}, actor); err != nil {
+	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{HeightCm: ip(181), ClothingSize: ip(54)}, actor); err != nil {
 		t.Fatal(err)
 	}
 	if countEvents(t, pool, e.ID, EventSizesChanged) != 1 {
 		t.Error("sizes_changed event missing")
+	}
+	if got, err := svc.Get(ctx, e.ID); err != nil || got.ClothingSize == nil || *got.ClothingSize != 54 {
+		t.Errorf("clothing size = %v, %v; want 54", got.ClothingSize, err)
 	}
 
 	res, err := svc.Search(ctx, "petr")
@@ -90,6 +93,24 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 	}
 	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, actor); err != nil {
 		t.Errorf("code reuse after delete: %v", err)
+	}
+}
+
+// TestPostgresClothingSizeCheck proves the CHECK from migration 0012 agrees
+// with size.IsClothingNumber: even EU sizes 44–66 only.
+func TestPostgresClothingSizeCheck(t *testing.T) {
+	pool, actor := newTestPool(t)
+	svc := NewService(NewPostgresRepository(pool))
+	ctx := context.Background()
+	e, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for n := 42; n <= 68; n++ {
+		_, err := pool.Exec(ctx, `UPDATE employees SET clothing_size = $2 WHERE id = $1`, e.ID, n)
+		if ok := n%2 == 0 && n >= 44 && n <= 66; ok != (err == nil) {
+			t.Errorf("clothing_size %d: err = %v", n, err)
+		}
 	}
 }
 

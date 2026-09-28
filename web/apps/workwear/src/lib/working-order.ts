@@ -232,8 +232,14 @@ function mapLine(order: WorkingOrder, id: string, f: (l: WorkingLine) => Working
 // on this device, so a colleague signing in here never sees it. Sign out
 // clears it; a session that simply expires does not, since signing back in
 // should find the work where it was left.
-const DRAFT_PREFIX = 'workwear.createOrder.v2.'
-/** Before drafts outlived the tab they were kept per tab; one found there is moved over once. */
+const DRAFT_PREFIX = 'workwear.createOrder.v3.'
+/**
+ * Drafts saved before clothing sizes became EU numbers (migration 0012) may
+ * hold letter sizes and an employee with a letter default, which a new order
+ * cannot use: v2 (per user) and v1 (per tab, from before drafts outlived the
+ * tab) are dropped, never restored.
+ */
+const OLD_PREFIX = 'workwear.createOrder.v2.'
 const LEGACY_KEY = 'workwear.createOrder.v1'
 
 const draftKey = (userId: string) => DRAFT_PREFIX + userId
@@ -264,12 +270,9 @@ export function loadDraft(
   legacy: Storage | undefined = globalThis.sessionStorage,
 ): WorkingOrder {
   try {
-    const own = parseDraft(storage?.getItem(draftKey(userId)))
-    if (own) return own
-    const old = parseDraft(legacy?.getItem(LEGACY_KEY))
+    storage?.removeItem(OLD_PREFIX + userId)
     legacy?.removeItem(LEGACY_KEY)
-    if (old) saveDraft(old, userId, storage)
-    return old ?? emptyOrder
+    return parseDraft(storage?.getItem(draftKey(userId))) ?? emptyOrder
   } catch {
     return emptyOrder
   }

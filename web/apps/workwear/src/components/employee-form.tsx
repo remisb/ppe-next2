@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi } from '@/lib/api'
-import { blankToNull } from '@/lib/utils'
+import { blankToNull, clothingSizeLabel } from '@/lib/utils'
 import { errorText } from '@/lib/use-load'
 
 interface Props {
@@ -25,6 +25,7 @@ interface Draft {
   last_name: string
   code: string
   height_cm: string
+  /** The select's value: the EU number as text, '' when not set. */
   clothing_size: string
   shoe_size: string
   notes: string
@@ -36,7 +37,7 @@ function draftOf(e: Employee | undefined): Draft {
     last_name: e?.last_name ?? '',
     code: e?.code ?? '',
     height_cm: e?.height_cm?.toString() ?? '',
-    clothing_size: e?.clothing_size ?? '',
+    clothing_size: e?.clothing_size?.toString() ?? '',
     shoe_size: e?.shoe_size ?? '',
     notes: e?.notes ?? '',
   }
@@ -73,7 +74,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       last_name: d.last_name,
       code: blankToNull(d.code),
       height_cm: height,
-      clothing_size: blankToNull(d.clothing_size),
+      clothing_size: d.clothing_size === '' ? null : Number(d.clothing_size),
       shoe_size: blankToNull(d.shoe_size),
       notes: d.notes,
     }
@@ -122,7 +123,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
               <option value="">Not set</option>
               {sizes?.clothing.map((s) => (
                 <option key={s.code} value={s.code}>
-                  {s.code} ({s.min_cm}–{s.max_cm} cm)
+                  {clothingSizeLabel(s)}
                 </option>
               ))}
             </Select>

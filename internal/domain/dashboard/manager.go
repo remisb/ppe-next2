@@ -140,7 +140,7 @@ type SizeCount struct {
 // EmployeeSizes is one group of live employees with the same saved sizes and
 // height, as the repository counts them.
 type EmployeeSizes struct {
-	ClothingSize *string
+	ClothingSize *int
 	HeightCm     *int
 	ShoeSize     *string
 	Employees    int

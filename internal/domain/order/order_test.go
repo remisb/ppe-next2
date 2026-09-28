@@ -19,7 +19,7 @@ func TestMarkAsOrderedValidate(t *testing.T) {
 		p    MarkAsOrderedParams
 		want error
 	}{
-		{"ok", MarkAsOrderedParams{emp, []LineParams{{a, 1, sp("M")}, {b, 2, nil}}}, nil},
+		{"ok", MarkAsOrderedParams{emp, []LineParams{{a, 1, sp("50")}, {b, 2, nil}}}, nil},
 		{"no employee", MarkAsOrderedParams{uuid.Nil, []LineParams{{a, 1, nil}}}, ErrInvalid},
 		{"no lines", MarkAsOrderedParams{emp, nil}, ErrInvalid},
 		{"zero quantity", MarkAsOrderedParams{emp, []LineParams{{a, 0, nil}}}, ErrInvalid},
@@ -37,7 +37,10 @@ func TestMarkAsOrderedValidate(t *testing.T) {
 }
 
 func TestCheckSize(t *testing.T) {
-	if err := CheckSize(0, size.GroupClothing, sp("L")); err != nil {
+	if err := CheckSize(0, size.GroupClothing, sp("54")); err != nil {
+		t.Error(err)
+	}
+	if err := CheckSize(0, size.GroupShoes, sp("44")); err != nil {
 		t.Error(err)
 	}
 	if err := CheckSize(0, size.GroupNone, nil); err != nil {
@@ -46,7 +49,11 @@ func TestCheckSize(t *testing.T) {
 	for _, tc := range []struct {
 		g size.Group
 		s *string
-	}{{size.GroupClothing, nil}, {size.GroupShoes, sp("M")}, {size.GroupNone, sp("M")}} {
+	}{
+		{size.GroupClothing, nil}, {size.GroupShoes, sp("M")}, {size.GroupNone, sp("M")},
+		// A letter size stays on the order lines that hold it, but a new line cannot use it.
+		{size.GroupClothing, sp("L")}, {size.GroupClothing, sp("55")}, {size.GroupShoes, sp("48")},
+	} {
 		if err := CheckSize(2, tc.g, tc.s); !errors.Is(err, ErrInvalid) {
 			t.Errorf("CheckSize(%s, %v) = %v, want ErrInvalid", tc.g, tc.s, err)
 		}

@@ -177,7 +177,7 @@ func newMarkFixture() markFixture {
 func TestMarkAsOrderedSnapshots(t *testing.T) {
 	f := newMarkFixture()
 	o, err := f.svc.MarkAsOrdered(context.Background(), MarkAsOrderedParams{EmployeeID: f.emp, Lines: []LineParams{
-		{f.jacket, 1, sp("L")}, {f.shoes, 1, sp("43")}, {f.gloves, 10, nil},
+		{f.jacket, 1, sp("54")}, {f.shoes, 1, sp("43")}, {f.gloves, 10, nil},
 	}}, f.actor)
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +187,7 @@ func TestMarkAsOrderedSnapshots(t *testing.T) {
 		t.Errorf("order = %+v", o)
 	}
 	l := o.Lines
-	if len(l) != 3 || l[0].LineNo != 1 || l[0].ItemName != "Work jacket" || *l[0].Size != "L" ||
+	if len(l) != 3 || l[0].LineNo != 1 || l[0].ItemName != "Work jacket" || *l[0].Size != "54" ||
 		l[1].UnitPriceCents != 4999 || l[2].Size != nil || l[2].Quantity != 10 || l[2].ServicePeriodMonths != 12 {
 		t.Errorf("lines = %+v", l)
 	}
@@ -221,8 +221,9 @@ func TestMarkAsOrderedRejections(t *testing.T) {
 		"unknown actor":        {MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 1, nil}}}, uuid.New(), ErrActorNotFound},
 		"unknown employee":     {MarkAsOrderedParams{uuid.New(), []LineParams{{f.gloves, 1, nil}}}, f.actor, ErrEmployeeNotFound},
 		"missing size":         {MarkAsOrderedParams{f.emp, []LineParams{{f.shoes, 1, nil}}}, f.actor, ErrInvalid},
-		"wrong group size":     {MarkAsOrderedParams{f.emp, []LineParams{{f.shoes, 1, sp("M")}}}, f.actor, ErrInvalid},
-		"size on no-size item": {MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 1, sp("M")}}}, f.actor, ErrInvalid},
+		"wrong group size":     {MarkAsOrderedParams{f.emp, []LineParams{{f.shoes, 1, sp("50")}}}, f.actor, ErrInvalid},
+		"letter clothing size": {MarkAsOrderedParams{f.emp, []LineParams{{f.jacket, 1, sp("L")}}}, f.actor, ErrInvalid},
+		"size on no-size item": {MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 1, sp("50")}}}, f.actor, ErrInvalid},
 		"price missing":        {MarkAsOrderedParams{f.emp, []LineParams{{f.draft, 1, nil}}}, f.actor, ErrPriceMissing},
 		"inactive item":        {MarkAsOrderedParams{f.emp, []LineParams{{f.retired, 1, nil}}}, f.actor, ErrItemUnavailable},
 		"deleted item":         {MarkAsOrderedParams{f.emp, []LineParams{{uuid.New(), 1, nil}}}, f.actor, ErrItemUnavailable},

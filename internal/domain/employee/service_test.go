@@ -172,23 +172,23 @@ func TestSizeChangesAudited(t *testing.T) {
 		t.Fatalf("rename recorded %d events", len(repo.events))
 	}
 
-	got, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: sp2("l"), ShoeSize: sp2("44")}, testActor)
+	got, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: ip(54), ShoeSize: sp2("44")}, testActor)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *got.ClothingSize != "L" || got.FirstName != "A2" {
+	if *got.ClothingSize != 54 || got.FirstName != "A2" {
 		t.Errorf("after sizes = %+v", got)
 	}
 	if len(repo.events) != 1 || repo.events[0].Event != EventSizesChanged {
 		t.Fatalf("events = %+v", repo.events)
 	}
 	if !strings.Contains(string(repo.events[0].Before), `"clothing_size":null`) ||
-		!strings.Contains(string(repo.events[0].After), `"clothing_size":"L"`) {
+		!strings.Contains(string(repo.events[0].After), `"clothing_size":54`) {
 		t.Errorf("before %s after %s", repo.events[0].Before, repo.events[0].After)
 	}
 
 	// Same sizes again: no event.
-	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: sp2("L"), ShoeSize: sp2("44")}, testActor); err != nil {
+	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: ip(54), ShoeSize: sp2("44")}, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 {
@@ -196,6 +196,10 @@ func TestSizeChangesAudited(t *testing.T) {
 	}
 	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ShoeSize: sp2("38")}, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("bad shoe size err = %v", err)
+	}
+	if _, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: ip(55)}, testActor); !errors.Is(err, ErrInvalid) ||
+		!strings.Contains(err.Error(), "clothing_size is not a known clothing size") {
+		t.Errorf("odd clothing size err = %v", err)
 	}
 	if _, err := svc.UpdateSizes(ctx, uuid.New(), SizesParams{}, testActor); !errors.Is(err, ErrNotFound) {
 		t.Errorf("unknown employee err = %v", err)

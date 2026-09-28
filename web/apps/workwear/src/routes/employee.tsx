@@ -13,7 +13,7 @@ import { useApi } from '@/lib/api'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatDateTime, formatUsage } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
-import { type SortColumn, type SortState, type SortValue, rankIn, sortRows } from '@/lib/sort'
+import { type SortColumn, type SortState, sizeRank, sortRows } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
 import { cn, formatMonths, formatSize } from '@/lib/utils'
 
@@ -41,7 +41,6 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const reorder = due.filter((d) => d.dueSoon && !d.reordered)
   const dueByLine = useMemo(() => new Map(due.map((d) => [d.item.key, d])), [due])
   const tz = settings.data?.timezone
-  const clothing = useMemo(() => sizes.data?.clothing.map((s) => s.code) ?? [], [sizes.data])
   const e = employee.data
 
   return (
@@ -126,7 +125,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             ) : items.given.length === 0 ? (
               <EmptyState>No items have been given to {e.first_name} yet.</EmptyState>
             ) : (
-              <ItemsTable items={items.given} dateLabel="Given" tz={tz} clothing={clothing} due={dueByLine} navigate={navigate} />
+              <ItemsTable items={items.given} dateLabel="Given" tz={tz} due={dueByLine} navigate={navigate} />
             )}
           </section>
 
@@ -136,7 +135,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 Ordered, not yet given
               </h2>
               <p className="mb-3 text-sm text-muted-foreground">Waiting for the employee to confirm receipt.</p>
-              <ItemsTable items={items.ordered} dateLabel="Ordered" tz={tz} clothing={clothing} navigate={navigate} />
+              <ItemsTable items={items.ordered} dateLabel="Ordered" tz={tz} navigate={navigate} />
             </section>
           ) : null}
 
@@ -177,16 +176,6 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 type ItemSort = 'item' | 'size' | 'quantity' | 'date' | 'usage' | 'period' | 'due' | 'record'
 
 /**
- * Sizes in size order: clothing S … 3XL by the vocabulary, then shoe sizes by
- * number, rather than by spelling (which puts L before M before S).
- */
-function sizeValue(size: string | null, clothing: readonly string[]): SortValue {
-  if (!size) return null
-  const n = Number(size)
-  return Number.isFinite(n) ? 1000 + n : rankIn(clothing, size)
-}
-
-/**
  * Given items link to their receipt (View Record). An ORDERED order has no
  * receipt yet (manual §6), so its record number is plain text. Each table
  * sorts on its own; with no sort it keeps newest activity first.
@@ -195,14 +184,12 @@ function ItemsTable({
   items,
   dateLabel,
   tz,
-  clothing,
   due,
   navigate,
 }: {
   items: EmployeeItem[]
   dateLabel: string
   tz: string | undefined
-  clothing: readonly string[]
   /** For given items: when each item's latest line is due for replacement. Older lines are replaced. */
   due?: Map<string, Due>
   navigate: (to: Route) => void
@@ -227,7 +214,7 @@ function ItemsTable({
           case 'item':
             return i.itemName
           case 'size':
-            return sizeValue(i.size, clothing)
+            return sizeRank(i.sizeGroup, i.size)
           case 'quantity':
             return i.quantity
           case 'date':
@@ -242,7 +229,7 @@ function ItemsTable({
             return i.recordNumber
         }
       }),
-    [items, sort, clothing, due],
+    [items, sort, due],
   )
   return (
     <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Newest first" {...sortProps} />}>

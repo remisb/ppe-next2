@@ -24,7 +24,7 @@ import { useApi, useSession } from '@/lib/api'
 import { loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import type { NavigateOptions, Prefill, Route } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatMonths } from '@/lib/utils'
+import { clothingSizeLabel, cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
 import {
   type SizeConflict,
@@ -204,7 +204,8 @@ export function CreateOrder({
     void run(async () => {
       const updated = await client.employees.updateSizes(emp.id, {
         height_cm: emp.height_cm,
-        clothing_size: p.group === 'CLOTHING' ? p.size : emp.clothing_size,
+        // The employee keeps the EU number; the line keeps its code ("54").
+        clothing_size: p.group === 'CLOTHING' ? Number(p.size) : emp.clothing_size,
         shoe_size: p.group === 'SHOES' ? p.size : emp.shoe_size,
       })
       setOrder((o) => applySavedDefault(o, toResolvedEmployee(updated), p.group, p.size))
@@ -725,7 +726,7 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
     )
   const options =
     line.sizeGroup === 'CLOTHING'
-      ? (sizes?.clothing ?? []).map((s) => ({ value: s.code, label: `${s.code} (${s.min_cm}–${s.max_cm} cm)` }))
+      ? (sizes?.clothing ?? []).map((s) => ({ value: s.code, label: clothingSizeLabel(s) }))
       : (sizes?.shoes ?? []).map((s) => ({ value: s.code, label: s.code }))
   const missing = line.size === null
   return (

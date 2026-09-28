@@ -46,7 +46,7 @@ type employeeRequest struct {
 	LastName     string  `json:"last_name"`
 	Code         *string `json:"code"`
 	HeightCm     *int    `json:"height_cm"`
-	ClothingSize *string `json:"clothing_size"`
+	ClothingSize *int    `json:"clothing_size"`
 	ShoeSize     *string `json:"shoe_size"`
 	Notes        string  `json:"notes"`
 }
@@ -60,7 +60,7 @@ func (req employeeRequest) params() employee.Params {
 
 type employeeSizesRequest struct {
 	HeightCm     *int    `json:"height_cm"`
-	ClothingSize *string `json:"clothing_size"`
+	ClothingSize *int    `json:"clothing_size"`
 	ShoeSize     *string `json:"shoe_size"`
 }
 

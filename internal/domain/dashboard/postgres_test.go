@@ -51,12 +51,12 @@ func seedPG(t *testing.T) pgData {
 	ona, jonas, gone := uuid.New(), uuid.New(), uuid.New()
 	// Ona has every size; Jonas has no shoe size; gone is deleted.
 	exec(`INSERT INTO employees (id, first_name, last_name, code, clothing_size, shoe_size, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, 'Ona', 'Kazlauskienė', 'W-1', 'M', '39', now(), now(), $2, $2)`, ona, admin)
+		VALUES ($1, 'Ona', 'Kazlauskienė', 'W-1', 50, '39', now(), now(), $2, $2)`, ona, admin)
 	exec(`INSERT INTO employees (id, first_name, last_name, height_cm, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Jonas', 'Petraitis', 180, now(), now(), $2, $2)`, jonas, admin)
 	exec(`INSERT INTO employees (id, first_name, last_name, clothing_size, shoe_size, created_at, updated_at, deleted_at,
 			created_by_user_id, updated_by_user_id, deleted_by_user_id)
-		VALUES ($1, 'Gone', 'Away', 'L', '44', now(), now(), now(), $2, $2, $2)`, gone, admin)
+		VALUES ($1, 'Gone', 'Away', 54, '44', now(), now(), now(), $2, $2, $2)`, gone, admin)
 
 	shoes, gloves, draft := uuid.New(), uuid.New(), uuid.New()
 	exec(`INSERT INTO catalogue_items (id, name, size_group, unit_price_cents, service_period_months, created_at, updated_at, created_by_user_id, updated_by_user_id)
@@ -289,8 +289,9 @@ func TestPostgresManager(t *testing.T) {
 	if s := o.ItemSets; len(s) != 1 || s[0].ID != starter || s[0].Inactive != 1 || s[0].Unpriced != 1 {
 		t.Errorf("item sets = %+v", s)
 	}
-	// Ona: M and 39. Jonas: 180 cm suggests a clothing size, no shoe size.
-	if s := o.Sizes; s.Suggested != 1 || s.NoClothing != 0 || s.NoShoes != 1 || s.Shoes[0] != (SizeCount{Size: "39", Employees: 1}) {
+	// Ona: 50 and 39. Jonas: 180 cm suggests 54, no shoe size. Gone (54) is deleted.
+	if s := o.Sizes; s.Suggested != 1 || s.NoClothing != 0 || s.NoShoes != 1 || s.Shoes[0] != (SizeCount{Size: "39", Employees: 1}) ||
+		len(s.Clothing) != 12 || s.Clothing[3] != (SizeCount{Size: "50", Employees: 1}) || s.Clothing[5] != (SizeCount{Size: "54", Employees: 1}) {
 		t.Errorf("sizes = %+v", s)
 	}
 }

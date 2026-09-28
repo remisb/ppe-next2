@@ -103,7 +103,7 @@ type resolvedEmployeeJSON struct {
 	FullName     string    `json:"full_name"`
 	Code         *string   `json:"code"`
 	HeightCm     *int      `json:"height_cm"`
-	ClothingSize *string   `json:"clothing_size"`
+	ClothingSize *int      `json:"clothing_size"`
 	ShoeSize     *string   `json:"shoe_size"`
 }
 

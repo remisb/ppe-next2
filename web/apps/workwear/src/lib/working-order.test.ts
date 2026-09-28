@@ -61,7 +61,7 @@ describe('addLines', () => {
 
   it('records the size source', () => {
     const o = addLines(emptyOrder, [
-      line('a', { size_group: 'CLOTHING', size: 'M', size_suggested: true }),
+      line('a', { size_group: 'CLOTHING', size: '50', size_suggested: true }),
       line('b', { size_group: 'SHOES', size: '42' }),
     ])
     expect(o.lines.map((l) => l.sizeSource)).toEqual(['suggested', 'saved'])
@@ -88,10 +88,10 @@ describe('reassign', () => {
   })
 
   it('takes resolved sizes for lines that were not set by hand', () => {
-    const o = addLines({ employee: ona, lines: [] }, [line('jacket', { size_group: 'CLOTHING', size: 'M' })])
-    const { order, conflicts } = reassign(o, jonas, [line('jacket', { size_group: 'CLOTHING', size: 'XL' })])
+    const o = addLines({ employee: ona, lines: [] }, [line('jacket', { size_group: 'CLOTHING', size: '50' })])
+    const { order, conflicts } = reassign(o, jonas, [line('jacket', { size_group: 'CLOTHING', size: '58' })])
     expect(conflicts).toEqual([])
-    expect(order.lines[0]!.size).toBe('XL')
+    expect(order.lines[0]!.size).toBe('58')
   })
 })
 
@@ -110,6 +110,20 @@ describe('applySavedDefault', () => {
       [null, 'none'],
     ])
     expect(o.employee?.shoe_size).toBe('42')
+  })
+
+  it('keeps the clothing default as a number and the line size as its code', () => {
+    let o = addLines({ employee: ona, lines: [] }, [
+      line('jacket', { size_group: 'CLOTHING', size_missing: true }),
+      line('boots', { size_group: 'SHOES', size_missing: true }),
+    ])
+    o = setManualSize(o, 'jacket', '44')
+    o = applySavedDefault(o, { ...ona, clothing_size: 44 }, 'CLOTHING', '44')
+    expect(o.lines.map((l) => [l.size, l.sizeSource])).toEqual([
+      ['44', 'saved'],
+      [null, 'none'],
+    ])
+    expect(o.employee?.clothing_size).toBe(44)
   })
 })
 
@@ -136,7 +150,7 @@ describe('validate', () => {
   })
 
   it('accepts a complete order', () => {
-    const o = addLines({ employee: ona, lines: [] }, [line('a', { quantity: 2 }), line('b', { size_group: 'CLOTHING', size: 'L' })])
+    const o = addLines({ employee: ona, lines: [] }, [line('a', { quantity: 2 }), line('b', { size_group: 'CLOTHING', size: '54' })])
     expect(validate(o).valid).toBe(true)
     expect(totalCents(o)).toBe(3000)
     expect(validate(removeLine(o, 'a')).valid).toBe(true)
@@ -164,7 +178,7 @@ describe('draft persistence', () => {
     expect(loadDraft('u2', storage, none)).toEqual(emptyOrder)
     saveDraft(emptyOrder, 'u1', storage)
     expect(store.size).toBe(0)
-    storage.setItem('workwear.createOrder.v2.u1', '{broken')
+    storage.setItem('workwear.createOrder.v3.u1', '{broken')
     expect(loadDraft('u1', storage, none)).toEqual(emptyOrder)
   })
 
@@ -177,14 +191,15 @@ describe('draft persistence', () => {
     expect(loadDraft('u2', storage, memory().storage).lines).toHaveLength(1)
   })
 
-  it('moves a draft kept per tab by the earlier version over once', () => {
-    const { storage } = memory()
+  it('drops drafts saved before clothing sizes became numbers', () => {
+    const { store, storage } = memory()
     const { store: tab, storage: legacy } = memory()
-    const o = addLines({ employee: ona, lines: [] }, [line('a')])
+    const o = addLines({ employee: { ...ona, shoe_size: '42' }, lines: [] }, [line('jacket', { size_group: 'CLOTHING', size: 'M' })])
+    storage.setItem('workwear.createOrder.v2.u1', JSON.stringify(o))
     legacy.setItem('workwear.createOrder.v1', JSON.stringify(o))
-    expect(loadDraft('u1', storage, legacy)).toEqual(o)
+    expect(loadDraft('u1', storage, legacy)).toEqual(emptyOrder)
+    expect(store.size).toBe(0)
     expect(tab.size).toBe(0)
-    expect(loadDraft('u1', storage, legacy)).toEqual(o)
   })
 })
 

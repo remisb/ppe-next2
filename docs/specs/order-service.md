@@ -23,7 +23,9 @@ accepted (a client-sent price is a 400). In one SQL transaction the repository:
 4. takes `nextval('order_record_seq')`,
 5. calls the service's build closure, which requires each item to be live and active
    (`ErrItemUnavailable`, 409), to have a price and service period (`ErrPriceMissing`,
-   409, naming the item), and each size to fit the item's size group (400),
+   409, naming the item), and each size to fit the item's size group (400): a CLOTHING
+   line takes an EU code `"44"`–`"66"` (even) and no longer a letter, which lines ordered
+   before migration 0012 keep and History and receipts still show,
 6. inserts the order, its lines and an `order.ordered` audit event.
 
 Any failure rolls everything back (a record number may be skipped). The response (201) is

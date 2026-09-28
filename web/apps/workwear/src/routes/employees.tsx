@@ -15,9 +15,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedB
 import { useApi, useSession } from '@/lib/api'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
-import { type SortColumn, type SortState, rankIn, sortRows } from '@/lib/sort'
+import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
-import { cn, formatSize } from '@/lib/utils'
+import { clothingSizeLabel, cn, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
@@ -44,11 +44,10 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    const clothing = sizes.data?.clothing.map((s) => s.code) ?? []
     const matching = (employees.data ?? []).filter(
       (e) => (!q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q)) && (!onlyMissing || isMissingASize(e)),
     )
-    // Clothing sizes sort S, M, L … 3XL, not alphabetically; shoe sizes are numbers.
+    // Clothing (EU) and shoe sizes are numbers, so they sort as numbers.
     return sortRows(matching, sort, (e, key) => {
       switch (key) {
         case 'name':
@@ -58,12 +57,12 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
         case 'height':
           return e.height_cm
         case 'clothing':
-          return rankIn(clothing, e.clothing_size)
+          return e.clothing_size
         case 'shoes':
           return e.shoe_size ? Number(e.shoe_size) : null
       }
     })
-  }, [employees.data, sizes.data, filter, onlyMissing, sort])
+  }, [employees.data, filter, onlyMissing, sort])
   const sortProps = { sort, onSort: setSort }
   const missingCount = (employees.data ?? []).filter(isMissingASize).length
 
@@ -237,7 +236,7 @@ export function EditSizes({
 
   useEffect(() => {
     setHeight(employee?.height_cm?.toString() ?? '')
-    setClothing(employee?.clothing_size ?? '')
+    setClothing(employee?.clothing_size?.toString() ?? '')
     setShoe(employee?.shoe_size ?? '')
     setError(undefined)
   }, [employee])
@@ -251,7 +250,7 @@ export function EditSizes({
       return
     }
     try {
-      await client.employees.updateSizes(employee.id, { height_cm: h, clothing_size: clothing || null, shoe_size: shoe || null })
+      await client.employees.updateSizes(employee.id, { height_cm: h, clothing_size: clothing ? Number(clothing) : null, shoe_size: shoe || null })
       onSaved()
     } catch (err) {
       setError(errorText(err))
@@ -283,7 +282,7 @@ export function EditSizes({
               <option value="">Not set</option>
               {sizes?.clothing.map((s) => (
                 <option key={s.code} value={s.code}>
-                  {s.code} ({s.min_cm}–{s.max_cm} cm)
+                  {clothingSizeLabel(s)}
                 </option>
               ))}
             </Select>

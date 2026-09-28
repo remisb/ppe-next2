@@ -94,7 +94,7 @@ func TestResolveAlgorithmA(t *testing.T) {
 	if *l[0].Size != "43" || l[0].SizeSuggested || l[0].SizeMissing {
 		t.Errorf("shoes = %+v", l[0])
 	}
-	if *l[1].Size != "XL" || !l[1].SizeSuggested { // 185 cm → XL, suggested from height
+	if *l[1].Size != "58" || !l[1].SizeSuggested { // 185 cm → 58, suggested from height
 		t.Errorf("jacket = %+v", l[1])
 	}
 	if l[2].Size != nil || l[2].SizeMissing || l[2].Quantity != 2 {
