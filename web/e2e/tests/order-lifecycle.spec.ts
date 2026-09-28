@@ -294,24 +294,38 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   const employee = await ctx.newPage()
   await employee.goto(confirmationURL)
   await expect(employee.getByRole('navigation')).toHaveCount(0)
-  // First what is asked, in plain words, and the items; then the full record.
-  await expect(employee.getByRole('heading', { name: 'Ona, please confirm you received these 3 items' })).toBeVisible()
-  await expect(employee.getByRole('list', { name: 'Items / Предметы' }).getByRole('listitem')).toHaveCount(3)
+  // First what is asked, in plain words, the items and the statement agreed to; the full record is one tap away.
+  await expect(employee.getByRole('heading', { name: 'Ona, please confirm you received 3 items' })).toBeVisible()
+  await expect(employee.getByText(/^Order WE-\d{6} · from /)).toBeVisible()
+  await expect(employee.getByRole('list', { name: 'Items' }).getByRole('listitem')).toHaveCount(3)
+  await expect(employee.getByText('What you confirm')).toBeVisible()
+  await expect(employee.getByText('Items Given Record / Акт выдачи')).toHaveCount(0)
+  await employee.getByRole('button', { name: 'View full record (EN / RU)' }).click()
   await expect(employee.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(employee.getByText('Подтверждение получения')).toBeVisible()
   await expect(employee.getByText('Confirmation of receipt')).toBeVisible()
 
-  const confirm = employee.getByRole('button', { name: 'Confirm Receipt / Подтвердить' })
-  // The consent is pinned to the bottom of the screen: in reach without scrolling the record.
+  // EN / RU changes the interface wording; the record stays bilingual.
+  await employee.getByRole('button', { name: 'Русский' }).click()
+  await expect(employee.getByRole('heading', { name: 'Ona, пожалуйста, подтвердите получение 3 предметов' })).toBeVisible()
+  await expect(employee.getByRole('button', { name: 'Подтвердить получение' })).toBeDisabled()
+  await expect(employee.getByText('Items Given Record / Акт выдачи')).toBeVisible()
+  await employee.getByRole('button', { name: 'English' }).click()
+
+  const confirm = employee.getByRole('button', { name: 'Confirm receipt' })
+  // The consent is pinned to the bottom of the screen: in reach with the whole record open.
   await expect(confirm).toBeInViewport()
   await expect(confirm).toBeDisabled()
   await employee.getByRole('checkbox').check()
   await confirm.click()
-  await expect(employee.getByText('Receipt confirmed / Получение подтверждено')).toBeVisible()
+  await expect(employee.getByRole('heading', { name: 'Receipt confirmed' })).toBeVisible()
+  await expect(employee.getByText(/WE-\d{6} is recorded as given on .+ at \d\d:\d\d\. You can close this page\./)).toBeVisible()
 
   await employee.reload()
-  await expect(employee.getByText('Receipt confirmed / Получение подтверждено')).toBeVisible()
-  await expect(employee.getByRole('button', { name: 'Confirm Receipt / Подтвердить' })).toHaveCount(0)
+  await expect(employee.getByRole('heading', { name: 'Receipt confirmed' })).toBeVisible()
+  await expect(employee.getByRole('button', { name: 'Confirm receipt' })).toHaveCount(0)
+  await employee.getByRole('button', { name: 'View record' }).click()
+  await expect(employee.getByText(/Confirmed electronically by/)).toBeVisible()
 
   // §7: an unknown or revoked link asks for a new one.
   await employee.goto(confirmationURL.replace(/[\w-]+$/, 'not-a-valid-token'))
@@ -455,13 +469,15 @@ test('hand-over: the employee confirms on this device, recorded in person', asyn
   await order.getByRole('button', { name: 'Hand over now' }).click()
   // The device is turned to the employee: the same summary, record and consent as their own link.
   const screen = page.getByRole('dialog', { name: 'Hand-over / Выдача' })
-  await expect(screen.getByRole('heading', { name: 'Ona, please confirm you received this item' })).toBeVisible()
-  const confirm = screen.getByRole('button', { name: 'Confirm Receipt / Подтвердить' })
+  await expect(screen.getByRole('heading', { name: 'Ona, please confirm you received 1 item' })).toBeVisible()
+  await expect(screen.getByRole('group', { name: 'Language / Язык' })).toBeVisible()
+  const confirm = screen.getByRole('button', { name: 'Confirm receipt' })
   await expect(confirm).toBeInViewport()
   await expect(confirm).toBeDisabled()
   await screen.getByRole('checkbox').check()
   await confirm.click()
-  await expect(screen.getByText('Receipt confirmed / Получение подтверждено')).toBeVisible()
+  await expect(screen.getByRole('heading', { name: 'Receipt confirmed' })).toBeVisible()
+  await expect(screen.getByText(/Please hand the device back\./)).toBeVisible()
   await screen.getByRole('button', { name: 'Done' }).click()
 
   await expect(order).toContainText('confirmed in person on a staff device')

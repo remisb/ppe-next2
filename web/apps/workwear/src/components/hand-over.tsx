@@ -1,12 +1,11 @@
 import type { OrderRecord } from '@ppe/api-client'
-import { CheckCircle2 } from 'lucide-react'
 import { type PointerEvent, useEffect, useId, useRef, useState } from 'react'
 
-import { ConfirmSummary, ConsentBar } from '@/components/confirmation'
-import { ReceiptDocument } from '@/components/receipt'
+import { ConfirmSummary, Confirmed, ConsentBar, FullRecord, LanguageSwitch } from '@/components/confirmation'
 import { ErrorState, Loading } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
+import { type ConfirmLang, confirmText, initialLang } from '@/lib/confirm-text'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
 
@@ -17,8 +16,10 @@ const HOLD_MS = 1500
  * Hand-over mode: the storekeeper turns this device to the employee at the
  * counter. It fills the screen (a modal dialog, full screen where allowed)
  * with no app navigation, and shows the employee what the public confirmation
- * page shows: what is asked, the items, the full record and the consent. Their
- * confirmation is recorded IN_PERSON with the signed-in staff member as giver.
+ * page shows: what is asked, the items, the full record one tap away, the
+ * consent and EN / RU. Each hand-over starts in the device's language, not the
+ * last employee's choice. Their confirmation is recorded IN_PERSON with the
+ * signed-in staff member as giver.
  *
  * Getting out before the employee confirms takes Hand back held for 1.5
  * seconds, or Escape on a keyboard. For a device left at a counter, iPad
@@ -30,6 +31,7 @@ export function HandOver({ orderId, onGiven, onClose }: { orderId: string; onGiv
   const [confirmed, setConfirmed] = useState<OrderRecord | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>()
+  const [lang, setLang] = useState<ConfirmLang>(() => initialLang(null, navigator.languages))
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   // The latest onClose, without reopening the dialog each time the parent renders.
@@ -69,52 +71,48 @@ export function HandOver({ orderId, onGiven, onClose }: { orderId: string; onGiv
   }
 
   const r = record.data
+  // While asking, the consent bar is the bottom edge and carries the safe-area padding itself.
+  const asking = !record.error && !confirmed && r?.status === 'ORDERED'
   return (
     <dialog
       ref={dialog}
       aria-labelledby={titleId}
       className="m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto bg-background p-0 text-foreground backdrop:bg-background"
     >
-      <main className="mx-auto max-w-4xl px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6">
+      <main
+        className={cn(
+          'mx-auto flex min-h-full max-w-4xl flex-col px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6',
+          asking ? 'pb-0' : 'pb-[max(1rem,env(safe-area-inset-bottom))]',
+        )}
+      >
         <div className="mb-4 flex items-center justify-between gap-3">
           <p id={titleId} className="text-sm font-medium text-muted-foreground">
             Hand-over / Выдача
           </p>
-          {confirmed ? null : <HoldToClose onDone={onClose} />}
+          <div className="flex items-center gap-2">
+            <LanguageSwitch lang={lang} onChange={setLang} />
+            {confirmed ? null : <HoldToClose onDone={onClose} />}
+          </div>
         </div>
         {record.error ? (
           <ErrorState error={record.error} onRetry={record.reload} />
         ) : !r ? (
           <Loading />
         ) : confirmed || r.status === 'GIVEN' ? (
-          <Done record={confirmed ?? r} onClose={onClose} />
+          <Confirmed record={confirmed ?? r} lang={lang} next={confirmText[lang].handBack}>
+            <Button size="lg" onClick={onClose}>
+              Done
+            </Button>
+          </Confirmed>
         ) : (
           <>
-            <ConfirmSummary record={r} />
-            <ReceiptDocument record={r} />
-            <ConsentBar busy={busy} error={error ? errorText(error) : undefined} onConfirm={() => void confirm()} />
+            <ConfirmSummary record={r} lang={lang} />
+            <FullRecord record={r} lang={lang} />
+            <ConsentBar className="mt-auto" lang={lang} busy={busy} error={error ? errorText(error) : undefined} onConfirm={() => void confirm()} />
           </>
         )}
       </main>
     </dialog>
-  )
-}
-
-/** After the employee confirmed: thanks, and the staff member's way back to the app. */
-function Done({ record, onClose }: { record: OrderRecord; onClose: () => void }) {
-  return (
-    <section className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
-      <CheckCircle2 aria-hidden className="size-16 text-primary" />
-      <h2 className="text-2xl font-semibold">Receipt confirmed / Получение подтверждено</h2>
-      <p className="max-w-md text-muted-foreground">
-        Thank you, {record.receipt.employee_first_name}. Please hand the device back.
-        <br />
-        <span lang="ru">Спасибо. Пожалуйста, верните устройство.</span>
-      </p>
-      <Button size="lg" onClick={onClose}>
-        Done
-      </Button>
-    </section>
   )
 }
 
