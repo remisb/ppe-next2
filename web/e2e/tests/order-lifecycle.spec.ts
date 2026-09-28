@@ -396,9 +396,12 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByText(/Confirmed electronically by/)).toBeVisible()
 })
 
-test('Print Record opens the print dialog', async () => {
+test('Print Record opens the print dialog; the record prints on one A4 page', async () => {
   await page.getByRole('button', { name: 'Print Record' }).click()
   await expect.poll(() => page.evaluate(() => (window as unknown as { __printed?: number }).__printed ?? 0)).toBeGreaterThan(0)
+  // Printed from a desktop window: the hidden navigation must not leave the record in its narrow column.
+  const pdf = (await page.pdf({ format: 'A4', preferCSSPageSize: true })).toString('latin1')
+  expect(pdf.match(/\/Type\s*\/Page[^s]/g)?.length, 'pages printed').toBe(1)
 })
 
 test('paper confirmation: a second order signed on paper', async () => {

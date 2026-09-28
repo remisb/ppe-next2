@@ -176,8 +176,9 @@ export function App() {
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
   const back = (fallback: Route) => () => (canGoBack() ? window.history.back() : navigate(fallback))
 
+  // No grid in print: the navigation is hidden there, and the page would fall into its narrow column.
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[5.5rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="min-h-dvh md:grid md:grid-cols-[5.5rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)] print:block">
       <a
         href="#main"
         className="sr-only z-50 rounded-md bg-background px-4 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"

@@ -55,7 +55,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         </TableHeader>
         <TableBody>
           {r.lines.map((l) => (
-            <TableRow key={l.line_no} className="hover:bg-transparent">
+            <TableRow key={l.line_no} className="hover:bg-transparent print:break-inside-avoid">
               <TableCell className={cn(td, 'stacked:mb-1')}>
                 <div className="font-medium">{l.item_name}</div>
                 {l.item_details ? <div className="text-xs text-muted-foreground print:text-black/70">{l.item_details}</div> : null}
@@ -79,6 +79,8 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         </TableFooter>
       </Table>
 
+      {/* On paper the statements and the signature lines stay together, on one page. */}
+      <div className="print:break-inside-avoid">
       <section className="mb-4 grid gap-4 sm:grid-cols-2 print:grid-cols-2">
         <div className="rounded-md border border-border p-3 print:border-black/40">
           <h2 className="mb-1 text-sm font-semibold">{r.confirmation_title_en}</h2>
@@ -101,6 +103,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         <SignatureLine label="Employee name and surname / Имя и фамилия работника" />
         <SignatureLine label="Signature / Подпись" />
         <SignatureLine label="Date / Дата" />
+      </div>
       </div>
 
       <p className="mt-6 break-all text-[10px] text-muted-foreground print:text-black/60">
