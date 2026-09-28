@@ -38,6 +38,17 @@
 }
 
 /*
+ * Create Order's composer (container `order`): from 60rem of content (a laptop
+ * with the sidebar, a desktop) the summary is a sticky panel beside the lines;
+ * narrower, it is the sticky bar at the bottom of the screen.
+ */
+@custom-variant composer-wide {
+  @container order (width >= 60rem) {
+    @slot;
+  }
+}
+
+/*
  * Tailwind v4: the theme is CSS, not a JS config file. These are the shadcn
  * token names, so a component copied from shadcn's registry works unmodified.
  *

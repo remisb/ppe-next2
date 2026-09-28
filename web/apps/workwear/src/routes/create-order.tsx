@@ -1,9 +1,9 @@
-import type { CatalogueIcon, CatalogueItem, Employee, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
+import type { CatalogueIcon, CatalogueItem, ConfirmationLink, Employee, ItemSet, ListedOrder, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
+import { Check, CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { ConfirmationSheet } from '@/components/confirmation-sheet'
+import { ConfirmationLinkView, ConfirmationSheet } from '@/components/confirmation-sheet'
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
@@ -21,8 +21,10 @@ import { Select } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
-import { loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
-import type { NavigateOptions, Prefill, Route } from '@/lib/router'
+import { lastOrder, linesText, loadCreateLink, saveCreateLink, setOnOrder, sizeParts } from '@/lib/composer'
+import { type Due, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
+import { statusLabel } from '@/lib/history'
+import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { clothingBandValue, clothingBands, cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
@@ -58,6 +60,19 @@ interface Failure {
   retry: () => void
 }
 
+/** After Mark as Ordered: the stored order, and the confirmation link if the review created one. */
+interface Placed {
+  order: Order
+  link?: ConfirmationLink
+  linkError?: unknown
+}
+
+/** An item the employee is due to have replaced, with its catalogue row. */
+interface DueItem {
+  due: Due
+  item: CatalogueItem
+}
+
 interface PendingDefault {
   catalogueItemId: string
   group: 'CLOTHING' | 'SHOES'
@@ -79,9 +94,11 @@ export function CreateOrder({
   const { client } = useApi()
   const session = useSession()
   const itemSetLabel = useId()
-  const [placed, setPlaced] = useState<Order | null>(null)
+  const [placed, setPlaced] = useState<Placed | null>(null)
   // Mark as Ordered cannot be undone, so it is confirmed on a summary first.
   const [reviewing, setReviewing] = useState(false)
+  // The review creates the employee's confirmation link as well, unless this device turned that off.
+  const [createLink, setCreateLink] = useState(loadCreateLink)
   const [order, setOrder] = useState<WorkingOrder>(() => loadDraft(session.userId))
   const [conflicts, setConflicts] = useState<SizeConflict[]>([])
   const [pendingDefault, setPendingDefault] = useState<PendingDefault | null>(null)
@@ -168,20 +185,25 @@ export function CreateOrder({
   const history = useLoad(() => (employeeId ? loadEmployeeOrders(client, employeeId) : Promise.resolve([])), [employeeId])
   const settings = useLoad(() => client.settings())
   const tz = settings.data?.timezone ?? 'UTC'
-  const dueNow = useMemo(() => {
+  const dueAll = useMemo<DueItem[]>(() => {
     const active = new Map(catalogue.data?.map((i) => [i.id, i]))
-    const onThisOrder = new Set(order.lines.map((l) => l.catalogueItemId))
     return replacementsDue(employeeId ? (history.data ?? []) : [], new Date()).flatMap((d) => {
       const item = active.get(d.item.catalogueItemId)
-      return item && d.dueSoon && !d.reordered && !onThisOrder.has(item.id) ? [{ due: d, item }] : []
+      return item && d.dueSoon && !d.reordered ? [{ due: d, item }] : []
     })
-  }, [history.data, employeeId, catalogue.data, order.lines])
+  }, [history.data, employeeId, catalogue.data])
+  const onThisOrder = useMemo(() => new Set(order.lines.map((l) => l.catalogueItemId)), [order.lines])
+  const dueNow = dueAll.filter((d) => !onThisOrder.has(d.item.id))
+  const last = employeeId ? lastOrder(history.data ?? []) : undefined
+  const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
 
-  const applySet = (setId: string) => {
+  const applySet = (set: ItemSet) => {
     const employee = order.employee
     if (!employee) return
+    // Applying a set again adds its quantities to the lines already here.
+    if (setOnOrder(set, order.lines) && !window.confirm(`${set.name} is on this order already. Add its items again?`)) return
     void run(async () => {
-      const res = await client.itemSets.apply(setId, employee.id)
+      const res = await client.itemSets.apply(set.id, employee.id)
       setOrder((o) => addLines(o, res.lines))
     })
   }
@@ -213,15 +235,27 @@ export function CreateOrder({
     })
   }
 
-  /** Mark as Ordered (algorithm B). On failure the working order is kept. */
-  const markAsOrdered = () =>
+  /**
+   * Mark as Ordered (algorithm B). On failure the working order is kept. The
+   * confirmation link is created after, when asked; the order stands even if
+   * that fails, and the success screen offers to send one.
+   */
+  const markAsOrdered = (withLink: boolean) =>
     run(async () => {
       const o = await client.orders.markAsOrdered(toMarkAsOrderedInput(order))
       clearDraft(session.userId)
       setOrder(emptyOrder)
       setConflicts([])
       setPendingDefault(null)
-      setPlaced(o)
+      let next: Placed = { order: o }
+      if (withLink) {
+        try {
+          next = { order: o, link: await client.orders.createConfirmationLink(o.id) }
+        } catch (linkError) {
+          next = { order: o, linkError }
+        }
+      }
+      setPlaced(next)
     })
 
   const reset = () => {
@@ -248,7 +282,8 @@ export function CreateOrder({
     return () => window.removeEventListener('keydown', onKey)
   }, [v.valid, busy, placed])
 
-  if (placed) return <OrderedPanel order={placed} navigate={navigate} onNew={() => setPlaced(null)} />
+  if (placed) return <OrderedPanel placed={placed} navigate={navigate} onNew={() => setPlaced(null)} />
+  const whatsappText = formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))
 
   return (
     <>
@@ -276,8 +311,12 @@ export function CreateOrder({
         )
       ) : null}
 
-      <section className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="md:col-span-2 lg:col-span-1">
+      {/* The composer: a container, so the summary sits beside the lines wherever the content has room (composer-wide). */}
+      <div className="@container/order">
+      <div className="composer-wide:grid composer-wide:grid-cols-[minmax(0,1fr)_17rem] composer-wide:items-start composer-wide:gap-6">
+      <div className="min-w-0">
+      <section className="mb-6 grid gap-4 md:grid-cols-2">
+        <div>
           <p className="mb-1.5 text-sm font-medium">Assigned to</p>
           <EmployeePicker
             label="Assigned to"
@@ -286,26 +325,41 @@ export function CreateOrder({
             onSelect={(e) => void selectEmployee(e.id)}
             onAddNew={() => setAddingEmployee(true)}
           />
-        </div>
-        <div>
-          <p id={itemSetLabel} className="mb-1.5 text-sm font-medium">
-            Item Set
-          </p>
-          {/* One tap applies a set: its lines join the order, merged by item. */}
-          <div role="group" aria-labelledby={itemSetLabel} className="flex flex-wrap gap-2">
-            {itemSets.data?.map((s) => (
-              <Button key={s.id} size="sm" variant="outline" disabled={!order.employee || busy} onClick={() => applySet(s.id)}>
-                <Plus aria-hidden />
-                <span className="sr-only">Apply </span>
-                {s.name}
-              </Button>
-            ))}
-            {itemSets.data?.length === 0 ? <p className="text-sm text-muted-foreground">No item sets yet.</p> : null}
-          </div>
+          {/* The saved sizes explain how each line's size was resolved. */}
+          {order.employee ? (
+            <p aria-label={`Saved sizes of ${order.employee.full_name}`} className="mt-1.5 flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+              {sizeParts(order.employee, bands).map((part, i) => (
+                <span key={part.label} className={cn(part.missing && 'font-medium text-destructive')}>
+                  {i > 0 ? <span aria-hidden>· </span> : null}
+                  {part.label}
+                </span>
+              ))}
+            </p>
+          ) : null}
         </div>
         <div>
           <p className="mb-1.5 text-sm font-medium">Add Item</p>
           <ItemPicker items={catalogue.data} disabled={busy} onPick={addItem} />
+        </div>
+        <div className="md:col-span-2">
+          <p id={itemSetLabel} className="mb-1.5 text-sm font-medium">
+            Item Set
+          </p>
+          {/* One tap applies a set: its lines join the order, merged by item. A ✓ marks a set already on it. */}
+          <div role="group" aria-labelledby={itemSetLabel} className="flex flex-wrap gap-2">
+            {itemSets.data?.map((s) => {
+              const on = setOnOrder(s, order.lines)
+              return (
+                <Button key={s.id} size="sm" variant={on ? 'secondary' : 'outline'} disabled={!order.employee || busy} onClick={() => applySet(s)}>
+                  {on ? <Check aria-hidden /> : <Plus aria-hidden />}
+                  <span className="sr-only">Apply </span>
+                  {s.name}
+                  {on ? <span className="sr-only"> (on this order)</span> : null}
+                </Button>
+              )
+            })}
+            {itemSets.data?.length === 0 ? <p className="text-sm text-muted-foreground">No item sets yet.</p> : null}
+          </div>
         </div>
       </section>
 
@@ -431,47 +485,38 @@ export function CreateOrder({
         </ul>
       ) : null}
 
-      {/*
-        Sticky above the phone tab bar (and at the bottom from md), so the
-        total and the two actions stay in reach however long the order is.
-      */}
-      <section
-        aria-label="Order actions"
-        className={cn(
-          'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
-          '-mx-4 px-4 md:-mx-6 md:px-6 xl:-mx-10 xl:px-10 print:hidden',
-        )}
-      >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="flex items-baseline justify-between gap-3 text-sm md:justify-start">
-            <span className="text-muted-foreground">
-              {order.lines.length} {order.lines.length === 1 ? 'line' : 'lines'}
-              {v.valid ? ' · complete' : order.lines.length > 0 ? ' · not ready' : ''}
-            </span>
-            <span className="text-base font-semibold tabular-nums">{formatEuro(totalCents(order))}</span>
-          </p>
-          {/* Side by side while both labels fit; stacked on the narrowest phones. */}
-          <div className="flex flex-wrap items-start gap-2 *:flex-auto md:*:flex-none">
-            <WhatsAppButton
-              disabled={!v.valid || busy}
-              text={formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))}
-            />
-            <Button disabled={!v.valid || busy} onClick={() => setReviewing(true)}>
-              {busy ? 'Working…' : 'Mark as Ordered…'}
-            </Button>
-          </div>
-        </div>
-      </section>
+      </div>
+
+      <OrderSummary
+        order={order}
+        valid={v.valid}
+        busy={busy}
+        due={dueAll}
+        onThisOrder={onThisOrder}
+        last={last}
+        tz={tz}
+        whatsappText={whatsappText}
+        navigate={navigate}
+        onReview={() => setReviewing(true)}
+      />
+      </div>
+      </div>
 
       <ReviewSheet
         open={reviewing}
         order={order}
         busy={busy}
+        whatsappText={whatsappText}
+        createLink={createLink}
+        onCreateLink={(on) => {
+          setCreateLink(on)
+          saveCreateLink(on)
+        }}
         onClose={() => setReviewing(false)}
         onConfirm={() => {
           // A failure shows on the page, with Retry, and keeps the order.
           setReviewing(false)
-          void markAsOrdered()
+          void markAsOrdered(createLink)
         }}
       />
 
@@ -490,6 +535,123 @@ export function CreateOrder({
 }
 
 /**
+ * What the order comes to, and the way on to the review. Narrow, it is a bar
+ * pinned above the phone tab bar holding one Review button with the line count
+ * and total. Where the composer has room (composer-wide) it is a sticky panel
+ * beside the lines: who the order is for and their last order, what they are
+ * due, the lines and total, Review, Copy for WhatsApp, and the keyboard keys.
+ */
+function OrderSummary({
+  order,
+  valid,
+  busy,
+  due,
+  onThisOrder,
+  last,
+  tz,
+  whatsappText,
+  navigate,
+  onReview,
+}: {
+  order: WorkingOrder
+  valid: boolean
+  busy: boolean
+  due: DueItem[]
+  onThisOrder: Set<string>
+  last: ListedOrder | undefined
+  tz: string
+  whatsappText: string
+  navigate: (to: Route) => void
+  onReview: () => void
+}) {
+  const n = order.lines.length
+  const total = formatEuro(totalCents(order))
+  const state = valid ? ' · complete' : n > 0 ? ' · not ready' : ''
+  const e = order.employee
+  return (
+    <aside
+      aria-label="Order summary"
+      className={cn(
+        'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+        '-mx-4 px-4 md:-mx-6 md:px-6 xl:-mx-10 xl:px-10 print:hidden',
+        'composer-wide:top-6 composer-wide:bottom-auto composer-wide:mx-0 composer-wide:mt-0 composer-wide:flex composer-wide:flex-col composer-wide:gap-4 composer-wide:rounded-lg composer-wide:border composer-wide:bg-card composer-wide:p-4 composer-wide:backdrop-blur-none',
+      )}
+    >
+      {/* Narrow: one button, the count and the total on it. */}
+      <Button size="lg" className="w-full justify-between composer-wide:hidden" disabled={!valid || busy} onClick={onReview}>
+        <span>{busy ? 'Working…' : 'Review'}</span>{' '}
+        <span className="font-normal opacity-80">
+          {linesText(n)}
+          {state}
+        </span>{' '}
+        <span className="tabular-nums">{total}</span>
+      </Button>
+
+      {/* Wide: the panel. */}
+      <div className="hidden text-sm composer-wide:flex composer-wide:flex-col composer-wide:gap-3">
+        {e ? (
+          <div>
+            <p className="text-xs text-muted-foreground">For</p>
+            <p className="font-medium">
+              {e.full_name}
+              {e.code ? <span className="font-normal text-muted-foreground"> · {e.code}</span> : null}
+            </p>
+            {last ? (
+              <p className="text-xs text-muted-foreground">
+                Last order{' '}
+                <a {...linkTo({ name: 'history', order: last.id }, navigate)} className="font-medium text-foreground underline-offset-4 hover:underline">
+                  {last.record_number}
+                </a>{' '}
+                · {formatDate(last.ordered_at, tz)} · {statusLabel[last.status]}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">No earlier orders</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Choose who the order is for.</p>
+        )}
+        {due.length > 0 ? (
+          <ul aria-label="Due for replacement" className="flex flex-col gap-1 border-t border-border pt-3 text-xs">
+            {due.slice(0, 4).map(({ due: d, item }) => (
+              <li key={item.id} className="flex items-start gap-1.5">
+                {onThisOrder.has(item.id) ? <Check aria-hidden className="mt-px size-3.5 shrink-0 text-primary" /> : <span aria-hidden className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', d.overdue ? 'bg-destructive' : 'bg-muted-foreground')} />}
+                <span>
+                  {item.name} {d.overdue ? 'overdue since' : 'due'} {formatDate(d.dueAt.toISOString(), tz)}
+                  {onThisOrder.has(item.id) ? <span className="text-muted-foreground"> · on this order</span> : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="flex items-baseline justify-between gap-3 border-t border-border pt-3">
+          <span className="text-muted-foreground">
+            {linesText(n)}
+            {state}
+          </span>
+          <span className="text-lg font-semibold tabular-nums">{total}</span>
+        </div>
+        <Button disabled={!valid || busy} onClick={onReview}>
+          {busy ? 'Working…' : 'Review and mark as ordered'}
+        </Button>
+        <WhatsAppButton disabled={!valid || busy} text={whatsappText} />
+        <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pointer-coarse:hidden">
+          <span>
+            <kbd className="rounded border border-border px-1 font-mono">/</kbd> add item
+          </span>
+          <span>
+            <kbd className="rounded border border-border px-1 font-mono">⌘/Ctrl ↵</kbd> review
+          </span>
+          <span>
+            <kbd className="rounded border border-border px-1 font-mono">↑↓</kbd> quantity
+          </span>
+        </p>
+      </div>
+    </aside>
+  )
+}
+
+/**
  * The summary confirmed before Mark as Ordered: who the order is for, each
  * line with its size, quantity and price, and the total. Nothing is stored
  * until Mark as Ordered here.
@@ -498,12 +660,19 @@ function ReviewSheet({
   open,
   order,
   busy,
+  whatsappText,
+  createLink,
+  onCreateLink,
   onClose,
   onConfirm,
 }: {
   open: boolean
   order: WorkingOrder
   busy: boolean
+  /** The order as a message to the supplier, before it is marked as ordered. */
+  whatsappText: string
+  createLink: boolean
+  onCreateLink: (on: boolean) => void
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -515,9 +684,7 @@ function ReviewSheet({
       description={`For ${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}. After Mark as Ordered this record cannot be changed.`}
       footer={
         <>
-          <Button variant="outline" onClick={onClose}>
-            Back to order
-          </Button>
+          <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} />
           <Button disabled={busy} onClick={onConfirm}>
             Mark as Ordered
           </Button>
@@ -541,6 +708,15 @@ function ReviewSheet({
         <span>Total</span>
         <span className="text-base tabular-nums">{formatEuro(totalCents(order))}</span>
       </p>
+      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md p-1 text-sm">
+        <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" checked={createLink} onChange={(e) => onCreateLink(e.target.checked)} />
+        <span>
+          Create the confirmation link as well
+          <span className="block text-xs text-muted-foreground">
+            {order.employee?.first_name ?? 'The employee'} confirms receipt with it; you can still print the record for signing instead.
+          </span>
+        </span>
+      </label>
     </FormSheet>
   )
 }
@@ -550,7 +726,8 @@ function ReviewSheet({
  * from the server's snapshot, and the next step: the employee confirms receipt
  * by a secure link or on the printed record.
  */
-function OrderedPanel({ order, navigate, onNew }: { order: Order; navigate: (to: Route) => void; onNew: () => void }) {
+function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (to: Route) => void; onNew: () => void }) {
+  const { order, link } = placed
   const [confirming, setConfirming] = useState(false)
   const [given, setGiven] = useState(false)
   const name = `${order.employee_first_name} ${order.employee_last_name}`
@@ -575,10 +752,20 @@ function OrderedPanel({ order, navigate, onNew }: { order: Order; navigate: (to:
           <p className="text-sm text-muted-foreground">
             {given
               ? `${name}'s signed paper confirmation is recorded: the order is Given.`
-              : `This record can no longer be edited. Next, ${name} confirms receipt: send a secure link, or print the record for signing. It changes to Given when they confirm.`}
+              : link
+                ? `This record can no longer be edited. Next, send ${name} the confirmation link below, or print the record for signing. It changes to Given when they confirm.`
+                : `This record can no longer be edited. Next, ${name} confirms receipt: send a secure link, or print the record for signing. It changes to Given when they confirm.`}
           </p>
+          {link && !given ? (
+            <section aria-label="Employee confirmation" className="flex flex-col gap-2 rounded-lg border border-border p-3">
+              <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
+            </section>
+          ) : null}
+          {placed.linkError && !given ? (
+            <ErrorState title="The confirmation link was not created" error={placed.linkError} />
+          ) : null}
           <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
-            {given ? null : (
+            {given || link ? null : (
               <Button className="w-full sm:w-auto" onClick={() => setConfirming(true)}>
                 <LinkIcon aria-hidden /> Send confirmation link
               </Button>

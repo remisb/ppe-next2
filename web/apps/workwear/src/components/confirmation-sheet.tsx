@@ -30,12 +30,10 @@ export function ConfirmationSheet({
   const [link, setLink] = useState<ConfirmationLink | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>()
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setLink(null)
     setError(undefined)
-    setCopied(false)
   }, [order])
 
   const run = async (f: () => Promise<void>) => {
@@ -66,41 +64,7 @@ export function ConfirmationSheet({
         <section className="flex flex-col gap-2">
           <h3 className="font-medium">Electronic confirmation</h3>
           {link ? (
-            <>
-              <div className="flex gap-2">
-                <Input readOnly aria-label="Confirmation link" className="min-w-0 flex-1" value={link.url} onFocus={(e) => e.target.select()} />
-                <Button
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={() =>
-                    void navigator.clipboard.writeText(link.url).then(
-                      () => setCopied(true),
-                      () => setCopied(false),
-                    )
-                  }
-                >
-                  <Copy aria-hidden /> {copied ? 'Copied' : 'Copy link'}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Valid until {formatDateTime(link.expires_at, undefined)}. This link is shown once; creating another replaces it.
-              </p>
-              <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted"
-                >
-                  <ExternalLink aria-hidden className="size-4" /> Open on this device
-                </a>
-                <WhatsAppButton
-                  className="sm:w-auto"
-                  label="Share link via WhatsApp"
-                  text={`${name}, please confirm receipt of your workwear (${order.record_number}):\n${link.url}`}
-                />
-              </div>
-            </>
+            <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
           ) : (
             <Button className="w-full sm:w-fit" disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
               Create confirmation link
@@ -134,5 +98,51 @@ export function ConfirmationSheet({
         </section>
       </div>
     </FormSheet>
+  )
+}
+
+/**
+ * A confirmation link just created: shown once, with Copy, Open on this device
+ * and Share via WhatsApp. Also on the success screen after Mark as Ordered
+ * when the review created the link as well.
+ */
+export function ConfirmationLinkView({ link, name, recordNumber }: { link: ConfirmationLink; name: string; recordNumber: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <>
+      <div className="flex gap-2">
+        <Input readOnly aria-label="Confirmation link" className="min-w-0 flex-1" value={link.url} onFocus={(e) => e.target.select()} />
+        <Button
+          variant="outline"
+          className="shrink-0"
+          onClick={() =>
+            void navigator.clipboard.writeText(link.url).then(
+              () => setCopied(true),
+              () => setCopied(false),
+            )
+          }
+        >
+          <Copy aria-hidden /> {copied ? 'Copied' : 'Copy link'}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Valid until {formatDateTime(link.expires_at, undefined)}. This link is shown once; creating another replaces it.
+      </p>
+      <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted"
+        >
+          <ExternalLink aria-hidden className="size-4" /> Open on this device
+        </a>
+        <WhatsAppButton
+          className="sm:w-auto"
+          label="Share link via WhatsApp"
+          text={`${name}, please confirm receipt of your workwear (${recordNumber}):\n${link.url}`}
+        />
+      </div>
+    </>
   )
 }

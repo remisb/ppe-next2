@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 
 /**
  * A quantity as − [n] +: the common change (one more, one fewer) is a tap,
- * with no keyboard; the number itself stays typeable for larger amounts. A
+ * with no keyboard; the number itself stays typeable for larger amounts, and
+ * ↑ / ↓ step it from a keyboard. A
  * value that is not a whole number of at least 1 is kept and flagged, not
  * corrected, so what was typed is never lost.
  */
@@ -46,6 +47,13 @@ export function QuantityStepper({
         onChange={(e) => {
           const raw = e.target.value.trim()
           onChange(raw === '' ? Number.NaN : Number(raw))
+        }}
+        // ↑ and ↓ step the quantity from the keyboard, as the buttons do.
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+          e.preventDefault()
+          if (e.key === 'ArrowUp') onChange(valid ? value + 1 : 1)
+          else if (valid && value > 1) onChange(value - 1)
         }}
       />
       <Button

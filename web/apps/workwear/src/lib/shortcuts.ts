@@ -12,6 +12,7 @@ export const shortcutList: { keys: string; does: string }[] = [
   { keys: 'G then D, O, H, E, C, S, U', does: 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets, Users' },
   { keys: 'J / K', does: 'History: the next or previous order, beside the list' },
   { keys: '⌘Enter / Ctrl+Enter', does: 'Create Order: review the order before Mark as Ordered' },
+  { keys: '↑ / ↓', does: 'Create Order: one more or one fewer, in a quantity field' },
   { keys: '?', does: 'Show these shortcuts' },
 ]
 

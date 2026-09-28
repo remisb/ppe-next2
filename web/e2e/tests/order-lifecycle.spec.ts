@@ -48,10 +48,17 @@ async function openOrder(record: string) {
   return page.getByRole('complementary', { name: 'Order' })
 }
 
-/** Mark as Ordered asks for a review first; confirm it there. */
-async function markAsOrdered() {
-  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
-  await page.getByRole('dialog', { name: 'Review order' }).getByRole('button', { name: 'Mark as Ordered' }).click()
+/** Create Order's way on to the review: "Review · 3 lines · €…" in the bar, or "Review and mark as ordered" in the panel. */
+function reviewButton() {
+  return page.getByRole('button', { name: /^Review/ })
+}
+
+/** Mark as Ordered asks for a review first; confirm it there, with or without the confirmation link (remembered on the device). */
+async function markAsOrdered({ link }: { link?: boolean } = {}) {
+  await reviewButton().click()
+  const review = page.getByRole('dialog', { name: 'Review order' })
+  if (link !== undefined) await review.getByRole('checkbox', { name: /Create the confirmation link as well/ }).setChecked(link)
+  await review.getByRole('button', { name: 'Mark as Ordered' }).click()
 }
 
 async function addCatalogueItem(item: { name: string; details: string; group: string; price?: string; months?: string; rank: string }) {
@@ -136,7 +143,7 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await openTab('Create Order')
   // An item set is one tap, once the employee is chosen.
   await expect(page.getByRole('button', { name: 'Apply Starter kit' })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
+  await expect(reviewButton()).toBeDisabled()
 
   await page.getByRole('combobox', { name: 'Assigned to' }).click()
   await page.getByRole('button', { name: '+ Add New Employee' }).click()
@@ -146,8 +153,18 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await dialog.getByLabel('Height (cm)').fill('170')
   await dialog.getByRole('button', { name: 'Save and Select Employee' }).click()
   await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
+  // Her saved sizes explain how the lines resolve: clothing from height, no shoe size.
+  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toHaveText(/^170 cm\W+Clothing from height\W+No shoe size$/)
+  const summary = page.getByRole('complementary', { name: 'Order summary' })
+  await expect(summary).toContainText('Ona Kazlauskienė')
+  await expect(summary).toContainText('No earlier orders')
 
   await page.getByRole('button', { name: 'Apply Starter kit' }).click()
+  // A set already on the order is marked, and applying it again asks first.
+  await expect(page.getByRole('button', { name: 'Apply Starter kit (on this order)' })).toBeVisible()
+  page.once('dialog', (d) => void d.dismiss())
+  await page.getByRole('button', { name: 'Apply Starter kit (on this order)' }).click()
+  await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 
   // Clothing: 50 suggested from 170 cm. Shoes: never inferred, so missing.
   await expect(page.getByLabel('Size of Work jacket')).toHaveValue('50')
@@ -167,7 +184,7 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await expect(page.getByRole('alert').filter({ hasText: 'Select a size.' })).toBeVisible()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
   // §7: a missing size keeps the work and blocks the order.
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
+  await expect(reviewButton()).toBeDisabled()
 })
 
 test('missing size: choose it and Save as Employee Default', async () => {
@@ -175,15 +192,16 @@ test('missing size: choose it and Save as Employee Default', async () => {
   await expect(page.getByText('Save as Employee Default?')).toBeVisible()
   await page.getByRole('button', { name: 'Save as Employee Default' }).click()
   await expect(page.getByText('Save as Employee Default?')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeEnabled()
+  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toContainText('Shoes 42')
+  await expect(reviewButton()).toBeEnabled()
 })
 
 test('missing catalogue price blocks Mark as Ordered', async () => {
   await addItem('helmet', /^Safety helmet/)
   await expect(page.getByRole('alert').filter({ hasText: 'No price or service period' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
+  await expect(reviewButton()).toBeDisabled()
   await page.getByRole('button', { name: 'Remove Safety helmet' }).click()
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeEnabled()
+  await expect(reviewButton()).toBeEnabled()
 })
 
 test('quantity below 1 or not an integer is rejected at the field', async () => {
@@ -191,10 +209,16 @@ test('quantity below 1 or not an integer is rejected at the field', async () => 
   for (const bad of ['0', '1.5']) {
     await qty.fill(bad)
     await expect(page.getByRole('alert').filter({ hasText: 'Quantity must be a whole number' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
+    await expect(reviewButton()).toBeDisabled()
   }
   await qty.fill('1')
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeEnabled()
+  await expect(reviewButton()).toBeEnabled()
+  // ↑ and ↓ step the quantity from the keyboard.
+  await qty.press('ArrowUp')
+  await expect(qty).toHaveValue('2')
+  await qty.press('ArrowDown')
+  await qty.press('ArrowDown')
+  await expect(qty).toHaveValue('1')
 })
 
 test('network error keeps the form and offers Retry', async () => {
@@ -239,12 +263,15 @@ test('the draft survives a closed tab, for the same user only', async ({ browser
 
 test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // The review lists each line with its size and the total, and changes nothing until confirmed.
-  await page.getByRole('button', { name: 'Mark as Ordered' }).click()
+  await reviewButton().click()
   const review = page.getByRole('dialog', { name: 'Review order' })
   await expect(review).toContainText('Ona Kazlauskienė')
   await expect(review.getByRole('listitem').filter({ hasText: 'Safety shoes' })).toContainText('42')
   await expect(review).toContainText('€114.98') // 39.99 + 49.99 + 10 × 2.50
-  await review.getByRole('button', { name: 'Back to order' }).click()
+  // The supplier message is sent from here; the confirmation link is created as well unless unticked.
+  await expect(review.getByRole('button', { name: 'Copy for WhatsApp' })).toBeEnabled()
+  await expect(review.getByRole('checkbox', { name: /Create the confirmation link as well/ })).toBeChecked()
+  await review.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
 
   await markAsOrdered()
@@ -252,11 +279,13 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   await expect(heading).toBeVisible()
   recordNumber = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
   await expect(page.getByText('€114.98')).toBeVisible()
-  // The next step is the employee's confirmation.
-  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toBeVisible()
+  // The next step is the employee's confirmation: the link is ready to send.
+  await expect(page.getByLabel('Confirmation link')).toHaveValue(/\/confirm\/[\w-]{40,}$/)
+  await expect(page.getByRole('button', { name: 'Share link via WhatsApp' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Print record' })).toBeVisible()
   await page.getByRole('button', { name: 'Start a new order' }).click()
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeDisabled()
+  await expect(reviewButton()).toBeDisabled()
 })
 
 test('History shows it ORDERED with the ORDERED actions', async () => {
@@ -380,9 +409,12 @@ test('paper confirmation: a second order signed on paper', async () => {
   // The shoe size saved earlier is now her default.
   await addItem('shoes', /^Safety shoes/)
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
-  await markAsOrdered()
+  await expect(page.getByRole('complementary', { name: 'Order summary' })).toContainText(`Last order ${recordNumber}`)
+  // Signed on paper, so no link this time; the success screen still offers one.
+  await markAsOrdered({ link: false })
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
   paperRecord = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
+  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toBeVisible()
   // The new order was placed at the new price.
   await expect(page.getByRole('cell', { name: '€59.99' }).first()).toBeVisible()
 
@@ -679,7 +711,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   await page.getByRole('button', { name: 'Apply Starter kit' }).click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
-  await expect(page.getByRole('button', { name: 'Mark as Ordered' })).toBeInViewport()
+  await expect(reviewButton()).toBeInViewport()
   expect(await fits()).toBe(true)
   // Left ORDERED, so History has a row waiting for confirmation.
   await markAsOrdered()
@@ -700,6 +732,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await page.setViewportSize({ width, height: 900 })
     for (const [tab, content] of [
       ['Dashboard', 'Spending by month'],
+      ['Create Order', 'Assigned to'],
       ['History', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],

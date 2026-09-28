@@ -62,7 +62,9 @@ The workwear app is the reference.
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
   phone tab bar's height (0 from `md`). An action that cannot be undone (Mark as Ordered)
-  opens a review of what it will store, confirmed there.
+  opens a review of what it will store, confirmed there. Where a screen has room for it,
+  the bar can become a sticky panel beside the content, chosen by container width: Create
+  Order's summary uses `composer-wide:` (container `order`, 60rem and up).
 - **Keyboard**: shortcuts live in `lib/shortcuts.ts` and never fire while typing in a
   field (⌘K / Ctrl+K excepted) or while a dialog is open. A screen's main search field
   carries `data-shortcut="search"` so `/` reaches it. Every shortcut has a visible way to do
