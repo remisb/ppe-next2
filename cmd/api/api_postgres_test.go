@@ -104,8 +104,8 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	}
 	// The vocabulary: 12 clothing sizes, a height band on six of them.
 	rec = api.do(t, "GET", "/api/v1/sizes", staff, nil)
-	for _, want := range []string{`{"code":"44","min_cm":null,"max_cm":null}`, `{"code":"46","min_cm":160,"max_cm":167}`,
-		`{"code":"66","min_cm":194,"max_cm":200}`} {
+	for _, want := range []string{`{"code":"44","band":"S","min_cm":null,"max_cm":null}`, `{"code":"46","band":"S","min_cm":160,"max_cm":167}`,
+		`{"code":"66","band":"3XL","min_cm":194,"max_cm":200}`} {
 		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {
 			t.Errorf("sizes = %d %s, want %s", rec.Code, rec.Body, want)
 		}

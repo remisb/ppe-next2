@@ -44,6 +44,8 @@ export interface LoginResponse {
 /** A clothing size; six carry the height range a suggestion is made from, the rest null. */
 export interface ClothingSize {
   code: string
+  /** The letter size covering two EU sizes: S (44–46) … 3XL (64–66). */
+  band: string
   min_cm: number | null
   max_cm: number | null
 }

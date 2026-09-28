@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { clothingSizeLabel, formatEuro, formatMonths, formatSize, parseEuro } from './utils'
+import { clothingBandValue, clothingBands, formatEuro, formatMonths, formatSize, parseEuro } from './utils'
 
 describe('money and display helpers', () => {
   it('formats euros with the € symbol', () => {
@@ -22,8 +22,16 @@ describe('money and display helpers', () => {
     expect(formatSize(54)).toBe('54')
     expect(formatSize('L')).toBe('L')
   })
-  it('labels a clothing size with its height range only when it has one', () => {
-    expect(clothingSizeLabel({ code: '46', min_cm: 160, max_cm: 167 })).toBe('46 (160–167 cm)')
-    expect(clothingSizeLabel({ code: '44', min_cm: null, max_cm: null })).toBe('44')
+  it('offers clothing sizes as letter bands storing the larger size', () => {
+    const letters = ['S', 'M', 'L', 'XL', '2XL', '3XL']
+    const sizes = Array.from({ length: 12 }, (_, i) => ({ code: String(44 + 2 * i), band: letters[i >> 1]!, min_cm: null, max_cm: null }))
+    const bands = clothingBands(sizes)
+    expect(bands.map((b) => b.label)).toEqual(['S (44–46)', 'M (48–50)', 'L (52–54)', 'XL (56–58)', '2XL (60–62)', '3XL (64–66)'])
+    expect(bands.map((b) => b.value)).toEqual(['46', '50', '54', '58', '62', '66'])
+    expect(clothingBandValue(bands, 44)).toBe('46')
+    expect(clothingBandValue(bands, '54')).toBe('54')
+    expect(clothingBandValue(bands, null)).toBe('')
+    // A letter size of an old order line has no band.
+    expect(clothingBandValue(bands, 'M')).toBe('M')
   })
 })

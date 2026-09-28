@@ -24,7 +24,7 @@ import { useApi, useSession } from '@/lib/api'
 import { loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import type { NavigateOptions, Prefill, Route } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { clothingSizeLabel, cn, formatEuro, formatMonths } from '@/lib/utils'
+import { clothingBandValue, clothingBands, cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
 import {
   type SizeConflict,
@@ -724,10 +724,9 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
         –
       </span>
     )
-  const options =
-    line.sizeGroup === 'CLOTHING'
-      ? (sizes?.clothing ?? []).map((s) => ({ value: s.code, label: clothingSizeLabel(s) }))
-      : (sizes?.shoes ?? []).map((s) => ({ value: s.code, label: s.code }))
+  const clothing = line.sizeGroup === 'CLOTHING'
+  const bands = clothingBands(sizes?.clothing ?? [])
+  const options = clothing ? bands : (sizes?.shoes ?? []).map((s) => ({ value: s.code, label: s.code }))
   const missing = line.size === null
   return (
     <div className="flex flex-col gap-1">
@@ -735,7 +734,7 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
         aria-label={`Size of ${line.itemName}`}
         className="h-9 w-40 pointer-coarse:h-11 stacked:w-auto stacked:max-w-40"
         invalid={missing}
-        value={line.size ?? ''}
+        value={clothing ? clothingBandValue(bands, line.size) : (line.size ?? '')}
         onChange={(e) => onChange(e.target.value || null)}
       >
         <option value="">Select size…</option>

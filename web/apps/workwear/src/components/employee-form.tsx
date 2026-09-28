@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi } from '@/lib/api'
-import { blankToNull, clothingSizeLabel } from '@/lib/utils'
+import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
 import { errorText } from '@/lib/use-load'
 
 interface Props {
@@ -52,6 +52,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
   const [d, setD] = useState<Draft>(() => draftOf(employee))
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
+  const bands = clothingBands(sizes?.clothing ?? [])
 
   useEffect(() => {
     if (open) {
@@ -119,11 +120,11 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
         </Field>
         <Field label="Clothing size">
           {(p) => (
-            <Select {...controlProps(p)} value={d.clothing_size} onChange={set('clothing_size')}>
+            <Select {...controlProps(p)} value={clothingBandValue(bands, d.clothing_size)} onChange={set('clothing_size')}>
               <option value="">Not set</option>
-              {sizes?.clothing.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {clothingSizeLabel(s)}
+              {bands.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
                 </option>
               ))}
             </Select>

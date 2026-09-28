@@ -151,6 +151,17 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
 
   // Clothing: 50 suggested from 170 cm. Shoes: never inferred, so missing.
   await expect(page.getByLabel('Size of Work jacket')).toHaveValue('50')
+  // Clothing sizes are picked by letter band; a pick stores the band's larger EU size.
+  await expect(page.getByLabel('Size of Work jacket').locator('option:checked')).toHaveText('M (48–50)')
+  await expect(page.getByLabel('Size of Work jacket').locator('option')).toHaveText([
+    'Select size…',
+    'S (44–46)',
+    'M (48–50)',
+    'L (52–54)',
+    'XL (56–58)',
+    '2XL (60–62)',
+    '3XL (64–66)',
+  ])
   await expect(page.getByText('Suggested from height')).toBeVisible()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('')
   await expect(page.getByRole('alert').filter({ hasText: 'Select a size.' })).toBeVisible()

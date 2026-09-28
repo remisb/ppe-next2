@@ -31,9 +31,29 @@ export function formatSize(size: string | number | null | undefined): string {
   return size === null || size === undefined ? '–' : String(size)
 }
 
-/** A clothing size choice: "46 (160–167 cm)" for a size a height suggests, just "44" for the rest. */
-export function clothingSizeLabel(s: ClothingSize): string {
-  return s.min_cm === null || s.max_cm === null ? s.code : `${s.code} (${s.min_cm}–${s.max_cm} cm)`
+/** One clothing size choice: a letter band of two EU sizes, "S (44–46)". */
+export interface ClothingBand {
+  /** The band's larger size, the one a pick stores (and a height suggests). */
+  value: string
+  label: string
+  codes: string[]
+}
+
+/** The clothing vocabulary as the six choices size pickers offer, smallest first. */
+export function clothingBands(sizes: ClothingSize[]): ClothingBand[] {
+  const byBand = new Map<string, string[]>()
+  for (const s of sizes) byBand.set(s.band, [...(byBand.get(s.band) ?? []), s.code])
+  return [...byBand].map(([band, codes]) => ({ value: codes.at(-1)!, label: `${band} (${codes[0]}–${codes.at(-1)})`, codes }))
+}
+
+/**
+ * The picker value for a saved size: its band's. A size that is the band's
+ * smaller one still shows as its band, and keeps its number until another band is picked.
+ */
+export function clothingBandValue(bands: ClothingBand[], code: string | number | null | undefined): string {
+  if (code === null || code === undefined || code === '') return ''
+  const c = String(code)
+  return bands.find((b) => b.codes.includes(c))?.value ?? c
 }
 
 /** Blank input as null, otherwise trimmed. */

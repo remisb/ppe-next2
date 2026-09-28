@@ -18,6 +18,30 @@ func TestClothingVocabulary(t *testing.T) {
 	}
 }
 
+// Each letter band covers two EU sizes, and its larger one is the size a
+// height suggests (the letter sizes migration 0012 converted).
+func TestClothingBands(t *testing.T) {
+	want := map[string][2]string{
+		"S": {"44", "46"}, "M": {"48", "50"}, "L": {"52", "54"},
+		"XL": {"56", "58"}, "2XL": {"60", "62"}, "3XL": {"64", "66"},
+	}
+	got := map[string][]string{}
+	for _, s := range Clothing() {
+		got[s.Band] = append(got[s.Band], s.Code)
+		if top := want[s.Band][1]; (s.MinCm != nil) != (s.Code == top) {
+			t.Errorf("%s in %s: height range only on the band's larger size %s", s.Code, s.Band, top)
+		}
+	}
+	for band, codes := range want {
+		if len(got[band]) != 2 || got[band][0] != codes[0] || got[band][1] != codes[1] {
+			t.Errorf("band %s = %v, want %v", band, got[band], codes)
+		}
+	}
+	if len(got) != len(want) {
+		t.Errorf("got %d bands, want %d", len(got), len(want))
+	}
+}
+
 // The six banded sizes' ranges follow one another without a gap or overlap.
 func TestClothingRangesContiguous(t *testing.T) {
 	var banded []ClothingSize

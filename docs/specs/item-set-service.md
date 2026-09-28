@@ -45,7 +45,7 @@ Both return `{employee, lines, orderable}`. Per line:
 - Repeated items are merged into one line with summed quantity (one line per item).
 - Quantity must be an integer ≥ 1 (400; a non-integer fails JSON decoding).
 
-The vocabulary (`internal/domain/size`), smallest first: clothing `{code, min_cm, max_cm}`,
+The vocabulary (`internal/domain/size`), smallest first: clothing `{code, band, min_cm, max_cm}`,
 the even EU sizes 44–66; shoes `{code}`, 39–46. Only six clothing sizes carry a height band
 (`min_cm`/`max_cm`, inclusive; `null` on the others, which are valid but never suggested),
 and a height outside 160–200 cm suggests nothing:
@@ -53,6 +53,12 @@ and a height outside 160–200 cm suggests nothing:
 | Height (cm) | 160–167 | 168–175 | 176–181 | 182–187 | 188–193 | 194–200 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Suggested size | 46 | 50 | 54 | 58 | 62 | 66 |
+
+`band` is the letter size covering two EU sizes: S (44–46), M (48–50), L (52–54),
+XL (56–58), 2XL (60–62), 3XL (64–66). Every clothing size picker in the app (Edit Sizes,
+the employee form, a Create Order line) offers these six bands and stores the band's larger
+size, the one a height suggests. A saved size that is the band's smaller one (44, 48, …)
+shows as its band and is kept unless the user picks another band.
 
 Clothing 44 and 46 are also shoe sizes; sizes are always checked against the line's size
 group, never guessed from the value.

@@ -17,7 +17,7 @@ import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
-import { clothingSizeLabel, cn, formatSize } from '@/lib/utils'
+import { clothingBandValue, clothingBands, cn, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
@@ -233,6 +233,7 @@ export function EditSizes({
   const [clothing, setClothing] = useState('')
   const [shoe, setShoe] = useState('')
   const [error, setError] = useState<string>()
+  const bands = clothingBands(sizes?.clothing ?? [])
 
   useEffect(() => {
     setHeight(employee?.height_cm?.toString() ?? '')
@@ -278,11 +279,11 @@ export function EditSizes({
         <Field label="Height (cm)">{(p) => <Input {...controlProps(p)} inputMode="numeric" enterKeyHint="next" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
         <Field label="Clothing size">
           {(p) => (
-            <Select {...controlProps(p)} value={clothing} onChange={(e) => setClothing(e.target.value)}>
+            <Select {...controlProps(p)} value={clothingBandValue(bands, clothing)} onChange={(e) => setClothing(e.target.value)}>
               <option value="">Not set</option>
-              {sizes?.clothing.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {clothingSizeLabel(s)}
+              {bands.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
                 </option>
               ))}
             </Select>

@@ -29,7 +29,10 @@ func (g Group) Valid() bool {
 // it is suggested for. MinCm and MaxCm are both nil on the sizes a height
 // never suggests.
 type ClothingSize struct {
-	Code  string `json:"code"`
+	Code string `json:"code"`
+	// Band is the letter size covering it: two EU sizes each, S (44–46) to
+	// 3XL (64–66). Size pickers offer the bands and store the larger size.
+	Band  string `json:"band"`
 	MinCm *int   `json:"min_cm"`
 	MaxCm *int   `json:"max_cm"`
 }
@@ -55,9 +58,10 @@ var clothingSizes = func() []ClothingSize {
 		46: {160, 167}, 50: {168, 175}, 54: {176, 181},
 		58: {182, 187}, 62: {188, 193}, 66: {194, 200},
 	}
+	letters := []string{"S", "M", "L", "XL", "2XL", "3XL"}
 	var out []ClothingSize
 	for n := MinClothing; n <= MaxClothing; n += 2 {
-		s := ClothingSize{Code: ClothingCode(n)}
+		s := ClothingSize{Code: ClothingCode(n), Band: letters[(n-MinClothing)/4]}
 		if b, ok := bands[n]; ok {
 			s.MinCm, s.MaxCm = &b[0], &b[1]
 		}
