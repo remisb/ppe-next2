@@ -672,6 +672,14 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
 test('phone and tablet: no screen scrolls sideways', async () => {
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
+  // The phone bar puts New order in the middle, raised: Home, History, New order, Employees, More.
+  const phoneNav = page.getByRole('navigation', { name: 'Main' })
+  const newOrder = phoneNav.getByRole('link', { name: /^Create Order/ })
+  await expect(newOrder).toHaveText(/New order/)
+  const middle = await newOrder.boundingBox()
+  expect(Math.abs(middle!.x + middle!.width / 2 - 375 / 2), 'New order is in the middle of the bar').toBeLessThan(2)
+  const history = await phoneNav.getByRole('link', { name: /^History/ }).boundingBox()
+  expect(history!.x).toBeLessThan(middle!.x)
   // Neither the page nor any table (which scrolls inside its own box) runs sideways.
   const fits = () =>
     page.evaluate(
@@ -716,6 +724,12 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await expect(reviewButton()).toBeInViewport()
   expect(await fits()).toBe(true)
+  // Away from Create Order, the button says a draft is waiting, with its line count, and reopens it.
+  await openTab('History')
+  await expect(newOrder).toHaveAccessibleName(/^Create Order \(draft, \d+ lines?\)$/)
+  await expect(newOrder).toHaveText(/Draft/)
+  await newOrder.click()
+  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   // Left ORDERED, so History has a row waiting for confirmation.
   await markAsOrdered()
   await page.getByRole('button', { name: 'Start a new order' }).click()

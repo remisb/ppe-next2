@@ -1,4 +1,4 @@
-import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
@@ -8,6 +8,7 @@ import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/rout
 import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
+import { draftLineCount } from '@/lib/working-order'
 
 import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
@@ -65,12 +66,19 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
 
 /** The phone tab bar holds this many sections; the rest, the account and Sign out are under More. */
 const phoneTabs = 4
+/**
+ * Where the phone bar puts the other sections: Create Order is the raised
+ * button in the middle (order 3) and More is last, so the rail and sidebar
+ * keep the one order of the markup.
+ */
+const phoneOrder = ['max-md:order-1', 'max-md:order-2', 'max-md:order-4', 'max-md:order-5']
 
 /*
  * One navigation, three layouts:
  *   phone (< md)   the first four sections are a bottom tab bar within thumb
- *                  reach, above the home bar; More opens a panel above it with
- *                  the other sections, the account and Sign out
+ *                  reach, above the home bar, with Create Order as a raised
+ *                  New order button in the middle; More opens a panel above it
+ *                  with the other sections, the account and Sign out
  *   tablet (md)    a 5.5rem side rail: icon over a short label. It stays up to
  *                  xl so a landscape tablet (1024px) keeps room for tables
  *   desktop (xl)   a 15rem sidebar: icon beside the full label
@@ -171,6 +179,9 @@ export function App() {
   const more = shownTabs.slice(phoneTabs)
   const moreCurrent = route.name === 'account' || more.some((t) => isCurrent(route.name, t.route.name))
   const waiting = awaiting.data ?? 0
+  // The saved draft's lines, read again on every render (each navigation among them): the New order button shows them.
+  const draftLines = draftLineCount(session.userId)
+  let placed = 0
 
   const link = (to: Route) => linkTo(to, navigate)
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
@@ -223,16 +234,27 @@ export function App() {
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
-          {primary.map((t) => (
-            <NavLink key={t.route.name} tab={t} current={isCurrent(route.name, t.route.name)} link={link} badge={t.route.name === 'history' ? waiting : 0} />
-          ))}
+          {primary.map((t) =>
+            t.route.name === 'createOrder' ? (
+              <NewOrderLink key={t.route.name} tab={t} current={isCurrent(route.name, t.route.name)} link={link} draftLines={draftLines} />
+            ) : (
+              <NavLink
+                key={t.route.name}
+                tab={t}
+                current={isCurrent(route.name, t.route.name)}
+                link={link}
+                badge={t.route.name === 'history' ? waiting : 0}
+                className={phoneOrder[placed++]}
+              />
+            ),
+          )}
           <button
             type="button"
             aria-expanded={moreOpen}
             aria-controls="more-sections"
             data-active={moreOpen || moreCurrent}
             onClick={() => setMoreOpen((o) => !o)}
-            className={cn(navItem, 'cursor-pointer md:hidden')}
+            className={cn(navItem, 'cursor-pointer max-md:order-5 md:hidden')}
           >
             <span className={navIcon}>
               <Ellipsis aria-hidden className="size-5" />
@@ -379,6 +401,7 @@ function NavLink({
   badge = 0,
   item = navItem,
   icon = navIcon,
+  className,
 }: {
   tab: Tab
   current: boolean
@@ -387,9 +410,11 @@ function NavLink({
   badge?: number
   item?: string
   icon?: string
+  /** Placement, such as the phone bar's order. */
+  className?: string | undefined
 }) {
   return (
-    <a {...link(r)} aria-current={current ? 'page' : undefined} className={item}>
+    <a {...link(r)} aria-current={current ? 'page' : undefined} className={cn(item, className)}>
       <span className={cn(icon, 'relative')}>
         <Icon aria-hidden className="size-5 xl:size-4" />
         {/* On the icon in the tab bar and rail; at the end of the row in the sidebar. */}
@@ -405,6 +430,58 @@ function NavLink({
           <span className="sr-only"> ({badge} waiting for confirmation)</span>
         </>
       ) : null}
+    </a>
+  )
+}
+
+/**
+ * Create Order. On a phone it is the raised button in the middle of the tab
+ * bar, labelled New order, or Draft with its line count when a draft is
+ * saved: the button reopens it, as Create Order always does. In the rail and
+ * sidebar it is an ordinary section.
+ */
+function NewOrderLink({
+  tab: { route: r, label, short, icon: Icon },
+  current,
+  link,
+  draftLines,
+}: {
+  tab: Tab
+  current: boolean
+  link: (to: Route) => ReturnType<typeof linkTo>
+  draftLines: number
+}) {
+  const draft = draftLines > 0
+  return (
+    <a {...link(r)} aria-current={current ? 'page' : undefined} className={cn(navItem, 'max-md:order-3 max-md:justify-end max-md:pb-1.5')}>
+      <span
+        className={cn(
+          navIcon,
+          'relative',
+          // The phone's raised button: above the bar, in the primary colour, whatever the state.
+          'max-md:-mt-5 max-md:size-12 max-md:max-w-none max-md:rounded-2xl max-md:bg-primary max-md:text-primary-foreground max-md:shadow-lg max-md:ring-4 max-md:ring-background',
+          'max-md:group-hover:bg-primary/90 max-md:group-aria-[current=page]:bg-primary',
+        )}
+      >
+        <Plus aria-hidden className="size-6 md:hidden" />
+        <Icon aria-hidden className="size-5 max-md:hidden xl:size-4" />
+        {draft && !current ? (
+          <span
+            aria-hidden
+            className="absolute -top-1.5 -right-1.5 min-w-5 rounded-full border border-border bg-background px-1 text-center text-[0.6875rem] leading-[1.125rem] font-semibold text-foreground tabular-nums md:hidden"
+          >
+            {draftLines > 99 ? '99+' : draftLines}
+          </span>
+        ) : null}
+      </span>
+      <span aria-hidden className="max-w-full truncate px-0.5 md:hidden">
+        {draft ? 'Draft' : 'New order'}
+      </span>
+      <span aria-hidden className="max-w-full truncate px-0.5 max-md:hidden xl:hidden">
+        {short}
+      </span>
+      <span className="sr-only xl:not-sr-only">{label}</span>
+      {draft ? <span className="sr-only"> (draft, {draftLines === 1 ? '1 line' : `${draftLines} lines`})</span> : null}
     </a>
   )
 }

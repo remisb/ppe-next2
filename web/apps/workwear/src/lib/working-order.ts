@@ -278,6 +278,18 @@ export function loadDraft(
   }
 }
 
+/**
+ * How many lines the user's saved draft holds, without loading or tidying
+ * anything: the phone's New order button shows it, so a draft is not forgotten.
+ */
+export function draftLineCount(userId: string, storage: Storage | undefined = globalThis.localStorage): number {
+  try {
+    return parseDraft(storage?.getItem(draftKey(userId)))?.lines.length ?? 0
+  } catch {
+    return 0
+  }
+}
+
 export function clearDraft(userId: string, storage: Storage | undefined = globalThis.localStorage): void {
   try {
     storage?.removeItem(draftKey(userId))

@@ -5,6 +5,7 @@ import {
   acceptResolvedSize,
   addLines,
   clearDraft,
+  draftLineCount,
   applySavedDefault,
   emptyOrder,
   lineFromCatalogue,
@@ -189,6 +190,18 @@ describe('draft persistence', () => {
     clearDraft('u1', storage)
     expect(loadDraft('u1', storage, memory().storage)).toEqual(emptyOrder)
     expect(loadDraft('u2', storage, memory().storage).lines).toHaveLength(1)
+  })
+
+  it('counts the lines of a user\'s draft without changing storage', () => {
+    const { store, storage } = memory()
+    expect(draftLineCount('u1', storage)).toBe(0)
+    saveDraft(addLines({ employee: ona, lines: [] }, [line('a'), line('b')]), 'u1', storage)
+    storage.setItem('workwear.createOrder.v2.u1', '{}')
+    expect(draftLineCount('u1', storage)).toBe(2)
+    expect(draftLineCount('u2', storage)).toBe(0)
+    expect(store.size).toBe(2)
+    storage.setItem('workwear.createOrder.v3.u1', '{broken')
+    expect(draftLineCount('u1', storage)).toBe(0)
   })
 
   it('drops drafts saved before clothing sizes became numbers', () => {

@@ -30,7 +30,10 @@ The workwear app is the reference.
   a phone, an icon rail from `md`, a labelled sidebar from `xl`. The rail stays up to `xl`
   so a landscape tablet (1024px) keeps room for tables; the sidebar's 15rem there would
   stack them. The phone bar holds the first four sections and More, which opens a panel
-  above it with the rest (Item Catalogue, Item Sets, Users), the account and Sign out; from
+  above it with the rest (Item Catalogue, Item Sets, Users), the account and Sign out.
+  Create Order is the raised New order button in the middle of that bar (Draft, with the
+  line count, while a draft is saved); the bar reorders with `max-md:order-*`, so the markup
+  keeps one order for the rail and sidebar. From
   `md` those links flow on in the rail (`md:contents`), never a second list. An
   administrator has seven sections (Dashboard first, Users last), a manager or the employee
   role six (their Dashboard first). History shows the number of orders waiting for
