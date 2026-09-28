@@ -62,6 +62,12 @@ func TestPostgresCatalogue(t *testing.T) {
 	if got, _ := svc.Get(ctx, draft.ID); got.Icon != IconHelmet {
 		t.Errorf("icon = %q", got.Icon)
 	}
+	// The database accepts every pictogram the app draws: its CHECK and Icons list the same set.
+	for _, icon := range Icons {
+		if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = $2 WHERE id = $1`, draft.ID, string(icon)); err != nil {
+			t.Errorf("the database refused icon %q: %v", icon, err)
+		}
+	}
 	if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = 'boot' WHERE id = $1`, draft.ID); err == nil {
 		t.Error("the database accepted an unknown icon")
 	}

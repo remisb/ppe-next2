@@ -158,6 +158,11 @@ func TestIcon(t *testing.T) {
 	if err != nil || u.Icon != IconEar {
 		t.Fatalf("updated icon %q, err %v", u.Icon, err)
 	}
+	for _, icon := range []Icon{IconWeldingHelmet, IconInsulatedJacket} {
+		if w, err := svc.Create(ctx, Params{Name: "Item " + string(icon), SizeGroup: size.GroupNone, Icon: icon}, testActor); err != nil || w.Icon != icon {
+			t.Errorf("icon %q: got %q, err %v", icon, w.Icon, err)
+		}
+	}
 	if _, err := svc.Create(ctx, Params{Name: "Boots", SizeGroup: size.GroupShoes, Icon: "boot"}, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("unknown icon err = %v", err)
 	}

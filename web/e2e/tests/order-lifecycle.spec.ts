@@ -103,6 +103,14 @@ test('Item Catalogue: items with and without a price', async () => {
   await addCatalogueItem({ name: 'Safety helmet', details: 'EN 397', group: 'NONE', rank: '5' })
   await expect(page.getByRole('row', { name: /Safety helmet/ })).toContainText('Incomplete')
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€49.99')
+  // A new item's picture follows its name: a welding helmet and an insulated jacket have their own.
+  await page.getByRole('button', { name: 'Add Item' }).click()
+  const form = page.getByRole('dialog')
+  await form.getByLabel('Item name').fill('Welding helmet')
+  await expect(form.getByRole('radio', { name: 'Welding helmet' })).toBeChecked()
+  await form.getByLabel('Item name').fill('Insulated jacket')
+  await expect(form.getByRole('radio', { name: 'Insulated jacket' })).toBeChecked()
+  await form.getByRole('button', { name: 'Cancel' }).click()
   // One status per item: the chips count the items and show one status at a time.
   await page.getByRole('button', { name: 'Incomplete · 1' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toHaveCount(0)

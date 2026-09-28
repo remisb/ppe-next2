@@ -26,20 +26,26 @@ const (
 type Icon string
 
 const (
-	IconShoes    Icon = "shoes"
-	IconJacket   Icon = "jacket"
-	IconTrousers Icon = "trousers"
-	IconVest     Icon = "vest"
-	IconGloves   Icon = "gloves"
-	IconHelmet   Icon = "helmet"
-	IconGlasses  Icon = "glasses"
-	IconEar      Icon = "ear"
-	IconMask     Icon = "mask"
-	IconOther    Icon = "other"
+	IconShoes           Icon = "shoes"
+	IconJacket          Icon = "jacket"
+	IconInsulatedJacket Icon = "insulated_jacket"
+	IconTrousers        Icon = "trousers"
+	IconVest            Icon = "vest"
+	IconGloves          Icon = "gloves"
+	IconHelmet          Icon = "helmet"
+	IconWeldingHelmet   Icon = "welding_helmet"
+	IconGlasses         Icon = "glasses"
+	IconEar             Icon = "ear"
+	IconMask            Icon = "mask"
+	IconOther           Icon = "other"
 )
 
-// Icons lists every Icon, in the order a picker offers them.
-var Icons = []Icon{IconShoes, IconJacket, IconTrousers, IconVest, IconGloves, IconHelmet, IconGlasses, IconEar, IconMask, IconOther}
+// Icons lists every Icon, in the order a picker offers them. The database's
+// catalogue_items_icon_check (migration 0014) must list the same values.
+var Icons = []Icon{
+	IconShoes, IconJacket, IconInsulatedJacket, IconTrousers, IconVest, IconGloves,
+	IconHelmet, IconWeldingHelmet, IconGlasses, IconEar, IconMask, IconOther,
+}
 
 func (i Icon) Valid() bool {
 	for _, x := range Icons {

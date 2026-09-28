@@ -21,10 +21,21 @@ describe('Add Item search', () => {
 describe('a new item\'s pictogram', () => {
   it('is suggested by its name', () => {
     expect(guessIcon('Safety shoes')).toBe('shoes')
-    expect(guessIcon('Winter JACKET')).toBe('jacket')
+    expect(guessIcon('Rain JACKET')).toBe('jacket')
     expect(guessIcon('Hi-vis vest')).toBe('vest')
     expect(guessIcon('Ear defenders')).toBe('ear')
     expect(guessIcon('FFP3 respirator')).toBe('mask')
     expect(guessIcon('First aid kit')).toBe('other')
+  })
+  it('tells a welding helmet and an insulated jacket from the plain ones', () => {
+    expect(guessIcon('Welding Helmet')).toBe('welding_helmet')
+    expect(guessIcon('Auto-darkening welding mask')).toBe('welding_helmet')
+    expect(guessIcon('Safety helmet')).toBe('helmet')
+    expect(guessIcon('Welding gloves')).toBe('gloves')
+    expect(guessIcon('Insulated Jacket')).toBe('insulated_jacket')
+    expect(guessIcon('Winter jacket')).toBe('insulated_jacket')
+    expect(guessIcon('Thermal parka')).toBe('insulated_jacket')
+    expect(guessIcon('Work jacket')).toBe('jacket')
+    expect(guessIcon('Insulated gloves')).toBe('gloves')
   })
 })

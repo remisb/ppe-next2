@@ -88,7 +88,19 @@ export interface EmployeeSizesInput {
 }
 
 /** An item's pictogram; the web app draws each one. */
-export type CatalogueIcon = 'shoes' | 'jacket' | 'trousers' | 'vest' | 'gloves' | 'helmet' | 'glasses' | 'ear' | 'mask' | 'other'
+export type CatalogueIcon =
+  | 'shoes'
+  | 'jacket'
+  | 'insulated_jacket'
+  | 'trousers'
+  | 'vest'
+  | 'gloves'
+  | 'helmet'
+  | 'welding_helmet'
+  | 'glasses'
+  | 'ear'
+  | 'mask'
+  | 'other'
 
 export interface CatalogueItem {
   id: string

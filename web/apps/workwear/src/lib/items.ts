@@ -13,9 +13,15 @@ export function matchItems(items: readonly CatalogueItem[], q: string): Catalogu
   })
 }
 
-/** Name keywords per pictogram, first match wins; the same list the migration used for existing items. */
+/**
+ * Name keywords per pictogram, first match wins; the list migration 0008 used
+ * for existing items, with the welding helmet and insulated jacket (0014)
+ * ahead of the plain helmet and jacket they would otherwise match.
+ */
 const iconWords: [RegExp, CatalogueIcon][] = [
   [/shoe|boot/i, 'shoes'],
+  [/weld.*(helmet|mask|shield|visor)|(helmet|mask|shield|visor).*weld/i, 'welding_helmet'],
+  [/(insulat|thermal|padded|quilted|winter|puffer).*(jacket|coat)|(jacket|coat).*(insulat|thermal|padded|quilted)|parka|puffer/i, 'insulated_jacket'],
   [/jacket|coat|parka/i, 'jacket'],
   [/trouser|pants|overall/i, 'trousers'],
   [/vest/i, 'vest'],

@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils'
 /*
  * Pictograms for catalogue items, so an item is recognised by its picture as
  * well as its name: in Add Item, the catalogue and order lines. Lucide draws
- * most; the four it lacks (a work boot, trousers, a hi-vis vest, a
- * respirator) are drawn here in the same 24px, 2px-stroke style.
+ * most; the six it lacks (a work boot, trousers, a hi-vis vest, a
+ * respirator, a welding helmet, a quilted insulated jacket) are drawn here in
+ * the same 24px, 2px-stroke style.
  */
 
 function Svg({ children, ...props }: SVGProps<SVGSVGElement>) {
@@ -67,15 +68,39 @@ function Respirator(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+/** A welding helmet from the front: the shell, its dark viewing window and the side pivots. */
+function WeldingHelmet(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M5 9a7 6 0 0 1 14 0v6a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6z" />
+      <rect x="8" y="10" width="8" height="4" rx="1" fill="currentColor" />
+      <path d="M3 11h2M19 11h2" />
+    </Svg>
+  )
+}
+
+/** A quilted jacket with long sleeves: the zip and bands of padding tell it from a work jacket. */
+function InsulatedJacket(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M9 3 4 5 2 18h4l1-7v10h10V11l1 7h4L20 5l-5-2a3 3 0 0 1-6 0z" />
+      <path d="M12 6v15" />
+      <path d="M7 11h10M7 16h10" />
+    </Svg>
+  )
+}
+
 type IconComponent = ComponentType<LucideProps> | ComponentType<SVGProps<SVGSVGElement>>
 
 const drawings: Record<CatalogueIcon, IconComponent> = {
   shoes: Boot,
   jacket: Shirt,
+  insulated_jacket: InsulatedJacket,
   trousers: Trousers,
   vest: Vest,
   gloves: Hand,
   helmet: HardHat,
+  welding_helmet: WeldingHelmet,
   glasses: Glasses,
   ear: Headphones,
   mask: Respirator,
@@ -86,10 +111,12 @@ const drawings: Record<CatalogueIcon, IconComponent> = {
 export const iconChoices: { icon: CatalogueIcon; label: string }[] = [
   { icon: 'shoes', label: 'Shoes' },
   { icon: 'jacket', label: 'Jacket' },
+  { icon: 'insulated_jacket', label: 'Insulated jacket' },
   { icon: 'trousers', label: 'Trousers' },
   { icon: 'vest', label: 'Vest' },
   { icon: 'gloves', label: 'Gloves' },
   { icon: 'helmet', label: 'Helmet' },
+  { icon: 'welding_helmet', label: 'Welding helmet' },
   { icon: 'glasses', label: 'Glasses' },
   { icon: 'ear', label: 'Ear protection' },
   { icon: 'mask', label: 'Mask' },
