@@ -77,7 +77,18 @@ async function addCatalogueItem(item: { name: string; details: string; group: st
 test('sign in', async () => {
   await page.goto('/')
   await page.getByLabel('Email').fill(admin.email)
-  await page.getByLabel('Password').fill(admin.password)
+  const password = page.getByLabel(/^Password/)
+  await password.fill(admin.password)
+  // Show password checks what was typed, and hides it again.
+  const show = page.getByRole('button', { name: 'Show password' })
+  await expect(password).toHaveAttribute('type', 'password')
+  await show.click()
+  await expect(password).toHaveAttribute('type', 'text')
+  await expect(password).toHaveValue(admin.password)
+  await expect(page.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Hide password' }).click()
+  await expect(password).toHaveAttribute('type', 'password')
+  await show.click()
   await page.getByRole('button', { name: 'Sign in' }).click()
   // An administrator starts on the Dashboard; an empty database still gives a whole one.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
@@ -243,7 +254,7 @@ test('the draft survives a closed tab, for the same user only', async ({ browser
   const tab = await page.context().newPage()
   await tab.goto('/')
   await tab.getByLabel('Email').fill(admin.email)
-  await tab.getByLabel('Password').fill(admin.password)
+  await tab.getByLabel(/^Password/).fill(admin.password)
   await tab.getByRole('button', { name: 'Sign in' }).click()
   await expect(tab.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await tab.goto('/orders/new')
@@ -253,7 +264,7 @@ test('the draft survives a closed tab, for the same user only', async ({ browser
   const other = await (await browser.newContext()).newPage()
   await other.goto(webURL + '/')
   await other.getByLabel('Email').fill(admin.email)
-  await other.getByLabel('Password').fill(admin.password)
+  await other.getByLabel(/^Password/).fill(admin.password)
   await other.getByRole('button', { name: 'Sign in' }).click()
   await expect(other.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await other.goto(webURL + '/orders/new')
@@ -788,7 +799,7 @@ async function signInElsewhere(browser: Browser, email: string, password: string
   const other = await (await browser.newContext()).newPage()
   await other.goto(webURL + '/')
   await other.getByLabel('Email').fill(email)
-  await other.getByLabel('Password').fill(password)
+  await other.getByLabel(/^Password/).fill(password)
   await other.getByRole('button', { name: 'Sign in' }).click()
   return other
 }
@@ -946,11 +957,11 @@ test('Account: change password, then only the new one signs in', async () => {
 
   await page.getByRole('button', { name: 'Sign out' }).click()
   await page.getByLabel('Email').fill(admin.email)
-  await page.getByLabel('Password').fill(admin.password)
+  await page.getByLabel(/^Password/).fill(admin.password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByText('Wrong email or password.')).toBeVisible()
 
-  await page.getByLabel('Password').fill(newPassword)
+  await page.getByLabel(/^Password/).fill(newPassword)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByRole('link', { name: admin.name })).toBeVisible()
 })

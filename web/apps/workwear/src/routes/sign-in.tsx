@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Field, Input, controlProps } from '@/components/ui/field'
+import { Field, Input, PasswordInput, controlProps } from '@/components/ui/field'
 import { useApi } from '@/lib/api'
 import { errorText } from '@/lib/use-load'
 
@@ -46,9 +46,8 @@ export function SignIn() {
             </Field>
             <Field label="Password" required error={error}>
               {(p) => (
-                <Input
+                <PasswordInput
                   {...controlProps(p)}
-                  type="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

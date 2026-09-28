@@ -1,10 +1,12 @@
 import type {
+  ComponentProps,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react'
-import { useId } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -76,13 +78,60 @@ export function Input({
   className,
   invalid,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+}: ComponentProps<'input'> & { invalid?: boolean }) {
   return (
     <input
       className={cn(CONTROL, invalid && 'border-destructive focus-visible:ring-destructive', className)}
       aria-invalid={invalid || undefined}
       {...props}
     />
+  )
+}
+
+/**
+ * A password field with a Show / Hide button inside it, so a password typed on
+ * a phone (often with gloves) can be checked before it is sent. The button is
+ * a toggle (aria-pressed) that names what it does; it never submits. The field
+ * turns back into a password field when its form is submitted, so the browser
+ * and password managers still see a password.
+ */
+export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & { invalid?: boolean }) {
+  const [shown, setShown] = useState(false)
+  const input = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const form = input.current?.form
+    if (!form) return
+    const hide = () => setShown(false)
+    form.addEventListener('submit', hide)
+    return () => form.removeEventListener('submit', hide)
+  }, [])
+
+  return (
+    <div className="relative">
+      <Input
+        ref={input}
+        {...props}
+        type={shown ? 'text' : 'password'}
+        // Shown as text, a phone must not capitalise or "correct" it.
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className={cn('pr-12', className)}
+      />
+      <button
+        type="button"
+        aria-pressed={shown}
+        aria-controls={props.id}
+        aria-label={shown ? 'Hide password' : 'Show password'}
+        title={shown ? 'Hide password' : 'Show password'}
+        disabled={props.disabled}
+        onClick={() => setShown((v) => !v)}
+        className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {shown ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
+      </button>
+    </div>
   )
 }
 
