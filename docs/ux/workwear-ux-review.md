@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`312676a`)
+status: phases 1–3 shipped, plus follow-ups (`49a1ce3`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -13,8 +13,8 @@ status: phases 1–3 shipped, plus follow-ups (`312676a`)
 > figures followed in `13214e8`, the Replacements due screen in `65da1ad`, the
 > employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
 > in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
-> button in `c089c1a`, compact History rows in `7edcdcc`, and Show password in
-> `312676a`. Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, and
+> the shorter confirmation wording in `49a1ce3`. Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -555,8 +555,8 @@ switch changes only the interface; the legal document stays bilingual.
 │ Work trousers · S             ×2 │      │          [ View record ]         │
 │ Protective gloves            ×10 │      │                                  │
 │ What you confirm                 │      │                                  │
-│ "I confirm that I have received  │      │                                  │
-│ the items listed above, …"       │      │                                  │
+│ "I confirm receipt of the listed │      │                                  │
+│ items in the stated sizes …"     │      │                                  │
 │ [ View full record (EN / RU) ]   │      │                                  │
 ├──────────────────────────────────┤      │                                  │
 │ [ ] I have received the items    │      │                                  │
@@ -573,6 +573,7 @@ switch changes only the interface; the legal document stays bilingual.
 | The document hash and the legal text are unchanged | |
 
 **As built:** the public page and hand-over mode now follow this option. The first screen asks “Ona, please confirm you received 5 items”, gives the order, who prepared it and the date, lists the items, and quotes the confirmation statement from the locked record in the chosen language. View full record (EN / RU) opens the unchanged bilingual record in place. The consent sits at the bottom of the screen even when the order is short. EN / RU changes only the interface wording: the public page starts in the browser's language and remembers the choice on that phone, while hand-over starts fresh for each employee. After confirming, the page says when the receipt was recorded, and View record opens it. Quoting the statement next to the items answers most of the legal question, because the consent refers to text on the screen. Whether the collapsed record is enough still needs legal sign-off.
+The confirmation statement was shortened in `49a1ce3` to “I confirm receipt of the listed items in the stated sizes and quantities, in good condition for work. I know each item’s service period.” (Russian: “Подтверждаю получение перечисленных предметов указанных размеров и количества, в надлежащем состоянии для работы. Знаю срок службы каждого предмета.”). The wording is part of the hashed record, so each order keeps the version it was placed under: the 11 orders placed before stay on `2026-09-v1`, and new orders get `2026-09-v2`.
 
 #### B. Slide to confirm (not recommended)
 
@@ -858,7 +859,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -881,6 +882,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Phone navigation option B from section 2: a raised New order button in the middle of the bar, labelled Draft with the line count while a draft is saved
 - [x] History option A from section 4 completed: two-line rows under month headings on a phone, with the sort order and time-zone note moved into Filters
 - [x] Sign in: a Show / Hide password button inside the password field
+- [x] Shorter confirmation wording for new orders (`2026-09-v2`), versioned per order so placed and confirmed records keep their text and hash; the printed record fills in the employee's name on the signature line
 
 ### Still open
 
