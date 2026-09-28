@@ -81,7 +81,9 @@ func (s *Service) MarkAsOrdered(ctx context.Context, p MarkAsOrderedParams, acto
 			PreparedByUserID:  actor,
 			PreparedByName:    snap.PreparedByName,
 			UpdatedAt:         now,
-			Lines:             make([]Line, 0, len(p.Lines)),
+			// The wording is fixed with the order, as its lines are.
+			ReceiptTextVersion: ReceiptTextVersion,
+			Lines:              make([]Line, 0, len(p.Lines)),
 		}
 		for i, l := range p.Lines {
 			item, ok := snap.Items[l.CatalogueItemID]

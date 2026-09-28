@@ -101,10 +101,20 @@ Only `sha256(token)` is stored. At most one confirmation per order carries evide
 name and code, ordered date, preparer, lines (item, details, size, quantity, unit price,
 line total, currency, service period), total, and the English and Russian confirmation
 texts with their `text_version`. `document_hash` is SHA-256 of its canonical JSON and is
-stored as evidence; the record of a GIVEN order returns the stored hash. Changing the
-wording (`order/receipt.go`) requires a new `ReceiptTextVersion`.
+stored as evidence; the record of a GIVEN order returns the stored hash.
 
-**Open item:** the Russian confirmation wording is a draft pending approval.
+**Wording versions.** Each order stores the wording it was placed under
+(`orders.receipt_text_version`, migration `0013`), and its receipt always shows and hashes
+that version from `order.ConfirmationTexts`, so a change of wording never alters a stored
+record or makes a confirmed hash disagree with its text. To change the wording, add a
+version to `ConfirmationTexts` and point `ReceiptTextVersion` at it; never edit or remove
+a version that orders use. Orders not yet confirmed keep their own version too: the
+employee confirms the text the order was placed with.
+
+| Version | Used for | English | Russian |
+|---|---|---|---|
+| `2026-09-v1` | Orders placed before 28 Sep 2026 | I confirm that I have received the items listed above, in the stated sizes and quantities and in good condition, for use in my work. I understand the service period of each item. | Я подтверждаю, что получил(а) перечисленные выше предметы указанных размеров и в указанном количестве, в надлежащем состоянии, для использования в работе. Мне известен срок службы каждого предмета. |
+| `2026-09-v2` | New orders | I confirm receipt of the listed items in the stated sizes and quantities, in good condition for work. I know each item’s service period. | Подтверждаю получение перечисленных предметов указанных размеров и количества, в надлежащем состоянии для работы. Знаю срок службы каждого предмета. |
 
 The web app renders the record in `components/receipt.tsx`; A4 print mode hides app
 chrome and adds *Employee name and surname / Имя и фамилия работника*, *Signature /

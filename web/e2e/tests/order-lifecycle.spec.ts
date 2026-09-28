@@ -339,6 +339,8 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   await expect(employee.getByText(/^Order WE-\d{6} · from /)).toBeVisible()
   await expect(employee.getByRole('list', { name: 'Items' }).getByRole('listitem')).toHaveCount(3)
   await expect(employee.getByText('What you confirm')).toBeVisible()
+  // A new order carries the current wording (2026-09-v2).
+  await expect(employee.getByText('I confirm receipt of the listed items in the stated sizes and quantities', { exact: false })).toBeVisible()
   await expect(employee.getByText('Items Given Record / Акт выдачи')).toHaveCount(0)
   await employee.getByRole('button', { name: 'View full record (EN / RU)' }).click()
   await expect(employee.getByText('Items Given Record / Акт выдачи')).toBeVisible()
@@ -413,6 +415,11 @@ test('Print Record opens the print dialog; the record prints on one A4 page', as
   // Printed from a desktop window: the hidden navigation must not leave the record in its narrow column.
   const pdf = (await page.pdf({ format: 'A4', preferCSSPageSize: true })).toString('latin1')
   expect(pdf.match(/\/Type\s*\/Page[^s]/g)?.length, 'pages printed').toBe(1)
+  // On paper the name line is filled in from the record; the employee signs and dates it.
+  await page.emulateMedia({ media: 'print' })
+  const nameLine = page.getByText('Employee name and surname / Имя и фамилия работника').locator('..')
+  await expect(nameLine).toContainText('Ona Kazlauskienė')
+  await page.emulateMedia({ media: null })
 })
 
 test('paper confirmation: a second order signed on paper', async () => {

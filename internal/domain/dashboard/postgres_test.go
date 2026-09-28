@@ -84,12 +84,13 @@ func seedPG(t *testing.T) pgData {
 		seq++
 		if givenAt == nil {
 			exec(`INSERT INTO orders (id, record_seq, employee_id, employee_first_name, employee_last_name, status, ordered_at,
-					prepared_by_user_id, prepared_by_name, updated_at)
-				VALUES ($1, $2, $3, $4, 'X', 'ORDERED', $5, $6, 'Admin', $5)`, id, seq, emp, first, orderedAt, admin)
+					prepared_by_user_id, prepared_by_name, updated_at, receipt_text_version)
+				VALUES ($1, $2, $3, $4, 'X', 'ORDERED', $5, $6, 'Admin', $5, '2026-09-v2')`, id, seq, emp, first, orderedAt, admin)
 		} else {
 			exec(`INSERT INTO orders (id, record_seq, employee_id, employee_first_name, employee_last_name, status, ordered_at,
-					prepared_by_user_id, prepared_by_name, given_at, given_by_user_id, given_by_name, confirmation_method, updated_at)
-				VALUES ($1, $2, $3, $4, 'X', 'GIVEN', $5, $6, 'Admin', $7, $6, 'Admin', $8, $7)`, id, seq, emp, first, orderedAt, admin, *givenAt, method)
+					prepared_by_user_id, prepared_by_name, given_at, given_by_user_id, given_by_name, confirmation_method, updated_at,
+					receipt_text_version)
+				VALUES ($1, $2, $3, $4, 'X', 'GIVEN', $5, $6, 'Admin', $7, $6, 'Admin', $8, $7, '2026-09-v2')`, id, seq, emp, first, orderedAt, admin, *givenAt, method)
 		}
 		for i, l := range lines {
 			exec(`INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity,
@@ -315,8 +316,8 @@ func TestPostgresEmployee(t *testing.T) {
 		t.Helper()
 		id := uuid.New()
 		exec(`INSERT INTO orders (id, employee_id, employee_first_name, employee_last_name, status, ordered_at,
-				prepared_by_user_id, prepared_by_name, updated_at)
-			VALUES ($1, $2, 'Ona', 'X', 'ORDERED', $3, $4, 'Someone', $3)`, id, emp, utc(orderedAt), by)
+				prepared_by_user_id, prepared_by_name, updated_at, receipt_text_version)
+			VALUES ($1, $2, 'Ona', 'X', 'ORDERED', $3, $4, 'Someone', $3, '2026-09-v2')`, id, emp, utc(orderedAt), by)
 		exec(`INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity,
 				unit_price_cents, currency, service_period_months)
 			VALUES ($1, $2, 1, $3, 'Helmet', '', 'NONE', NULL, $4, $5, 'EUR', 24)`, uuid.New(), id, d.draft, qty, cents)

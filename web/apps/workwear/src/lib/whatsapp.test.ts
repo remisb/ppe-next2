@@ -41,7 +41,7 @@ describe('formatWhatsApp', () => {
       id: 'o', record_number: 'WE-000001', employee_id: 'e', employee_first_name: 'Ona', employee_last_name: 'K',
       employee_code: null, status: 'ORDERED', ordered_at: '2026-09-24T09:00:00Z', prepared_by_user_id: 'u',
       prepared_by_name: 'Admin', given_at: null, given_by_user_id: null, given_by_name: null, confirmation_method: null,
-      updated_at: '', total_cents: 4999,
+      updated_at: '', receipt_text_version: '2026-09-v2', total_cents: 4999,
       lines: [{ id: 'l', line_no: 1, catalogue_item_id: 'i', item_name: 'Safety shoes', item_details: '', size_group: 'SHOES',
         size: '40', quantity: 1, unit_price_cents: 4999, currency: 'EUR', service_period_months: 12 }],
     }

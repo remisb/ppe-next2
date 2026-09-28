@@ -53,6 +53,8 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | History filters in the organisation timezone | `TestListParamsDatesUseOrganisationTimezone`, `TestPostgresHistory` |
 | WhatsApp text (algorithm E): no prices, no status | web `whatsapp` tests |
 | Receipt from snapshot only, bilingual, € prices, stable hash (§8) | `TestReceiptIsSnapshotOnlyAndHashStable`; e2e public page and View Record |
+| The confirmation wording is fixed per order (`receipt_text_version`): new orders take the current version; an order keeps its version's text and hash when the wording changes | `order.TestReceiptKeepsTheOrdersWording`, `TestPostgresMarkAsOrdered` (version stored); e2e *the employee confirms on the public page* (current wording) |
+| Print Record: one A4 page for a usual order; rows and the signature block never split across pages; the employee's name is printed on the name line from the locked record, leaving signature and date to fill in | e2e *Print Record opens the print dialog; the record prints on one A4 page* |
 | Audit events commit with their change | `TestPostgresFailedWriteRecordsNoEvent`, catalogue price event, `order.ordered` / `order.given` counts; append-only trigger in `audit.TestAppendOnly` |
 | Route access per role | `cmd/api.TestRoutePolicy` (every route must be listed) |
 | Change own password (8–72 bytes, current one required) | `user.TestPasswords`; web `validatePasswordChange`; e2e *Account: change password* |

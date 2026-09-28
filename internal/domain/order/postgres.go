@@ -103,10 +103,10 @@ func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs 
 func insertOrder(ctx context.Context, tx pgx.Tx, o Order) error {
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO orders (id, record_seq, employee_id, employee_first_name, employee_last_name, employee_code,
-			status, ordered_at, prepared_by_user_id, prepared_by_name, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			status, ordered_at, prepared_by_user_id, prepared_by_name, updated_at, receipt_text_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		o.ID, o.RecordSeq, o.EmployeeID, o.EmployeeFirstName, o.EmployeeLastName, o.EmployeeCode,
-		o.Status, o.OrderedAt, o.PreparedByUserID, o.PreparedByName, o.UpdatedAt); err != nil {
+		o.Status, o.OrderedAt, o.PreparedByUserID, o.PreparedByName, o.UpdatedAt, o.ReceiptTextVersion); err != nil {
 		return err
 	}
 	for _, l := range o.Lines {
@@ -124,13 +124,13 @@ func insertOrder(ctx context.Context, tx pgx.Tx, o Order) error {
 
 const orderColumns = `id, record_seq, employee_id, employee_first_name, employee_last_name, employee_code,
 	status, ordered_at, prepared_by_user_id, prepared_by_name, given_at, given_by_user_id, given_by_name,
-	confirmation_method, updated_at, updated_by_user_id`
+	confirmation_method, updated_at, updated_by_user_id, receipt_text_version`
 
 func scanOrder(row pgx.Row) (Order, error) {
 	var o Order
 	err := row.Scan(&o.ID, &o.RecordSeq, &o.EmployeeID, &o.EmployeeFirstName, &o.EmployeeLastName, &o.EmployeeCode,
 		&o.Status, &o.OrderedAt, &o.PreparedByUserID, &o.PreparedByName, &o.GivenAt, &o.GivenByUserID, &o.GivenByName,
-		&o.ConfirmationMethod, &o.UpdatedAt, &o.UpdatedByUserID)
+		&o.ConfirmationMethod, &o.UpdatedAt, &o.UpdatedByUserID, &o.ReceiptTextVersion)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Order{}, ErrNotFound
 	}

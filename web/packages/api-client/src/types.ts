@@ -229,6 +229,8 @@ export interface Order {
   given_by_name: string | null
   confirmation_method: ConfirmationMethod | null
   updated_at: string
+  /** The confirmation wording the order was placed under; its record keeps that wording. */
+  receipt_text_version: string
   lines: OrderLine[]
   total_cents: number
 }

@@ -71,6 +71,7 @@ func TestPostgresMarkAsOrdered(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.Status != StatusOrdered || got.RecordSeq != o.RecordSeq || got.PreparedByName != "Admin" || *got.EmployeeCode != "W-17" ||
+		got.ReceiptTextVersion != ReceiptTextVersion ||
 		len(got.Lines) != 2 || *got.Lines[0].Size != "43" || got.Lines[1].Size != nil || got.Lines[1].Quantity != 5 || got.TotalCents() != 4999+1250 {
 		t.Fatalf("stored = %+v", got)
 	}

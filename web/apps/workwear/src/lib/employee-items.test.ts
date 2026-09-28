@@ -36,6 +36,7 @@ function order(id: string, status: ListedOrder['status'], lines: OrderLine[]): L
     given_by_name: status === 'GIVEN' ? 'Admin' : null,
     confirmation_method: status === 'GIVEN' ? 'PAPER' : null,
     updated_at: '2026-02-01T08:00:00Z',
+    receipt_text_version: '2026-09-v2',
     lines,
     total_cents: 100 * lines.length,
     usage_months: status === 'GIVEN' ? 1.5 : null,

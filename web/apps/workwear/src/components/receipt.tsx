@@ -100,7 +100,8 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
       ) : null}
 
       <div className="hidden grid-cols-3 gap-8 pt-10 text-sm print:grid">
-        <SignatureLine label="Employee name and surname / Имя и фамилия работника" />
+        {/* The name is printed from the locked record; the employee only signs and dates. */}
+        <SignatureLine label="Employee name and surname / Имя и фамилия работника" value={`${r.employee_first_name} ${r.employee_last_name}`} />
         <SignatureLine label="Signature / Подпись" />
         <SignatureLine label="Date / Дата" />
       </div>
@@ -122,10 +123,10 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
-function SignatureLine({ label }: { label: string }) {
+function SignatureLine({ label, value }: { label: string; value?: string }) {
   return (
     <div>
-      <div className="mb-1 h-8 border-b border-black" />
+      <div className="mb-1 flex h-8 items-end border-b border-black pb-0.5 font-medium">{value}</div>
       <div className="text-xs">{label}</div>
     </div>
   )

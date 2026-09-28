@@ -54,7 +54,10 @@ type Order struct {
 	ConfirmationMethod *Method    `json:"confirmation_method"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 	UpdatedByUserID    *uuid.UUID `json:"updated_by_user_id"`
-	Lines              []Line     `json:"lines"`
+	// ReceiptTextVersion is the confirmation wording the order was placed
+	// under (ConfirmationTexts); its record shows that wording for good.
+	ReceiptTextVersion string `json:"receipt_text_version"`
+	Lines              []Line `json:"lines"`
 }
 
 // RecordNumber is the human-facing record number, e.g. WE-000123.

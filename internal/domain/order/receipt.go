@@ -4,21 +4,40 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
-// ReceiptTextVersion names the confirmation wording below. It is part of the
-// hashed payload, so changing the wording changes every new document hash.
-const ReceiptTextVersion = "2026-09-v1"
+// ReceiptTextVersion names the confirmation wording new orders are placed
+// under. Each order keeps the version it was placed under
+// (orders.receipt_text_version), and its record always shows and hashes that
+// version's wording, so changing the wording never alters a stored record:
+// add a version to ConfirmationTexts and point this at it.
+const ReceiptTextVersion = "2026-09-v2"
 
-// The confirmation statements, as separate titled blocks (manual §8). The
-// Russian wording awaits approval; see docs/specs/order-service.md.
-const (
-	ConfirmationTitleEN = "Confirmation of receipt"
-	ConfirmationTextEN  = "I confirm that I have received the items listed above, in the stated sizes and quantities and in good condition, for use in my work. I understand the service period of each item."
-	ConfirmationTitleRU = "Подтверждение получения"
-	ConfirmationTextRU  = "Я подтверждаю, что получил(а) перечисленные выше предметы указанных размеров и в указанном количестве, в надлежащем состоянии, для использования в работе. Мне известен срок службы каждого предмета."
-)
+// ConfirmationText is one version of the confirmation statements, as separate
+// titled blocks (manual §8).
+type ConfirmationText struct {
+	TitleEN, TextEN, TitleRU, TextRU string
+}
+
+// ConfirmationTexts holds every wording an order has been placed under, by
+// version. A version is never edited or removed once orders use it.
+var ConfirmationTexts = map[string]ConfirmationText{
+	// Orders placed up to the shorter wording.
+	"2026-09-v1": {
+		TitleEN: "Confirmation of receipt",
+		TextEN:  "I confirm that I have received the items listed above, in the stated sizes and quantities and in good condition, for use in my work. I understand the service period of each item.",
+		TitleRU: "Подтверждение получения",
+		TextRU:  "Я подтверждаю, что получил(а) перечисленные выше предметы указанных размеров и в указанном количестве, в надлежащем состоянии, для использования в работе. Мне известен срок службы каждого предмета.",
+	},
+	"2026-09-v2": {
+		TitleEN: "Confirmation of receipt",
+		TextEN:  "I confirm receipt of the listed items in the stated sizes and quantities, in good condition for work. I know each item’s service period.",
+		TitleRU: "Подтверждение получения",
+		TextRU:  "Подтверждаю получение перечисленных предметов указанных размеров и количества, в надлежащем состоянии для работы. Знаю срок службы каждого предмета.",
+	},
+}
 
 // ReceiptLine is one line of the Items Given Record, from the snapshot only.
 type ReceiptLine struct {
@@ -53,8 +72,14 @@ type Receipt struct {
 	TextRU            string        `json:"confirmation_text_ru"`
 }
 
-// ReceiptOf builds the receipt for a stored order.
+// ReceiptOf builds the receipt for a stored order, in the wording of the
+// version the order was placed under.
 func ReceiptOf(o Order) Receipt {
+	text, ok := ConfirmationTexts[o.ReceiptTextVersion]
+	if !ok {
+		// Only this package writes the version, from ConfirmationTexts.
+		panic("order: unknown receipt text version " + strconv.Quote(o.ReceiptTextVersion))
+	}
 	r := Receipt{
 		RecordNumber:      o.RecordNumber(),
 		EmployeeFirstName: o.EmployeeFirstName,
@@ -65,11 +90,11 @@ func ReceiptOf(o Order) Receipt {
 		Lines:             make([]ReceiptLine, len(o.Lines)),
 		TotalCents:        o.TotalCents(),
 		Currency:          "EUR",
-		TextVersion:       ReceiptTextVersion,
-		TitleEN:           ConfirmationTitleEN,
-		TextEN:            ConfirmationTextEN,
-		TitleRU:           ConfirmationTitleRU,
-		TextRU:            ConfirmationTextRU,
+		TextVersion:       o.ReceiptTextVersion,
+		TitleEN:           text.TitleEN,
+		TextEN:            text.TextEN,
+		TitleRU:           text.TitleRU,
+		TextRU:            text.TextRU,
 	}
 	for i, l := range o.Lines {
 		r.Lines[i] = ReceiptLine{

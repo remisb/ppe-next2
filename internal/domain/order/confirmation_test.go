@@ -40,6 +40,35 @@ func TestReceiptIsSnapshotOnlyAndHashStable(t *testing.T) {
 	}
 }
 
+// A record shows and hashes the wording its order was placed under: new
+// orders take the current version, and an order placed under an earlier one
+// keeps that wording and its hash.
+func TestReceiptKeepsTheOrdersWording(t *testing.T) {
+	for v, text := range ConfirmationTexts {
+		if text.TitleEN == "" || text.TextEN == "" || text.TitleRU == "" || text.TextRU == "" {
+			t.Errorf("wording %s is incomplete: %+v", v, text)
+		}
+	}
+	_, o, _ := orderedFixture(t)
+	if o.ReceiptTextVersion != ReceiptTextVersion {
+		t.Fatalf("new order placed under %q, want %q", o.ReceiptTextVersion, ReceiptTextVersion)
+	}
+	r := ReceiptOf(o)
+	cur := ConfirmationTexts[ReceiptTextVersion]
+	if r.TextVersion != ReceiptTextVersion || r.TextEN != cur.TextEN || r.TextRU != cur.TextRU {
+		t.Errorf("receipt wording = %q / %q", r.TextEN, r.TextRU)
+	}
+	earlier := o
+	earlier.ReceiptTextVersion = "2026-09-v1"
+	old := ReceiptOf(earlier)
+	if old.TextVersion != "2026-09-v1" || old.TextEN != ConfirmationTexts["2026-09-v1"].TextEN || old.TextRU == r.TextRU {
+		t.Errorf("an earlier order's wording changed: %q", old.TextEN)
+	}
+	if DocumentHash(old) == DocumentHash(r) {
+		t.Error("the hash ignores the wording")
+	}
+}
+
 func TestElectronicConfirmation(t *testing.T) {
 	f, o, now := orderedFixture(t)
 	ctx := context.Background()
