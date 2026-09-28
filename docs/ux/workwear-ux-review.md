@@ -5,12 +5,13 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`65da1ad`)
+status: phases 1–3 shipped, plus follow-ups (`c0cf0bc`)
 
-> **Status, updated 27 Sep 2026.** Phases 1–3 are built and live at the production site:
+> **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
-> figures followed in `13214e8`, and the Replacements due screen in `65da1ad`. Each came
+> figures followed in `13214e8`, the Replacements due screen in `65da1ad`, and the
+> employee confirmation page as option A in section 7 in `c0cf0bc`. Each came
 > with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -70,7 +71,7 @@ undone, yet it runs on a single tap with no review.
 | 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M | Done (Phase 2) |
 | 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M | Done (Phases 1–2) |
 | 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1) |
-| 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2) |
+| 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2; option A in full, `c0cf0bc`) |
 | 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M | Done (Phase 3) |
 | 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S | Done (Phase 1) |
 | 12 | One-column rows in portrait, list and detail in landscape, chosen by container width | Lists, History | Tablet | Med | M | Done (Phase 2) |
@@ -516,10 +517,14 @@ password" moves into ⋯ as well.
 - **Good.** No sign-in, a whole-label tap target on the checkbox, a disabled button until
   consent, bilingual copy, an explicit expired-link state, and a confirmation that can be
   repeated safely.
+- **Fixed, live since `c0cf0bc`.** The first screen now says what is asked, lists the items
+  and quotes the statement agreed to; the full record is one tap away and the consent sits
+  at the bottom of the screen (option A below). Hand-over mode on the counter tablet shows
+  the same screen.
 
 ### Options
 
-#### A. Summary first, consent pinned to the bottom (recommended)
+#### A. Summary first, consent pinned to the bottom (recommended, built in `c0cf0bc`)
 
 The first screen says in plain words what is asked, lists the items, and pins the consent
 to the bottom. The full bilingual document is one tap away and unchanged. The EN/RU
@@ -529,14 +534,16 @@ switch changes only the interface; the legal document stays bilingual.
 ┌──────────────────────────────────┐      ┌──────────────────────────────────┐
 │ ⛑                      [EN] RU   │      │                                  │
 │ Ona, please confirm you received │      │               ✓                  │
-│ 5 items                          │      │        Receipt confirmed         │
+│ 4 items                          │      │        Receipt confirmed         │
 │ Order WE-000002 · from           │      │ Thank you, Ona. WE-000002 is     │
-│ Administrator · 30 Jul           │      │ recorded as given on 1 Aug 2026  │
-│ Safety shoes · 39             ×1 │      │ at 14:02. You can close this page│
-│ Work jacket · S               ×1 │      │ Получение подтверждено. Эту      │
-│ Work trousers · S             ×2 │      │ страницу можно закрыть.          │
-│ Protective gloves            ×10 │      │          [ View record ]         │
-│ Safety helmet                 ×1 │      │                                  │
+│ Administrator · 30 Jul 2026      │      │ recorded as given on 1 Aug 2026  │
+│ Safety shoes · 39             ×1 │      │ at 14:02. You can close this     │
+│ Work jacket · S               ×1 │      │ page.                            │
+│ Work trousers · S             ×2 │      │          [ View record ]         │
+│ Protective gloves            ×10 │      │                                  │
+│ What you confirm                 │      │                                  │
+│ "I confirm that I have received  │      │                                  │
+│ the items listed above, …"       │      │                                  │
 │ [ View full record (EN / RU) ]   │      │                                  │
 ├──────────────────────────────────┤      │                                  │
 │ [ ] I have received the items    │      │                                  │
