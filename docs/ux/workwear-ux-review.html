@@ -350,7 +350,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
     <p class="eyebrow">UX research report · Workwear &amp; Equipment (PPE-next2)</p>
     <h1>Workwear UX Review</h1>
     <p class="lede">A review of all 15 screens at phone (375&nbsp;px), tablet (768–1366&nbsp;px) and desktop (1280&nbsp;px) widths. For each problem area there are two or three design options, each with a sample screen, pros and cons, and a recommendation.</p>
-    <div class="meta"><span>27 Sep 2026</span><span>Reviewed build 1ff7a0c · demo data</span><span>Roles: admin, manager, employee</span><span>Status: phases 1–3 shipped, plus follow-ups (c0cf0bc)</span></div>
+    <div class="meta"><span>27 Sep 2026</span><span>Reviewed build 1ff7a0c · demo data</span><span>Roles: admin, manager, employee</span><span>Status: phases 1–3 shipped, plus follow-ups (1dcc4ed)</span></div>
   </header>
 
   <div class="layout">
@@ -377,7 +377,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
         <header><p class="eyebrow">00 · Summary</p><h2>A solid base that needs a denser phone layout and a safer order step</h2></header>
         <div class="status" role="note">
           <p class="eyebrow">Status · updated 28 Sep 2026</p>
-          <p><b>Phases 1–3 are built and live</b> at the production site: every recommendation in the table below is done. Phase 1 shipped in <code>3c76945</code>, phase 2 in <code>aee8829</code> and phase 3 in <code>a663ce0</code>; record-number search and tappable dashboard figures followed in <code>13214e8</code>, the Replacements due screen in <code>65da1ad</code>, and the employee confirmation page as option A in section 07 in <code>c0cf0bc</code>. Each came with its e2e steps (33 in total, all passing).</p>
+          <p><b>Phases 1–3 are built and live</b> at the production site: every recommendation in the table below is done. Phase 1 shipped in <code>3c76945</code>, phase 2 in <code>aee8829</code> and phase 3 in <code>a663ce0</code>; record-number search and tappable dashboard figures followed in <code>13214e8</code>, the Replacements due screen in <code>65da1ad</code>, the employee confirmation page as option A in section 07 in <code>c0cf0bc</code>, Create Order as option A in section 03 in <code>acfc5b6</code>, and a one-page Print Record in <code>1dcc4ed</code>. Each came with its e2e steps (33 in total, all passing).</p>
           <p>The findings, figures and "today" samples in this report describe the app as reviewed, build <code>1ff7a0c</code>, before these changes. The <a href="#roadmap">roadmap</a> lists what shipped in each phase, where it differs from the proposal, and what is still open.</p>
         </div>
         <div class="prose">
@@ -577,6 +577,7 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
           <div class="finding"><span class="sev md">Med</span><p><b>The employee's saved sizes are not shown</b> after picking them, so users cannot see why a line says "39" or "S (160–167 cm)". On a phone the size select also cuts off its label.</p></div>
           <div class="finding"><span class="sev md">Med</span><p><b>After ordering there is no clear next step.</b> The success panel offers WhatsApp and "Start a new order". Sending the confirmation link, the step that closes the loop, means going to History.</p></div>
           <div class="finding"><span class="sev ok">Good</span><p>Sizes resolved from the employee's defaults, the saved draft, validation shown as "5 lines · complete", and a sticky total that is always visible.</p></div>
+          <div class="finding"><span class="sev ok">Fixed</span><p><b>Live since <code>acfc5b6</code>.</b> Phases 1 and 2 added the review before Mark as Ordered, the success screen with next steps, one-tap set chips, compact rows with steppers and a searchable Add item. <code>acfc5b6</code> completed option A: the saved sizes show under Assigned to, sets already on the order are marked, the review can create the confirmation link as well, and on a laptop or desktop a summary panel sits beside the lines.</p></div>
         </div>
 
         <div class="options">
@@ -640,9 +641,10 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
               </div>
             </div>
             <div class="opt-body">
-              <div class="opt-head"><h4>A. Compact composer with a review sheet</h4><span class="tag rec">Recommended</span></div>
+              <div class="opt-head"><h4>A. Compact composer with a review sheet</h4><span class="tag rec">Recommended</span><span class="tag done">Built · 3c76945, aee8829, acfc5b6</span></div>
               <p>Keep the single page that experienced users like, but make every part smaller. The employee card shows the saved sizes. Item sets are one-tap chips. Each line is a 64&nbsp;px row with a size chip and a stepper. The sticky bar becomes one "Review" button that opens a sheet holding the irreversible step.</p>
               <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>A 5-line order fits on one screen instead of 2.4</li><li>The irreversible action gets a summary and a clear warning</li><li>Showing sizes explains how lines were resolved</li><li>A "due now" hint reuses the dashboard's replacement data to suggest lines</li><li>The same model works on desktop (see below)</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Line totals move to the review sheet</li><li>A stepper is slow for 10+; tapping the number must still allow typing</li><li>Needs new Stepper, Sheet and Combobox components</li><li>Changes most Create Order e2e selectors</li></ul></div></div>
+              <div class="notes"><p><b>As built:</b> Phases 1 and 2 built the review sheet, the success screen, the one-tap set chips, the compact rows with steppers and size chips, and the searchable Add item; <code>acfc5b6</code> completed the option. The employee's saved sizes show under Assigned to (&quot;189 cm · Clothing 2XL (60–62) · Shoes 46&quot;), with a missing size in red. A set already on the order carries a ✓, and applying it again asks first. The bar is one Review button with the line count and total. The review sheet holds Copy for WhatsApp and &quot;Create the confirmation link as well&quot;, on unless the device turned it off; the success screen then shows the link ready to send. ↑ / ↓ step a quantity. Line totals stayed on the rows rather than moving to the review sheet.</p></div>
             </div>
           </article>
 
@@ -755,7 +757,9 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
             <p class="cap">Desktop A · lines beside a sticky summary panel, with keyboard hints</p>
           </div></div>
           <div class="opt-body">
+            <div class="opt-head"><h4>Desktop A. Lines beside a sticky summary panel</h4><span class="tag done">Built · acfc5b6</span></div>
             <div class="pc"><div class="pros"><h5>Pros</h5><ul><li>Who, what and how much are all visible at once, with no bottom bar</li><li>The summary panel has room for context: sizes, last order, what's due</li><li>Keyboard use: <code>/</code> focuses Add, <code>↑↓</code> changes quantity, <code>⌘↵</code> opens the review</li></ul></div><div class="cons"><h5>Cons</h5><ul><li>Needs about 1100&nbsp;px of content width; below that the panel drops under the table</li><li>A second place to keep in sync with the phone's sticky bar</li></ul></div></div>
+            <div class="notes"><p><b>As built:</b> From 60&nbsp;rem of content (a laptop with the sidebar, or wider), the bar becomes a sticky panel beside the lines, built in <code>acfc5b6</code>: who the order is for and their last order (linked to History), what they are due with a ✓ once it is on the order, the lines and total, Review and mark as ordered, Copy for WhatsApp, and the keys <code>/</code>, <code>⌘/Ctrl ↵</code> and <code>↑↓</code>. The saved sizes stay under Assigned to rather than moving into the panel. Beside the panel the lines are the compact one-line rows rather than a full table, which needs 48&nbsp;rem.</p></div>
           </div>
         </div>
 
@@ -1500,9 +1504,9 @@ table.plan td:first-child{font-family:var(--mono);color:var(--muted);width:3em}
           </div>
         </div>
         <div class="phase">
-          <div class="opt-head"><p class="eyebrow">Since phase 3</p><span class="tag done">Done · 13214e8, 65da1ad, c0cf0bc</span></div>
+          <div class="opt-head"><p class="eyebrow">Since phase 3</p><span class="tag done">Done · 13214e8, 65da1ad, c0cf0bc, acfc5b6, 1dcc4ed</span></div>
           <h4>Follow-ups</h4>
-          <ul class="shipped"><li>Search by record number in the ⌘K palette: <code>WE-000004</code>, <code>we4</code> or <code>4</code> lists that order first, and Enter opens it in History (History's new <code>record</code> filter)</li><li>Dashboard figures with a list behind them are tappable: Awaiting and On order open History on the Awaiting tab, Replacements due opens the Replacements due screen, Missing sizes opens Employees filtered</li><li>A <b>Replacements due</b> screen (<code>/replacements</code>): every replacement due within 30 days across all employees, not just the dashboards' first 8, with tabs All · Overdue · Due soon, the item, size and quantity given, the due date and receipt, and Reorder on each row. It restores, as its own screen, the full list that phase 2 folded into Needs you</li><li>Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe size") instead of "1 employee to measure"</li><li>Employee confirmation as option A in section 07: the task, the items and the confirmation statement first; the full bilingual record one tap away; the consent at the bottom of the screen; an EN / RU interface switch; and a confirmed screen that says when the receipt was recorded. Hand-over mode uses the same parts</li></ul>
+          <ul class="shipped"><li>Search by record number in the ⌘K palette: <code>WE-000004</code>, <code>we4</code> or <code>4</code> lists that order first, and Enter opens it in History (History's new <code>record</code> filter)</li><li>Dashboard figures with a list behind them are tappable: Awaiting and On order open History on the Awaiting tab, Replacements due opens the Replacements due screen, Missing sizes opens Employees filtered</li><li>A <b>Replacements due</b> screen (<code>/replacements</code>): every replacement due within 30 days across all employees, not just the dashboards' first 8, with tabs All · Overdue · Due soon, the item, size and quantity given, the due date and receipt, and Reorder on each row. It restores, as its own screen, the full list that phase 2 folded into Needs you</li><li>Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe size") instead of "1 employee to measure"</li><li>Employee confirmation as option A in section 07: the task, the items and the confirmation statement first; the full bilingual record one tap away; the consent at the bottom of the screen; an EN / RU interface switch; and a confirmed screen that says when the receipt was recorded. Hand-over mode uses the same parts</li><li>Create Order as option A in section 03, with the desktop summary panel: saved sizes under Assigned to, ✓ on sets already on the order, one Review button, WhatsApp and "Create the confirmation link as well" in the review, the link ready on the success screen, and ↑ / ↓ on quantities</li><li>Print Record fits one A4 page: in print the app shell no longer keeps the navigation's narrow grid column, which had spread a five-line record over three pages; rows and the signature block no longer split across pages</li></ul>
         </div>
         <div class="open">
           <p class="eyebrow">Still open</p>

@@ -5,13 +5,14 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`c0cf0bc`)
+status: phases 1–3 shipped, plus follow-ups (`1dcc4ed`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
 > figures followed in `13214e8`, the Replacements due screen in `65da1ad`, and the
-> employee confirmation page as option A in section 7 in `c0cf0bc`. Each came
+> employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
+> in section 3 in `acfc5b6`, and a one-page Print Record in `1dcc4ed`. Each came
 > with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -207,10 +208,11 @@ Item Sets) and "Admin" (Users), plus a "Search or jump to… ⌘K" field at the 
   going to History.
 - **Good.** Sizes resolved from the employee's defaults, the saved draft, validation shown
   as "5 lines · complete", and a sticky total that is always visible.
+- **Fixed, live since `acfc5b6`.** Phases 1 and 2 added the review before Mark as Ordered, the success screen with next steps, one-tap set chips, compact rows with steppers and a searchable Add item. `acfc5b6` completed option A: the saved sizes show under Assigned to, sets already on the order are marked, the review can create the confirmation link as well, and on a laptop or desktop a summary panel sits beside the lines.
 
 ### Options
 
-#### A. Compact composer with a review sheet (recommended)
+#### A. Compact composer with a review sheet (recommended, built in `3c76945`, `aee8829`, `acfc5b6`)
 
 Keep the single page that experienced users like, but make every part smaller. The
 employee card shows the saved sizes. Item sets are one-tap chips. Each line is a 64 px
@@ -258,6 +260,8 @@ Review sheet:
 | A "due now" hint reuses the dashboard's replacement data to suggest lines | Changes most Create Order e2e selectors |
 | The same model works on desktop (see below) | |
 
+**As built:** Phases 1 and 2 built the review sheet, the success screen, the one-tap set chips, the compact rows with steppers and size chips, and the searchable Add item; `acfc5b6` completed the option. The employee's saved sizes show under Assigned to ("189 cm · Clothing 2XL (60–62) · Shoes 46"), with a missing size in red. A set already on the order carries a ✓, and applying it again asks first. The bar is one Review button with the line count and total. The review sheet holds Copy for WhatsApp and "Create the confirmation link as well", on unless the device turned it off; the success screen then shows the link ready to send. ↑ / ↓ step a quantity. Line totals stayed on the rows rather than moving to the review sheet.
+
 #### B. Three-step wizard: Who → What → Review (alternative)
 
 Each step is one short decision. The tab bar is hidden while the task is open, which gives
@@ -287,7 +291,7 @@ glasses, vest), filter chips All / Clothing / Shoes / No size, and a floating "2
 | Recognition beats recall: people spot the boot rather than reading "S3 SRC" | Slower than applying a set, which is the common case |
 | Scales to a large catalogue with filters | Size and quantity are edited in the cart, which splits attention |
 
-#### Desktop A: lines beside a sticky summary panel
+#### Desktop A: lines beside a sticky summary panel (built in `acfc5b6`)
 
 *Sample: the lines table (item, size chip, stepper, unit, service, total) with an
 "Add an item… /" search field and set chips above it. On the right, a summary panel:
@@ -301,6 +305,8 @@ employee with sizes, a "Gloves overdue since 30 Aug · already in this order ✓
 | Who, what and how much are all visible at once, with no bottom bar | Needs about 1100 px of content width; below that the panel drops under the table |
 | The summary panel has room for context: sizes, last order, what's due | A second place to keep in sync with the phone's sticky bar |
 | Keyboard use: `/` focuses Add, `↑↓` changes quantity, `⌘↵` opens the review | |
+
+**As built:** From 60 rem of content (a laptop with the sidebar, or wider), the bar becomes a sticky panel beside the lines, built in `acfc5b6`: who the order is for and their last order (linked to History), what they are due with a ✓ once it is on the order, the lines and total, Review and mark as ordered, Copy for WhatsApp, and the keys `/`, `⌘/Ctrl ↵` and `↑↓`. The saved sizes stay under Assigned to rather than moving into the panel. Beside the panel the lines are the compact one-line rows rather than a full table, which needs 48 rem.
 
 > **Recommendation.** Build **A** on both platforms. Ship the review sheet and the "next
 > steps" success screen first, since they are small and protect an irreversible action.
@@ -845,7 +851,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -863,6 +869,8 @@ kept in localStorage per user on the device, cleared by Sign out.
   confirmation statement first; the full bilingual record one tap away; the consent at the
   bottom of the screen; an EN / RU interface switch; and a confirmed screen that says when
   the receipt was recorded. Hand-over mode uses the same parts
+- [x] Create Order as option A in section 3, with the desktop summary panel: saved sizes under Assigned to, ✓ on sets already on the order, one Review button, WhatsApp and "Create the confirmation link as well" in the review, the link ready on the success screen, and ↑ / ↓ on quantities
+- [x] Print Record fits one A4 page: in print the app shell no longer keeps the navigation's narrow grid column, which had spread a five-line record over three pages; rows and the signature block no longer split across pages
 
 ### Still open
 
