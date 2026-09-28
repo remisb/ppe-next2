@@ -721,6 +721,16 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await expect(page.getByText(content).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
   }
+  // The dashboard on a phone: compact figure tiles, one fact beside each figure, then Needs you.
+  await openTab('Dashboard')
+  const figures = page.getByRole('list', { name: 'Key figures' })
+  await expect(figures.getByRole('listitem').first()).toBeVisible()
+  expect((await figures.boundingBox())!.height, 'the key figures on a phone').toBeLessThan(200)
+  await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible()
+  expect((await page.getByRole('button', { name: 'Refresh' }).boundingBox())!.width, 'Refresh is an icon on a phone').toBeLessThanOrEqual(44)
+  const needsYou = page.getByRole('region', { name: /^Needs you/ })
+  expect((await needsYou.boundingBox())!.y, 'Needs you starts in the first screen').toBeLessThan(420)
+
   // History on a phone: one list of two-line rows under month headings; the sort order and the
   // time zone note fold away with the filters, so the orders start near the top.
   await openTab('History')

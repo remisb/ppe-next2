@@ -1,7 +1,7 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
-import { AlertTriangle, ArrowRight, CheckCircle2, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi, useSession } from '@/lib/api'
@@ -9,7 +9,7 @@ import { type Need, changeText, formatDays, monthLabel, plural, share } from '@/
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro } from '@/lib/utils'
+import { formatEuro } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 
@@ -29,6 +29,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title="Dashboard"
+        descriptionClassName="max-md:hidden"
         description={
           d
             ? `Orders, spending and what needs attention. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
@@ -47,9 +48,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
                 Employee Dashboard <ArrowRight aria-hidden />
               </Button>
             ) : null}
-            <Button variant="outline" onClick={board.reload} disabled={board.loading}>
-              <RefreshCw aria-hidden className={cn(board.loading && 'animate-spin')} /> Refresh
-            </Button>
+            <RefreshButton loading={board.loading} onClick={board.reload} />
           </>
         }
       />
@@ -100,6 +99,7 @@ function Kpis({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
             ? 'Every order is confirmed.'
             : `${formatEuro(d.awaiting.value_cents)} · oldest ${formatDays(d.awaiting.oldest_days)}`
         }
+        brief={d.awaiting.orders === 0 ? 'all confirmed' : `oldest ${formatDays(d.awaiting.oldest_days)}`}
         alert={(d.awaiting.oldest_days ?? 0) > 14}
         onOpen={d.awaiting.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
         openHint="Show them in History"
@@ -124,6 +124,7 @@ function Kpis({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
         label="Replacements due"
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
+        brief={`${r.overdue} overdue`}
         alert={r.overdue > 0}
         onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
         openHint="Show them all in Replacements due"

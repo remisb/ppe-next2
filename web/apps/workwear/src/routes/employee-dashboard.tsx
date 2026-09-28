@@ -1,7 +1,6 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
-import { RefreshCw } from 'lucide-react'
 
-import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
+import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
@@ -30,6 +29,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title="Employee Dashboard"
+        descriptionClassName="max-md:hidden"
         description={
           d
             ? `Your orders and what to order next. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
@@ -38,9 +38,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
         actions={
           <>
             <Button onClick={() => navigate({ name: 'createOrder' })}>Create Order</Button>
-            <Button variant="outline" onClick={board.reload} disabled={board.loading}>
-              <RefreshCw aria-hidden className={cn(board.loading && 'animate-spin')} /> Refresh
-            </Button>
+            <RefreshButton loading={board.loading} onClick={board.reload} />
           </>
         }
       />
@@ -86,6 +84,7 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
             ? 'Every order of yours is confirmed.'
             : `${plural(a.items, 'item')} · oldest ${formatDays(a.oldest_days)}${unlinked > 0 ? ` · ${unlinked} without a usable link` : ''}`
         }
+        brief={a.orders === 0 ? 'all confirmed' : unlinked > 0 ? `${unlinked} without a link` : `oldest ${formatDays(a.oldest_days)}`}
         alert={unlinked > 0 || (a.oldest_days ?? 0) > 14}
         onOpen={a.orders > 0 ? () => jumpTo('[data-need^="wait-"]') : undefined}
         openHint="Show them in Needs you"
@@ -102,6 +101,7 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
         label="Replacements due"
         value={String(r.overdue + r.due_soon)}
         detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
+        brief={`${r.overdue} overdue`}
         alert={r.overdue > 0}
         onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
         openHint="Show them all in Replacements due"

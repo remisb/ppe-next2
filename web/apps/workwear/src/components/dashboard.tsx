@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, RefreshCw } from 'lucide-react'
 import { type ReactNode, useId } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -25,10 +25,13 @@ export function Panel({
   description,
   className,
   anchor,
+  descriptionClassName,
   children,
 }: {
   title: string
   description?: ReactNode
+  /** Such as `max-md:hidden`, where the phone needs the height. */
+  descriptionClassName?: string
   className?: string | undefined
   /** A name to jump to it by (data-panel), for a tile that leads here. */
   anchor?: string
@@ -46,17 +49,27 @@ export function Panel({
         <CardTitle>
           <h2 id={id}>{title}</h2>
         </CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+        {description ? <CardDescription className={descriptionClassName}>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
   )
 }
 
+/** Refresh for a dashboard: an icon on a phone, where the header has little room; labelled wider. */
+export function RefreshButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
+  return (
+    <Button variant="outline" onClick={onClick} disabled={loading} title="Refresh" className="max-md:size-11 max-md:px-0">
+      <RefreshCw aria-hidden className={cn(loading && 'animate-spin')} />
+      <span className="max-md:sr-only">Refresh</span>
+    </Button>
+  )
+}
+
 /** The row of headline figures. */
 export function KeyFigures({ children }: { children: ReactNode }) {
   return (
-    // Two by two on a phone: the four figures fit in the first screen, with room for what needs doing.
+    // Two by two on a phone, in compact tiles: the four figures take about a fifth of the first screen, leaving it to what needs doing.
     <ul aria-label="Key figures" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {children}
     </ul>
@@ -67,11 +80,15 @@ export function KeyFigures({ children }: { children: ReactNode }) {
  * A headline figure. With onOpen it is one button, the whole tile: it goes to
  * the list behind the figure (the rows in Needs you, History, Employees), and
  * a chevron says so. Without, it only reports.
+ *
+ * On a phone a tile is one fact beside the figure: `brief`, or else the
+ * comparison. The full detail then stays for screen readers and shows from md.
  */
 export function Kpi({
   label,
   value,
   detail,
+  brief,
   change,
   alert = false,
   onOpen,
@@ -80,22 +97,33 @@ export function Kpi({
   label: string
   value: string
   detail: string
+  /** The phone's one fact beside the figure, e.g. "oldest 12 days"; the comparison when absent. */
+  brief?: string
   change?: string
   alert?: boolean
   onOpen?: (() => void) | undefined
   /** Where the tile goes, for screen readers: "Show them in Needs you". */
   openHint?: string
 }) {
+  const note = brief ?? (change || undefined)
   const body = (
     <Card size="sm" className={cn('h-full', onOpen && 'transition-colors group-hover:bg-accent/60')}>
-      <CardContent className="flex flex-col gap-1">
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          {label}
-          {alert ? <AlertTriangle aria-label="Needs attention" className="size-3.5 text-destructive" /> : null}
+      <CardContent className="flex flex-col gap-1 max-md:gap-0.5">
+        <span className="flex items-center gap-1.5 text-muted-foreground max-md:text-xs">
+          <span className="min-w-0 truncate">{label}</span>
+          {alert ? <AlertTriangle aria-label="Needs attention" className="size-3.5 shrink-0 text-destructive" /> : null}
           {onOpen ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
         </span>
-        <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-2xl font-semibold tracking-tight tabular-nums max-md:text-xl">{value}</span>
+          {/* The same words as the detail below, which screen readers get in full. */}
+          {note ? (
+            <span aria-hidden className="text-xs text-muted-foreground md:hidden">
+              {note}
+            </span>
+          ) : null}
+        </span>
+        <span className={cn('text-xs text-muted-foreground', note && 'max-md:sr-only')}>
           {detail}
           {change ? <span className="block">{change}</span> : null}
         </span>
@@ -273,7 +301,12 @@ export function NeedsYouPanel({
 }) {
   const sorted = sortNeeds(needs)
   return (
-    <Panel title="Needs you" description="What to do next, most urgent first." className={className}>
+    <Panel
+      title={sorted.length > 0 ? `Needs you · ${sorted.length}` : 'Needs you'}
+      description="What to do next, most urgent first."
+      descriptionClassName="max-md:hidden"
+      className={className}
+    >
       {sorted.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <CheckCircle2 aria-hidden className="size-4" /> {empty}

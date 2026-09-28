@@ -1,7 +1,7 @@
 import type { ManagerDashboard as Data } from '@ppe/api-client'
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, Panel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
+import { BarList, KeyFigures, Kpi, MonthChart, Panel, RefreshButton, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title="Manager Dashboard"
+        descriptionClassName="max-md:hidden"
         description={
           d
             ? `Items, prices and what will need buying. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
@@ -44,9 +45,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
                 Employee Dashboard <ArrowRight aria-hidden />
               </Button>
             ) : null}
-            <Button variant="outline" onClick={board.reload} disabled={board.loading}>
-              <RefreshCw aria-hidden className={cn(board.loading && 'animate-spin')} /> Refresh
-            </Button>
+            <RefreshButton loading={board.loading} onClick={board.reload} />
           </>
         }
       />
@@ -89,6 +88,7 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
         label="On order"
         value={formatEuro(d.on_order.value_cents)}
         detail={`${plural(d.on_order.items, 'item')} in ${plural(d.on_order.orders, 'order')}, not yet given out`}
+        brief={plural(d.on_order.orders, 'order')}
         onOpen={d.on_order.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
         openHint="Show them in History"
       />
@@ -100,7 +100,12 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
           change={changeText(cur.value_cents, prev.value_cents, prev.month, d.through_day)}
         />
       ) : null}
-      <Kpi label="Ordered, last 12 months" value={formatEuro(year.value)} detail={`${plural(year.items, 'item')} in ${plural(year.orders, 'order')}`} />
+      <Kpi
+        label="Ordered, last 12 months"
+        value={formatEuro(year.value)}
+        detail={`${plural(year.items, 'item')} in ${plural(year.orders, 'order')}`}
+        brief={plural(year.orders, 'order')}
+      />
       <Kpi
         label={`Replacements, next ${f.days} days`}
         value={plural(f.items, 'item')}
@@ -109,6 +114,7 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
             ? 'Nothing is due.'
             : `About ${formatEuro(f.estimated_cents)} at current prices${f.unpriced > 0 ? ` · ${f.unpriced} without a price` : ''}`
         }
+        brief={f.items === 0 ? 'nothing due' : f.unpriced > 0 ? `${f.unpriced} unpriced` : `about ${formatEuro(f.estimated_cents)}`}
         alert={f.unpriced > 0}
         onOpen={f.items > 0 ? () => jumpTo('[data-panel="forecast"]') : undefined}
         openHint="Show the replacement forecast"
