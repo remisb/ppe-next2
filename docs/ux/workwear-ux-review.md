@@ -552,6 +552,8 @@ switch changes only the interface; the legal document stays bilingual.
 | The consent is always within thumb reach | The language switch adds a small piece of state |
 | The document hash and the legal text are unchanged | |
 
+**As built:** the public page and hand-over mode now follow this option. The first screen asks “Ona, please confirm you received 5 items”, gives the order, who prepared it and the date, lists the items, and quotes the confirmation statement from the locked record in the chosen language. View full record (EN / RU) opens the unchanged bilingual record in place. The consent sits at the bottom of the screen even when the order is short. EN / RU changes only the interface wording: the public page starts in the browser's language and remembers the choice on that phone, while hand-over starts fresh for each employee. After confirming, the page says when the receipt was recorded, and View record opens it. Quoting the statement next to the items answers most of the legal question, because the consent refers to text on the screen. Whether the collapsed record is enough still needs legal sign-off.
+
 #### B. Slide to confirm (not recommended)
 
 A swipe gesture instead of checkbox plus button.
@@ -818,8 +820,8 @@ API addition (`previous_to_date`, `through_day`).
 - [x] Tablet: one-column rows in portrait, list and detail in landscape
 
 **As built:** the History tabs still open on All; Awaiting is one tap away. The
-confirmation page keeps the full bilingual record visible below the summary rather than
-collapsing it, which avoids the legal question raised in section 7. Reorder uses the
+confirmation page first kept the full bilingual record visible below the summary; the
+follow-up below moved it behind one tap, as option A in section 7 proposes. Reorder uses the
 quantity given last time, which the API now returns with each replacement.
 
 ### Phase 3: delight (speed for power users) — done, `a663ce0`
@@ -836,7 +838,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -850,6 +852,10 @@ kept in localStorage per user on the device, cleared by Sign out.
   you
 - [x] Missing sizes names the person and what they lack ("Rasa Stankevičiūtė: no shoe
   size") instead of "1 employee to measure"
+- [x] Employee confirmation as option A in section 7: the task, the items and the
+  confirmation statement first; the full bilingual record one tap away; the consent at the
+  bottom of the screen; an EN / RU interface switch; and a confirmed screen that says when
+  the receipt was recorded. Hand-over mode uses the same parts
 
 ### Still open
 
@@ -860,6 +866,9 @@ kept in localStorage per user on the device, cleared by Sign out.
   measure the new flow.
 - **Product owner sign-off** for in-person confirmation, which goes beyond the manual; and
   iPad Guided Access on any tablet left at a counter.
+- **Legal sign-off** for confirmation with the full record collapsed behind View full
+  record. The confirmation statement is quoted on the first screen; if that is not enough,
+  require opening the record once before Confirm.
 
 Each phase updated the e2e suite, `web/AGENTS.md` and `docs/testing.md`. The responsive
 rules still hold: one Main nav, 44 px touch targets, sticky actions above `--bottom-nav`,
