@@ -50,7 +50,9 @@ The workwear app is the reference.
   for desktop plus cards for phones). Lists people scan (History, Employees, Catalogue,
   order lines) keep one compact card a row rather than `stack="grid"`: from 36rem of room
   (`stacked-wide:`, a tablet in portrait) a card's actions move beside its title and its
-  facts share a line.
+  facts share a line. History goes further: stacked, its rows are one bordered list of
+  two-line rows (who and how long it has waited, then record · date · value), with a
+  heading row per month while it is sorted by date.
 - **List and detail**: a row that has more to show opens it at its own address (History:
   `/history/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. The row's actions live in the

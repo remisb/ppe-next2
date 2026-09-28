@@ -703,6 +703,17 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await expect(page.getByText(content).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
   }
+  // History on a phone: one list of two-line rows under month headings; the sort order and the
+  // time zone note fold away with the filters, so the orders start near the top.
+  await openTab('History')
+  await expect(page.getByRole('row', { name: /^[a-z]+ \d{4}$/i }).first()).toBeVisible()
+  const historyRow = page.getByRole('row', { name: new RegExp(recordNumber) })
+  expect((await historyRow.boundingBox())!.height, 'a History row on a phone').toBeLessThan(80)
+  await expect(page.getByLabel('Sort by').filter({ visible: true })).toHaveCount(0)
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
+  await expect(page.getByText(/Dates and times are shown in/)).toBeVisible()
+  await page.getByRole('button', { name: /^Filters/ }).click()
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
   await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()

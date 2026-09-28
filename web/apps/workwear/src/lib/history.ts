@@ -55,6 +55,21 @@ export function formatDateTime(iso: string, timeZone: string | undefined): strin
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
 }
 
+/** A date as "24 Sep" in timeZone, for a compact History row. */
+export function formatShortDate(iso: string, timeZone: string | undefined): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short' }).format(d)
+}
+
+/** The month of a timestamp in timeZone: a key to group by ("2026-09") and its heading ("September 2026"). */
+export function monthOf(iso: string, timeZone: string | undefined): { key: string; label: string } {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return { key: '', label: '' }
+  const [y, m] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit' }).format(d).split('-')
+  return { key: `${y}-${m}`, label: new Intl.DateTimeFormat('en-GB', { timeZone, month: 'long', year: 'numeric' }).format(d) }
+}
+
 /** The calendar date of iso in timeZone, as days since 1970 (for day differences). */
 function localDay(iso: string | Date, timeZone: string | undefined): number {
   const d = typeof iso === 'string' ? new Date(iso) : iso

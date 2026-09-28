@@ -3,6 +3,7 @@ import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { errorText } from '@/lib/use-load'
+import { cn } from '@/lib/utils'
 
 /** An error with a Retry action; the screen's own state is untouched. */
 export function ErrorState({ error, onRetry, title = 'Could not load' }: { error: unknown; onRetry?: () => void; title?: string }) {
@@ -35,9 +36,12 @@ export function PageHeader({
   description,
   actions,
   icon,
+  descriptionClassName,
 }: {
   title: string
   description?: string
+  /** Such as `max-md:hidden`, where the screen needs its height for content. */
+  descriptionClassName?: string
   actions?: React.ReactNode
   /** A decorative mark before the title, such as an item's pictogram. */
   icon?: React.ReactNode
@@ -51,7 +55,7 @@ export function PageHeader({
         </h1>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
-      {description ? <p className="mt-1 max-w-prose text-sm text-muted-foreground">{description}</p> : null}
+      {description ? <p className={cn('mt-1 max-w-prose text-sm text-muted-foreground', descriptionClassName)}>{description}</p> : null}
     </div>
   )
 }

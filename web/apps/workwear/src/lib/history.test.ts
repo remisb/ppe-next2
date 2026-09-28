@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { activityAt, formatDateTime, formatUsage, formatWaiting, historyActions, looksLikeRecord, waitingDays } from './history'
+import { activityAt, formatDateTime, formatShortDate, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
@@ -48,5 +48,18 @@ describe('record number search', () => {
   it('recognises a record number however it is typed', () => {
     for (const q of ['WE-000004', 'we4', 'WE 12', ' 000123 ', '7']) expect(looksLikeRecord(q)).toBe(true)
     for (const q of ['', 'WE-', 'Ona', 'WE-12a', 'gloves 10']) expect(looksLikeRecord(q)).toBe(false)
+  })
+})
+
+describe('compact rows', () => {
+  it('shows a short date in the organisation timezone', () => {
+    expect(formatShortDate('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('24 Sept')
+    expect(formatShortDate('2026-09-23T22:30:00Z', 'UTC')).toBe('23 Sept')
+    expect(formatShortDate('garbage', 'UTC')).toBe('—')
+  })
+  it('groups by the month in the organisation timezone', () => {
+    expect(monthOf('2026-09-30T22:30:00Z', 'Europe/Vilnius')).toEqual({ key: '2026-10', label: 'October 2026' })
+    expect(monthOf('2026-09-30T22:30:00Z', 'UTC')).toEqual({ key: '2026-09', label: 'September 2026' })
+    expect(monthOf('garbage', 'UTC')).toEqual({ key: '', label: '' })
   })
 })

@@ -1,6 +1,6 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
-import { SlidersHorizontal } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { Fragment, useEffect, useState } from 'react'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderDetail } from '@/components/order-detail'
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/field'
 import { Table, TableBody, TableCell, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
 import { isTyping } from '@/lib/shortcuts'
-import { LONG_WAIT_DAYS, activityAt, formatDateTime, formatUsage, formatWaiting, statusLabel, waitingDays } from '@/lib/history'
+import { LONG_WAIT_DAYS, activityAt, formatDateTime, formatShortDate, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import type { SortColumn, SortState } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
@@ -150,6 +150,8 @@ export function History({
         <PageHeader
           title="History"
           description="Stored orders, newest activity first. Values are as they were when ordered."
+          // A phone needs its height for the orders; the filters say the rest.
+          descriptionClassName="max-md:hidden"
           actions={
             <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
               <SlidersHorizontal aria-hidden /> Filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
@@ -214,9 +216,13 @@ export function History({
               Clear filters
             </Button>
           </div>
+          {/* On a phone the sort order folds away with the filters; wider, it sits above the rows. */}
+          <div className="md:hidden">
+            <SortControl columns={columns} {...sortProps} />
+          </div>
+          {tz ? <p className="text-xs text-muted-foreground sm:col-span-full">Dates and times are shown in {tz}.</p> : null}
         </section>
         {dateError ? <p role="alert" className="mb-4 text-sm text-destructive">{dateError}</p> : null}
-        {tz ? <p className="mb-4 text-xs text-muted-foreground">Dates and times are shown in {tz}.</p> : null}
 
         {orders.error && !dateError ? (
           <ErrorState error={orders.error} onRetry={orders.reload} />
@@ -244,10 +250,19 @@ export function History({
           <>
             {/*
               A row opens its order, where its actions are. Where the table is
-              narrow each order is a compact three-line row: record and status,
-              employee, then date and value.
+              narrow the orders are one list of two-line rows: who and how long
+              it has waited, then the record, date and value; sorted by date,
+              under a heading per month.
             */}
-            <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} {...sortProps} />}>
+            <Table
+              stack
+              stackBelow="lg"
+              sortControl={
+                <div className="max-md:hidden">
+                  <SortControl columns={columns} {...sortProps} />
+                </div>
+              }
+            >
               <TableHeader>
                 <TableRow>
                   {columns.map((c) => (
@@ -255,15 +270,28 @@ export function History({
                   ))}
                 </TableRow>
               </TableHeader>
-              <TableBody className="stacked:gap-2">
-                {orders.data.orders.map((o) => {
+              <TableBody className="stacked:gap-0 stacked:overflow-hidden stacked:rounded-lg stacked:border stacked:bg-card stacked:[&_tr:last-child]:border-0">
+                {orders.data.orders.map((o, i, list) => {
                   const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, now, tz) : 0
+                  const month = monthOf(activityAt(o), tz)
+                  const prev = list[i - 1]
+                  const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                   return (
+                    <Fragment key={o.id}>
+                    {newMonth ? (
+                      <TableRow className="hover:bg-transparent stacked:rounded-none stacked:border-0 stacked:border-b stacked:bg-muted/50 stacked:px-4 stacked:py-1.5">
+                        <TableCell colSpan={columns.length} className="pt-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase stacked:pt-0">
+                          {month.label}
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
                     <TableRow
-                      key={o.id}
                       data-state={selected === o.id ? 'selected' : undefined}
                       aria-current={selected === o.id ? 'true' : undefined}
-                      className={cn(stackedBreak, 'cursor-pointer stacked:py-2.5 stacked:data-[state=selected]:bg-muted')}
+                      className={cn(
+                        stackedBreak,
+                        'cursor-pointer stacked:gap-x-1.5 stacked:gap-y-0.5 stacked:rounded-none stacked:border-0 stacked:border-b stacked:px-4 stacked:py-2.5 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                      )}
                       // The whole row opens the order; the record number is the real link,
                       // for keyboards, screen readers and "open in new tab".
                       onClick={(ev) => {
@@ -271,7 +299,8 @@ export function History({
                         open(o.id)
                       }}
                     >
-                      <TableCell className="font-medium stacked:order-1 stacked:w-auto stacked:flex-1 stacked:text-base stacked:font-semibold">
+                      {/* Second line in a row: the record number, still the link for keyboards and "open in new tab". */}
+                      <TableCell className="font-medium stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground">
                         <a
                           {...linkTo({ name: 'history', order: o.id }, () => open(o.id))}
                           className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
@@ -279,28 +308,51 @@ export function History({
                           {o.record_number}
                         </a>
                       </TableCell>
-                      <TableCell className="min-w-32 whitespace-normal stacked:order-3">
+                      <TableCell className="min-w-32 whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1 stacked:truncate stacked:font-medium">
                         {o.employee_first_name} {o.employee_last_name}
-                        {o.employee_code ? <span className="text-muted-foreground"> · {o.employee_code}</span> : null}
+                        {o.employee_code ? <span className="text-muted-foreground stacked:hidden"> · {o.employee_code}</span> : null}
                       </TableCell>
-                      <TableCell className="tabular-nums stacked:order-4 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-                        {formatDateTime(activityAt(o), tz)}
+                      <TableCell className="tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
+                        <span className="stacked:hidden">{formatDateTime(activityAt(o), tz)}</span>
+                        <span className="hidden stacked:inline">{formatShortDate(activityAt(o), tz)}</span>
                       </TableCell>
                       <TableCell className="stacked:order-1 stacked:w-auto">
                         <span className="inline-flex items-center gap-2">
-                          <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
+                          {/* In a row an aging chip says Ordered by itself. */}
+                          <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'} className={cn(o.status === 'ORDERED' && 'stacked:hidden')}>
+                            {statusLabel[o.status]}
+                          </Badge>
                           {o.status === 'ORDERED' ? (
-                            <span className={cn('text-xs whitespace-nowrap', days > LONG_WAIT_DAYS ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+                            <span
+                              className={cn(
+                                'text-xs whitespace-nowrap stacked:rounded-full stacked:px-2 stacked:py-0.5 stacked:tabular-nums',
+                                days > LONG_WAIT_DAYS
+                                  ? 'font-medium text-destructive stacked:bg-destructive/10'
+                                  : 'text-muted-foreground stacked:bg-muted',
+                              )}
+                            >
                               {formatWaiting(days)}
                             </span>
                           ) : null}
                         </span>
                       </TableCell>
-                      <TableCell className={cn('stacked:order-4 stacked:w-auto stacked:text-xs stacked:text-muted-foreground', o.usage_months === null && 'stacked:hidden')}>
+                      <TableCell
+                        className={cn(
+                          "stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']",
+                          o.usage_months === null && 'stacked:hidden',
+                        )}
+                      >
                         {formatUsage(o.usage_months) || '—'}
                       </TableCell>
-                      <TableCell className="text-right font-medium tabular-nums stacked:order-4 stacked:ml-auto stacked:w-auto">{formatEuro(o.total_cents)}</TableCell>
+                      <TableCell className="text-right font-medium tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
+                        {formatEuro(o.total_cents)}
+                      </TableCell>
+                      {/* A row opens its order: a chevron says so where the row is the whole target. */}
+                      <TableCell aria-hidden className="hidden w-auto text-muted-foreground stacked:order-1 stacked:block stacked:w-auto">
+                        <ChevronRight className="size-4" />
+                      </TableCell>
                     </TableRow>
+                    </Fragment>
                   )
                 })}
               </TableBody>
