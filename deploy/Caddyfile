@@ -6,6 +6,13 @@
 #   WEB_ROOT      web/apps/workwear/dist from `pnpm build`
 #   HSTS_MAX_AGE  seconds; set 0 on a shared zone such as sslip.io, where a pin
 #                 would outlive the demo and cannot be taken back
+
+# Other sites this Caddy serves for applications sharing the host, one file
+# each in deploy/sites/ (mounted at /etc/caddy/sites). They belong to those
+# applications and are not committed here; with none present this imports
+# nothing.
+import sites/*.caddy
+
 {$SITE_ADDRESS:localhost} {
 	encode zstd gzip
 

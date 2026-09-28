@@ -9,3 +9,5 @@ dist/
 playwright-report/
 test-results/
 !.env.prod.example
+# Host-specific Caddy sites for other applications (deploy/sites/README.md).
+/deploy/sites/*.caddy

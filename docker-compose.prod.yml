@@ -88,6 +88,8 @@ services:
       HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Sites for other applications on this host (see deploy/sites/README.md).
+      - ./deploy/sites:/etc/caddy/sites:ro
       # Certificates and the ACME account key: keep this volume, or the next
       # start re-issues against Let's Encrypt's rate limit.
       - caddy-data:/data
