@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`b9cda4d`)
+status: phases 1–3 shipped, plus follow-ups (`9213136`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -14,7 +14,8 @@ status: phases 1–3 shipped, plus follow-ups (`b9cda4d`)
 > employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
 > in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
 > button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
-> shorter confirmation wording in `49a1ce3`, and compact phone dashboards in `b9cda4d`.
+> shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, and the
+> records lists as option A in section 6 in `9213136`.
 > Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -73,7 +74,7 @@ undone, yet it runs on a single tap with no review.
 | 5 | History status tabs (Awaiting · Given · All) with counts, a "days waiting" chip, and 64 px rows that open the record | History | Phone | High | M | Done (Phase 2) |
 | 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M | Done (Phase 2) |
 | 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M | Done (Phases 1–2) |
-| 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1) |
+| 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1; option A in full, `9213136`) |
 | 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2; option A in full, `c0cf0bc`) |
 | 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M | Done (Phase 3) |
 | 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S | Done (Phase 1) |
@@ -472,10 +473,11 @@ The same content split into three short views. Today is the default.
   which is the right model.
 - **Med. There is no "New order for this person"** on the employee page, which is where
   the intent to order often starts.
+- **Fixed, live since `3c76945` and `9213136`.** Phase 1 moved Delete and Deactivate into ⋯ and flagged missing sizes; `9213136` completed option A. On a phone an employee is a 66 px two-line row instead of a 171 px card, and a catalogue item 67 px instead of 230 px: 100 employees now take about 6,900 px, not 17,000 px. A missing size is a red chip beside the name, and the employee page has New order.
 
 ### Options
 
-#### A. Row list and record page (recommended)
+#### A. Row list and record page (recommended, built in `3c76945`, `9213136`)
 
 Lists are for finding a record, and pages are for acting on it. The Employees and
 Catalogue item pages already exist; this makes them the only place with edit and delete
@@ -504,7 +506,9 @@ actions, and adds "New order" and a due-date bar per item.
 | Missing sizes show up where they get fixed | |
 | The same pattern applies to Catalogue (price on the right, "Incomplete" chip) and Users | |
 
-#### Catalogue: grouped rows with status chips (applies A)
+**As built:** `9213136` completed the option. Employees, Item Catalogue and Users stack as one bordered list of short rows, a `stack="list"` mode of the same `<Table>` that History now shares, rather than hand-built rows: the AGENTS.md rule gained that list variant. An employee row shows initials, the name with "No shoe size", "No clothing size" or "No sizes" beside it, then code · height · clothing · shoes; All and Missing a size chips filter it. On a phone a row has no buttons and opens its page; the employee page holds New order, Edit Sizes and ⋯ with Edit details and Delete employee…, which asks first. The due-date bars were already on that page. Rows measure 66 px, so the gain is 2.6× rather than the 3.7× estimated, and 6 rows fit below the search, chips and sort on the first screen. Edit Sizes on a phone is two taps, as the con says; no swipe shortcut was added.
+
+#### Catalogue: grouped rows with status chips (applies A, built in `9213136`)
 
 Status filter chips (Active 9 · Incomplete 1 · Inactive 1) replace the Status column.
 Grouping by size group (Clothing, Shoes, No size) mirrors how sizes are resolved.
@@ -515,10 +519,14 @@ Deactivate moves to the item page.
 | The one blocking item stands out | Grouping and a manual "display order" sort can conflict; pick one as the default |
 | Prices line up on the right for quick comparison | |
 
+**As built:** Built in `9213136`. The chips are All · Active · Incomplete · Inactive, each item in one of them (an inactive item counts as Inactive even without a price), and on a phone they scroll sideways in one row. The Status column stays on desktop. Display order stays the default, because it is the order Add Item lists; sorting by Size group adds a heading per group, as History does per month. A phone row shows the picture, name and price, then details · size group · service period, with Incomplete or Inactive under them. Edit and Deactivate are on the item page, and in the table under ⋯.
+
 **Desktop:** keep the tables, but move row actions into a ⋯ menu that appears on hover
 and focus. Keep one quiet inline action per row ("Edit sizes" for Employees). Item Sets
 cards gain a total ("5 items · €274.90") and a "Use in new order" link. On Users, "Reset
 password" moves into ⋯ as well.
+
+**As built:** Built in `9213136`, except that ⋯ stays visible on every row rather than appearing on hover, since touch screens have no hover. Employees keep Edit Sizes inline, the Catalogue Edit. Item Sets show "5 items · €274.90 at today's prices" (an item with no price is left out, and the card says so) and Use in new order, which opens Create Order with the set's items: before an employee is chosen they wait unresolved, as Add Item's do, and join the order in progress otherwise. Users moved Reset password into ⋯ and lost the two-up cards on a phone.
 
 ---
 
@@ -863,7 +871,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -888,6 +896,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Sign in: a Show / Hide password button inside the password field
 - [x] Shorter confirmation wording for new orders (`2026-09-v2`), versioned per order so placed and confirmed records keep their text and hash; the printed record fills in the employee's name on the signature line
 - [x] Dashboards option A from section 5 completed on phones: compact figure tiles with one fact beside each figure, Refresh as an icon, and a counted Needs you on the first screen, on all three dashboards
+- [x] Records lists option A from section 6 completed: Employees, Item Catalogue and Users as short two-line rows on a phone that open the record's page, where its actions are; All / Missing a size and Catalogue status chips; size-group headings; Item Sets with a total and Use in new order; Reset password under ⋯
 
 ### Still open
 
