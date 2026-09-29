@@ -45,7 +45,13 @@ const columns: SortColumn<HistorySort>[] = [
   { key: 'usage', label: 'Usage time' },
   { key: 'total', label: 'Total value' },
 ]
+// Beside an open order the list keeps the columns that find the next one to chase: one line a row.
+const besideColumns = columns.filter((c) => c.key !== 'usage')
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
+
+function Kbd({ children }: { children: string }) {
+  return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
+}
 
 /** From lg the order opens beside the list; below it, instead of the list. */
 const wide = () => window.matchMedia('(min-width: 64rem)').matches
@@ -118,13 +124,19 @@ export function History({
   const open = (id: string) => navigate({ name: 'history', order: id }, { scroll: !wide() })
   const close = () => navigate({ name: 'history' }, { scroll: false })
 
-  // J and K: the next or previous order on this page, while one is open.
+  // J and K: the next or previous order on this page, while one is open; Escape closes it beside the list.
   const shown = orders.data?.orders
   useEffect(() => {
     if (!selected || !shown) return
     const onKey = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase()
-      if ((key !== 'j' && key !== 'k') || e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || document.querySelector('dialog[open]')) return
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || document.querySelector('dialog[open]')) return
+      if (e.key === 'Escape' && wide()) {
+        e.preventDefault()
+        close()
+        return
+      }
+      if (key !== 'j' && key !== 'k') return
       const at = shown.findIndex((o) => o.id === selected)
       const next = shown[at + (key === 'j' ? 1 : -1)]
       if (next) {
@@ -136,8 +148,16 @@ export function History({
     return () => window.removeEventListener('keydown', onKey)
   }, [selected, shown, navigate])
 
+  // The open order's row stays in view as J and K move through the list.
+  useEffect(() => {
+    if (selected && wide()) document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' })
+  }, [selected, shown])
+
   const tz = settings.data?.timezone
   const now = new Date()
+  // An order is open beside the list (from lg): the list keeps its short columns.
+  const beside = selected !== undefined
+  const shownColumns = beside ? besideColumns : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
   const activeFilters = [filters.employee, filters.from, filters.to].filter(Boolean).length
@@ -252,11 +272,13 @@ export function History({
               A row opens its order, where its actions are. Where the table is
               narrow the orders are one list of two-line rows: who and how long
               it has waited, then the record, date and value; sorted by date,
-              under a heading per month.
+              under a heading per month. Beside an open order the table drops
+              Usage time, the Ordered badge and the time of day, so it stays
+              one line a row down to 30rem of room (a desktop from about 1200px).
             */}
             <Table
               stack="list"
-              stackBelow="lg"
+              stackBelow={selected ? 'sm' : 'lg'}
               sortControl={
                 <div className="max-md:hidden">
                   <SortControl columns={columns} {...sortProps} />
@@ -265,7 +287,7 @@ export function History({
             >
               <TableHeader>
                 <TableRow>
-                  {columns.map((c) => (
+                  {shownColumns.map((c) => (
                     <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} {...sortProps} />
                   ))}
                 </TableRow>
@@ -278,7 +300,7 @@ export function History({
                   const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                   return (
                     <Fragment key={o.id}>
-                    {newMonth ? <TableGroupRow colSpan={columns.length}>{month.label}</TableGroupRow> : null}
+                    {newMonth ? <TableGroupRow colSpan={shownColumns.length}>{month.label}</TableGroupRow> : null}
                     <TableRow
                       data-state={selected === o.id ? 'selected' : undefined}
                       aria-current={selected === o.id ? 'true' : undefined}
@@ -302,27 +324,29 @@ export function History({
                           {o.record_number}
                         </a>
                       </TableCell>
-                      <TableCell className="min-w-32 whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1 stacked:truncate stacked:font-medium">
+                      <TableCell className={cn('whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1 stacked:truncate stacked:font-medium', !beside && 'min-w-32')}>
                         {o.employee_first_name} {o.employee_last_name}
-                        {o.employee_code ? <span className="text-muted-foreground stacked:hidden"> · {o.employee_code}</span> : null}
+                        {o.employee_code && !beside ? <span className="text-muted-foreground stacked:hidden"> · {o.employee_code}</span> : null}
                       </TableCell>
                       <TableCell className="tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
-                        <span className="stacked:hidden">{formatDateTime(activityAt(o), tz)}</span>
-                        <span className="hidden stacked:inline">{formatShortDate(activityAt(o), tz)}</span>
+                        {beside ? null : <span className="stacked:hidden">{formatDateTime(activityAt(o), tz)}</span>}
+                        <span className={cn(!beside && 'hidden stacked:inline')}>{formatShortDate(activityAt(o), tz)}</span>
                       </TableCell>
                       <TableCell className="stacked:order-1 stacked:w-auto">
                         <span className="inline-flex items-center gap-2">
                           {/* In a row an aging chip says Ordered by itself. */}
-                          <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'} className={cn(o.status === 'ORDERED' && 'stacked:hidden')}>
+                          <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'} className={cn(o.status === 'ORDERED' && (beside ? 'hidden' : 'stacked:hidden'))}>
                             {statusLabel[o.status]}
                           </Badge>
                           {o.status === 'ORDERED' ? (
                             <span
                               className={cn(
-                                'text-xs whitespace-nowrap stacked:rounded-full stacked:px-2 stacked:py-0.5 stacked:tabular-nums',
+                                'text-xs whitespace-nowrap',
+                                // Beside an order, and stacked, the wait is a pill: it stands for the Ordered badge.
+                                beside ? 'rounded-full px-2 py-0.5 tabular-nums' : 'stacked:rounded-full stacked:px-2 stacked:py-0.5 stacked:tabular-nums',
                                 days > LONG_WAIT_DAYS
-                                  ? 'font-medium text-destructive stacked:bg-destructive/10'
-                                  : 'text-muted-foreground stacked:bg-muted',
+                                  ? cn('font-medium text-destructive', beside ? 'bg-destructive/10' : 'stacked:bg-destructive/10')
+                                  : cn('text-muted-foreground', beside ? 'bg-muted' : 'stacked:bg-muted'),
                               )}
                             >
                               {formatWaiting(days)}
@@ -330,14 +354,16 @@ export function History({
                           ) : null}
                         </span>
                       </TableCell>
-                      <TableCell
-                        className={cn(
-                          "stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']",
-                          o.usage_months === null && 'stacked:hidden',
-                        )}
-                      >
-                        {formatUsage(o.usage_months) || '—'}
-                      </TableCell>
+                      {beside ? null : (
+                        <TableCell
+                          className={cn(
+                            "stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']",
+                            o.usage_months === null && 'stacked:hidden',
+                          )}
+                        >
+                          {formatUsage(o.usage_months) || '—'}
+                        </TableCell>
+                      )}
                       <TableCell className="text-right font-medium tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
                         {formatEuro(o.total_cents)}
                       </TableCell>
@@ -382,6 +408,10 @@ export function History({
               counts.reload()
             }}
           />
+          {/* Beside the list only, and only where there is a keyboard. */}
+          <p className="mt-4 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
+            <Kbd>J</Kbd> / <Kbd>K</Kbd> next or previous order · <Kbd>Esc</Kbd> close
+          </p>
         </aside>
       ) : null}
     </div>

@@ -60,7 +60,10 @@ The workwear app is the reference.
 - **List and detail**: a row that has more to show opens it at its own address (History:
   `/history/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. The row's actions live in the
-  detail, not in an Actions column.
+  detail, not in an Actions column. Beside a detail the list drops to the columns that
+  find the next record (History: no Usage time, no time of day, the wait as the status)
+  and stacks only under 30rem (`stackBelow="sm"`), so from about 1200px it stays one line
+  a row; J / K step through it and Escape closes the detail.
 - **Sorting**: sortable columns use `SortableHead` (`components/sortable.tsx`, `aria-sort`
   on the header) and the same state in a `SortControl` passed as the Table's
   `sortControl`, which shows only while the table is stacked and its header hidden.

@@ -676,6 +676,26 @@ test('a reorder link starts the order with the item at the quantity given; the s
   await expect(page.getByText('No items yet.')).toBeVisible()
 })
 
+test('History beside an open order: one line a row; J and K move through it, Escape closes it', async () => {
+  await openTab('History')
+  const detail = await openOrder(recordNumber)
+  await expect(detail.getByRole('heading', { name: recordNumber })).toBeVisible()
+  // Beside the order the list keeps its short columns, one line a row, rather than stacking.
+  await expect(page.getByRole('columnheader', { name: 'Record' })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
+  expect((await page.getByRole('row', { name: new RegExp(recordNumber) }).boundingBox())!.height, 'a History row beside an order').toBeLessThan(48)
+  await expect(detail.getByText('next or previous order')).toBeVisible()
+  const opened = page.url()
+  await page.keyboard.press('k')
+  await expect(page).not.toHaveURL(opened)
+  await expect(page.getByRole('row', { name: new RegExp(recordNumber) })).not.toHaveAttribute('aria-current', 'true')
+  await page.keyboard.press('j')
+  await expect(page).toHaveURL(opened)
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/\/history$/)
+  await expect(page.getByRole('columnheader', { name: 'Usage time' })).toBeVisible()
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')

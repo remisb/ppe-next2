@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
  * It is one DOM at every width: the table keeps its semantics and nothing is
  * rendered twice. Cells restyle further with `stacked:` classes, which `cn`
  * merges over the defaults below. `stackBelow="lg"` moves the threshold to
- * 60rem, for a table whose columns need more than 48rem side by side.
+ * 60rem, for a table whose columns need more than 48rem side by side;
+ * `stackBelow="sm"` to 30rem, for one cut down to a few short columns.
  * `"list"` makes the cards one bordered list of short rows instead, for
  * lists people scan to find a record (History, Employees, Item Catalogue).
  * `sortControl` (a SortControl) shows above the cards only while stacked,
@@ -25,12 +26,12 @@ function Table({
   stackBelow = "md",
   sortControl,
   ...props
-}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "md" | "lg"; sortControl?: React.ReactNode }) {
+}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode }) {
   return (
     <StackContext value={stack}>
       <div
         data-slot="table-container"
-        className={cn("relative w-full overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : "@container/table"))}
+        className={cn("relative w-full overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : stackBelow === "sm" ? "@container/table-sm" : "@container/table"))}
       >
         {stack && sortControl ? <div className="mb-3 hidden stacked:block">{sortControl}</div> : null}
         <table
