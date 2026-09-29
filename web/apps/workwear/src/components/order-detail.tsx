@@ -45,12 +45,13 @@ export function OrderDetail({
 
   return (
     <article aria-label={o ? `Order ${o.record_number}` : 'Order'} className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        {/* Narrow: the detail is the whole screen, so the way out is Back to the list. */}
+      {/* Narrow: the detail is the whole screen, so the way out is Back to the list, on its own row. */}
+      <div className="flex items-center lg:contents">
         <Button variant="ghost" className="-ml-3 lg:hidden" onClick={onClose}>
           <ArrowLeft aria-hidden /> History
         </Button>
-        <Button variant="ghost" size="icon" className="ml-auto max-lg:hidden" aria-label="Close order" onClick={onClose}>
+        {/* Beside the list: Close sits in the pane's corner, beside the heading rather than above it. */}
+        <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label="Close order" onClick={onClose}>
           <X aria-hidden />
         </Button>
       </div>
@@ -97,7 +98,7 @@ export function OrderDetail({
 function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: string | undefined; navigate: (to: Route) => void }) {
   const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, new Date(), timeZone) : 0
   return (
-    <header className="flex flex-col gap-1">
+    <header className="flex flex-col gap-1 lg:pr-10">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-xl font-semibold">{o.record_number}</h2>
         <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
