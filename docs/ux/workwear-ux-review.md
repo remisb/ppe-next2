@@ -920,7 +920,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - **Hallway test**: the five-user test of the phone Create Order, timing "apply the
   starter kit, change one size, send", was not run before building. Running it now would
   measure the new flow.
-- **Native-speaker review** of the Lithuanian and Russian wording, which was drafted for review: first the short navigation labels (the phone's raised button reads "Užsakyti"; the tablet rail's Users reads "Польз."), "Kam skirta" / "Для кого" for Assigned to, and "Reikia pakeisti" / "Требуется замена" for Replacements due. Whether WhatsApp messages should follow the sender's language, as now, or always go out in English / Russian is a product owner's call.
+- **Native-speaker review** of the Lithuanian and Russian wording, which was drafted for review, on the [translation review page](https://claude.ai/artifact/5HXjeDapxp7umudiqDnD6Q): all 718 texts beside the English, counted phrases at 1, 3, 5 and 21, where a reviewer with Contributor access marks each draft right or suggests wording, and progress shows per language. First the short navigation labels (the phone's raised button reads "Užsakyti"; the tablet rail's Users reads "Польз."), "Kam skirta" / "Для кого" for Assigned to, and "Reikia pakeisti" / "Требуется замена" for Replacements due. Whether WhatsApp messages should follow the sender's language, as now, or always go out in English / Russian is a product owner's call.
 - **Product owner sign-off** for in-person confirmation and for deleting orders, a given
   one with its signed record, both of which go beyond the manual; and iPad Guided Access on
   any tablet left at a counter.
