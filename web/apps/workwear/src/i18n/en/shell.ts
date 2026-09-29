@@ -73,6 +73,8 @@ export const shell = {
   nothingMatches: (q: string) => `Nothing matches “${q}”.`,
   // Sign in.
   signIn: 'Sign in',
+  signInHint: 'Use your work email and password.',
+  signInTagline: 'Orders, hand-overs and signed receipts, in one place.',
   signingIn: 'Signing in…',
   email: 'Email',
   password: 'Password',

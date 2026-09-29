@@ -65,6 +65,8 @@ export const shell: ShellText = {
   densityWords: { compact: 'компакт', comfortable: 'простор', density: 'плотн', rows: 'строки табл' },
   nothingMatches: (q: string) => `По запросу «${q}» ничего не найдено.`,
   signIn: 'Войти',
+  signInHint: 'Используйте рабочую эл. почту и пароль.',
+  signInTagline: 'Заказы, выдача и подписанные акты — в одном месте.',
   signingIn: 'Вход…',
   email: 'Эл. почта',
   password: 'Пароль',

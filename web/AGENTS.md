@@ -43,6 +43,14 @@ in a narrow column wraps (`h-auto min-h-11 py-2 whitespace-normal`) rather than 
 Button's one line; the e2e *Language* step fails when a visible button's text on Create
 Order is wider than the button in Lithuanian.
 
+## Colours
+
+The app's colours are tokens in `src/index.css`, defined once for light and once for dark
+(the media query and `.dark` share the same values). The screens use the neutral shadcn
+palette. Gavort's navy is the `brand` tokens (`bg-brand`, `bg-brand-panel`, and their
+foregrounds), used only by the sign-in page: its mark, its button and its panel, which
+turns navy in dark mode. A new colour gets a token in all three places, never a literal.
+
 ## User guide
 
 The Help screen (`/help`, `routes/help.tsx`) shows the user guide, which lives in

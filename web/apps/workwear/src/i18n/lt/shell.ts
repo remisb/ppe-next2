@@ -63,6 +63,8 @@ export const shell: ShellText = {
   densityWords: { compact: 'kompakt', comfortable: 'erdv', density: 'tank', rows: 'lentelės eilut' },
   nothingMatches: (q: string) => `Nieko nerasta pagal „${q}“.`,
   signIn: 'Prisijungti',
+  signInHint: 'Naudokite darbo el. paštą ir slaptažodį.',
+  signInTagline: 'Užsakymai, išdavimai ir pasirašyti įrašai – vienoje vietoje.',
   signingIn: 'Jungiamasi…',
   email: 'El. paštas',
   password: 'Slaptažodis',

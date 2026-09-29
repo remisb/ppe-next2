@@ -94,6 +94,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-panel-foreground: var(--brand-panel-foreground);
 
   --radius-lg: 0.625rem;
   --radius-md: 0.5rem;
@@ -145,6 +149,11 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Gavort's navy (#0D0C33), for the sign-in page: its mark, its button and its panel. */
+  --brand: oklch(0.187 0.074 277.5);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-panel: oklch(0.968 0.005 275);
+  --brand-panel-foreground: oklch(0.187 0.074 277.5);
 
   color-scheme: light;
 
@@ -201,6 +210,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  /* Dark: the panel turns navy and the button takes the app's light primary. */
+  --brand: oklch(0.922 0 0);
+  --brand-foreground: oklch(0.187 0.074 277.5);
+  --brand-panel: oklch(0.187 0.074 277.5);
+  --brand-panel-foreground: oklch(0.985 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -326,6 +340,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  /* Dark: the panel turns navy and the button takes the app's light primary. */
+  --brand: oklch(0.922 0 0);
+  --brand-foreground: oklch(0.187 0.074 277.5);
+  --brand-panel: oklch(0.187 0.074 277.5);
+  --brand-panel-foreground: oklch(0.985 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
