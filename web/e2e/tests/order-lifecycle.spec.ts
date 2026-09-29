@@ -1116,6 +1116,25 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(other.getByRole('heading', { name: 'Suvestinė' })).toBeVisible()
   await other.context().close()
 
+  // Longer labels wrap inside their buttons, not into the padding or past it: Create Order's panel at desktop width.
+  await page.goto('/orders/new')
+  await expect(page.getByRole('button', { name: 'Peržiūrėti ir pažymėti kaip užsakytą' })).toBeVisible()
+  expect(
+    await page.evaluate(() =>
+      [...document.querySelectorAll('main button')]
+        .filter((b) => {
+          if (!b.checkVisibility()) return false
+          const style = getComputedStyle(b)
+          const room = b.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+          const text = document.createRange()
+          text.selectNodeContents(b)
+          return text.getBoundingClientRect().width > room + 1
+        })
+        .map((b) => b.textContent),
+    ),
+    'buttons whose text is wider than their content box in Lithuanian',
+  ).toEqual([])
+
   await page.getByRole('link', { name: admin.name }).click()
   await page.getByRole('group', { name: 'Kalba' }).getByRole('button', { name: 'Русский' }).click()
   await expect(page.getByRole('heading', { name: 'Учётная запись' })).toBeVisible()

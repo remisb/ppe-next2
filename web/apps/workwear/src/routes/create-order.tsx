@@ -645,7 +645,8 @@ function OrderSummary({
           </span>
           <span className="text-lg font-semibold tabular-nums">{total}</span>
         </div>
-        <Button disabled={!valid || busy} onClick={onReview}>
+        {/* Wraps: the Lithuanian and Russian labels are wider than the panel. */}
+        <Button disabled={!valid || busy} onClick={onReview} className="h-auto min-h-11 py-2 text-center whitespace-normal">
           {busy ? t.order.working : t.order.reviewAndMark}
         </Button>
         <WhatsAppButton disabled={!valid || busy} text={whatsappText} />

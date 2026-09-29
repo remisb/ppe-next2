@@ -38,6 +38,10 @@ Not translated: data (names, codes, sizes, record numbers), server error message
 employee-facing confirmation page, hand-over mode and the Items Given Record, which keep
 their English / Russian as the manual defines. `src/i18n/i18n.test.ts` fails when a
 Lithuanian or Russian text is missing, empty or left identical to the English.
+Lithuanian and Russian labels are often longer than the English, so a button
+in a narrow column wraps (`h-auto min-h-11 py-2 whitespace-normal`) rather than keep the
+Button's one line; the e2e *Language* step fails when a visible button's text on Create
+Order is wider than the button in Lithuanian.
 
 ## Responsive layout
 
