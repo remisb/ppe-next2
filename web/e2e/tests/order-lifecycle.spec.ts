@@ -612,7 +612,13 @@ test('Employees: less frequent and destructive actions are under ⋯', async () 
   await page.getByRole('menuitem', { name: 'Edit details' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page).toHaveURL(/\/employees$/)
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
+  // A note shows under her name in the list, on one line, and in full on hover.
+  await page.getByRole('dialog').getByLabel('Notes').fill('Prefers Russian. Collects on Fridays.')
+  await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('dialog')).toBeHidden()
+  const note = row.getByText('Prefers Russian. Collects on Fridays.').filter({ visible: true })
+  await expect(note).toBeVisible()
+  await expect(note).toHaveAttribute('title', 'Prefers Russian. Collects on Fridays.')
 })
 
 test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {
@@ -829,7 +835,9 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   // Records lists on a phone: short rows that open the record, whose page holds the actions.
   await openTab('Employees')
   const onaRow = page.getByRole('row', { name: /Ona Kazlauskienė/ })
-  expect((await onaRow.boundingBox())!.height, 'an Employees row on a phone').toBeLessThan(80)
+  // Name, then code and sizes, then her note on a third line (a row without a note is two).
+  await expect(onaRow.getByText('Prefers Russian. Collects on Fridays.').filter({ visible: true })).toBeVisible()
+  expect((await onaRow.boundingBox())!.height, 'an Employees row with a note on a phone').toBeLessThan(96)
   await expect(onaRow.getByRole('button')).toHaveCount(0)
   await openTab('Item Catalogue')
   const helmetRow = page.getByRole('row', { name: /Safety helmet/ })

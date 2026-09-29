@@ -101,7 +101,7 @@ Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rus�
 
 ## 8. Darbuotojai
 
-Sąraše matyti kiekvieno darbuotojo dydžiai. Darbuotojai, kuriems trūksta dydžio, pažymėti.
+Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.
 
 Darbuotojo puslapyje rodoma:
 

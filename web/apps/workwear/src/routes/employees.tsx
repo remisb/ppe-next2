@@ -132,7 +132,8 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
       ) : (
         /*
           Where the table is narrow the employees are one list of two-line rows:
-          name (a missing size flagged beside it), then code and saved sizes.
+          name (a missing size flagged beside it), then code and saved sizes,
+          then the note, if any, on a third line.
           A row opens the employee, whose page holds Edit Sizes, New order and
           Delete; the table keeps Edit Sizes and ⋯ on each row.
         */
@@ -160,13 +161,19 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     navigate({ name: 'employee', id: e.id })
                   }}
                 >
-                  <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
+                  <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
                     <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
                   </TableCell>
                   <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
                     <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
                       {e.full_name}
                     </a>
+                    {/* The note on one line under the name, in full on hover and on the employee's page. */}
+                    {e.notes ? (
+                      <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
+                        {e.notes}
+                      </p>
+                    ) : null}
                     {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
                     {flag ? (
                       <Badge variant="destructive" title={t.employees.missingTitle} className="hidden shrink-0 stacked:inline-flex">
@@ -177,11 +184,16 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                   <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
                     {employeeFacts(e, bands) || t.employees.noSizesSaved}
                   </TableCell>
+                  {e.notes ? (
+                    <TableCell title={e.notes} className="hidden stacked:col-start-2 stacked:row-start-3 stacked:block stacked:truncate stacked:text-xs stacked:text-muted-foreground">
+                      {e.notes}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
                   <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : '—'}</TableCell>
                   <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
                   <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
-                  <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2]">
+                  <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_3]">
                     <ChevronRight className="size-4 text-muted-foreground" />
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:hidden">

@@ -140,7 +140,7 @@ export const en: Guide = {
       id: 'employees',
       title: 'Employees',
       blocks: [
-        { p: "The list shows each employee's sizes and marks anyone missing one." },
+        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee." },
         { p: "Each employee's page shows:" },
         { ul: ['their sizes;', 'every item given, with its usage time and replacement date;', 'orders not yet given.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },

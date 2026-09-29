@@ -101,7 +101,7 @@ A **Given** order has a locked record in English and Russian. Open it with **Vie
 
 ## 8. Employees
 
-The list shows each employee's sizes and marks anyone missing one.
+The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.
 
 Each employee's page shows:
 

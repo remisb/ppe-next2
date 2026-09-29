@@ -143,7 +143,7 @@ export const lt: Guide = {
       id: 'employees',
       title: 'Darbuotojai',
       blocks: [
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai. Darbuotojai, kuriems trūksta dydžio, pažymėti.' },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.' },
         { p: 'Darbuotojo puslapyje rodoma:' },
         { ul: ['jo dydžiai;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai.'] },
         { p: 'Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.' },
