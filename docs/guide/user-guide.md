@@ -1,12 +1,14 @@
 # Workwear & Equipment: user guide
 
+English · [Lietuvių](user-guide.lt.md) · [Русский](user-guide.ru.md)
+
 The app records workwear and safety equipment given to employees. You prepare an order, mark it as ordered and give it to the employee. The employee then confirms receipt, and the app keeps a locked record in English and Russian.
 
 The screenshots show demo data. Run `pnpm guide` in `web/e2e` to take them again.
 
 ## 1. Sign in
 
-![Sign in](img/sign-in.png)
+![Sign in](img/en/sign-in.png)
 
 1. Open **https://workwear.gavort.nl** and sign in with your email and password.
 2. Your first screen depends on your role:
@@ -16,7 +18,7 @@ The screenshots show demo data. Run `pnpm guide` in `web/e2e` to take them again
 
 ## 2. Dashboard
 
-![Dashboard](img/dashboard.png)
+![Dashboard](img/en/dashboard.png)
 
 - The figures at the top show:
   - orders awaiting confirmation;
@@ -30,7 +32,7 @@ The screenshots show demo data. Run `pnpm guide` in `web/e2e` to take them again
 
 ## 3. Create an order
 
-![Create Order](img/create-order.png)
+![Create Order](img/en/create-order.png)
 
 1. Open **Create Order**.
 2. In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.
@@ -46,13 +48,13 @@ The order is saved as a draft on this device while you work. **Copy for WhatsApp
 
 ## 4. Review and Mark as Ordered
 
-![Review order](img/review.png)
+![Review order](img/en/review.png)
 
 1. Check the lines and the total.
 2. Leave **Create the confirmation link as well** ticked if the employee will confirm on their phone.
 3. Choose **Mark as Ordered**. The order becomes **Ordered** and can no longer be edited.
 
-![Ordered](img/ordered.png)
+![Ordered](img/en/ordered.png)
 
 Next, send the employee the confirmation link:
 
@@ -63,7 +65,7 @@ The link is valid for 7 days and is shown only once. To have the employee sign o
 
 ## 5. The employee confirms
 
-![Confirmation on a phone](img/confirm-phone.png)
+![Confirmation on a phone](img/en/confirm-phone.png)
 
 1. The employee opens the link. No account is needed.
 2. They check the items, in English or Russian (**EN / RU**).
@@ -73,7 +75,7 @@ The order then changes to **Given**.
 
 ## 6. History
 
-![History](img/history.png)
+![History](img/en/history.png)
 
 - **Awaiting**, **Given** and **All** filter by status. You can also filter by employee and date.
 - Click a record number to open the order beside the list.
@@ -88,7 +90,7 @@ The order then changes to **Given**.
 
 ## 7. Items Given Record
 
-![Items Given Record](img/record.png)
+![Items Given Record](img/en/record.png)
 
 A **Given** order has a locked record in English and Russian. Open it with **View Record**. From there:
 
@@ -97,11 +99,11 @@ A **Given** order has a locked record in English and Russian. Open it with **Vie
 
 ## 8. Employees
 
-![Employees](img/employees.png)
+![Employees](img/en/employees.png)
 
 The list shows each employee's sizes. Anyone missing a size is marked.
 
-![Employee](img/employee.png)
+![Employee](img/en/employee.png)
 
 An employee's page shows:
 
@@ -118,12 +120,12 @@ From this page:
 
 Administrators and managers use these screens.
 
-![Item Catalogue](img/catalogue.png)
+![Item Catalogue](img/en/catalogue.png)
 
 - Each item has a price, a service period and a size group. An item without a price or service period cannot be ordered.
 - Price changes never alter orders that already exist.
 
-![Item Sets](img/item-sets.png)
+![Item Sets](img/en/item-sets.png)
 
 An item set is a kit of items with default quantities, applied on Create Order in one tap.
 
@@ -131,14 +133,14 @@ An item set is a kit of items with default quantities, applied on Create Order i
 
 Administrators only.
 
-![Users](img/users.png)
+![Users](img/en/users.png)
 
 - Add, edit or deactivate accounts, and give each one roles (admin, manager, employee).
 - To reset a password, use **⋯ → Reset password…**.
 
 ## 11. Your account
 
-![Account](img/account.png)
+![Account](img/en/account.png)
 
 - **Language:** English, Lietuvių or Русский. The choice is saved on your account and every device follows it. The employee confirmation and the record stay in English / Russian.
 - **Change password.**
@@ -146,7 +148,7 @@ Administrators only.
 
 ## 12. Search and shortcuts
 
-![Search](img/palette.png)
+![Search](img/en/palette.png)
 
 | Key | Does |
 | --- | --- |

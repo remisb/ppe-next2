@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Darbo drabužių vadovas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* One reading column; each step is a short instruction above its screenshot, numbered because the sections follow an order's life. */
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --ink:#1B1F1C; --muted:#5C645E; --line:#D9DDD7;
+  --hivis:#E9F23A; --hivis-ink:#1B1F1C; --key:#ECEEEA;
+  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#131614; --surface:#1B1F1C; --ink:#E7EAE5; --muted:#9BA39D; --line:#2E3430;
+  --hivis:#D9E22E; --hivis-ink:#131614; --key:#262B27; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#131614; --surface:#1B1F1C; --ink:#E7EAE5; --muted:#9BA39D; --line:#2E3430;
+  --hivis:#D9E22E; --hivis-ink:#131614; --key:#262B27; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 var(--body); padding-inline:16px; padding-block:40px 72px}
+main{max-width:980px; margin:0 auto; display:grid; gap:56px}
+header{display:grid; gap:12px; max-width:68ch}
+.eyebrow{font:600 12px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+h1{font:800 clamp(34px,6vw,54px)/1.02 var(--display); font-stretch:80%; margin:0; text-wrap:balance}
+h1 span{background:var(--hivis); color:var(--hivis-ink); padding:0 .12em; box-decoration-break:clone; -webkit-box-decoration-break:clone}
+.lede{margin:0; color:var(--muted); font-size:17px}
+nav ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:8px}
+nav a{display:inline-flex; gap:6px; align-items:baseline; padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:var(--surface); color:var(--ink); text-decoration:none; font-size:14px}
+nav a b{font:500 12px var(--mono); color:var(--muted)}
+nav a:hover, nav a:focus-visible{border-color:var(--ink); outline:none}
+
+section{display:grid; gap:16px; scroll-margin-top:24px}
+h2{font:700 26px/1.15 var(--display); font-stretch:85%; margin:0; display:flex; gap:12px; align-items:center}
+h2 .n{flex:none; display:inline-grid; place-items:center; width:34px; height:34px; border-radius:8px; background:var(--hivis); color:var(--hivis-ink); font:700 16px var(--mono)}
+.text{max-width:68ch; display:grid; gap:10px}
+.text p, .text ol, .text ul{margin:0}
+.text ol, .text ul{padding-left:1.3em; display:grid; gap:4px}
+.who{font-size:14px; color:var(--muted)}
+figure{margin:0; min-width:0}
+figure img{display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+figure.phone img{max-width:340px; border-radius:22px}
+.pair{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:16px}
+kbd, code{font:500 .86em var(--mono); background:var(--key); border:1px solid var(--line); border-radius:5px; padding:1px 5px; white-space:nowrap}
+.table{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:15px}
+th, td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600}
+td:first-child{white-space:nowrap}
+.langs{display:flex; gap:4px; flex-wrap:wrap}
+.langs a{padding:4px 10px; border-radius:6px; color:var(--muted); text-decoration:none; font-size:14px; border:1px solid transparent}
+.langs a[aria-current]{color:var(--ink); border-color:var(--line); background:var(--surface); font-weight:600}
+.langs a:hover, .langs a:focus-visible{color:var(--ink); outline:none; border-color:var(--ink)}
+footer{color:var(--muted); font-size:14px; max-width:68ch}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <nav class="langs" aria-label="Kalba"><a href="index.html" lang="en">English</a><a href="lt.html" lang="lt" aria-current="page">Lietuvių</a><a href="ru.html" lang="ru">Русский</a></nav>
+  <div class="eyebrow">workwear.gavort.nl · naudotojo vadovas</div>
+  <h1>Darbo drabužiai ir įranga <span>naudotojo vadovas</span></h1>
+  <p class="lede">Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis.</p>
+  <nav aria-label="Turinys"><ol>
+    <li><a href="#sign-in"><b>1</b>Prisijungimas</a></li>
+    <li><a href="#dashboard"><b>2</b>Suvestinė</a></li>
+    <li><a href="#create"><b>3</b>Užsakymo kūrimas</a></li>
+    <li><a href="#review"><b>4</b>Pažymėti kaip užsakytą</a></li>
+    <li><a href="#confirm"><b>5</b>Darbuotojo patvirtinimas</a></li>
+    <li><a href="#history"><b>6</b>Istorija</a></li>
+    <li><a href="#record"><b>7</b>Įrašas</a></li>
+    <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
+    <li><a href="#catalogue"><b>9</b>Katalogas ir rinkiniai</a></li>
+    <li><a href="#users"><b>10</b>Naudotojai</a></li>
+    <li><a href="#account"><b>11</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>12</b>Spartieji klavišai</a></li>
+  </ol></nav>
+</header>
+
+<section id="sign-in">
+  <h2><span class="n">1</span>Prisijungimas</h2>
+  <div class="text">
+    <ol>
+      <li>Atidarykite <b>workwear.gavort.nl</b> ir prisijunkite savo el. paštu ir slaptažodžiu.</li>
+      <li>Pirmasis ekranas priklauso nuo jūsų rolės:
+        <ul>
+          <li>administratoriai pradeda ekrane <b>Suvestinė</b>;</li>
+          <li>vadovai – ekrane <b>Vadovo suvestinė</b>;</li>
+          <li>darbuotojo rolė – ekrane <b>Darbuotojo suvestinė</b>.</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+  <figure><img src="img/lt/sign-in.png" alt="Prisijungimo ekranas su el. paštu ir slaptažodžiu" loading="lazy"></figure>
+</section>
+
+<section id="dashboard">
+  <h2><span class="n">2</span>Suvestinė</h2>
+  <div class="text">
+    <p>Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir artėjantys pakeitimai.</p>
+    <p><b>Reikia jūsų dėmesio</b> rodo, ką daryti toliau, pradedant skubiausiais darbais. Kiekvienoje eilutėje yra jos užduoties mygtukas:</p>
+    <ul>
+      <li>pavėluota prekė – <b>Užsakyti vėl</b>;</li>
+      <li>nepatvirtintas užsakymas – <b>Siųsti nuorodą</b>;</li>
+      <li>trūkstamas dydis – <b>Pridėti dydžius</b>;</li>
+      <li>prekė be kainos – <b>Taisyti</b>.</li>
+    </ul>
+  </div>
+  <figure><img src="img/lt/dashboard.png" alt="Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“" loading="lazy"></figure>
+</section>
+
+<section id="create">
+  <h2><span class="n">3</span>Užsakymo kūrimas</h2>
+  <div class="text">
+    <ol>
+      <li>Atidarykite <b>Kurti užsakymą</b>.</li>
+      <li>Lauke <b>Kam skirta</b> įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite <b>+ Naujas darbuotojas</b>.</li>
+      <li>Pridėkite prekes:
+        <ul>
+          <li><b>Prekių rinkinys</b> vienu paspaudimu prideda visą komplektą.</li>
+          <li><b>Pridėti prekę</b> prideda vieną prekę. Paspaudę <kbd>/</kbd>, pereisite į šį lauką.</li>
+        </ul>
+      </li>
+      <li>Patikrinkite kiekvienos eilutės dydį ir kiekį:
+        <ul>
+          <li>Dydžiai imami iš darbuotojo išsaugotų dydžių. Drabužių dydis renkamas raide, pvz., <code>S (44–46)</code>.</li>
+          <li>Kol nepasirinkti visi trūkstami dydžiai, užsakyti negalima.</li>
+        </ul>
+      </li>
+      <li>Pasirinkite <b>Peržiūrėti ir pažymėti kaip užsakytą</b> arba paspauskite <kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd>.</li>
+    </ol>
+    <p>Kol dirbate, šis įrenginys saugo užsakymo juodraštį. <b>Kopijuoti į WhatsApp</b> nukopijuoja žinutę tiekėjui.</p>
+  </div>
+  <figure><img src="img/lt/create-order.png" alt="Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai" loading="lazy"></figure>
+</section>
+
+<section id="review">
+  <h2><span class="n">4</span>Peržiūra ir „Pažymėti kaip užsakytą“</h2>
+  <div class="text">
+    <ol>
+      <li>Patikrinkite eilutes ir bendrą sumą.</li>
+      <li>Jei darbuotojas patvirtins telefonu, palikite pažymėtą <b>Kartu sukurti patvirtinimo nuorodą</b>.</li>
+      <li>Pasirinkite <b>Pažymėti kaip užsakytą</b>. Užsakymo būsena tampa <b>Užsakyta</b>, ir jo nebegalima keisti.</li>
+      <li>Nusiųskite darbuotojui nuorodą: <b>Siųsti nuorodą per WhatsApp</b> arba <b>Kopijuoti nuorodą</b>. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.</li>
+    </ol>
+    <p>Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite <b>Spausdinti įrašą</b>.</p>
+  </div>
+  <div class="pair">
+    <figure><img src="img/lt/review.png" alt="Užsakymo peržiūros langas" loading="lazy"></figure>
+    <figure><img src="img/lt/ordered.png" alt="Užsakytas užsakymas su patvirtinimo nuoroda" loading="lazy"></figure>
+  </div>
+</section>
+
+<section id="confirm">
+  <h2><span class="n">5</span>Darbuotojas patvirtina</h2>
+  <div class="text">
+    <ol>
+      <li>Darbuotojas atidaro nuorodą. Paskyros jam nereikia.</li>
+      <li>Jis peržiūri prekes anglų arba rusų kalba (<b>EN / RU</b>). Šis puslapis lietuviškai nerodomas.</li>
+      <li>Jis pažymi sutikimą ir paspaudžia <b>Confirm receipt</b> (<b>Подтвердить получение</b>). Užsakymo būsena tampa <b>Išduota</b>.</li>
+    </ol>
+  </div>
+  <figure class="phone"><img src="img/lt/confirm-phone.png" alt="Patvirtinimo puslapis telefone" loading="lazy"></figure>
+</section>
+
+<section id="history">
+  <h2><span class="n">6</span>Istorija</h2>
+  <div class="text">
+    <p><b>Laukia</b>, <b>Išduota</b> ir <b>Visi</b> filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. <kbd>J</kbd> ir <kbd>K</kbd> pereina tarp užsakymų, o <kbd>Esc</kbd> užsakymą uždaro.</p>
+    <p>Užsakymas, kurio būsena <b>Užsakyta</b>, turi šiuos veiksmus:</p>
+    <ul>
+      <li><b>Atidaryti darbuotojo patvirtinimą</b> sukuria naują nuorodą. Ten pat galima pažymėti pasirašytą popierinį egzempliorių (<b>Pažymėti pasirašytą popierinį patvirtinimą</b>).</li>
+      <li><b>Išduoti dabar</b> perduoda šį įrenginį darbuotojui, ir jis patvirtina gavimą vietoje.</li>
+      <li><b>Spausdinti įrašą</b> atspausdina įrašą pasirašyti.</li>
+      <li><b>Kopijuoti į WhatsApp</b> nukopijuoja žinutę tiekėjui.</li>
+    </ul>
+    <p class="who">Tik vadovams: <b>⋯ → Ištrinti užsakymą…</b> pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.</p>
+  </div>
+  <figure><img src="img/lt/history.png" alt="Istorija su atidarytu užsakymu šalia sąrašo" loading="lazy"></figure>
+</section>
+
+<section id="record">
+  <h2><span class="n">7</span>Išdavimo įrašas</h2>
+  <div class="text">
+    <p>Užsakymas, kurio būsena <b>Išduota</b>, turi užrakintą įrašą anglų ir rusų kalbomis (<i>Items Given Record / Акт выдачи</i>). Atidarykite jį mygtuku <b>Peržiūrėti įrašą</b>.</p>
+    <ul>
+      <li><b>Spausdinti įrašą</b> atspausdina jį viename A4 lape.</li>
+      <li><b>Siųsti per WhatsApp</b> jį išsiunčia.</li>
+    </ul>
+  </div>
+  <figure><img src="img/lt/record.png" alt="Dvikalbis išdavimo įrašas" loading="lazy"></figure>
+</section>
+
+<section id="employees">
+  <h2><span class="n">8</span>Darbuotojai</h2>
+  <div class="text">
+    <p>Sąraše matyti kiekvieno darbuotojo dydžiai. Darbuotojai, kuriems trūksta dydžio, pažymėti.</p>
+    <p>Darbuotojo puslapyje rodoma:</p>
+    <ul>
+      <li>jo dydžiai;</li>
+      <li>visos išduotos prekės su naudojimo trukme ir pakeitimo data;</li>
+      <li>dar neišduoti užsakymai.</li>
+    </ul>
+    <p>Šiame puslapyje <b>Naujas užsakymas</b> pradeda užsakymą šiam darbuotojui, o <b>Keisti dydžius</b> pakeičia jo dydžius.</p>
+  </div>
+  <div class="pair">
+    <figure><img src="img/lt/employees.png" alt="Darbuotojų sąrašas" loading="lazy"></figure>
+    <figure><img src="img/lt/employee.png" alt="Darbuotojo puslapis su išduotomis prekėmis" loading="lazy"></figure>
+  </div>
+</section>
+
+<section id="catalogue">
+  <h2><span class="n">9</span>Prekių katalogas ir prekių rinkiniai</h2>
+  <div class="text">
+    <p class="who">Administratoriams ir vadovams.</p>
+    <p>Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.</p>
+    <p>Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane <b>Kurti užsakymą</b> jį pritaikote vienu paspaudimu.</p>
+  </div>
+  <div class="pair">
+    <figure><img src="img/lt/catalogue.png" alt="Prekių katalogas" loading="lazy"></figure>
+    <figure><img src="img/lt/item-sets.png" alt="Prekių rinkiniai" loading="lazy"></figure>
+  </div>
+</section>
+
+<section id="users">
+  <h2><span class="n">10</span>Naudotojai</h2>
+  <div class="text">
+    <p class="who">Tik administratoriams.</p>
+    <ul>
+      <li>Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.</li>
+      <li>Slaptažodžiui atkurti naudokite <b>⋯ → Nustatyti naują slaptažodį…</b>.</li>
+    </ul>
+  </div>
+  <figure><img src="img/lt/users.png" alt="Naudotojų ekranas" loading="lazy"></figure>
+</section>
+
+<section id="account">
+  <h2><span class="n">11</span>Jūsų paskyra</h2>
+  <div class="text">
+    <ul>
+      <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
+      <li><b>Keisti slaptažodį</b>.</li>
+      <li><b>Lentelės eilutės</b>: <b>Kompaktiškos</b> kompiuterio ekrane sutalpina daugiau eilučių.</li>
+    </ul>
+  </div>
+  <figure><img src="img/lt/account.png" alt="Paskyra: kalba, slaptažodis ir lentelės eilutės" loading="lazy"></figure>
+</section>
+
+<section id="shortcuts">
+  <h2><span class="n">12</span>Paieška ir spartieji klavišai</h2>
+  <div class="table"><table>
+    <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
+      <tr><td><kbd>/</kbd></td><td>Pereina į paieškos arba „Pridėti prekę“ lauką.</td></tr>
+      <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Istoriją, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus.</td></tr>
+      <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Pereina per Istoriją arba uždaro atidarytą užsakymą.</td></tr>
+      <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Rodo visus sparčiuosius klavišus.</td></tr>
+    </tbody>
+  </table></div>
+  <figure><img src="img/lt/palette.png" alt="⌘K paieška randa darbuotoją" loading="lazy"></figure>
+</section>
+
+<footer>Ekrano nuotraukose rodomi demonstraciniai duomenys. Prekių pavadinimai yra duomenys, todėl rodomi taip, kaip įvesti. Norėdami nuotraukas padaryti iš naujo, aplanke <code>web/e2e</code> paleiskite <code>pnpm guide</code>.</footer>
+
+</main>
+</body>
+</html>
