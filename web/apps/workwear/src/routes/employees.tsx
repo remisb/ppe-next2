@@ -18,7 +18,7 @@ import { employeeFacts, initials, missingLabel } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
-import { clothingBandValue, clothingBands, formatSize } from '@/lib/utils'
+import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
@@ -35,6 +35,8 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   const session = useSession()
   const employees = useLoad(() => client.employees.list())
   const sizes = useLoad(() => client.sizes())
+  // Clothing sizes are named as the pickers name them: 46 is "S (44–46)".
+  const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
   const [filter, setFilter] = useState('')
   // Only those Create Order would flag for a missing size.
   const [onlyMissing, setOnlyMissing] = useState(missing)
@@ -170,11 +172,11 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     ) : null}
                   </TableCell>
                   <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                    {employeeFacts(e) || 'No sizes saved'}
+                    {employeeFacts(e, bands) || 'No sizes saved'}
                   </TableCell>
                   <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
                   <TableCell className="stacked:hidden">{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
-                  <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}</TableCell>
+                  <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
                   <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
                   <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2]">
                     <ChevronRight className="size-4 text-muted-foreground" />

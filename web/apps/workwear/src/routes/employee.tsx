@@ -21,7 +21,7 @@ import { missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sizeRank, sortRows } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
-import { cn, formatMonths, formatSize } from '@/lib/utils'
+import { clothingBands, clothingSizeLabel, cn, formatMonths, formatSize } from '@/lib/utils'
 
 import { EditSizes, MissingBadge } from './employees'
 
@@ -102,7 +102,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
           />
           <dl className="mb-8 grid grid-cols-3 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-lg">
             <Fact label="Height">{e.height_cm ? `${e.height_cm} cm` : '—'}</Fact>
-            <Fact label="Clothing">{missing.clothing ? <MissingBadge /> : formatSize(e.clothing_size)}</Fact>
+            <Fact label="Clothing">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)}</Fact>
             <Fact label="Shoes">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</Fact>
             {e.notes ? (
               <div className="col-span-3">

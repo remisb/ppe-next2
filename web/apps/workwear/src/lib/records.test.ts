@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { clothingBands } from './utils'
 import { employeeFacts, initials, itemStatus, missingLabel, setTotal } from './records'
 
 describe('initials', () => {
@@ -11,9 +12,15 @@ describe('initials', () => {
 
 describe('employeeFacts', () => {
   it('joins the code and saved sizes, leaving out what is missing', () => {
-    expect(employeeFacts({ code: 'W-006', height_cm: 189, clothing_size: 54, shoe_size: '46' })).toBe('W-006 · 189 cm · Clothing 54 · Shoes 46')
-    expect(employeeFacts({ code: null, height_cm: 171, clothing_size: null, shoe_size: null })).toBe('171 cm')
-    expect(employeeFacts({ code: null, height_cm: null, clothing_size: null, shoe_size: null })).toBe('')
+    const bands = clothingBands([
+      { code: '52', band: 'L', min_cm: null, max_cm: null },
+      { code: '54', band: 'L', min_cm: null, max_cm: null },
+    ])
+    expect(employeeFacts({ code: 'W-006', height_cm: 189, clothing_size: 54, shoe_size: '46' }, bands)).toBe('W-006 · 189 cm · Clothing L (52–54) · Shoes 46')
+    // A size outside the vocabulary shows as it is.
+    expect(employeeFacts({ code: null, height_cm: null, clothing_size: 70, shoe_size: null }, bands)).toBe('Clothing 70')
+    expect(employeeFacts({ code: null, height_cm: 171, clothing_size: null, shoe_size: null }, bands)).toBe('171 cm')
+    expect(employeeFacts({ code: null, height_cm: null, clothing_size: null, shoe_size: null }, bands)).toBe('')
   })
 })
 

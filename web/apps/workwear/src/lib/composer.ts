@@ -1,6 +1,6 @@
 import type { ItemSet, ListedOrder, ResolvedEmployee } from '@ppe/api-client'
 
-import type { ClothingBand } from './utils'
+import { type ClothingBand, clothingSizeLabel } from './utils'
 import type { WorkingLine } from './working-order'
 
 /*
@@ -25,8 +25,7 @@ export function sizeParts(e: Pick<ResolvedEmployee, 'height_cm' | 'clothing_size
   const parts: SizePart[] = []
   if (e.height_cm !== null) parts.push({ label: `${e.height_cm} cm`, missing: false })
   if (e.clothing_size !== null) {
-    const band = bands.find((b) => b.codes.includes(String(e.clothing_size)))
-    parts.push({ label: `Clothing ${band ? band.label : e.clothing_size}`, missing: false })
+    parts.push({ label: `Clothing ${clothingSizeLabel(bands, e.clothing_size)}`, missing: false })
   } else {
     parts.push(e.height_cm !== null ? { label: 'Clothing from height', missing: false } : { label: 'No clothing size', missing: true })
   }

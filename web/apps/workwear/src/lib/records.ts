@@ -1,6 +1,7 @@
 import type { CatalogueItem, Employee, ItemSet } from '@ppe/api-client'
 
 import { missingSizes } from './missing-sizes'
+import { type ClothingBand, clothingSizeLabel } from './utils'
 
 /*
  * What the record lists (Employees, Item Catalogue, Item Sets) show in a row:
@@ -13,12 +14,15 @@ export function initials(e: Pick<Employee, 'first_name' | 'last_name'>): string 
   return `${e.first_name.trim().charAt(0)}${e.last_name.trim().charAt(0)}`.toUpperCase()
 }
 
-/** A row's second line: "W-006 · 189 cm · Clothing 54 · Shoes 46". A missing size is left out; the row flags it. */
-export function employeeFacts(e: Pick<Employee, 'code' | 'height_cm' | 'clothing_size' | 'shoe_size'>): string {
+/**
+ * A row's second line: "W-006 · 189 cm · Clothing L (52–54) · Shoes 46", the
+ * clothing size named as the pickers name it. A missing size is left out; the row flags it.
+ */
+export function employeeFacts(e: Pick<Employee, 'code' | 'height_cm' | 'clothing_size' | 'shoe_size'>, bands: readonly ClothingBand[]): string {
   return [
     e.code,
     e.height_cm !== null ? `${e.height_cm} cm` : null,
-    e.clothing_size !== null ? `Clothing ${e.clothing_size}` : null,
+    e.clothing_size !== null ? `Clothing ${clothingSizeLabel(bands, e.clothing_size)}` : null,
     e.shoe_size !== null ? `Shoes ${e.shoe_size}` : null,
   ]
     .filter(Boolean)

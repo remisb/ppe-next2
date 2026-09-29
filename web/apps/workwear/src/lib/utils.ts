@@ -47,6 +47,15 @@ export function clothingBands(sizes: ClothingSize[]): ClothingBand[] {
 }
 
 /**
+ * A saved clothing size as the pickers name it: 46 is "S (44–46)". A size
+ * outside the vocabulary shows as it is, a missing one as an en dash.
+ */
+export function clothingSizeLabel(bands: readonly ClothingBand[], code: string | number | null | undefined): string {
+  if (code === null || code === undefined) return formatSize(code)
+  return bands.find((b) => b.codes.includes(String(code)))?.label ?? String(code)
+}
+
+/**
  * The picker value for a saved size: its band's. A size that is the band's
  * smaller one still shows as its band, and keeps its number until another band is picked.
  */
