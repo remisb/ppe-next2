@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { formatShortDate, statusLabel } from '@/lib/history'
 import { useLoad } from '@/lib/use-load'
@@ -54,7 +55,7 @@ function OrderSummary({ id, timeZone }: { id: string; timeZone: string | undefin
   const { client } = useApi()
   const order = useLoad(() => client.orders.get(id), [id])
   const o = order.data
-  if (order.error) return <p className="text-muted-foreground">The order could not be loaded.</p>
+  if (order.error) return <p className="text-muted-foreground">{t.history.previewFailed}</p>
   if (!o) {
     return (
       <div aria-busy className="flex flex-col gap-2">
@@ -72,8 +73,10 @@ function OrderSummary({ id, timeZone }: { id: string; timeZone: string | undefin
         <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
       </div>
       <p className="text-xs text-muted-foreground">
-        {o.employee_first_name} {o.employee_last_name} · ordered {formatShortDate(o.ordered_at, timeZone)}
-        {o.given_at ? `, given ${formatShortDate(o.given_at, timeZone)}` : ''}
+        {o.employee_first_name} {o.employee_last_name} ·{' '}
+        {o.given_at
+          ? t.history.previewOrderedGiven(formatShortDate(o.ordered_at, timeZone), formatShortDate(o.given_at, timeZone))
+          : t.history.previewOrdered(formatShortDate(o.ordered_at, timeZone))}
       </p>
       <ul className="flex flex-col gap-1 border-t border-border pt-2">
         {o.lines.slice(0, SHOWN_LINES).map((l) => (
@@ -83,10 +86,10 @@ function OrderSummary({ id, timeZone }: { id: string; timeZone: string | undefin
             {l.size ? <span className="shrink-0 text-xs text-muted-foreground">{formatSize(l.size)}</span> : null}
           </li>
         ))}
-        {more > 0 ? <li className="pl-10 text-xs text-muted-foreground">and {more} more</li> : null}
+        {more > 0 ? <li className="pl-10 text-xs text-muted-foreground">{t.history.andMore(more)}</li> : null}
       </ul>
       <p className="flex justify-between border-t border-border pt-2 font-medium">
-        Total <span className="tabular-nums">{formatEuro(o.total_cents)}</span>
+        {t.common.total} <span className="tabular-nums">{formatEuro(o.total_cents)}</span>
       </p>
     </div>
   )

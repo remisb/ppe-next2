@@ -4,6 +4,7 @@ import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 
 
 import { ItemTile } from '@/components/item-icon'
 import { Input } from '@/components/ui/field'
+import { t } from '@/i18n'
 import { matchItems } from '@/lib/items'
 import { cn, formatEuro } from '@/lib/utils'
 
@@ -78,13 +79,13 @@ export function ItemPicker({
         role="combobox"
         autoComplete="off"
         enterKeyHint="done"
-        aria-label="Add Item"
+        aria-label={t.order.addItem}
         data-shortcut="search"
         aria-expanded={open}
         aria-controls={listId}
         className="pl-9"
         disabled={disabled}
-        placeholder="Add an item…"
+        placeholder={t.order.addAnItem}
         value={q}
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
@@ -97,7 +98,7 @@ export function ItemPicker({
         <ul
           id={listId}
           role="listbox"
-          aria-label="Items"
+          aria-label={t.order.items}
           className="absolute z-40 mt-1 max-h-[min(20rem,50dvh)] w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 shadow-md"
         >
           {shown.map((i) => {
@@ -115,14 +116,14 @@ export function ItemPicker({
                     {i.details ? <span className="block truncate text-xs text-muted-foreground">{i.details}</span> : null}
                   </span>
                   <span className={cn('shrink-0 text-xs tabular-nums', incomplete ? 'text-destructive' : 'text-muted-foreground')}>
-                    {incomplete ? 'No price' : formatEuro(i.unit_price_cents)}
+                    {incomplete ? t.order.noPrice : formatEuro(i.unit_price_cents)}
                   </span>
                 </button>
               </li>
             )
           })}
           {shown.length === 0 ? (
-            <li className="px-2 py-2 text-sm text-muted-foreground">{items ? `No item matches “${q.trim()}”.` : 'Loading items…'}</li>
+            <li className="px-2 py-2 text-sm text-muted-foreground">{items ? t.order.noItemMatches(q.trim()) : t.order.loadingItems}</li>
           ) : null}
         </ul>
       ) : null}

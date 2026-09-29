@@ -1,0 +1,28 @@
+import type { AccountText } from '../en/account'
+
+export const account: AccountText = {
+  title: 'Учётная запись',
+  signedInAs: (name: string) => `Вы вошли как ${name}.`,
+  changePassword: 'Сменить пароль',
+  changing: 'Смена…',
+  passwordChanged: 'Пароль изменён',
+  useNewPassword: 'При следующем входе используйте новый пароль.',
+  currentPassword: 'Текущий пароль',
+  newPassword: 'Новый пароль',
+  confirmNewPassword: 'Повторите новый пароль',
+  atLeast: (n: number) => `Не менее ${n} символов.`,
+  currentIncorrect: 'Неверный текущий пароль.',
+  useAtLeast: (n: number) => `Используйте не менее ${n} символов.`,
+  tooLong: 'Пароль слишком длинный.',
+  enterCurrent: 'Введите текущий пароль.',
+  chooseDifferent: 'Выберите пароль, отличный от текущего.',
+  noMatch: 'Пароли не совпадают.',
+  language: 'Язык',
+  languageHint: 'Сохраняется в вашей учётной записи, поэтому действует на любом устройстве, где вы входите. На странице подтверждения сотрудник сам выбирает английский или русский, а подписанная запись остаётся на английском и русском.',
+  languageFailed: 'Язык не изменён',
+  tableRows: 'Строки таблиц',
+  comfortable: 'Просторные',
+  compact: 'Компактные',
+  densityHint: 'В компактном виде на экране помещается больше строк. Настройка сохраняется на этом устройстве; её можно найти и через ⌘K.',
+  signOut: 'Выйти',
+}

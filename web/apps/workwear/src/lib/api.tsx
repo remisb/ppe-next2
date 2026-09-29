@@ -1,5 +1,7 @@
 import { type Client, createClient } from '@ppe/api-client'
-import { type ReactNode, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { Fragment, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+
+import { type Lang, deviceLanguage, isLang, rememberDeviceLanguage, setLanguage } from '@/i18n'
 
 import { type Session, clearSession, loadSession, sessionFromToken, storeSession } from './session'
 import { clearDraft } from './working-order'
@@ -9,6 +11,8 @@ interface ApiContext {
   session: Session | null
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
+  /** Saves the signed-in user's interface language on their account and switches to it. */
+  setUserLanguage: (lang: Lang) => Promise<void>
 }
 
 const Ctx = createContext<ApiContext | null>(null)
@@ -42,16 +46,53 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(
     async (email: string, password: string) => {
       const res = await client.login(email, password)
-      const s = sessionFromToken(res.access_token, res.user.name)
+      const s = sessionFromToken(res.access_token, res.user.name, isLang(res.user.language) ? res.user.language : 'en')
       if (!s) throw new Error('The server returned an unusable token.')
+      rememberDeviceLanguage(s.language)
       storeSession(s)
       setSession(s)
     },
     [client],
   )
 
-  const value = useMemo(() => ({ client, session, signIn, signOut }), [client, session, signIn, signOut])
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+  const applyLanguage = useCallback((lang: Lang) => {
+    const cur = sessionRef.current
+    if (!cur || cur.language === lang) return
+    const next = { ...cur, language: lang }
+    rememberDeviceLanguage(lang)
+    storeSession(next)
+    setSession(next)
+  }, [])
+
+  const setUserLanguage = useCallback(
+    async (lang: Lang) => {
+      const u = await client.setOwnLanguage(lang)
+      if (isLang(u.language)) applyLanguage(u.language)
+    },
+    [client, applyLanguage],
+  )
+
+  // The language may have changed on another device since this session began.
+  const userId = session?.userId
+  useEffect(() => {
+    if (!userId) return
+    client.me().then(
+      (u) => isLang(u.language) && applyLanguage(u.language),
+      () => {},
+    )
+  }, [client, userId, applyLanguage])
+
+  // The whole app remounts when the language changes, so nothing keeps text,
+  // dates or amounts in the old one. Before sign-in, the device's language.
+  const lang = session?.language ?? deviceLanguage()
+  setLanguage(lang)
+
+  const value = useMemo(() => ({ client, session, signIn, signOut, setUserLanguage }), [client, session, signIn, signOut, setUserLanguage])
+  return (
+    <Ctx.Provider value={value}>
+      <Fragment key={lang}>{children}</Fragment>
+    </Ctx.Provider>
+  )
 }
 
 export function useApi(): ApiContext {

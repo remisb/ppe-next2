@@ -2,6 +2,7 @@ import { Minus, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
+import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /**
@@ -31,14 +32,14 @@ export function QuantityStepper({
         variant="outline"
         size="icon-sm"
         className="rounded-r-none"
-        aria-label={`One fewer ${itemName}`}
+        aria-label={t.order.oneFewer(itemName)}
         disabled={!valid || value <= 1}
         onClick={() => onChange(value - 1)}
       >
         <Minus aria-hidden />
       </Button>
       <Input
-        aria-label={`Quantity of ${itemName}`}
+        aria-label={t.order.quantityOf(itemName)}
         inputMode="numeric"
         enterKeyHint="done"
         className="h-9 w-14 min-w-0 rounded-none border-x-0 px-1 text-center tabular-nums pointer-coarse:h-11"
@@ -61,7 +62,7 @@ export function QuantityStepper({
         variant="outline"
         size="icon-sm"
         className="rounded-l-none"
-        aria-label={`One more ${itemName}`}
+        aria-label={t.order.oneMore(itemName)}
         onClick={() => onChange(valid ? value + 1 : 1)}
       >
         <Plus aria-hidden />

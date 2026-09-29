@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { isTyping } from '@/lib/shortcuts'
 import { LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
@@ -32,23 +33,21 @@ interface Filters {
 const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
 
 /** The status tabs: the question most people bring to History is what is still waiting. */
-const statusTabs: { value: OrderStatus | ''; label: string }[] = [
-  { value: 'ORDERED', label: 'Awaiting' },
-  { value: 'GIVEN', label: 'Given' },
-  { value: '', label: 'All' },
+const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
+  { value: 'ORDERED', label: t.history.awaiting },
+  { value: 'GIVEN', label: t.common.given },
+  { value: '', label: t.common.all },
 ]
 
 // History is paged, so the API sorts it (the whole history, not one page).
-const columns: SortColumn<HistorySort>[] = [
-  { key: 'record', label: 'Record' },
-  { key: 'employee', label: 'Employee' },
-  { key: 'date', label: 'Date', firstDir: 'desc' },
-  { key: 'status', label: 'Status' },
-  { key: 'usage', label: 'Usage time' },
-  { key: 'total', label: 'Total value' },
+const historyColumns = (): SortColumn<HistorySort>[] => [
+  { key: 'record', label: t.history.colRecord },
+  { key: 'employee', label: t.history.colEmployee },
+  { key: 'date', label: t.history.colDate, firstDir: 'desc' },
+  { key: 'status', label: t.history.colStatus },
+  { key: 'usage', label: t.history.colUsage },
+  { key: 'total', label: t.history.colTotal },
 ]
-// Beside an open order the list keeps the columns that find the next one to chase: one line a row.
-const besideColumns = columns.filter((c) => c.key !== 'usage')
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
 
 const recordLink = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
@@ -161,46 +160,48 @@ export function History({
   const now = new Date()
   // An order is open beside the list (from lg): the list keeps its short columns.
   const beside = selected !== undefined
-  const shownColumns = beside ? besideColumns : columns
+  const columns = historyColumns()
+  // Beside an open order the list keeps the columns that find the next one to chase: one line a row.
+  const shownColumns = beside ? columns.filter((c) => c.key !== 'usage') : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
   const activeFilters = [filters.employee, filters.from, filters.to].filter(Boolean).length
-  const dateError = filters.from && filters.to && filters.from > filters.to ? 'From must not be after To.' : undefined
+  const dateError = filters.from && filters.to && filters.from > filters.to ? t.history.fromAfterTo : undefined
 
   return (
     <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
       {/* Narrow, an open order takes the screen; its list keeps its state behind it. */}
       <div className={cn('min-w-0', selected && 'max-lg:hidden')}>
         <PageHeader
-          title="History"
-          description="Stored orders, newest activity first. Values are as they were when ordered."
+          title={t.history.title}
+          description={t.history.description}
           // A phone needs its height for the orders; the filters say the rest.
           descriptionClassName="max-md:hidden"
           actions={
             <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
-              <SlidersHorizontal aria-hidden /> Filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
+              <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.history.filtersCount(activeFilters) : t.history.filters}
             </Button>
           }
         />
 
-        <div role="group" aria-label="Status" className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-          {statusTabs.map((t) => (
+        <div role="group" aria-label={t.history.status} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
+          {statusTabs().map((tab) => (
             <button
-              key={t.label}
+              key={tab.label}
               type="button"
-              aria-pressed={filters.status === t.value}
-              onClick={() => setFilter('status', t.value)}
+              aria-pressed={filters.status === tab.value}
+              onClick={() => setFilter('status', tab.value)}
               className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
             >
-              {t.label}
-              {counts.data ? <span className="tabular-nums text-muted-foreground">{counts.data[t.value]}</span> : null}
+              {tab.label}
+              {counts.data ? <span className="tabular-nums text-muted-foreground">{counts.data[tab.value]}</span> : null}
             </button>
           ))}
         </div>
 
         <section
           id="history-filters"
-          aria-label="Filters"
+          aria-label={t.history.filters}
           className={cn(
             'mb-4 grid gap-3 sm:grid-cols-2',
             // Beside an open order the list is narrow: two columns there, three on their own.
@@ -209,9 +210,9 @@ export function History({
           )}
         >
           <div>
-            <p className="mb-1.5 text-sm font-medium">Employee</p>
+            <p className="mb-1.5 text-sm font-medium">{t.history.employee}</p>
             <EmployeePicker
-              label="Employee"
+              label={t.history.employee}
               selected={filters.employee}
               onSelect={(e) => setFilter('employee', { id: e.id, full_name: e.full_name, code: e.code })}
               onClear={() => setFilter('employee', null)}
@@ -219,11 +220,11 @@ export function History({
           </div>
           <div className="grid grid-cols-2 gap-2">
             <label className="text-sm font-medium">
-              From
+              {t.history.from}
               <Input type="date" className="mt-1.5" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
             </label>
             <label className="text-sm font-medium">
-              To
+              {t.history.to}
               <Input type="date" className="mt-1.5" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
             </label>
           </div>
@@ -237,14 +238,14 @@ export function History({
                 setPage(1)
               }}
             >
-              Clear filters
+              {t.history.clearFilters}
             </Button>
           </div>
           {/* On a phone the sort order folds away with the filters; wider, it sits above the rows. */}
           <div className="md:hidden">
             <SortControl columns={columns} {...sortProps} />
           </div>
-          {tz ? <p className="text-xs text-muted-foreground sm:col-span-full">Dates and times are shown in {tz}.</p> : null}
+          {tz ? <p className="text-xs text-muted-foreground sm:col-span-full">{t.history.timezoneNote(tz)}</p> : null}
         </section>
         {dateError ? <p role="alert" className="mb-4 text-sm text-destructive">{dateError}</p> : null}
 
@@ -257,18 +258,18 @@ export function History({
             action={
               activeFilters > 0 ? (
                 <Button variant="outline" size="sm" onClick={() => { setFilters((f) => ({ ...noFilters, status: f.status })); setPage(1) }}>
-                  Clear filters
+                  {t.history.clearFilters}
                 </Button>
               ) : undefined
             }
           >
             {activeFilters > 0
-              ? 'No orders match these filters.'
+              ? t.history.noMatch
               : filters.status === 'ORDERED'
-                ? 'Nothing is waiting: every order is confirmed.'
+                ? t.history.nothingWaiting
                 : filters.status === 'GIVEN'
-                  ? 'No order has been given yet.'
-                  : 'No orders yet. Orders appear here after Mark as Ordered.'}
+                  ? t.history.noneGiven
+                  : t.history.noOrders}
           </EmptyState>
         ) : (
           <>
@@ -388,16 +389,16 @@ export function History({
                 })}
               </TableBody>
             </Table>
-            <nav className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm" aria-label="Pages">
+            <nav className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm" aria-label={t.history.pages}>
               <span className="text-muted-foreground">
-                {orders.data.total} order{orders.data.total === 1 ? '' : 's'} · page {page} of {pages}
+                {t.common.orders(orders.data.total)} · {t.history.pageOf(page, pages)}
               </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  Previous
+                  {t.history.previous}
                 </Button>
                 <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
-                  Next
+                  {t.history.next}
                 </Button>
               </div>
             </nav>
@@ -406,7 +407,7 @@ export function History({
       </div>
 
       {selected ? (
-        <aside aria-label="Order" className="lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4">
+        <aside aria-label={t.history.order} className="lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4">
           <OrderDetail
             key={selected}
             id={selected}
@@ -426,7 +427,7 @@ export function History({
           />
           {/* Beside the list only, and only where there is a keyboard. */}
           <p className="mt-4 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
-            <Kbd>J</Kbd> / <Kbd>K</Kbd> next or previous order · <Kbd>Esc</Kbd> close
+            <Kbd>J</Kbd> / <Kbd>K</Kbd> {t.history.nextOrPrevious} · <Kbd>Esc</Kbd> {t.history.closeHint}
           </p>
         </aside>
       ) : null}

@@ -1,9 +1,12 @@
 /**
  * Copy for WhatsApp (algorithm E): plain text for the supplier, built from the
- * current working order or a stored ORDERED snapshot. Copying or opening
+ * current working order or a stored ORDERED snapshot, in the staff member's
+ * language. Copying or opening
  * WhatsApp never changes an order's status and never implies delivery.
  */
 import type { Order, OrderRecord } from '@ppe/api-client'
+
+import { t } from '@/i18n'
 
 import type { WorkingOrder } from './working-order'
 
@@ -25,19 +28,19 @@ export interface WhatsAppMessage {
 }
 
 export function formatWhatsApp(m: WhatsAppMessage): string {
-  const out = [m.recordNumber ? `Workwear order ${m.recordNumber}` : 'Workwear order']
-  out.push(`Employee: ${m.employeeName}${m.employeeCode ? ` (${m.employeeCode})` : ''}`)
+  const out = [m.recordNumber ? t.order.waOrderNumber(m.recordNumber) : t.order.waOrder]
+  out.push(t.order.waEmployee(`${m.employeeName}${m.employeeCode ? ` (${m.employeeCode})` : ''}`))
   out.push('')
   m.lines.forEach((l, i) => {
     const parts = [l.itemName]
     if (l.itemDetails) parts.push(l.itemDetails)
-    if (l.size) parts.push(`size ${l.size}`)
-    parts.push(`qty ${l.quantity}`)
+    if (l.size) parts.push(t.order.waSize(l.size))
+    parts.push(t.order.waQty(l.quantity))
     out.push(`${i + 1}. ${parts.join(' – ')}`)
   })
   out.push('')
-  out.push(`Prepared by: ${m.preparedBy}`)
-  out.push(`Date: ${m.date}`)
+  out.push(t.order.waPreparedBy(m.preparedBy))
+  out.push(t.order.waDate(m.date))
   return out.join('\n')
 }
 

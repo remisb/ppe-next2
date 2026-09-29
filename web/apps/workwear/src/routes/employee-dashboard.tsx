@@ -3,8 +3,9 @@ import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/a
 import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
-import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel, plural } from '@/lib/dashboard'
+import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -28,16 +29,16 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
   return (
     <>
       <PageHeader
-        title="Employee Dashboard"
+        title={t.dashboard.employeeDashboard}
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `Your orders and what to order next. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
-            : 'Your orders and what to order next.'
+            ? `${t.dashboard.employeeIntro} ${t.dashboard.timezoneNote(d.timezone, formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            : t.dashboard.employeeIntro
         }
         actions={
           <>
-            <Button onClick={() => navigate({ name: 'createOrder' })}>Create Order</Button>
+            <Button onClick={() => navigate({ name: 'createOrder' })}>{t.dashboard.createOrder}</Button>
             <RefreshButton loading={board.loading} onClick={board.reload} />
           </>
         }
@@ -52,10 +53,10 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
           <NeedsYouPanel
             needs={needsOf(d)}
             navigate={navigate}
-            empty="Nothing needs you right now."
+            empty={t.dashboard.employeeNothingNeeded}
             footer={
               d.awaiting.orders > d.awaiting.longest.length ? (
-                <MoreLink label={`All ${d.awaiting.orders} of yours waiting in History`} to={{ name: 'history' }} navigate={navigate} />
+                <MoreLink label={t.dashboard.allYoursWaiting(d.awaiting.orders)} to={{ name: 'history' }} navigate={navigate} />
               ) : null
             }
           />
@@ -77,42 +78,44 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
   return (
     <KeyFigures>
       <Kpi
-        label="Awaiting confirmation"
+        label={t.dashboard.awaitingConfirmation}
         value={String(a.orders)}
         detail={
           a.orders === 0
-            ? 'Every order of yours is confirmed.'
-            : `${plural(a.items, 'item')} · oldest ${formatDays(a.oldest_days)}${unlinked > 0 ? ` · ${unlinked} without a usable link` : ''}`
+            ? t.dashboard.everyOrderOfYoursConfirmed
+            : `${t.common.items(a.items)} · ${t.dashboard.oldest(formatDays(a.oldest_days))}${unlinked > 0 ? ` · ${t.dashboard.withoutUsableLink(unlinked)}` : ''}`
         }
-        brief={a.orders === 0 ? 'all confirmed' : unlinked > 0 ? `${unlinked} without a link` : `oldest ${formatDays(a.oldest_days)}`}
+        brief={
+          a.orders === 0 ? t.dashboard.allConfirmed : unlinked > 0 ? t.dashboard.withoutLink(unlinked) : t.dashboard.oldest(formatDays(a.oldest_days))
+        }
         alert={unlinked > 0 || (a.oldest_days ?? 0) > 14}
         onOpen={a.orders > 0 ? () => jumpTo('[data-need^="wait-"]') : undefined}
-        openHint="Show them in Needs you"
+        openHint={t.dashboard.showInNeedsYou}
       />
       {cur ? (
         <Kpi
-          label={`Given in ${monthLabel(cur.month)}`}
+          label={t.dashboard.givenIn(monthLabel(cur.month))}
           value={String(cur.given)}
-          detail={`${plural(cur.given, 'order')} of yours, ${plural(cur.given_items, 'item')}`}
+          detail={t.dashboard.yourOrdersItems(cur.given, cur.given_items)}
           change={changeText(cur.given, prev.given, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi
-        label="Replacements due"
+        label={t.dashboard.replacementsDue}
         value={String(r.overdue + r.due_soon)}
-        detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
-        brief={`${r.overdue} overdue`}
+        detail={t.dashboard.dueDetail(r.overdue, r.due_soon, r.due_soon_days)}
+        brief={t.dashboard.overdueCount(r.overdue)}
         alert={r.overdue > 0}
         onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
-        openHint="Show them all in Replacements due"
+        openHint={t.dashboard.showAllInReplacements}
       />
       <Kpi
-        label="Missing sizes"
+        label={t.dashboard.missingSizes}
         value={String(d.missing_sizes.employees)}
         detail={missingSizesText(d.missing_sizes.employees, d.missing_sizes.list[0])}
         alert={d.missing_sizes.employees > 0}
         onOpen={d.missing_sizes.employees > 0 ? () => navigate({ name: 'employees', missing: true }) : undefined}
-        openHint="Show them in Employees"
+        openHint={t.dashboard.showInEmployees}
       />
     </KeyFigures>
   )
@@ -122,11 +125,11 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
 function linkText(w: EmployeeDashboardWaiting, timezone: string): string {
   switch (w.link) {
     case 'ACTIVE':
-      return `link valid until ${w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '—'}`
+      return t.dashboard.linkValidUntil(w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '—')
     case 'EXPIRED':
-      return 'link expired'
+      return t.dashboard.linkExpired
     default:
-      return 'no link sent'
+      return t.dashboard.noLinkSent
   }
 }
 
@@ -141,28 +144,32 @@ function needsOf(d: Data): Need[] {
     urgent: w.days > 14 || w.link === 'EXPIRED',
     tag: formatDays(w.days),
     title: w.employee_name,
-    detail: `${w.record_number} · ${plural(w.items, 'item')} · ${linkText(w, d.timezone)}`,
-    action: { label: w.link === 'ACTIVE' ? 'Open' : 'Send link', context: `for ${w.record_number}`, to: { name: 'history', order: w.order_id } },
+    detail: `${w.record_number} · ${t.common.items(w.items)} · ${linkText(w, d.timezone)}`,
+    action: {
+      label: w.link === 'ACTIVE' ? t.dashboard.open : t.dashboard.sendLink,
+      context: t.dashboard.forContext(w.record_number),
+      to: { name: 'history', order: w.order_id },
+    },
   }))
   const due = d.replacements.next.map<Need>((x) => ({
     key: `due-${x.employee_id}-${x.catalogue_item_id}`,
     urgent: x.overdue,
-    tag: x.overdue ? 'Overdue' : 'Due soon',
+    tag: x.overdue ? t.dashboard.overdue : t.dashboard.dueSoon,
     title: x.employee_name,
-    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · due ${formatDate(x.due_at, d.timezone)}`,
+    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · ${t.dashboard.dueOn(formatDate(x.due_at, d.timezone))}`,
     action: {
-      label: 'Reorder',
-      context: `${x.item_name} for ${x.employee_name}`,
+      label: t.dashboard.reorder,
+      context: t.dashboard.itemFor(x.item_name, x.employee_name),
       to: { name: 'createOrder', prefill: { employeeId: x.employee_id, items: [{ id: x.catalogue_item_id, quantity: x.quantity }] } },
     },
   }))
   const sizes = d.missing_sizes.list.map<Need>((e) => ({
     key: `size-${e.employee_id}`,
     urgent: false,
-    tag: 'Size',
+    tag: t.dashboard.sizeTag,
     title: e.employee_name,
     detail: missingText(e),
-    action: { label: 'Add sizes', context: `for ${e.employee_name}`, to: { name: 'employee', id: e.employee_id } },
+    action: { label: t.dashboard.addSizes, context: t.dashboard.forContext(e.employee_name), to: { name: 'employee', id: e.employee_id } },
   }))
   return [...waiting, ...due, ...sizes]
 }
@@ -174,21 +181,21 @@ function ActivityChart({ d, className }: { d: Data; className?: string }) {
   const total = d.months.reduce((n, m) => n + m.ordered, 0)
   return (
     <Panel
-      title="Your orders by month"
+      title={t.dashboard.yourOrdersByMonth}
       className={className}
-      description={`${first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}: ` : ''}${plural(total, 'order')} placed. An order counts in the month it was ordered, and again in the month it was given.`}
+      description={`${first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}: ` : ''}${t.dashboard.yourOrdersDescription(total)}`}
     >
       <MonthChart
         months={d.months.map((m) => m.month)}
         series={[
-          { label: 'Ordered', className: 'bg-foreground/25', values: d.months.map((m) => m.ordered) },
-          { label: 'Given', className: 'bg-foreground/80', values: d.months.map((m) => m.given) },
+          { label: t.common.ordered, className: 'bg-foreground/25', values: d.months.map((m) => m.ordered) },
+          { label: t.common.given, className: 'bg-foreground/80', values: d.months.map((m) => m.given) },
         ]}
         format={String}
-        caption="Your orders ordered and given per month"
+        caption={t.dashboard.yourOrdersCaption}
         cell={(s, i) => {
           const m = d.months[i]!
-          return s.label === 'Ordered' ? plural(m.ordered, 'order') : `${plural(m.given, 'order')}, ${plural(m.given_items, 'item')}`
+          return s.label === t.common.ordered ? t.common.orders(m.ordered) : `${t.common.orders(m.given)}, ${t.common.items(m.given_items)}`
         }}
       />
     </Panel>
@@ -197,9 +204,9 @@ function ActivityChart({ d, className }: { d: Data; className?: string }) {
 
 function RecentlyGivenCard({ d, navigate }: { d: Data; navigate: Navigate }) {
   return (
-    <Panel title="Recently given" description="Your orders the employee most recently confirmed, newest first.">
+    <Panel title={t.dashboard.recentlyGiven} description={t.dashboard.recentlyGivenDescription}>
       {d.recently_given.length === 0 ? (
-        <EmptyState>None of your orders has been given yet.</EmptyState>
+        <EmptyState>{t.dashboard.noneGivenYet}</EmptyState>
       ) : (
         <ul className="grid gap-x-6 md:grid-cols-2">
           {d.recently_given.map((g) => (
@@ -209,13 +216,15 @@ function RecentlyGivenCard({ d, navigate }: { d: Data; navigate: Navigate }) {
                   {g.employee_name}
                 </a>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  given {formatDate(g.given_at, d.timezone)} · {g.method === 'PAPER' ? 'paper' : g.method === 'IN_PERSON' ? 'in person' : 'electronic'} · {plural(g.items, 'item')} ·{' '}
+                  {t.dashboard.givenOn(formatDate(g.given_at, d.timezone))} ·{' '}
+                  {g.method === 'PAPER' ? t.dashboard.methodPaper : g.method === 'IN_PERSON' ? t.dashboard.methodInPerson : t.dashboard.methodElectronic} ·{' '}
+                  {t.common.items(g.items)} ·{' '}
                   {formatEuro(g.value_cents)}
                 </span>
               </div>
               <a
                 {...linkTo({ name: 'record', id: g.order_id }, navigate)}
-                aria-label={`Receipt ${g.record_number}`}
+                aria-label={t.dashboard.receipt(g.record_number)}
                 className={cn(inlineLink, 'inline-flex min-h-11 shrink-0 items-center text-sm tabular-nums md:min-h-0')}
               >
                 {g.record_number}

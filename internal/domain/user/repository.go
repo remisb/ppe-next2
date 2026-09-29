@@ -19,5 +19,7 @@ type Repository interface {
 	// Update writes email, name, roles, is_active, updated_at and updated_by.
 	Update(ctx context.Context, u User) error
 	SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error
+	// SetLanguage sets a live user's interface language, or ErrNotFound.
+	SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID) error
 }

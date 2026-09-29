@@ -1,5 +1,7 @@
 import { type Role, decodeToken, hasAnyRole, isTokenExpired } from '@ppe/api-client'
 
+import { type Lang, isLang } from '@/i18n'
+
 // sessionStorage: tokens live 15 minutes and cannot be revoked, so they should
 // not outlive the tab.
 const TOKEN_KEY = 'workwear.token'
@@ -8,6 +10,8 @@ export interface Session {
   token: string
   userId: string
   name: string
+  /** The user's interface language, from their account. */
+  language: Lang
   roles: readonly Role[]
   /** "Manage Items and Prices": catalogue and item sets. */
   canManageItems: boolean
@@ -21,13 +25,14 @@ export interface Session {
   isEmployee: boolean
 }
 
-export function sessionFromToken(token: string, name: string): Session | null {
+export function sessionFromToken(token: string, name: string, language: Lang = 'en'): Session | null {
   const claims = decodeToken(token)
   if (!claims || isTokenExpired(claims)) return null
   return {
     token,
     userId: claims.sub,
     name,
+    language,
     roles: claims.roles,
     canManageItems: hasAnyRole(claims.roles, 'admin', 'manager'),
     canManageUsers: hasAnyRole(claims.roles, 'admin'),
@@ -40,6 +45,7 @@ export function sessionFromToken(token: string, name: string): Session | null {
 interface Stored {
   token: string
   name: string
+  language?: string
 }
 
 export function loadSession(): Session | null {
@@ -47,7 +53,7 @@ export function loadSession(): Session | null {
     const raw = globalThis.sessionStorage?.getItem(TOKEN_KEY)
     if (!raw) return null
     const s = JSON.parse(raw) as Stored
-    const session = sessionFromToken(s.token, s.name)
+    const session = sessionFromToken(s.token, s.name, isLang(s.language) ? s.language : 'en')
     if (!session) clearSession()
     return session
   } catch {
@@ -57,7 +63,7 @@ export function loadSession(): Session | null {
 
 export function storeSession(s: Session): void {
   try {
-    globalThis.sessionStorage?.setItem(TOKEN_KEY, JSON.stringify({ token: s.token, name: s.name } satisfies Stored))
+    globalThis.sessionStorage?.setItem(TOKEN_KEY, JSON.stringify({ token: s.token, name: s.name, language: s.language } satisfies Stored))
   } catch {
     // The session still works in memory for this tab.
   }

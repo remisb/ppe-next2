@@ -2,8 +2,16 @@ import type { OrderRecord } from '@ppe/api-client'
 
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatDateTime, methodText, statusLabel } from '@/lib/history'
-import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
+import { formatDateTime, methodText } from '@/lib/history'
+import { cn, formatSize } from '@/lib/utils'
+
+// The record reads the same whatever the staff member's interface language
+// (manual §8): English / Russian words, and amounts and periods as when it was
+// first printed, rather than lib/utils' formatters, which follow the language.
+const receiptStatus = { ORDERED: 'Ordered / Заказано', GIVEN: 'Given / Выдано' } as const
+const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })
+const formatEuro = (cents: number) => euro.format(cents / 100)
+const formatMonths = (n: number) => (n === 1 ? '1 month' : `${n} months`)
 
 /**
  * The Items Given Record (manual §8), rendered only from the locked receipt
@@ -25,7 +33,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
           <p className="text-sm text-muted-foreground print:text-black">Record / Номер: {r.record_number}</p>
         </div>
         <Badge variant={given ? 'default' : 'secondary'} className="print:hidden">
-          {statusLabel[record.status]}
+          {receiptStatus[record.status]}
         </Badge>
       </header>
 

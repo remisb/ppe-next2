@@ -9,6 +9,7 @@ const user: User = {
   name: 'Ona',
   roles: ['employee', 'admin'],
   is_active: true,
+  language: 'en',
   created_at: '',
   updated_at: '',
 }

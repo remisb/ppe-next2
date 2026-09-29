@@ -72,6 +72,7 @@ export interface ConfirmText {
   expiredBody: string
   loadErrorTitle: string
   retry: string
+  loading: string
 }
 
 export const confirmText: Record<ConfirmLang, ConfirmText> = {
@@ -96,6 +97,7 @@ export const confirmText: Record<ConfirmLang, ConfirmText> = {
     expiredBody: 'Please ask for a new confirmation link.',
     loadErrorTitle: 'Could not load the record',
     retry: 'Retry',
+    loading: 'Loading…',
   },
   ru: {
     name: 'Русский',
@@ -119,5 +121,6 @@ export const confirmText: Record<ConfirmLang, ConfirmText> = {
     expiredBody: 'Пожалуйста, запросите новую ссылку для подтверждения.',
     loadErrorTitle: 'Не удалось загрузить документ',
     retry: 'Повторить',
+    loading: 'Загрузка…',
   },
 }

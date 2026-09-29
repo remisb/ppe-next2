@@ -1,0 +1,88 @@
+import { plural } from '../plural'
+
+/** The app's frame: the Main navigation, ⌘K palette, shortcuts, sign-in and shared list controls. */
+export const shell = {
+  // Section names: the navigation's full labels, and the palette's screens.
+  createOrder: 'Create Order',
+  history: 'History',
+  employees: 'Employees',
+  catalogue: 'Item Catalogue',
+  itemSets: 'Item Sets',
+  dashboard: 'Dashboard',
+  users: 'Users',
+  replacements: 'Replacements due',
+  accountAndPassword: 'Account and password',
+  // Short labels under the icons in the phone tab bar and tablet rail.
+  shortOrder: 'Order',
+  shortHistory: 'History',
+  shortEmployees: 'Employees',
+  shortCatalogue: 'Catalogue',
+  shortItemSets: 'Sets',
+  shortDashboard: 'Home',
+  shortUsers: 'Users',
+  shortKeys: 'Keys',
+  shortAccount: 'Account',
+  mainNav: 'Main',
+  skipToContent: 'Skip to content',
+  searchEllipsis: 'Search…',
+  more: 'More',
+  signOut: 'Sign out',
+  keyboardShortcuts: 'Keyboard shortcuts',
+  shortcutsHint: 'Letters work anywhere except while typing in a field.',
+  /** The phone's raised Create Order button, without and with a saved draft. */
+  newOrderButton: 'New order',
+  draft: 'Draft',
+  draftLines: (n: number) => plural(n, { one: '(draft, # line)', other: '(draft, # lines)' }),
+  waiting: (n: number) => plural(n, { one: '(# waiting for confirmation)', other: '(# waiting for confirmation)' }),
+  shortcuts: {
+    palette: 'Search record numbers, employees, items and screens, and jump to them',
+    search: 'Go to the search or Add Item field on this screen',
+    newOrder: 'New order',
+    /** The key names stay; only the word between them is translated. */
+    goToKeys: 'G then D, O, H, E, C, S, U',
+    goTo: 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets, Users',
+    nextPrevious: 'History: the next or previous order, beside the list',
+    closeOrder: 'History: close the order beside the list',
+    review: 'Create Order: review the order before Mark as Ordered',
+    quantity: 'Create Order: one more or one fewer, in a quantity field',
+    help: 'Show these shortcuts',
+  },
+  // The ⌘K palette.
+  searchOrJump: 'Search or jump to',
+  paletteHint: 'Search orders, employees, items and screens…',
+  results: 'Results',
+  groups: {
+    orders: 'Orders',
+    actions: 'Actions',
+    screens: 'Screens',
+    employees: 'Employees',
+    items: 'Items',
+  },
+  newOrder: 'New order',
+  newOrderFor: (name: string) => `New order for ${name}`,
+  compactRows: 'Compact table rows',
+  comfortableRows: 'Comfortable table rows',
+  density: 'Density',
+  /**
+   * Beginnings of words that find the density switch, besides the English
+   * ones the palette always knows ("compact", "comfortable", "density", "dense", "table rows").
+   */
+  densityWords: { compact: 'compact', comfortable: 'comfortable', density: 'density', rows: 'table rows' },
+  nothingMatches: (q: string) => `Nothing matches “${q}”.`,
+  // Sign in.
+  signIn: 'Sign in',
+  signingIn: 'Signing in…',
+  email: 'Email',
+  password: 'Password',
+  wrongPassword: 'Wrong email or password.',
+  // Shared controls.
+  retry: 'Retry',
+  sortBy: 'Sort by',
+  defaultOrder: 'Default order',
+  ascending: 'Ascending; switch to descending',
+  descending: 'Descending; switch to ascending',
+  showPassword: 'Show password',
+  hidePassword: 'Hide password',
+}
+
+export type ShellText = typeof shell

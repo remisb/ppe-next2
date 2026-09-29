@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { type Need, barPercent, missingSizesText, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, plural, share, sortNeeds } from './dashboard'
+import { t } from '@/i18n'
+
+import { type Need, barPercent, missingSizesText, changeText, formatDays, monthLabel, niceCeiling, percentChange, periodLabel, share, sortNeeds } from './dashboard'
 
 describe('dashboard display rules', () => {
   it('labels months short or with the year', () => {
@@ -52,8 +54,9 @@ describe('dashboard display rules', () => {
     expect(formatDays(2.5)).toBe('2.5 days')
     expect(share(1, 3)).toBe(33)
     expect(share(1, 0)).toBe(0)
-    expect(plural(1, 'order')).toBe('1 order')
-    expect(plural(2, 'item')).toBe('2 items')
+    // Counts come from the dictionary now; the English is unchanged.
+    expect(t.common.orders(1)).toBe('1 order')
+    expect(t.common.items(2)).toBe('2 items')
   })
 })
 

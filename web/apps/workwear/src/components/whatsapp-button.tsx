@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/field'
+import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { whatsappUrl } from '@/lib/whatsapp'
 
@@ -13,12 +14,13 @@ import { whatsappUrl } from '@/lib/whatsapp'
  */
 export function WhatsAppButton({
   text,
-  label = 'Copy for WhatsApp',
+  label,
   disabled,
   className,
 }: {
   text: string
-  label?: string
+  /** Defaults to Copy for WhatsApp. */
+  label?: string | undefined
   disabled?: boolean | undefined
   /** Sizes the button, e.g. full width in a phone action bar. */
   className?: string | undefined
@@ -38,26 +40,26 @@ export function WhatsAppButton({
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <Button variant="outline" className="w-full" disabled={disabled} onClick={() => void copy()}>
         {state === 'copied' && !disabled ? <Check aria-hidden /> : <MessageCircle aria-hidden />}
-        <span className="truncate">{label}</span>
+        <span className="truncate">{label ?? t.order.copyForWhatsApp}</span>
       </Button>
       {state === 'copied' && !disabled ? (
         <p role="status" className="text-xs text-muted-foreground">
-          Copied.{' '}
+          {t.order.copied}{' '}
           <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground underline underline-offset-4">
-            Open WhatsApp <ExternalLink aria-hidden className="size-3" />
+            {t.order.openWhatsApp} <ExternalLink aria-hidden className="size-3" />
           </a>
         </p>
       ) : null}
       {state === 'manual' && !disabled ? (
         <>
           <p role="status" className="text-xs text-muted-foreground">
-            Copying is blocked here. Select the text below, or{' '}
+            {t.order.copyBlockedBefore}
             <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
-              open WhatsApp
+              {t.order.copyBlockedLink}
             </a>
-            .
+            {t.order.copyBlockedAfter}
           </p>
-          <Textarea aria-label="Order text for WhatsApp" readOnly rows={6} value={text} onFocus={(e) => e.target.select()} />
+          <Textarea aria-label={t.order.whatsappText} readOnly rows={6} value={text} onFocus={(e) => e.target.select()} />
         </>
       ) : null}
     </div>

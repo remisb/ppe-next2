@@ -95,9 +95,10 @@ export function HandOver({ orderId, onGiven, onClose }: { orderId: string; onGiv
           </div>
         </div>
         {record.error ? (
-          <ErrorState error={record.error} onRetry={record.reload} />
+          // Hand-over is the employee's screen: its EN / RU, not the staff member's language.
+          <ErrorState error={record.error} onRetry={record.reload} title={confirmText[lang].loadErrorTitle} retryLabel={confirmText[lang].retry} />
         ) : !r ? (
-          <Loading />
+          <Loading label={confirmText[lang].loading} />
         ) : confirmed || r.status === 'GIVEN' ? (
           <Confirmed record={confirmed ?? r} lang={lang} next={confirmText[lang].handBack}>
             <Button size="lg" onClick={onClose}>

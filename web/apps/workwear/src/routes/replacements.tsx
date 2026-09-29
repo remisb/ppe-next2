@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -33,20 +34,20 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
   const rows = (r?.next ?? []).filter((x) => show === 'all' || (show === 'overdue') === x.overdue)
   const tabs: { value: Show; label: string; count: number }[] = r
     ? [
-        { value: 'all', label: 'All', count: r.overdue + r.due_soon },
-        { value: 'overdue', label: 'Overdue', count: r.overdue },
-        { value: 'soon', label: 'Due soon', count: r.due_soon },
+        { value: 'all', label: t.common.all, count: r.overdue + r.due_soon },
+        { value: 'overdue', label: t.dashboard.overdue, count: r.overdue },
+        { value: 'soon', label: t.dashboard.dueSoon, count: r.due_soon },
       ]
     : []
 
   return (
     <>
       <Button variant="ghost" className="-ml-3 mb-2" onClick={onBack}>
-        <ArrowLeft aria-hidden /> Dashboard
+        <ArrowLeft aria-hidden /> {t.dashboard.title}
       </Button>
       <PageHeader
-        title="Replacements due"
-        description={`Items whose service period has ended or ends within ${r?.due_soon_days ?? 30} days, counted from the date given, and not already on an open order. Dates are in ${tz}.`}
+        title={t.dashboard.replacementsDue}
+        description={t.dashboard.replacementsDescription(r?.due_soon_days ?? 30, tz)}
       />
       {list.error ? (
         <ErrorState error={list.error} onRetry={list.reload} />
@@ -54,34 +55,38 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
         <Loading />
       ) : (
         <>
-          <div role="group" aria-label="Show" className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-            {tabs.map((t) => (
+          <div role="group" aria-label={t.dashboard.show} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
+            {tabs.map((tab) => (
               <button
-                key={t.value}
+                key={tab.value}
                 type="button"
-                aria-pressed={show === t.value}
-                onClick={() => setShow(t.value)}
+                aria-pressed={show === tab.value}
+                onClick={() => setShow(tab.value)}
                 className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
               >
-                {t.label}
-                <span className="tabular-nums text-muted-foreground">{t.count}</span>
+                {tab.label}
+                <span className="tabular-nums text-muted-foreground">{tab.count}</span>
               </button>
             ))}
           </div>
           {rows.length === 0 ? (
             <EmptyState>
-              {show === 'overdue' ? 'Nothing is overdue.' : show === 'soon' ? 'Nothing else is due in the next 30 days.' : 'Nothing is due for replacement.'}
+              {show === 'overdue'
+                ? t.dashboard.nothingOverdue
+                : show === 'soon'
+                  ? t.dashboard.nothingElseDue
+                  : t.dashboard.nothingDueForReplacement}
             </EmptyState>
           ) : (
             <Table stack>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead>Last given</TableHead>
+                  <TableHead>{t.dashboard.employee}</TableHead>
+                  <TableHead>{t.dashboard.item}</TableHead>
+                  <TableHead>{t.dashboard.due}</TableHead>
+                  <TableHead>{t.dashboard.lastGiven}</TableHead>
                   <TableHead>
-                    <span className="sr-only">Reorder</span>
+                    <span className="sr-only">{t.dashboard.reorder}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -93,7 +98,7 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
             </Table>
           )}
           {r.overdue + r.due_soon > r.next.length ? (
-            <p className="mt-3 text-xs text-muted-foreground">Showing the {r.next.length} soonest due.</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t.dashboard.showingSoonest(r.next.length)}</p>
           ) : null}
         </>
       )}
@@ -119,25 +124,25 @@ function Row({ x, tz, navigate }: { x: DashboardReplacement; tz: string; navigat
       <TableCell className="tabular-nums stacked:order-1 stacked:w-auto">
         <span className="inline-flex items-center gap-2">
           <RelativeDate iso={x.due_at} timeZone={tz} className="stacked:hidden" />
-          <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? 'Overdue' : 'Due soon'}</Badge>
+          <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? t.dashboard.overdue : t.dashboard.dueSoon}</Badge>
         </span>
       </TableCell>
       <TableCell className="stacked:order-4 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
         <span className="hidden stacked:inline">
-          Due <RelativeDate iso={x.due_at} timeZone={tz} sentence /> ·{' '}
+          {t.dashboard.due} <RelativeDate iso={x.due_at} timeZone={tz} sentence /> ·{' '}
         </span>
         <RecordPreview
           orderId={x.order_id}
           timeZone={tz}
           {...linkTo({ name: 'record', id: x.order_id }, navigate)}
-          aria-label={`Receipt ${x.record_number}`}
+          aria-label={t.dashboard.receipt(x.record_number)}
           className={cn(inlineLink, 'inline-flex items-center gap-1 font-normal')}
         >
           <FileText aria-hidden className="size-3.5" />
           {x.record_number}
         </RecordPreview>{' '}
         <span className="text-muted-foreground">
-          given <RelativeDate iso={x.given_at} timeZone={tz} sentence />
+          {t.dashboard.given} <RelativeDate iso={x.given_at} timeZone={tz} sentence />
         </span>
       </TableCell>
       <TableCell className="text-right stacked:order-4 stacked:ml-auto stacked:w-auto">
@@ -148,11 +153,8 @@ function Row({ x, tz, navigate }: { x: DashboardReplacement; tz: string; navigat
             navigate({ name: 'createOrder', prefill: { employeeId: x.employee_id, items: [{ id: x.catalogue_item_id, quantity: x.quantity }] } })
           }
         >
-          <RotateCcw aria-hidden /> Reorder
-          <span className="sr-only">
-            {' '}
-            {x.item_name} for {x.employee_name}
-          </span>
+          <RotateCcw aria-hidden /> {t.dashboard.reorder}
+          <span className="sr-only"> {t.dashboard.itemFor(x.item_name, x.employee_name)}</span>
         </Button>
       </TableCell>
     </TableRow>

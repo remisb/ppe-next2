@@ -1,6 +1,7 @@
 import type { Order } from '@ppe/api-client'
 
 import { Table, TableBody, stackedBreak, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
 
 /**
@@ -15,12 +16,12 @@ export function OrderLinesTable({ order }: { order: Order }) {
     <Table stack="grid">
       <TableHeader>
         <TableRow>
-          <TableHead>Item</TableHead>
-          <TableHead>Size</TableHead>
-          <TableHead className="text-right">Quantity</TableHead>
-          <TableHead className="text-right">Unit price</TableHead>
-          <TableHead>Service period</TableHead>
-          <TableHead className="text-right">Total</TableHead>
+          <TableHead>{t.order.item}</TableHead>
+          <TableHead>{t.order.size}</TableHead>
+          <TableHead className="text-right">{t.order.quantity}</TableHead>
+          <TableHead className="text-right">{t.order.unitPrice}</TableHead>
+          <TableHead>{t.order.servicePeriod}</TableHead>
+          <TableHead className="text-right">{t.common.total}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -30,10 +31,10 @@ export function OrderLinesTable({ order }: { order: Order }) {
               <div className="font-medium">{l.item_name}</div>
               {l.item_details ? <div className="text-xs text-muted-foreground">{l.item_details}</div> : null}
             </TableCell>
-            <TableCell label="Size" className={fact}>{formatSize(l.size)}</TableCell>
-            <TableCell label="Qty" className={cn('text-right tabular-nums', fact)}>{l.quantity}</TableCell>
-            <TableCell label="Unit" className={cn('text-right tabular-nums', fact)}>{formatEuro(l.unit_price_cents)}</TableCell>
-            <TableCell label="Service" className={fact}>{formatMonths(l.service_period_months)}</TableCell>
+            <TableCell label={t.order.cardSize} className={fact}>{formatSize(l.size)}</TableCell>
+            <TableCell label={t.order.cardQty} className={cn('text-right tabular-nums', fact)}>{l.quantity}</TableCell>
+            <TableCell label={t.order.cardUnit} className={cn('text-right tabular-nums', fact)}>{formatEuro(l.unit_price_cents)}</TableCell>
+            <TableCell label={t.order.cardService} className={fact}>{formatMonths(l.service_period_months)}</TableCell>
             <TableCell className="text-right font-medium tabular-nums stacked:order-1 stacked:w-auto stacked:self-start">
               {formatEuro(l.unit_price_cents * l.quantity)}
             </TableCell>
@@ -43,7 +44,7 @@ export function OrderLinesTable({ order }: { order: Order }) {
       <TableFooter>
         <TableRow className="stacked:flex-nowrap stacked:justify-between stacked:bg-muted/50">
           <TableCell colSpan={5} className="text-right font-medium stacked:w-auto">
-            Total value
+            {t.order.totalValue}
           </TableCell>
           <TableCell className="text-right font-semibold tabular-nums stacked:w-auto">{formatEuro(order.total_cents)}</TableCell>
         </TableRow>

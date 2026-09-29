@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { t } from '@/i18n'
+
 export interface Loaded<T> {
   data: T | undefined
   error: unknown
@@ -31,10 +33,10 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
     }
   }, [tick, ...deps])
 
-  const reload = useCallback(() => setTick((t) => t + 1), [])
+  const reload = useCallback(() => setTick((n) => n + 1), [])
   return { ...state, reload }
 }
 
 export function errorText(err: unknown): string {
-  return err instanceof Error ? err.message : 'Something went wrong.'
+  return err instanceof Error ? err.message : t.common.somethingWentWrong
 }

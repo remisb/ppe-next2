@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
 import { errorText } from '@/lib/use-load'
@@ -47,7 +48,7 @@ function draftOf(e: Employee | undefined): Draft {
  * Add New Employee / edit employee. Only first and last name are required;
  * height, clothing and shoe size are optional defaults. There is no glove size.
  */
-export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel = 'Save' }: Props) {
+export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel }: Props) {
   const { client } = useApi()
   const [d, setD] = useState<Draft>(() => draftOf(employee))
   const [error, setError] = useState<string | undefined>()
@@ -65,7 +66,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
 
   const height = d.height_cm.trim() === '' ? null : Number(d.height_cm)
   const heightError =
-    height !== null && (!Number.isInteger(height) || height < 100 || height > 250) ? 'Height must be 100–250 cm.' : undefined
+    height !== null && (!Number.isInteger(height) || height < 100 || height > 250) ? t.employees.heightRange : undefined
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -84,7 +85,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
     try {
       onSaved(employee ? await client.employees.update(employee.id, input) : await client.employees.create(input))
     } catch (err) {
-      setError(err instanceof ApiError && err.isConflict ? 'Another employee already has this code.' : errorText(err))
+      setError(err instanceof ApiError && err.isConflict ? t.employees.codeTaken : errorText(err))
     } finally {
       setBusy(false)
     }
@@ -94,34 +95,34 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
     <FormSheet
       open={open}
       onClose={onClose}
-      title={employee ? 'Edit Employee' : 'Add New Employee'}
-      description="First and last name are required. Sizes are defaults for future orders."
+      title={employee ? t.employees.editEmployee : t.employees.addNew}
+      description={t.employees.formDescription}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" form="employee-form" disabled={busy || !d.first_name.trim() || !d.last_name.trim()}>
-            {busy ? 'Saving…' : submitLabel}
+            {busy ? t.common.saving : (submitLabel ?? t.common.save)}
           </Button>
         </>
       }
     >
       <form id="employee-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="First name" required>
+        <Field label={t.employees.firstName} required>
           {(p) => <Input {...controlProps(p)} value={d.first_name} onChange={set('first_name')} autoFocus />}
         </Field>
-        <Field label="Last name" required>
+        <Field label={t.employees.lastName} required>
           {(p) => <Input {...controlProps(p)} value={d.last_name} onChange={set('last_name')} />}
         </Field>
-        <Field label="Employee code">{(p) => <Input {...controlProps(p)} value={d.code} onChange={set('code')} />}</Field>
-        <Field label="Height (cm)" error={heightError}>
+        <Field label={t.employees.employeeCode}>{(p) => <Input {...controlProps(p)} value={d.code} onChange={set('code')} />}</Field>
+        <Field label={t.employees.heightLabel} error={heightError}>
           {(p) => <Input {...controlProps(p)} inputMode="numeric" value={d.height_cm} onChange={set('height_cm')} />}
         </Field>
-        <Field label="Clothing size">
+        <Field label={t.employees.clothingSize}>
           {(p) => (
             <Select {...controlProps(p)} value={clothingBandValue(bands, d.clothing_size)} onChange={set('clothing_size')}>
-              <option value="">Not set</option>
+              <option value="">{t.employees.notSet}</option>
               {bands.map((b) => (
                 <option key={b.value} value={b.value}>
                   {b.label}
@@ -130,10 +131,10 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
             </Select>
           )}
         </Field>
-        <Field label="Shoe size">
+        <Field label={t.employees.shoeSize}>
           {(p) => (
             <Select {...controlProps(p)} value={d.shoe_size} onChange={set('shoe_size')}>
-              <option value="">Not set</option>
+              <option value="">{t.employees.notSet}</option>
               {sizes?.shoes.map((s) => (
                 <option key={s.code} value={s.code}>
                   {s.code}
@@ -143,7 +144,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
           )}
         </Field>
         <div className="sm:col-span-2">
-          <Field label="Notes">{(p) => <Textarea {...controlProps(p)} rows={2} value={d.notes} onChange={set('notes')} />}</Field>
+          <Field label={t.employees.notes}>{(p) => <Textarea {...controlProps(p)} rows={2} value={d.notes} onChange={set('notes')} />}</Field>
         </div>
         {error ? <p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p> : null}
       </form>

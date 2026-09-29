@@ -6,6 +6,8 @@
  */
 import type { CatalogueItem, MarkAsOrderedInput, ResolvedEmployee, ResolvedLine, SizeGroup } from '@ppe/api-client'
 
+import { t } from '@/i18n'
+
 /** Where a line's size came from. 'manual' sizes are never silently overwritten. */
 export type SizeSource = 'saved' | 'suggested' | 'manual' | 'none'
 
@@ -186,16 +188,14 @@ export interface Validation {
 export function validate(order: WorkingOrder): Validation {
   const orderProblems: string[] = []
   const lineProblems = new Map<string, string[]>()
-  if (!order.employee) orderProblems.push('Select an employee in Assigned to.')
-  if (order.lines.length === 0) orderProblems.push('Add at least one item.')
+  if (!order.employee) orderProblems.push(t.order.selectEmployee)
+  if (order.lines.length === 0) orderProblems.push(t.order.addAtLeastOne)
   for (const l of order.lines) {
     const p: string[] = []
-    if (l.unavailable) p.push('This item is no longer available. Remove it from the order.')
-    if (!Number.isInteger(l.quantity) || l.quantity < 1) p.push('Quantity must be a whole number of at least 1.')
-    if (needsSize(l)) p.push('Select a size.')
-    if (l.priceMissing && !l.unavailable) {
-      p.push('No price or service period in the Item Catalogue. An authorised user must complete it.')
-    }
+    if (l.unavailable) p.push(t.order.itemUnavailable)
+    if (!Number.isInteger(l.quantity) || l.quantity < 1) p.push(t.order.quantityInvalid)
+    if (needsSize(l)) p.push(t.order.selectSize)
+    if (l.priceMissing && !l.unavailable) p.push(t.order.priceMissing)
     if (p.length > 0) lineProblems.set(l.catalogueItemId, p)
   }
   return { valid: orderProblems.length === 0 && lineProblems.size === 0, orderProblems, lineProblems }

@@ -1,5 +1,7 @@
 import type { ItemSet, ListedOrder, ResolvedEmployee } from '@ppe/api-client'
 
+import { t } from '@/i18n'
+
 import { type ClothingBand, clothingSizeLabel } from './utils'
 import type { WorkingLine } from './working-order'
 
@@ -23,13 +25,13 @@ export interface SizePart {
  */
 export function sizeParts(e: Pick<ResolvedEmployee, 'height_cm' | 'clothing_size' | 'shoe_size'>, bands: readonly ClothingBand[]): SizePart[] {
   const parts: SizePart[] = []
-  if (e.height_cm !== null) parts.push({ label: `${e.height_cm} cm`, missing: false })
+  if (e.height_cm !== null) parts.push({ label: t.order.heightCm(e.height_cm), missing: false })
   if (e.clothing_size !== null) {
-    parts.push({ label: `Clothing ${clothingSizeLabel(bands, e.clothing_size)}`, missing: false })
+    parts.push({ label: t.order.clothingSize(clothingSizeLabel(bands, e.clothing_size)), missing: false })
   } else {
-    parts.push(e.height_cm !== null ? { label: 'Clothing from height', missing: false } : { label: 'No clothing size', missing: true })
+    parts.push(e.height_cm !== null ? { label: t.order.clothingFromHeight, missing: false } : { label: t.order.noClothingSize, missing: true })
   }
-  parts.push(e.shoe_size !== null ? { label: `Shoes ${e.shoe_size}`, missing: false } : { label: 'No shoe size', missing: true })
+  parts.push(e.shoe_size !== null ? { label: t.order.shoeSize(e.shoe_size), missing: false } : { label: t.order.noShoeSize, missing: true })
   return parts
 }
 
@@ -49,7 +51,7 @@ export function setOnOrder(set: Pick<ItemSet, 'lines'>, lines: readonly Pick<Wor
 
 /** "5 lines", "1 line". */
 export function linesText(n: number): string {
-  return `${n} ${n === 1 ? 'line' : 'lines'}`
+  return t.common.lines(n)
 }
 
 const REVIEW_LINK_KEY = 'workwear.review-link'

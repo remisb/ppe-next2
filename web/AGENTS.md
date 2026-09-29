@@ -21,6 +21,24 @@ web/
     <name>/              one directory per frontend
 ```
 
+## Languages
+
+The staff app is in English, Lithuanian and Russian, each user's choice on Account, saved
+on their account (`PUT /api/v1/users/me/language`) and so on every device; before sign-in,
+the language last used on the device. Every word a user reads comes from `t` in `src/i18n`
+(`t.history.title`, `t.common.days(3)`): one typed dictionary per language, split into
+namespaces (`i18n/<lang>/<ns>.ts`), the Lithuanian and Russian typed against the English so
+a missing key fails the typecheck. Counted phrases are functions using `plural`
+(Intl.PluralRules: Lithuanian one / few / other, Russian one / few / many / other); a
+sentence with a value in it is one function, never glued fragments. Never read `t` at
+module level (a constant array of labels is evaluated once, in the language of the moment):
+build it in the component or a function. Dates and amounts use `intlLocale()`;
+`formatEuro` and `formatMonths` already do. The app remounts when the language changes.
+Not translated: data (names, codes, sizes, record numbers), server error messages, and the
+employee-facing confirmation page, hand-over mode and the Items Given Record, which keep
+their English / Russian as the manual defines. `src/i18n/i18n.test.ts` fails when a
+Lithuanian or Russian text is missing, empty or left identical to the English.
+
 ## Responsive layout
 
 Mobile first: unprefixed classes are the phone layout, `sm:`/`md:`/`lg:` add to it.

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { formatDateTime } from '@/lib/history'
 
@@ -55,44 +56,42 @@ export function ConfirmationSheet({
     <FormSheet
       open
       onClose={onClose}
-      title="Open Employee Confirmation"
-      description={`${order.record_number} · ${name}. The employee confirms receipt on a secure page, or signs the printed record.`}
+      title={t.history.openConfirmation}
+      description={t.history.confirmationDescription(order.record_number, name)}
     >
       <div className="flex flex-col gap-6">
-        {error ? <ErrorState title="That did not work" error={error} /> : null}
+        {error ? <ErrorState title={t.history.didNotWork} error={error} /> : null}
 
         <section className="flex flex-col gap-2">
-          <h3 className="font-medium">Electronic confirmation</h3>
+          <h3 className="font-medium">{t.history.electronicConfirmation}</h3>
           {link ? (
             <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
           ) : (
             <Button className="w-full sm:w-fit" disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
-              Create confirmation link
+              {t.history.createLink}
             </Button>
           )}
         </section>
 
         <section className="flex flex-col gap-2 border-t border-border pt-4">
-          <h3 className="font-medium">Paper confirmation</h3>
-          <p className="text-sm text-muted-foreground">
-            Print the record, have the employee sign it, then record that the signed copy was received.
-          </p>
+          <h3 className="font-medium">{t.history.paperConfirmation}</h3>
+          <p className="text-sm text-muted-foreground">{t.history.paperSteps}</p>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             <Button variant="outline" onClick={() => onPrint(order.id)}>
-              Print Record
+              {t.history.printRecord}
             </Button>
             <Button
               variant="outline"
               disabled={busy}
               onClick={() => {
-                if (!window.confirm(`Record that ${name} signed the paper record for ${order.record_number}? The order becomes Given.`)) return
+                if (!window.confirm(t.history.recordPaperQuestion(name, order.record_number))) return
                 void run(async () => {
                   await client.orders.confirmPaper(order.id)
                   onGiven()
                 })
               }}
             >
-              Record signed paper confirmation
+              {t.history.recordPaper}
             </Button>
           </div>
         </section>
@@ -111,7 +110,7 @@ export function ConfirmationLinkView({ link, name, recordNumber }: { link: Confi
   return (
     <>
       <div className="flex gap-2">
-        <Input readOnly aria-label="Confirmation link" className="min-w-0 flex-1" value={link.url} onFocus={(e) => e.target.select()} />
+        <Input readOnly aria-label={t.history.confirmationLink} className="min-w-0 flex-1" value={link.url} onFocus={(e) => e.target.select()} />
         <Button
           variant="outline"
           className="shrink-0"
@@ -122,11 +121,11 @@ export function ConfirmationLinkView({ link, name, recordNumber }: { link: Confi
             )
           }
         >
-          <Copy aria-hidden /> {copied ? 'Copied' : 'Copy link'}
+          <Copy aria-hidden /> {copied ? t.history.copied : t.history.copyLink}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Valid until {formatDateTime(link.expires_at, undefined)}. This link is shown once; creating another replaces it.
+        {t.history.linkValidUntil(formatDateTime(link.expires_at, undefined))}
       </p>
       <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
         <a
@@ -135,12 +134,12 @@ export function ConfirmationLinkView({ link, name, recordNumber }: { link: Confi
           rel="noreferrer"
           className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted"
         >
-          <ExternalLink aria-hidden className="size-4" /> Open on this device
+          <ExternalLink aria-hidden className="size-4" /> {t.history.openOnThisDevice}
         </a>
         <WhatsAppButton
           className="sm:w-auto"
-          label="Share link via WhatsApp"
-          text={`${name}, please confirm receipt of your workwear (${recordNumber}):\n${link.url}`}
+          label={t.history.shareLinkWhatsApp}
+          text={t.history.linkMessage(name, recordNumber, link.url)}
         />
       </div>
     </>

@@ -7,12 +7,16 @@
 export type Role = 'admin' | 'manager' | 'employee'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
+/** A user's interface language; each user sets their own. */
+export type Language = 'en' | 'lt' | 'ru'
+
 export interface User {
   id: string
   email: string
   name: string
   roles: Role[]
   is_active: boolean
+  language: Language
   created_at: string
   updated_at: string
 }

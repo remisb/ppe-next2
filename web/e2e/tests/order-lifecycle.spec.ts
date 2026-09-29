@@ -1094,6 +1094,58 @@ test('History: only a manager deletes an order, after asking; it then leaves His
   await expect(page.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
 })
 
+test('Language: Lithuanian or Russian on Account; the app and every later sign-in follow it', async ({ browser }) => {
+  await page.getByRole('link', { name: admin.name }).click()
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
+  let languages = page.getByRole('group', { name: 'Language' })
+  await expect(languages.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true')
+
+  // The app switches at once: the page, the navigation and <html lang>.
+  await languages.getByRole('button', { name: 'Lietuvių' }).click()
+  await expect(page.getByRole('heading', { name: 'Paskyra' })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'lt')
+  await page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Istorija' }).click()
+  await expect(page.getByRole('heading', { name: 'Istorija' })).toBeVisible()
+  // The record stays English / Russian whatever the interface language.
+  await openOrder(recordNumber)
+  await page.getByRole('button', { name: 'Peržiūrėti įrašą' }).click()
+  await expect(page.getByRole('heading', { name: 'Items Given Record / Акт выдачи' })).toBeVisible()
+
+  // Saved on the account, so a sign-in on another device opens in Lithuanian too.
+  const other = await signInElsewhere(browser, admin.email, admin.password)
+  await expect(other.getByRole('heading', { name: 'Suvestinė' })).toBeVisible()
+  await other.context().close()
+
+  await page.getByRole('link', { name: admin.name }).click()
+  await page.getByRole('group', { name: 'Kalba' }).getByRole('button', { name: 'Русский' }).click()
+  await expect(page.getByRole('heading', { name: 'Учётная запись' })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
+
+  // Longer words must not push any screen sideways on a phone.
+  const desktop = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  for (const path of ['/dashboard', '/orders/new', '/history', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/account']) {
+    await page.goto(path)
+    await expect(page.locator('main h1')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <= window.innerWidth &&
+          [...document.querySelectorAll('[data-slot=table-container]')].every((t) => t.scrollWidth <= t.clientWidth),
+      ),
+      `${path} scrolls sideways in Russian`,
+    ).toBe(true)
+  }
+  await page.setViewportSize(desktop)
+
+  // Back to English for the steps after.
+  languages = page.getByRole('group', { name: 'Язык' })
+  await languages.getByRole('button', { name: 'English' }).click()
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+})
+
 test('Account: change password, then only the new one signs in', async () => {
   const newPassword = 'e2e-new-password-456'
   await page.getByRole('link', { name: admin.name }).click()

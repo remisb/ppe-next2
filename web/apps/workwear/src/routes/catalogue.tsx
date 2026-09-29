@@ -13,6 +13,7 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { guessIcon } from '@/lib/items'
 import { type ItemStatus, itemStatus } from '@/lib/records'
@@ -21,17 +22,28 @@ import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn, formatEuro, formatMonths, parseEuro } from '@/lib/utils'
 
-export const sizeGroupLabel: Record<SizeGroup, string> = { CLOTHING: 'Clothing', SHOES: 'Shoes', NONE: 'No size' }
+/** Each size group's name in the current language; the getters read the text in use at each lookup. */
+export const sizeGroupLabel: Record<SizeGroup, string> = {
+  get CLOTHING() {
+    return t.catalogue.clothing
+  },
+  get SHOES() {
+    return t.catalogue.shoes
+  },
+  get NONE() {
+    return t.catalogue.noSize
+  },
+}
 
 type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status'
 
-const columns: SortColumn<CatalogueSort>[] = [
-  { key: 'name', label: 'Item' },
-  { key: 'details', label: 'Details' },
-  { key: 'group', label: 'Size group' },
-  { key: 'price', label: 'Unit price' },
-  { key: 'period', label: 'Service period' },
-  { key: 'status', label: 'Status' },
+const columns = (): SortColumn<CatalogueSort>[] => [
+  { key: 'name', label: t.catalogue.colItem },
+  { key: 'details', label: t.catalogue.colDetails },
+  { key: 'group', label: t.catalogue.sizeGroup },
+  { key: 'price', label: t.catalogue.unitPrice },
+  { key: 'period', label: t.catalogue.servicePeriod },
+  { key: 'status', label: t.catalogue.colStatus },
 ]
 
 /**
@@ -39,14 +51,14 @@ const columns: SortColumn<CatalogueSort>[] = [
  * activating needs no confirmation.
  */
 export function confirmActiveChange(i: CatalogueItem): boolean {
-  return !i.active || window.confirm(`Deactivate ${i.name}? It will no longer be offered in Add Item. Orders that hold it keep it.`)
+  return !i.active || window.confirm(t.catalogue.confirmDeactivate(i.name))
 }
 
-const statusChips: { status: ItemStatus | 'all'; label: string }[] = [
-  { status: 'all', label: 'All' },
-  { status: 'active', label: 'Active' },
-  { status: 'incomplete', label: 'Incomplete' },
-  { status: 'inactive', label: 'Inactive' },
+const statusChips = (): { status: ItemStatus | 'all'; label: string; empty: string }[] => [
+  { status: 'all', label: t.catalogue.statusAll, empty: t.catalogue.noItems },
+  { status: 'active', label: t.catalogue.statusActive, empty: t.catalogue.noActiveItems },
+  { status: 'incomplete', label: t.catalogue.statusIncomplete, empty: t.catalogue.noIncompleteItems },
+  { status: 'inactive', label: t.catalogue.statusInactive, empty: t.catalogue.noInactiveItems },
 ]
 
 /** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
@@ -106,13 +118,13 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   return (
     <>
       <PageHeader
-        title="Item Catalogue"
-        description="Current names, prices and service periods. Orders keep the values they were placed with."
+        title={t.catalogue.title}
+        description={t.catalogue.description}
         descriptionClassName="max-md:hidden"
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
-              <Plus aria-hidden /> Add Item
+              <Plus aria-hidden /> {t.catalogue.addItem}
             </Button>
           ) : undefined
         }
@@ -120,8 +132,8 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
       {counts.all > 0 ? (
         // One status per item; a chip with nothing in it is left out unless it is the one chosen.
         // On a phone the chips scroll sideways in their own row rather than take two lines.
-        <div role="group" aria-label="Show" className="mb-4 flex gap-2 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none] md:flex-wrap">
-          {statusChips
+        <div role="group" aria-label={t.catalogue.show} className="mb-4 flex gap-2 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none] md:flex-wrap">
+          {statusChips()
             .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
             .map((c) => (
               <Button key={c.status} className="shrink-0" variant={status === c.status ? 'secondary' : 'outline'} aria-pressed={status === c.status} onClick={() => setStatus(c.status)}>
@@ -130,13 +142,13 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
             ))}
         </div>
       ) : null}
-      {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
+      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
       {items.error ? (
         <ErrorState error={items.error} onRetry={items.reload} />
       ) : items.loading && !items.data ? (
         <Loading />
       ) : shown.length === 0 ? (
-        <EmptyState>{status === 'all' ? 'No items yet.' : `No ${statusChips.find((c) => c.status === status)!.label.toLowerCase()} items.`}</EmptyState>
+        <EmptyState>{statusChips().find((c) => c.status === status)!.empty}</EmptyState>
       ) : (
         /*
           Where the table is narrow the items are one list of two-line rows:
@@ -144,13 +156,13 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
           Incomplete or Inactive flagged. A row opens the item, whose page holds
           Edit and Deactivate; the table keeps Edit and ⋯ on each row.
         */
-        <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel="Display order" {...sortProps} />}>
+        <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns()} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
           <TableHeader>
             <TableRow>
-              {columns.map((c) => (
+              {columns().map((c) => (
                 <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
               ))}
-              {canManageItems ? <TableHead className="text-right">Actions</TableHead> : null}
+              {canManageItems ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -160,7 +172,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
               const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
               return (
                 <Fragment key={i.id}>
-                  {newGroup ? <TableGroupRow colSpan={columns.length + (canManageItems ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
+                  {newGroup ? <TableGroupRow colSpan={columns().length + (canManageItems ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
                   <TableRow
                     className={cn(
                       'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50',
@@ -200,12 +212,12 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                     >
                       {i.active ? (
                         <Badge variant="secondary" className="stacked:hidden">
-                          Active
+                          {t.catalogue.active}
                         </Badge>
                       ) : (
-                        <Badge variant="outline">Inactive</Badge>
+                        <Badge variant="outline">{t.catalogue.inactive}</Badge>
                       )}
-                      {incomplete ? <Badge variant="destructive">Incomplete</Badge> : null}
+                      {incomplete ? <Badge variant="destructive">{t.catalogue.incomplete}</Badge> : null}
                     </TableCell>
                     <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
                       <ChevronRight className="size-4 text-muted-foreground" />
@@ -213,11 +225,11 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                     {canManageItems ? (
                       <TableCell className="text-right whitespace-nowrap stacked:hidden">
                         <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
-                          Edit
+                          {t.common.edit}
                         </Button>{' '}
-                        <MoreActions label={`More actions for ${i.name}`}>
+                        <MoreActions label={t.common.moreActions(i.name)}>
                           <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                            {i.active ? 'Deactivate item…' : 'Activate item'}
+                            {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
                           </DropdownMenuItem>
                         </MoreActions>
                       </TableCell>
@@ -271,11 +283,11 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   }, [item, existing])
 
   const priceCents = parseEuro(price)
-  const priceError = Number.isNaN(priceCents) ? 'Enter a price like 49.99.' : undefined
+  const priceError = Number.isNaN(priceCents) ? t.catalogue.priceInvalid : undefined
   const months = period.trim() === '' ? null : Number(period)
-  const periodError = months !== null && (!Number.isInteger(months) || months < 1) ? 'Whole months, at least 1.' : undefined
+  const periodError = months !== null && (!Number.isInteger(months) || months < 1) ? t.catalogue.periodInvalid : undefined
   const rankNum = Number(rank)
-  const rankError = !Number.isInteger(rankNum) || rankNum < 0 ? 'A whole number, 0 or more.' : undefined
+  const rankError = !Number.isInteger(rankNum) || rankNum < 0 ? t.catalogue.rankInvalid : undefined
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -295,7 +307,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       else await client.catalogue.create(input)
       onSaved()
     } catch (err) {
-      setError(err instanceof ApiError && err.isConflict ? 'An item with this name already exists.' : errorText(err))
+      setError(err instanceof ApiError && err.isConflict ? t.catalogue.itemNameTaken : errorText(err))
     }
   }
 
@@ -303,21 +315,21 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     <FormSheet
       open={item !== null}
       onClose={onClose}
-      title={existing ? 'Edit Item' : 'Add Item'}
-      description="An item without a price or service period cannot be ordered until both are set."
+      title={existing ? t.catalogue.editItem : t.catalogue.addItem}
+      description={t.catalogue.formDescription}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" form="item-form" disabled={!name.trim()}>
-            Save
+            {t.common.save}
           </Button>
         </>
       }
     >
       <form id="item-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-        <Field label="Item name" required>
+        <Field label={t.catalogue.itemName} required>
           {(p) => (
             <Input
               {...controlProps(p)}
@@ -329,8 +341,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
             />
           )}
         </Field>
-        <Field label="Manufacturer / model">{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
-        <Field label="Size group" hint="Clothing and shoe items take the employee's size; no-size items (gloves, helmets) have none.">
+        <Field label={t.catalogue.manufacturerModel}>{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
+        <Field label={t.catalogue.sizeGroup} hint={t.catalogue.sizeGroupHint}>
           {(p) => (
             <Select {...controlProps(p)} value={group} onChange={(e) => setGroup(e.target.value as SizeGroup)}>
               {(Object.keys(sizeGroupLabel) as SizeGroup[]).map((g) => (
@@ -341,15 +353,15 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
             </Select>
           )}
         </Field>
-        <Field label="Unit price (€)" error={priceError}>{(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
-        <Field label="Service period (months)" error={periodError}>{(p) => <Input {...controlProps(p)} inputMode="numeric" value={period} onChange={(e) => setPeriod(e.target.value)} />}</Field>
-        <Field label="Display order" hint="Lower comes first in Add Item." error={rankError}>
+        <Field label={t.catalogue.unitPriceEuro} error={priceError}>{(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
+        <Field label={t.catalogue.servicePeriodMonths} error={periodError}>{(p) => <Input {...controlProps(p)} inputMode="numeric" value={period} onChange={(e) => setPeriod(e.target.value)} />}</Field>
+        <Field label={t.catalogue.displayOrder} hint={t.catalogue.displayOrderHint} error={rankError}>
           {(p) => <Input {...controlProps(p)} inputMode="numeric" value={rank} onChange={(e) => setRank(e.target.value)} />}
         </Field>
         <fieldset className="sm:col-span-2">
-          <legend className="mb-1.5 text-sm font-medium">Picture</legend>
+          <legend className="mb-1.5 text-sm font-medium">{t.catalogue.picture}</legend>
           <div className="grid grid-cols-5 gap-2">
-            {iconChoices.map((c) => (
+            {iconChoices().map((c) => (
               <label
                 key={c.icon}
                 className="flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-border p-1.5 text-center text-xs text-muted-foreground has-checked:border-primary has-checked:bg-accent has-checked:text-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring"
@@ -372,7 +384,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
           </div>
         </fieldset>
         <label className="flex min-h-11 items-center gap-3 text-sm sm:col-span-2">
-          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Add Item)
+          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> {t.catalogue.activeInAddItem}
         </label>
         {error ? <p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p> : null}
       </form>

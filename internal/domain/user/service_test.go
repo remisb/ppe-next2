@@ -103,6 +103,18 @@ func (f *fakeRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string,
 	return nil
 }
 
+func (f *fakeRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	u, ok := f.users[id]
+	if !ok || u.Deleted() {
+		return ErrNotFound
+	}
+	u.Language, u.UpdatedAt, u.UpdatedByUserID = lang, at, by
+	f.users[id] = u
+	return nil
+}
+
 func (f *fakeRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -311,5 +323,28 @@ func TestBcryptRoundTrip(t *testing.T) {
 	}
 	if !bcryptVerify(h, "password123") || bcryptVerify(h, "password124") {
 		t.Error("bcrypt verify mismatch")
+	}
+}
+
+func TestSetLanguage(t *testing.T) {
+	svc, _, admin := newTestService(t)
+	ctx := context.Background()
+	if admin.Language != LangEnglish {
+		t.Errorf("new account language = %q, want en", admin.Language)
+	}
+	u, err := svc.SetLanguage(ctx, admin.ID, LangLithuanian)
+	if err != nil || u.Language != LangLithuanian || u.UpdatedByUserID != admin.ID {
+		t.Fatalf("SetLanguage = %+v, %v", u, err)
+	}
+	for _, bad := range []string{"", "de", "LT", "en-GB"} {
+		if _, err := svc.SetLanguage(ctx, admin.ID, bad); !errors.Is(err, ErrInvalid) {
+			t.Errorf("language %q: %v, want ErrInvalid", bad, err)
+		}
+	}
+	if _, err := svc.SetLanguage(ctx, uuid.Nil, LangRussian); !errors.Is(err, ErrInvalid) {
+		t.Errorf("nil user: %v, want ErrInvalid", err)
+	}
+	if _, err := svc.SetLanguage(ctx, uuid.New(), LangRussian); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown user: %v, want ErrNotFound", err)
 	}
 }

@@ -6,8 +6,9 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
-import { changeText, monthLabel, percentChange, plural } from '@/lib/dashboard'
+import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -30,19 +31,19 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
   return (
     <>
       <PageHeader
-        title="Manager Dashboard"
+        title={t.dashboard.managerDashboard}
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `Items, prices and what will need buying. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
-            : 'Items, prices and what will need buying.'
+            ? `${t.dashboard.managerIntro} ${t.dashboard.timezoneNote(d.timezone, formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            : t.dashboard.managerIntro
         }
         actions={
           <>
             {/* A manager who also prepares orders reaches that dashboard from here, not from a tab. */}
             {isEmployee ? (
               <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
-                Employee Dashboard <ArrowRight aria-hidden />
+                {t.dashboard.employeeDashboard} <ArrowRight aria-hidden />
               </Button>
             ) : null}
             <RefreshButton loading={board.loading} onClick={board.reload} />
@@ -85,39 +86,41 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
   return (
     <KeyFigures>
       <Kpi
-        label="On order"
+        label={t.dashboard.onOrder}
         value={formatEuro(d.on_order.value_cents)}
-        detail={`${plural(d.on_order.items, 'item')} in ${plural(d.on_order.orders, 'order')}, not yet given out`}
-        brief={plural(d.on_order.orders, 'order')}
+        detail={t.dashboard.onOrderDetail(d.on_order.items, d.on_order.orders)}
+        brief={t.common.orders(d.on_order.orders)}
         onOpen={d.on_order.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
-        openHint="Show them in History"
+        openHint={t.dashboard.showInHistory}
       />
       {cur ? (
         <Kpi
-          label={`Ordered in ${monthLabel(cur.month)}`}
+          label={t.dashboard.orderedIn(monthLabel(cur.month))}
           value={formatEuro(cur.value_cents)}
-          detail={`${plural(cur.items, 'item')} in ${plural(cur.orders, 'order')}`}
+          detail={t.dashboard.itemsInOrders(cur.items, cur.orders)}
           change={changeText(cur.value_cents, prev.value_cents, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi
-        label="Ordered, last 12 months"
+        label={t.dashboard.orderedLast12}
         value={formatEuro(year.value)}
-        detail={`${plural(year.items, 'item')} in ${plural(year.orders, 'order')}`}
-        brief={plural(year.orders, 'order')}
+        detail={t.dashboard.itemsInOrders(year.items, year.orders)}
+        brief={t.common.orders(year.orders)}
       />
       <Kpi
-        label={`Replacements, next ${f.days} days`}
-        value={plural(f.items, 'item')}
+        label={t.dashboard.replacementsNext(f.days)}
+        value={t.common.items(f.items)}
         detail={
           f.items === 0
-            ? 'Nothing is due.'
-            : `About ${formatEuro(f.estimated_cents)} at current prices${f.unpriced > 0 ? ` · ${f.unpriced} without a price` : ''}`
+            ? t.dashboard.nothingIsDue
+            : `${t.dashboard.aboutAtCurrentPrices(formatEuro(f.estimated_cents))}${f.unpriced > 0 ? ` · ${t.dashboard.withoutPrice(f.unpriced)}` : ''}`
         }
-        brief={f.items === 0 ? 'nothing due' : f.unpriced > 0 ? `${f.unpriced} unpriced` : `about ${formatEuro(f.estimated_cents)}`}
+        brief={
+          f.items === 0 ? t.dashboard.nothingDue : f.unpriced > 0 ? t.dashboard.unpriced(f.unpriced) : t.dashboard.about(formatEuro(f.estimated_cents))
+        }
         alert={f.unpriced > 0}
         onOpen={f.items > 0 ? () => jumpTo('[data-panel="forecast"]') : undefined}
-        openHint="Show the replacement forecast"
+        openHint={t.dashboard.showForecast}
       />
     </KeyFigures>
   )
@@ -128,18 +131,18 @@ function OrderedChart({ d, className }: { d: Data; className?: string }) {
   const last = d.months.at(-1)
   return (
     <Panel
-      title="Ordered by month"
+      title={t.dashboard.orderedByMonth}
       className={className}
-      description={`${first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}. ` : ''}The value of the orders placed each month, at the prices they were ordered at.`}
+      description={`${first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}. ` : ''}${t.dashboard.orderedByMonthDescription}`}
     >
       <MonthChart
         months={d.months.map((m) => m.month)}
-        series={[{ label: 'Ordered', className: 'bg-foreground/70', values: d.months.map((m) => m.value_cents) }]}
+        series={[{ label: t.common.ordered, className: 'bg-foreground/70', values: d.months.map((m) => m.value_cents) }]}
         format={formatEuro}
-        caption="Value ordered per month"
+        caption={t.dashboard.orderedCaption}
         cell={(_, i) => {
           const m = d.months[i]!
-          return `${formatEuro(m.value_cents)}: ${plural(m.items, 'item')} in ${plural(m.orders, 'order')}`
+          return t.dashboard.valueItemsInOrders(formatEuro(m.value_cents), m.items, m.orders)
         }}
       />
     </Panel>
@@ -150,15 +153,13 @@ function OrderedChart({ d, className }: { d: Data; className?: string }) {
 function SizesCard({ d }: { d: Data }) {
   const s = d.sizes
   return (
-    <Panel title="Sizes to stock" description="Employees by the size Create Order would pick: the saved size, or for clothing one suggested from height.">
+    <Panel title={t.dashboard.sizesToStock} description={t.dashboard.sizesToStockDescription}>
       <div className="flex flex-col gap-5">
-        <SizeBars title="Clothing" sizes={s.clothing} />
-        <SizeBars title="Shoes" sizes={s.shoes} />
+        <SizeBars title={t.dashboard.clothing} sizes={s.clothing} />
+        <SizeBars title={t.dashboard.shoes} sizes={s.shoes} />
         <p className="text-xs text-muted-foreground">
-          {s.suggested > 0 ? `${plural(s.suggested, 'clothing size')} suggested from height. ` : ''}
-          {s.no_clothing > 0 || s.no_shoes > 0
-            ? `Without a size: ${s.no_clothing} for clothing, ${s.no_shoes} for shoes.`
-            : 'Every employee has both sizes.'}
+          {s.suggested > 0 ? `${t.dashboard.suggestedFromHeight(s.suggested)} ` : ''}
+          {s.no_clothing > 0 || s.no_shoes > 0 ? t.dashboard.withoutASize(s.no_clothing, s.no_shoes) : t.dashboard.everyoneHasBothSizes}
         </p>
       </div>
     </Panel>
@@ -173,7 +174,7 @@ function SizeBars({ title, sizes }: { title: string; sizes: { size: string; empl
       <ul className="flex h-24 items-end gap-1">
         {sizes.map((s) => (
           <li key={s.size} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
-            <span className="sr-only">{`Size ${s.size}: ${plural(s.employees, 'employee')}`}</span>
+            <span className="sr-only">{t.dashboard.sizeEmployees(s.size, s.employees)}</span>
             <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
               {s.employees || ''}
             </span>
@@ -198,39 +199,39 @@ function ForecastCard({ d }: { d: Data }) {
   return (
     <Panel
       anchor="forecast"
-      title="Replacement forecast"
-      description={`Items whose service period has ended or ends within ${f.days} days and that are not already on order: the same quantity again, at today's catalogue price.`}
+      title={t.dashboard.forecast}
+      description={t.dashboard.forecastDescription(f.days)}
     >
       {f.lines.length === 0 ? (
-        <EmptyState>Nothing is due for replacement in the next {f.days} days.</EmptyState>
+        <EmptyState>{t.dashboard.forecastEmpty(f.days)}</EmptyState>
       ) : (
         <Table stack="grid">
           <TableHeader>
             <TableRow>
-              <TableHead>Item</TableHead>
-              <TableHead className="text-right">Quantity</TableHead>
-              <TableHead className="text-right">Employees</TableHead>
-              <TableHead className="text-right">Unit price</TableHead>
-              <TableHead className="text-right">Estimated</TableHead>
+              <TableHead>{t.dashboard.item}</TableHead>
+              <TableHead className="text-right">{t.dashboard.quantity}</TableHead>
+              <TableHead className="text-right">{t.dashboard.employees}</TableHead>
+              <TableHead className="text-right">{t.dashboard.unitPrice}</TableHead>
+              <TableHead className="text-right">{t.dashboard.estimated}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {f.lines.map((l) => (
               <TableRow key={l.catalogue_item_id}>
                 <TableCell className="font-medium whitespace-normal stacked:mb-1">{l.item_name}</TableCell>
-                <TableCell label="Quantity" className="text-right tabular-nums">
+                <TableCell label={t.dashboard.quantity} className="text-right tabular-nums">
                   <span className="inline-flex flex-wrap items-center justify-end gap-2">
                     {l.quantity}
-                    {l.overdue > 0 ? <Badge variant="destructive">{l.overdue} overdue</Badge> : null}
+                    {l.overdue > 0 ? <Badge variant="destructive">{t.dashboard.overdueCount(l.overdue)}</Badge> : null}
                   </span>
                 </TableCell>
-                <TableCell label="Employees" className="text-right tabular-nums">
+                <TableCell label={t.dashboard.employees} className="text-right tabular-nums">
                   {l.employees}
                 </TableCell>
-                <TableCell label="Unit price" className="text-right tabular-nums">
-                  {l.unit_price_cents === null ? <Badge variant="outline">No price</Badge> : formatEuro(l.unit_price_cents)}
+                <TableCell label={t.dashboard.unitPrice} className="text-right tabular-nums">
+                  {l.unit_price_cents === null ? <Badge variant="outline">{t.dashboard.noPrice}</Badge> : formatEuro(l.unit_price_cents)}
                 </TableCell>
-                <TableCell label="Estimated" className="text-right font-medium tabular-nums">
+                <TableCell label={t.dashboard.estimated} className="text-right font-medium tabular-nums">
                   {formatEuro(l.estimated_cents)}
                 </TableCell>
               </TableRow>
@@ -239,7 +240,7 @@ function ForecastCard({ d }: { d: Data }) {
         </Table>
       )}
       {f.items > shown ? (
-        <p className="mt-3 text-xs text-muted-foreground">And {plural(f.items - shown, 'more item')} of other items, included in the total.</p>
+        <p className="mt-3 text-xs text-muted-foreground">{t.dashboard.moreItems(f.items - shown)}</p>
       ) : null}
     </Panel>
   )
@@ -247,9 +248,9 @@ function ForecastCard({ d }: { d: Data }) {
 
 function SpendCard({ d }: { d: Data }) {
   return (
-    <Panel title="Spend by item" description="Value ordered over the last 12 months, at the prices ordered.">
+    <Panel title={t.dashboard.spendByItem} description={t.dashboard.spendByItemDescription}>
       {d.spend_by_item.length === 0 ? (
-        <EmptyState>Nothing was ordered in this period.</EmptyState>
+        <EmptyState>{t.dashboard.nothingOrdered}</EmptyState>
       ) : (
         <BarList
           items={d.spend_by_item.map((i) => ({
@@ -266,9 +267,9 @@ function SpendCard({ d }: { d: Data }) {
 
 function PriceChangesCard({ d }: { d: Data }) {
   return (
-    <Panel title="Price changes" description="Catalogue prices and service periods changed in the last 12 months, newest first. Existing orders keep their prices.">
+    <Panel title={t.dashboard.priceChanges} description={t.dashboard.priceChangesDescription}>
       {d.price_changes.length === 0 ? (
-        <EmptyState>No prices changed in this period.</EmptyState>
+        <EmptyState>{t.dashboard.noPriceChanges}</EmptyState>
       ) : (
         <ul className="divide-y divide-border">
           {d.price_changes.map((p, i) => {
@@ -281,7 +282,9 @@ function PriceChangesCard({ d }: { d: Data }) {
                   <span className="text-xs text-muted-foreground">
                     {formatDate(p.at, d.timezone)}
                     {p.by_name ? ` · ${p.by_name}` : ''}
-                    {periodChanged ? ` · service period ${formatMonths(p.before_service_months)} → ${formatMonths(p.after_service_months)}` : ''}
+                    {periodChanged
+                      ? ` · ${t.dashboard.servicePeriodChange(formatMonths(p.before_service_months), formatMonths(p.after_service_months))}`
+                      : ''}
                   </span>
                 </div>
                 <div className="shrink-0 text-right text-sm tabular-nums">
@@ -309,44 +312,46 @@ function ReadinessCard({ d, navigate }: { d: Data; navigate: Navigate }) {
   const ready = c.unpriced.length === 0 && d.item_sets.length === 0
   return (
     <Panel
-      title="Catalogue and item sets"
-      description={`${plural(c.active, 'active item')}, ${c.inactive} inactive. Items without a price or service period cannot be ordered; item sets holding them, or inactive items, get flagged lines when applied.`}
+      title={t.dashboard.readiness}
+      description={t.dashboard.readinessDescription(c.active, c.inactive)}
     >
       <div className="grid gap-6 md:grid-cols-3">
         <Check
-          title="Without a price or service period"
-          empty="Every active item has a price and service period."
+          title={t.dashboard.withoutPriceOrPeriodTitle}
+          empty={t.dashboard.everyItemPriced}
           alert
           items={c.unpriced.map((i) => ({ key: i.id, label: i.name }))}
           to={{ name: 'catalogue' }}
-          toLabel="Item Catalogue"
+          openLabel={t.dashboard.openCatalogue}
           navigate={navigate}
         />
         <Check
-          title="Item sets with flagged lines"
-          empty="Every active item set applies cleanly."
+          title={t.dashboard.setsWithFlaggedLines}
+          empty={t.dashboard.everySetClean}
           alert
           items={d.item_sets.map((s) => ({
             key: s.id,
             label: s.name,
-            note: [s.unpriced ? `${s.unpriced} without a price` : '', s.inactive ? `${s.inactive} inactive` : ''].filter(Boolean).join(', '),
+            note: [s.unpriced ? t.dashboard.withoutPrice(s.unpriced) : '', s.inactive ? t.dashboard.inactiveCount(s.inactive) : '']
+              .filter(Boolean)
+              .join(', '),
           }))}
           to={{ name: 'itemSets' }}
-          toLabel="Item Sets"
+          openLabel={t.dashboard.openItemSets}
           navigate={navigate}
         />
         <Check
-          title="Not ordered in 12 months"
-          empty="Every active item was ordered this year."
+          title={t.dashboard.notOrdered12}
+          empty={t.dashboard.everyItemOrdered}
           items={c.not_ordered.map((i) => ({ key: i.id, label: i.name }))}
           to={{ name: 'catalogue' }}
-          toLabel="Item Catalogue"
+          openLabel={t.dashboard.openCatalogue}
           navigate={navigate}
         />
       </div>
       {ready ? (
         <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <CheckCircle2 aria-hidden className="size-4" /> Everything active is ready to order.
+          <CheckCircle2 aria-hidden className="size-4" /> {t.dashboard.readyToOrder}
         </p>
       ) : null}
     </Panel>
@@ -359,7 +364,7 @@ function Check({
   items,
   alert = false,
   to,
-  toLabel,
+  openLabel,
   navigate,
 }: {
   title: string
@@ -367,7 +372,8 @@ function Check({
   items: { key: string; label: string; note?: string }[]
   alert?: boolean
   to: Route
-  toLabel: string
+  /** The link to where the list is fixed: "Open Item Catalogue". */
+  openLabel: string
   navigate: Navigate
 }) {
   const flagged = alert && items.length > 0
@@ -392,9 +398,9 @@ function Check({
               </li>
             ))}
           </ul>
-          {items.length > 6 ? <p className="mt-1 text-xs text-muted-foreground">And {items.length - 6} more.</p> : null}
+          {items.length > 6 ? <p className="mt-1 text-xs text-muted-foreground">{t.dashboard.andMore(items.length - 6)}</p> : null}
           <a {...linkTo(to, navigate)} className={cn(inlineLink, 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0')}>
-            Open {toLabel} <ArrowRight aria-hidden className="size-3.5" />
+            {openLabel} <ArrowRight aria-hidden className="size-3.5" />
           </a>
         </>
       )}

@@ -23,12 +23,12 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
-const userColumns = `id, email, name, password_hash, roles, is_active,
+const userColumns = `id, email, name, password_hash, roles, is_active, language,
 	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
 
 func scanUser(row pgx.Row) (User, error) {
 	var u User
-	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.Roles, &u.IsActive,
+	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.Roles, &u.IsActive, &u.Language,
 		&u.CreatedAt, &u.UpdatedAt, &u.DeletedAt, &u.CreatedByUserID, &u.UpdatedByUserID, &u.DeletedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
@@ -47,10 +47,10 @@ func scanUser(row pgx.Row) (User, error) {
 
 func (r *PostgresRepository) Create(ctx context.Context, u User) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO users (id, email, name, password_hash, roles, is_active,
+		INSERT INTO users (id, email, name, password_hash, roles, is_active, language,
 			created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-		u.ID, u.Email, u.Name, u.PasswordHash, u.Roles, u.IsActive,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		u.ID, u.Email, u.Name, u.PasswordHash, u.Roles, u.IsActive, u.Language,
 		u.CreatedAt, u.UpdatedAt, u.CreatedByUserID, u.UpdatedByUserID)
 	return translate(err)
 }
@@ -97,6 +97,13 @@ func (r *PostgresRepository) SetPasswordHash(ctx context.Context, id uuid.UUID, 
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE users SET password_hash = $2, updated_at = $3, updated_by_user_id = $4
 		WHERE id = $1 AND deleted_at IS NULL`, id, hash, at, by)
+	return affectedOne(tag, err)
+}
+
+func (r *PostgresRepository) SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE users SET language = $2, updated_at = $3, updated_by_user_id = $4
+		WHERE id = $1 AND deleted_at IS NULL`, id, lang, at, by)
 	return affectedOne(tag, err)
 }
 

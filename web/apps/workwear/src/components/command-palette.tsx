@@ -3,6 +3,7 @@ import { ClipboardList, CornerDownLeft, FileText, Rows3, Rows4, Search, UserRoun
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { useDensity } from '@/lib/density'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
@@ -19,7 +20,8 @@ export interface PaletteSection {
 
 interface Entry {
   key: string
-  group: 'Orders' | 'Actions' | 'Screens' | 'Employees' | 'Items'
+  /** Its heading, looked up in the language in use. */
+  group: keyof typeof t.shell.groups
   label: string
   hint?: string
   icon: ReactNode
@@ -29,6 +31,9 @@ interface Entry {
 
 /** How many of each kind the palette lists, so the first screen of results stays short. */
 const PER_GROUP = 5
+
+/** English words that find the density switch in any language; the language in use adds its own. */
+const DENSITY_WORDS = ['compact', 'comfortable', 'density', 'dense', 'table rows']
 
 /**
  * ⌘K (Ctrl+K): one search box over record numbers, screens, employees and
@@ -61,6 +66,7 @@ export function CommandPalette({
   const [orders, setOrders] = useState<ListedOrder[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
   const [density, setDensity] = useDensity(userId)
+  const text = t.shell
 
   useEffect(() => {
     const d = dialog.current
@@ -98,7 +104,7 @@ export function CommandPalette({
       return
     }
     let current = true
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       client.employees.search(term).then(
         (r) => current && setEmployees(r),
         () => current && setEmployees([]),
@@ -112,7 +118,7 @@ export function CommandPalette({
     }, 150)
     return () => {
       current = false
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [q, open, client])
 
@@ -124,45 +130,46 @@ export function CommandPalette({
     for (const o of orders) {
       out.push({
         key: `order-${o.id}`,
-        group: 'Orders',
+        group: 'orders',
         label: `${o.record_number} · ${o.employee_first_name} ${o.employee_last_name}`,
         hint: statusLabel[o.status],
         icon: <FileText aria-hidden className="size-4" />,
         to: { name: 'history', order: o.id },
       })
     }
-    if (!term || has('new order') || has('create order')) {
-      out.push({ key: 'new', group: 'Actions', label: 'New order', icon: <ClipboardList aria-hidden className="size-4" />, to: { name: 'createOrder' } })
+    if (!term || has('new order') || has('create order') || has(text.newOrder) || has(text.createOrder)) {
+      out.push({ key: 'new', group: 'actions', label: text.newOrder, icon: <ClipboardList aria-hidden className="size-4" />, to: { name: 'createOrder' } })
     }
     for (const e of employees.slice(0, PER_GROUP)) {
       out.push({
         key: `new-${e.id}`,
-        group: 'Actions',
-        label: `New order for ${e.full_name}`,
+        group: 'actions',
+        label: text.newOrderFor(e.full_name),
         icon: <ClipboardList aria-hidden className="size-4" />,
         to: { name: 'createOrder', prefill: { employeeId: e.id, items: [] } },
       })
     }
-    // Table density, for a search that asks for it: "compact", "comfortable", "density", "rows".
-    if (term && ['compact', 'comfortable', 'density', 'dense', 'table rows'].some((w) => w.startsWith(term) || term.startsWith(w))) {
+    // Table density, for a search that asks for it: "compact", "comfortable", "density", "rows", or the same in the language in use.
+    const densityWords = [...DENSITY_WORDS, ...Object.values(text.densityWords).map((w) => w.toLowerCase())]
+    if (term && densityWords.some((w) => w.startsWith(term) || term.startsWith(w))) {
       const next = density === 'compact' ? 'comfortable' : 'compact'
       out.push({
         key: 'density',
-        group: 'Actions',
-        label: next === 'compact' ? 'Compact table rows' : 'Comfortable table rows',
-        hint: 'Density',
+        group: 'actions',
+        label: next === 'compact' ? text.compactRows : text.comfortableRows,
+        hint: text.density,
         icon: next === 'compact' ? <Rows4 aria-hidden className="size-4" /> : <Rows3 aria-hidden className="size-4" />,
         to: () => setDensity(next),
       })
     }
     for (const s of sections.filter((s) => !term || has(s.label))) {
       const Icon = s.icon
-      out.push({ key: `screen-${s.label}`, group: 'Screens', label: s.label, icon: <Icon aria-hidden className="size-4" />, to: s.route })
+      out.push({ key: `screen-${s.label}`, group: 'screens', label: s.label, icon: <Icon aria-hidden className="size-4" />, to: s.route })
     }
     for (const e of employees.slice(0, PER_GROUP)) {
       out.push({
         key: `emp-${e.id}`,
-        group: 'Employees',
+        group: 'employees',
         label: e.full_name,
         ...(e.code ? { hint: e.code } : {}),
         icon: <UserRound aria-hidden className="size-4" />,
@@ -171,11 +178,11 @@ export function CommandPalette({
     }
     if (term) {
       for (const i of matchItems(items ?? [], term).slice(0, PER_GROUP)) {
-        out.push({ key: `item-${i.id}`, group: 'Items', label: i.name, hint: i.details, icon: <ItemIcon icon={i.icon} />, to: { name: 'catalogueItem', id: i.id } })
+        out.push({ key: `item-${i.id}`, group: 'items', label: i.name, hint: i.details, icon: <ItemIcon icon={i.icon} />, to: { name: 'catalogueItem', id: i.id } })
       }
     }
     return out
-  }, [q, orders, employees, items, sections, density, setDensity])
+  }, [q, orders, employees, items, sections, density, setDensity, text])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]
@@ -198,11 +205,11 @@ export function CommandPalette({
     }
   }
 
-  let lastGroup = ''
+  let lastGroup: Entry['group'] | '' = ''
   return (
     <dialog
       ref={dialog}
-      aria-label="Search or jump to"
+      aria-label={text.searchOrJump}
       className="mx-auto mt-[12dvh] w-[min(36rem,calc(100vw-2rem))] max-w-none overflow-hidden rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl backdrop:bg-black/40"
       onClick={(e) => e.target === dialog.current && onClose()}
     >
@@ -214,8 +221,8 @@ export function CommandPalette({
           aria-expanded
           aria-controls={listId}
           aria-activedescendant={selected ? `${listId}-${selected.key}` : undefined}
-          aria-label="Search or jump to"
-          placeholder="Search orders, employees, items and screens…"
+          aria-label={text.searchOrJump}
+          placeholder={text.paletteHint}
           autoComplete="off"
           className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
           value={q}
@@ -224,10 +231,10 @@ export function CommandPalette({
         />
         <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[0.625rem] text-muted-foreground">esc</kbd>
       </div>
-      <ul id={listId} role="listbox" aria-label="Results" className="max-h-[min(24rem,60dvh)] overflow-y-auto p-1">
-        {entries.length === 0 ? <li className="px-3 py-6 text-center text-sm text-muted-foreground">Nothing matches “{q.trim()}”.</li> : null}
+      <ul id={listId} role="listbox" aria-label={text.results} className="max-h-[min(24rem,60dvh)] overflow-y-auto p-1">
+        {entries.length === 0 ? <li className="px-3 py-6 text-center text-sm text-muted-foreground">{text.nothingMatches(q.trim())}</li> : null}
         {entries.map((e) => {
-          const heading = e.group !== lastGroup ? e.group : null
+          const heading = e.group !== lastGroup ? text.groups[e.group] : null
           lastGroup = e.group
           const active = e === selected
           return (

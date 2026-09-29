@@ -125,3 +125,18 @@ func TestPostgresUpdateAndPassword(t *testing.T) {
 		t.Errorf("update unknown err = %v", err)
 	}
 }
+
+func TestPostgresLanguage(t *testing.T) {
+	svc, admin := newPostgresService(t)
+	ctx := context.Background()
+	if admin.Language != LangEnglish {
+		t.Errorf("new account language = %q, want en", admin.Language)
+	}
+	if _, err := svc.SetLanguage(ctx, admin.ID, LangRussian); err != nil {
+		t.Fatal(err)
+	}
+	u, err := svc.Authenticate(ctx, admin.Email, "password123")
+	if err != nil || u.Language != LangRussian {
+		t.Errorf("signed in as %+v, %v; want language ru", u, err)
+	}
+}

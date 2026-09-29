@@ -13,6 +13,7 @@ Accounts that sign in to the API. Package `internal/domain/user`, routes in
 | `password_hash` | bcrypt; never serialised (`json:"-"`) |
 | `roles` | Non-empty subset of `admin`, `manager`, `employee`; normalised, de-duplicated, sorted |
 | `is_active` | Inactive users cannot log in |
+| `language` | Interface language: `en` (default for every new account), `lt` or `ru` (migration 0016). Each user sets their own; the staff app follows it on every device |
 | actor + timestamp columns | Per the domain contract; FK to `users` |
 
 Passwords are 8–72 bytes (bcrypt ignores anything past 72).
@@ -24,6 +25,7 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 | `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) | returns `{access_token, token_type, expires_in, expires_at, user}` |
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
 | `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}` |
+| `PUT /api/v1/users/me/language` | any authenticated user | body `{language}` (`en`, `lt` or `ru`, else 400); returns the user. No one sets another user's language |
 | `GET /api/v1/users` | admin, manager | list |
 | `GET /api/v1/users/{id}` | admin, manager | single object, 404 on miss |
 | `GET /api/v1/users/by-email/{email}` | admin, manager | single-object lookup, 404 on miss |

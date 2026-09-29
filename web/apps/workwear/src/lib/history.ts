@@ -4,6 +4,8 @@
  */
 import type { ConfirmationMethod, OrderStatus } from '@ppe/api-client'
 
+import { currentLang, intlLocale, t } from '@/i18n'
+
 export type HistoryAction =
   | 'viewItems'
   | 'openConfirmation'
@@ -23,9 +25,21 @@ export function historyActions(status: OrderStatus): HistoryAction[] {
     : ['viewItems', 'viewRecord', 'printRecord', 'shareWhatsApp']
 }
 
-export const statusLabel: Record<OrderStatus, string> = { ORDERED: 'Ordered', GIVEN: 'Given' }
+/** A status in the interface language, read when used: `statusLabel[o.status]`. */
+export const statusLabel: Readonly<Record<OrderStatus, string>> = {
+  get ORDERED() {
+    return t.common.ordered
+  },
+  get GIVEN() {
+    return t.common.given
+  },
+}
 
-/** How receipt was confirmed, as it completes "Confirmed …" and "given …, …". */
+/**
+ * How receipt was confirmed, as it completes the Items Given Record's English
+ * "Confirmed … by". English only: the record keeps its own English / Russian.
+ * The staff screens word it through t.history.givenConfirmed.
+ */
 export const methodText: Record<ConfirmationMethod, string> = {
   ELECTRONIC: 'electronically',
   PAPER: 'on paper',
@@ -37,18 +51,15 @@ export const methodText: Record<ConfirmationMethod, string> = {
  * given order says so: its signed record goes with it.
  */
 export function deleteQuestion(o: { record_number: string; status: OrderStatus; employee_first_name: string; employee_last_name: string }): string {
-  const which = `${o.record_number} for ${o.employee_first_name} ${o.employee_last_name}`
-  const effect =
-    o.status === 'GIVEN'
-      ? 'It was given and confirmed: it leaves History, the dashboards and Replacements due, and its record can no longer be opened.'
-      : 'It leaves History and the dashboards, and its confirmation link stops working.'
-  return `Delete ${which}? ${effect} Only for demo and test orders; this cannot be undone in the app.`
+  const name = `${o.employee_first_name} ${o.employee_last_name}`
+  return o.status === 'GIVEN' ? t.history.deleteGiven(o.record_number, name) : t.history.deleteOrdered(o.record_number, name)
 }
 
 /** Usage time (algorithm D), shown for GIVEN orders only, e.g. "2.1 months". */
 export function formatUsage(months: number | null): string {
   if (months === null) return ''
-  return `${months.toFixed(1)} months`
+  const value = new Intl.NumberFormat(intlLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }).format(months)
+  return t.history.usage(value)
 }
 
 /** A timestamp as "YYYY-MM-DD HH:mm" in timeZone (the organisation's). */
@@ -68,11 +79,20 @@ export function formatDateTime(iso: string, timeZone: string | undefined): strin
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
 }
 
+/**
+ * The month form for a day and month: short ("24 Sept", "24 сент."), except
+ * in Lithuanian, where Intl's short form is numeric ("09-24") and the long
+ * one reads as people write it ("rugsėjo 24 d.").
+ */
+function shortMonth(): 'short' | 'long' {
+  return currentLang() === 'lt' ? 'long' : 'short'
+}
+
 /** A date as "24 Sep" in timeZone, for a compact History row. */
 export function formatShortDate(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short' }).format(d)
+  return new Intl.DateTimeFormat(intlLocale(), { timeZone, day: 'numeric', month: shortMonth() }).format(d)
 }
 
 /**
@@ -87,14 +107,14 @@ export function formatRelative(iso: string, now: Date, timeZone: string | undefi
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   const days = localDay(d, timeZone) - localDay(now, timeZone)
-  const at = time ? ` ${formatDateTime(iso, timeZone).slice(11)}` : ''
-  if (days === 0) return `today${at}`
-  if (days === -1) return `yesterday${at}`
-  if (days === 1) return 'tomorrow'
-  if (days < 0 && days > -7) return `${-days} days ago`
-  if (days > 0 && days < 7) return `in ${days} days`
+  const at = time ? formatDateTime(iso, timeZone).slice(11) : ''
+  if (days === 0) return at ? t.history.todayAt(at) : t.history.today
+  if (days === -1) return at ? t.history.yesterdayAt(at) : t.history.yesterday
+  if (days === 1) return t.history.tomorrow
+  if (days < 0 && days > -7) return t.history.daysAgo(-days)
+  if (days > 0 && days < 7) return t.history.inDays(days)
   const sameYear = formatDateTime(iso, timeZone).slice(0, 4) === formatDateTime(now.toISOString(), timeZone).slice(0, 4)
-  return new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) }).format(d)
+  return new Intl.DateTimeFormat(intlLocale(), { timeZone, day: 'numeric', month: shortMonth(), ...(sameYear ? {} : { year: 'numeric' }) }).format(d)
 }
 
 /** The first letter in upper case: "today 14:03" as a table cell's "Today 14:03". */
@@ -107,7 +127,8 @@ export function monthOf(iso: string, timeZone: string | undefined): { key: strin
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return { key: '', label: '' }
   const [y, m] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit' }).format(d).split('-')
-  return { key: `${y}-${m}`, label: new Intl.DateTimeFormat('en-GB', { timeZone, month: 'long', year: 'numeric' }).format(d) }
+  // Capitalized for a heading: Russian names the month in lower case ("сентябрь 2026 г.").
+  return { key: `${y}-${m}`, label: capitalize(new Intl.DateTimeFormat(intlLocale(), { timeZone, month: 'long', year: 'numeric' }).format(d)) }
 }
 
 /** The calendar date of iso in timeZone, as days since 1970 (for day differences). */
@@ -134,7 +155,7 @@ export const LONG_WAIT_DAYS = 14
 
 /** "today", "1 day", "12 days". */
 export function formatWaiting(days: number): string {
-  return days === 0 ? 'today' : days === 1 ? '1 day' : `${days} days`
+  return days === 0 ? t.history.today : t.common.days(days)
 }
 
 /** The order's activity time: given if given, else ordered. History sorts on it. */

@@ -4,6 +4,7 @@ import { type ReactNode, useId } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { t } from '@/i18n'
 import { type Need, barPercent, monthLabel, niceCeiling, sortNeeds } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import type { Route } from '@/lib/router'
@@ -59,9 +60,9 @@ export function Panel({
 /** Refresh for a dashboard: an icon on a phone, where the header has little room; labelled wider. */
 export function RefreshButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
   return (
-    <Button variant="outline" onClick={onClick} disabled={loading} title="Refresh" className="max-md:size-11 max-md:px-0">
+    <Button variant="outline" onClick={onClick} disabled={loading} title={t.dashboard.refresh} className="max-md:size-11 max-md:px-0">
       <RefreshCw aria-hidden className={cn(loading && 'animate-spin')} />
-      <span className="max-md:sr-only">Refresh</span>
+      <span className="max-md:sr-only">{t.dashboard.refresh}</span>
     </Button>
   )
 }
@@ -70,7 +71,7 @@ export function RefreshButton({ loading, onClick }: { loading: boolean; onClick:
 export function KeyFigures({ children }: { children: ReactNode }) {
   return (
     // Two by two on a phone, in compact tiles: the four figures take about a fifth of the first screen, leaving it to what needs doing.
-    <ul aria-label="Key figures" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+    <ul aria-label={t.dashboard.keyFigures} className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {children}
     </ul>
   )
@@ -111,7 +112,7 @@ export function Kpi({
       <CardContent className="flex flex-col gap-1 max-md:gap-0.5">
         <span className="flex items-center gap-1.5 text-muted-foreground max-md:text-xs">
           <span className="min-w-0 truncate">{label}</span>
-          {alert ? <AlertTriangle aria-label="Needs attention" className="size-3.5 shrink-0 text-destructive" /> : null}
+          {alert ? <AlertTriangle aria-label={t.dashboard.needsAttention} className="size-3.5 shrink-0 text-destructive" /> : null}
           {onOpen ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
         </span>
         <span className="flex flex-wrap items-baseline gap-x-2">
@@ -198,7 +199,7 @@ export function MonthChart({
               </span>
             ))
           : null}
-        <span className="ml-auto tabular-nums">Scale {format(scale)}</span>
+        <span className="ml-auto tabular-nums">{t.dashboard.scale(format(scale))}</span>
       </div>
       <div aria-hidden className="relative h-44 border-b border-border md:h-52">
         {[25, 50, 75, 100].map((p) => (
@@ -236,7 +237,7 @@ export function MonthChart({
           <caption>{caption}</caption>
           <thead>
             <tr>
-              <th scope="col">Month</th>
+              <th scope="col">{t.dashboard.month}</th>
               {series.map((s) => (
                 <th key={s.label} scope="col">
                   {s.label}
@@ -302,8 +303,8 @@ export function NeedsYouPanel({
   const sorted = sortNeeds(needs)
   return (
     <Panel
-      title={sorted.length > 0 ? `Needs you · ${sorted.length}` : 'Needs you'}
-      description="What to do next, most urgent first."
+      title={sorted.length > 0 ? t.dashboard.needsYouCount(sorted.length) : t.dashboard.needsYou}
+      description={t.dashboard.needsYouDescription}
       descriptionClassName="max-md:hidden"
       className={className}
     >
@@ -312,7 +313,7 @@ export function NeedsYouPanel({
           <CheckCircle2 aria-hidden className="size-4" /> {empty}
         </p>
       ) : (
-        <ul aria-label="Needs you" className="divide-y divide-border">
+        <ul aria-label={t.dashboard.needsYou} className="divide-y divide-border">
           {sorted.map((n) => (
             <li
               key={n.key}

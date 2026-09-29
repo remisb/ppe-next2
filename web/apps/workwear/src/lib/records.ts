@@ -1,5 +1,7 @@
 import type { CatalogueItem, Employee, ItemSet } from '@ppe/api-client'
 
+import { t } from '@/i18n'
+
 import { missingSizes } from './missing-sizes'
 import { type ClothingBand, clothingSizeLabel } from './utils'
 
@@ -21,9 +23,9 @@ export function initials(e: Pick<Employee, 'first_name' | 'last_name'>): string 
 export function employeeFacts(e: Pick<Employee, 'code' | 'height_cm' | 'clothing_size' | 'shoe_size'>, bands: readonly ClothingBand[]): string {
   return [
     e.code,
-    e.height_cm !== null ? `${e.height_cm} cm` : null,
-    e.clothing_size !== null ? `Clothing ${clothingSizeLabel(bands, e.clothing_size)}` : null,
-    e.shoe_size !== null ? `Shoes ${e.shoe_size}` : null,
+    e.height_cm !== null ? t.employees.heightCm(e.height_cm) : null,
+    e.clothing_size !== null ? t.employees.factClothing(clothingSizeLabel(bands, e.clothing_size)) : null,
+    e.shoe_size !== null ? t.employees.factShoes(e.shoe_size) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -32,9 +34,9 @@ export function employeeFacts(e: Pick<Employee, 'code' | 'height_cm' | 'clothing
 /** The sizes Create Order will ask for, in a few words, or undefined when it asks for none. */
 export function missingLabel(e: Pick<Employee, 'clothing_size' | 'shoe_size' | 'height_cm'>): string | undefined {
   const m = missingSizes(e)
-  if (m.clothing && m.shoes) return 'No sizes'
-  if (m.clothing) return 'No clothing size'
-  if (m.shoes) return 'No shoe size'
+  if (m.clothing && m.shoes) return t.employees.noSizes
+  if (m.clothing) return t.employees.noClothingSize
+  if (m.shoes) return t.employees.noShoeSize
   return undefined
 }
 

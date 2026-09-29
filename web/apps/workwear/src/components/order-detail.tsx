@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
-import { LONG_WAIT_DAYS, deleteQuestion, formatDateTime, formatWaiting, historyActions, methodText, statusLabel, waitingDays } from '@/lib/history'
+import { LONG_WAIT_DAYS, deleteQuestion, formatDateTime, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
@@ -62,14 +63,14 @@ export function OrderDetail({
   }
 
   return (
-    <article aria-label={o ? `Order ${o.record_number}` : 'Order'} className="flex flex-col gap-4">
+    <article aria-label={o ? t.history.orderLabel(o.record_number) : t.history.order} className="flex flex-col gap-4">
       {/* Narrow: the detail is the whole screen, so the way out is Back to the list, on its own row. */}
       <div className="flex items-center lg:contents">
         <Button variant="ghost" className="-ml-3 lg:hidden" onClick={onClose}>
-          <ArrowLeft aria-hidden /> History
+          <ArrowLeft aria-hidden /> {t.history.title}
         </Button>
         {/* Beside the list: Close sits in the pane's corner, beside the heading rather than above it. */}
-        <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label="Close order" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.history.closeOrder} onClick={onClose}>
           <X aria-hidden />
         </Button>
       </div>
@@ -89,7 +90,7 @@ export function OrderDetail({
             // Only the manager role clears demo and test orders; the API allows no one else.
             onDelete={session.isManager ? () => void remove(o) : undefined}
           />
-          {deleteError ? <ErrorState title="The order was not deleted" error={deleteError} /> : null}
+          {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
           {handingOver ? (
             <HandOver
               orderId={o.id}
@@ -125,7 +126,7 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
         <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
         {o.status === 'ORDERED' ? (
           <span className={cn('text-sm', days > LONG_WAIT_DAYS ? 'font-medium text-destructive' : 'text-muted-foreground')}>
-            Waiting {formatWaiting(days)}
+            {days === 0 ? t.history.waitingToday : t.history.waitingFor(days)}
           </span>
         ) : null}
       </div>
@@ -136,9 +137,9 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
         {o.employee_code ? <span className="font-normal text-muted-foreground"> · {o.employee_code}</span> : null}
       </p>
       <p className="text-sm text-muted-foreground">
-        Ordered {formatDateTime(o.ordered_at, timeZone)} by {o.prepared_by_name}
+        {t.history.orderedBy(formatDateTime(o.ordered_at, timeZone), o.prepared_by_name)}
         {o.given_at
-          ? ` · given ${formatDateTime(o.given_at, timeZone)}${o.confirmation_method ? `, confirmed ${methodText[o.confirmation_method]}` : ''}`
+          ? ` · ${o.confirmation_method ? t.history.givenConfirmed[o.confirmation_method](formatDateTime(o.given_at, timeZone)) : t.history.given(formatDateTime(o.given_at, timeZone))}`
           : ''}
       </p>
     </header>
@@ -171,27 +172,27 @@ function Actions({
     <div className="grid gap-2 sm:flex sm:flex-wrap">
       {actions.includes('openConfirmation') ? (
         <Button onClick={onConfirm}>
-          <Link2 aria-hidden /> Open Employee Confirmation
+          <Link2 aria-hidden /> {t.history.openConfirmation}
         </Button>
       ) : null}
       {actions.includes('openConfirmation') ? (
         <Button variant="outline" onClick={onHandOver}>
-          <Handshake aria-hidden /> Hand over now
+          <Handshake aria-hidden /> {t.history.handOverNow}
         </Button>
       ) : null}
       {actions.includes('viewRecord') ? (
         <Button variant="outline" onClick={() => onOpenRecord(false)}>
-          <FileText aria-hidden /> View Record
+          <FileText aria-hidden /> {t.history.viewRecord}
         </Button>
       ) : null}
       <Button variant="outline" onClick={() => onOpenRecord(true)}>
-        <Printer aria-hidden /> Print Record
+        <Printer aria-hidden /> {t.history.printRecord}
       </Button>
-      <WhatsAppButton label={actions.includes('shareWhatsApp') ? 'Share via WhatsApp' : 'Copy for WhatsApp'} text={whatsapp} />
+      <WhatsAppButton label={actions.includes('shareWhatsApp') ? t.history.shareWhatsApp : t.history.copyWhatsApp} text={whatsapp} />
       {onDelete ? (
-        <MoreActions label={`More actions for ${o.record_number}`} className="justify-self-start">
+        <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
           <DropdownMenuItem variant="destructive" onClick={onDelete}>
-            Delete order…
+            {t.history.deleteOrder}
           </DropdownMenuItem>
         </MoreActions>
       ) : null}

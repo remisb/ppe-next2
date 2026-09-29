@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
 import { FormSheet } from '@/components/ui/form-sheet'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { applyDensity, loadDensity } from '@/lib/density'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
@@ -28,23 +29,36 @@ import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
 import { UsersPage } from './routes/users'
 
-const tabs: { route: Route; label: string; short: string; icon: typeof Users }[] = [
-  { route: { name: 'createOrder' }, label: 'Create Order', short: 'Order', icon: ClipboardList },
-  { route: { name: 'history' }, label: 'History', short: 'History', icon: HistoryIcon },
-  { route: { name: 'employees' }, label: 'Employees', short: 'Employees', icon: Users },
-  { route: { name: 'catalogue' }, label: 'Item Catalogue', short: 'Catalogue', icon: Shirt },
-  { route: { name: 'itemSets' }, label: 'Item Sets', short: 'Sets', icon: Package },
+interface Tab {
+  route: Route
+  label: string
+  short: string
+  icon: typeof Users
+}
+
+/** The everyday sections, in the language in use (so built on each render, never at import). */
+const tabs = (): Tab[] => [
+  { route: { name: 'createOrder' }, label: t.shell.createOrder, short: t.shell.shortOrder, icon: ClipboardList },
+  { route: { name: 'history' }, label: t.shell.history, short: t.shell.shortHistory, icon: HistoryIcon },
+  { route: { name: 'employees' }, label: t.shell.employees, short: t.shell.shortEmployees, icon: Users },
+  { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
+  { route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package },
 ]
-/** Administrators only: the Dashboard first, as their start screen, and Users after the everyday sections. */
-const dashboardTab = { route: { name: 'dashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
-/**
- * Managers' start screen, first in their tabs. An administrator who is also a
- * manager keeps the one Dashboard tab and reaches this one from the Dashboard.
+/** A start screen's tab: the Dashboard for administrators, managers and the employee role alike. */
+const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): Tab => ({
+  route: { name },
+  label: t.shell.dashboard,
+  short: t.shell.shortDashboard,
+  icon: LayoutDashboard,
+})
+/*
+ * Administrators: the Dashboard first, as their start screen, and Users after
+ * the everyday sections. Managers get managerDashboard first in their tabs; an
+ * administrator who is also a manager keeps the one Dashboard tab and reaches
+ * that one from the Dashboard. The employee role's start screen,
+ * employeeDashboard, is first in their tabs, as for managers.
  */
-const managerTab = { route: { name: 'managerDashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
-/** The employee role's start screen, first in their tabs, as for managers. */
-const employeeTab = { route: { name: 'employeeDashboard' }, label: 'Dashboard', short: 'Home', icon: LayoutDashboard } satisfies (typeof tabs)[number]
-const usersTab = { route: { name: 'users' }, label: 'Users', short: 'Users', icon: UserCog } satisfies (typeof tabs)[number]
+const usersTab = (): Tab => ({ route: { name: 'users' }, label: t.shell.users, short: t.shell.shortUsers, icon: UserCog })
 
 /**
  * A record belongs to History, an employee to Employees and an item to Item
@@ -167,21 +181,21 @@ export function App() {
   if (!session) return <SignIn />
   const route = startRoute(asked, session)
   const shownTabs = session.isAdmin
-    ? [dashboardTab, ...tabs, usersTab]
+    ? [homeTab('dashboard'), ...tabs(), usersTab()]
     : session.isManager
-      ? [managerTab, ...tabs]
+      ? [homeTab('managerDashboard'), ...tabs()]
       : session.isEmployee
-        ? [employeeTab, ...tabs]
-        : tabs
+        ? [homeTab('employeeDashboard'), ...tabs()]
+        : tabs()
 
   const sections: PaletteSection[] = [
-    ...shownTabs.map((t) => ({ route: t.route, label: t.label, icon: t.icon })),
-    { route: { name: 'replacements' }, label: 'Replacements due', icon: RotateCcw },
-    { route: { name: 'account' }, label: 'Account and password', icon: UserRound },
+    ...shownTabs.map((tab) => ({ route: tab.route, label: tab.label, icon: tab.icon })),
+    { route: { name: 'replacements' }, label: t.shell.replacements, icon: RotateCcw },
+    { route: { name: 'account' }, label: t.shell.accountAndPassword, icon: UserRound },
   ]
   const primary = shownTabs.slice(0, phoneTabs)
   const more = shownTabs.slice(phoneTabs)
-  const moreCurrent = route.name === 'account' || more.some((t) => isCurrent(route.name, t.route.name))
+  const moreCurrent = route.name === 'account' || more.some((tab) => isCurrent(route.name, tab.route.name))
   const waiting = awaiting.data ?? 0
   // The saved draft's lines, read again on every render (each navigation among them): the New order button shows them.
   const draftLines = draftLineCount(session.userId)
@@ -198,7 +212,7 @@ export function App() {
         href="#main"
         className="sr-only z-50 rounded-md bg-background px-4 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
       >
-        Skip to content
+        {t.shell.skipToContent}
       </a>
 
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden print:hidden">
@@ -224,30 +238,30 @@ export function App() {
             <span className={navIcon}>
               <Search aria-hidden className="size-5 xl:size-4" />
             </span>
-            <span className="xl:hidden">Search</span>
-            <span className="hidden flex-1 text-left xl:inline">Search…</span>
+            <span className="xl:hidden">{t.common.search}</span>
+            <span className="hidden flex-1 text-left xl:inline">{t.shell.searchEllipsis}</span>
             <kbd className="hidden rounded border border-border px-1.5 font-mono text-[0.625rem] xl:inline">⌘K</kbd>
           </button>
         </div>
         {/* A phone's More panel dims the page; a tap outside closes it. */}
         {moreOpen ? <div aria-hidden className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setMoreOpen(false)} /> : null}
         <nav
-          aria-label="Main"
+          aria-label={t.shell.mainNav}
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
-          {primary.map((t) =>
-            t.route.name === 'createOrder' ? (
-              <NewOrderLink key={t.route.name} tab={t} current={isCurrent(route.name, t.route.name)} link={link} draftLines={draftLines} />
+          {primary.map((tab) =>
+            tab.route.name === 'createOrder' ? (
+              <NewOrderLink key={tab.route.name} tab={tab} current={isCurrent(route.name, tab.route.name)} link={link} draftLines={draftLines} />
             ) : (
               <NavLink
-                key={t.route.name}
-                tab={t}
-                current={isCurrent(route.name, t.route.name)}
+                key={tab.route.name}
+                tab={tab}
+                current={isCurrent(route.name, tab.route.name)}
                 link={link}
-                badge={t.route.name === 'history' ? waiting : 0}
+                badge={tab.route.name === 'history' ? waiting : 0}
                 className={phoneOrder[placed++]}
               />
             ),
@@ -263,7 +277,7 @@ export function App() {
             <span className={navIcon}>
               <Ellipsis aria-hidden className="size-5" />
             </span>
-            More
+            {t.shell.more}
           </button>
           {/*
             The rest of the sections: a panel above the tab bar on a phone,
@@ -290,10 +304,10 @@ export function App() {
               <span className={moreIcon}>
                 <Search aria-hidden className="size-5" />
               </span>
-              Search
+              {t.common.search}
             </button>
-            {more.map((t) => (
-              <NavLink key={t.route.name} tab={t} current={isCurrent(route.name, t.route.name)} link={link} item={moreItem} icon={moreIcon} />
+            {more.map((tab) => (
+              <NavLink key={tab.route.name} tab={tab} current={isCurrent(route.name, tab.route.name)} link={link} item={moreItem} icon={moreIcon} />
             ))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
@@ -303,14 +317,14 @@ export function App() {
                 </span>
                 <span className="flex min-w-0 flex-col items-start leading-tight">
                   <span className="truncate">{session.name}</span>
-                  <span className="text-xs font-normal text-muted-foreground">Account and password</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t.shell.accountAndPassword}</span>
                 </span>
               </a>
               <button type="button" onClick={signOut} className={cn(moreItem, 'w-full cursor-pointer')}>
                 <span className={moreIcon}>
                   <LogOut aria-hidden className="size-5" />
                 </span>
-                Sign out
+                {t.shell.signOut}
               </button>
             </div>
           </div>
@@ -320,26 +334,26 @@ export function App() {
             <span className={navIcon}>
               <Keyboard aria-hidden className="size-5 xl:size-4" />
             </span>
-            <span className="xl:hidden">Keys</span>
-            <span className="hidden xl:inline">Keyboard shortcuts</span>
+            <span className="xl:hidden">{t.shell.shortKeys}</span>
+            <span className="hidden xl:inline">{t.shell.keyboardShortcuts}</span>
           </button>
           <a
             {...link({ name: 'account' })}
             aria-current={route.name === 'account' ? 'page' : undefined}
-            title="Account and password"
+            title={t.shell.accountAndPassword}
             className={navItem}
           >
             <span className={navIcon}>
               <UserRound aria-hidden className="size-5 xl:size-4" />
             </span>
-            <span className="xl:hidden">Account</span>
+            <span className="xl:hidden">{t.shell.shortAccount}</span>
             <span className="hidden truncate xl:inline">{session.name}</span>
           </a>
           <button type="button" onClick={signOut} className={cn(navItem, 'w-full cursor-pointer')}>
             <span className={navIcon}>
               <LogOut aria-hidden className="size-5 xl:size-4" />
             </span>
-            Sign out
+            {t.shell.signOut}
           </button>
         </div>
       </aside>
@@ -379,9 +393,9 @@ export function App() {
         ) : null}
       </main>
       <CommandPalette open={paletteOpen} sections={sections} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
-      <FormSheet open={helpOpen} onClose={() => setHelpOpen(false)} title="Keyboard shortcuts" description="Letters work anywhere except while typing in a field.">
+      <FormSheet open={helpOpen} onClose={() => setHelpOpen(false)} title={t.shell.keyboardShortcuts} description={t.shell.shortcutsHint}>
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[auto_1fr]">
-          {shortcutList.map((s) => (
+          {shortcutList().map((s) => (
             <div key={s.keys} className="contents">
               <dt>
                 <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">{s.keys}</kbd>
@@ -394,8 +408,6 @@ export function App() {
     </div>
   )
 }
-
-type Tab = (typeof tabs)[number]
 
 /** One section's link: icon, a short label in the tab bar and rail, the full label in the sidebar. */
 function NavLink({
@@ -431,7 +443,7 @@ function NavLink({
       {badge > 0 ? (
         <>
           <Count n={badge} className="ml-auto hidden xl:block" />
-          <span className="sr-only"> ({badge} waiting for confirmation)</span>
+          <span className="sr-only"> {t.shell.waiting(badge)}</span>
         </>
       ) : null}
     </a>
@@ -479,13 +491,13 @@ function NewOrderLink({
         ) : null}
       </span>
       <span aria-hidden className="max-w-full truncate px-0.5 md:hidden">
-        {draft ? 'Draft' : 'New order'}
+        {draft ? t.shell.draft : t.shell.newOrderButton}
       </span>
       <span aria-hidden className="max-w-full truncate px-0.5 max-md:hidden xl:hidden">
         {short}
       </span>
       <span className="sr-only xl:not-sr-only">{label}</span>
-      {draft ? <span className="sr-only"> (draft, {draftLines === 1 ? '1 line' : `${draftLines} lines`})</span> : null}
+      {draft ? <span className="sr-only"> {t.shell.draftLines(draftLines)}</span> : null}
     </a>
   )
 }
@@ -508,7 +520,7 @@ function Brand() {
       <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <HardHat aria-hidden className="size-4.5" />
       </span>
-      <span className="leading-tight md:sr-only xl:not-sr-only">Workwear &amp; Equipment</span>
+      <span className="leading-tight md:sr-only xl:not-sr-only">{t.common.appName}</span>
     </span>
   )
 }

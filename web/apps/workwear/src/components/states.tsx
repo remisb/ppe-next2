@@ -2,20 +2,21 @@ import { AlertCircle } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 import { errorText } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
 
 /** An error with a Retry action; the screen's own state is untouched. */
-export function ErrorState({ error, onRetry, title = 'Could not load' }: { error: unknown; onRetry?: () => void; title?: string }) {
+export function ErrorState({ error, onRetry, title, retryLabel }: { error: unknown; onRetry?: () => void; title?: string; retryLabel?: string }) {
   return (
     <Alert variant="destructive">
       <AlertCircle aria-hidden />
-      <AlertTitle>{title}</AlertTitle>
+      <AlertTitle>{title ?? t.common.couldNotLoad}</AlertTitle>
       <AlertDescription className="flex flex-wrap items-center gap-3">
         <span>{errorText(error)}</span>
         {onRetry ? (
           <Button size="sm" variant="outline" onClick={onRetry}>
-            Retry
+            {retryLabel ?? t.shell.retry}
           </Button>
         ) : null}
       </AlertDescription>
@@ -23,8 +24,8 @@ export function ErrorState({ error, onRetry, title = 'Could not load' }: { error
   )
 }
 
-export function Loading({ label = 'Loading…' }: { label?: string }) {
-  return <p className="py-8 text-center text-sm text-muted-foreground">{label}</p>
+export function Loading({ label }: { label?: string }) {
+  return <p className="py-8 text-center text-sm text-muted-foreground">{label ?? t.common.loading}</p>
 }
 
 /**

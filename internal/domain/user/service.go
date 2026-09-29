@@ -89,6 +89,7 @@ func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self
 		PasswordHash:    hash,
 		Roles:           p.Roles,
 		IsActive:        true,
+		Language:        LangEnglish,
 		CreatedAt:       now,
 		UpdatedAt:       now,
 		CreatedByUserID: actor,
@@ -170,6 +171,21 @@ func (s *Service) ChangePassword(ctx context.Context, self uuid.UUID, current, n
 		return fieldError("current_password", "is incorrect")
 	}
 	return s.SetPassword(ctx, self, next, self)
+}
+
+// SetLanguage sets the signed-in user's own interface language; no one sets
+// another's. It returns the updated user.
+func (s *Service) SetLanguage(ctx context.Context, self uuid.UUID, lang string) (User, error) {
+	if self == uuid.Nil {
+		return User{}, fieldError("actor", "is required")
+	}
+	if err := validateLanguage(lang); err != nil {
+		return User{}, err
+	}
+	if err := s.repo.SetLanguage(ctx, self, lang, s.now(), self); err != nil {
+		return User{}, err
+	}
+	return s.repo.Get(ctx, self)
 }
 
 // Delete soft-deletes user id. Deleting your own account is refused.

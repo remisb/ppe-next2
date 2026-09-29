@@ -1,0 +1,28 @@
+import type { AccountText } from '../en/account'
+
+export const account: AccountText = {
+  title: 'Paskyra',
+  signedInAs: (name: string) => `Prisijungta kaip ${name}.`,
+  changePassword: 'Keisti slaptažodį',
+  changing: 'Keičiama…',
+  passwordChanged: 'Slaptažodis pakeistas',
+  useNewPassword: 'Kitą kartą prisijungdami naudokite naują slaptažodį.',
+  currentPassword: 'Dabartinis slaptažodis',
+  newPassword: 'Naujas slaptažodis',
+  confirmNewPassword: 'Pakartokite naują slaptažodį',
+  atLeast: (n: number) => `Ne mažiau kaip ${n} simbolių.`,
+  currentIncorrect: 'Neteisingas dabartinis slaptažodis.',
+  useAtLeast: (n: number) => `Naudokite ne mažiau kaip ${n} simbolių.`,
+  tooLong: 'Slaptažodis per ilgas.',
+  enterCurrent: 'Įveskite dabartinį slaptažodį.',
+  chooseDifferent: 'Pasirinkite kitokį slaptažodį nei dabartinis.',
+  noMatch: 'Slaptažodžiai nesutampa.',
+  language: 'Kalba',
+  languageHint: 'Išsaugoma jūsų paskyroje, todėl ją naudoja kiekvienas įrenginys, kuriame prisijungiate. Darbuotojo patvirtinimo puslapyje lieka jo paties anglų / rusų kalbos pasirinkimas, o pasirašytas įrašas lieka anglų ir rusų kalbomis.',
+  languageFailed: 'Kalba nepakeista',
+  tableRows: 'Lentelės eilutės',
+  comfortable: 'Erdvios',
+  compact: 'Kompaktiškos',
+  densityHint: 'Kompaktiškos eilutės leidžia matyti daugiau eilučių ekrane. Nustatymas išsaugomas šiame įrenginyje; jį galima rasti ir per ⌘K.',
+  signOut: 'Atsijungti',
+}

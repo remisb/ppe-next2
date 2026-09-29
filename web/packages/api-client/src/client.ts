@@ -11,6 +11,7 @@ import type {
   HistoryQuery,
   ItemSet,
   ItemSetInput,
+  Language,
   LoginResponse,
   ManagerDashboard,
   MarkAsOrderedInput,
@@ -78,6 +79,8 @@ export function createClient(options: ClientOptions) {
     /** Change the signed-in user's own password; the current one must be supplied. */
     changeOwnPassword: (currentPassword: string, newPassword: string) =>
       request<void>('PUT', '/api/v1/users/me/password', { current_password: currentPassword, new_password: newPassword }),
+    /** Set the signed-in user's own interface language; returns the user. */
+    setOwnLanguage: (language: Language) => request<User>('PUT', '/api/v1/users/me/language', { language }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** The administrator's dashboard; admins only. */

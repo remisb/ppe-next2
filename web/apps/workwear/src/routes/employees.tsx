@@ -12,6 +12,7 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdow
 import { Field, Input, Select, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { employeeFacts, initials, missingLabel } from '@/lib/records'
@@ -22,12 +23,13 @@ import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from 
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
-const columns: SortColumn<EmployeeSort>[] = [
-  { key: 'name', label: 'Name' },
-  { key: 'code', label: 'Code' },
-  { key: 'height', label: 'Height' },
-  { key: 'clothing', label: 'Clothing' },
-  { key: 'shoes', label: 'Shoes' },
+// A function, so the labels are read in the language in use.
+const employeeColumns = (): SortColumn<EmployeeSort>[] => [
+  { key: 'name', label: t.employees.name },
+  { key: 'code', label: t.employees.code },
+  { key: 'height', label: t.employees.height },
+  { key: 'clothing', label: t.employees.clothing },
+  { key: 'shoes', label: t.employees.shoes },
 ]
 
 export function Employees({ missing = false, navigate }: { missing?: boolean; navigate: (to: Route) => void }) {
@@ -37,6 +39,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   const sizes = useLoad(() => client.sizes())
   // Clothing sizes are named as the pickers name them: 46 is "S (44–46)".
   const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
+  const columns = employeeColumns()
   const [filter, setFilter] = useState('')
   // Only those Create Order would flag for a missing size.
   const [onlyMissing, setOnlyMissing] = useState(missing)
@@ -70,7 +73,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   const missingCount = (employees.data ?? []).filter(isMissingASize).length
 
   const remove = async (e: Employee) => {
-    if (!window.confirm(`Delete ${e.full_name}? Their past orders are kept.`)) return
+    if (!window.confirm(t.employees.confirmDelete(e.full_name))) return
     try {
       await client.employees.remove(e.id)
       employees.reload()
@@ -82,12 +85,12 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   return (
     <>
       <PageHeader
-        title="Employees"
-        description="Size defaults used when preparing future orders. Editing sizes never changes past orders."
+        title={t.employees.title}
+        description={t.employees.description}
         descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
-            <Plus aria-hidden /> Add New Employee
+            <Plus aria-hidden /> {t.employees.addNew}
           </Button>
         }
       />
@@ -95,25 +98,25 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
         <Input
           type="search"
           enterKeyHint="search"
-          placeholder="Search by name or code"
+          placeholder={t.employees.searchPlaceholder}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          aria-label="Search employees"
+          aria-label={t.employees.searchLabel}
           data-shortcut="search"
           className="min-w-48 flex-1 md:max-w-sm md:flex-none"
         />
         {missingCount > 0 || onlyMissing ? (
-          <div role="group" aria-label="Show" className="flex gap-2">
+          <div role="group" aria-label={t.employees.show} className="flex gap-2">
             <Button variant={onlyMissing ? 'outline' : 'secondary'} aria-pressed={!onlyMissing} onClick={() => setOnlyMissing(false)}>
-              All · {employees.data?.length ?? 0}
+              {t.employees.allChip(employees.data?.length ?? 0)}
             </Button>
             <Button variant={onlyMissing ? 'secondary' : 'outline'} aria-pressed={onlyMissing} onClick={() => setOnlyMissing((v) => !v)}>
-              Missing a size · {missingCount}
+              {t.employees.missingChip(missingCount)}
             </Button>
           </div>
         ) : null}
       </div>
-      {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
+      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
       {employees.error ? (
         <ErrorState error={employees.error} onRetry={employees.reload} />
       ) : employees.loading && !employees.data ? (
@@ -121,10 +124,10 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
       ) : shown.length === 0 ? (
         <EmptyState>
           {onlyMissing && !filter
-            ? 'Every employee has the sizes Create Order needs.'
+            ? t.employees.everyoneHasSizes
             : filter
-              ? `No employees match “${filter.trim()}”.`
-              : 'No employees yet. Use Add New Employee to add the first.'}
+              ? t.employees.noMatch(filter.trim())
+              : t.employees.noneYet}
         </EmptyState>
       ) : (
         /*
@@ -139,7 +142,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
               {columns.map((c) => (
                 <SortableHead key={c.key} column={c} {...sortProps} />
               ))}
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">{t.employees.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,16 +169,16 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     </a>
                     {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
                     {flag ? (
-                      <Badge variant="destructive" title="Create Order will ask for this size" className="hidden shrink-0 stacked:inline-flex">
+                      <Badge variant="destructive" title={t.employees.missingTitle} className="hidden shrink-0 stacked:inline-flex">
                         {flag}
                       </Badge>
                     ) : null}
                   </TableCell>
                   <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                    {employeeFacts(e, bands) || 'No sizes saved'}
+                    {employeeFacts(e, bands) || t.employees.noSizesSaved}
                   </TableCell>
                   <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
-                  <TableCell className="stacked:hidden">{e.height_cm ? `${e.height_cm} cm` : '—'}</TableCell>
+                  <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : '—'}</TableCell>
                   <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
                   <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
                   <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2]">
@@ -183,15 +186,15 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:hidden">
                     <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
-                      Edit Sizes
+                      {t.employees.editSizes}
                     </Button>{' '}
-                    <MoreActions label={`More actions for ${e.full_name}`}>
-                      <DropdownMenuItem onClick={() => setEditing(e)}>Edit details</DropdownMenuItem>
+                    <MoreActions label={t.common.moreActions(e.full_name)}>
+                      <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem>
                       {session.canManageItems ? (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                            Delete employee…
+                            {t.employees.deleteEmployee}
                           </DropdownMenuItem>
                         </>
                       ) : null}
@@ -229,8 +232,8 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
 /** A size Create Order will flag: set it before ordering clothing or shoes. */
 export function MissingBadge() {
   return (
-    <Badge variant="destructive" title="Create Order will ask for this size">
-      Missing
+    <Badge variant="destructive" title={t.employees.missingTitle}>
+      {t.employees.missing}
     </Badge>
   )
 }
@@ -266,7 +269,7 @@ export function EditSizes({
     if (!employee) return
     const h = height.trim() === '' ? null : Number(height)
     if (h !== null && (!Number.isInteger(h) || h < 100 || h > 250)) {
-      setError('Height must be 100–250 cm.')
+      setError(t.employees.heightRange)
       return
     }
     try {
@@ -281,25 +284,25 @@ export function EditSizes({
     <FormSheet
       open={employee !== null}
       onClose={onClose}
-      title={`Edit Sizes: ${employee?.full_name ?? ''}`}
-      description="Affects future orders only."
+      title={t.employees.editSizesTitle(employee?.full_name ?? '')}
+      description={t.employees.futureOnly}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" form="sizes-form">
-            Save
+            {t.common.save}
           </Button>
         </>
       }
     >
       <form id="sizes-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
-        <Field label="Height (cm)">{(p) => <Input {...controlProps(p)} inputMode="numeric" enterKeyHint="next" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
-        <Field label="Clothing size">
+        <Field label={t.employees.heightLabel}>{(p) => <Input {...controlProps(p)} inputMode="numeric" enterKeyHint="next" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
+        <Field label={t.employees.clothingSize}>
           {(p) => (
             <Select {...controlProps(p)} value={clothingBandValue(bands, clothing)} onChange={(e) => setClothing(e.target.value)}>
-              <option value="">Not set</option>
+              <option value="">{t.employees.notSet}</option>
               {bands.map((b) => (
                 <option key={b.value} value={b.value}>
                   {b.label}
@@ -308,10 +311,10 @@ export function EditSizes({
             </Select>
           )}
         </Field>
-        <Field label="Shoe size">
+        <Field label={t.employees.shoeSize}>
           {(p) => (
             <Select {...controlProps(p)} value={shoe} onChange={(e) => setShoe(e.target.value)}>
-              <option value="">Not set</option>
+              <option value="">{t.employees.notSet}</option>
               {sizes?.shoes.map((s) => (
                 <option key={s.code} value={s.code}>
                   {s.code}

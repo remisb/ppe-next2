@@ -4,8 +4,9 @@ import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate } from '@/components/dashboard'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Button } from '@/components/ui/button'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
-import { type Need, changeText, formatDays, monthLabel, plural, share } from '@/lib/dashboard'
+import { type Need, changeText, formatDays, monthLabel, share } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
@@ -28,24 +29,24 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
   return (
     <>
       <PageHeader
-        title="Dashboard"
+        title={t.dashboard.title}
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `Orders, spending and what needs attention. Months and dates are in ${d.timezone}; updated ${formatDateTime(d.generated_at, d.timezone).slice(11)}.`
-            : 'Orders, spending and what needs attention.'
+            ? `${t.dashboard.adminIntro} ${t.dashboard.timezoneNote(d.timezone, formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            : t.dashboard.adminIntro
         }
         actions={
           <>
             {/* An administrator who also holds another role reaches its dashboard from here, not from a tab. */}
             {isManager ? (
               <Button variant="ghost" onClick={() => navigate({ name: 'managerDashboard' })}>
-                Manager Dashboard <ArrowRight aria-hidden />
+                {t.dashboard.managerDashboard} <ArrowRight aria-hidden />
               </Button>
             ) : null}
             {isEmployee ? (
               <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
-                Employee Dashboard <ArrowRight aria-hidden />
+                {t.dashboard.employeeDashboard} <ArrowRight aria-hidden />
               </Button>
             ) : null}
             <RefreshButton loading={board.loading} onClick={board.reload} />
@@ -64,10 +65,10 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
               className="lg:col-span-2"
               needs={needsOf(d)}
               navigate={navigate}
-              empty="Nothing needs you: every order is confirmed and nothing is due."
+              empty={t.dashboard.adminNothingNeeded}
               footer={
                 d.awaiting.orders > d.awaiting.longest.length ? (
-                  <MoreLink label={`All ${d.awaiting.orders} waiting in History`} to={{ name: 'history' }} navigate={navigate} />
+                  <MoreLink label={t.dashboard.allWaiting(d.awaiting.orders)} to={{ name: 'history' }} navigate={navigate} />
                 ) : null
               }
             />
@@ -92,42 +93,42 @@ function Kpis({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
   return (
     <KeyFigures>
       <Kpi
-        label="Awaiting confirmation"
+        label={t.dashboard.awaitingConfirmation}
         value={String(d.awaiting.orders)}
         detail={
           d.awaiting.orders === 0
-            ? 'Every order is confirmed.'
-            : `${formatEuro(d.awaiting.value_cents)} · oldest ${formatDays(d.awaiting.oldest_days)}`
+            ? t.dashboard.everyOrderConfirmed
+            : `${formatEuro(d.awaiting.value_cents)} · ${t.dashboard.oldest(formatDays(d.awaiting.oldest_days))}`
         }
-        brief={d.awaiting.orders === 0 ? 'all confirmed' : `oldest ${formatDays(d.awaiting.oldest_days)}`}
+        brief={d.awaiting.orders === 0 ? t.dashboard.allConfirmed : t.dashboard.oldest(formatDays(d.awaiting.oldest_days))}
         alert={(d.awaiting.oldest_days ?? 0) > 14}
         onOpen={d.awaiting.orders > 0 ? () => navigate({ name: 'history', status: 'ORDERED' }) : undefined}
-        openHint="Show them in History"
+        openHint={t.dashboard.showInHistory}
       />
       {cur ? (
         <Kpi
-          label={`Given in ${monthLabel(cur.month)}`}
+          label={t.dashboard.givenIn(monthLabel(cur.month))}
           value={formatEuro(cur.given_cents)}
-          detail={`${plural(cur.given_items, 'item')} in ${plural(cur.given_orders, 'order')}`}
+          detail={t.dashboard.itemsInOrders(cur.given_items, cur.given_orders)}
           change={changeText(cur.given_cents, prev.given_cents, prev.month, d.through_day)}
         />
       ) : null}
       {cur ? (
         <Kpi
-          label={`Ordered in ${monthLabel(cur.month)}`}
+          label={t.dashboard.orderedIn(monthLabel(cur.month))}
           value={formatEuro(cur.ordered_cents)}
-          detail={plural(cur.ordered_orders, 'order')}
+          detail={t.common.orders(cur.ordered_orders)}
           change={changeText(cur.ordered_cents, prev.ordered_cents, prev.month, d.through_day)}
         />
       ) : null}
       <Kpi
-        label="Replacements due"
+        label={t.dashboard.replacementsDue}
         value={String(r.overdue + r.due_soon)}
-        detail={`${r.overdue} overdue · ${r.due_soon} within ${r.due_soon_days} days`}
-        brief={`${r.overdue} overdue`}
+        detail={t.dashboard.dueDetail(r.overdue, r.due_soon, r.due_soon_days)}
+        brief={t.dashboard.overdueCount(r.overdue)}
         alert={r.overdue > 0}
         onOpen={r.overdue + r.due_soon > 0 ? () => navigate({ name: 'replacements' }) : undefined}
-        openHint="Show them all in Replacements due"
+        openHint={t.dashboard.showAllInReplacements}
       />
     </KeyFigures>
   )
@@ -140,28 +141,28 @@ function MonthlyChart({ months, className }: { months: DashboardMonth[]; classNa
   const last = months.at(-1)
   return (
     <Panel
-      title="Spending by month"
+      title={t.dashboard.spendingByMonth}
       className={className}
       description={
         <>
           {first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}: ` : ''}
-          {formatEuro(total)} given. Orders count in the month they were ordered, and again in the month they were given.
+          {t.dashboard.spendingDescription(formatEuro(total))}
         </>
       }
     >
       <MonthChart
         months={months.map((m) => m.month)}
         series={[
-          { label: 'Ordered', className: 'bg-foreground/25', values: months.map((m) => m.ordered_cents) },
-          { label: 'Given', className: 'bg-foreground/80', values: months.map((m) => m.given_cents) },
+          { label: t.common.ordered, className: 'bg-foreground/25', values: months.map((m) => m.ordered_cents) },
+          { label: t.common.given, className: 'bg-foreground/80', values: months.map((m) => m.given_cents) },
         ]}
         format={formatEuro}
-        caption="Value ordered and given per month"
+        caption={t.dashboard.spendingCaption}
         cell={(s, i) => {
           const m = months[i]!
-          return s.label === 'Ordered'
-            ? `${formatEuro(m.ordered_cents)} in ${plural(m.ordered_orders, 'order')}`
-            : `${formatEuro(m.given_cents)} in ${plural(m.given_orders, 'order')}, ${plural(m.given_items, 'item')}`
+          return s.label === t.common.ordered
+            ? t.dashboard.valueInOrders(formatEuro(m.ordered_cents), m.ordered_orders)
+            : t.dashboard.valueInOrdersItems(formatEuro(m.given_cents), m.given_orders, m.given_items)
         }}
       />
     </Panel>
@@ -174,22 +175,22 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
   const electronic = share(c.electronic, c.given)
   const paper = share(c.paper, c.given)
   const methods = [
-    { label: 'Electronic', count: c.electronic, pct: electronic, className: 'bg-foreground/80' },
-    { label: 'Paper', count: c.paper, pct: paper, className: 'bg-foreground/45' },
-    { label: 'In person', count: c.in_person, pct: c.in_person > 0 ? 100 - electronic - paper : 0, className: 'bg-foreground/25' },
+    { label: t.dashboard.electronic, count: c.electronic, pct: electronic, className: 'bg-foreground/80' },
+    { label: t.dashboard.paper, count: c.paper, pct: paper, className: 'bg-foreground/45' },
+    { label: t.dashboard.inPerson, count: c.in_person, pct: c.in_person > 0 ? 100 - electronic - paper : 0, className: 'bg-foreground/25' },
   ]
   return (
-    <Panel title="Confirmation" description={`Orders given in the last ${c.window_days} days.`}>
+    <Panel title={t.dashboard.confirmation} description={t.dashboard.confirmationDescription(c.window_days)}>
       <div className="flex flex-col gap-5">
         <dl className="grid grid-cols-2 gap-4">
           <div>
-            <dt className="text-muted-foreground">Given</dt>
+            <dt className="text-muted-foreground">{t.common.given}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{c.given}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Median wait</dt>
+            <dt className="text-muted-foreground">{t.dashboard.medianWait}</dt>
             <dd className="text-2xl font-semibold tabular-nums">
-              {c.median_days !== null && c.median_days < 1 ? 'under a day' : formatDays(c.median_days)}
+              {c.median_days !== null && c.median_days < 1 ? t.dashboard.underADay : formatDays(c.median_days)}
             </dd>
           </div>
         </dl>
@@ -202,7 +203,7 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
             </div>
             <dl className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs">
               {methods
-                .filter((m) => m.label !== 'In person' || m.count > 0)
+                .filter((m) => m.label !== t.dashboard.inPerson || m.count > 0)
                 .map((m) => (
                   <div key={m.label}>
                     <dt className="inline text-muted-foreground">{m.label} </dt>
@@ -214,9 +215,9 @@ function ConfirmationCard({ d }: { d: DashboardData }) {
             </dl>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing was given in this period.</p>
+          <p className="text-sm text-muted-foreground">{t.dashboard.nothingGiven}</p>
         )}
-        <p className="text-xs text-muted-foreground">Median wait is the time from Mark as Ordered to the employee's confirmation.</p>
+        <p className="text-xs text-muted-foreground">{t.dashboard.medianWaitNote}</p>
       </div>
     </Panel>
   )
@@ -233,18 +234,18 @@ function needsOf(d: DashboardData): Need[] {
     urgent: w.days > 14,
     tag: formatDays(w.days),
     title: w.employee_name,
-    detail: `${w.record_number} not confirmed · ordered ${formatDate(w.ordered_at, d.timezone)} · ${formatEuro(w.value_cents)}`,
-    action: { label: 'Send link', context: `for ${w.record_number}`, to: { name: 'history', order: w.order_id } },
+    detail: t.dashboard.waitingDetail(w.record_number, formatDate(w.ordered_at, d.timezone), formatEuro(w.value_cents)),
+    action: { label: t.dashboard.sendLink, context: t.dashboard.forContext(w.record_number), to: { name: 'history', order: w.order_id } },
   }))
   const due = d.replacements.next.map<Need>((x) => ({
     key: `due-${x.employee_id}-${x.catalogue_item_id}`,
     urgent: x.overdue,
-    tag: x.overdue ? 'Overdue' : 'Due soon',
+    tag: x.overdue ? t.dashboard.overdue : t.dashboard.dueSoon,
     title: x.employee_name,
-    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · due ${formatDate(x.due_at, d.timezone)}`,
+    detail: `${x.item_name}${x.size ? ` · ${x.size}` : ''} × ${x.quantity} · ${t.dashboard.dueOn(formatDate(x.due_at, d.timezone))}`,
     action: {
-      label: 'Reorder',
-      context: `${x.item_name} for ${x.employee_name}`,
+      label: t.dashboard.reorder,
+      context: t.dashboard.itemFor(x.item_name, x.employee_name),
       to: { name: 'createOrder', prefill: { employeeId: x.employee_id, items: [{ id: x.catalogue_item_id, quantity: x.quantity }] } },
     },
   }))
@@ -254,28 +255,28 @@ function needsOf(d: DashboardData): Need[] {
     setup.push({
       key: 'sizes',
       urgent: false,
-      tag: 'Sizes',
-      title: `${plural(s.employees_missing_sizes, 'employee')} missing a size`,
-      detail: 'Create Order will ask for it on every order',
-      action: { label: 'Add sizes', context: 'in Employees', to: { name: 'employees' } },
+      tag: t.dashboard.sizesTag,
+      title: t.dashboard.employeesMissingSize(s.employees_missing_sizes),
+      detail: t.dashboard.createOrderWillAsk,
+      action: { label: t.dashboard.addSizes, context: t.dashboard.inEmployees, to: { name: 'employees' } },
     })
   if (s.catalogue_unpriced > 0)
     setup.push({
       key: 'unpriced',
       urgent: false,
-      tag: 'Items',
-      title: `${plural(s.catalogue_unpriced, 'item')} without a price or service period`,
-      detail: 'Mark as Ordered refuses them',
-      action: { label: 'Fix', context: 'in the Item Catalogue', to: { name: 'catalogue' } },
+      tag: t.dashboard.itemsTag,
+      title: t.dashboard.itemsUnpriced(s.catalogue_unpriced),
+      detail: t.dashboard.markAsOrderedRefuses,
+      action: { label: t.dashboard.fix, context: t.dashboard.inCatalogue, to: { name: 'catalogue' } },
     })
   return [...waiting, ...due, ...setup]
 }
 
 function TopItemsCard({ d }: { d: DashboardData }) {
   return (
-    <Panel title="Most given items" description="By quantity over the last 12 months.">
+    <Panel title={t.dashboard.mostGiven} description={t.dashboard.mostGivenDescription}>
       {d.top_items.length === 0 ? (
-        <EmptyState>No items were given in this period.</EmptyState>
+        <EmptyState>{t.dashboard.noItemsGiven}</EmptyState>
       ) : (
         <BarList
           items={d.top_items.map((i) => ({
@@ -295,22 +296,22 @@ function SetupCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
   const s = d.setup
   const rows: { label: string; count: number; issue: string | null; to: Route }[] = [
     {
-      label: 'Employees',
+      label: t.dashboard.employees,
       count: s.employees,
-      issue: s.employees_missing_sizes > 0 ? `${s.employees_missing_sizes} missing a size` : null,
+      issue: s.employees_missing_sizes > 0 ? t.dashboard.missingASize(s.employees_missing_sizes) : null,
       to: { name: 'employees' },
     },
     {
-      label: 'Catalogue items',
+      label: t.dashboard.catalogueItems,
       count: s.catalogue_active,
-      issue: s.catalogue_unpriced > 0 ? `${s.catalogue_unpriced} without a price or service period` : null,
+      issue: s.catalogue_unpriced > 0 ? t.dashboard.withoutPriceOrPeriod(s.catalogue_unpriced) : null,
       to: { name: 'catalogue' },
     },
-    { label: 'Item sets', count: s.item_sets_active, issue: null, to: { name: 'itemSets' } },
-    { label: 'Users', count: s.users, issue: s.admins === 1 ? 'only one administrator' : null, to: { name: 'users' } },
+    { label: t.dashboard.itemSets, count: s.item_sets_active, issue: null, to: { name: 'itemSets' } },
+    { label: t.dashboard.users, count: s.users, issue: s.admins === 1 ? t.dashboard.onlyOneAdmin : null, to: { name: 'users' } },
   ]
   return (
-    <Panel title="Setup" description="Active records, and anything that holds up ordering.">
+    <Panel title={t.dashboard.setup} description={t.dashboard.setupDescription}>
       <ul className="divide-y divide-border">
         {rows.map((r) => (
           <li key={r.label}>

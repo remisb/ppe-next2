@@ -5,6 +5,7 @@ import { ReceiptDocument } from '@/components/receipt'
 import { ErrorState, Loading } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { useLoad } from '@/lib/use-load'
 import { formatWhatsApp, recordMessage } from '@/lib/whatsapp'
@@ -30,15 +31,15 @@ export function RecordPage({ id, autoPrint, onBack }: { id: string; autoPrint: b
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2 print:hidden">
         <Button variant="ghost" className="-ml-3" onClick={onBack}>
-          <ArrowLeft aria-hidden /> Back
+          <ArrowLeft aria-hidden /> {t.common.back}
         </Button>
         {record.data ? (
           <div className="flex flex-wrap items-start gap-2">
             {record.data.status === 'GIVEN' ? (
-              <WhatsAppButton label="Share via WhatsApp" text={formatWhatsApp(recordMessage(record.data))} />
+              <WhatsAppButton label={t.history.shareWhatsApp} text={formatWhatsApp(recordMessage(record.data))} />
             ) : null}
             <Button onClick={() => window.print()}>
-              <Printer aria-hidden /> Print Record
+              <Printer aria-hidden /> {t.history.printRecord}
             </Button>
           </div>
         ) : null}

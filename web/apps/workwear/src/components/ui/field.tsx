@@ -8,6 +8,7 @@ import type {
 import { Eye, EyeOff } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
+import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /*
@@ -123,8 +124,8 @@ export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<
         type="button"
         aria-pressed={shown}
         aria-controls={props.id}
-        aria-label={shown ? 'Hide password' : 'Show password'}
-        title={shown ? 'Hide password' : 'Show password'}
+        aria-label={shown ? t.shell.hidePassword : t.shell.showPassword}
+        title={shown ? t.shell.hidePassword : t.shell.showPassword}
         disabled={props.disabled}
         onClick={() => setShown((v) => !v)}
         className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"

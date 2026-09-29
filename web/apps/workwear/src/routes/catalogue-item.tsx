@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { percentChange } from '@/lib/dashboard'
 import { activityAt, formatDateTime, statusLabel } from '@/lib/history'
@@ -67,7 +68,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
   return (
     <>
       <Button variant="ghost" className="-ml-3 mb-2" onClick={onBack}>
-        <ArrowLeft aria-hidden /> Item Catalogue
+        <ArrowLeft aria-hidden /> {t.catalogue.title}
       </Button>
       {item.error ? (
         <ErrorState error={item.error} onRetry={item.reload} />
@@ -83,54 +84,54 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
               canManageItems ? (
                 <>
                   <Button variant="outline" onClick={() => setEditing(true)}>
-                    Edit
+                    {t.common.edit}
                   </Button>
-                  <MoreActions label={`More actions for ${i.name}`}>
+                  <MoreActions label={t.common.moreActions(i.name)}>
                     <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle()}>
-                      {i.active ? 'Deactivate item…' : 'Activate item'}
+                      {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
                     </DropdownMenuItem>
                   </MoreActions>
                 </>
               ) : undefined
             }
           />
-          {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
+          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
           <div className="mb-3 flex flex-wrap gap-1">
-            {i.active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
-            {incomplete ? <Badge variant="destructive">Incomplete</Badge> : null}
+            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <Badge variant="outline">{t.catalogue.inactive}</Badge>}
+            {incomplete ? <Badge variant="destructive">{t.catalogue.incomplete}</Badge> : null}
           </div>
           {incomplete ? (
             <p role="note" className="mb-4 text-sm text-destructive">
-              Without a price and a service period this item cannot be ordered: Mark as Ordered refuses it.
+              {t.catalogue.incompleteNote}
             </p>
           ) : null}
-          {!i.active ? <p className="mb-4 text-sm text-muted-foreground">Inactive: not offered in Add Item. Orders that hold it keep it.</p> : null}
+          {!i.active ? <p className="mb-4 text-sm text-muted-foreground">{t.catalogue.inactiveNote}</p> : null}
 
-          <dl aria-label="Item details" className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-3">
-            <Fact label="Size group">{sizeGroupLabel[i.size_group]}</Fact>
-            <Fact label="Unit price">{formatEuro(i.unit_price_cents)}</Fact>
-            <Fact label="Service period">{formatMonths(i.service_period_months)}</Fact>
-            <Fact label="Display order">{i.display_rank}</Fact>
-            <Fact label="Added">{formatDateTime(i.created_at, tz)}</Fact>
-            <Fact label="Last changed">{formatDateTime(i.updated_at, tz)}</Fact>
+          <dl aria-label={t.catalogue.itemDetails} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-3">
+            <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
+            <Fact label={t.catalogue.unitPrice}>{formatEuro(i.unit_price_cents)}</Fact>
+            <Fact label={t.catalogue.servicePeriod}>{formatMonths(i.service_period_months)}</Fact>
+            <Fact label={t.catalogue.displayOrder}>{i.display_rank}</Fact>
+            <Fact label={t.catalogue.added}>{formatDateTime(i.created_at, tz)}</Fact>
+            <Fact label={t.catalogue.lastChanged}>{formatDateTime(i.updated_at, tz)}</Fact>
           </dl>
 
           <section aria-labelledby="price-history" className="mb-8">
             <h2 id="price-history" className="mb-1 text-lg font-semibold">
-              Price history
+              {t.catalogue.priceHistory}
             </h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Price and service period changes, newest first. Orders keep the values they were placed with.
+              {t.catalogue.priceHistoryIntro}
             </p>
             {prices.error ? (
               <ErrorState error={prices.error} onRetry={prices.reload} />
             ) : !prices.data ? (
               <Loading />
             ) : prices.data.length === 0 ? (
-              <EmptyState>No price history is recorded for this item.</EmptyState>
+              <EmptyState>{t.catalogue.noPriceHistory}</EmptyState>
             ) : (
-              <ol aria-label="Price history" className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
+              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
                 {prices.data.map((p, n) => (
                   <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
                 ))}
@@ -140,17 +141,17 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
 
           <section aria-labelledby="item-orders" className="mb-8">
             <h2 id="item-orders" className="mb-1 text-lg font-semibold">
-              Orders
+              {t.catalogue.orders}
             </h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Orders with this item, newest activity first, as recorded on each order.{tz ? ` Dates are shown in ${tz}.` : ''}
+              {t.catalogue.ordersIntro(tz)}
             </p>
             {orders.error ? (
               <ErrorState error={orders.error} onRetry={orders.reload} />
             ) : !orders.data ? (
               <Loading />
             ) : orders.data.orders.length === 0 ? (
-              <EmptyState>This item has not been ordered yet.</EmptyState>
+              <EmptyState>{t.catalogue.notOrdered}</EmptyState>
             ) : (
               <ItemOrders itemId={id} orders={orders.data.orders} total={orders.data.total} tz={tz} navigate={navigate} />
             )}
@@ -158,15 +159,15 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
 
           <section aria-labelledby="item-sets" className="mb-8">
             <h2 id="item-sets" className="mb-1 text-lg font-semibold">
-              Item sets
+              {t.catalogue.itemSets}
             </h2>
-            <p className="mb-3 text-sm text-muted-foreground">Sets that add this item when applied in Create Order, with their default quantity.</p>
+            <p className="mb-3 text-sm text-muted-foreground">{t.catalogue.itemSetsIntro}</p>
             {sets.error ? (
               <ErrorState error={sets.error} onRetry={sets.reload} />
             ) : !sets.data ? (
               <Loading />
             ) : holding.length === 0 ? (
-              <EmptyState>No item set holds this item.</EmptyState>
+              <EmptyState>{t.catalogue.noSetHolds}</EmptyState>
             ) : (
               <ul className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
                 {holding.map(({ set, quantity }) => (
@@ -176,7 +177,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
                       {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
-                      {set.active ? null : <Badge variant="outline">Inactive</Badge>}
+                      {set.active ? null : <Badge variant="outline">{t.common.inactive}</Badge>}
                       <span className="text-sm tabular-nums">× {quantity}</span>
                     </span>
                   </li>
@@ -187,7 +188,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
               {...linkTo({ name: 'itemSets' }, navigate)}
               className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
             >
-              Open Item Sets <ArrowRight aria-hidden className="size-3.5" />
+              {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
             </a>
           </section>
 
@@ -225,13 +226,13 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
     <li className="flex items-start justify-between gap-3 px-4 py-2.5">
       <div className="min-w-0">
         <span className="block font-medium">
-          {created ? 'Added' : priceChanged && periodChanged ? 'Price and service period changed' : priceChanged ? 'Price changed' : 'Service period changed'}
+          {created ? t.catalogue.stepAdded : priceChanged && periodChanged ? t.catalogue.priceAndPeriodChanged : priceChanged ? t.catalogue.priceChanged : t.catalogue.periodChanged}
         </span>
         <span className="block text-xs text-muted-foreground tabular-nums">
           {formatDateTime(p.at, tz)}
           {p.by_name ? ` · ${p.by_name}` : ''}
-          {created ? ` · service period ${formatMonths(p.service_period_months)}` : ''}
-          {periodChanged ? ` · service period ${formatMonths(p.before_service_months)} → ${formatMonths(p.service_period_months)}` : ''}
+          {created ? t.catalogue.stepPeriod(formatMonths(p.service_period_months)) : ''}
+          {periodChanged ? t.catalogue.stepPeriodChange(formatMonths(p.before_service_months), formatMonths(p.service_period_months)) : ''}
         </span>
       </div>
       <div className="shrink-0 text-right text-sm tabular-nums">
@@ -275,21 +276,21 @@ function ItemOrders({
     <>
       {total <= orders.length ? (
         <p className="mb-3 text-sm">
-          {`${total} ${total === 1 ? 'order' : 'orders'}: ${sum('GIVEN')} given, ${sum('ORDERED')} on order.`}
+          {t.catalogue.ordersSummary(total, sum('GIVEN'), sum('ORDERED'))}
         </p>
       ) : (
-        <p className="mb-3 text-sm">{`${total} orders; the latest ${orders.length} are shown.`}</p>
+        <p className="mb-3 text-sm">{t.catalogue.latestShown(total, orders.length)}</p>
       )}
       <Table stack stackBelow="lg">
         <TableHeader>
           <TableRow>
-            <TableHead>Record</TableHead>
-            <TableHead>Employee</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Unit price</TableHead>
+            <TableHead>{t.catalogue.colRecord}</TableHead>
+            <TableHead>{t.catalogue.colEmployee}</TableHead>
+            <TableHead>{t.catalogue.colStatus}</TableHead>
+            <TableHead>{t.catalogue.colDate}</TableHead>
+            <TableHead>{t.catalogue.colSize}</TableHead>
+            <TableHead className="text-right">{t.catalogue.colQuantity}</TableHead>
+            <TableHead className="text-right">{t.catalogue.unitPrice}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -302,7 +303,7 @@ function ItemOrders({
                     orderId={o.id}
                     timeZone={tz}
                     {...linkTo({ name: 'record', id: o.id }, navigate)}
-                    aria-label={`Receipt ${o.record_number}`}
+                    aria-label={t.catalogue.receipt(o.record_number)}
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
                   >
                     <FileText aria-hidden className="size-4" />
@@ -319,7 +320,7 @@ function ItemOrders({
                   </RecordPreview>
                 )}
               </TableCell>
-              <TableCell label="Employee" className="stacked:order-2">
+              <TableCell label={t.catalogue.colEmployee} className="stacked:order-2">
                 <a
                   {...linkTo({ name: 'employee', id: o.employee_id }, navigate)}
                   className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
@@ -327,15 +328,15 @@ function ItemOrders({
                   {o.employee_first_name} {o.employee_last_name}
                 </a>
               </TableCell>
-              <TableCell label="Status" className="stacked:order-2">
+              <TableCell label={t.catalogue.colStatus} className="stacked:order-2">
                 <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
               </TableCell>
-              <TableCell label="Date" className="tabular-nums stacked:order-2">
+              <TableCell label={t.catalogue.colDate} className="tabular-nums stacked:order-2">
                 <RelativeDate iso={activityAt(o)} timeZone={tz} time />
               </TableCell>
-              <TableCell label="Size" className="stacked:order-2">{line.size ?? '–'}</TableCell>
-              <TableCell label="Quantity" className="text-right tabular-nums stacked:order-2">{line.quantity}</TableCell>
-              <TableCell label="Unit price" className="text-right tabular-nums stacked:order-2">{formatEuro(line.unit_price_cents)}</TableCell>
+              <TableCell label={t.catalogue.colSize} className="stacked:order-2">{line.size ?? '–'}</TableCell>
+              <TableCell label={t.catalogue.colQuantity} className="text-right tabular-nums stacked:order-2">{line.quantity}</TableCell>
+              <TableCell label={t.catalogue.unitPrice} className="text-right tabular-nums stacked:order-2">{formatEuro(line.unit_price_cents)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

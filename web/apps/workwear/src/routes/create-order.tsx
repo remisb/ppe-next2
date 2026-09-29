@@ -1,7 +1,7 @@
 import type { CatalogueIcon, CatalogueItem, ConfirmationLink, Employee, ItemSet, ListedOrder, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { Check, CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ConfirmationLinkView, ConfirmationSheet } from '@/components/confirmation-sheet'
 import { formatDate } from '@/components/dashboard'
@@ -20,10 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
+import { intlLocale, t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { lastOrder, linesText, loadCreateLink, saveCreateLink, setOnOrder, sizeParts } from '@/lib/composer'
 import { type Due, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
-import { statusLabel } from '@/lib/history'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { clothingBandValue, clothingBands, cn, formatEuro, formatMonths } from '@/lib/utils'
@@ -140,7 +140,7 @@ export function CreateOrder({
       return
     }
     const same = order.employee?.id === target
-    if (order.lines.length > 0 && !same && !window.confirm(`Replace the order in progress for ${order.employee?.full_name ?? 'no one yet'} with this reorder?`)) return
+    if (order.lines.length > 0 && !same && !window.confirm(t.order.replaceConfirm(order.employee?.full_name ?? t.order.noOneYet))) return
     void run(async () => {
       const res = await client.orders.resolve({ employee_id: target, lines })
       setOrder((o) => (same ? addLines(o, res.lines) : reassign(emptyOrder, res.employee, res.lines).order))
@@ -214,7 +214,7 @@ export function CreateOrder({
     const employee = order.employee
     if (!employee) return
     // Applying a set again adds its quantities to the lines already here.
-    if (setOnOrder(set, order.lines) && !window.confirm(`${set.name} is on this order already. Add its items again?`)) return
+    if (setOnOrder(set, order.lines) && !window.confirm(t.order.setOnOrderConfirm(set.name))) return
     void run(async () => {
       const res = await client.itemSets.apply(set.id, employee.id)
       setOrder((o) => addLines(o, res.lines))
@@ -272,7 +272,7 @@ export function CreateOrder({
     })
 
   const reset = () => {
-    if (order.lines.length > 0 && !window.confirm('Clear this order? Unsaved lines will be lost.')) return
+    if (order.lines.length > 0 && !window.confirm(t.order.clearConfirm)) return
     clearDraft(session.userId)
     setOrder(emptyOrder)
     setConflicts([])
@@ -301,11 +301,11 @@ export function CreateOrder({
   return (
     <>
       <PageHeader
-        title="Create Order"
-        description="Prepare a supplier order for one employee. Nothing is final until Mark as Ordered."
+        title={t.order.title}
+        description={t.order.description}
         actions={
           <Button variant="outline" onClick={reset}>
-            <RotateCcw aria-hidden /> New order
+            <RotateCcw aria-hidden /> {t.order.newOrder}
           </Button>
         }
       />
@@ -316,11 +316,11 @@ export function CreateOrder({
       {failure ? (
         failure.error instanceof ApiError && failure.error.isConflict ? (
           <ErrorState
-            title="Cannot mark as ordered"
-            error={new Error(`${failure.error.message}. An authorised user must complete or reactivate it in the Item Catalogue, or remove the line.`)}
+            title={t.order.cannotMarkAsOrdered}
+            error={new Error(t.order.conflictHelp(failure.error.message))}
           />
         ) : (
-          <ErrorState title="That did not work" error={failure.error} onRetry={failure.retry} />
+          <ErrorState title={t.order.thatDidNotWork} error={failure.error} onRetry={failure.retry} />
         )
       ) : null}
 
@@ -330,9 +330,9 @@ export function CreateOrder({
       <div className="min-w-0">
       <section className="mb-6 grid gap-4 md:grid-cols-2">
         <div>
-          <p className="mb-1.5 text-sm font-medium">Assigned to</p>
+          <p className="mb-1.5 text-sm font-medium">{t.order.assignedTo}</p>
           <EmployeePicker
-            label="Assigned to"
+            label={t.order.assignedTo}
             selected={order.employee}
             disabled={busy}
             onSelect={(e) => void selectEmployee(e.id)}
@@ -340,7 +340,7 @@ export function CreateOrder({
           />
           {/* The saved sizes explain how each line's size was resolved. */}
           {order.employee ? (
-            <p aria-label={`Saved sizes of ${order.employee.full_name}`} className="mt-1.5 flex flex-wrap gap-x-2 text-sm text-muted-foreground">
+            <p aria-label={t.order.savedSizesOf(order.employee.full_name)} className="mt-1.5 flex flex-wrap gap-x-2 text-sm text-muted-foreground">
               {sizeParts(order.employee, bands).map((part, i) => (
                 <span key={part.label} className={cn(part.missing && 'font-medium text-destructive')}>
                   {i > 0 ? <span aria-hidden>· </span> : null}
@@ -351,12 +351,12 @@ export function CreateOrder({
           ) : null}
         </div>
         <div>
-          <p className="mb-1.5 text-sm font-medium">Add Item</p>
+          <p className="mb-1.5 text-sm font-medium">{t.order.addItem}</p>
           <ItemPicker items={catalogue.data} disabled={busy} onPick={addItem} />
         </div>
         <div className="md:col-span-2">
           <p id={itemSetLabel} className="mb-1.5 text-sm font-medium">
-            Item Set
+            {t.order.itemSet}
           </p>
           {/* One tap applies a set: its lines join the order, merged by item. A ✓ marks a set already on it. */}
           <div role="group" aria-labelledby={itemSetLabel} className="flex flex-wrap gap-2">
@@ -365,30 +365,30 @@ export function CreateOrder({
               return (
                 <Button key={s.id} size="sm" variant={on ? 'secondary' : 'outline'} disabled={!order.employee || busy} onClick={() => applySet(s)}>
                   {on ? <Check aria-hidden /> : <Plus aria-hidden />}
-                  <span className="sr-only">Apply </span>
+                  <span className="sr-only">{t.order.applySr}</span>
                   {s.name}
-                  {on ? <span className="sr-only"> (on this order)</span> : null}
+                  {on ? <span className="sr-only">{t.order.onThisOrderSr}</span> : null}
                 </Button>
               )
             })}
-            {itemSets.data?.length === 0 ? <p className="text-sm text-muted-foreground">No item sets yet.</p> : null}
+            {itemSets.data?.length === 0 ? <p className="text-sm text-muted-foreground">{t.order.noItemSets}</p> : null}
           </div>
         </div>
       </section>
 
       {!order.employee ? (
-        <p className="mb-4 text-sm text-muted-foreground">Choose who the order is for first: sizes are resolved from their saved defaults.</p>
+        <p className="mb-4 text-sm text-muted-foreground">{t.order.chooseEmployeeFirst}</p>
       ) : null}
 
       {order.employee && dueNow.length > 0 ? (
         <section aria-labelledby="due-now" className="mb-4 rounded-lg border border-border bg-muted/40 p-3">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h2 id="due-now" className="text-sm font-semibold">
-              Due for {order.employee.first_name}
+              {t.order.dueFor(order.employee.first_name)}
             </h2>
             {dueNow.length > 1 ? (
               <Button size="sm" variant="ghost" disabled={busy} onClick={() => addItems(dueNow.map((d) => ({ item: d.item, quantity: d.due.item.quantity })))}>
-                Add all {dueNow.length}
+                {t.order.addAll(dueNow.length)}
               </Button>
             ) : null}
           </div>
@@ -399,11 +399,11 @@ export function CreateOrder({
                 <span className="min-w-0 flex-1 text-sm">
                   <span className="font-medium">{item.name}</span> × {due.item.quantity}
                   <span className={cn('block text-xs', due.overdue ? 'text-destructive' : 'text-muted-foreground')}>
-                    {due.overdue ? 'Overdue since' : 'Due'} {formatDate(due.dueAt.toISOString(), tz)} · last given {formatDate(due.item.at, tz)}
+                    {(due.overdue ? t.order.overdueSinceLastGiven : t.order.dueLastGiven)(formatDate(due.dueAt.toISOString(), tz), formatDate(due.item.at, tz))}
                   </span>
                 </span>
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => addItems([{ item, quantity: due.item.quantity }])}>
-                  <Plus aria-hidden /> Add<span className="sr-only"> {item.name}</span>
+                  <Plus aria-hidden /> {t.common.add}<span className="sr-only"> {item.name}</span>
                 </Button>
               </li>
             ))}
@@ -413,19 +413,16 @@ export function CreateOrder({
 
       {conflicts.length > 0 ? (
         <Alert className="mb-4">
-          <AlertTitle>Check sizes for {order.employee?.full_name}</AlertTitle>
+          <AlertTitle>{t.order.checkSizesFor(order.employee?.full_name ?? '')}</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 flex flex-col gap-2">
               {conflicts.map((c) => (
                 <li key={c.catalogueItemId} className="flex flex-wrap items-center gap-2">
                   <span>
-                    {c.itemName}: you chose <strong>{c.manualSize}</strong>;{' '}
-                    {c.resolvedSize ? (
-                      <>
-                        resolved size is <strong>{c.resolvedSize}</strong>.
-                      </>
-                    ) : (
-                      <>this employee has no saved size.</>
+                    {nodes(
+                      c.resolvedSize
+                        ? t.order.conflictResolved(c.itemName, <strong>{c.manualSize}</strong>, <strong>{c.resolvedSize}</strong>)
+                        : t.order.conflictNoSaved(c.itemName, <strong>{c.manualSize}</strong>),
                     )}
                   </span>
                   <Button
@@ -436,7 +433,7 @@ export function CreateOrder({
                       setConflicts((cs) => cs.filter((x) => x !== c))
                     }}
                   >
-                    {c.resolvedSize ? `Use ${c.resolvedSize}` : 'Clear size'}
+                    {c.resolvedSize ? t.order.useSize(c.resolvedSize) : t.order.clearSize}
                   </Button>
                   <Button
                     size="sm"
@@ -446,10 +443,10 @@ export function CreateOrder({
                       setConflicts((cs) => cs.filter((x) => x !== c))
                     }}
                   >
-                    Remove line
+                    {t.order.removeLine}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setConflicts((cs) => cs.filter((x) => x !== c))}>
-                    Keep {c.manualSize}
+                    {t.order.keepSize(c.manualSize)}
                   </Button>
                 </li>
               ))}
@@ -460,17 +457,21 @@ export function CreateOrder({
 
       {pendingDefault && order.employee ? (
         <Alert className="mb-4">
-          <AlertTitle>Save as Employee Default?</AlertTitle>
+          <AlertTitle>{t.order.saveAsDefaultQuestion}</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
             <span>
-              {order.employee.full_name} has no saved {pendingDefault.group === 'CLOTHING' ? 'clothing' : 'shoe'} size. Save{' '}
-              <strong>{pendingDefault.size}</strong> for future orders?
+              {nodes(
+                (pendingDefault.group === 'CLOTHING' ? t.order.noSavedClothing : t.order.noSavedShoe)(
+                  order.employee.full_name,
+                  <strong>{pendingDefault.size}</strong>,
+                ),
+              )}
             </span>
             <Button size="sm" onClick={() => saveDefault(pendingDefault)} disabled={busy}>
-              Save as Employee Default
+              {t.order.saveAsDefault}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setPendingDefault(null)}>
-              This order only
+              {t.order.thisOrderOnly}
             </Button>
           </AlertDescription>
         </Alert>
@@ -494,7 +495,7 @@ export function CreateOrder({
           {v.orderProblems.map((p) => (
             <li key={p}>{p}</li>
           ))}
-          {v.lineProblems.size > 0 ? <li>Resolve the highlighted lines.</li> : null}
+          {v.lineProblems.size > 0 ? <li>{t.order.resolveHighlighted}</li> : null}
         </ul>
       ) : null}
 
@@ -536,7 +537,7 @@ export function CreateOrder({
       <EmployeeForm
         open={addingEmployee}
         sizes={sizes.data}
-        submitLabel="Save and Select Employee"
+        submitLabel={t.order.saveAndSelectEmployee}
         onClose={() => setAddingEmployee(false)}
         onSaved={(e) => {
           setAddingEmployee(false)
@@ -579,11 +580,11 @@ function OrderSummary({
 }) {
   const n = order.lines.length
   const total = formatEuro(totalCents(order))
-  const state = valid ? ' · complete' : n > 0 ? ' · not ready' : ''
+  const state = valid ? ` · ${t.order.complete}` : n > 0 ? ` · ${t.order.notReady}` : ''
   const e = order.employee
   return (
     <aside
-      aria-label="Order summary"
+      aria-label={t.order.orderSummary}
       className={cn(
         'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
         '-mx-4 px-4 md:-mx-6 md:px-6 xl:-mx-10 xl:px-10 print:hidden',
@@ -592,7 +593,7 @@ function OrderSummary({
     >
       {/* Narrow: one button, the count and the total on it. */}
       <Button size="lg" className="w-full justify-between composer-wide:hidden" disabled={!valid || busy} onClick={onReview}>
-        <span>{busy ? 'Working…' : 'Review'}</span>{' '}
+        <span>{busy ? t.order.working : t.order.review}</span>{' '}
         <span className="font-normal opacity-80">
           {linesText(n)}
           {state}
@@ -604,34 +605,34 @@ function OrderSummary({
       <div className="hidden text-sm composer-wide:flex composer-wide:flex-col composer-wide:gap-3">
         {e ? (
           <div>
-            <p className="text-xs text-muted-foreground">For</p>
+            <p className="text-xs text-muted-foreground">{t.order.for}</p>
             <p className="font-medium">
               {e.full_name}
               {e.code ? <span className="font-normal text-muted-foreground"> · {e.code}</span> : null}
             </p>
             {last ? (
               <p className="text-xs text-muted-foreground">
-                Last order{' '}
+                {t.order.lastOrder}{' '}
                 <a {...linkTo({ name: 'history', order: last.id }, navigate)} className="font-medium text-foreground underline-offset-4 hover:underline">
                   {last.record_number}
                 </a>{' '}
-                · {formatDate(last.ordered_at, tz)} · {statusLabel[last.status]}
+                · {formatDate(last.ordered_at, tz)} · {last.status === 'GIVEN' ? t.common.given : t.common.ordered}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">No earlier orders</p>
+              <p className="text-xs text-muted-foreground">{t.order.noEarlierOrders}</p>
             )}
           </div>
         ) : (
-          <p className="text-muted-foreground">Choose who the order is for.</p>
+          <p className="text-muted-foreground">{t.order.chooseEmployee}</p>
         )}
         {due.length > 0 ? (
-          <ul aria-label="Due for replacement" className="flex flex-col gap-1 border-t border-border pt-3 text-xs">
+          <ul aria-label={t.order.dueForReplacement} className="flex flex-col gap-1 border-t border-border pt-3 text-xs">
             {due.slice(0, 4).map(({ due: d, item }) => (
               <li key={item.id} className="flex items-start gap-1.5">
                 {onThisOrder.has(item.id) ? <Check aria-hidden className="mt-px size-3.5 shrink-0 text-primary" /> : <span aria-hidden className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', d.overdue ? 'bg-destructive' : 'bg-muted-foreground')} />}
                 <span>
-                  {item.name} {d.overdue ? 'overdue since' : 'due'} {formatDate(d.dueAt.toISOString(), tz)}
-                  {onThisOrder.has(item.id) ? <span className="text-muted-foreground"> · on this order</span> : null}
+                  {(d.overdue ? t.order.itemOverdueSince : t.order.itemDue)(item.name, formatDate(d.dueAt.toISOString(), tz))}
+                  {onThisOrder.has(item.id) ? <span className="text-muted-foreground"> · {t.order.onThisOrder}</span> : null}
                 </span>
               </li>
             ))}
@@ -645,18 +646,18 @@ function OrderSummary({
           <span className="text-lg font-semibold tabular-nums">{total}</span>
         </div>
         <Button disabled={!valid || busy} onClick={onReview}>
-          {busy ? 'Working…' : 'Review and mark as ordered'}
+          {busy ? t.order.working : t.order.reviewAndMark}
         </Button>
         <WhatsAppButton disabled={!valid || busy} text={whatsappText} />
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pointer-coarse:hidden">
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">/</kbd> add item
+            <kbd className="rounded border border-border px-1 font-mono">/</kbd> {t.order.keyAddItem}
           </span>
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">⌘/Ctrl ↵</kbd> review
+            <kbd className="rounded border border-border px-1 font-mono">⌘/Ctrl ↵</kbd> {t.order.keyReview}
           </span>
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">↑↓</kbd> quantity
+            <kbd className="rounded border border-border px-1 font-mono">↑↓</kbd> {t.order.keyQuantity}
           </span>
         </p>
       </div>
@@ -693,18 +694,18 @@ function ReviewSheet({
     <FormSheet
       open={open}
       onClose={onClose}
-      title="Review order"
-      description={`For ${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}. After Mark as Ordered this record cannot be changed.`}
+      title={t.order.reviewOrder}
+      description={t.order.reviewDescription(`${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}`)}
       footer={
         <>
           <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} />
           <Button disabled={busy} onClick={onConfirm}>
-            Mark as Ordered
+            {t.order.markAsOrdered}
           </Button>
         </>
       }
     >
-      <ul aria-label="Order lines" className="flex flex-col divide-y divide-border text-sm">
+      <ul aria-label={t.order.orderLines} className="flex flex-col divide-y divide-border text-sm">
         {order.lines.map((l) => (
           <li key={l.catalogueItemId} className="flex items-baseline justify-between gap-3 py-2">
             <span className="min-w-0">
@@ -718,15 +719,15 @@ function ReviewSheet({
         ))}
       </ul>
       <p className="mt-2 flex items-baseline justify-between border-t border-border pt-3 font-semibold">
-        <span>Total</span>
+        <span>{t.common.total}</span>
         <span className="text-base tabular-nums">{formatEuro(totalCents(order))}</span>
       </p>
       <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md p-1 text-sm">
         <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" checked={createLink} onChange={(e) => onCreateLink(e.target.checked)} />
         <span>
-          Create the confirmation link as well
+          {t.order.createLinkToo}
           <span className="block text-xs text-muted-foreground">
-            {order.employee?.first_name ?? 'The employee'} confirms receipt with it; you can still print the record for signing instead.
+            {t.order.createLinkHint(order.employee?.first_name ?? null)}
           </span>
         </span>
       </label>
@@ -746,49 +747,49 @@ function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (
   const name = `${order.employee_first_name} ${order.employee_last_name}`
   return (
     <>
-      <PageHeader title="Create Order" />
+      <PageHeader title={t.order.title} />
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
             <CheckCircle2 aria-hidden className="size-5 text-primary" />
-            Order {order.record_number} is ordered
-            {given ? <Badge>Given</Badge> : <Badge variant="secondary">Ordered</Badge>}
+            {t.order.orderIsOrdered(order.record_number)}
+            {given ? <Badge>{t.common.given}</Badge> : <Badge variant="secondary">{t.common.ordered}</Badge>}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {name}
-            {order.employee_code ? ` · ${order.employee_code}` : ''} · prepared by {order.prepared_by_name} ·{' '}
-            {new Date(order.ordered_at).toLocaleString()}
+            {order.employee_code ? ` · ${order.employee_code}` : ''} · {t.order.preparedBy(order.prepared_by_name)} ·{' '}
+            {new Date(order.ordered_at).toLocaleString(intlLocale())}
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <OrderLinesTable order={order} />
           <p className="text-sm text-muted-foreground">
             {given
-              ? `${name}'s signed paper confirmation is recorded: the order is Given.`
+              ? t.order.nextGiven(name)
               : link
-                ? `This record can no longer be edited. Next, send ${name} the confirmation link below, or print the record for signing. It changes to Given when they confirm.`
-                : `This record can no longer be edited. Next, ${name} confirms receipt: send a secure link, or print the record for signing. It changes to Given when they confirm.`}
+                ? t.order.nextSendLink(name)
+                : t.order.nextConfirm(name)}
           </p>
           {link && !given ? (
-            <section aria-label="Employee confirmation" className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <section aria-label={t.order.employeeConfirmation} className="flex flex-col gap-2 rounded-lg border border-border p-3">
               <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
             </section>
           ) : null}
           {placed.linkError && !given ? (
-            <ErrorState title="The confirmation link was not created" error={placed.linkError} />
+            <ErrorState title={t.order.linkNotCreated} error={placed.linkError} />
           ) : null}
           <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-start">
             {given || link ? null : (
               <Button className="w-full sm:w-auto" onClick={() => setConfirming(true)}>
-                <LinkIcon aria-hidden /> Send confirmation link
+                <LinkIcon aria-hidden /> {t.order.sendConfirmationLink}
               </Button>
             )}
             <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} />
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate({ name: 'record', id: order.id, print: true })}>
-              <Printer aria-hidden /> Print record
+              <Printer aria-hidden /> {t.order.printRecord}
             </Button>
             <Button variant="outline" className="w-full sm:w-auto" onClick={onNew}>
-              Start a new order
+              {t.order.startNewOrder}
             </Button>
           </div>
         </CardContent>
@@ -804,6 +805,11 @@ function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (
       />
     </>
   )
+}
+
+/** A translated sentence with emphasised values in it (t.order.conflictResolved), as siblings. */
+function nodes(parts: ReactNode[]): ReactNode {
+  return parts.map((p, i) => <Fragment key={i}>{p}</Fragment>)
 }
 
 /** Quantities sent for resolution must be valid; an invalid typed value resolves as 1 and stays flagged locally. */
@@ -828,7 +834,7 @@ function LinesTable({
   onChange: (f: (o: WorkingOrder) => WorkingOrder) => void
 }) {
   if (order.lines.length === 0) {
-    return <EmptyState>No items yet. Use Add Item, or choose an Item Set.</EmptyState>
+    return <EmptyState>{t.order.noItemsYet}</EmptyState>
   }
   /*
    * Where the table is narrow each line is a compact row: the item with its
@@ -839,14 +845,14 @@ function LinesTable({
     <Table stack>
       <TableHeader>
         <TableRow>
-          <TableHead>Item</TableHead>
-          <TableHead>Size</TableHead>
-          <TableHead>Quantity</TableHead>
-          <TableHead className="text-right">Unit price</TableHead>
-          <TableHead>Service period</TableHead>
-          <TableHead className="text-right">Total</TableHead>
+          <TableHead>{t.order.item}</TableHead>
+          <TableHead>{t.order.size}</TableHead>
+          <TableHead>{t.order.quantity}</TableHead>
+          <TableHead className="text-right">{t.order.unitPrice}</TableHead>
+          <TableHead>{t.order.servicePeriod}</TableHead>
+          <TableHead className="text-right">{t.common.total}</TableHead>
           <TableHead className="w-10">
-            <span className="sr-only">Remove</span>
+            <span className="sr-only">{t.order.remove}</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -866,7 +872,7 @@ function LinesTable({
                 <div className="flex items-start gap-3">
                   <ItemTile icon={icons.get(l.catalogueItemId)} className="max-sm:hidden" />
                   <div className="min-w-0">
-                    <div className="font-medium">{l.itemName || 'Unknown item'}</div>
+                    <div className="font-medium">{l.itemName || t.order.unknownItem}</div>
                     {l.itemDetails ? <div className="text-xs text-muted-foreground stacked:hidden">{l.itemDetails}</div> : null}
                     {/* The unit price and service period columns are hidden in a row: shown here instead. */}
                     <div className="hidden text-xs text-muted-foreground tabular-nums stacked:block">
@@ -894,7 +900,7 @@ function LinesTable({
                 {l.unitPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.unitPriceCents * l.quantity) : '—'}
               </TableCell>
               <TableCell className="align-top stacked:order-1 stacked:w-auto stacked:-my-1.5 stacked:-mr-2 stacked-wide:order-4 stacked-wide:my-0">
-                <Button size="icon-sm" variant="ghost" aria-label={`Remove ${l.itemName}`} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>
+                <Button size="icon-sm" variant="ghost" aria-label={t.order.removeItem(l.itemName)} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>
                   <X aria-hidden />
                 </Button>
               </TableCell>
@@ -906,7 +912,7 @@ function LinesTable({
       <TableFooter className="stacked:hidden">
         <TableRow>
           <TableCell colSpan={5} className="text-right font-medium">
-            Total value
+            {t.order.totalValue}
           </TableCell>
           <TableCell className="text-right font-semibold tabular-nums">{formatEuro(totalCents(order))}</TableCell>
           <TableCell />
@@ -920,7 +926,7 @@ function LinesTable({
 function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Sizes | undefined; onChange: (s: string | null) => void }) {
   if (line.sizeGroup === 'NONE' || line.sizeGroup === '')
     return (
-      <span aria-label="No size" className="flex h-9 items-center text-muted-foreground pointer-coarse:h-11 stacked:px-2">
+      <span aria-label={t.order.noSize} className="flex h-9 items-center text-muted-foreground pointer-coarse:h-11 stacked:px-2">
         –
       </span>
     )
@@ -931,13 +937,13 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
   return (
     <div className="flex flex-col gap-1">
       <Select
-        aria-label={`Size of ${line.itemName}`}
+        aria-label={t.order.sizeOf(line.itemName)}
         className="h-9 w-40 pointer-coarse:h-11 stacked:w-auto stacked:max-w-40"
         invalid={missing}
         value={clothing ? clothingBandValue(bands, line.size) : (line.size ?? '')}
         onChange={(e) => onChange(e.target.value || null)}
       >
-        <option value="">Select size…</option>
+        <option value="">{t.order.selectSizeOption}</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -946,7 +952,7 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
       </Select>
       {line.sizeSource === 'suggested' ? (
         <Badge variant="outline" className="w-fit">
-          Suggested from height
+          {t.order.suggestedFromHeight}
         </Badge>
       ) : null}
     </div>

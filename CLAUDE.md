@@ -195,6 +195,10 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
   Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.
 - Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
+- The staff app is in English, Lithuanian and Russian (each user's choice, `users.language`,
+  migration 0016): every visible word comes from `t` in `src/i18n` (typed dictionaries per
+  language and namespace; never read `t` at module level). The confirmation page, hand-over
+  mode and the Items Given Record stay English / Russian. Rules in `web/AGENTS.md`.
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if

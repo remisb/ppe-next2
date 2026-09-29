@@ -12,23 +12,25 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
+import { MIN_PASSWORD_LENGTH } from '@/lib/password'
 import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
 import { errorText, useLoad } from '@/lib/use-load'
-import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleLabel, roles, sortRoles, validateNewPassword, validateUser } from '@/lib/users'
+import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleLabel, roleOrder, roles, sortRoles, validateNewPassword, validateUser } from '@/lib/users'
 import { cn } from '@/lib/utils'
 
 type UserSort = 'name' | 'email' | 'roles' | 'status'
 
-const columns: SortColumn<UserSort>[] = [
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'roles', label: 'Roles' },
-  { key: 'status', label: 'Status' },
+const columns = (): SortColumn<UserSort>[] => [
+  { key: 'name', label: t.users.name },
+  { key: 'email', label: t.users.email },
+  { key: 'roles', label: t.users.roles },
+  { key: 'status', label: t.users.status },
 ]
 
 /** By the most powerful role: administrators, then managers, then employees. */
-const roleRank = (u: User) => Math.min(...u.roles.map((r) => roles.findIndex((x) => x.role === r)).filter((i) => i >= 0), roles.length)
+const roleRank = (u: User) => Math.min(...u.roles.map((r) => roleOrder.indexOf(r)).filter((i) => i >= 0), roleOrder.length)
 
 /**
  * Users: the accounts that sign in to this app. Administrators only; the
@@ -65,8 +67,8 @@ export function UsersPage() {
   if (!session.canManageUsers) {
     return (
       <>
-        <PageHeader title="Users" />
-        <EmptyState>Only administrators can manage users.</EmptyState>
+        <PageHeader title={t.users.title} />
+        <EmptyState>{t.users.onlyAdmins}</EmptyState>
       </>
     )
   }
@@ -74,12 +76,12 @@ export function UsersPage() {
   return (
     <>
       <PageHeader
-        title="Users"
-        description="Who can sign in, and what they may do. Inactive users cannot sign in; their past work keeps their name."
+        title={t.users.title}
+        description={t.users.description}
         descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
-            <Plus aria-hidden /> Add User
+            <Plus aria-hidden /> {t.users.addUser}
           </Button>
         }
       />
@@ -87,10 +89,10 @@ export function UsersPage() {
         <Input
           type="search"
           enterKeyHint="search"
-          placeholder="Search by name or email"
+          placeholder={t.users.searchPlaceholder}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          aria-label="Search users"
+          aria-label={t.users.searchLabel}
           data-shortcut="search"
         />
       </div>
@@ -99,16 +101,16 @@ export function UsersPage() {
       ) : users.loading && !users.data ? (
         <Loading />
       ) : shown.length === 0 ? (
-        <EmptyState>{filter ? `No users match “${filter.trim()}”.` : 'No users yet.'}</EmptyState>
+        <EmptyState>{filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}</EmptyState>
       ) : (
         // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
-        <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
+        <Table stack="list" sortControl={<SortControl columns={columns()} {...sortProps} />}>
           <TableHeader>
             <TableRow>
-              {columns.map((c) => (
+              {columns().map((c) => (
                 <SortableHead key={c.key} column={c} {...sortProps} />
               ))}
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">{t.users.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -118,7 +120,7 @@ export function UsersPage() {
                   {u.name}
                   {u.id === session.userId ? (
                     <Badge variant="outline" className="ml-2 align-middle">
-                      You
+                      {t.users.you}
                     </Badge>
                   ) : null}
                 </TableCell>
@@ -133,20 +135,20 @@ export function UsersPage() {
                     {/* Stacked, an inactive account says so beside its roles; an active one needs no word. */}
                     {u.is_active ? null : (
                       <Badge variant="outline" className="hidden stacked:inline-flex">
-                        Inactive
+                        {t.common.inactive}
                       </Badge>
                     )}
                   </span>
                 </TableCell>
                 <TableCell className="stacked:hidden">
-                  <Badge variant={u.is_active ? 'outline' : 'secondary'}>{u.is_active ? 'Active' : 'Inactive'}</Badge>
+                  <Badge variant={u.is_active ? 'outline' : 'secondary'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
-                  <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={`Edit ${u.name}`}>
-                    Edit
+                  <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
+                    {t.common.edit}
                   </Button>{' '}
-                  <MoreActions label={`More actions for ${u.name}`}>
-                    <DropdownMenuItem onClick={() => setResetting(u)}>Reset password…</DropdownMenuItem>
+                  <MoreActions label={t.common.moreActions(u.name)}>
+                    <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
                   </MoreActions>
                 </TableCell>
               </TableRow>
@@ -210,7 +212,7 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
       else await client.users.create({ ...profile, password: d.password })
       onSaved()
     } catch (err) {
-      if (err instanceof ApiError && err.isConflict) setErrors({ email: 'Another user already has this email address.' })
+      if (err instanceof ApiError && err.isConflict) setErrors({ email: t.users.emailTaken })
       else setServerError(errorText(err))
     } finally {
       setBusy(false)
@@ -221,24 +223,24 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
     <FormSheet
       open={open}
       onClose={onClose}
-      title={user ? `Edit User: ${user.name}` : 'Add User'}
-      description={user ? 'A role change applies from the user’s next sign-in.' : 'They sign in with this email and password, and can change the password under Account.'}
+      title={user ? t.users.editUser(user.name) : t.users.addUser}
+      description={user ? t.users.editDescription : t.users.addDescription}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" form="user-form" disabled={busy}>
-            {busy ? 'Saving…' : user ? 'Save' : 'Add User'}
+            {busy ? t.common.saving : user ? t.common.save : t.users.addUser}
           </Button>
         </>
       }
     >
       <form id="user-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Field label="Name" required error={errors.name}>
+        <Field label={t.users.name} required error={errors.name}>
           {(p) => <Input {...controlProps(p)} autoComplete="off" value={d.name} onChange={set('name')} autoFocus />}
         </Field>
-        <Field label="Email" required error={errors.email}>
+        <Field label={t.users.email} required error={errors.email}>
           {(p) => (
             <Input {...controlProps(p)} type="email" inputMode="email" autoComplete="off" autoCapitalize="none" spellCheck={false} value={d.email} onChange={set('email')} />
           )}
@@ -246,10 +248,10 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
 
         <fieldset className="sm:col-span-2" aria-describedby={errors.roles ? 'user-roles-error' : undefined}>
           <legend className="mb-1.5 text-sm font-medium">
-            Roles<span className="text-destructive"> *</span>
+            {t.users.roles}<span className="text-destructive"> *</span>
           </legend>
           <div className="grid gap-1">
-            {roles.map(({ role, label, grants }) => {
+            {roles().map(({ role, label, grants }) => {
               const locked = role === 'admin' && locks.admin
               return (
                 <label key={role} className={cn('flex min-h-11 items-start gap-3 rounded-md py-2 text-sm', locked && 'opacity-70')}>
@@ -264,7 +266,7 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
                     <span className="font-medium">{label}</span>
                     <span className="block text-muted-foreground">
                       {grants}
-                      {locked ? ' You cannot remove it from your own account.' : ''}
+                      {locked ? t.users.adminLocked : ''}
                     </span>
                   </span>
                 </label>
@@ -280,10 +282,10 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
 
         {isNew ? (
           <>
-            <Field label="Password" required error={errors.password} hint="At least 8 characters.">
+            <Field label={t.users.password} required error={errors.password} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
               {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={d.password} onChange={set('password')} />}
             </Field>
-            <Field label="Confirm password" required error={errors.confirm}>
+            <Field label={t.users.confirmPassword} required error={errors.confirm}>
               {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={d.confirm} onChange={set('confirm')} />}
             </Field>
           </>
@@ -297,9 +299,9 @@ function UserForm({ open, user, onClose, onSaved }: { open: boolean; user: User 
               onChange={(e) => setD((cur) => ({ ...cur, isActive: e.target.checked }))}
             />
             <span>
-              <span className="font-medium">Active</span>
+              <span className="font-medium">{t.common.active}</span>
               <span className="block text-muted-foreground">
-                {locks.active ? 'You cannot deactivate your own account.' : 'An inactive user cannot sign in. A token they already hold lasts until it expires.'}
+                {locks.active ? t.users.cannotDeactivateOwn : t.users.inactiveExplained}
               </span>
             </span>
           </label>
@@ -357,18 +359,18 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
     <FormSheet
       open={user !== null}
       onClose={onClose}
-      title={`Reset password: ${user?.name ?? ''}`}
-      description="Give them the new password in person or by phone, not in a chat. They can change it under Account."
+      title={t.users.resetTitle(user?.name ?? '')}
+      description={t.users.resetDescription}
       footer={
         done ? (
-          <Button onClick={onClose}>Done</Button>
+          <Button onClick={onClose}>{t.users.done}</Button>
         ) : (
           <>
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="submit" form="reset-password-form" disabled={busy}>
-              {busy ? 'Saving…' : 'Set password'}
+              {busy ? t.common.saving : t.users.setPassword}
             </Button>
           </>
         )
@@ -376,11 +378,11 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
     >
       {done ? (
         <p role="status" className="text-sm">
-          The password for {user?.name} has been changed.
+          {t.users.passwordChangedFor(user?.name ?? '')}
         </p>
       ) : (
         <form id="reset-password-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
-          <Field label="New password" required error={errors.password} hint="At least 8 characters.">
+          <Field label={t.account.newPassword} required error={errors.password} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
             {(p) => (
               <Input
                 {...controlProps(p)}
@@ -395,7 +397,7 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
               />
             )}
           </Field>
-          <Field label="Confirm new password" required error={errors.confirm}>
+          <Field label={t.account.confirmNewPassword} required error={errors.confirm}>
             {(p) => (
               <Input
                 {...controlProps(p)}

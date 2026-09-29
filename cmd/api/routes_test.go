@@ -101,6 +101,18 @@ func (m *memRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, 
 	return nil
 }
 
+func (m *memRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	u, ok := m.users[id]
+	if !ok || u.DeletedAt != nil {
+		return user.ErrNotFound
+	}
+	u.Language, u.UpdatedAt, u.UpdatedByUserID = lang, at, by
+	m.users[id] = u
+	return nil
+}
+
 func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -274,6 +286,7 @@ var policy = map[string]string{
 	"POST /api/v1/users":                 "admins",
 	"PUT /api/v1/users/{id}":             "admins",
 	"PUT /api/v1/users/{id}/password":    "admins",
+	"PUT /api/v1/users/me/language":      "any",
 	"DELETE /api/v1/users/{id}":          "admins",
 
 	"GET /api/v1/employees":             "any",

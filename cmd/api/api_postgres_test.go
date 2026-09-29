@@ -619,3 +619,30 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 		}
 	}
 }
+
+// Each user sets their own interface language; sign-in and /users/me return it.
+func TestPostgresOwnLanguageHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, staff := api.userWith(t, user.RoleEmployee)
+	rec := api.do(t, "GET", "/api/v1/users/me", staff, nil)
+	if decode[map[string]any](t, rec.Body.Bytes())["language"] != "en" {
+		t.Errorf("default language: %s", rec.Body)
+	}
+	rec = api.do(t, "PUT", "/api/v1/users/me/language", staff, map[string]any{"language": "lt"})
+	if rec.Code != http.StatusOK || decode[map[string]any](t, rec.Body.Bytes())["language"] != "lt" {
+		t.Fatalf("set language = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/users/me", staff, nil)
+	if decode[map[string]any](t, rec.Body.Bytes())["language"] != "lt" {
+		t.Errorf("after setting: %s", rec.Body)
+	}
+	for _, body := range []map[string]any{{"language": "de"}, {"language": "lt", "user_id": "x"}} {
+		if rec := api.do(t, "PUT", "/api/v1/users/me/language", staff, body); rec.Code != http.StatusBadRequest {
+			t.Errorf("%v = %d, want 400", body, rec.Code)
+		}
+	}
+	rec = api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "admin@example.com", "password": "password123"})
+	if u := decode[map[string]any](t, rec.Body.Bytes())["user"].(map[string]any); u["language"] != "en" {
+		t.Errorf("login user = %v", u)
+	}
+}

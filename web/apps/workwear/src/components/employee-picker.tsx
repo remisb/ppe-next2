@@ -3,6 +3,7 @@ import { Search, UserPlus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/field'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 
 /** The minimum a picker needs to show the chosen employee. */
@@ -43,7 +44,7 @@ export function EmployeePicker({
     if (!open) return
     const term = q.trim()
     let current = true
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       ;(term ? client.employees.search(term) : client.employees.list()).then(
         (r) => current && (setResults(r.slice(0, 50)), setError(undefined)),
         (err: unknown) => current && setError(err),
@@ -51,7 +52,7 @@ export function EmployeePicker({
     }, 200)
     return () => {
       current = false
-      clearTimeout(t)
+      clearTimeout(timer)
     }
   }, [q, open, client])
 
@@ -100,7 +101,7 @@ export function EmployeePicker({
           aria-label={label}
           className="pl-9"
           disabled={disabled}
-          placeholder={selectedLabel || 'Search employees…'}
+          placeholder={selectedLabel || t.order.searchEmployees}
           value={open ? q : selectedLabel}
           onFocus={() => {
             setOpen(true)
@@ -124,7 +125,7 @@ export function EmployeePicker({
                   onAddNew()
                 }}
               >
-                <UserPlus aria-hidden className="size-4" /> + Add New Employee
+                <UserPlus aria-hidden className="size-4" /> {t.order.addNewEmployee}
               </button>
             </li>
           ) : null}
@@ -138,11 +139,11 @@ export function EmployeePicker({
                   onClear()
                 }}
               >
-                All employees
+                {t.order.allEmployees}
               </button>
             </li>
           ) : null}
-          {error ? <li className="px-2 py-2 text-sm text-destructive">Could not search employees.</li> : null}
+          {error ? <li className="px-2 py-2 text-sm text-destructive">{t.order.couldNotSearchEmployees}</li> : null}
           {results.map((e) => (
             <li key={e.id} role="option" aria-selected={selected?.id === e.id}>
               <button
@@ -158,7 +159,7 @@ export function EmployeePicker({
               </button>
             </li>
           ))}
-          {!error && results.length === 0 ? <li className="px-2 py-2 text-sm text-muted-foreground">No matching employees.</li> : null}
+          {!error && results.length === 0 ? <li className="px-2 py-2 text-sm text-muted-foreground">{t.order.noMatchingEmployees}</li> : null}
         </ul>
       ) : null}
     </div>

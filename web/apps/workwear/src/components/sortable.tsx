@@ -4,6 +4,7 @@ import { useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/field'
 import { TableHead } from '@/components/ui/table'
+import { t } from '@/i18n'
 import { type SortColumn, type SortState, nextSort } from '@/lib/sort'
 import { cn } from '@/lib/utils'
 
@@ -59,7 +60,7 @@ export function SortControl<K extends string>({
   sort,
   onSort,
   allowNone = false,
-  noneLabel = 'Default order',
+  noneLabel,
 }: SortProps<K> & { columns: readonly SortColumn<K>[]; noneLabel?: string }) {
   const dir = sort?.dir ?? 'asc'
   const id = useId()
@@ -69,7 +70,7 @@ export function SortControl<K extends string>({
     <div className="flex items-end gap-2">
       <div className="min-w-0 flex-1">
         <label htmlFor={id} className="text-sm font-medium">
-          Sort by
+          {t.shell.sortBy}
         </label>
         <Select
           id={id}
@@ -80,7 +81,7 @@ export function SortControl<K extends string>({
             onSort(column ? { key: column.key, dir: column.firstDir ?? 'asc' } : null)
           }}
         >
-          {allowNone ? <option value="">{noneLabel}</option> : null}
+          {allowNone ? <option value="">{noneLabel ?? t.shell.defaultOrder}</option> : null}
           {columns.map((c) => (
             <option key={c.key} value={c.key}>
               {c.label}
@@ -94,7 +95,7 @@ export function SortControl<K extends string>({
         size="icon"
         className="shrink-0"
         disabled={!sort}
-        aria-label={dir === 'asc' ? 'Ascending; switch to descending' : 'Descending; switch to ascending'}
+        aria-label={dir === 'asc' ? t.shell.ascending : t.shell.descending}
         onClick={() => sort && onSort({ key: sort.key, dir: dir === 'asc' ? 'desc' : 'asc' })}
       >
         {dir === 'asc' ? <ArrowUp aria-hidden /> : <ArrowDown aria-hidden />}

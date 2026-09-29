@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { Route } from './router'
 
 /**
@@ -5,13 +7,17 @@ import type { Route } from './router'
  * figure; these only label, compare and scale them.
  */
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-/** "2026-09" as "Sep", or with long as "Sep 2026". */
+/**
+ * "2026-09" as "Sep", or with long as "Sep 2026". The names come from the
+ * dictionary, not Intl: en-GB's short September is "Sept", and Lithuanian's
+ * short months are numbers ("09").
+ */
 export function monthLabel(month: string, long = false): string {
   const [y, m] = month.split('-')
-  const name = monthNames[Number(m) - 1] ?? month
-  return long ? `${name} ${y}` : name
+  const i = Number(m) - 1
+  const name = t.dashboard.months[i]
+  if (name === undefined) return long ? `${month} ${y}` : month
+  return long ? t.dashboard.monthYear(i, y ?? '') : name
 }
 
 /**
@@ -32,7 +38,7 @@ export function periodLabel(month: string, throughDay: number): string {
   const days = new Date(Date.UTC(y ?? 0, m ?? 0, 0)).getUTCDate()
   const name = monthLabel(month)
   if (throughDay >= days) return name
-  return throughDay === 1 ? `1 ${name}` : `1–${throughDay} ${name}`
+  return t.dashboard.monthDays((m ?? 0) - 1, throughDay)
 }
 
 /**
@@ -45,8 +51,8 @@ export function changeText(current: number, previous: number, previousMonth: str
   const pct = percentChange(current, previous)
   if (pct === null) return ''
   const vs = periodLabel(previousMonth, throughDay)
-  if (pct === 0) return `same as ${vs}`
-  return `${pct > 0 ? '+' : '−'}${Math.abs(pct)}% vs ${vs}`
+  if (pct === 0) return t.dashboard.sameAs(vs)
+  return t.dashboard.changeVs(`${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`, vs)
 }
 
 /**
@@ -71,18 +77,13 @@ export function barPercent(value: number, scale: number): number {
 /** Days for people: "today", "1 day", "5 days", "1.5 days". */
 export function formatDays(days: number | null): string {
   if (days === null) return '—'
-  if (days === 0) return 'today'
-  return days === 1 ? '1 day' : `${days} days`
+  if (days === 0) return t.dashboard.today
+  return t.common.days(days)
 }
 
 /** part as a whole percentage of total; 0 when total is 0. */
 export function share(part: number, total: number): number {
   return total > 0 ? Math.round((part / total) * 100) : 0
-}
-
-/** "1 order", "3 orders". */
-export function plural(n: number, one: string, many = `${one}s`): string {
-  return `${n} ${n === 1 ? one : many}`
 }
 
 /** One thing a dashboard asks the user to do. */
@@ -105,8 +106,8 @@ export function sortNeeds(needs: readonly Need[]): Need[] {
 
 /** What a person is missing, as Create Order will ask: "no shoe size", "no clothing size or height". */
 export function missingText(m: { clothing: boolean; shoes: boolean }): string {
-  if (m.clothing && m.shoes) return 'no shoe size, clothing size or height'
-  return m.shoes ? 'no shoe size' : 'no clothing size or height'
+  if (m.clothing && m.shoes) return t.dashboard.noShoeOrClothingSize
+  return m.shoes ? t.dashboard.noShoeSize : t.dashboard.noClothingSize
 }
 
 /**
@@ -114,7 +115,7 @@ export function missingText(m: { clothing: boolean; shoes: boolean }): string {
  * otherwise; never "to measure", since a shoe size needs asking, not measuring.
  */
 export function missingSizesText(employees: number, first?: { employee_name: string; clothing: boolean; shoes: boolean }): string {
-  if (employees === 0) return 'Every employee has their sizes.'
-  if (employees === 1 && first) return `${first.employee_name}: ${missingText(first)}`
-  return `${employees} employees without a size Create Order needs`
+  if (employees === 0) return t.dashboard.everyoneHasSizes
+  if (employees === 1 && first) return t.dashboard.personMissing(first.employee_name, missingText(first))
+  return t.dashboard.employeesMissing(employees)
 }

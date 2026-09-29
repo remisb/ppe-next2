@@ -82,7 +82,8 @@ export function ConfirmPage({ token }: { token: string }) {
           </AlertDescription>
         </Alert>
       ) : !record ? (
-        <Loading />
+        // The employee's page keeps its own EN / RU, not the device's staff language.
+        <Loading label={t.loading} />
       ) : record.status === 'GIVEN' ? (
         <>
           <Confirmed record={record} lang={lang} next={t.closePage} />

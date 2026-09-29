@@ -2,6 +2,7 @@ import type { CatalogueIcon } from '@ppe/api-client'
 import { Glasses, Hand, HardHat, Headphones, type LucideProps, Package, Shirt } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 
+import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /*
@@ -107,21 +108,13 @@ const drawings: Record<CatalogueIcon, IconComponent> = {
   other: Package,
 }
 
-/** The pictograms in the order the item form offers them, with their names. */
-export const iconChoices: { icon: CatalogueIcon; label: string }[] = [
-  { icon: 'shoes', label: 'Shoes' },
-  { icon: 'jacket', label: 'Jacket' },
-  { icon: 'insulated_jacket', label: 'Insulated jacket' },
-  { icon: 'trousers', label: 'Trousers' },
-  { icon: 'vest', label: 'Vest' },
-  { icon: 'gloves', label: 'Gloves' },
-  { icon: 'helmet', label: 'Helmet' },
-  { icon: 'welding_helmet', label: 'Welding helmet' },
-  { icon: 'glasses', label: 'Glasses' },
-  { icon: 'ear', label: 'Ear protection' },
-  { icon: 'mask', label: 'Mask' },
-  { icon: 'other', label: 'Other' },
-]
+/** The pictograms in the order the item form offers them. */
+const iconOrder: CatalogueIcon[] = ['shoes', 'jacket', 'insulated_jacket', 'trousers', 'vest', 'gloves', 'helmet', 'welding_helmet', 'glasses', 'ear', 'mask', 'other']
+
+/** The pictograms in the order the item form offers them, with their names in the current language. */
+export function iconChoices(): { icon: CatalogueIcon; label: string }[] {
+  return iconOrder.map((icon) => ({ icon, label: t.catalogue.icons[icon] }))
+}
 
 /** An item's pictogram, decorative: the item's name always stands beside it. */
 export function ItemIcon({ icon, className }: { icon: CatalogueIcon | undefined; className?: string }) {

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
+import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { type SetTotal, setTotal } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
@@ -34,7 +35,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const itemsById = useMemo(() => new Map((catalogue.data ?? []).map((i) => [i.id, i])), [catalogue.data])
 
   const remove = async (s: ItemSet) => {
-    if (!window.confirm(`Delete item set "${s.name}"?`)) return
+    if (!window.confirm(t.catalogue.confirmDeleteSet(s.name))) return
     try {
       await client.itemSets.remove(s.id)
       sets.reload()
@@ -47,25 +48,25 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   return (
     <>
       <PageHeader
-        title="Item Sets"
-        description="Presets for Apply Item Set. Sizes and prices are resolved fresh each time a set is applied."
+        title={t.catalogue.setsTitle}
+        description={t.catalogue.setsDescription}
         descriptionClassName="max-md:hidden"
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
-              <Plus aria-hidden /> New Item Set
+              <Plus aria-hidden /> {t.catalogue.newItemSet}
             </Button>
           ) : undefined
         }
       />
-      {actionError ? <ErrorState title="Action failed" error={actionError} /> : null}
+      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
       {error ? (
         <ErrorState error={error} onRetry={() => { sets.reload(); catalogue.reload() }} />
       ) : !sets.data || !catalogue.data ? (
         <Loading />
       ) : sets.data.length === 0 ? (
         // The header's New Item Set is the next step; a second button would only repeat it.
-        <EmptyState>No item sets yet.</EmptyState>
+        <EmptyState>{t.catalogue.noSets}</EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sets.data.map((s) => (
@@ -73,7 +74,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
               <CardHeader>
                 <CardTitle className="flex flex-wrap items-center gap-2">
                   {s.name}
-                  {s.active ? null : <Badge variant="outline">Inactive</Badge>}
+                  {s.active ? null : <Badge variant="outline">{t.common.inactive}</Badge>}
                 </CardTitle>
                 {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
                 <p className="text-sm font-medium tabular-nums">
@@ -86,8 +87,8 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
                     const item = itemsById.get(l.catalogue_item_id)
                     return (
                       <li key={l.catalogue_item_id}>
-                        {item?.name ?? 'Deleted item'} × {l.default_quantity}
-                        {item && !item.active ? <span className="text-muted-foreground"> (inactive)</span> : null}
+                        {item?.name ?? t.catalogue.deletedItem} × {l.default_quantity}
+                        {item && !item.active ? <span className="text-muted-foreground">{t.catalogue.inactiveSuffix}</span> : null}
                       </li>
                     )
                   })}
@@ -96,20 +97,20 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
                   {s.active ? (
                     <a
                       {...linkTo({ name: 'createOrder', prefill: { items: s.lines.map((l) => ({ id: l.catalogue_item_id, quantity: l.default_quantity })) } }, navigate)}
-                      aria-label={`Use ${s.name} in a new order`}
+                      aria-label={t.catalogue.useInNewOrderFor(s.name)}
                       className={buttonVariants({ size: 'sm' })}
                     >
-                      <ClipboardList aria-hidden /> Use in new order
+                      <ClipboardList aria-hidden /> {t.catalogue.useInNewOrder}
                     </a>
                   ) : null}
                   {canManageItems ? (
                     <>
                       <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
-                        Edit
+                        {t.common.edit}
                       </Button>
-                      <MoreActions label={`More actions for ${s.name}`}>
+                      <MoreActions label={t.common.moreActions(s.name)}>
                         <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
-                          Delete item set…
+                          {t.catalogue.deleteItemSet}
                         </DropdownMenuItem>
                       </MoreActions>
                     </>
@@ -135,11 +136,11 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
 
 /** "3 items · €274.90 today"; an item without a price is left out, and the total says so. */
 function SetTotalText({ total }: { total: SetTotal }) {
-  const items = total.items === 1 ? '1 item' : `${total.items} items`
+  const items = t.common.items(total.items)
   return (
     <>
       {items} · {formatEuro(total.cents)}
-      <span className="font-normal text-muted-foreground">{total.complete ? ' at today\'s prices' : ' without the items that have no price'}</span>
+      <span className="font-normal text-muted-foreground">{total.complete ? t.catalogue.atTodaysPrices : t.catalogue.withoutUnpriced}</span>
     </>
   )
 }
@@ -178,7 +179,7 @@ function SetForm({
     setError(undefined)
   }, [set, existing])
 
-  const nameOf = (id: string) => catalogue.find((i) => i.id === id)?.name ?? 'Deleted item'
+  const nameOf = (id: string) => catalogue.find((i) => i.id === id)?.name ?? t.catalogue.deletedItem
   const available = catalogue.filter((i) => !lines.some((l) => l.catalogue_item_id === i.id))
   const qtyInvalid = lines.some((l) => !/^[1-9]\d*$/.test(l.default_quantity))
 
@@ -205,7 +206,7 @@ function SetForm({
       else await client.itemSets.create(input)
       onSaved()
     } catch (err) {
-      setError(err instanceof ApiError && err.isConflict ? 'An item set with this name already exists.' : errorText(err))
+      setError(err instanceof ApiError && err.isConflict ? t.catalogue.setNameTaken : errorText(err))
     }
   }
 
@@ -213,58 +214,58 @@ function SetForm({
     <FormSheet
       open={set !== null}
       onClose={onClose}
-      title={existing ? 'Edit Item Set' : 'New Item Set'}
+      title={existing ? t.catalogue.editItemSet : t.catalogue.newItemSet}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" form="set-form" disabled={!name.trim() || lines.length === 0 || qtyInvalid}>
-            Save
+            {t.common.save}
           </Button>
         </>
       }
     >
       <form id="set-form" onSubmit={submit} className="flex flex-col gap-4">
-        <Field label="Name" required>{(p) => <Input {...controlProps(p)} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
-        <Field label="Description">{(p) => <Textarea {...controlProps(p)} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
+        <Field label={t.catalogue.setName} required>{(p) => <Input {...controlProps(p)} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+        <Field label={t.catalogue.setDescription}>{(p) => <Textarea {...controlProps(p)} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />}</Field>
         <label className="flex min-h-11 items-center gap-3 text-sm">
-          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active (offered in Create Order)
+          <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> {t.catalogue.activeInCreateOrder}
         </label>
 
         <div>
-          <p className="mb-2 text-sm font-medium">Items, in display order</p>
+          <p className="mb-2 text-sm font-medium">{t.catalogue.itemsInDisplayOrder}</p>
           <ul className="flex flex-col gap-2">
             {lines.map((l, i) => (
               <li key={l.catalogue_item_id} className="flex items-center gap-1 rounded-md border border-border py-1 pr-1 pl-3 sm:gap-2">
                 <span className="min-w-0 flex-1 text-sm break-words">{nameOf(l.catalogue_item_id)}</span>
                 <Input
-                  aria-label={`Default quantity for ${nameOf(l.catalogue_item_id)}`}
+                  aria-label={t.catalogue.defaultQuantityFor(nameOf(l.catalogue_item_id))}
                   className="w-16 shrink-0 sm:w-20"
                   inputMode="numeric"
                   invalid={!/^[1-9]\d*$/.test(l.default_quantity)}
                   value={l.default_quantity}
                   onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, default_quantity: e.target.value } : x)))}
                 />
-                <Button type="button" size="icon" variant="ghost" aria-label={`Move ${nameOf(l.catalogue_item_id)} up`} disabled={i === 0} onClick={() => move(i, -1)}>
+                <Button type="button" size="icon" variant="ghost" aria-label={t.catalogue.moveUp(nameOf(l.catalogue_item_id))} disabled={i === 0} onClick={() => move(i, -1)}>
                   <ArrowUp aria-hidden />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" aria-label={`Move ${nameOf(l.catalogue_item_id)} down`} disabled={i === lines.length - 1} onClick={() => move(i, 1)}>
+                <Button type="button" size="icon" variant="ghost" aria-label={t.catalogue.moveDown(nameOf(l.catalogue_item_id))} disabled={i === lines.length - 1} onClick={() => move(i, 1)}>
                   <ArrowDown aria-hidden />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" aria-label={`Remove ${nameOf(l.catalogue_item_id)}`} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
+                <Button type="button" size="icon" variant="ghost" aria-label={t.catalogue.remove(nameOf(l.catalogue_item_id))} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}>
                   <X aria-hidden />
                 </Button>
               </li>
             ))}
           </ul>
           <div className="mt-3 flex gap-2">
-            <Select aria-label="Item to add" className="min-w-0 flex-1" value={adding} onChange={(e) => setAdding(e.target.value)}>
-              <option value="">Choose an item…</option>
+            <Select aria-label={t.catalogue.itemToAdd} className="min-w-0 flex-1" value={adding} onChange={(e) => setAdding(e.target.value)}>
+              <option value="">{t.catalogue.chooseItem}</option>
               {available.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.name}
-                  {i.active ? '' : ' (inactive)'}
+                  {i.active ? '' : t.catalogue.inactiveSuffix}
                 </option>
               ))}
             </Select>
@@ -277,10 +278,10 @@ function SetForm({
                 setAdding('')
               }}
             >
-              Add
+              {t.common.add}
             </Button>
           </div>
-          {qtyInvalid ? <p className="mt-2 text-xs text-destructive">Quantities must be whole numbers of at least 1.</p> : null}
+          {qtyInvalid ? <p className="mt-2 text-xs text-destructive">{t.catalogue.quantitiesInvalid}</p> : null}
         </div>
         {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
       </form>

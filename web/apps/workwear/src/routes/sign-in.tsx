@@ -4,6 +4,7 @@ import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, PasswordInput, controlProps } from '@/components/ui/field'
+import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { errorText } from '@/lib/use-load'
 
@@ -21,7 +22,7 @@ export function SignIn() {
     try {
       await signIn(email, password)
     } catch (err) {
-      setError(errorText(err) === 'unauthenticated' ? 'Wrong email or password.' : errorText(err))
+      setError(errorText(err) === 'unauthenticated' ? t.shell.wrongPassword : errorText(err))
     } finally {
       setBusy(false)
     }
@@ -33,18 +34,18 @@ export function SignIn() {
         <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <HardHat aria-hidden className="size-6" />
         </span>
-        <h1 className="text-xl font-semibold tracking-tight">Workwear &amp; Equipment</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t.common.appName}</h1>
       </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
+          <CardTitle>{t.shell.signIn}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="flex flex-col gap-4">
-            <Field label="Email" required>
+            <Field label={t.shell.email} required>
               {(p) => <Input {...controlProps(p)} type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}
             </Field>
-            <Field label="Password" required error={error}>
+            <Field label={t.shell.password} required error={error}>
               {(p) => (
                 <PasswordInput
                   {...controlProps(p)}
@@ -55,7 +56,7 @@ export function SignIn() {
               )}
             </Field>
             <Button type="submit" disabled={busy || !email || !password}>
-              {busy ? 'Signing in…' : 'Sign in'}
+              {busy ? t.shell.signingIn : t.shell.signIn}
             </Button>
           </form>
         </CardContent>

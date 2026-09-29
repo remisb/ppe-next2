@@ -21,6 +21,7 @@ func registerUserRoutes(rt *router, users *user.Service) {
 
 	rt.authenticated("GET /api/v1/users/me", h.me)
 	rt.authenticated("PUT /api/v1/users/me/password", h.changeOwnPassword)
+	rt.authenticated("PUT /api/v1/users/me/language", h.setOwnLanguage)
 
 	rt.restricted("GET /api/v1/users", h.list, managers...)
 	rt.restricted("GET /api/v1/users/{id}", h.get, managers...)
@@ -48,6 +49,30 @@ type updateUserRequest struct {
 
 type setPasswordRequest struct {
 	Password string `json:"password"`
+}
+
+type languageRequest struct {
+	Language string `json:"language"`
+}
+
+// setOwnLanguage sets the signed-in user's interface language and returns the user.
+func (h *userHandler) setOwnLanguage(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req languageRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	u, err := h.users.SetLanguage(r.Context(), actor, req.Language)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, u)
 }
 
 type changePasswordRequest struct {

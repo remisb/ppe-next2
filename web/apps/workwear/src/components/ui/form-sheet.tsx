@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useRef } from 'react'
 
+import { t } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 import { Button } from './button'
@@ -85,7 +86,7 @@ export function FormSheet({ open, onClose, title, description, children, footer 
               <p className="text-sm text-muted-foreground">{description}</p>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t.common.close}>
             <X aria-hidden />
           </Button>
         </header>

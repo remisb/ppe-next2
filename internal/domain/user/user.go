@@ -19,18 +19,37 @@ const (
 // User is an account that can sign in. PasswordHash never leaves the service in
 // a response: it is tagged json:"-".
 type User struct {
-	ID              uuid.UUID  `json:"id"`
-	Email           string     `json:"email"`
-	Name            string     `json:"name"`
-	PasswordHash    string     `json:"-"`
-	Roles           []string   `json:"roles"`
-	IsActive        bool       `json:"is_active"`
+	ID           uuid.UUID `json:"id"`
+	Email        string    `json:"email"`
+	Name         string    `json:"name"`
+	PasswordHash string    `json:"-"`
+	Roles        []string  `json:"roles"`
+	IsActive     bool      `json:"is_active"`
+	// Language is the user's interface language (LangEnglish, LangLithuanian or
+	// LangRussian); each user sets their own.
+	Language        string     `json:"language"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
 	CreatedByUserID uuid.UUID  `json:"created_by_user_id"`
 	UpdatedByUserID uuid.UUID  `json:"updated_by_user_id"`
 	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+}
+
+// Interface languages. English is every account's default.
+const (
+	LangEnglish    = "en"
+	LangLithuanian = "lt"
+	LangRussian    = "ru"
+)
+
+// validateLanguage accepts only the interface languages the app has.
+func validateLanguage(lang string) error {
+	switch lang {
+	case LangEnglish, LangLithuanian, LangRussian:
+		return nil
+	}
+	return fieldError("language", "must be en, lt or ru")
 }
 
 // Deleted reports whether the user has been soft-deleted.

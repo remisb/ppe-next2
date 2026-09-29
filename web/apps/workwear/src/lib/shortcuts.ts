@@ -1,21 +1,26 @@
 import { useEffect, useRef } from 'react'
 
+import { t } from '@/i18n'
+
 /**
  * Keyboard shortcuts for people who use the app all day on a desktop. None
  * fires while typing in a field, except the palette's ⌘K / Ctrl+K; a letter
  * never steals a keystroke meant for text.
  */
-export const shortcutList: { keys: string; does: string }[] = [
-  { keys: '⌘K / Ctrl+K', does: 'Search record numbers, employees, items and screens, and jump to them' },
-  { keys: '/', does: 'Go to the search or Add Item field on this screen' },
-  { keys: 'N', does: 'New order' },
-  { keys: 'G then D, O, H, E, C, S, U', does: 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets, Users' },
-  { keys: 'J / K', does: 'History: the next or previous order, beside the list' },
-  { keys: 'Esc', does: 'History: close the order beside the list' },
-  { keys: '⌘Enter / Ctrl+Enter', does: 'Create Order: review the order before Mark as Ordered' },
-  { keys: '↑ / ↓', does: 'Create Order: one more or one fewer, in a quantity field' },
-  { keys: '?', does: 'Show these shortcuts' },
-]
+export function shortcutList(): { keys: string; does: string }[] {
+  const d = t.shell.shortcuts
+  return [
+    { keys: '⌘K / Ctrl+K', does: d.palette },
+    { keys: '/', does: d.search },
+    { keys: 'N', does: d.newOrder },
+    { keys: d.goToKeys, does: d.goTo },
+    { keys: 'J / K', does: d.nextPrevious },
+    { keys: 'Esc', does: d.closeOrder },
+    { keys: '⌘Enter / Ctrl+Enter', does: d.review },
+    { keys: '↑ / ↓', does: d.quantity },
+    { keys: '?', does: d.help },
+  ]
+}
 
 /** Whether a key press belongs to a field (or other editable content) rather than to the app. */
 export function isTyping(target: EventTarget | null): boolean {
