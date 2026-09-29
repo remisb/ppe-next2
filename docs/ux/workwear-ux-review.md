@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`f8e3982`)
+status: phases 1–3 shipped, plus follow-ups (`121644f`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -16,7 +16,7 @@ status: phases 1–3 shipped, plus follow-ups (`f8e3982`)
 > button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
 > shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, and the
 > records lists as option A in section 6 in `9213136`, and History option C in section 4 in
-> `f8e3982`.
+> `f8e3982`, its order pane tightened in `121644f`.
 > Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -382,7 +382,7 @@ link, or View record) with a secondary style, and the rest goes into ⋯.
 | Actions stay one tap away | A ⋯ menu hides actions such as Print from new users |
 | Cards drop to about 120 px, so about 4 fit per screen | |
 
-#### C. List and detail (recommended on desktop ≥ 1200 px, built in `aee8829`, `f8e3982`)
+#### C. List and detail (recommended on desktop ≥ 1200 px, built in `aee8829`, `f8e3982`, `121644f`)
 
 *Sample: tabs Awaiting · 3 / Given · 3 / All · 6 above a one-line table (Record,
 Employee, Ordered, Waiting chip, Value). The selected row WE-000004 opens a right-hand
@@ -395,7 +395,7 @@ pane with its lines, the total, "Send confirmation link", "Print", "Paper signed
 | Chase several waiting orders without leaving the list (J/K) | The selected row must be kept in the URL so Back and refresh work |
 | Items are visible without "View Items" expanding rows | |
 
-**As built:** Phase 2 built the pane beside the list from 1024 px, kept at `/history/<id>` so Back and refresh work, with the items, the total and the actions, and J / K; `f8e3982` completed the option. Beside the pane the list keeps Record, Employee, Date, Status and Total value: Usage time and the time of day drop out, and a waiting order shows its wait as a pill (red after 14 days) in place of the Ordered badge. The table stacks only under 30 rem of room (a new `stackBelow="sm"`), so it stays one line a row, 38 px, from about 1200 px; at 1024 px, beside the rail, it falls back to the two-line rows, as the con expects, rather than to the order page. Escape closes the pane, J / K keep the open row in view, and the pane ends with a “J / K next or previous order · Esc close” hint where there is a keyboard. The status tabs sit above the list as in the sample; Send confirmation link is Open Employee Confirmation, and Paper signed is in its sheet. J / K stop at the end of a page of 20 orders.
+**As built:** Phase 2 built the pane beside the list from 1024 px, kept at `/history/<id>` so Back and refresh work, with the items, the total and the actions, and J / K; `f8e3982` completed the option. Beside the pane the list keeps Record, Employee, Date, Status and Total value: Usage time and the time of day drop out, and a waiting order shows its wait as a pill (red after 14 days) in place of the Ordered badge. The table stacks only under 30 rem of room (a new `stackBelow="sm"`), so it stays one line a row, 38 px, from about 1200 px; at 1024 px, beside the rail, it falls back to the two-line rows, as the con expects, rather than to the order page. Escape closes the pane, J / K keep the open row in view, and the pane ends with a “J / K next or previous order · Esc close” hint where there is a keyboard. The status tabs sit above the list as in the sample; Send confirmation link is Open Employee Confirmation, and Paper signed is in its sheet. J / K stop at the end of a page of 20 orders. In `121644f` the pane's Close ✕ moved into its top-right corner: it had a row of its own, so the order began about 76 px down the pane, and now starts 17 px from its top, beside the ✕. A phone keeps Back to History on its own row.
 
 ---
 
@@ -874,7 +874,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
