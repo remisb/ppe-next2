@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`b2ac1e4`)
+status: phases 1–3 shipped, plus follow-ups (`b3ec94e`)
 
 > **Status, updated 29 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -16,8 +16,8 @@ status: phases 1–3 shipped, plus follow-ups (`b2ac1e4`)
 > button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
 > shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, the
 > records lists as option A in section 6 in `9213136`, History option C in section 4 in
-> `f8e3982`, its order pane tightened in `121644f`, and the desktop power layer in section 9
-> in `b2ac1e4`.
+> `f8e3982`, its order pane tightened in `121644f`, the desktop power layer in section 9
+> in `b2ac1e4`, and Delete order for managers (section 4) in `b3ec94e`.
 > Each came with its e2e steps (36 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -397,6 +397,8 @@ pane with its lines, the total, "Send confirmation link", "Print", "Paper signed
 | Items are visible without "View Items" expanding rows | |
 
 **As built:** Phase 2 built the pane beside the list from 1024 px, kept at `/history/<id>` so Back and refresh work, with the items, the total and the actions, and J / K; `f8e3982` completed the option. Beside the pane the list keeps Record, Employee, Date, Status and Total value: Usage time and the time of day drop out, and a waiting order shows its wait as a pill (red after 14 days) in place of the Ordered badge. The table stacks only under 30 rem of room (a new `stackBelow="sm"`), so it stays one line a row, 38 px, from about 1200 px; at 1024 px, beside the rail, it falls back to the two-line rows, as the con expects, rather than to the order page. Escape closes the pane, J / K keep the open row in view, and the pane ends with a “J / K next or previous order · Esc close” hint where there is a keyboard. The status tabs sit above the list as in the sample; Send confirmation link is Open Employee Confirmation, and Paper signed is in its sheet. J / K stop at the end of a page of 20 orders. In `121644f` the pane's Close ✕ moved into its top-right corner: it had a row of its own, so the order began about 76 px down the pane, and now starts 17 px from its top, beside the ✕. A phone keeps Back to History on its own row.
+
+**Added since: Delete order (`b3ec94e`).** Neither this review nor the manual proposed it: it was asked for to clear the demo orders left from the test period. In the order pane a manager finds Delete order… under ⋯, after the other actions. It asks first, naming the order and the employee, and for a given order says that its signed record goes with it. Only the manager role sees it, and the API refuses the administrator and employee roles (403), so an administrator needs the manager role as well to delete. It is a soft delete, like every record in the app: the order leaves History, its record page, the three dashboards and Replacements due, and its confirmation link reads as expired, even one already used. The row, its lines, its evidence and the audit trail stay, with an `order.deleted` event; record numbers are not reused, so a deleted one leaves a gap. There is no undo in the app.
 
 ---
 
@@ -877,7 +879,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `b3ec94e`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -905,6 +907,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Records lists option A from section 6 completed: Employees, Item Catalogue and Users as short two-line rows on a phone that open the record's page, where its actions are; All / Missing a size and Catalogue status chips; size-group headings; Item Sets with a total and Use in new order; Reset password under ⋯
 - [x] History option C from section 4 completed: one-line rows beside the open order on desktop, Escape to close it, and a J / K / Esc hint in the pane
 - [x] Desktop power layer from section 9 completed: a Comfortable / Compact switch with 32 px rows (mouse and trackpad only), record numbers that preview their order on hover, and relative dates in lists with the exact time on hover
+- [x] Delete order for the manager role, under ⋯ in History's order pane: it asks first, and the order leaves History, the dashboards and Replacements due while its row, evidence and audit trail stay (a soft delete)
 
 ### Still open
 
@@ -913,8 +916,9 @@ kept in localStorage per user on the device, cleared by Sign out.
 - **Hallway test**: the five-user test of the phone Create Order, timing "apply the
   starter kit, change one size, send", was not run before building. Running it now would
   measure the new flow.
-- **Product owner sign-off** for in-person confirmation, which goes beyond the manual; and
-  iPad Guided Access on any tablet left at a counter.
+- **Product owner sign-off** for in-person confirmation and for deleting orders, a given
+  one with its signed record, both of which go beyond the manual; and iPad Guided Access on
+  any tablet left at a counter.
 - **Legal sign-off** for confirmation with the full record collapsed behind View full
   record. The confirmation statement is quoted on the first screen; if that is not enough,
   require opening the record once before Confirm.
