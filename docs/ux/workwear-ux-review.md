@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`397bfd4`)
+status: phases 1–3 shipped, plus follow-ups (`d19c604`)
 
 > **Status, updated 29 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -21,7 +21,8 @@ status: phases 1–3 shipped, plus follow-ups (`397bfd4`)
 > managers (section 4) in `b3ec94e`, the staff app in English, Lithuanian and Russian
 > in `6290a42`, and a user guide with screenshots in `915c738`, in
 > Lithuanian and Russian in `08dc9b5`, the Lithuanian review button fixed in `f0fb0bd`,
-> and the guide on a Help screen in the app in `397bfd4`.
+> the guide on a Help screen in the app in `397bfd4`, employees' notes in the list in
+> `c3036e7`, and Help for each device in `d19c604`.
 > Each came with its e2e steps (37 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -883,7 +884,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `dbf9091`, `b3ec94e`, `6290a42`, `915c738`, `08dc9b5`, `f0fb0bd`, `397bfd4`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `dbf9091`, `b3ec94e`, `6290a42`, `915c738`, `08dc9b5`, `f0fb0bd`, `397bfd4`, `c3036e7`, `d19c604`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -914,9 +915,11 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Employees: the clothing size shows as its band, "M (48–50)", in the list and on the employee page, as the size pickers and Create Order name it
 - [x] Delete order for the manager role, under ⋯ in History's order pane: it asks first, and the order leaves History, the dashboards and Replacements due while its row, evidence and audit trail stay (a soft delete)
 - [x] The staff app in English, Lithuanian and Russian: each user picks the language on Account; it is saved on their account, so every device follows it, and before sign-in the device's last language is used. Plurals, amounts ("274,90 €") and dates follow the language, and the Items Given Record, the employee's confirmation page and hand-over mode keep English / Russian
-- [x] A [user guide](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U) for staff (`docs/guide`) in English, Lithuanian and Russian, with a language switch: twelve short sections from sign-in to shortcuts, each a few steps above its screenshot, and each language shows the app in that language and names its buttons as the app does. `pnpm guide` in `web/e2e` retakes all 45 screenshots from the demo data, so the guide can follow the UI
+- [x] A [user guide](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U) for staff (`docs/guide`) in English, Lithuanian and Russian, with a language switch: twelve short sections from sign-in to shortcuts, each a few steps above its screenshot, and each language shows the app in that language and names its buttons as the app does. `pnpm guide` in `web/e2e` retakes the screenshots from the demo data, on each device in each language, so the guide can follow the UI
 - [x] Create Order's Review and mark as ordered button wraps a long label onto two lines (the Lithuanian one ran into its edges at desktop width); the e2e Language step fails when a visible button on Create Order holds text wider than itself in Lithuanian
 - [x] A Help screen (`/help`) shows the user guide in the app, from the sidebar or rail foot, the phone's More sheet, ⌘K and the shortcuts sheet. It opens in the user's language, with its own English / Lietuvių / Русский switch that changes only the guide, and leaves out what the user's roles cannot do: Users for administrators, Delete order for managers, and each role's own dashboard. Each section has its own address (`/help#history`). The guide is typed text in the app (`src/help`), kept in step across the three languages by a unit test, and `docs/guide` is written from it
+- [x] Employees shows each employee's note on one line under the name, in full on hover; on a phone it is a third line in the row
+- [x] Help follows the device it is read on, by the app's own layout: a phone below 768px, a tablet to 1279px, a desktop from 1280px, following a resize. Each device has its own screenshots (123 in all, per language and device) and, where the screens differ, its own words: the bottom bar and More, the rail or the sidebar; Review in the bar or the panel; tap an order or open it beside the list; keys and hover on the desktop only. A Phone / Tablet / Desktop switch shows another device's guide
 
 ### Still open
 
