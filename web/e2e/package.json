@@ -6,7 +6,8 @@
   "description": "End-to-end tests: the workwear app against the real Go API and a test Postgres database.",
   "scripts": {
     "e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "guide": "playwright test -c guide.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
