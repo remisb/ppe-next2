@@ -32,6 +32,19 @@ export const methodText: Record<ConfirmationMethod, string> = {
   IN_PERSON: 'in person on a staff device',
 }
 
+/**
+ * What Delete order asks before a manager removes a demo or test order. A
+ * given order says so: its signed record goes with it.
+ */
+export function deleteQuestion(o: { record_number: string; status: OrderStatus; employee_first_name: string; employee_last_name: string }): string {
+  const which = `${o.record_number} for ${o.employee_first_name} ${o.employee_last_name}`
+  const effect =
+    o.status === 'GIVEN'
+      ? 'It was given and confirmed: it leaves History, the dashboards and Replacements due, and its record can no longer be opened.'
+      : 'It leaves History and the dashboards, and its confirmation link stops working.'
+  return `Delete ${which}? ${effect} Only for demo and test orders; this cannot be undone in the app.`
+}
+
 /** Usage time (algorithm D), shown for GIVEN orders only, e.g. "2.1 months". */
 export function formatUsage(months: number | null): string {
   if (months === null) return ''

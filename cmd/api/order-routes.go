@@ -16,7 +16,8 @@ type orderHandler struct {
 
 // registerOrderRoutes mounts the order endpoints. Resolution only reads;
 // POST /orders is Mark as Ordered, the only way an order comes to exist.
-// Staff who prepare orders (every role) may use all of them.
+// Staff who prepare orders (every role) may use all of them, except Delete,
+// which only the manager role may: it clears demo and test orders.
 func registerOrderRoutes(rt *router, orders *order.Service) {
 	h := &orderHandler{orders: orders}
 	rt.authenticated("GET /api/v1/sizes", h.sizes)
@@ -25,6 +26,7 @@ func registerOrderRoutes(rt *router, orders *order.Service) {
 	rt.authenticated("GET /api/v1/orders", h.list)
 	rt.authenticated("POST /api/v1/orders", h.markAsOrdered)
 	rt.authenticated("GET /api/v1/orders/{id}", h.get)
+	rt.restricted("DELETE /api/v1/orders/{id}", h.delete, managerRole...)
 }
 
 type markAsOrderedRequest struct {
@@ -86,6 +88,24 @@ func (h *orderHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toOrderJSON(o))
+}
+
+func (h *orderHandler) delete(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.orders.Delete(r.Context(), id, actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type resolveRequest struct {

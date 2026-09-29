@@ -147,7 +147,7 @@ func scanOrder(row pgx.Row) (Order, error) {
 }
 
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Order, error) {
-	o, err := scanOrder(r.pool.QueryRow(ctx, `SELECT `+orderColumns+` FROM orders WHERE id = $1`, id))
+	o, err := scanOrder(r.pool.QueryRow(ctx, `SELECT `+orderColumns+` FROM orders WHERE id = $1 AND deleted_at IS NULL`, id))
 	if err != nil {
 		return Order{}, err
 	}
@@ -190,7 +190,7 @@ func orderBy(f ListFilter) string {
 }
 
 func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Order, int, error) {
-	where := `TRUE`
+	where := `deleted_at IS NULL`
 	var args []any
 	add := func(cond string, v any) {
 		args = append(args, v)
@@ -292,10 +292,10 @@ func scanConfirmation(row pgx.Row) (Confirmation, error) {
 	return c, nil
 }
 
-// lockOrder locks an order row for the rest of the transaction and loads it
-// with its lines.
+// lockOrder locks a live order row for the rest of the transaction and loads
+// it with its lines; a deleted order is ErrNotFound.
 func lockOrder(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Order, error) {
-	o, err := scanOrder(tx.QueryRow(ctx, `SELECT `+orderColumns+` FROM orders WHERE id = $1 FOR UPDATE`, id))
+	o, err := scanOrder(tx.QueryRow(ctx, `SELECT `+orderColumns+` FROM orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, id))
 	if err != nil {
 		return Order{}, err
 	}
@@ -354,9 +354,32 @@ func (r *PostgresRepository) CreateLink(ctx context.Context, orderID uuid.UUID, 
 	}))
 }
 
+func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, fn DeleteFunc) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		o, err := lockOrder(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		d, ev, err := fn(o)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE orders SET deleted_at = $2, deleted_by_user_id = $3, updated_at = $4,
+				updated_by_user_id = $5
+			WHERE id = $1 AND deleted_at IS NULL`, id, d.DeletedAt, d.DeletedByUserID, d.UpdatedAt, d.UpdatedByUserID); err != nil {
+			return err
+		}
+		if err := revokeUnused(ctx, tx, id, *d.DeletedAt, nil); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
+}
+
 func (r *PostgresRepository) LinkByHash(ctx context.Context, tokenHash string) (Confirmation, error) {
-	c, err := scanConfirmation(r.pool.QueryRow(ctx,
-		`SELECT `+confirmationColumns+` FROM order_confirmations WHERE token_hash = $1`, tokenHash))
+	// A deleted order's links read as expired, even one already used.
+	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations
+		WHERE token_hash = $1 AND order_id IN (SELECT id FROM orders WHERE deleted_at IS NULL)`, tokenHash))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Confirmation{}, ErrLinkExpired
 	}

@@ -12,6 +12,7 @@ import (
 
 const (
 	EventOrdered = "order.ordered"
+	EventDeleted = "order.deleted"
 	auditEntity  = "order"
 )
 
@@ -119,6 +120,28 @@ func (s *Service) MarkAsOrdered(ctx context.Context, p MarkAsOrderedParams, acto
 			Lines: len(o.Lines), TotalCents: o.TotalCents(),
 		})
 		return o, ev, err
+	})
+}
+
+// Delete soft-deletes an order, ORDERED or GIVEN, for clearing demo and test
+// orders. The route allows only the manager role. The order leaves History,
+// the dashboards and Replacements due; its unused confirmation links stop
+// working; its row, lines, evidence and audit trail stay. The event records
+// what was deleted.
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
+	if actor == uuid.Nil {
+		return fieldError("actor", "is required")
+	}
+	return s.repo.Delete(ctx, id, func(cur Order) (Order, audit.Event, error) {
+		now := s.now()
+		next := cur
+		next.DeletedAt, next.DeletedByUserID = &now, &actor
+		next.UpdatedAt, next.UpdatedByUserID = now, &actor
+		ev, err := audit.New(s.newID(), &actor, EventDeleted, auditEntity, cur.ID, now, orderedSummary{
+			RecordNumber: cur.RecordNumber(), EmployeeID: cur.EmployeeID, Status: cur.Status,
+			Lines: len(cur.Lines), TotalCents: cur.TotalCents(),
+		}, nil)
+		return next, ev, err
 	})
 }
 

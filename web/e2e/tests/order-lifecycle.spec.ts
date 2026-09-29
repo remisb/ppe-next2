@@ -1052,6 +1052,48 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await other.context().close()
 })
 
+test('History: only a manager deletes an order, after asking; it then leaves History', async ({ browser }) => {
+  // The administrator has no Delete order: the order pane has no ⋯ for it.
+  await openTab('History')
+  const detail = await openOrder(paperRecord)
+  await expect(detail.getByRole('heading', { name: paperRecord })).toBeVisible()
+  await expect(detail.getByRole('button', { name: `More actions for ${paperRecord}` })).toHaveCount(0)
+
+  // Mia, the manager from the Users step, with the password reset there.
+  const other = await signInElsewhere(browser, 'mia@example.com', 'mia-password-2')
+  await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
+  await other.goto(webURL + '/history')
+  await other.getByRole('link', { name: paperRecord, exact: true }).click()
+  const pane = other.getByRole('complementary', { name: 'Order' })
+  const more = pane.getByRole('button', { name: `More actions for ${paperRecord}` })
+  // Delete asks first, saying the order was given; declining keeps it.
+  let asked = ''
+  other.once('dialog', (d) => {
+    asked = d.message()
+    void d.dismiss()
+  })
+  await more.click()
+  await other.getByRole('menuitem', { name: 'Delete order…' }).click()
+  expect(asked).toContain(`Delete ${paperRecord}`)
+  expect(asked).toContain('given and confirmed')
+  await expect(pane.getByRole('heading', { name: paperRecord })).toBeVisible()
+
+  other.once('dialog', (d) => void d.accept())
+  await more.click()
+  await other.getByRole('menuitem', { name: 'Delete order…' }).click()
+  await expect(other).toHaveURL(/\/history$/)
+  await expect(other.getByRole('heading', { name: 'History' })).toBeVisible()
+  await expect(other.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
+  await other.context().close()
+
+  // Gone for everyone: the administrator's open copy no longer loads, and the list leaves it out.
+  await page.reload()
+  await expect(page.getByRole('complementary', { name: 'Order' })).toContainText('order not found')
+  await openTab('History')
+  await expect(page.getByRole('link', { name: recordNumber, exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
+})
+
 test('Account: change password, then only the new one signs in', async () => {
   const newPassword = 'e2e-new-password-456'
   await page.getByRole('link', { name: admin.name }).click()

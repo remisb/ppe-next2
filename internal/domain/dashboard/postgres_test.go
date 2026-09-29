@@ -113,6 +113,15 @@ func seedPG(t *testing.T) pgData {
 	order(jonas, "Jonas", utc("2024-01-10T08:00:00Z"), at("2024-01-12T08:00:00Z"), "PAPER", shoeLine(1))
 	waitOld := order(jonas, "Jonas", utc("2026-09-10T08:00:00Z"), nil, "", shoeLine(1))
 	order(ona, "Ona", utc("2026-09-14T08:00:00Z"), nil, "", gloveLine(5))
+	// Deleted orders count nowhere. Counted, this one would wait longest, raise
+	// every ORDERED figure and mark Jonas's overdue gloves as reordered ...
+	deleted := func(id uuid.UUID) {
+		exec(`UPDATE orders SET deleted_at = now(), deleted_by_user_id = $2 WHERE id = $1`, id, manager)
+	}
+	deleted(order(jonas, "Jonas", utc("2026-09-01T08:00:00Z"), nil, "", gloveLine(3)))
+	// ... and this one would add a September giving, top shoes and a newer pair
+	// for Ona, so her shoes (order 1) would no longer be due.
+	deleted(order(ona, "Ona", utc("2026-09-05T08:00:00Z"), at("2026-09-06T08:00:00Z"), "IN_PERSON", shoeLine(2)))
 
 	return pgData{pool: pool, now: now, admin: admin, ona: ona, jonas: jonas, shoes: shoes, gloves: gloves, draft: draft, o1: o1, waitOld: waitOld}
 }

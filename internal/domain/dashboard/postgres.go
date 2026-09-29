@@ -59,12 +59,12 @@ func (r *PostgresRepository) Read(ctx context.Context, w Window) (Overview, erro
 
 func readAwaiting(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	if err := tx.QueryRow(ctx, `SELECT count(*), coalesce(sum(`+lineTotal+`), 0)::bigint
-		FROM orders o WHERE o.status = 'ORDERED'`).Scan(&o.Awaiting.Orders, &o.Awaiting.ValueCents); err != nil {
+		FROM orders o WHERE o.deleted_at IS NULL AND o.status = 'ORDERED'`).Scan(&o.Awaiting.Orders, &o.Awaiting.ValueCents); err != nil {
 		return err
 	}
 	rows, err := tx.Query(ctx, `SELECT o.id, o.record_seq, o.employee_id, o.employee_first_name || ' ' || o.employee_last_name,
 			o.ordered_at, `+lineTotal+`
-		FROM orders o WHERE o.status = 'ORDERED' ORDER BY o.ordered_at, o.id LIMIT $1`, w.Limit)
+		FROM orders o WHERE o.deleted_at IS NULL AND o.status = 'ORDERED' ORDER BY o.ordered_at, o.id LIMIT $1`, w.Limit)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func readMonths(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
 		), t AS (
 			SELECT o.ordered_at, o.given_at, sum(l.unit_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
-			FROM orders o JOIN order_lines l ON l.order_id = o.id
+			FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL
 			WHERE o.ordered_at >= $3 OR o.given_at >= $3
 			GROUP BY o.id
 		)
@@ -119,14 +119,14 @@ func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 			count(*) FILTER (WHERE confirmation_method = 'PAPER'),
 			count(*) FILTER (WHERE confirmation_method = 'IN_PERSON'),
 			percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM given_at - ordered_at))
-		FROM orders WHERE status = 'GIVEN' AND given_at >= $1`, w.ConfirmSince).
+		FROM orders WHERE deleted_at IS NULL AND status = 'GIVEN' AND given_at >= $1`, w.ConfirmSince).
 		Scan(&c.Given, &c.Electronic, &c.Paper, &c.InPerson, &c.MedianSeconds)
 }
 
 func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	rows, err := tx.Query(ctx, `SELECT l.catalogue_item_id, (array_agg(l.item_name ORDER BY o.given_at DESC))[1],
 			sum(l.quantity), sum(l.unit_price_cents * l.quantity)::bigint
-		FROM order_lines l JOIN orders o ON o.id = l.order_id
+		FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 		WHERE o.status = 'GIVEN' AND o.given_at >= $1
 		GROUP BY l.catalogue_item_id
 		ORDER BY 3 DESC, 4 DESC, 2 LIMIT $2`, w.MonthStarts[0], w.Limit)
@@ -155,14 +155,14 @@ func queryReplacements(ctx context.Context, tx pgx.Tx, now, dueBy time.Time, lim
 			SELECT DISTINCT ON (o.employee_id, l.catalogue_item_id)
 				o.employee_id, l.catalogue_item_id, l.item_name, l.size, l.quantity, o.id AS order_id, o.record_seq, o.given_at,
 				o.given_at + make_interval(months => l.service_period_months) AS due_at
-			FROM order_lines l JOIN orders o ON o.id = l.order_id
+			FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 			WHERE o.status = 'GIVEN'
 			ORDER BY o.employee_id, l.catalogue_item_id, o.given_at DESC, l.line_no
 		), due AS (
 			SELECT d.*, e.first_name || ' ' || e.last_name AS name, e.code
 			FROM latest d JOIN employees e ON e.id = d.employee_id AND e.deleted_at IS NULL
 			WHERE d.due_at < $1 AND NOT EXISTS (
-				SELECT 1 FROM orders p JOIN order_lines pl ON pl.order_id = p.id
+				SELECT 1 FROM orders p JOIN order_lines pl ON pl.order_id = p.id AND p.deleted_at IS NULL
 				WHERE p.status = 'ORDERED' AND p.employee_id = d.employee_id AND pl.catalogue_item_id = d.catalogue_item_id)
 		)
 		SELECT employee_id, name, code, catalogue_item_id, item_name, size, quantity, order_id, record_seq, given_at, due_at,
@@ -227,7 +227,7 @@ func (r *PostgresRepository) ReadManager(ctx context.Context, w ManagerWindow) (
 func readOnOrder(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigures) error {
 	o := &f.OnOrder
 	return tx.QueryRow(ctx, `SELECT count(DISTINCT o.id), coalesce(sum(l.quantity), 0), coalesce(sum(l.unit_price_cents * l.quantity), 0)::bigint
-		FROM orders o JOIN order_lines l ON l.order_id = o.id WHERE o.status = 'ORDERED'`).Scan(&o.Orders, &o.Items, &o.ValueCents)
+		FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL WHERE o.status = 'ORDERED'`).Scan(&o.Orders, &o.Items, &o.ValueCents)
 }
 
 // readOrderedMonths buckets orders by ordered_at into the window's months.
@@ -238,7 +238,7 @@ func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manag
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
 		), t AS (
 			SELECT o.ordered_at, sum(l.unit_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
-			FROM orders o JOIN order_lines l ON l.order_id = o.id
+			FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL
 			WHERE o.ordered_at >= $3
 			GROUP BY o.id
 		)
@@ -264,7 +264,7 @@ func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manag
 func readSpendByItem(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFigures) error {
 	rows, err := tx.Query(ctx, `SELECT l.catalogue_item_id, (array_agg(l.item_name ORDER BY o.ordered_at DESC))[1],
 			sum(l.quantity), sum(l.unit_price_cents * l.quantity)::bigint
-		FROM order_lines l JOIN orders o ON o.id = l.order_id
+		FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 		WHERE o.ordered_at >= $1
 		GROUP BY l.catalogue_item_id
 		ORDER BY 4 DESC, 3 DESC, 2 LIMIT $2`, w.MonthStarts[0], w.Limit)
@@ -288,13 +288,13 @@ func readForecast(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFig
 			SELECT DISTINCT ON (o.employee_id, l.catalogue_item_id)
 				o.employee_id, l.catalogue_item_id, l.item_name, l.quantity, o.given_at,
 				o.given_at + make_interval(months => l.service_period_months) AS due_at
-			FROM order_lines l JOIN orders o ON o.id = l.order_id
+			FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 			WHERE o.status = 'GIVEN'
 			ORDER BY o.employee_id, l.catalogue_item_id, o.given_at DESC, l.line_no
 		), due AS (
 			SELECT d.* FROM latest d JOIN employees e ON e.id = d.employee_id AND e.deleted_at IS NULL
 			WHERE d.due_at < $1 AND NOT EXISTS (
-				SELECT 1 FROM orders p JOIN order_lines pl ON pl.order_id = p.id
+				SELECT 1 FROM orders p JOIN order_lines pl ON pl.order_id = p.id AND p.deleted_at IS NULL
 				WHERE p.status = 'ORDERED' AND p.employee_id = d.employee_id AND pl.catalogue_item_id = d.catalogue_item_id)
 		)
 		SELECT d.catalogue_item_id,
@@ -366,7 +366,7 @@ func readCatalogueCheck(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Mana
 	}
 	c.NotOrdered, err = refs(`SELECT c.id, c.name FROM catalogue_items c
 		WHERE c.deleted_at IS NULL AND c.active AND c.unit_price_cents IS NOT NULL AND c.service_period_months IS NOT NULL
-			AND NOT EXISTS (SELECT 1 FROM order_lines l JOIN orders o ON o.id = l.order_id
+			AND NOT EXISTS (SELECT 1 FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 				WHERE l.catalogue_item_id = c.id AND o.ordered_at >= $1)
 		ORDER BY c.display_rank, lower(c.name)`, w.MonthStarts[0])
 	return err
@@ -440,7 +440,7 @@ func readMyAwaiting(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *Employe
 					WHERE c.order_id = o.id AND c.method = 'ELECTRONIC' AND c.revoked_at IS NULL AND c.expires_at > $2
 					ORDER BY c.created_at DESC LIMIT 1) AS expires_at,
 				EXISTS (SELECT 1 FROM order_confirmations c WHERE c.order_id = o.id AND c.method = 'ELECTRONIC') AS linked
-			FROM orders o WHERE o.status = 'ORDERED' AND o.prepared_by_user_id = $1
+			FROM orders o WHERE o.deleted_at IS NULL AND o.status = 'ORDERED' AND o.prepared_by_user_id = $1
 		)
 		SELECT id, record_seq, employee_id, name, ordered_at, items, cents,
 			CASE WHEN expires_at IS NOT NULL THEN 'ACTIVE' WHEN linked THEN 'EXPIRED' ELSE 'NONE' END, expires_at,
@@ -475,7 +475,7 @@ func readMyMonths(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeO
 		), t AS (
 			SELECT o.ordered_at, o.given_at, (SELECT sum(l.quantity) FROM order_lines l WHERE l.order_id = o.id) AS qty
 			FROM orders o
-			WHERE o.prepared_by_user_id = $4 AND (o.ordered_at >= $3 OR o.given_at >= $3)
+			WHERE o.deleted_at IS NULL AND o.prepared_by_user_id = $4 AND (o.ordered_at >= $3 OR o.given_at >= $3)
 		)
 		SELECT
 			(SELECT count(*) FROM t WHERE t.ordered_at >= m.s AND t.ordered_at < m.e),
@@ -501,7 +501,7 @@ func readRecentlyGiven(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *Empl
 	rows, err := tx.Query(ctx, `SELECT o.id, o.record_seq, o.employee_id, o.employee_first_name || ' ' || o.employee_last_name,
 			o.given_at, o.confirmation_method,
 			(SELECT coalesce(sum(l.quantity), 0) FROM order_lines l WHERE l.order_id = o.id), `+lineTotal+`
-		FROM orders o WHERE o.status = 'GIVEN' AND o.prepared_by_user_id = $1
+		FROM orders o WHERE o.deleted_at IS NULL AND o.status = 'GIVEN' AND o.prepared_by_user_id = $1
 		ORDER BY o.given_at DESC, o.id LIMIT $2`, w.UserID, w.Limit)
 	if err != nil {
 		return err

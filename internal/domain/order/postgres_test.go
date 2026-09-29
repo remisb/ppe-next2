@@ -472,3 +472,76 @@ func TestPostgresStatusInvariants(t *testing.T) {
 		t.Errorf("re-giving a GIVEN order err = %v, want ErrNotOrdered", err)
 	}
 }
+
+// Delete hides an order from every read and stops its links, but keeps the
+// row, its lines, its evidence and the audit trail.
+func TestPostgresDelete(t *testing.T) {
+	f := newPGFixture(t)
+	ctx := context.Background()
+	repo := NewPostgresRepository(f.pool)
+	ordered, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{f.emp, []LineParams{{f.shoes, 1, sp("43")}}}, f.actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, _, err := f.svc.CreateConfirmationLink(ctx, ordered.ID, f.actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	given, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 10, nil}}}, f.actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.ConfirmPaper(ctx, given.ID, f.actor); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := f.svc.Delete(ctx, ordered.ID, uuid.New()); !errors.Is(err, ErrActorNotFound) {
+		t.Errorf("unknown actor: %v, want ErrActorNotFound", err)
+	}
+	for _, id := range []uuid.UUID{ordered.ID, given.ID} {
+		if err := f.svc.Delete(ctx, id, f.actor); err != nil {
+			t.Fatalf("delete %v: %v", id, err)
+		}
+	}
+	if err := f.svc.Delete(ctx, ordered.ID, f.actor); !errors.Is(err, ErrNotFound) {
+		t.Errorf("second delete: %v, want ErrNotFound", err)
+	}
+	if err := f.svc.Delete(ctx, uuid.New(), f.actor); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown order: %v, want ErrNotFound", err)
+	}
+
+	if _, err := f.svc.Get(ctx, ordered.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("Get: %v, want ErrNotFound", err)
+	}
+	if _, err := f.svc.Record(ctx, given.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("Record: %v, want ErrNotFound", err)
+	}
+	if orders, total, err := repo.List(ctx, ListFilter{Limit: 50}); err != nil || total != 0 || len(orders) != 0 {
+		t.Errorf("List = %d orders, total %d, %v; want none", len(orders), total, err)
+	}
+	if _, err := f.svc.RecordByToken(ctx, token); !errors.Is(err, ErrLinkExpired) {
+		t.Errorf("link view: %v, want ErrLinkExpired", err)
+	}
+	if _, err := f.svc.ConfirmByToken(ctx, token, true); !errors.Is(err, ErrLinkExpired) {
+		t.Errorf("link confirm: %v, want ErrLinkExpired", err)
+	}
+	if _, err := f.svc.ConfirmPaper(ctx, ordered.ID, f.actor); !errors.Is(err, ErrNotFound) {
+		t.Errorf("paper: %v, want ErrNotFound", err)
+	}
+	if _, _, err := f.svc.CreateConfirmationLink(ctx, ordered.ID, f.actor); !errors.Is(err, ErrNotFound) {
+		t.Errorf("new link: %v, want ErrNotFound", err)
+	}
+
+	var rows, lines, evidence, events, unrevoked int
+	f.pool.QueryRow(ctx, `SELECT
+			(SELECT count(*) FROM orders WHERE deleted_at IS NOT NULL AND deleted_by_user_id = $1),
+			(SELECT count(*) FROM order_lines),
+			(SELECT count(*) FROM order_confirmations WHERE confirmed_at IS NOT NULL),
+			(SELECT count(*) FROM audit_events WHERE event = $2),
+			(SELECT count(*) FROM order_confirmations WHERE revoked_at IS NULL AND confirmed_at IS NULL)`,
+		f.actor, EventDeleted).Scan(&rows, &lines, &evidence, &events, &unrevoked)
+	if rows != 2 || lines != 2 || evidence != 1 || events != 2 || unrevoked != 0 {
+		t.Errorf("deleted rows %d, lines %d, evidence %d, events %d, open links %d; want 2, 2, 1, 2, 0",
+			rows, lines, evidence, events, unrevoked)
+	}
+}

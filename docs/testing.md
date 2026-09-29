@@ -39,6 +39,7 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | GIVEN → GIVEN (again) | No-op, same record | as §7 "Second confirmation" |
 | GIVEN → confirmation link | 409 | `TestElectronicConfirmation`, `TestPostgresStatusInvariants`, HTTP |
 | any other status, GIVEN without evidence, re-giving, editing lines | Rejected by the database | `TestPostgresStatusInvariants` |
+| ORDERED or GIVEN → deleted (a manager clearing demo and test orders; an addition to the manual) | Soft delete with `order.deleted`; the order leaves History, Get, Record, the dashboards and Replacements due; its links read as expired and unused ones are revoked; row, lines, evidence and audit stay; a second delete is 404; only the manager role (admin and employee 403); the pane's ⋯ Delete order… asks first, naming a given order's signed record | `TestDelete`, `TestPostgresDelete`, dashboard `TestPostgresOverview` / `Manager` / `Employee` (deleted orders seeded, counted nowhere), `TestPostgresMarkAsOrderedHTTP`, `TestRoutePolicy`; web `history` (`deleteQuestion`); e2e *History: only a manager deletes an order…* |
 
 ## Other manual rules
 

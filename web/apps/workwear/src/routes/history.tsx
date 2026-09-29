@@ -418,6 +418,11 @@ export function History({
               orders.reload()
               counts.reload()
             }}
+            onDeleted={() => {
+              close()
+              orders.reload()
+              counts.reload()
+            }}
           />
           {/* Beside the list only, and only where there is a keyboard. */}
           <p className="mt-4 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">

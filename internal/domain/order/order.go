@@ -1,6 +1,7 @@
 // Package order is the Order aggregate: the order, its immutable snapshot lines
 // and its confirmations. An order exists only from Mark as Ordered onwards;
-// the only later change is ORDERED → GIVEN through a confirmation.
+// the only later change is ORDERED → GIVEN through a confirmation, apart from
+// a manager deleting a demo or test order (a soft delete).
 package order
 
 import (
@@ -37,6 +38,7 @@ const (
 
 // Order is an immutable business record. Employee and user names are
 // snapshotted so a record never depends on the live employees or users rows.
+// A manager may delete one (soft delete); a deleted order is never read back.
 type Order struct {
 	ID                 uuid.UUID  `json:"id"`
 	RecordSeq          int64      `json:"-"`
@@ -56,8 +58,10 @@ type Order struct {
 	UpdatedByUserID    *uuid.UUID `json:"updated_by_user_id"`
 	// ReceiptTextVersion is the confirmation wording the order was placed
 	// under (ConfirmationTexts); its record shows that wording for good.
-	ReceiptTextVersion string `json:"receipt_text_version"`
-	Lines              []Line `json:"lines"`
+	ReceiptTextVersion string     `json:"receipt_text_version"`
+	Lines              []Line     `json:"lines"`
+	DeletedAt          *time.Time `json:"-"`
+	DeletedByUserID    *uuid.UUID `json:"-"`
 }
 
 // RecordNumber is the human-facing record number, e.g. WE-000123.

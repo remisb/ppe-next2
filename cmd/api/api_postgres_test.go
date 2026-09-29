@@ -350,6 +350,27 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 	if rec := api.do(t, "POST", "/api/v1/orders", staff, noSize); rec.Code != http.StatusBadRequest {
 		t.Errorf("missing size = %d, want 400", rec.Code)
 	}
+
+	// Only the manager role deletes an order (demo and test orders); it then leaves History.
+	id := o["id"].(string)
+	_, adminTok := api.userWith(t, user.RoleAdmin)
+	for _, tok := range []string{staff, adminTok} {
+		if rec := api.do(t, "DELETE", "/api/v1/orders/"+id, tok, nil); rec.Code != http.StatusForbidden {
+			t.Errorf("delete by a non-manager = %d, want 403", rec.Code)
+		}
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/orders/"+id, mgr, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/orders/"+id, staff, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("get deleted = %d, want 404", rec.Code)
+	}
+	if rec := api.do(t, "GET", "/api/v1/orders", staff, nil); decode[map[string]any](t, rec.Body.Bytes())["total"] != float64(0) {
+		t.Errorf("history after delete = %s", rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/orders/"+id, mgr, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("second delete = %d, want 404", rec.Code)
+	}
 }
 
 func TestPostgresHistoryHTTP(t *testing.T) {

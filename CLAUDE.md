@@ -31,7 +31,10 @@ which maps every manual §7 rule and status transition to its tests.
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
 `given_*` columns to the status; catalogue price and service period are nullable (Mark as
-Ordered must refuse such items), while order-line snapshots require them. Postgres tests
+Ordered must refuse such items), while order-line snapshots require them. A manager may
+soft-delete an order (`DELETE /api/v1/orders/{id}`, manager role only, migration 0015), so
+every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
+dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests
 must `TRUNCATE ... CASCADE` because of the actor foreign keys.
 
 ## Commands

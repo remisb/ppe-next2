@@ -96,7 +96,8 @@ The workwear app is the reference.
   the same with a pointer; the ⌘K palette also opens from Search in the sidebar and More.
 - **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
   Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
-  (Delete, Deactivate, and Reset password on Users). A record with its own page (an
+  (Delete, Deactivate, and Reset password on Users; Delete order in History's order pane,
+  for the manager role only). A record with its own page (an
   employee, a catalogue item) has the same ⋯ on that page, the only place a phone reaches it. The ⋯ button is always shown, never revealed on hover: touch
   screens have no hover.
 - **Empty states** give the next step in words and never repeat the header action as a

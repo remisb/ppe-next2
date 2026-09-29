@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { activityAt, capitalize, formatDateTime, formatRelative, formatShortDate, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
+import { activityAt, capitalize, deleteQuestion, formatDateTime, formatRelative, formatShortDate, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
@@ -87,5 +87,17 @@ describe('relative dates', () => {
   it('capitalizes for a table cell', () => {
     expect(capitalize('today 08:30')).toBe('Today 08:30')
     expect(capitalize('22 Sept')).toBe('22 Sept')
+  })
+})
+
+describe('deleteQuestion', () => {
+  const o = { record_number: 'WE-000004', employee_first_name: 'Ona', employee_last_name: 'Kazlauskienė' }
+  it('names the order and what deleting it does', () => {
+    expect(deleteQuestion({ ...o, status: 'ORDERED' })).toBe(
+      'Delete WE-000004 for Ona Kazlauskienė? It leaves History and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.',
+    )
+  })
+  it('warns that a given order takes its signed record with it', () => {
+    expect(deleteQuestion({ ...o, status: 'GIVEN' })).toContain('given and confirmed')
   })
 })

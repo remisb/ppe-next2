@@ -24,6 +24,7 @@ type fakeRepo struct {
 	events     []audit.Event
 	lastFilter ListFilter
 	links      []Confirmation
+	deleted    map[uuid.UUID]Order
 }
 
 func (f *fakeRepo) CreateLink(_ context.Context, orderID uuid.UUID, fn LinkFunc) error {
@@ -136,6 +137,25 @@ func (f *fakeRepo) List(_ context.Context, lf ListFilter) ([]Order, int, error) 
 	return out, len(out), nil
 }
 
+// Delete keeps the deleted order in f.deleted; reads no longer find it.
+func (f *fakeRepo) Delete(_ context.Context, id uuid.UUID, fn DeleteFunc) error {
+	o, ok := f.orders[id]
+	if !ok {
+		return ErrNotFound
+	}
+	d, ev, err := fn(o)
+	if err != nil {
+		return err
+	}
+	delete(f.orders, id)
+	if f.deleted == nil {
+		f.deleted = map[uuid.UUID]Order{}
+	}
+	f.deleted[id] = d
+	f.events = append(f.events, ev)
+	return nil
+}
+
 func (f *fakeRepo) Get(_ context.Context, id uuid.UUID) (Order, error) {
 	o, ok := f.orders[id]
 	if !ok {
@@ -240,5 +260,35 @@ func TestMarkAsOrderedRejections(t *testing.T) {
 	_, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{f.emp, []LineParams{{f.draft, 1, nil}}}, f.actor)
 	if err == nil || !strings.Contains(err.Error(), "Helmet") {
 		t.Errorf("price-missing error should name the item: %v", err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	f := newMarkFixture()
+	ctx := context.Background()
+	o, err := f.svc.MarkAsOrdered(ctx, MarkAsOrderedParams{f.emp, []LineParams{{f.gloves, 10, nil}}}, f.actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.Delete(ctx, o.ID, uuid.Nil); !errors.Is(err, ErrInvalid) {
+		t.Errorf("nil actor: %v, want ErrInvalid", err)
+	}
+	manager := uuid.New()
+	if err := f.svc.Delete(ctx, o.ID, manager); err != nil {
+		t.Fatal(err)
+	}
+	d := f.repo.deleted[o.ID]
+	if d.DeletedAt == nil || *d.DeletedByUserID != manager || *d.UpdatedByUserID != manager || !d.UpdatedAt.Equal(*d.DeletedAt) {
+		t.Errorf("deleted order = %+v", d)
+	}
+	ev := f.repo.events[len(f.repo.events)-1]
+	if ev.Event != EventDeleted || *ev.ActorUserID != manager || !strings.Contains(string(ev.Before), `"record_number":"WE-000001"`) {
+		t.Errorf("event = %+v", ev)
+	}
+	if _, err := f.svc.Get(ctx, o.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("Get after delete: %v, want ErrNotFound", err)
+	}
+	if err := f.svc.Delete(ctx, o.ID, manager); !errors.Is(err, ErrNotFound) {
+		t.Errorf("second delete: %v, want ErrNotFound", err)
 	}
 }

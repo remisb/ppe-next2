@@ -181,6 +181,9 @@ func (stubOrders) LinkByHash(context.Context, string) (order.Confirmation, error
 func (stubOrders) Confirm(context.Context, uuid.UUID, *uuid.UUID, uuid.UUID, order.ConfirmFunc) (order.Order, error) {
 	return order.Order{}, order.ErrNotFound
 }
+func (stubOrders) Delete(context.Context, uuid.UUID, order.DeleteFunc) error {
+	return order.ErrNotFound
+}
 func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, error) {
 	return order.Confirmation{}, order.ErrNotFound
 }
@@ -310,6 +313,7 @@ var policy = map[string]string{
 	"POST /api/v1/confirmations/view":               "public",
 	"POST /api/v1/confirmations/confirm":            "public",
 	"GET /api/v1/orders/{id}":                       "any",
+	"DELETE /api/v1/orders/{id}":                    "manager",
 	"GET /api/v1/dashboard":                         "admins",
 	"GET /api/v1/dashboard/manager":                 "manager",
 	"GET /api/v1/dashboard/employee":                "employee",

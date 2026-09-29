@@ -152,6 +152,8 @@ export function createClient(options: ClientOptions) {
       confirmInPerson: (id: string) => request<OrderRecord>('POST', `/api/v1/orders/${seg(id)}/confirm-in-person`, { confirmed: true }),
       /** View Record / Print Record: the locked receipt. */
       record: (id: string) => request<OrderRecord>('GET', `/api/v1/orders/${seg(id)}/record`),
+      /** Managers only: soft-deletes a demo or test order; it leaves History, the dashboards and its links. */
+      remove: (id: string) => request<void>('DELETE', `/api/v1/orders/${seg(id)}`),
     },
 
     /** Public, token-only routes for the employee's confirmation page. */

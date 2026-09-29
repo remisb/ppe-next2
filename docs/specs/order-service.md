@@ -2,15 +2,28 @@
 
 The Order aggregate: `internal/domain/order` (orders, snapshot lines, confirmations),
 routes in `cmd/api/order-routes.go`, tables from migrations `0006_orders` and
-`0007_order_confirmations`. Manual §1, §3.1, algorithm B and algorithm E. Resolution
+`0007_order_confirmations` (`0015_order_soft_delete` for Delete). Manual §1, §3.1, algorithm B and algorithm E. Resolution
 (algorithm A) is described in [item-set-service.md](item-set-service.md).
 
 ## Statuses
 
 Only `ORDERED` and `GIVEN` are ever stored. An unsubmitted order is client working state;
 there is no draft row. The only transition is ORDERED → GIVEN through a confirmation
-(Slice 6). Orders and lines are never updated or deleted otherwise; `order_lines` rejects
-UPDATE/DELETE with a trigger.
+(Slice 6). Orders and lines are never updated otherwise; `order_lines` rejects
+UPDATE/DELETE with a trigger. The one exception, beyond the manual, is Delete below.
+
+## Delete — `DELETE /api/v1/orders/{id}` (manager role only)
+
+For clearing demo and test orders. The manager role alone may; an administrator without it
+gets 403, as does the employee role. Either status can be deleted. It is a soft delete: in
+one transaction the live order is locked (404 if missing or already deleted),
+`deleted_at` / `deleted_by_user_id` and `updated_*` are set, the order's unused electronic
+links are revoked, and `order.deleted` is recorded with the record number, employee,
+status, line count and total as its `before`. Nothing else changes: the row, its snapshot
+lines, its confirmation evidence and its audit events stay, and record numbers are never
+reused. Every read filters `deleted_at IS NULL`: Get, History, the record, the dashboards
+and Replacements due; a link to a deleted order, even one already used, reads as expired
+(410). 204 on success.
 
 ## Mark as Ordered — `POST /api/v1/orders` (any authenticated)
 

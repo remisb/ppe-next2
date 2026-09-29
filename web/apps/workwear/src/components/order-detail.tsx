@@ -4,13 +4,15 @@ import { useState } from 'react'
 
 import { ConfirmationSheet } from '@/components/confirmation-sheet'
 import { HandOver } from '@/components/hand-over'
+import { MoreActions } from '@/components/more-actions'
 import { OrderLinesTable } from '@/components/order-lines'
 import { ErrorState, Loading } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { WhatsAppButton } from '@/components/whatsapp-button'
-import { useApi } from '@/lib/api'
-import { LONG_WAIT_DAYS, formatDateTime, formatWaiting, historyActions, methodText, statusLabel, waitingDays } from '@/lib/history'
+import { useApi, useSession } from '@/lib/api'
+import { LONG_WAIT_DAYS, deleteQuestion, formatDateTime, formatWaiting, historyActions, methodText, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
@@ -28,6 +30,7 @@ export function OrderDetail({
   onClose,
   onOpenRecord,
   onChanged,
+  onDeleted,
 }: {
   id: string
   timeZone: string | undefined
@@ -36,12 +39,27 @@ export function OrderDetail({
   onOpenRecord: (id: string, print: boolean) => void
   /** The order changed state (a paper confirmation): the list should reload. */
   onChanged: () => void
+  /** A manager deleted the order: close it and reload the list. */
+  onDeleted: () => void
 }) {
   const { client } = useApi()
+  const session = useSession()
   const order = useLoad(() => client.orders.get(id), [id])
   const [confirming, setConfirming] = useState(false)
   const [handingOver, setHandingOver] = useState(false)
+  const [deleteError, setDeleteError] = useState<unknown>()
   const o = order.data
+
+  const remove = async (o: Order) => {
+    if (!window.confirm(deleteQuestion(o))) return
+    setDeleteError(undefined)
+    try {
+      await client.orders.remove(o.id)
+      onDeleted()
+    } catch (err) {
+      setDeleteError(err)
+    }
+  }
 
   return (
     <article aria-label={o ? `Order ${o.record_number}` : 'Order'} className="flex flex-col gap-4">
@@ -68,7 +86,10 @@ export function OrderDetail({
             onConfirm={() => setConfirming(true)}
             onHandOver={() => setHandingOver(true)}
             onOpenRecord={(print) => onOpenRecord(o.id, print)}
+            // Only the manager role clears demo and test orders; the API allows no one else.
+            onDelete={session.isManager ? () => void remove(o) : undefined}
           />
+          {deleteError ? <ErrorState title="The order was not deleted" error={deleteError} /> : null}
           {handingOver ? (
             <HandOver
               orderId={o.id}
@@ -135,11 +156,14 @@ function Actions({
   onConfirm,
   onHandOver,
   onOpenRecord,
+  onDelete,
 }: {
   order: Order
   onConfirm: () => void
   onHandOver: () => void
   onOpenRecord: (print: boolean) => void
+  /** Managers only: Delete order under ⋯, last and asking first. */
+  onDelete?: (() => void) | undefined
 }) {
   const actions = historyActions(o.status)
   const whatsapp = formatWhatsApp(messageFromOrder(o))
@@ -164,6 +188,13 @@ function Actions({
         <Printer aria-hidden /> Print Record
       </Button>
       <WhatsAppButton label={actions.includes('shareWhatsApp') ? 'Share via WhatsApp' : 'Copy for WhatsApp'} text={whatsapp} />
+      {onDelete ? (
+        <MoreActions label={`More actions for ${o.record_number}`} className="justify-self-start">
+          <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            Delete order…
+          </DropdownMenuItem>
+        </MoreActions>
+      ) : null}
     </div>
   )
 }
