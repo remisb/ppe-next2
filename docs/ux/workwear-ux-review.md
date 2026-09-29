@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`08dc9b5`)
+status: phases 1–3 shipped, plus follow-ups (`397bfd4`)
 
 > **Status, updated 29 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -20,7 +20,8 @@ status: phases 1–3 shipped, plus follow-ups (`08dc9b5`)
 > in `b2ac1e4`, clothing sizes named by their band in `dbf9091`, Delete order for
 > managers (section 4) in `b3ec94e`, the staff app in English, Lithuanian and Russian
 > in `6290a42`, and a user guide with screenshots in `915c738`, in
-> Lithuanian and Russian in `08dc9b5`.
+> Lithuanian and Russian in `08dc9b5`, the Lithuanian review button fixed in `f0fb0bd`,
+> and the guide on a Help screen in the app in `397bfd4`.
 > Each came with its e2e steps (37 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -882,7 +883,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `dbf9091`, `b3ec94e`, `6290a42`, `915c738`, `08dc9b5`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `dbf9091`, `b3ec94e`, `6290a42`, `915c738`, `08dc9b5`, `f0fb0bd`, `397bfd4`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -914,6 +915,8 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Delete order for the manager role, under ⋯ in History's order pane: it asks first, and the order leaves History, the dashboards and Replacements due while its row, evidence and audit trail stay (a soft delete)
 - [x] The staff app in English, Lithuanian and Russian: each user picks the language on Account; it is saved on their account, so every device follows it, and before sign-in the device's last language is used. Plurals, amounts ("274,90 €") and dates follow the language, and the Items Given Record, the employee's confirmation page and hand-over mode keep English / Russian
 - [x] A [user guide](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U) for staff (`docs/guide`) in English, Lithuanian and Russian, with a language switch: twelve short sections from sign-in to shortcuts, each a few steps above its screenshot, and each language shows the app in that language and names its buttons as the app does. `pnpm guide` in `web/e2e` retakes all 45 screenshots from the demo data, so the guide can follow the UI
+- [x] Create Order's Review and mark as ordered button wraps a long label onto two lines (the Lithuanian one ran into its edges at desktop width); the e2e Language step fails when a visible button on Create Order holds text wider than itself in Lithuanian
+- [x] A Help screen (`/help`) shows the user guide in the app, from the sidebar or rail foot, the phone's More sheet, ⌘K and the shortcuts sheet. It opens in the user's language, with its own English / Lietuvių / Русский switch that changes only the guide, and leaves out what the user's roles cannot do: Users for administrators, Delete order for managers, and each role's own dashboard. Each section has its own address (`/help#history`). The guide is typed text in the app (`src/help`), kept in step across the three languages by a unit test, and `docs/guide` is written from it
 
 ### Still open
 
@@ -922,7 +925,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - **Hallway test**: the five-user test of the phone Create Order, timing "apply the
   starter kit, change one size, send", was not run before building. Running it now would
   measure the new flow.
-- **Native-speaker review** of the Lithuanian and Russian wording, which was drafted for review, on the [translation review page](https://claude.ai/artifact/5HXjeDapxp7umudiqDnD6Q): all 718 texts beside the English, counted phrases at 1, 3, 5 and 21, where a reviewer with Contributor access marks each draft right or suggests wording, and progress shows per language. First the short navigation labels (the phone's raised button reads "Užsakyti"; the tablet rail's Users reads "Польз."), "Kam skirta" / "Для кого" for Assigned to, and "Reikia pakeisti" / "Требуется замена" for Replacements due, and the user guide's Lithuanian and Russian pages, drafted the same way. Whether WhatsApp messages should follow the sender's language, as now, or always go out in English / Russian is a product owner's call. The guide's Lithuanian screenshots show one layout fault: at desktop width "Peržiūrėti ir pažymėti kaip užsakytą" is wider than the Create Order panel's button and touches both its edges; the button should wrap, or the label be shortened.
+- **Native-speaker review** of the Lithuanian and Russian wording, which was drafted for review, on the [translation review page](https://claude.ai/artifact/5HXjeDapxp7umudiqDnD6Q): all 718 texts beside the English, counted phrases at 1, 3, 5 and 21, where a reviewer with Contributor access marks each draft right or suggests wording, and progress shows per language. First the short navigation labels (the phone's raised button reads "Užsakyti"; the tablet rail's Users reads "Польз."), "Kam skirta" / "Для кого" for Assigned to, and "Reikia pakeisti" / "Требуется замена" for Replacements due, and the user guide's Lithuanian and Russian pages, drafted the same way. Whether WhatsApp messages should follow the sender's language, as now, or always go out in English / Russian is a product owner's call.
 - **Product owner sign-off** for in-person confirmation and for deleting orders, a given
   one with its signed record, both of which go beyond the manual; and iPad Guided Access on
   any tablet left at a counter.
