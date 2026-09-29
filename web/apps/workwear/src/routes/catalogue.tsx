@@ -175,7 +175,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                   >
                     <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
                       <span className="flex items-center gap-3">
-                        <ItemTile icon={i.icon} className="size-8 stacked:hidden" />
+                        <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
                         <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
                           {i.name}
                         </a>

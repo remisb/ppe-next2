@@ -4,6 +4,8 @@ import { Fragment, useEffect, useState } from 'react'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderDetail } from '@/components/order-detail'
+import { RecordPreview } from '@/components/record-preview'
+import { RelativeDate } from '@/components/relative-date'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/field'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { useApi } from '@/lib/api'
 import { isTyping } from '@/lib/shortcuts'
-import { LONG_WAIT_DAYS, activityAt, formatDateTime, formatShortDate, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
+import { LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import type { SortColumn, SortState } from '@/lib/sort'
 import { useLoad } from '@/lib/use-load'
@@ -48,6 +50,8 @@ const columns: SortColumn<HistorySort>[] = [
 // Beside an open order the list keeps the columns that find the next one to chase: one line a row.
 const besideColumns = columns.filter((c) => c.key !== 'usage')
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
+
+const recordLink = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 
 function Kbd({ children }: { children: string }) {
   return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
@@ -315,22 +319,29 @@ export function History({
                         open(o.id)
                       }}
                     >
-                      {/* Second line in a row: the record number, still the link for keyboards and "open in new tab". */}
+                      {/*
+                        Second line in a row: the record number, still the link for keyboards and "open in new tab".
+                        With no order open, hovering it previews the order; beside one, the row itself does that.
+                      */}
                       <TableCell className="font-medium stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground">
-                        <a
-                          {...linkTo({ name: 'history', order: o.id }, () => open(o.id))}
-                          className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          {o.record_number}
-                        </a>
+                        {beside ? (
+                          <a {...linkTo({ name: 'history', order: o.id }, () => open(o.id))} className={recordLink}>
+                            {o.record_number}
+                          </a>
+                        ) : (
+                          <RecordPreview orderId={o.id} timeZone={tz} {...linkTo({ name: 'history', order: o.id }, () => open(o.id))} className={recordLink}>
+                            {o.record_number}
+                          </RecordPreview>
+                        )}
                       </TableCell>
                       <TableCell className={cn('whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1 stacked:truncate stacked:font-medium', !beside && 'min-w-32')}>
                         {o.employee_first_name} {o.employee_last_name}
                         {o.employee_code && !beside ? <span className="text-muted-foreground stacked:hidden"> · {o.employee_code}</span> : null}
                       </TableCell>
                       <TableCell className="tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
-                        {beside ? null : <span className="stacked:hidden">{formatDateTime(activityAt(o), tz)}</span>}
-                        <span className={cn(!beside && 'hidden stacked:inline')}>{formatShortDate(activityAt(o), tz)}</span>
+                        {/* "3 days ago", the exact time on hover; today's and yesterday's with the time where there is room. */}
+                        {beside ? null : <RelativeDate iso={activityAt(o)} timeZone={tz} time className="stacked:hidden" />}
+                        <RelativeDate iso={activityAt(o)} timeZone={tz} className={cn(!beside && 'hidden stacked:inline')} />
                       </TableCell>
                       <TableCell className="stacked:order-1 stacked:w-auto">
                         <span className="inline-flex items-center gap-2">

@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react'
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { MoreActions } from '@/components/more-actions'
+import { RecordPreview } from '@/components/record-preview'
+import { RelativeDate } from '@/components/relative-date'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -14,7 +16,7 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdow
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
 import { useApi, useSession } from '@/lib/api'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
-import { formatDateTime, formatUsage } from '@/lib/history'
+import { formatUsage } from '@/lib/history'
 import { missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
 import { type SortColumn, type SortState, sizeRank, sortRows } from '@/lib/sort'
@@ -277,7 +279,9 @@ function ItemsTable({
             </TableCell>
             <TableCell label="Size" className="stacked:order-2">{i.size ?? '–'}</TableCell>
             <TableCell label="Quantity" className="text-right tabular-nums stacked:order-2">{i.quantity}</TableCell>
-            <TableCell label={dateLabel} className="tabular-nums stacked:order-2">{formatDateTime(i.at, tz)}</TableCell>
+            <TableCell label={dateLabel} className="tabular-nums stacked:order-2">
+              <RelativeDate iso={i.at} timeZone={tz} time />
+            </TableCell>
             {given ? (
               <TableCell label="Usage time" className="stacked:order-2">{formatUsage(i.usageMonths) || '—'}</TableCell>
             ) : null}
@@ -288,18 +292,29 @@ function ItemsTable({
               </TableCell>
             ) : null}
             <TableCell label={given ? 'Receipt' : 'Record'} className="stacked:order-3">
+              {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
               {given ? (
-                <a
+                <RecordPreview
+                  orderId={i.orderId}
+                  timeZone={tz}
                   {...linkTo({ name: 'record', id: i.orderId }, navigate)}
                   aria-label={`Receipt ${i.recordNumber}`}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
                 >
                   <FileText aria-hidden className="size-4" />
                   {i.recordNumber}
-                </a>
+                </RecordPreview>
               ) : (
                 <span className="inline-flex items-center gap-2">
-                  {i.recordNumber} <Badge variant="secondary">Ordered</Badge>
+                  <RecordPreview
+                    orderId={i.orderId}
+                    timeZone={tz}
+                    {...linkTo({ name: 'history', order: i.orderId }, navigate)}
+                    className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                  >
+                    {i.recordNumber}
+                  </RecordPreview>
+                  <Badge variant="secondary">Ordered</Badge>
                 </span>
               )}
             </TableCell>

@@ -696,6 +696,41 @@ test('History beside an open order: one line a row; J and K move through it, Esc
   await expect(page.getByRole('columnheader', { name: 'Usage time' })).toBeVisible()
 })
 
+test('desktop power layer: relative dates, a record previewed on hover, Compact rows kept per user', async () => {
+  await openTab('History')
+  const row = page.getByRole('row', { name: new RegExp(recordNumber) })
+  // This run's orders are from today (or, run across midnight, yesterday); the exact time is on hover.
+  const when = row.locator('time:visible')
+  await expect(when).toHaveText(/^(Today|Yesterday) \d{2}:\d{2}$/)
+  await expect(when).toHaveAttribute('title', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)
+
+  // Hovering the record number shows the order without leaving the list.
+  await row.getByRole('link', { name: recordNumber, exact: true }).hover()
+  const preview = page.locator('[data-slot=record-preview]')
+  await expect(preview).toContainText(recordNumber)
+  await expect(preview).toContainText(/Total\s*€/)
+  await page.getByRole('heading', { name: 'History' }).hover()
+  await expect(preview).toBeHidden()
+
+  const height = async () => (await row.boundingBox())!.height
+  const comfortable = await height()
+  await page.keyboard.press('ControlOrMeta+k')
+  await page.getByRole('dialog', { name: 'Search or jump to' }).getByRole('combobox').fill('compact')
+  await page.getByRole('option', { name: 'Compact table rows' }).click()
+  await expect.poll(height, { message: 'a Compact History row' }).toBeLessThanOrEqual(33)
+  expect(comfortable).toBeGreaterThan(33)
+  // Saved for this user on this device: a reload keeps it; Account switches it back.
+  await page.reload()
+  await expect.poll(height).toBeLessThanOrEqual(33)
+  await page.goto('/account')
+  const rows = page.getByRole('group', { name: 'Table rows' })
+  await expect(rows.getByRole('button', { name: 'Compact' })).toHaveAttribute('aria-pressed', 'true')
+  await rows.getByRole('button', { name: 'Comfortable' }).click()
+  await expect(rows.getByRole('button', { name: 'Comfortable' })).toHaveAttribute('aria-pressed', 'true')
+  await openTab('History')
+  await expect.poll(height).toBeGreaterThan(33)
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')

@@ -15,7 +15,9 @@ import { cn } from "@/lib/utils"
  * `"list"` makes the cards one bordered list of short rows instead, for
  * lists people scan to find a record (History, Employees, Item Catalogue).
  * `sortControl` (a SortControl) shows above the cards only while stacked,
- * standing in for the sortable headers the stacked table hides.
+ * standing in for the sortable headers the stacked table hides. Compact
+ * density (`compact:`, a user's choice with a mouse) shortens the rows of an
+ * unstacked table; a stacked one keeps its own spacing.
  */
 type Stack = boolean | "grid" | "list"
 const StackContext = React.createContext<Stack>(false)
@@ -124,13 +126,24 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground compact:h-8 [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
     />
   )
 }
+
+/**
+ * Compact density: 32px rows. A row's buttons and ⋯ are 28px, still over
+ * WCAG's 24px for a mouse, and sit on the middle of the line rather than its
+ * baseline, which would add a few pixels below them.
+ */
+const compactCell = [
+  "compact:h-8 compact:py-0.5",
+  "compact:**:data-[slot=button]:h-7 compact:**:data-[slot=button]:align-middle",
+  "compact:**:data-[slot=dropdown-menu-trigger]:size-7 compact:**:data-[slot=dropdown-menu-trigger]:align-middle",
+]
 
 /**
  * In a stacked table a cell with a `label` is a "label … value" line; one
@@ -149,7 +162,8 @@ function TableCell({
       data-slot="table-cell"
       className={cn(
         "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
-        stack && "stacked:block stacked:w-full stacked:px-0 stacked:py-0.5 stacked:whitespace-normal",
+        compactCell,
+        stack && "stacked:block stacked:h-auto stacked:w-full stacked:px-0 stacked:py-0.5 stacked:whitespace-normal",
         stack && label && "stacked:flex stacked:items-baseline stacked:justify-between stacked:gap-4 stacked:text-right",
         className
       )}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { useApi } from '@/lib/api'
+import { applyDensity, loadDensity } from '@/lib/density'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
 import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { useLoad } from '@/lib/use-load'
@@ -146,6 +147,9 @@ export function App() {
     },
     session !== null,
   )
+
+  // The signed-in user's table density; no one's once signed out.
+  useEffect(() => applyDensity(session ? loadDensity(session.userId) : null), [session?.userId])
 
   // More closes when a section is chosen (any navigation) and on Escape.
   useEffect(() => setMoreOpen(false), [asked])
@@ -374,7 +378,7 @@ export function App() {
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />
         ) : null}
       </main>
-      <CommandPalette open={paletteOpen} sections={sections} onClose={() => setPaletteOpen(false)} navigate={navigate} />
+      <CommandPalette open={paletteOpen} sections={sections} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
       <FormSheet open={helpOpen} onClose={() => setHelpOpen(false)} title="Keyboard shortcuts" description="Letters work anywhere except while typing in a field.">
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[auto_1fr]">
           {shortcutList.map((s) => (

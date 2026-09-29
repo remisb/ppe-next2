@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 
 import { ItemTile } from '@/components/item-icon'
 import { MoreActions } from '@/components/more-actions'
+import { RecordPreview } from '@/components/record-preview'
+import { RelativeDate } from '@/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -294,17 +296,27 @@ function ItemOrders({
           {rows.map(({ o, line }) => (
             <TableRow key={o.id}>
               <TableCell className="stacked:order-1 stacked:mb-1">
+                {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
                 {o.status === 'GIVEN' ? (
-                  <a
+                  <RecordPreview
+                    orderId={o.id}
+                    timeZone={tz}
                     {...linkTo({ name: 'record', id: o.id }, navigate)}
                     aria-label={`Receipt ${o.record_number}`}
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
                   >
                     <FileText aria-hidden className="size-4" />
                     {o.record_number}
-                  </a>
+                  </RecordPreview>
                 ) : (
-                  <span className="font-medium">{o.record_number}</span>
+                  <RecordPreview
+                    orderId={o.id}
+                    timeZone={tz}
+                    {...linkTo({ name: 'history', order: o.id }, navigate)}
+                    className="inline-flex min-h-11 items-center rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                  >
+                    {o.record_number}
+                  </RecordPreview>
                 )}
               </TableCell>
               <TableCell label="Employee" className="stacked:order-2">
@@ -318,7 +330,9 @@ function ItemOrders({
               <TableCell label="Status" className="stacked:order-2">
                 <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
               </TableCell>
-              <TableCell label="Date" className="tabular-nums stacked:order-2">{formatDateTime(activityAt(o), tz)}</TableCell>
+              <TableCell label="Date" className="tabular-nums stacked:order-2">
+                <RelativeDate iso={activityAt(o)} timeZone={tz} time />
+              </TableCell>
               <TableCell label="Size" className="stacked:order-2">{line.size ?? '–'}</TableCell>
               <TableCell label="Quantity" className="text-right tabular-nums stacked:order-2">{line.quantity}</TableCell>
               <TableCell label="Unit price" className="text-right tabular-nums stacked:order-2">{formatEuro(line.unit_price_cents)}</TableCell>

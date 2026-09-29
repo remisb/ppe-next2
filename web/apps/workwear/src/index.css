@@ -8,6 +8,20 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * `compact:` is the Compact table density (lib/density.ts, <html
+ * data-density="compact">), on a screen with a fine pointer only: a touch
+ * screen keeps 44px targets and print keeps the record's layout. Declared
+ * before `stacked:` so a stacked table's own spacing wins over it.
+ */
+@custom-variant compact {
+  @media screen and (pointer: fine) {
+    &:where([data-density=compact] *) {
+      @slot;
+    }
+  }
+}
+
+/*
  * `stacked:` is a table (see components/ui/table.tsx) with under 48rem of room:
  * a phone, a tablet beside the side rail, a narrow laptop window. It asks the
  * table's own container, not the viewport, because only the container knows

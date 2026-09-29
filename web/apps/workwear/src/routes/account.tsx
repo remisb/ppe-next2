@@ -8,14 +8,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, controlProps } from '@/components/ui/field'
 import { useApi, useSession } from '@/lib/api'
+import { type Density, useDensity } from '@/lib/density'
 import { type PasswordChange, type PasswordErrors, validatePasswordChange } from '@/lib/password'
 import { errorText } from '@/lib/use-load'
 
 const empty: PasswordChange = { current: '', next: '', confirm: '' }
 
+const densities: { value: Density; label: string }[] = [
+  { value: 'comfortable', label: 'Comfortable' },
+  { value: 'compact', label: 'Compact' },
+]
+
 /**
- * Account: change the signed-in user's own password. On a phone Sign out is
- * here, since the bottom bar holds only the sections; from md it is in the sidebar.
+ * Account: change the signed-in user's own password, and, with a mouse, the
+ * table density. On a phone Sign out is here, since the bottom bar holds only
+ * the sections; from md it is in the sidebar.
  */
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const { client } = useApi()
@@ -25,6 +32,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
   const [serverError, setServerError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [density, setDensity] = useDensity(session.userId)
 
   const set = (k: keyof PasswordChange) => (e: { target: { value: string } }) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -89,6 +97,28 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
               {busy ? 'Changing…' : 'Change password'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+      {/* Compact rows need a mouse or trackpad: a touch screen keeps its 44px rows, so it has nothing to choose. */}
+      <Card className="mt-6 md:max-w-md pointer-coarse:hidden">
+        <CardHeader>
+          <CardTitle>Table rows</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div role="group" aria-label="Table rows" className="inline-grid w-fit grid-flow-col gap-1 rounded-lg bg-muted p-1">
+            {densities.map((d) => (
+              <button
+                key={d.value}
+                type="button"
+                aria-pressed={density === d.value}
+                onClick={() => setDensity(d.value)}
+                className="flex h-9 cursor-pointer items-center rounded-md px-3 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm"
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">Compact fits more rows on the screen. It is kept for you on this device; ⌘K finds it too.</p>
         </CardContent>
       </Card>
       <Button variant="outline" className="mt-6 w-full md:hidden" onClick={onSignOut}>

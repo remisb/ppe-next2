@@ -1,9 +1,10 @@
 import type { CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
-import { ClipboardList, CornerDownLeft, FileText, Search, UserRound, type LucideIcon } from 'lucide-react'
+import { ClipboardList, CornerDownLeft, FileText, Rows3, Rows4, Search, UserRound, type LucideIcon } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
 import { useApi } from '@/lib/api'
+import { useDensity } from '@/lib/density'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
@@ -22,7 +23,8 @@ interface Entry {
   label: string
   hint?: string
   icon: ReactNode
-  to: Route
+  /** Where the entry goes, or what it does instead (a setting). */
+  to: Route | (() => void)
 }
 
 /** How many of each kind the palette lists, so the first screen of results stays short. */
@@ -37,11 +39,14 @@ const PER_GROUP = 5
 export function CommandPalette({
   open,
   sections,
+  userId,
   onClose,
   navigate,
 }: {
   open: boolean
   sections: PaletteSection[]
+  /** Whose table density the palette's switch saves. */
+  userId: string
   onClose: () => void
   navigate: (to: Route) => void
 }) {
@@ -55,6 +60,7 @@ export function CommandPalette({
   // The order a record-number search finds, if any: "WE-000004", "we4", "4".
   const [orders, setOrders] = useState<ListedOrder[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
+  const [density, setDensity] = useDensity(userId)
 
   useEffect(() => {
     const d = dialog.current
@@ -137,6 +143,18 @@ export function CommandPalette({
         to: { name: 'createOrder', prefill: { employeeId: e.id, items: [] } },
       })
     }
+    // Table density, for a search that asks for it: "compact", "comfortable", "density", "rows".
+    if (term && ['compact', 'comfortable', 'density', 'dense', 'table rows'].some((w) => w.startsWith(term) || term.startsWith(w))) {
+      const next = density === 'compact' ? 'comfortable' : 'compact'
+      out.push({
+        key: 'density',
+        group: 'Actions',
+        label: next === 'compact' ? 'Compact table rows' : 'Comfortable table rows',
+        hint: 'Density',
+        icon: next === 'compact' ? <Rows4 aria-hidden className="size-4" /> : <Rows3 aria-hidden className="size-4" />,
+        to: () => setDensity(next),
+      })
+    }
     for (const s of sections.filter((s) => !term || has(s.label))) {
       const Icon = s.icon
       out.push({ key: `screen-${s.label}`, group: 'Screens', label: s.label, icon: <Icon aria-hidden className="size-4" />, to: s.route })
@@ -157,7 +175,7 @@ export function CommandPalette({
       }
     }
     return out
-  }, [q, orders, employees, items, sections])
+  }, [q, orders, employees, items, sections, density, setDensity])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]
@@ -165,7 +183,8 @@ export function CommandPalette({
   const go = (e: Entry | undefined) => {
     if (!e) return
     onClose()
-    navigate(e.to)
+    if (typeof e.to === 'function') e.to()
+    else navigate(e.to)
   }
 
   const onKeyDown = (e: KeyboardEvent) => {

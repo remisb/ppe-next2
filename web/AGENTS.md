@@ -70,6 +70,19 @@ The workwear app is the reference.
   Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
   their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
   list (History) sends `sort`/`dir` to the API.
+- **Density**: Comfortable (the default) or Compact, a user's choice on Account and in
+  ⌘K, saved per user on the device (`lib/density.ts`, `<html data-density>`). Style it
+  with the `compact:` variant, which needs a screen with a fine pointer: Compact never
+  shrinks a touch target or the printed record. `Table` already gives unstacked rows 32px
+  and their buttons and ⋯ 28px (WCAG 2.5.8's 24px minimum); a stacked table keeps its
+  own spacing, so `compact:` is declared before `stacked:` in `index.css`.
+- **Dates in lists** are relative (`RelativeDate`: "Today 14:03", "3 days ago", "in 5
+  days", then the date), in the organisation timezone, with the exact time in the
+  `title`. Records, receipts and the order pane keep absolute dates.
+- **Record previews**: a record number that links away from a list is a `RecordPreview`,
+  which shows the order's status, lines and total on hover or focus and stays a link;
+  a tap on a touch screen follows it. Not where the row already opens the order beside
+  the list (History with an order open).
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the

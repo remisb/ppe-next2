@@ -62,6 +62,33 @@ export function formatShortDate(iso: string, timeZone: string | undefined): stri
   return new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short' }).format(d)
 }
 
+/**
+ * A timestamp relative to now, in timeZone's calendar, for lists: "today",
+ * "yesterday", "3 days ago", "tomorrow", "in 5 days"; a week or more away, the
+ * date ("24 Sep", with the year when it is not this year's). With `time`,
+ * today's and yesterday's add the time of day ("today 14:03"). Lower case, to
+ * sit inside a sentence; `capitalize` it to start one. Records and receipts
+ * keep absolute dates.
+ */
+export function formatRelative(iso: string, now: Date, timeZone: string | undefined, { time = false } = {}): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const days = localDay(d, timeZone) - localDay(now, timeZone)
+  const at = time ? ` ${formatDateTime(iso, timeZone).slice(11)}` : ''
+  if (days === 0) return `today${at}`
+  if (days === -1) return `yesterday${at}`
+  if (days === 1) return 'tomorrow'
+  if (days < 0 && days > -7) return `${-days} days ago`
+  if (days > 0 && days < 7) return `in ${days} days`
+  const sameYear = formatDateTime(iso, timeZone).slice(0, 4) === formatDateTime(now.toISOString(), timeZone).slice(0, 4)
+  return new Intl.DateTimeFormat('en-GB', { timeZone, day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) }).format(d)
+}
+
+/** The first letter in upper case: "today 14:03" as a table cell's "Today 14:03". */
+export function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 /** The month of a timestamp in timeZone: a key to group by ("2026-09") and its heading ("September 2026"). */
 export function monthOf(iso: string, timeZone: string | undefined): { key: string; label: string } {
   const d = new Date(iso)

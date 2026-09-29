@@ -2,7 +2,9 @@ import type { DashboardReplacement } from '@ppe/api-client'
 import { ArrowLeft, FileText, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
-import { formatDate, inlineLink } from '@/components/dashboard'
+import { inlineLink } from '@/components/dashboard'
+import { RecordPreview } from '@/components/record-preview'
+import { RelativeDate } from '@/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -116,21 +118,27 @@ function Row({ x, tz, navigate }: { x: DashboardReplacement; tz: string; navigat
       </TableCell>
       <TableCell className="tabular-nums stacked:order-1 stacked:w-auto">
         <span className="inline-flex items-center gap-2">
-          <span className="stacked:hidden">{formatDate(x.due_at, tz)}</span>
+          <RelativeDate iso={x.due_at} timeZone={tz} className="stacked:hidden" />
           <Badge variant={x.overdue ? 'destructive' : 'secondary'}>{x.overdue ? 'Overdue' : 'Due soon'}</Badge>
         </span>
       </TableCell>
       <TableCell className="stacked:order-4 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-        <span className="hidden stacked:inline">Due {formatDate(x.due_at, tz)} · </span>
-        <a
+        <span className="hidden stacked:inline">
+          Due <RelativeDate iso={x.due_at} timeZone={tz} sentence /> ·{' '}
+        </span>
+        <RecordPreview
+          orderId={x.order_id}
+          timeZone={tz}
           {...linkTo({ name: 'record', id: x.order_id }, navigate)}
           aria-label={`Receipt ${x.record_number}`}
           className={cn(inlineLink, 'inline-flex items-center gap-1 font-normal')}
         >
           <FileText aria-hidden className="size-3.5" />
           {x.record_number}
-        </a>{' '}
-        <span className="text-muted-foreground">given {formatDate(x.given_at, tz)}</span>
+        </RecordPreview>{' '}
+        <span className="text-muted-foreground">
+          given <RelativeDate iso={x.given_at} timeZone={tz} sentence />
+        </span>
       </TableCell>
       <TableCell className="text-right stacked:order-4 stacked:ml-auto stacked:w-auto">
         <Button
