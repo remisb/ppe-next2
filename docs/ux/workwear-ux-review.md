@@ -5,7 +5,7 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`9213136`)
+status: phases 1–3 shipped, plus follow-ups (`f8e3982`)
 
 > **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
@@ -15,7 +15,8 @@ status: phases 1–3 shipped, plus follow-ups (`9213136`)
 > in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
 > button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
 > shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, and the
-> records lists as option A in section 6 in `9213136`.
+> records lists as option A in section 6 in `9213136`, and History option C in section 4 in
+> `f8e3982`.
 > Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -72,7 +73,7 @@ undone, yet it runs on a single tap with no review.
 | 3 | Compact order lines: size chip and a −/+ quantity stepper on one 64 px row, with price details on tap | Create Order | Phone | High | M | Done (Phase 2) |
 | 4 | Apply an item set with one tap on a chip (today it takes a select plus Apply). Add items from a search field | Create Order | Both | High | S | Done (Phases 1–2) |
 | 5 | History status tabs (Awaiting · Given · All) with counts, a "days waiting" chip, and 64 px rows that open the record | History | Phone | High | M | Done (Phase 2) |
-| 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M | Done (Phase 2) |
+| 6 | Replace the Actions column with a list and a detail pane beside it | History | Desktop | Med | M | Done (Phase 2; option C in full, `f8e3982`) |
 | 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M | Done (Phases 1–2) |
 | 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1; option A in full, `9213136`) |
 | 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2; option A in full, `c0cf0bc`) |
@@ -337,7 +338,7 @@ employee with sizes, a "Gloves overdue since 30 Aug · already in this order ✓
   already has "12 days").
 - **Med. Status is hidden in a filter select**, but "Awaiting vs Given" is the main way
   people split this list.
-- **Fixed, live since `aee8829` and `7edcdcc`.** Phase 2 added the status tabs with counts, the aging chips and the order page (beside the list on desktop). `7edcdcc` made the phone list dense: two-line rows of about 70 px instead of 254–282 px, a heading per month, and the first order at 222 px instead of 303 px.
+- **Fixed, live since `aee8829` and `7edcdcc`.** Phase 2 added the status tabs with counts, the aging chips and the order page (beside the list on desktop). `7edcdcc` made the phone list dense: two-line rows of about 70 px instead of 254–282 px, a heading per month, and the first order at 222 px instead of 303 px. `f8e3982` completed option C: beside an open order the desktop list is one line a row again, 38 px at 1280 and 1440 px, where it had been the phone's two-line rows of about 70 px.
 
 ### Options
 
@@ -381,7 +382,7 @@ link, or View record) with a secondary style, and the rest goes into ⋯.
 | Actions stay one tap away | A ⋯ menu hides actions such as Print from new users |
 | Cards drop to about 120 px, so about 4 fit per screen | |
 
-#### C. List and detail (recommended on desktop ≥ 1200 px)
+#### C. List and detail (recommended on desktop ≥ 1200 px, built in `aee8829`, `f8e3982`)
 
 *Sample: tabs Awaiting · 3 / Given · 3 / All · 6 above a one-line table (Record,
 Employee, Ordered, Waiting chip, Value). The selected row WE-000004 opens a right-hand
@@ -393,6 +394,8 @@ pane with its lines, the total, "Send confirmation link", "Print", "Paper signed
 | Rows go back to one line (about 36 px); the only primary button is in the pane | Needs width; between 768 and 1200 px it falls back to the order page from A |
 | Chase several waiting orders without leaving the list (J/K) | The selected row must be kept in the URL so Back and refresh work |
 | Items are visible without "View Items" expanding rows | |
+
+**As built:** Phase 2 built the pane beside the list from 1024 px, kept at `/history/<id>` so Back and refresh work, with the items, the total and the actions, and J / K; `f8e3982` completed the option. Beside the pane the list keeps Record, Employee, Date, Status and Total value: Usage time and the time of day drop out, and a waiting order shows its wait as a pill (red after 14 days) in place of the Ordered badge. The table stacks only under 30 rem of room (a new `stackBelow="sm"`), so it stays one line a row, 38 px, from about 1200 px; at 1024 px, beside the rail, it falls back to the two-line rows, as the con expects, rather than to the order page. Escape closes the pane, J / K keep the open row in view, and the pane ends with a “J / K next or previous order · Esc close” hint where there is a keyboard. The status tabs sit above the list as in the sample; Send confirmation link is Open Employee Confirmation, and Paper signed is in its sheet. J / K stop at the end of a page of 20 orders.
 
 ---
 
@@ -871,7 +874,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -897,6 +900,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Shorter confirmation wording for new orders (`2026-09-v2`), versioned per order so placed and confirmed records keep their text and hash; the printed record fills in the employee's name on the signature line
 - [x] Dashboards option A from section 5 completed on phones: compact figure tiles with one fact beside each figure, Refresh as an icon, and a counted Needs you on the first screen, on all three dashboards
 - [x] Records lists option A from section 6 completed: Employees, Item Catalogue and Users as short two-line rows on a phone that open the record's page, where its actions are; All / Missing a size and Catalogue status chips; size-group headings; Item Sets with a total and Use in new order; Reset password under ⋯
+- [x] History option C from section 4 completed: one-line rows beside the open order on desktop, Escape to close it, and a J / K / Esc hint in the pane
 
 ### Still open
 
