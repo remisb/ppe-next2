@@ -49,12 +49,15 @@ type employeeRequest struct {
 	ClothingSize *int    `json:"clothing_size"`
 	ShoeSize     *string `json:"shoe_size"`
 	Notes        string  `json:"notes"`
+	// Optional; en, lt or ru. Update replaces every field, so leaving it out clears it.
+	PreferredLanguage *string `json:"preferred_language"`
 }
 
 func (req employeeRequest) params() employee.Params {
 	return employee.Params{
 		FirstName: req.FirstName, LastName: req.LastName, Code: req.Code, HeightCm: req.HeightCm,
 		ClothingSize: req.ClothingSize, ShoeSize: req.ShoeSize, Notes: req.Notes,
+		PreferredLanguage: req.PreferredLanguage,
 	}
 }
 

@@ -42,6 +42,7 @@ export const employees: EmployeesText = {
   codeIs: (code: string) => `Код ${code}`,
   newOrder: 'Новый заказ',
   notes: 'Примечания',
+  preferredLanguage: 'Предпочитаемый язык',
   dueForReplacement: (n: number) =>
     plural(n, {
       one: '# предмет требует замены',

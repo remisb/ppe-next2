@@ -77,7 +77,8 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Employ
 	e := Employee{
 		ID: s.newID(), FirstName: p.FirstName, LastName: p.LastName, Code: p.Code,
 		HeightCm: p.HeightCm, ClothingSize: p.ClothingSize, ShoeSize: p.ShoeSize, Notes: p.Notes,
-		CreatedAt: now, UpdatedAt: now, CreatedByUserID: actor, UpdatedByUserID: actor,
+		PreferredLanguage: p.PreferredLanguage,
+		CreatedAt:         now, UpdatedAt: now, CreatedByUserID: actor, UpdatedByUserID: actor,
 	}
 	ev, err := s.event(actor, EventCreated, e.ID, now, nil, snapshotOf(e))
 	if err != nil {
@@ -118,6 +119,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	return s.repo.Update(ctx, id, func(cur Employee) (Employee, *audit.Event, error) {
 		next := cur
 		next.FirstName, next.LastName, next.Code, next.Notes = p.FirstName, p.LastName, p.Code, p.Notes
+		next.PreferredLanguage = p.PreferredLanguage
 		next.HeightCm, next.ClothingSize, next.ShoeSize = p.HeightCm, p.ClothingSize, p.ShoeSize
 		return s.touch(cur, next, actor)
 	})

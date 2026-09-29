@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
-import { t } from '@/i18n'
+import { languages, t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
@@ -101,12 +101,15 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               </>
             }
           />
-          <dl className="mb-8 grid grid-cols-3 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-lg">
+          <dl className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-4">
             <Fact label={t.employees.height}>{e.height_cm ? t.employees.heightCm(e.height_cm) : '—'}</Fact>
             <Fact label={t.employees.clothing}>{missing.clothing ? <MissingBadge /> : clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)}</Fact>
             <Fact label={t.employees.shoes}>{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</Fact>
+            <Fact label={t.employees.preferredLanguage}>
+              <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '—'}</span>
+            </Fact>
             {e.notes ? (
-              <div className="col-span-3">
+              <div className="col-span-full">
                 <dt className="text-muted-foreground">{t.employees.notes}</dt>
                 <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
               </div>

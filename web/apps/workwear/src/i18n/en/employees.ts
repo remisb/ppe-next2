@@ -44,6 +44,7 @@ export const employees = {
   codeIs: (code: string) => `Code ${code}`,
   newOrder: 'New order',
   notes: 'Notes',
+  preferredLanguage: 'Preferred language',
   dueForReplacement: (n: number) => plural(n, { one: '# item is due for replacement', other: '# items are due for replacement' }),
   dueItemOverdue: (item: string) => `${item} (overdue)`,
   dueItemOn: (item: string, date: string) => `${item} (due ${date})`,

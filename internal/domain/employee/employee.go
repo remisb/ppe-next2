@@ -20,23 +20,28 @@ const (
 	maxHeightCm = 250
 )
 
+// Languages an employee may prefer: the ones the app speaks, as user.Language.
+var languages = map[string]bool{"en": true, "lt": true, "ru": true}
+
 // Employee is a person orders are prepared for. There is deliberately no glove
 // size: gloves and similar PPE are no-size items.
 type Employee struct {
-	ID              uuid.UUID  `json:"id"`
-	FirstName       string     `json:"first_name"`
-	LastName        string     `json:"last_name"`
-	Code            *string    `json:"code"`
-	HeightCm        *int       `json:"height_cm"`
-	ClothingSize    *int       `json:"clothing_size"` // EU size, even 44–66
-	ShoeSize        *string    `json:"shoe_size"`
-	Notes           string     `json:"notes"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
-	CreatedByUserID uuid.UUID  `json:"created_by_user_id"`
-	UpdatedByUserID uuid.UUID  `json:"updated_by_user_id"`
-	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	ID           uuid.UUID `json:"id"`
+	FirstName    string    `json:"first_name"`
+	LastName     string    `json:"last_name"`
+	Code         *string   `json:"code"`
+	HeightCm     *int      `json:"height_cm"`
+	ClothingSize *int      `json:"clothing_size"` // EU size, even 44–66
+	ShoeSize     *string   `json:"shoe_size"`
+	Notes        string    `json:"notes"`
+	// PreferredLanguage is en, lt or ru, or nil when no one has recorded it.
+	PreferredLanguage *string    `json:"preferred_language"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
+	CreatedByUserID   uuid.UUID  `json:"created_by_user_id"`
+	UpdatedByUserID   uuid.UUID  `json:"updated_by_user_id"`
+	DeletedByUserID   *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
 func (e Employee) Deleted() bool { return e.DeletedAt != nil }
@@ -59,6 +64,8 @@ type Params struct {
 	ClothingSize *int
 	ShoeSize     *string
 	Notes        string
+	// PreferredLanguage: en, lt or ru; blank is not set.
+	PreferredLanguage *string
 }
 
 func (p *Params) Normalize() {
@@ -67,6 +74,7 @@ func (p *Params) Normalize() {
 	p.Code = blankToNil(p.Code)
 	p.ShoeSize = blankToNil(p.ShoeSize)
 	p.Notes = strings.TrimSpace(p.Notes)
+	p.PreferredLanguage = blankToNil(p.PreferredLanguage)
 }
 
 func (p *Params) Validate() error {
@@ -84,6 +92,8 @@ func (p *Params) Validate() error {
 		return fieldError("code", "is too long")
 	case len(p.Notes) > maxNotesLen:
 		return fieldError("notes", "is too long")
+	case p.PreferredLanguage != nil && !languages[*p.PreferredLanguage]:
+		return fieldError("preferred_language", "must be en, lt or ru")
 	}
 	s := SizesParams{HeightCm: p.HeightCm, ClothingSize: p.ClothingSize, ShoeSize: p.ShoeSize}
 	return s.Validate()

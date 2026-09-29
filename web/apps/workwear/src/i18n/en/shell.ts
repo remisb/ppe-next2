@@ -70,6 +70,12 @@ export const shell = {
    * ones the palette always knows ("compact", "comfortable", "density", "dense", "table rows").
    */
   densityWords: { compact: 'compact', comfortable: 'comfortable', density: 'density', rows: 'table rows' },
+  theme: 'Theme',
+  lightTheme: 'Light theme',
+  darkTheme: 'Dark theme',
+  systemTheme: 'Theme as on the device',
+  /** Beginnings of words that find the theme switch, besides the English ones the palette always knows. */
+  themeWords: { theme: 'theme', light: 'light', dark: 'dark', system: 'system' },
   nothingMatches: (q: string) => `Nothing matches “${q}”.`,
   // Sign in.
   signIn: 'Sign in',

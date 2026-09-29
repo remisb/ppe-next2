@@ -24,5 +24,10 @@ export const account: AccountText = {
   comfortable: 'Erdvios',
   compact: 'Kompaktiškos',
   densityHint: 'Kompaktiškos eilutės leidžia matyti daugiau eilučių ekrane. Nustatymas išsaugomas šiame įrenginyje; jį galima rasti ir per ⌘K.',
+  theme: 'Tema',
+  light: 'Šviesi',
+  dark: 'Tamsi',
+  system: 'Kaip įrenginyje',
+  themeHint: 'Išsaugoma šiame įrenginyje, galioja ir prisijungiant. „Kaip įrenginyje“ – pagal įrenginio šviesų ar tamsų režimą.',
   signOut: 'Atsijungti',
 }

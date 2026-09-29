@@ -2,7 +2,8 @@
 
 People workwear is ordered for, and their reusable size defaults. Package
 `internal/domain/employee`, routes in `cmd/api/employee-routes.go`, table from migration
-`0003_employees` (clothing size made numeric by `0012_numeric_clothing_size`). Manual §3.2
+`0003_employees` (clothing size made numeric by `0012_numeric_clothing_size`, preferred
+language added by `0017_employee_language`). Manual §3.2
 and §4.1.
 
 ## Entity
@@ -15,6 +16,7 @@ and §4.1.
 | `clothing_size` | Optional EU size, a JSON number: even, 44–66 (else 400 "is not a known clothing size"; a string is refused) |
 | `shoe_size` | Optional: 39–46 |
 | `notes` | Optional free text |
+| `preferred_language` | Optional: `en`, `lt` or `ru`, the languages the app speaks (else 400); `null` when not recorded. A CHECK in migration `0017_employee_language` holds it too. Update replaces every field, so a PUT without it clears it |
 | `full_name` | Derived, response only |
 
 There is no glove size: gloves and similar PPE are no-size items.

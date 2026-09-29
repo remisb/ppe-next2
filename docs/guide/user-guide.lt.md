@@ -107,7 +107,7 @@ Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems 
 
 Darbuotojo puslapyje rodoma:
 
-- jo dydžiai;
+- jo dydžiai ir pageidaujama kalba;
 - visos išduotos prekės su naudojimo trukme ir pakeitimo data;
 - dar neišduoti užsakymai.
 
@@ -141,6 +141,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 ## 11. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
+- **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
 - **Keisti slaptažodį**.
 - **Lentelės eilutės**: **Kompaktiškos** ekrane sutalpina daugiau eilučių.
 

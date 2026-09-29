@@ -50,6 +50,10 @@ The app's colours are tokens in `src/index.css`, defined once for light and once
 palette. Gavort's navy is the `brand` tokens (`bg-brand`, `bg-brand-panel`, and their
 foregrounds), used only by the sign-in page: its mark, its button and its panel, which
 turns navy in dark mode. A new colour gets a token in all three places, never a literal.
+The theme is the device's choice on Account (and ⌘K): Light or Dark pin `<html
+data-theme>`, System leaves it to the media query. `lib/theme.ts` keeps it in
+localStorage, and an inline script in `index.html` applies it before the first paint;
+keep the two in step. The `dark:` variant follows all three triggers.
 
 ## User guide
 

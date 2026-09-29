@@ -69,6 +69,8 @@ export interface Employee {
   clothing_size: number | null
   shoe_size: string | null
   notes: string
+  /** The language the employee prefers, of those the app speaks; null when not recorded. */
+  preferred_language: Language | null
   created_at: string
   updated_at: string
 }
@@ -82,6 +84,7 @@ export interface EmployeeInput {
   clothing_size: number | null
   shoe_size: string | null
   notes: string
+  preferred_language: Language | null
 }
 
 /** Body of PUT /employees/{id}/sizes: all three are replaced. */

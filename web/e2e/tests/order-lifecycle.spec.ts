@@ -614,6 +614,10 @@ test('Employees: less frequent and destructive actions are under ⋯', async () 
   await expect(page).toHaveURL(/\/employees$/)
   // A note shows under her name in the list, on one line, and in full on hover.
   await page.getByRole('dialog').getByLabel('Notes').fill('Prefers Russian. Collects on Fridays.')
+  // Her preferred language, from those the app speaks, each named in itself.
+  const language = page.getByRole('dialog').getByLabel('Preferred language')
+  await expect(language.locator('option')).toHaveText(['Not set', 'English', 'Lietuvių', 'Русский'])
+  await language.selectOption('ru')
   await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('dialog')).toBeHidden()
   const note = row.getByText('Prefers Russian. Collects on Fridays.').filter({ visible: true })
@@ -629,6 +633,7 @@ test('Employees: a row opens the employee at its own address, with the items giv
   const employeeURL = page.url()
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('dl').filter({ hasText: 'Preferred language' })).toContainText('Русский')
   // The page holds her actions: Delete, as in the table, is under ⋯.
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
@@ -1207,6 +1212,47 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await languages.getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+})
+
+test('Theme: light, dark or the device’s own, kept on this device through a reload and at sign-in', async ({ browser }) => {
+  await page.getByRole('link', { name: admin.name }).click()
+  const theme = page.getByRole('group', { name: 'Theme' })
+  const scheme = () => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)
+  await expect(theme.getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
+
+  await theme.getByRole('button', { name: 'Dark' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(await scheme()).toBe('dark')
+  // Set before the first paint, so a reload shows no flash of light.
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(theme.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true')
+  // The device's, not the account's: a new tab in this browser shows the sign-in page dark too.
+  const tab = await page.context().newPage()
+  await tab.goto(webURL)
+  await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(tab.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await tab.close()
+  // A browser that never chose follows its own setting.
+  const fresh = await browser.newPage({ colorScheme: 'dark' })
+  await fresh.goto(webURL)
+  await expect(fresh.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(fresh.locator('html')).not.toHaveAttribute('data-theme')
+  expect(await fresh.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe('dark')
+  await fresh.close()
+
+  // ⌘K offers the other themes; Light from there.
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  await palette.getByRole('combobox').fill('theme')
+  await expect(palette.getByRole('option', { name: /Dark theme/ })).toHaveCount(0)
+  await palette.getByRole('option', { name: /Light theme/ }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect(await scheme()).toBe('light')
+
+  await theme.getByRole('button', { name: 'System' }).click()
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme')
 })
 
 test('Account: change password, then only the new one signs in', async () => {

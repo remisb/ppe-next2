@@ -76,8 +76,17 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	}
 	e := decode[map[string]any](t, rec.Body.Bytes())
 	id := e["id"].(string)
-	if e["full_name"] != "Jonas Petraitis" || e["clothing_size"] != nil {
+	if e["full_name"] != "Jonas Petraitis" || e["clothing_size"] != nil || e["preferred_language"] != nil {
 		t.Errorf("created = %v", e)
+	}
+
+	// A preferred language is one the app speaks, or none.
+	rec = api.do(t, "PUT", "/api/v1/employees/"+id, staff, map[string]any{"first_name": "Jonas", "last_name": "Petraitis", "preferred_language": "lt"})
+	if rec.Code != http.StatusOK || decode[map[string]any](t, rec.Body.Bytes())["preferred_language"] != "lt" {
+		t.Errorf("set language = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/employees/"+id, staff, map[string]any{"first_name": "Jonas", "last_name": "Petraitis", "preferred_language": "de"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("unsupported language = %d", rec.Code)
 	}
 
 	// Client-owned fields only: id and derived fields are rejected.

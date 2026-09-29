@@ -82,6 +82,24 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 		t.Errorf("LIKE wildcard matched %d rows", len(res))
 	}
 
+	// The preferred language is stored, replaced by an update and cleared by one without it.
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1"), PreferredLanguage: sp2("ru")}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := svc.Get(ctx, e.ID); err != nil || got.PreferredLanguage == nil || *got.PreferredLanguage != "ru" {
+		t.Errorf("preferred language = %v, %v; want ru", got.PreferredLanguage, err)
+	}
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1")}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := svc.Get(ctx, e.ID); got.PreferredLanguage != nil {
+		t.Errorf("preferred language = %v after an update without it; want none", *got.PreferredLanguage)
+	}
+	// The database refuses a language the app does not speak, whatever the caller.
+	if _, err := pool.Exec(ctx, `UPDATE employees SET preferred_language = 'de' WHERE id = $1`, e.ID); err == nil {
+		t.Error("preferred_language 'de' was accepted")
+	}
+
 	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, actor); !errors.Is(err, ErrCodeTaken) {
 		t.Errorf("duplicate code err = %v", err)
 	}

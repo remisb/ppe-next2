@@ -42,6 +42,7 @@ export const employees: EmployeesText = {
   codeIs: (code: string) => `Kodas ${code}`,
   newOrder: 'Naujas užsakymas',
   notes: 'Pastabos',
+  preferredLanguage: 'Pageidaujama kalba',
   dueForReplacement: (n: number) =>
     plural(n, { one: '# prekę reikia pakeisti', few: '# prekes reikia pakeisti', other: '# prekių reikia pakeisti' }),
   dueItemOverdue: (item: string) => `${item} (pavėluota)`,

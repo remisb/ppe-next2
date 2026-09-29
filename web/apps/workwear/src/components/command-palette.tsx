@@ -1,11 +1,12 @@
 import type { CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
-import { ClipboardList, CornerDownLeft, FileText, Rows3, Rows4, Search, UserRound, type LucideIcon } from 'lucide-react'
+import { ClipboardList, CornerDownLeft, FileText, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound, type LucideIcon } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
 import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { useDensity } from '@/lib/density'
+import { type Theme, themes, useTheme } from '@/lib/theme'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
@@ -34,6 +35,9 @@ const PER_GROUP = 5
 
 /** English words that find the density switch in any language; the language in use adds its own. */
 const DENSITY_WORDS = ['compact', 'comfortable', 'density', 'dense', 'table rows']
+/** English words that find the theme switch in any language; the language in use adds its own. */
+const THEME_WORDS = ['theme', 'dark', 'light', 'system', 'appearance', 'night mode']
+const themeIcon: Record<Theme, LucideIcon> = { light: Sun, dark: Moon, system: Monitor }
 
 /**
  * ⌘K (Ctrl+K): one search box over record numbers, screens, employees and
@@ -66,6 +70,7 @@ export function CommandPalette({
   const [orders, setOrders] = useState<ListedOrder[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
   const [density, setDensity] = useDensity(userId)
+  const [theme, setTheme] = useTheme()
   const text = t.shell
 
   useEffect(() => {
@@ -161,6 +166,15 @@ export function CommandPalette({
         icon: next === 'compact' ? <Rows4 aria-hidden className="size-4" /> : <Rows3 aria-hidden className="size-4" />,
         to: () => setDensity(next),
       })
+    }
+    // The theme, for a search that asks for it: each theme but the one in use.
+    const themeWords = [...THEME_WORDS, ...Object.values(text.themeWords).map((w) => w.toLowerCase())]
+    if (term && themeWords.some((w) => w.startsWith(term) || term.startsWith(w))) {
+      const label = { light: text.lightTheme, dark: text.darkTheme, system: text.systemTheme }
+      for (const th of themes.filter((th) => th !== theme)) {
+        const Icon = themeIcon[th]
+        out.push({ key: `theme-${th}`, group: 'actions', label: label[th], hint: text.theme, icon: <Icon aria-hidden className="size-4" />, to: () => setTheme(th) })
+      }
     }
     for (const s of sections.filter((s) => !term || has(s.label))) {
       const Icon = s.icon

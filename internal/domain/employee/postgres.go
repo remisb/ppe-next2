@@ -25,12 +25,12 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
-const columns = `id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes,
+const columns = `id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes, preferred_language,
 	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
 
 func scan(row pgx.Row) (Employee, error) {
 	var e Employee
-	err := row.Scan(&e.ID, &e.FirstName, &e.LastName, &e.Code, &e.HeightCm, &e.ClothingSize, &e.ShoeSize, &e.Notes,
+	err := row.Scan(&e.ID, &e.FirstName, &e.LastName, &e.Code, &e.HeightCm, &e.ClothingSize, &e.ShoeSize, &e.Notes, &e.PreferredLanguage,
 		&e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.CreatedByUserID, &e.UpdatedByUserID, &e.DeletedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Employee{}, ErrNotFound
@@ -59,10 +59,10 @@ func (r *PostgresRepository) Create(ctx context.Context, e Employee, ev *audit.E
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO employees (id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes,
-				created_at, updated_at, created_by_user_id, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+				preferred_language, created_at, updated_at, created_by_user_id, updated_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 			e.ID, e.FirstName, e.LastName, e.Code, e.HeightCm, e.ClothingSize, e.ShoeSize, e.Notes,
-			e.CreatedAt, e.UpdatedAt, e.CreatedByUserID, e.UpdatedByUserID); err != nil {
+			e.PreferredLanguage, e.CreatedAt, e.UpdatedAt, e.CreatedByUserID, e.UpdatedByUserID); err != nil {
 			return err
 		}
 		return insertEvent(ctx, tx, ev)
@@ -110,11 +110,11 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE employees SET first_name = $2, last_name = $3, code = $4, height_cm = $5,
-				clothing_size = $6, shoe_size = $7, notes = $8, updated_at = $9, updated_by_user_id = $10,
-				deleted_at = $11, deleted_by_user_id = $12
+				clothing_size = $6, shoe_size = $7, notes = $8, preferred_language = $9, updated_at = $10,
+				updated_by_user_id = $11, deleted_at = $12, deleted_by_user_id = $13
 			WHERE id = $1`,
 			id, next.FirstName, next.LastName, next.Code, next.HeightCm, next.ClothingSize, next.ShoeSize,
-			next.Notes, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID); err != nil {
+			next.Notes, next.PreferredLanguage, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID); err != nil {
 			return err
 		}
 		if err := insertEvent(ctx, tx, ev); err != nil {

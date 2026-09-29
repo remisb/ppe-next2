@@ -29,6 +29,10 @@ func TestParamsValidate(t *testing.T) {
 		{"clothing above the range", Params{FirstName: "A", LastName: "B", ClothingSize: ip(68)}, ErrInvalid},
 		{"unknown shoe", Params{FirstName: "A", LastName: "B", ShoeSize: sp("38")}, ErrInvalid},
 		{"long code", Params{FirstName: "A", LastName: "B", Code: sp(strings.Repeat("x", 51))}, ErrInvalid},
+		{"each language", Params{FirstName: "A", LastName: "B", PreferredLanguage: sp("lt")}, nil},
+		{"blank language", Params{FirstName: "A", LastName: "B", PreferredLanguage: sp(" ")}, nil},
+		{"unknown language", Params{FirstName: "A", LastName: "B", PreferredLanguage: sp("de")}, ErrInvalid},
+		{"language in capitals", Params{FirstName: "A", LastName: "B", PreferredLanguage: sp("RU")}, ErrInvalid},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

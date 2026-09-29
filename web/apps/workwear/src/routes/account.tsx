@@ -10,6 +10,7 @@ import { Field, Input, controlProps } from '@/components/ui/field'
 import { type Lang, languages, t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { type Density, useDensity } from '@/lib/density'
+import { themes, useTheme } from '@/lib/theme'
 import { MIN_PASSWORD_LENGTH, type PasswordChange, type PasswordErrors, validatePasswordChange } from '@/lib/password'
 import { errorText } from '@/lib/use-load'
 
@@ -36,6 +37,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [density, setDensity] = useDensity(session.userId)
+  const [theme, setTheme] = useTheme()
 
   const set = (k: keyof PasswordChange) => (e: { target: { value: string } }) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -98,6 +100,21 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             </p>
           ) : null}
           <p className="text-sm text-muted-foreground">{t.account.languageHint}</p>
+        </CardContent>
+      </Card>
+      <Card className="mb-6 md:max-w-md">
+        <CardHeader>
+          <CardTitle>{t.account.theme}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div role="group" aria-label={t.account.theme} className="inline-grid w-fit grid-flow-col gap-1 rounded-lg bg-muted p-1">
+            {themes.map((th) => (
+              <button key={th} type="button" aria-pressed={theme === th} onClick={() => setTheme(th)} className={choice}>
+                {t.account[th]}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">{t.account.themeHint}</p>
         </CardContent>
       </Card>
       <Card className="md:max-w-md">

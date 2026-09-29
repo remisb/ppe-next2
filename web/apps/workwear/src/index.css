@@ -5,7 +5,17 @@
 /*
  ---break---
  */
-@custom-variant dark (&:is(.dark *));
+/* dark: follows the palette's three triggers (see the dark rules below). */
+@custom-variant dark {
+  &:is(.dark *, :root[data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:is(:root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
 
 /*
  * `compact:` is the Compact table density (lib/density.ts, <html
@@ -210,6 +220,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  color-scheme: dark;
   /* Dark: the panel turns navy and the button takes the app's light primary. */
   --brand: oklch(0.922 0 0);
   --brand-foreground: oklch(0.187 0.074 277.5);
@@ -340,6 +351,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  color-scheme: dark;
   /* Dark: the panel turns navy and the button takes the app's light primary. */
   --brand: oklch(0.922 0 0);
   --brand-foreground: oklch(0.187 0.074 277.5);

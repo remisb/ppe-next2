@@ -153,7 +153,7 @@ export const en: Guide = {
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
-        { ul: ['their sizes;', 'every item given, with its usage time and replacement date;', 'orders not yet given.'] },
+        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
         {
           shots: [
@@ -198,6 +198,7 @@ export const en: Guide = {
         {
           ul: [
             "**Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.",
+            '**Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.',
             '**Change password**.',
             { text: '**Table rows**: **Compact** fits more rows on the screen.', devices: ['desktop'] },
           ],

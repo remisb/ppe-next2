@@ -5,7 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
 import { FormSheet } from '@/components/ui/form-sheet'
-import { t } from '@/i18n'
+import { isLang, languages, t } from '@/i18n'
 import { useApi } from '@/lib/api'
 import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
 import { errorText } from '@/lib/use-load'
@@ -30,6 +30,8 @@ interface Draft {
   clothing_size: string
   shoe_size: string
   notes: string
+  /** en, lt or ru; '' when not set. */
+  preferred_language: string
 }
 
 function draftOf(e: Employee | undefined): Draft {
@@ -41,6 +43,7 @@ function draftOf(e: Employee | undefined): Draft {
     clothing_size: e?.clothing_size?.toString() ?? '',
     shoe_size: e?.shoe_size ?? '',
     notes: e?.notes ?? '',
+    preferred_language: e?.preferred_language ?? '',
   }
 }
 
@@ -79,6 +82,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       clothing_size: d.clothing_size === '' ? null : Number(d.clothing_size),
       shoe_size: blankToNull(d.shoe_size),
       notes: d.notes,
+      preferred_language: isLang(d.preferred_language) ? d.preferred_language : null,
     }
     setBusy(true)
     setError(undefined)
@@ -138,6 +142,19 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
               {sizes?.shoes.map((s) => (
                 <option key={s.code} value={s.code}>
                   {s.code}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label={t.employees.preferredLanguage}>
+          {(p) => (
+            // Each language named in itself, as on Account.
+            <Select {...controlProps(p)} value={d.preferred_language} onChange={set('preferred_language')}>
+              <option value="">{t.employees.notSet}</option>
+              {languages.map((l) => (
+                <option key={l.value} value={l.value} lang={l.value}>
+                  {l.label}
                 </option>
               ))}
             </Select>

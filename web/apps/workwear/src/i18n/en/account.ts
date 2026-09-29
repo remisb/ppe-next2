@@ -23,6 +23,11 @@ export const account = {
   comfortable: 'Comfortable',
   compact: 'Compact',
   densityHint: 'Compact fits more rows on the screen. It is kept for you on this device; ⌘K finds it too.',
+  theme: 'Theme',
+  light: 'Light',
+  dark: 'Dark',
+  system: 'System',
+  themeHint: "Kept on this device, before sign-in too. System follows the device's own light or dark setting.",
   signOut: 'Sign out',
 }
 

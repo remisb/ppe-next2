@@ -107,7 +107,7 @@ The list shows each employee's sizes and note, and marks anyone missing a size. 
 
 Each employee's page shows:
 
-- their sizes;
+- their sizes and preferred language;
 - every item given, with its usage time and replacement date;
 - orders not yet given.
 
@@ -141,6 +141,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 ## 11. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
+- **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
 - **Change password**.
 - **Table rows**: **Compact** fits more rows on the screen.
 
