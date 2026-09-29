@@ -107,7 +107,7 @@ export const en: Guide = {
         {
           ol: [
             "The employee opens the link. They don't need an account.",
-            'They check the items, in English or Russian (**EN / RU**).',
+            'They check the items, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.',
             'They tick the statement and tap **Confirm receipt**. The order becomes **Given**.',
           ],
         },

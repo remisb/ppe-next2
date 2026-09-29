@@ -338,6 +338,8 @@ export interface OrderRecord {
   given_by_name: string | null
   confirmation_method: ConfirmationMethod | null
   confirmation: { method: ConfirmationMethod; confirmed_at: string | null; confirmed_name: string | null } | null
+  /** The employee's preferred language now, for the confirmation page to open in; not part of the record. */
+  employee_language: Language | null
 }
 
 export interface ConfirmationLink {

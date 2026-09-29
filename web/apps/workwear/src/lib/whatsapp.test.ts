@@ -80,7 +80,7 @@ describe('recordMessage', () => {
         confirmation_title_en: '', confirmation_text_en: '', confirmation_title_ru: '', confirmation_text_ru: '',
         lines: [{ line_no: 1, item_name: 'Gloves', item_details: '', size: null, quantity: 2, unit_price_cents: 250, total_cents: 500, currency: 'EUR', service_period_months: 1 }],
       },
-      document_hash: 'h', status: 'GIVEN', given_at: '2026-09-20T09:00:00Z', given_by_name: 'Admin', confirmation_method: 'PAPER', confirmation: null,
+      document_hash: 'h', status: 'GIVEN', given_at: '2026-09-20T09:00:00Z', given_by_name: 'Admin', confirmation_method: 'PAPER', confirmation: null, employee_language: null,
     }))
     expect(text).toContain('Workwear order WE-000007')
     expect(text).toContain('1. Gloves – qty 2')

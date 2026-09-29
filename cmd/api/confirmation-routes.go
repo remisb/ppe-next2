@@ -48,12 +48,15 @@ type recordJSON struct {
 	GivenByName        *string           `json:"given_by_name"`
 	ConfirmationMethod *order.Method     `json:"confirmation_method"`
 	Confirmation       *confirmationJSON `json:"confirmation"`
+	// The employee's preferred language now, for the page to open in; not part of the record.
+	EmployeeLanguage *string `json:"employee_language"`
 }
 
 func toRecordJSON(r order.Record, withID bool) recordJSON {
 	out := recordJSON{
 		Receipt: r.Receipt, DocumentHash: r.DocumentHash, Status: r.Order.Status, GivenAt: r.Order.GivenAt,
 		GivenByName: r.Order.GivenByName, ConfirmationMethod: r.Order.ConfirmationMethod,
+		EmployeeLanguage: r.EmployeeLanguage,
 	}
 	if withID {
 		id := r.Order.ID

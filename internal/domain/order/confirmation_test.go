@@ -191,3 +191,31 @@ func TestInPersonConfirmation(t *testing.T) {
 		t.Errorf("second in-person confirm = %v", err)
 	}
 }
+
+// The record carries the employee's preferred language as it is now, for the
+// page to open in; it is looked up, not part of the receipt or its hash.
+func TestRecordCarriesTheEmployeesLanguage(t *testing.T) {
+	f, o, _ := orderedFixture(t)
+	ctx := context.Background()
+	before, err := f.svc.Record(ctx, o.ID)
+	if err != nil || before.EmployeeLanguage != nil {
+		t.Fatalf("without an employee reader = %v, %v; want none", before.EmployeeLanguage, err)
+	}
+
+	ru := "ru"
+	f.svc.read.Employees = fakeEmployees{f.emp: {ID: f.emp, FirstName: "Jonas", LastName: "Petraitis", PreferredLanguage: &ru}}
+	token, _, _ := f.svc.CreateConfirmationLink(ctx, o.ID, f.actor)
+	rec, err := f.svc.RecordByToken(ctx, token)
+	if err != nil || rec.EmployeeLanguage == nil || *rec.EmployeeLanguage != "ru" {
+		t.Fatalf("language = %v, %v; want ru", rec.EmployeeLanguage, err)
+	}
+	if rec.DocumentHash != before.DocumentHash {
+		t.Error("the language changed the record's hash")
+	}
+
+	// An employee deleted since: the record still shows, without a language.
+	f.svc.read.Employees = fakeEmployees{}
+	if rec, err := f.svc.Record(ctx, o.ID); err != nil || rec.EmployeeLanguage != nil {
+		t.Errorf("deleted employee = %v, %v; want the record without a language", rec.EmployeeLanguage, err)
+	}
+}

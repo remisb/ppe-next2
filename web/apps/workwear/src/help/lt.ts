@@ -110,7 +110,7 @@ export const lt: Guide = {
         {
           ol: [
             'Darbuotojas atidaro nuorodą. Paskyros jam nereikia.',
-            'Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Šis puslapis lietuviškai nerodomas.',
+            'Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.',
             'Jis pažymi sutikimą ir paspaudžia **Confirm receipt** (**Подтвердить получение**). Užsakymo būsena tampa **Išduota**.',
           ],
         },

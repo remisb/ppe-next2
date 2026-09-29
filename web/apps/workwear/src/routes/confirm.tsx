@@ -8,7 +8,7 @@ import { Loading } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
-import { type ConfirmLang, confirmText, loadLang, saveLang } from '@/lib/confirm-text'
+import { type ConfirmLang, confirmText, employeeLang, loadLang, saveLang } from '@/lib/confirm-text'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
 
@@ -27,11 +27,15 @@ export function ConfirmPage({ token }: { token: string }) {
   const [busy, setBusy] = useState(false)
   const [confirmed, setConfirmed] = useState<OrderRecord | null>(null)
   const [error, setError] = useState<unknown>()
-  const [lang, setLang] = useState<ConfirmLang>(loadLang)
+  // The employee's preferred language once the order is in, where the page speaks it;
+  // else the one chosen last on this device or the browser's. EN / RU on the page wins.
+  const [device] = useState<ConfirmLang>(loadLang)
+  const [chosen, setChosen] = useState<ConfirmLang>()
+  const lang = chosen ?? employeeLang(view.data?.employee_language) ?? device
   const t = confirmText[lang]
 
   const choose = (l: ConfirmLang) => {
-    setLang(l)
+    setChosen(l)
     saveLang(l)
   }
 

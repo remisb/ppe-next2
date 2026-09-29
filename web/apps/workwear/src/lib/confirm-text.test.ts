@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { confirmText, formatDay, formatTime, initialLang } from './confirm-text'
+import { confirmText, employeeLang, formatDay, formatTime, initialLang } from './confirm-text'
 
 describe('initialLang', () => {
   it('keeps the language chosen last on this device', () => {
@@ -41,5 +41,13 @@ describe('dates', () => {
   it('formats the time on a 24-hour clock', () => {
     expect(formatTime('2026-08-01T11:02:00Z', 'Europe/Vilnius')).toBe('14:02')
     expect(formatTime('garbage')).toBe('—')
+  })
+})
+
+describe('employeeLang', () => {
+  it('opens in the employee’s preferred language where the page speaks it', () => {
+    expect([employeeLang('ru'), employeeLang('en')]).toEqual(['ru', 'en'])
+    // Lithuanian is not on the page (English / Russian); the device decides.
+    expect([employeeLang('lt'), employeeLang(null), employeeLang(undefined)]).toEqual([undefined, undefined, undefined])
   })
 })

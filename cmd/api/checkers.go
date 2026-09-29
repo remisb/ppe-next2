@@ -47,7 +47,8 @@ func (o orderEmployees) Employee(ctx context.Context, id uuid.UUID) (order.Emplo
 	if err != nil {
 		return order.EmployeeView{}, err
 	}
-	return order.EmployeeView{ID: e.ID, FirstName: e.FirstName, LastName: e.LastName, Code: e.Code, Sizes: e.Sizes()}, nil
+	return order.EmployeeView{ID: e.ID, FirstName: e.FirstName, LastName: e.LastName, Code: e.Code, Sizes: e.Sizes(),
+		PreferredLanguage: e.PreferredLanguage}, nil
 }
 
 // orderCatalogue answers order.CatalogueReader.

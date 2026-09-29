@@ -8,6 +8,14 @@ export type ConfirmLang = 'en' | 'ru'
 
 const LANG_KEY = 'workwear.confirm-lang'
 
+/**
+ * The employee's preferred language, where this page speaks it (English or
+ * Russian); a Lithuanian preference falls back to the device's choice.
+ */
+export function employeeLang(preferred: string | null | undefined): ConfirmLang | undefined {
+  return preferred === 'en' || preferred === 'ru' ? preferred : undefined
+}
+
 /** The language to start in: the one chosen last on this device, else the browser's, else English. */
 export function initialLang(stored: string | null, browser: readonly string[]): ConfirmLang {
   if (stored === 'en' || stored === 'ru') return stored

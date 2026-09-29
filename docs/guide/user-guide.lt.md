@@ -70,7 +70,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 ## 5. Darbuotojas patvirtina
 
 1. Darbuotojas atidaro nuorodą. Paskyros jam nereikia.
-2. Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Šis puslapis lietuviškai nerodomas.
+2. Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.
 3. Jis pažymi sutikimą ir paspaudžia **Confirm receipt** (**Подтвердить получение**). Užsakymo būsena tampa **Išduota**.
 
 ![Patvirtinimo puslapis telefone](../../web/apps/workwear/public/help-img/lt/phone/confirm-phone.png)

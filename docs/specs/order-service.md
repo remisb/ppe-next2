@@ -108,6 +108,13 @@ record it. The web page URL carries it; the app sets `Referrer-Policy: no-referr
 Only `sha256(token)` is stored. At most one confirmation per order carries evidence
 (partial unique index), so concurrent confirmations cannot both succeed.
 
+Every record (these routes, `GET /orders/{id}/record` and the confirm responses) also
+carries `employee_language`: the employee's preferred language as it is now (`en`, `lt`,
+`ru` or `null`; `null` too once the employee is deleted). It is looked up, not stored:
+the receipt and its document hash never change with it. The confirmation page and
+hand-over mode open in it where they speak it (English or Russian); the EN / RU switch
+still changes it.
+
 ### Receipt and document hash
 
 `order.ReceiptOf` builds the receipt **only from the snapshot**: record number, employee

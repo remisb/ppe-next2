@@ -70,7 +70,7 @@ If the employee will sign on paper, choose **Print record** instead.
 ## 5. The employee confirms
 
 1. The employee opens the link. They don't need an account.
-2. They check the items, in English or Russian (**EN / RU**).
+2. They check the items, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.
 3. They tick the statement and tap **Confirm receipt**. The order becomes **Given**.
 
 ![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/phone/confirm-phone.png)

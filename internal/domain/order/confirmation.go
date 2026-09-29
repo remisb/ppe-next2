@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,11 @@ type Record struct {
 	DocumentHash string
 	// Confirmation is the evidence of a GIVEN order; nil while ORDERED.
 	Confirmation *Confirmation
+	// EmployeeLanguage is the employee's preferred language now (en, lt or
+	// ru), for the confirmation page and hand-over mode to open in; nil when
+	// not recorded or the employee has since been deleted. It is looked up,
+	// not stored: the receipt and its hash never change with it.
+	EmployeeLanguage *string
 }
 
 // ConfirmSnapshot is what a confirmation sees inside its transaction, with the
@@ -194,6 +200,17 @@ func (s *Service) Record(ctx context.Context, orderID uuid.UUID) (Record, error)
 	}
 	r := Record{Order: o, Receipt: ReceiptOf(o)}
 	r.DocumentHash = DocumentHash(r.Receipt)
+	if s.read.Employees != nil {
+		e, err := s.read.Employees.Employee(ctx, o.EmployeeID)
+		switch {
+		case err == nil:
+			r.EmployeeLanguage = e.PreferredLanguage
+		case errors.Is(err, ErrEmployeeNotFound):
+			// Deleted since: the record still shows, in the page's own language.
+		default:
+			return Record{}, err
+		}
+	}
 	if o.Status == StatusGiven {
 		c, err := s.repo.ConfirmedFor(ctx, orderID)
 		if err != nil {

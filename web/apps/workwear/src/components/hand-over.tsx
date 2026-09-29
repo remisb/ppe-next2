@@ -5,7 +5,7 @@ import { ConfirmSummary, Confirmed, ConsentBar, FullRecord, LanguageSwitch } fro
 import { ErrorState, Loading } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/lib/api'
-import { type ConfirmLang, confirmText, initialLang } from '@/lib/confirm-text'
+import { type ConfirmLang, confirmText, employeeLang, initialLang } from '@/lib/confirm-text'
 import { errorText, useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
 
@@ -17,8 +17,9 @@ const HOLD_MS = 1500
  * counter. It fills the screen (a modal dialog, full screen where allowed)
  * with no app navigation, and shows the employee what the public confirmation
  * page shows: what is asked, the items, the full record one tap away, the
- * consent and EN / RU. Each hand-over starts in the device's language, not the
- * last employee's choice. Their confirmation is recorded IN_PERSON with the
+ * consent and EN / RU. Each hand-over starts in the employee's preferred
+ * language where it is English or Russian, else the device's; never in the last
+ * employee's choice. Their confirmation is recorded IN_PERSON with the
  * signed-in staff member as giver.
  *
  * Getting out before the employee confirms takes Hand back held for 1.5
@@ -31,7 +32,8 @@ export function HandOver({ orderId, onGiven, onClose }: { orderId: string; onGiv
   const [confirmed, setConfirmed] = useState<OrderRecord | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>()
-  const [lang, setLang] = useState<ConfirmLang>(() => initialLang(null, navigator.languages))
+  const [chosen, setLang] = useState<ConfirmLang>()
+  const lang = chosen ?? employeeLang(record.data?.employee_language) ?? initialLang(null, navigator.languages)
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   // The latest onClose, without reopening the dialog each time the parent renders.

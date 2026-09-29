@@ -1214,6 +1214,38 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 })
 
+test('the confirmation page and hand-over open in the employee’s preferred language', async ({ browser }) => {
+  // Ona prefers Russian (set in the Employees step); a new order for her, with its link.
+  await openTab('Create Order')
+  await page.getByRole('combobox', { name: 'Assigned to' }).click()
+  await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  await addItem('nitrile', /^Protective gloves/)
+  await markAsOrdered({ link: true })
+  const record = /WE-\d{6}/.exec((await page.getByText(/Order WE-\d{6} is ordered/).textContent()) ?? '')![0]
+  const link = await page.getByLabel('Confirmation link').inputValue()
+  await page.getByRole('button', { name: 'Start a new order' }).click()
+
+  // Her phone's browser is English, yet the page opens in Russian; EN still switches it.
+  const phone = await (await browser.newContext({ locale: 'en-GB' })).newPage()
+  await phone.goto(link)
+  await expect(phone.getByRole('button', { name: 'Подтвердить получение' })).toBeVisible()
+  const switchLang = phone.getByRole('group', { name: 'Language / Язык' })
+  await expect(switchLang.getByRole('button', { name: 'Русский' })).toHaveAttribute('aria-pressed', 'true')
+  await switchLang.getByRole('button', { name: 'English' }).click()
+  await expect(phone.getByRole('button', { name: 'Confirm receipt' })).toBeVisible()
+  await phone.context().close()
+
+  // Hand-over on this (English) staff device opens in Russian too.
+  await openTab('History')
+  const order = await openOrder(record)
+  await order.getByRole('button', { name: 'Hand over now' }).click()
+  const screen = page.getByRole('dialog', { name: 'Hand-over / Выдача' })
+  await expect(screen.getByRole('button', { name: 'Подтвердить получение' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(screen).toBeHidden()
+})
+
 test('Theme: light, dark or the device’s own, kept on this device through a reload and at sign-in', async ({ browser }) => {
   await page.getByRole('link', { name: admin.name }).click()
   const theme = page.getByRole('group', { name: 'Theme' })

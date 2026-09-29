@@ -20,6 +20,8 @@ type EmployeeView struct {
 	LastName  string
 	Code      *string
 	Sizes     size.Defaults
+	// PreferredLanguage is en, lt or ru, or nil when not recorded.
+	PreferredLanguage *string
 }
 
 // ItemView is the part of a catalogue item resolution needs.
