@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Руководство по спецодежде</title>
+<title>Спецодежда и снаряжение · Руководство пользователя</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -39,7 +39,11 @@ nav a:hover, nav a:focus-visible{border-color:var(--ink); outline:none}
 section{display:grid; gap:16px; scroll-margin-top:24px}
 h2{font:700 26px/1.15 var(--display); font-stretch:85%; margin:0; display:flex; gap:12px; align-items:center}
 h2 .n{flex:none; display:inline-grid; place-items:center; width:34px; height:34px; border-radius:8px; background:var(--hivis); color:var(--hivis-ink); font:700 16px var(--mono)}
-.text{max-width:68ch; display:grid; gap:10px}
+.text, section > p, section > ol, section > ul{max-width:68ch; display:grid; gap:10px}
+section > p, section > ol, section > ul{margin:0}
+section > ol, section > ul, section li > ul{padding-left:1.3em; display:grid; gap:4px}
+section li > ul{margin:4px 0 0}
+.shots{display:grid}
 .text p, .text ol, .text ul{margin:0}
 .text ol, .text ul{padding-left:1.3em; display:grid; gap:4px}
 .who{font-size:14px; color:var(--muted)}
@@ -62,32 +66,32 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </style>
 </head>
 <body>
+<!-- Written by `pnpm guide` (web/e2e/guide/docs.ts) from apps/workwear/src/help; edit the guide there. -->
 <main>
 
 <header>
-  <nav class="langs" aria-label="Язык"><a href="index.html" lang="en">English</a><a href="lt.html" lang="lt">Lietuvių</a><a href="ru.html" lang="ru" aria-current="page">Русский</a></nav>
-  <div class="eyebrow">workwear.gavort.nl · руководство пользователя</div>
-  <h1>Спецодежда и снаряжение <span>руководство пользователя</span></h1>
+  <nav class="langs" aria-label="Язык руководства"><a href="index.html" lang="en">English</a><a href="lt.html" lang="lt">Lietuvių</a><a href="ru.html" lang="ru" aria-current="page">Русский</a></nav>
+  <div class="eyebrow">workwear.gavort.nl</div>
+  <h1>Спецодежда и снаряжение <span>Руководство пользователя</span></h1>
   <p class="lede">Приложение учитывает спецодежду и средства защиты, выданные сотрудникам. Вы готовите заказ и отмечаете его как заказанный. Получив предметы, сотрудник подтверждает получение, а приложение сохраняет неизменяемую запись на английском и русском языках.</p>
   <nav aria-label="Содержание"><ol>
     <li><a href="#sign-in"><b>1</b>Вход</a></li>
     <li><a href="#dashboard"><b>2</b>Сводка</a></li>
     <li><a href="#create"><b>3</b>Создание заказа</a></li>
-    <li><a href="#review"><b>4</b>Отметить как заказанный</a></li>
-    <li><a href="#confirm"><b>5</b>Подтверждение сотрудником</a></li>
+    <li><a href="#review"><b>4</b>Проверка и «Отметить как заказанный»</a></li>
+    <li><a href="#confirm"><b>5</b>Сотрудник подтверждает</a></li>
     <li><a href="#history"><b>6</b>История</a></li>
-    <li><a href="#record"><b>7</b>Запись</a></li>
+    <li><a href="#record"><b>7</b>Акт выдачи</a></li>
     <li><a href="#employees"><b>8</b>Сотрудники</a></li>
-    <li><a href="#catalogue"><b>9</b>Каталог и наборы</a></li>
+    <li><a href="#catalogue"><b>9</b>Каталог предметов и наборы предметов</a></li>
     <li><a href="#users"><b>10</b>Пользователи</a></li>
     <li><a href="#account"><b>11</b>Ваша учётная запись</a></li>
-    <li><a href="#shortcuts"><b>12</b>Сочетания клавиш</a></li>
+    <li><a href="#shortcuts"><b>12</b>Поиск и сочетания клавиш</a></li>
   </ol></nav>
 </header>
 
 <section id="sign-in">
   <h2><span class="n">1</span>Вход</h2>
-  <div class="text">
     <ol>
       <li>Откройте <b>workwear.gavort.nl</b> и войдите со своей эл. почтой и паролем.</li>
       <li>Первый экран зависит от вашей роли:
@@ -98,13 +102,14 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
         </ul>
       </li>
     </ol>
-  </div>
-  <figure><img src="img/ru/sign-in.png" alt="Экран входа с эл. почтой и паролем" loading="lazy"></figure>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/ru/sign-in.png" alt="Экран входа с эл. почтой и паролем" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="dashboard">
   <h2><span class="n">2</span>Сводка</h2>
-  <div class="text">
+    <p class="who">Только для администраторов</p>
     <p>Вверху показаны заказы, ожидающие подтверждения, расходы за этот месяц и предстоящие замены.</p>
     <p><b>Требует внимания</b> показывает, что сделать дальше, начиная с самого срочного. У каждой строки есть кнопка для её задачи:</p>
     <ul>
@@ -113,13 +118,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>не указан размер — <b>Добавить размеры</b>;</li>
       <li>предмет без цены — <b>Исправить</b>.</li>
     </ul>
-  </div>
-  <figure><img src="img/ru/dashboard.png" alt="Сводка: показатели и список «Требует внимания»" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/dashboard.png" alt="Сводка: показатели и список «Требует внимания»" loading="lazy"></figure>
+    </div>
+    <p class="who">Только для менеджеров</p>
+    <p><b>Сводка менеджера</b> посвящена предметам, ценам и закупкам: что заказано, расходы по предметам, какие замены придётся закупать, последние изменения цен, что в каталоге и наборах мешает заказу и какие размеры держать в запасе.</p>
+    <p class="who">Только для роли «сотрудник»</p>
+    <p><b>Сводка сотрудника</b> начинается с того, что нужно сделать: ваши заказы, ещё ожидающие подтверждения сотрудником (<b>Отправить ссылку</b>), предметы, которые пора заменить, и сотрудники без размера. Ниже — ваши заказы по месяцам и недавно выданные.</p>
 </section>
 
 <section id="create">
   <h2><span class="n">3</span>Создание заказа</h2>
-  <div class="text">
     <ol>
       <li>Откройте <b>Создать заказ</b>.</li>
       <li>В поле <b>Для кого</b> введите часть имени сотрудника. Для нового сотрудника выберите <b>+ Новый сотрудник</b>.</li>
@@ -131,20 +140,20 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       </li>
       <li>Проверьте размер и количество в каждой строке:
         <ul>
-          <li>Размеры берутся из сохранённых размеров сотрудника. Размер одежды выбирается буквой, например <code>S (44–46)</code>.</li>
+          <li>Размеры берутся из сохранённых размеров сотрудника. Размер одежды выбирается буквой, например <kbd>S (44–46)</kbd>.</li>
           <li>Пока не выбраны все недостающие размеры, заказать нельзя.</li>
         </ul>
       </li>
       <li>Выберите <b>Проверить и отметить как заказанный</b> или нажмите <kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd>.</li>
     </ol>
     <p>Пока вы работаете, это устройство хранит черновик заказа. <b>Копировать для WhatsApp</b> копирует сообщение для поставщика.</p>
-  </div>
-  <figure><img src="img/ru/create-order.png" alt="Создание заказа: выбран сотрудник, применён набор, выбраны размеры" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/create-order.png" alt="Создание заказа: выбран сотрудник, применён набор, выбраны размеры" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="review">
   <h2><span class="n">4</span>Проверка и «Отметить как заказанный»</h2>
-  <div class="text">
     <ol>
       <li>Проверьте строки и общую сумму.</li>
       <li>Если сотрудник будет подтверждать с телефона, оставьте отмеченным <b>Также создать ссылку для подтверждения</b>.</li>
@@ -152,28 +161,26 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Отправьте сотруднику ссылку: <b>Отправить ссылку в WhatsApp</b> или <b>Копировать ссылку</b>. Ссылка действует 7 дней и показывается только один раз.</li>
     </ol>
     <p>Если сотрудник будет расписываться на бумаге, выберите вместо этого <b>Печать записи</b>.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/ru/review.png" alt="Окно проверки заказа" loading="lazy"></figure>
-    <figure><img src="img/ru/ordered.png" alt="Заказанный заказ со ссылкой для подтверждения" loading="lazy"></figure>
-  </div>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/review.png" alt="Окно проверки заказа" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/ordered.png" alt="Заказанный заказ со ссылкой для подтверждения" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="confirm">
   <h2><span class="n">5</span>Сотрудник подтверждает</h2>
-  <div class="text">
     <ol>
       <li>Сотрудник открывает ссылку. Учётная запись ему не нужна.</li>
       <li>Он проверяет предметы на английском или русском (<b>EN / RU</b>).</li>
       <li>Он отмечает согласие и нажимает <b>Подтвердить получение</b>. Заказ получает статус <b>Выдано</b>.</li>
     </ol>
-  </div>
-  <figure class="phone"><img src="img/ru/confirm-phone.png" alt="Страница подтверждения на телефоне" loading="lazy"></figure>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/ru/confirm-phone.png" alt="Страница подтверждения на телефоне" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="history">
   <h2><span class="n">6</span>История</h2>
-  <div class="text">
     <p><b>Ожидают</b>, <b>Выдано</b> и <b>Все</b> фильтруют заказы по статусу. Также можно фильтровать по сотруднику и дате. Нажмите номер записи, и заказ откроется рядом со списком. <kbd>J</kbd> и <kbd>K</kbd> переходят между заказами, <kbd>Esc</kbd> закрывает заказ.</p>
     <p>У заказа со статусом <b>Заказано</b> есть такие действия:</p>
     <ul>
@@ -182,26 +189,27 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li><b>Печать записи</b> печатает запись для подписи.</li>
       <li><b>Копировать для WhatsApp</b> копирует сообщение для поставщика.</li>
     </ul>
-    <p class="who">Только для менеджеров: <b>⋯ → Удалить заказ…</b> удаляет заказ, например тестовый. Перед этим приложение спрашивает подтверждение.</p>
-  </div>
-  <figure><img src="img/ru/history.png" alt="История с открытым заказом рядом со списком" loading="lazy"></figure>
+    <p class="who">Только для менеджеров</p>
+    <p><b>⋯ → Удалить заказ…</b> удаляет заказ, например тестовый. Перед этим приложение спрашивает подтверждение.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/history.png" alt="История с открытым заказом рядом со списком" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="record">
   <h2><span class="n">7</span>Акт выдачи</h2>
-  <div class="text">
-    <p>У заказа со статусом <b>Выдано</b> есть неизменяемая запись на английском и русском (<i>Items Given Record / Акт выдачи</i>). Откройте её кнопкой <b>Открыть запись</b>.</p>
+    <p>У заказа со статусом <b>Выдано</b> есть неизменяемая запись на английском и русском (Items Given Record / Акт выдачи). Откройте её кнопкой <b>Открыть запись</b>.</p>
     <ul>
       <li><b>Печать записи</b> печатает её на одном листе A4.</li>
       <li><b>Отправить в WhatsApp</b> отправляет её.</li>
     </ul>
-  </div>
-  <figure><img src="img/ru/record.png" alt="Двуязычный акт выдачи" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/record.png" alt="Двуязычный акт выдачи" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="employees">
   <h2><span class="n">8</span>Сотрудники</h2>
-  <div class="text">
     <p>В списке видны размеры каждого сотрудника. Сотрудники без какого-либо размера отмечены.</p>
     <p>На странице сотрудника показаны:</p>
     <ul>
@@ -210,67 +218,67 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>ещё не выданные заказы.</li>
     </ul>
     <p>На этой странице <b>Новый заказ</b> начинает заказ для сотрудника, а <b>Изменить размеры</b> меняет его размеры.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/ru/employees.png" alt="Список сотрудников" loading="lazy"></figure>
-    <figure><img src="img/ru/employee.png" alt="Страница сотрудника с выданными предметами" loading="lazy"></figure>
-  </div>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/employees.png" alt="Список сотрудников" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/employee.png" alt="Страница сотрудника с выданными предметами" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="catalogue">
   <h2><span class="n">9</span>Каталог предметов и наборы предметов</h2>
-  <div class="text">
-    <p class="who">Для администраторов и менеджеров.</p>
     <p>У каждого предмета в каталоге есть цена, срок службы и группа размеров. Предмет без цены или срока службы заказать нельзя. Изменение цены не меняет уже созданные заказы.</p>
-    <p>Набор предметов — это комплект предметов с количествами по умолчанию. На экране <b>Создать заказ</b> он применяется одним нажатием.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/ru/catalogue.png" alt="Каталог предметов" loading="lazy"></figure>
-    <figure><img src="img/ru/item-sets.png" alt="Наборы предметов" loading="lazy"></figure>
-  </div>
+    <p>Набор предметов — это комплект предметов с количествами по умолчанию. На экране «Создать заказ» он применяется одним нажатием.</p>
+    <p class="who">Только для администраторов и менеджеров</p>
+    <p>Предметы вы добавляете и меняете в <b>Каталоге предметов</b>, а комплекты — в <b>Наборах предметов</b>.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/catalogue.png" alt="Каталог предметов" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/item-sets.png" alt="Наборы предметов" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="users">
   <h2><span class="n">10</span>Пользователи</h2>
-  <div class="text">
-    <p class="who">Только для администраторов.</p>
+  <p class="who">Только для администраторов</p>
     <ul>
       <li>Создавайте, изменяйте и деактивируйте учётные записи и назначайте роли: администратор, менеджер или сотрудник.</li>
       <li>Чтобы сбросить пароль, используйте <b>⋯ → Сбросить пароль…</b>.</li>
     </ul>
-  </div>
-  <figure><img src="img/ru/users.png" alt="Экран «Пользователи»" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/users.png" alt="Экран «Пользователи»" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="account">
   <h2><span class="n">11</span>Ваша учётная запись</h2>
-  <div class="text">
     <ul>
       <li><b>Язык</b>: English, Lietuvių или Русский. Выбор сохраняется в вашей учётной записи, поэтому действует на любом устройстве, где вы входите. Страница подтверждения для сотрудника и запись остаются на английском и русском.</li>
       <li><b>Сменить пароль</b>.</li>
       <li><b>Строки таблиц</b>: <b>Компактные</b> помещают больше строк на экране компьютера.</li>
     </ul>
-  </div>
-  <figure><img src="img/ru/account.png" alt="Учётная запись: язык, пароль и строки таблиц" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/account.png" alt="Учётная запись: язык, пароль и строки таблиц" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="shortcuts">
   <h2><span class="n">12</span>Поиск и сочетания клавиш</h2>
-  <div class="table"><table>
-    <thead><tr><th>Клавиша</th><th>Действие</th></tr></thead>
-    <tbody>
+    <div class="table"><table>
+      <thead><tr><th>Клавиша</th><th>Действие</th></tr></thead>
+      <tbody>
       <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ищет номера записей, сотрудников, предметы и экраны. Например, введите имя и выберите <b>Новый заказ: …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Переходит в поле поиска или «Добавить предмет».</td></tr>
       <tr><td><kbd>G</kbd>, затем <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Переходит в Сводку, Создать заказ, Историю, Сотрудников, Каталог, Наборы предметов или Пользователей.</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Перемещается по Истории или закрывает открытый заказ.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>На экране «Создать заказ» открывает проверку заказа.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Показывает все сочетания клавиш.</td></tr>
-    </tbody>
-  </table></div>
-  <figure><img src="img/ru/palette.png" alt="Поиск ⌘K находит сотрудника" loading="lazy"></figure>
+      </tbody>
+    </table></div>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/ru/palette.png" alt="Поиск ⌘K находит сотрудника" loading="lazy"></figure>
+    </div>
 </section>
 
-<footer>На снимках экрана — демонстрационные данные. Названия предметов — это данные, поэтому они показаны так, как введены. Чтобы сделать снимки заново, запустите <code>pnpm guide</code> в папке <code>web/e2e</code>.</footer>
+<footer>На снимках экрана — демонстрационные данные. Названия предметов — это данные, поэтому они показаны так, как введены.</footer>
 
 </main>
 </body>

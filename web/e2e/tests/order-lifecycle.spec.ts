@@ -1084,6 +1084,12 @@ test('History: only a manager deletes an order, after asking; it then leaves His
   await expect(other).toHaveURL(/\/history$/)
   await expect(other.getByRole('heading', { name: 'History' })).toBeVisible()
   await expect(other.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
+
+  // Help shows a manager what their role can do: Delete order, but not Users.
+  await other.getByRole('link', { name: 'Help' }).click()
+  await expect(other.getByRole('heading', { name: 'User guide' })).toBeVisible()
+  await expect(other.locator('#history')).toContainText('Delete order…')
+  await expect(other.locator('#users')).toHaveCount(0)
   await other.context().close()
 
   // Gone for everyone: the administrator's open copy no longer loads, and the list leaves it out.
@@ -1116,6 +1122,19 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(other.getByRole('heading', { name: 'Suvestinė' })).toBeVisible()
   await other.context().close()
 
+  // Help opens the guide in the user's language; its own switch changes the guide, not the app.
+  await page.getByRole('link', { name: 'Pagalba' }).click()
+  await expect(page).toHaveURL(/\/help$/)
+  await expect(page.getByRole('heading', { name: 'Naudotojo vadovas' })).toBeVisible()
+  // An administrator's guide has Users and no Delete order, which is the manager's.
+  await expect(page.locator('#users')).toBeVisible()
+  await expect(page.locator('#history')).not.toContainText('Ištrinti užsakymą')
+  await page.getByRole('group', { name: 'Vadovo kalba' }).getByRole('button', { name: 'English' }).click()
+  await expect(page.getByRole('heading', { name: 'User guide' })).toBeVisible()
+  await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/create-order\.png$/)
+  expect(await page.locator('#create img').evaluate((img: HTMLImageElement) => img.decode().then(() => img.naturalWidth))).toBeGreaterThan(0)
+  await expect(page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Istorija' })).toBeVisible()
+
   // Longer labels wrap inside their buttons, not into the padding or past it: Create Order's panel at desktop width.
   await page.goto('/orders/new')
   await expect(page.getByRole('button', { name: 'Peržiūrėti ir pažymėti kaip užsakytą' })).toBeVisible()
@@ -1143,7 +1162,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   // Longer words must not push any screen sideways on a phone.
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
-  for (const path of ['/dashboard', '/orders/new', '/history', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/account']) {
+  for (const path of ['/dashboard', '/orders/new', '/history', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/help', '/account']) {
     await page.goto(path)
     await expect(page.locator('main h1')).toBeVisible()
     await page.waitForLoadState('networkidle')

@@ -26,6 +26,8 @@ export const shell: ShellText = {
   more: 'Daugiau',
   signOut: 'Atsijungti',
   keyboardShortcuts: 'Spartieji klavišai',
+  help: 'Pagalba',
+  userGuide: 'Naudotojo vadovas',
   shortcutsHint: 'Raidžių klavišai veikia visur, išskyrus kai rašote lauke.',
   newOrderButton: 'Užsakyti',
   draft: 'Juodraštis',

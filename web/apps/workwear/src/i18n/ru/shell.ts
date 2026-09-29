@@ -26,6 +26,8 @@ export const shell: ShellText = {
   more: 'Ещё',
   signOut: 'Выйти',
   keyboardShortcuts: 'Сочетания клавиш',
+  help: 'Справка',
+  userGuide: 'Руководство пользователя',
   shortcutsHint: 'Буквенные клавиши работают везде, кроме ввода текста в поле.',
   newOrderButton: 'Новый заказ',
   draft: 'Черновик',

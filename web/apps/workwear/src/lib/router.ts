@@ -32,6 +32,8 @@ export type Route =
   /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
   | { name: 'replacements' }
   | { name: 'account' }
+  /** The user guide, for the user's roles; /help#<section> opens it at a section. */
+  | { name: 'help' }
   /** View Record; print opens the browser's print dialog once loaded (Print Record). */
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
@@ -60,6 +62,7 @@ const fixed = {
   users: '/users',
   replacements: '/replacements',
   account: '/account',
+  help: '/help',
 } as const
 
 /** Unknown paths (stale bookmarks) land on the start screen, as the root does. */

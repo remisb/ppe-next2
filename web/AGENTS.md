@@ -43,6 +43,18 @@ in a narrow column wraps (`h-auto min-h-11 py-2 whitespace-normal`) rather than 
 Button's one line; the e2e *Language* step fails when a visible button's text on Create
 Order is wider than the button in Lithuanian.
 
+## User guide
+
+The Help screen (`/help`, `routes/help.tsx`) shows the user guide, which lives in
+`src/help/{en,lt,ru}.ts` as typed data: sections, paragraphs, lists, shortcut tables and
+screenshots, with `**names**` and `` `keys` `` marked up. A section or part carries
+`roles` when only those roles can do it, and Help leaves it out for everyone else; the
+guide opens in the user's language and its own switch changes only the guide. Change the
+guide with the screen it describes, in all three languages: `help.test.ts` fails when
+their sections, parts, roles or screenshots differ. `pnpm guide` in `web/e2e` retakes the
+screenshots (`public/help-img/<lang>/`) from the demo data and writes `docs/guide` from
+the same text, so never edit `docs/guide` by hand.
+
 ## Responsive layout
 
 Mobile first: unprefixed classes are the phone layout, `sm:`/`md:`/`lg:` add to it.

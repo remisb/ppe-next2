@@ -1,7 +1,8 @@
-import { ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { BookOpen, ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
+import { Loading } from '@/components/states'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
@@ -28,6 +29,9 @@ import { Replacements } from './routes/replacements'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
 import { UsersPage } from './routes/users'
+
+// The guide's text in three languages is read rarely: its own chunk, loaded when Help opens.
+const Help = lazy(() => import('./routes/help').then((m) => ({ default: m.Help })))
 
 interface Tab {
   route: Route
@@ -192,6 +196,7 @@ export function App() {
     ...shownTabs.map((tab) => ({ route: tab.route, label: tab.label, icon: tab.icon })),
     { route: { name: 'replacements' }, label: t.shell.replacements, icon: RotateCcw },
     { route: { name: 'account' }, label: t.shell.accountAndPassword, icon: UserRound },
+    { route: { name: 'help' }, label: t.shell.userGuide, icon: BookOpen },
   ]
   const primary = shownTabs.slice(0, phoneTabs)
   const more = shownTabs.slice(phoneTabs)
@@ -311,6 +316,12 @@ export function App() {
             ))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
+              <a {...link({ name: 'help' })} aria-current={route.name === 'help' ? 'page' : undefined} className={moreItem}>
+                <span className={moreIcon}>
+                  <BookOpen aria-hidden className="size-5" />
+                </span>
+                {t.shell.help}
+              </a>
               <a {...link({ name: 'account' })} aria-current={route.name === 'account' ? 'page' : undefined} className={moreItem}>
                 <span className={moreIcon}>
                   <UserRound aria-hidden className="size-5" />
@@ -330,6 +341,12 @@ export function App() {
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex xl:p-3">
+          <a {...link({ name: 'help' })} aria-current={route.name === 'help' ? 'page' : undefined} title={t.shell.userGuide} className={navItem}>
+            <span className={navIcon}>
+              <BookOpen aria-hidden className="size-5 xl:size-4" />
+            </span>
+            {t.shell.help}
+          </a>
           <button type="button" onClick={() => setHelpOpen(true)} className={cn(navItem, 'w-full cursor-pointer pointer-coarse:hidden')}>
             <span className={navIcon}>
               <Keyboard aria-hidden className="size-5 xl:size-4" />
@@ -380,6 +397,11 @@ export function App() {
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
+        {route.name === 'help' ? (
+          <Suspense fallback={<Loading />}>
+            <Help />
+          </Suspense>
+        ) : null}
         {route.name === 'history' ? (
           <History
             selected={route.order}
@@ -393,7 +415,25 @@ export function App() {
         ) : null}
       </main>
       <CommandPalette open={paletteOpen} sections={sections} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
-      <FormSheet open={helpOpen} onClose={() => setHelpOpen(false)} title={t.shell.keyboardShortcuts} description={t.shell.shortcutsHint}>
+      <FormSheet
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        title={t.shell.keyboardShortcuts}
+        description={t.shell.shortcutsHint}
+        footer={
+          <a
+            {...link({ name: 'help' })}
+            onClick={(e) => {
+              setHelpOpen(false)
+              link({ name: 'help' }).onClick(e)
+            }}
+            className="inline-flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
+          >
+            <BookOpen aria-hidden className="size-4" />
+            {t.shell.userGuide}
+          </a>
+        }
+      >
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[auto_1fr]">
           {shortcutList().map((s) => (
             <div key={s.keys} className="contents">

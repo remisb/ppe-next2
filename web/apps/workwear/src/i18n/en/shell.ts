@@ -28,6 +28,8 @@ export const shell = {
   more: 'More',
   signOut: 'Sign out',
   keyboardShortcuts: 'Keyboard shortcuts',
+  help: 'Help',
+  userGuide: 'User guide',
   shortcutsHint: 'Letters work anywhere except while typing in a field.',
   /** The phone's raised Create Order button, without and with a saved draft. */
   newOrderButton: 'New order',

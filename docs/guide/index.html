@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Workwear User Guide</title>
+<title>Workwear &amp; Equipment · User guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -39,7 +39,11 @@ nav a:hover, nav a:focus-visible{border-color:var(--ink); outline:none}
 section{display:grid; gap:16px; scroll-margin-top:24px}
 h2{font:700 26px/1.15 var(--display); font-stretch:85%; margin:0; display:flex; gap:12px; align-items:center}
 h2 .n{flex:none; display:inline-grid; place-items:center; width:34px; height:34px; border-radius:8px; background:var(--hivis); color:var(--hivis-ink); font:700 16px var(--mono)}
-.text{max-width:68ch; display:grid; gap:10px}
+.text, section > p, section > ol, section > ul{max-width:68ch; display:grid; gap:10px}
+section > p, section > ol, section > ul{margin:0}
+section > ol, section > ul, section li > ul{padding-left:1.3em; display:grid; gap:4px}
+section li > ul{margin:4px 0 0}
+.shots{display:grid}
 .text p, .text ol, .text ul{margin:0}
 .text ol, .text ul{padding-left:1.3em; display:grid; gap:4px}
 .who{font-size:14px; color:var(--muted)}
@@ -62,32 +66,32 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </style>
 </head>
 <body>
+<!-- Written by `pnpm guide` (web/e2e/guide/docs.ts) from apps/workwear/src/help; edit the guide there. -->
 <main>
 
 <header>
-  <nav class="langs" aria-label="Language"><a href="index.html" lang="en" aria-current="page">English</a><a href="lt.html" lang="lt">Lietuvių</a><a href="ru.html" lang="ru">Русский</a></nav>
-  <div class="eyebrow">workwear.gavort.nl · staff guide</div>
-  <h1>Workwear &amp; Equipment <span>user guide</span></h1>
+  <nav class="langs" aria-label="Guide language"><a href="index.html" lang="en" aria-current="page">English</a><a href="lt.html" lang="lt">Lietuvių</a><a href="ru.html" lang="ru">Русский</a></nav>
+  <div class="eyebrow">workwear.gavort.nl</div>
+  <h1>Workwear &amp; Equipment <span>User guide</span></h1>
   <p class="lede">The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian.</p>
   <nav aria-label="Contents"><ol>
     <li><a href="#sign-in"><b>1</b>Sign in</a></li>
     <li><a href="#dashboard"><b>2</b>Dashboard</a></li>
     <li><a href="#create"><b>3</b>Create an order</a></li>
-    <li><a href="#review"><b>4</b>Mark as Ordered</a></li>
-    <li><a href="#confirm"><b>5</b>Employee confirms</a></li>
+    <li><a href="#review"><b>4</b>Review and Mark as Ordered</a></li>
+    <li><a href="#confirm"><b>5</b>The employee confirms</a></li>
     <li><a href="#history"><b>6</b>History</a></li>
-    <li><a href="#record"><b>7</b>Record</a></li>
+    <li><a href="#record"><b>7</b>Items Given Record</a></li>
     <li><a href="#employees"><b>8</b>Employees</a></li>
-    <li><a href="#catalogue"><b>9</b>Catalogue &amp; sets</a></li>
+    <li><a href="#catalogue"><b>9</b>Item Catalogue and Item Sets</a></li>
     <li><a href="#users"><b>10</b>Users</a></li>
     <li><a href="#account"><b>11</b>Your account</a></li>
-    <li><a href="#shortcuts"><b>12</b>Shortcuts</a></li>
+    <li><a href="#shortcuts"><b>12</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
 <section id="sign-in">
   <h2><span class="n">1</span>Sign in</h2>
-  <div class="text">
     <ol>
       <li>Open <b>workwear.gavort.nl</b> and sign in with your email and password.</li>
       <li>Your first screen depends on your role:
@@ -98,13 +102,14 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
         </ul>
       </li>
     </ol>
-  </div>
-  <figure><img src="img/en/sign-in.png" alt="The sign-in screen with email and password" loading="lazy"></figure>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/en/sign-in.png" alt="The sign-in screen with email and password" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="dashboard">
   <h2><span class="n">2</span>Dashboard</h2>
-  <div class="text">
+    <p class="who">Administrators only</p>
     <p>The figures at the top show the orders awaiting confirmation, this month's spending and the replacements due.</p>
     <p><b>Needs you</b> lists what to do next, most urgent first. Each line has a button for its task:</p>
     <ul>
@@ -113,13 +118,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>A missing size: <b>Add sizes</b>.</li>
       <li>An item without a price: <b>Fix</b>.</li>
     </ul>
-  </div>
-  <figure><img src="img/en/dashboard.png" alt="The Dashboard: figures and the Needs you list" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/dashboard.png" alt="The Dashboard: figures and the Needs you list" loading="lazy"></figure>
+    </div>
+    <p class="who">Managers only</p>
+    <p>The <b>Manager Dashboard</b> covers items, prices and purchasing: what is on order, spending by item, the replacements that will need buying, recent price changes, what holds up ordering in the catalogue and item sets, and the sizes to stock.</p>
+    <p class="who">The employee role only</p>
+    <p>The <b>Employee Dashboard</b> starts with what needs doing: your orders still waiting for the employee's confirmation (<b>Send link</b>), items due for replacement and employees missing a size. Below are your orders by month and those given recently.</p>
 </section>
 
 <section id="create">
   <h2><span class="n">3</span>Create an order</h2>
-  <div class="text">
     <ol>
       <li>Open <b>Create Order</b>.</li>
       <li>In <b>Assigned to</b>, type part of the employee's name. For someone new, choose <b>+ Add New Employee</b>.</li>
@@ -131,20 +140,20 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       </li>
       <li>Check each line's size and quantity:
         <ul>
-          <li>Sizes come from the employee's saved sizes. Clothing is picked by letter, for example <code>S (44–46)</code>.</li>
+          <li>Sizes come from the employee's saved sizes. Clothing is picked by letter, for example <kbd>S (44–46)</kbd>.</li>
           <li>You can't order until every missing size is chosen.</li>
         </ul>
       </li>
       <li>Choose <b>Review and mark as ordered</b>, or press <kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd>.</li>
     </ol>
     <p>This device keeps a draft of the order while you work. <b>Copy for WhatsApp</b> copies the message for the supplier.</p>
-  </div>
-  <figure><img src="img/en/create-order.png" alt="Create Order with an employee, a kit applied and sizes chosen" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/create-order.png" alt="Create Order with an employee, a kit applied and sizes chosen" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="review">
   <h2><span class="n">4</span>Review and Mark as Ordered</h2>
-  <div class="text">
     <ol>
       <li>Check the lines and the total.</li>
       <li>If the employee will confirm on their phone, leave <b>Create the confirmation link as well</b> ticked.</li>
@@ -152,28 +161,26 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Send the employee the link with <b>Share link via WhatsApp</b> or <b>Copy link</b>. The link is valid for 7 days, and the app shows it only once.</li>
     </ol>
     <p>If the employee will sign on paper, choose <b>Print record</b> instead.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/en/review.png" alt="The Review order dialog" loading="lazy"></figure>
-    <figure><img src="img/en/ordered.png" alt="The ordered order with its confirmation link" loading="lazy"></figure>
-  </div>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/review.png" alt="The Review order dialog" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/ordered.png" alt="The ordered order with its confirmation link" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="confirm">
   <h2><span class="n">5</span>The employee confirms</h2>
-  <div class="text">
     <ol>
       <li>The employee opens the link. They don't need an account.</li>
       <li>They check the items, in English or Russian (<b>EN / RU</b>).</li>
       <li>They tick the statement and tap <b>Confirm receipt</b>. The order becomes <b>Given</b>.</li>
     </ol>
-  </div>
-  <figure class="phone"><img src="img/en/confirm-phone.png" alt="The confirmation page on a phone" loading="lazy"></figure>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/en/confirm-phone.png" alt="The confirmation page on a phone" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="history">
   <h2><span class="n">6</span>History</h2>
-  <div class="text">
     <p><b>Awaiting</b>, <b>Given</b> and <b>All</b> filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. <kbd>J</kbd> and <kbd>K</kbd> move between orders, and <kbd>Esc</kbd> closes the order.</p>
     <p>An <b>Ordered</b> order has these actions:</p>
     <ul>
@@ -182,26 +189,27 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li><b>Print Record</b> prints the record for signing.</li>
       <li><b>Copy for WhatsApp</b> copies the supplier message.</li>
     </ul>
-    <p class="who">Managers only: <b>⋯ → Delete order…</b> removes an order, such as a test order, after asking.</p>
-  </div>
-  <figure><img src="img/en/history.png" alt="History with an ordered order open beside the list" loading="lazy"></figure>
+    <p class="who">Managers only</p>
+    <p><b>⋯ → Delete order…</b> removes an order, such as a test order, after asking.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/history.png" alt="History with an ordered order open beside the list" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="record">
   <h2><span class="n">7</span>Items Given Record</h2>
-  <div class="text">
     <p>A <b>Given</b> order has a locked record in English and Russian. Open it with <b>View Record</b>.</p>
     <ul>
       <li><b>Print Record</b> prints it on one A4 page.</li>
       <li><b>Share via WhatsApp</b> sends it.</li>
     </ul>
-  </div>
-  <figure><img src="img/en/record.png" alt="The bilingual Items Given Record" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/record.png" alt="The bilingual Items Given Record" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="employees">
   <h2><span class="n">8</span>Employees</h2>
-  <div class="text">
     <p>The list shows each employee's sizes and marks anyone missing one.</p>
     <p>Each employee's page shows:</p>
     <ul>
@@ -210,67 +218,67 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>orders not yet given.</li>
     </ul>
     <p>From that page, <b>New order</b> starts an order for them, and <b>Edit Sizes</b> changes their sizes.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/en/employees.png" alt="The Employees list" loading="lazy"></figure>
-    <figure><img src="img/en/employee.png" alt="An employee's page with the items given" loading="lazy"></figure>
-  </div>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/employees.png" alt="The Employees list" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/employee.png" alt="An employee's page with the items given" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="catalogue">
   <h2><span class="n">9</span>Item Catalogue and Item Sets</h2>
-  <div class="text">
-    <p class="who">Administrators and managers.</p>
     <p>Each catalogue item has a price, a service period and a size group. You can't order an item without a price or service period. Changing a price never alters existing orders.</p>
     <p>An item set is a kit of items with default quantities. You apply it on Create Order in one tap.</p>
-  </div>
-  <div class="pair">
-    <figure><img src="img/en/catalogue.png" alt="The Item Catalogue" loading="lazy"></figure>
-    <figure><img src="img/en/item-sets.png" alt="Item Sets" loading="lazy"></figure>
-  </div>
+    <p class="who">Administrators and managers only</p>
+    <p>You add and change items in <b>Item Catalogue</b>, and kits in <b>Item Sets</b>.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/catalogue.png" alt="The Item Catalogue" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/item-sets.png" alt="Item Sets" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="users">
   <h2><span class="n">10</span>Users</h2>
-  <div class="text">
-    <p class="who">Administrators only.</p>
+  <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.</li>
       <li>To reset a password, use <b>⋯ → Reset password…</b>.</li>
     </ul>
-  </div>
-  <figure><img src="img/en/users.png" alt="The Users screen" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/users.png" alt="The Users screen" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="account">
   <h2><span class="n">11</span>Your account</h2>
-  <div class="text">
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.</li>
       <li><b>Change password</b>.</li>
       <li><b>Table rows</b>: <b>Compact</b> fits more rows on a desktop screen.</li>
     </ul>
-  </div>
-  <figure><img src="img/en/account.png" alt="Account: language, password and table rows" loading="lazy"></figure>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/account.png" alt="Account: language, password and table rows" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="shortcuts">
   <h2><span class="n">12</span>Search and shortcuts</h2>
-  <div class="table"><table>
-    <thead><tr><th>Key</th><th>Does</th></tr></thead>
-    <tbody>
+    <div class="table"><table>
+      <thead><tr><th>Key</th><th>Does</th></tr></thead>
+      <tbody>
       <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Go to the search or Add Item field.</td></tr>
       <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets or Users.</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Move through History, or close the open order.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>On Create Order, review the order.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show all shortcuts.</td></tr>
-    </tbody>
-  </table></div>
-  <figure><img src="img/en/palette.png" alt="The ⌘K search finding an employee" loading="lazy"></figure>
+      </tbody>
+    </table></div>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/palette.png" alt="The ⌘K search finding an employee" loading="lazy"></figure>
+    </div>
 </section>
 
-<footer>The screenshots show demo data. To take them again, run <code>pnpm guide</code> in <code>web/e2e</code>.</footer>
+<footer>The screenshots show demo data. Item names are data, so they show as entered.</footer>
 
 </main>
 </body>

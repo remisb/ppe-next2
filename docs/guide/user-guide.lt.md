@@ -1,4 +1,4 @@
-# Darbo drabužiai ir įranga: naudotojo vadovas
+# Darbo drabužiai ir įranga: Naudotojo vadovas
 
 [English](user-guide.md) · Lietuvių · [Русский](user-guide.ru.md)
 
@@ -12,9 +12,11 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
    - vadovai – ekrane **Vadovo suvestinė**;
    - darbuotojo rolė – ekrane **Darbuotojo suvestinė**.
 
-![Prisijungimo ekranas su el. paštu ir slaptažodžiu](img/lt/sign-in.png)
+![Prisijungimo ekranas su el. paštu ir slaptažodžiu](../../web/apps/workwear/public/help-img/lt/sign-in.png)
 
 ## 2. Suvestinė
+
+*Tik administratoriams:*
 
 Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir artėjantys pakeitimai.
 
@@ -25,7 +27,15 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
 - trūkstamas dydis – **Pridėti dydžius**;
 - prekė be kainos – **Taisyti**.
 
-![Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“](img/lt/dashboard.png)
+![Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“](../../web/apps/workwear/public/help-img/lt/dashboard.png)
+
+*Tik vadovams:*
+
+**Vadovo suvestinė** skirta prekėms, kainoms ir pirkimams: kas užsakyta, išlaidos pagal prekes, kokius pakeitimus teks pirkti, naujausi kainų pokyčiai, kas kataloge ir rinkiniuose trukdo užsakyti, ir kokių dydžių laikyti atsargų.
+
+*Tik darbuotojo rolei:*
+
+**Darbuotojo suvestinė** prasideda nuo to, ką reikia padaryti: jūsų užsakymai, dar laukiantys darbuotojo patvirtinimo (**Siųsti nuorodą**), keistinos prekės ir darbuotojai, kuriems trūksta dydžio. Žemiau – jūsų užsakymai pagal mėnesius ir neseniai išduoti.
 
 ## 3. Užsakymo kūrimas
 
@@ -41,7 +51,7 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
 
 Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.
 
-![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](img/lt/create-order.png)
+![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](../../web/apps/workwear/public/help-img/lt/create-order.png)
 
 ## 4. Peržiūra ir „Pažymėti kaip užsakytą“
 
@@ -52,9 +62,8 @@ Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsAp
 
 Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įrašą**.
 
-![Užsakymo peržiūros langas](img/lt/review.png)
-
-![Užsakytas užsakymas su patvirtinimo nuoroda](img/lt/ordered.png)
+![Užsakymo peržiūros langas](../../web/apps/workwear/public/help-img/lt/review.png)
+![Užsakytas užsakymas su patvirtinimo nuoroda](../../web/apps/workwear/public/help-img/lt/ordered.png)
 
 ## 5. Darbuotojas patvirtina
 
@@ -62,7 +71,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 2. Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Šis puslapis lietuviškai nerodomas.
 3. Jis pažymi sutikimą ir paspaudžia **Confirm receipt** (**Подтвердить получение**). Užsakymo būsena tampa **Išduota**.
 
-![Patvirtinimo puslapis telefone](img/lt/confirm-phone.png)
+![Patvirtinimo puslapis telefone](../../web/apps/workwear/public/help-img/lt/confirm-phone.png)
 
 ## 6. Istorija
 
@@ -75,18 +84,20 @@ Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 - **Spausdinti įrašą** atspausdina įrašą pasirašyti.
 - **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.
 
-Tik vadovams: **⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.
+*Tik vadovams:*
 
-![Istorija su atidarytu užsakymu šalia sąrašo](img/lt/history.png)
+**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.
+
+![Istorija su atidarytu užsakymu šalia sąrašo](../../web/apps/workwear/public/help-img/lt/history.png)
 
 ## 7. Išdavimo įrašas
 
-Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (*Items Given Record / Акт выдачи*). Atidarykite jį mygtuku **Peržiūrėti įrašą**.
+Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti įrašą**.
 
 - **Spausdinti įrašą** atspausdina jį viename A4 lape.
 - **Siųsti per WhatsApp** jį išsiunčia.
 
-![Dvikalbis išdavimo įrašas](img/lt/record.png)
+![Dvikalbis išdavimo įrašas](../../web/apps/workwear/public/help-img/lt/record.png)
 
 ## 8. Darbuotojai
 
@@ -100,30 +111,30 @@ Darbuotojo puslapyje rodoma:
 
 Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.
 
-![Darbuotojų sąrašas](img/lt/employees.png)
-
-![Darbuotojo puslapis su išduotomis prekėmis](img/lt/employee.png)
+![Darbuotojų sąrašas](../../web/apps/workwear/public/help-img/lt/employees.png)
+![Darbuotojo puslapis su išduotomis prekėmis](../../web/apps/workwear/public/help-img/lt/employee.png)
 
 ## 9. Prekių katalogas ir prekių rinkiniai
 
-Administratoriams ir vadovams.
-
 Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.
 
-Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane **Kurti užsakymą** jį pritaikote vienu paspaudimu.
+Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.
 
-![Prekių katalogas](img/lt/catalogue.png)
+*Tik administratoriams ir vadovams:*
 
-![Prekių rinkiniai](img/lt/item-sets.png)
+Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.
+
+![Prekių katalogas](../../web/apps/workwear/public/help-img/lt/catalogue.png)
+![Prekių rinkiniai](../../web/apps/workwear/public/help-img/lt/item-sets.png)
 
 ## 10. Naudotojai
 
-Tik administratoriams.
+*Tik administratoriams.*
 
 - Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.
 - Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.
 
-![Naudotojų ekranas](img/lt/users.png)
+![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/users.png)
 
 ## 11. Jūsų paskyra
 
@@ -131,7 +142,7 @@ Tik administratoriams.
 - **Keisti slaptažodį**.
 - **Lentelės eilutės**: **Kompaktiškos** kompiuterio ekrane sutalpina daugiau eilučių.
 
-![Paskyra: kalba, slaptažodis ir lentelės eilutės](img/lt/account.png)
+![Paskyra: kalba, slaptažodis ir lentelės eilutės](../../web/apps/workwear/public/help-img/lt/account.png)
 
 ## 12. Paieška ir spartieji klavišai
 
@@ -144,6 +155,6 @@ Tik administratoriams.
 | `⌘/Ctrl` `Enter` | Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą. |
 | `?` | Rodo visus sparčiuosius klavišus. |
 
-![⌘K paieška randa darbuotoją](img/lt/palette.png)
+![⌘K paieška randa darbuotoją](../../web/apps/workwear/public/help-img/lt/palette.png)
 
-Ekrano nuotraukose rodomi demonstraciniai duomenys. Prekių pavadinimai yra duomenys, todėl rodomi taip, kaip įvesti. Norėdami nuotraukas padaryti iš naujo, aplanke `web/e2e` paleiskite `pnpm guide`.
+Ekrano nuotraukose rodomi demonstraciniai duomenys. Prekių pavadinimai yra duomenys, todėl rodomi taip, kaip įvesti.

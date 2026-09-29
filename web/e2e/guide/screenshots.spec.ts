@@ -1,8 +1,10 @@
 import { fileURLToPath } from 'node:url'
 
-import { type Page, expect, test } from '@playwright/test'
+import { type Browser, type Page, expect, test } from '@playwright/test'
 
+import { type ShotName, shotPath } from '../../apps/workwear/src/help/index.ts'
 import { admin } from '../env.ts'
+import { writeDocs } from './docs.ts'
 import { T, lang, locale } from './lang.ts'
 
 // Screenshots for the user guide (docs/guide), taken from the demo data in
@@ -11,7 +13,8 @@ import { T, lang, locale } from './lang.ts'
 test.describe.configure({ mode: 'serial' })
 test.use({ locale })
 
-const img = (name: string) => fileURLToPath(new URL(`../../../docs/guide/img/${lang}/${name}.png`, import.meta.url))
+// The app serves them on its Help screen (public/help-img), and docs/guide shows them too.
+const img = (name: ShotName) => fileURLToPath(new URL(`../../apps/workwear/public/${shotPath(lang, name)}`, import.meta.url))
 
 let page: Page
 let confirmationURL = ''
@@ -21,7 +24,7 @@ test.beforeAll(async ({ browser }) => {
 })
 
 /** Settles the page (no hover, no pending requests, finished transitions) and saves it. */
-async function shot(name: string, target: Page = page) {
+async function shot(name: ShotName, target: Page = page) {
   await target.mouse.move(0, 0)
   await target.waitForLoadState('networkidle')
   await target.waitForTimeout(400)
@@ -34,11 +37,21 @@ async function openTab(name: string) {
 
 const order = () => page.getByRole('complementary', { name: T.history.order, exact: true })
 
-test('sign in and the dashboard', async () => {
+/** A phone, as an employee opening their link would hold it. */
+const phoneOf = (browser: Browser) => browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale })
+
+test('sign in and the dashboard', async ({ browser }) => {
+  // On a phone: at desktop width the form is a small card in an empty page.
+  const phone = await phoneOf(browser)
+  await phone.goto('/')
+  await phone.getByLabel(T.shell.email).fill(admin.email)
+  await phone.getByLabel(new RegExp(`^${T.shell.password}`)).fill(admin.password)
+  await shot('sign-in', phone)
+  await phone.close()
+
   await page.goto('/')
   await page.getByLabel(T.shell.email).fill(admin.email)
   await page.getByLabel(new RegExp(`^${T.shell.password}`)).fill(admin.password)
-  await shot('sign-in')
   await page.getByRole('button', { name: T.shell.signIn }).click()
   await expect(page.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await shot('dashboard')
@@ -64,7 +77,7 @@ test('create an order, review it, mark it as ordered', async () => {
 
 test('the employee confirms on their phone', async ({ browser }) => {
   // The page offers English or Russian and starts in the browser's, so Lithuanian shows English.
-  const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale })
+  const phone = await phoneOf(browser)
   await phone.goto(confirmationURL)
   await expect(phone.getByRole('heading', { name: /^Ona/ })).toBeVisible()
   await shot('confirm-phone', phone)
@@ -117,4 +130,8 @@ test('account and the command palette', async () => {
   await page.getByRole('dialog', { name: T.shell.searchOrJump }).getByRole('combobox').fill('ona')
   await expect(page.getByRole('option', { name: T.shell.newOrderFor('Ona Kazlauskienė') })).toBeVisible()
   await shot('palette')
+})
+
+test('docs/guide: the page and Markdown copy in this language, from the Help screen text', () => {
+  writeDocs(lang)
 })
