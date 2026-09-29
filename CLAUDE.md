@@ -55,7 +55,7 @@ make test-db          # all tests incl. Postgres ones (refuses if test DSN == ma
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
 go test ./internal/domain/user -run TestAuthenticate   # single test
 cd web/e2e && pnpm exec playwright test -g "paper confirmation"   # one e2e step (suite is serial)
-cd web/e2e && pnpm guide   # Help screenshots in EN, LT, RU and docs/guide from src/help (empties the _test DB, seeds demo data)
+cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB)
 ```
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
@@ -201,7 +201,8 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
   language and namespace; never read `t` at module level). The confirmation page, hand-over
   mode and the Items Given Record stay English / Russian. Rules in `web/AGENTS.md`.
 - The user guide is the Help screen (`/help`): typed text in `src/help/{en,lt,ru}.ts`, each
-  part limited to the roles that can do it; `pnpm guide` writes `docs/guide` from it.
+  part limited to the roles that can do it and, where screens differ, to a phone, tablet or
+  desktop, with that device's screenshots; `pnpm guide` writes `docs/guide` from it.
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if

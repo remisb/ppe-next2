@@ -6,6 +6,8 @@ export const lt: Guide = {
   title: 'Naudotojo vadovas',
   lede: 'Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis.',
   language: 'Vadovo kalba',
+  device: 'Įrenginys',
+  devices: { phone: 'Telefonas', tablet: 'Planšetė', desktop: 'Kompiuteris' },
   contents: 'Turinys',
   key: 'Klavišas',
   does: 'Ką daro',
@@ -28,6 +30,9 @@ export const lt: Guide = {
             },
           ],
         },
+        { p: 'Apatinėje juostoje yra **Pradžia**, **Istorija**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
+        { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
         { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu ir slaptažodžiu', phone: true }] },
       ],
     },
@@ -62,16 +67,18 @@ export const lt: Guide = {
             'Lauke **Kam skirta** įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite **+ Naujas darbuotojas**.',
             {
               text: 'Pridėkite prekes:',
-              items: ['**Prekių rinkinys** vienu paspaudimu prideda visą komplektą.', '**Pridėti prekę** prideda vieną prekę. Paspaudę `/`, pereisite į šį lauką.'],
+              items: ['**Prekių rinkinys** vienu paspaudimu prideda visą komplektą.', { text: '**Pridėti prekę** prideda vieną prekę.', devices: ['phone', 'tablet'] }, { text: '**Pridėti prekę** prideda vieną prekę. Paspaudę `/`, pereisite į šį lauką.', devices: ['desktop'] }],
             },
             {
               text: 'Patikrinkite kiekvienos eilutės dydį ir kiekį:',
               items: ['Dydžiai imami iš darbuotojo išsaugotų dydžių. Drabužių dydis renkamas raide, pvz., `S (44–46)`.', 'Kol nepasirinkti visi trūkstami dydžiai, užsakyti negalima.'],
             },
-            'Pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.',
+            { text: 'Ekrano apačios juostoje palieskite **Peržiūrėti**. Joje matyti ir eilučių skaičius, ir suma.', devices: ['phone', 'tablet'] },
+            { text: 'Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.' },
+        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.', devices: ['phone', 'tablet'] },
+        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.', devices: ['desktop'] },
         { shots: [{ name: 'create-order', alt: 'Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai' }] },
       ],
     },
@@ -116,7 +123,10 @@ export const lt: Guide = {
       blocks: [
         {
           p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
+          devices: ['desktop'],
         },
+        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Istorija** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
+        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną; mygtuke **Filtrai** – filtrai pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Istorija** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
         { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
         {
           ul: [
@@ -127,7 +137,7 @@ export const lt: Guide = {
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
-        { shots: [{ name: 'history', alt: 'Istorija su atidarytu užsakymu šalia sąrašo' }] },
+        { shots: [{ name: 'history', alt: 'Istorija su atidarytu užsakymu' }] },
       ],
     },
     {
@@ -143,7 +153,8 @@ export const lt: Guide = {
       id: 'employees',
       title: 'Darbuotojai',
       blocks: [
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.' },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją.', devices: ['phone', 'tablet'] },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.', devices: ['desktop'] },
         { p: 'Darbuotojo puslapyje rodoma:' },
         { ul: ['jo dydžiai;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai.'] },
         { p: 'Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.' },
@@ -194,7 +205,7 @@ export const lt: Guide = {
           ul: [
             '**Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.',
             '**Keisti slaptažodį**.',
-            '**Lentelės eilutės**: **Kompaktiškos** kompiuterio ekrane sutalpina daugiau eilučių.',
+            { text: '**Lentelės eilutės**: **Kompaktiškos** ekrane sutalpina daugiau eilučių.', devices: ['desktop'] },
           ],
         },
         { shots: [{ name: 'account', alt: 'Paskyra: kalba, slaptažodis ir lentelės eilutės' }] },
@@ -203,7 +214,10 @@ export const lt: Guide = {
     {
       id: 'shortcuts',
       title: 'Paieška ir spartieji klavišai',
+      titleOn: { phone: 'Paieška', tablet: 'Paieška' },
       blocks: [
+        { p: 'Atidarykite **Daugiau**, tada **Paieška** – rasite įrašų numerius, darbuotojus, prekes ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['phone'] },
+        { p: '**Paieška** juostos viršuje randa įrašų numerius, darbuotojus, prekes ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['tablet'] },
         {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
@@ -213,6 +227,7 @@ export const lt: Guide = {
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],
           ],
+          devices: ['desktop'],
         },
         { shots: [{ name: 'palette', alt: '⌘K paieška randa darbuotoją' }] },
       ],

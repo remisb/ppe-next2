@@ -48,12 +48,16 @@ Order is wider than the button in Lithuanian.
 The Help screen (`/help`, `routes/help.tsx`) shows the user guide, which lives in
 `src/help/{en,lt,ru}.ts` as typed data: sections, paragraphs, lists, shortcut tables and
 screenshots, with `**names**` and `` `keys` `` marked up. A section or part carries
-`roles` when only those roles can do it, and Help leaves it out for everyone else; the
-guide opens in the user's language and its own switch changes only the guide. Change the
-guide with the screen it describes, in all three languages: `help.test.ts` fails when
-their sections, parts, roles or screenshots differ. `pnpm guide` in `web/e2e` retakes the
-screenshots (`public/help-img/<lang>/`) from the demo data and writes `docs/guide` from
-the same text, so never edit `docs/guide` by hand.
+`roles` when only those roles can do it, and Help leaves it out for everyone else. It
+carries `devices` where the screens differ: a phone (below 768px: the bar and More), a
+tablet (the rail, up to 1279px) and a desktop (the sidebar, a keyboard and a mouse), so
+keys, hover and "beside the list" are desktop words. Help reads the device from the
+window's width, follows a resize, and shows that device's screenshots; the guide opens in
+the user's language, and its switches change only the guide. Change the guide with the
+screen it describes, in all three languages: `help.test.ts` fails when their sections,
+parts, roles, devices or screenshots differ. `pnpm guide` in `web/e2e` retakes the
+screenshots (`public/help-img/<lang>/<device>/`) from the demo data on each device and
+writes `docs/guide` from the desktop guide, so never edit `docs/guide` by hand.
 
 ## Responsive layout
 

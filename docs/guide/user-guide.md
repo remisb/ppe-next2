@@ -12,7 +12,9 @@ The app records workwear and safety equipment given to employees. You prepare an
    - Managers start on the **Manager Dashboard**.
    - The employee role starts on the **Employee Dashboard**.
 
-![The sign-in screen with email and password](../../web/apps/workwear/public/help-img/en/sign-in.png)
+The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
+
+![The sign-in screen with email and password](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
 
 ## 2. Dashboard
 
@@ -27,7 +29,7 @@ The figures at the top show the orders awaiting confirmation, this month's spend
 - A missing size: **Add sizes**.
 - An item without a price: **Fix**.
 
-![The Dashboard: figures and the Needs you list](../../web/apps/workwear/public/help-img/en/dashboard.png)
+![The Dashboard: figures and the Needs you list](../../web/apps/workwear/public/help-img/en/desktop/dashboard.png)
 
 *Managers only:*
 
@@ -47,11 +49,11 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
 4. Check each line's size and quantity:
    - Sizes come from the employee's saved sizes. Clothing is picked by letter, for example `S (44–46)`.
    - You can't order until every missing size is chosen.
-5. Choose **Review and mark as ordered**, or press `⌘/Ctrl` `Enter`.
+5. Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.
 
 This device keeps a draft of the order while you work. **Copy for WhatsApp** copies the message for the supplier.
 
-![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/create-order.png)
+![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/desktop/create-order.png)
 
 ## 4. Review and Mark as Ordered
 
@@ -62,8 +64,8 @@ This device keeps a draft of the order while you work. **Copy for WhatsApp** cop
 
 If the employee will sign on paper, choose **Print record** instead.
 
-![The Review order dialog](../../web/apps/workwear/public/help-img/en/review.png)
-![The ordered order with its confirmation link](../../web/apps/workwear/public/help-img/en/ordered.png)
+![The Review order dialog](../../web/apps/workwear/public/help-img/en/desktop/review.png)
+![The ordered order with its confirmation link](../../web/apps/workwear/public/help-img/en/desktop/ordered.png)
 
 ## 5. The employee confirms
 
@@ -71,7 +73,7 @@ If the employee will sign on paper, choose **Print record** instead.
 2. They check the items, in English or Russian (**EN / RU**).
 3. They tick the statement and tap **Confirm receipt**. The order becomes **Given**.
 
-![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/confirm-phone.png)
+![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/phone/confirm-phone.png)
 
 ## 6. History
 
@@ -88,7 +90,7 @@ An **Ordered** order has these actions:
 
 **⋯ → Delete order…** removes an order, such as a test order, after asking.
 
-![History with an ordered order open beside the list](../../web/apps/workwear/public/help-img/en/history.png)
+![History with an ordered order open](../../web/apps/workwear/public/help-img/en/desktop/history.png)
 
 ## 7. Items Given Record
 
@@ -97,7 +99,7 @@ A **Given** order has a locked record in English and Russian. Open it with **Vie
 - **Print Record** prints it on one A4 page.
 - **Share via WhatsApp** sends it.
 
-![The bilingual Items Given Record](../../web/apps/workwear/public/help-img/en/record.png)
+![The bilingual Items Given Record](../../web/apps/workwear/public/help-img/en/desktop/record.png)
 
 ## 8. Employees
 
@@ -111,8 +113,8 @@ Each employee's page shows:
 
 From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.
 
-![The Employees list](../../web/apps/workwear/public/help-img/en/employees.png)
-![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/employee.png)
+![The Employees list](../../web/apps/workwear/public/help-img/en/desktop/employees.png)
+![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
 
 ## 9. Item Catalogue and Item Sets
 
@@ -124,8 +126,8 @@ An item set is a kit of items with default quantities. You apply it on Create Or
 
 You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
-![The Item Catalogue](../../web/apps/workwear/public/help-img/en/catalogue.png)
-![Item Sets](../../web/apps/workwear/public/help-img/en/item-sets.png)
+![The Item Catalogue](../../web/apps/workwear/public/help-img/en/desktop/catalogue.png)
+![Item Sets](../../web/apps/workwear/public/help-img/en/desktop/item-sets.png)
 
 ## 10. Users
 
@@ -134,15 +136,15 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 - Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.
 - To reset a password, use **⋯ → Reset password…**.
 
-![The Users screen](../../web/apps/workwear/public/help-img/en/users.png)
+![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
 ## 11. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Change password**.
-- **Table rows**: **Compact** fits more rows on a desktop screen.
+- **Table rows**: **Compact** fits more rows on the screen.
 
-![Account: language, password and table rows](../../web/apps/workwear/public/help-img/en/account.png)
+![Account: language, password and table rows](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 
 ## 12. Search and shortcuts
 
@@ -155,6 +157,6 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |
 
-![The ⌘K search finding an employee](../../web/apps/workwear/public/help-img/en/palette.png)
+![The ⌘K search finding an employee](../../web/apps/workwear/public/help-img/en/desktop/palette.png)
 
 The screenshots show demo data. Item names are data, so they show as entered.

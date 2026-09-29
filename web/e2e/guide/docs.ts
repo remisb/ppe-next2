@@ -1,14 +1,15 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { type Block, type Guide, type Item, guides, inline, shotPath } from '../../apps/workwear/src/help/index.ts'
+import { type Block, type Guide, type Item, forReader, guides, inline, shotPath } from '../../apps/workwear/src/help/index.ts'
 import { en } from '../../apps/workwear/src/i18n/en/index.ts'
 import { lt } from '../../apps/workwear/src/i18n/lt/index.ts'
 import { ru } from '../../apps/workwear/src/i18n/ru/index.ts'
 
-// docs/guide, written from the app's own guide (apps/workwear/src/help): every
-// section and part, with who each role-limited part is for, so the Help screen
-// and these pages never disagree. Screenshots are the app's public/help-img.
+// docs/guide, written from the app's own guide (apps/workwear/src/help) as a
+// desktop reads it: every section and part, with who each role-limited part is
+// for, so the Help screen and these pages never disagree. Screenshots are the
+// app's public/help-img.
 
 type Lang = 'en' | 'lt' | 'ru'
 
@@ -60,13 +61,13 @@ function htmlBlock(g: Guide, lang: Lang, b: Block, run: string | undefined): str
     return `${who}    <div class="table"><table>\n      <thead><tr><th>${esc(g.key)}</th><th>${esc(g.does)}</th></tr></thead>\n      <tbody>\n${rows}\n      </tbody>\n    </table></div>`
   }
   const figs = b.shots.map(
-    (s) => `      <figure${s.phone ? ' class="phone"' : ''}><img src="${imgBase}${shotPath(lang, s.name)}" alt="${esc(s.alt)}" loading="lazy"></figure>`,
+    (s) => `      <figure${s.phone ? ' class="phone"' : ''}><img src="${imgBase}${shotPath(lang, 'desktop', s)}" alt="${esc(s.alt)}" loading="lazy"></figure>`,
   )
   return `${who}    <div class="${b.shots.length > 1 ? 'pair' : 'shots'}">\n${figs.join('\n')}\n    </div>`
 }
 
 function htmlPage(lang: Lang): string {
-  const g = guides[lang]
+  const g = forReader(guides[lang], { device: 'desktop' })
   const langs = (Object.keys(page) as Lang[])
     .map((l) => `<a href="${page[l]}" lang="${l}"${l === lang ? ' aria-current="page"' : ''}>${langNames[l]}</a>`)
     .join('')
@@ -176,7 +177,7 @@ function mdItems(g: Guide, items: Item[], ordered: boolean, indent: string): str
 }
 
 function mdPage(lang: Lang): string {
-  const g = guides[lang]
+  const g = forReader(guides[lang], { device: 'desktop' })
   const langs = (Object.keys(markdown) as Lang[]).map((l) => (l === lang ? langNames[l] : `[${langNames[l]}](${markdown[l]})`)).join(' · ')
   const out = [`# ${appName[lang]}: ${g.title}`, langs, g.lede]
   g.sections.forEach((s, i) => {
@@ -189,7 +190,7 @@ function mdPage(lang: Lang): string {
       else if ('ol' in b) out.push(mdItems(g, b.ol, true, '').join('\n'))
       else if ('ul' in b) out.push(mdItems(g, b.ul, false, '').join('\n'))
       else if ('keys' in b) out.push([`| ${g.key} | ${g.does} |`, '| --- | --- |', ...b.keys.map(([k, d]) => `| ${md(k)} | ${md(d)} |`)].join('\n'))
-      else out.push(b.shots.map((x) => `![${x.alt}](${imgBase}${shotPath(lang, x.name)})`).join('\n'))
+      else out.push(b.shots.map((x) => `![${x.alt}](${imgBase}${shotPath(lang, 'desktop', x)})`).join('\n'))
     })
   })
   out.push(g.footer)

@@ -1,18 +1,20 @@
+import type { Role } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { type Block, type Guide, type Item, forRoles, guides, inline } from './index'
+import { type Block, type Device, type Guide, type Item, deviceFor, forReader, guides, inline, shotPath } from './index'
 
 /** A guide's shape without its words: what must match across languages. */
 function shape(g: Guide) {
-  const item = (i: Item): unknown => (typeof i === 'string' ? 'text' : { roles: i.roles, items: i.items?.map(item) })
+  const item = (i: Item): unknown => (typeof i === 'string' ? 'text' : { roles: i.roles, devices: i.devices, items: i.items?.map(item) })
   const block = (b: Block): unknown => {
-    if ('p' in b) return { p: true, roles: b.roles }
-    if ('ol' in b) return { ol: b.ol.map(item), roles: b.roles }
-    if ('ul' in b) return { ul: b.ul.map(item), roles: b.roles }
-    if ('keys' in b) return { keys: b.keys.length, roles: b.roles }
-    return { shots: b.shots.map((s) => [s.name, s.phone ?? false]), roles: b.roles }
+    const who = { roles: b.roles, devices: b.devices }
+    if ('p' in b) return { p: true, ...who }
+    if ('ol' in b) return { ol: b.ol.map(item), ...who }
+    if ('ul' in b) return { ul: b.ul.map(item), ...who }
+    if ('keys' in b) return { keys: b.keys.length, ...who }
+    return { shots: b.shots.map((s) => [s.name, s.phone ?? false]), ...who }
   }
-  return g.sections.map((s) => ({ id: s.id, roles: s.roles, blocks: s.blocks.map(block) }))
+  return g.sections.map((s) => ({ id: s.id, roles: s.roles, titleOn: Object.keys(s.titleOn ?? {}), blocks: s.blocks.map(block) }))
 }
 
 /** Every text in a guide, markup included. */
@@ -24,6 +26,7 @@ function texts(g: Guide): string[] {
     g.footer,
     ...g.sections.flatMap((s) => [
       s.title,
+      ...Object.values(s.titleOn ?? {}),
       ...s.blocks.flatMap((b) =>
         'p' in b ? [b.p] : 'ol' in b ? b.ol.flatMap(item) : 'ul' in b ? b.ul.flatMap(item) : 'keys' in b ? b.keys.flat() : b.shots.map((x) => x.alt),
       ),
@@ -51,9 +54,10 @@ describe('guides', () => {
   })
 })
 
-describe('forRoles', () => {
+describe('forReader', () => {
   const ids = (g: Guide) => g.sections.map((s) => s.id)
   const words = (g: Guide) => texts(g).join('\n')
+  const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
   it('keeps Users and the Dashboard tour for administrators only', () => {
     expect(ids(forRoles(guides.en, ['admin']))).toContain('users')
@@ -70,6 +74,33 @@ describe('forRoles', () => {
   it('keeps only the start screens of the user’s roles', () => {
     const signIn = forRoles(guides.en, ['admin', 'manager']).sections[0]!.blocks[0]!
     expect(signIn).toMatchObject({ ol: [expect.any(String), { items: [{ roles: ['admin'] }, { roles: ['manager'] }] }] })
+  })
+})
+
+describe('devices', () => {
+  const words = (device: Device) => texts(forReader(guides.en, { roles: ['admin'], device })).join('\n')
+
+  it('follow the app’s layout: the bar below 768px, the rail up to 1279px, then the sidebar', () => {
+    expect([375, 767, 768, 1279, 1280, 1920].map(deviceFor)).toEqual(['phone', 'phone', 'tablet', 'tablet', 'desktop', 'desktop'])
+  })
+
+  it('keep keyboard parts for the desktop, and name each device’s way round', () => {
+    expect(words('desktop')).toContain('`J` and `K`')
+    expect(words('phone')).not.toContain('`J`')
+    expect(words('tablet')).not.toContain('⌘/Ctrl')
+    expect(words('phone')).toContain('**More** holds the rest')
+    expect(words('tablet')).toContain('The rail on the left')
+    expect(words('desktop')).toContain('The sidebar holds')
+  })
+
+  it('retitle Search and shortcuts where there is no keyboard', () => {
+    const title = (device: Device) => forReader(guides.en, { device }).sections.find((s) => s.id === 'shortcuts')!.title
+    expect([title('phone'), title('tablet'), title('desktop')]).toEqual(['Search', 'Search', 'Search and shortcuts'])
+  })
+
+  it('show each device’s screenshots, and the phone’s for phone-only ones', () => {
+    expect(shotPath('lt', 'tablet', { name: 'history' })).toBe('help-img/lt/tablet/history.png')
+    expect(shotPath('ru', 'desktop', { name: 'sign-in', phone: true })).toBe('help-img/ru/phone/sign-in.png')
   })
 })
 

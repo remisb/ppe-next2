@@ -1139,8 +1139,25 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(page.locator('#history')).not.toContainText('Ištrinti užsakymą')
   await page.getByRole('group', { name: 'Vadovo kalba' }).getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'User guide' })).toBeVisible()
-  await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/create-order\.png$/)
+  await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/desktop\/create-order\.png$/)
   expect(await page.locator('#create img').evaluate((img: HTMLImageElement) => img.decode().then(() => img.naturalWidth))).toBeGreaterThan(0)
+  // The guide is the device's: on a desktop the keyboard's way; a phone-sized window shows the phone's
+  // screenshots and words; the switch shows another device's, until the window is resized.
+  const devices = page.getByRole('group', { name: 'Device' })
+  await expect(devices.getByRole('button', { name: 'Desktop' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('#history')).toContainText('J and K move between orders')
+  const desk = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expect(devices.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
+  await expect(page.locator('#history')).toContainText('Filters holds the employee and date filters')
+  await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
+  await devices.getByRole('button', { name: 'Tablet' }).click()
+  await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)
+  await page.setViewportSize(desk)
+  await expect(devices.getByRole('button', { name: 'Tablet' })).toHaveAttribute('aria-pressed', 'true')
+  await devices.getByRole('button', { name: 'Desktop' }).click()
+  await expect(page.locator('#shortcuts h2')).toHaveText(/Search and shortcuts$/)
   await expect(page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Istorija' })).toBeVisible()
 
   // Longer labels wrap inside their buttons, not into the padding or past it: Create Order's panel at desktop width.

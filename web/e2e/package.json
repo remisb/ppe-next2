@@ -7,7 +7,7 @@
   "scripts": {
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "guide": "for l in en lt ru; do GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done"
+    "guide": "for d in phone tablet desktop; do for l in en lt ru; do GUIDE_DEVICE=$d GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done; done"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

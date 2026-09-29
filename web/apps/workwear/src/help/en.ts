@@ -6,6 +6,8 @@ export const en: Guide = {
   title: 'User guide',
   lede: 'The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian.',
   language: 'Guide language',
+  device: 'Device',
+  devices: { phone: 'Phone', tablet: 'Tablet', desktop: 'Desktop' },
   contents: 'Contents',
   key: 'Key',
   does: 'Does',
@@ -28,6 +30,9 @@ export const en: Guide = {
             },
           ],
         },
+        { p: 'The bar at the bottom holds **Home**, **History**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
+        { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
+        { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
         { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email and password', phone: true }] },
       ],
     },
@@ -60,15 +65,17 @@ export const en: Guide = {
           ol: [
             'Open **Create Order**.',
             "In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.",
-            { text: 'Add the items:', items: ['**Item Set** adds a whole kit in one tap.', '**Add Item** adds one item. Press `/` to jump to it.'] },
+            { text: 'Add the items:', items: ['**Item Set** adds a whole kit in one tap.', { text: '**Add Item** adds one item.', devices: ['phone', 'tablet'] }, { text: '**Add Item** adds one item. Press `/` to jump to it.', devices: ['desktop'] }] },
             {
               text: "Check each line's size and quantity:",
               items: ["Sizes come from the employee's saved sizes. Clothing is picked by letter, for example `S (44–46)`.", "You can't order until every missing size is chosen."],
             },
-            'Choose **Review and mark as ordered**, or press `⌘/Ctrl` `Enter`.',
+            { text: 'Tap **Review** in the bar at the bottom of the screen. It also shows the number of lines and the total.', devices: ['phone', 'tablet'] },
+            { text: 'Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp** copies the message for the supplier.' },
+        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier\'s message, is in the review.', devices: ['phone', 'tablet'] },
+        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp** copies the message for the supplier.', devices: ['desktop'] },
         { shots: [{ name: 'create-order', alt: 'Create Order with an employee, a kit applied and sizes chosen' }] },
       ],
     },
@@ -113,7 +120,10 @@ export const en: Guide = {
       blocks: [
         {
           p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
+          devices: ['desktop'],
         },
+        { p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **History** at its top takes you back to the list.', devices: ['tablet'] },
+        { p: '**Awaiting**, **Given** and **All** filter the orders by status; **Filters** holds the employee and date filters. Tap an order to open it; **History** at its top takes you back to the list.', devices: ['phone'] },
         { p: 'An **Ordered** order has these actions:' },
         {
           ul: [
@@ -124,7 +134,7 @@ export const en: Guide = {
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
-        { shots: [{ name: 'history', alt: 'History with an ordered order open beside the list' }] },
+        { shots: [{ name: 'history', alt: 'History with an ordered order open' }] },
       ],
     },
     {
@@ -140,7 +150,8 @@ export const en: Guide = {
       id: 'employees',
       title: 'Employees',
       blocks: [
-        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee." },
+        { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
+        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
         { ul: ['their sizes;', 'every item given, with its usage time and replacement date;', 'orders not yet given.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
@@ -188,7 +199,7 @@ export const en: Guide = {
           ul: [
             "**Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.",
             '**Change password**.',
-            '**Table rows**: **Compact** fits more rows on a desktop screen.',
+            { text: '**Table rows**: **Compact** fits more rows on the screen.', devices: ['desktop'] },
           ],
         },
         { shots: [{ name: 'account', alt: 'Account: language, password and table rows' }] },
@@ -197,7 +208,10 @@ export const en: Guide = {
     {
       id: 'shortcuts',
       title: 'Search and shortcuts',
+      titleOn: { phone: 'Search', tablet: 'Search' },
       blocks: [
+        { p: 'Open **More**, then **Search**, to find record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.', devices: ['phone'] },
+        { p: '**Search**, at the top of the rail, finds record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.', devices: ['tablet'] },
         {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.'],
@@ -207,6 +221,7 @@ export const en: Guide = {
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],
           ],
+          devices: ['desktop'],
         },
         { shots: [{ name: 'palette', alt: 'The ⌘K search finding an employee' }] },
       ],
