@@ -5,19 +5,20 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`121644f`)
+status: phases 1–3 shipped, plus follow-ups (`b2ac1e4`)
 
-> **Status, updated 28 Sep 2026.** Phases 1–3 are built and live at the production site:
+> **Status, updated 29 Sep 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
 > figures followed in `13214e8`, the Replacements due screen in `65da1ad`, the
 > employee confirmation page as option A in section 7 in `c0cf0bc`, Create Order as option A
 > in section 3 in `acfc5b6`, a one-page Print Record in `1dcc4ed`, the raised New order
 > button in `c089c1a`, compact History rows in `7edcdcc`, Show password in `312676a`, the
-> shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, and the
-> records lists as option A in section 6 in `9213136`, and History option C in section 4 in
-> `f8e3982`, its order pane tightened in `121644f`.
-> Each came with its e2e steps (33 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, the
+> records lists as option A in section 6 in `9213136`, History option C in section 4 in
+> `f8e3982`, its order pane tightened in `121644f`, and the desktop power layer in section 9
+> in `b2ac1e4`.
+> Each came with its e2e steps (36 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -77,7 +78,7 @@ undone, yet it runs on a single tap with no review.
 | 7 | Put what needs attention first on the dashboard: 2×2 figures, then a "Needs you" list where each item has one action | Dashboards | Both | Med | M | Done (Phases 1–2) |
 | 8 | List rows open the record's page. Move Delete and Deactivate out of every card into a ⋯ menu. Flag missing sizes in the list | Employees, Catalogue | Both | Med | S | Done (Phase 1; option A in full, `9213136`) |
 | 9 | Confirmation page: put a summary first and keep the consent bar pinned to the bottom of the screen | Employee confirmation | Phone | High | S | Done (Phase 2; option A in full, `c0cf0bc`) |
-| 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M | Done (Phase 3) |
+| 10 | A ⌘K command palette and keyboard shortcuts in Create Order | All | Desktop | Med | M | Done (Phase 3; the rest of the layer, `b2ac1e4`) |
 | 11 | Keep the icon rail until 1280 px, so a landscape iPad gets 888 px of content and real tables | App shell | Tablet | High | S | Done (Phase 1) |
 | 12 | One-column rows in portrait, list and detail in landscape, chosen by container width | Lists, History | Tablet | Med | M | Done (Phase 2) |
 
@@ -826,6 +827,8 @@ Kazlauskienė ↵; Reorder gloves for Ona Kazlauskienė (overdue)), Employees (O
 - **Relative dates:** show "3 days ago" in lists with the exact time in a tooltip.
   Receipts keep absolute dates.
 
+**As built:** the ⌘K palette and the shortcuts shipped in phase 3 (`a663ce0`). The palette finds record numbers, employees, items and screens, and "New order for Ona Kazlauskienė" starts an order for her; it has no "Reorder gloves" action, because Reorder lives on the dashboards and Replacements due. The rest of the layer shipped in `b2ac1e4`. **Density:** Comfortable / Compact on the Account page and in ⌘K (type "compact"), saved per user on the device rather than on the server, and kept through Sign out. Compact rows measure 32–33 px, down from 57 px on Employees, Item Catalogue and Users, 53 px on Replacements due and 38 px on History; a row's buttons and ⋯ shrink to 28 px. It acts only with a mouse or trackpad (`pointer: fine`), so touch screens keep 44 px targets, and stacked phone lists and the printed record are unchanged. **Hover previews:** a record number in History (while no order is open beside the list), on an employee's and an item's page, and in Replacements due shows the order's status, who, when it was ordered and given, its first five lines and the total, on hover or keyboard focus; it stays a link. On a touch screen a tap follows the link, which opens the order, so no tap-to-preview was added. Record numbers of orders still on order became links to History on those pages. **Relative dates:** History, the employee and item order tables and Replacements due show "Today 14:03", "Yesterday 09:12", "3 days ago" or "in 5 days", then the date from a week away, in the organisation's time zone, with the exact time on hover. Records, receipts, the order pane and the dashboards' sentences keep absolute dates. A waiting order now reads "3 days ago" beside its "3 days" pill: the date and the wait say the same thing.
+
 ---
 
 ## 10. Roadmap: phases 1–3 shipped
@@ -874,7 +877,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -901,6 +904,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Dashboards option A from section 5 completed on phones: compact figure tiles with one fact beside each figure, Refresh as an icon, and a counted Needs you on the first screen, on all three dashboards
 - [x] Records lists option A from section 6 completed: Employees, Item Catalogue and Users as short two-line rows on a phone that open the record's page, where its actions are; All / Missing a size and Catalogue status chips; size-group headings; Item Sets with a total and Use in new order; Reset password under ⋯
 - [x] History option C from section 4 completed: one-line rows beside the open order on desktop, Escape to close it, and a J / K / Esc hint in the pane
+- [x] Desktop power layer from section 9 completed: a Comfortable / Compact switch with 32 px rows (mouse and trackpad only), record numbers that preview their order on hover, and relative dates in lists with the exact time on hover
 
 ### Still open
 
