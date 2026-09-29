@@ -17,7 +17,8 @@ status: phases 1–3 shipped, plus follow-ups (`b3ec94e`)
 > shorter confirmation wording in `49a1ce3`, compact phone dashboards in `b9cda4d`, the
 > records lists as option A in section 6 in `9213136`, History option C in section 4 in
 > `f8e3982`, its order pane tightened in `121644f`, the desktop power layer in section 9
-> in `b2ac1e4`, and Delete order for managers (section 4) in `b3ec94e`.
+> in `b2ac1e4`, clothing sizes named by their band in `dbf9091`, and Delete order for
+> managers (section 4) in `b3ec94e`.
 > Each came with its e2e steps (36 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -512,7 +513,7 @@ actions, and adds "New order" and a due-date bar per item.
 | Missing sizes show up where they get fixed | |
 | The same pattern applies to Catalogue (price on the right, "Incomplete" chip) and Users | |
 
-**As built:** `9213136` completed the option. Employees, Item Catalogue and Users stack as one bordered list of short rows, a `stack="list"` mode of the same `<Table>` that History now shares, rather than hand-built rows: the AGENTS.md rule gained that list variant. An employee row shows initials, the name with "No shoe size", "No clothing size" or "No sizes" beside it, then code · height · clothing · shoes; All and Missing a size chips filter it. On a phone a row has no buttons and opens its page; the employee page holds New order, Edit Sizes and ⋯ with Edit details and Delete employee…, which asks first. The due-date bars were already on that page. Rows measure 66 px, so the gain is 2.6× rather than the 3.7× estimated, and 6 rows fit below the search, chips and sort on the first screen. Edit Sizes on a phone is two taps, as the con says; no swipe shortcut was added.
+**As built:** `9213136` completed the option. Employees, Item Catalogue and Users stack as one bordered list of short rows, a `stack="list"` mode of the same `<Table>` that History now shares, rather than hand-built rows: the AGENTS.md rule gained that list variant. An employee row shows initials, the name with "No shoe size", "No clothing size" or "No sizes" beside it, then code · height · clothing · shoes; All and Missing a size chips filter it. On a phone a row has no buttons and opens its page; the employee page holds New order, Edit Sizes and ⋯ with Edit details and Delete employee…, which asks first. The due-date bars were already on that page. Rows measure 66 px, so the gain is 2.6× rather than the 3.7× estimated, and 6 rows fit below the search, chips and sort on the first screen. Edit Sizes on a phone is two taps, as the con says; no swipe shortcut was added. Since `dbf9091` the clothing size reads as the size pickers name it, the letter band with its two EU sizes: "Clothing M (48–50)" in a phone row, "M (48–50)" in the desktop column and on the employee page, instead of the bare EU number "50". Create Order already named it that way under Assigned to; a size outside the vocabulary still shows its number.
 
 #### Catalogue: grouped rows with status chips (applies A, built in `9213136`)
 
@@ -879,7 +880,7 @@ with the staff member as giver; the manual defines only electronic and paper. Pi
 are an icon field on each item (migration 0008), guessed from existing names. Drafts are
 kept in localStorage per user on the device, cleared by Sign out.
 
-### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `b3ec94e`
+### Since phase 3 — done, `13214e8`, `65da1ad`, `c0cf0bc`, `acfc5b6`, `1dcc4ed`, `c089c1a`, `7edcdcc`, `312676a`, `49a1ce3`, `b9cda4d`, `9213136`, `f8e3982`, `121644f`, `b2ac1e4`, `dbf9091`, `b3ec94e`
 
 - [x] Search by record number in the ⌘K palette: `WE-000004`, `we4` or `4` lists that
   order first, and Enter opens it in History (History's new `record` filter)
@@ -907,6 +908,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Records lists option A from section 6 completed: Employees, Item Catalogue and Users as short two-line rows on a phone that open the record's page, where its actions are; All / Missing a size and Catalogue status chips; size-group headings; Item Sets with a total and Use in new order; Reset password under ⋯
 - [x] History option C from section 4 completed: one-line rows beside the open order on desktop, Escape to close it, and a J / K / Esc hint in the pane
 - [x] Desktop power layer from section 9 completed: a Comfortable / Compact switch with 32 px rows (mouse and trackpad only), record numbers that preview their order on hover, and relative dates in lists with the exact time on hover
+- [x] Employees: the clothing size shows as its band, "M (48–50)", in the list and on the employee page, as the size pickers and Create Order name it
 - [x] Delete order for the manager role, under ⋯ in History's order pane: it asks first, and the order leaves History, the dashboards and Replacements due while its row, evidence and audit trail stay (a soft delete)
 
 ### Still open
