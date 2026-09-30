@@ -42,7 +42,7 @@ async function addItem(search: string, name: RegExp) {
   await page.getByRole('option', { name }).click()
 }
 
-/** Opens an order from the History list; its detail and actions show beside the list (or instead of it on a phone). */
+/** Opens an order from the Orders list; its detail and actions show beside the list (or instead of it on a phone). */
 async function openOrder(record: string) {
   await page.getByRole('link', { name: record, exact: true }).click()
   return page.getByRole('complementary', { name: 'Order' })
@@ -335,10 +335,15 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   await expect(reviewButton()).toBeDisabled()
 })
 
-test('History shows it ORDERED with the ORDERED actions', async () => {
-  await openTab('History')
+test('Orders shows it ORDERED with the ORDERED actions', async () => {
+  await openTab('Orders')
+  // The screen once called History; as Employees has Add New Employee, it has Create Order.
+  const create = page.getByRole('main').getByRole('link', { name: 'Create Order' })
+  await create.click()
+  await expect(page).toHaveURL(/\/orders\/new$/)
+  await page.goBack()
   // The navigation counts the orders waiting for confirmation.
-  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'History (1 waiting for confirmation)' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Orders (1 waiting for confirmation)' })).toBeVisible()
   // The status tabs count what is waiting and what was given.
   await expect(page.getByRole('button', { name: 'Awaiting 1' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()
@@ -348,7 +353,7 @@ test('History shows it ORDERED with the ORDERED actions', async () => {
 
   // The row opens the order at its own address, beside the list, with its items and ORDERED actions.
   const order = await openOrder(recordNumber)
-  await expect(page).toHaveURL(/\/history\/[0-9a-f-]{36}$/)
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
   await expect(order.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'View Record' })).toHaveCount(0)
@@ -411,7 +416,7 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   await ctx.close()
 })
 
-test('History shows it GIVEN with usage time and the GIVEN actions', async () => {
+test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => {
   // The order's address still opens it after a reload.
   await page.reload()
   let order = page.getByRole('complementary', { name: 'Order' })
@@ -437,7 +442,7 @@ test('a later price change does not alter the stored record', async () => {
   await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
 
-  await openTab('History')
+  await openTab('Orders')
   await (await openOrder(recordNumber)).getByRole('button', { name: 'View Record' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(page.getByRole('cell', { name: '€49.99' }).first()).toBeVisible()
@@ -475,7 +480,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   // The new order was placed at the new price.
   await expect(page.getByRole('cell', { name: '€59.99' }).first()).toBeVisible()
 
-  await openTab('History')
+  await openTab('Orders')
   const order = await openOrder(paperRecord)
   await order.getByRole('button', { name: 'Open Employee Confirmation' }).click()
   page.once('dialog', (d) => void d.accept())
@@ -553,7 +558,7 @@ test('hand-over: the employee confirms on this device, recorded in person', asyn
   const handed = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
   await page.getByRole('button', { name: 'Start a new order' }).click()
 
-  await openTab('History')
+  await openTab('Orders')
   const order = await openOrder(handed)
   await order.getByRole('button', { name: 'Hand over now' }).click()
   // The device is turned to the employee: the same summary, record and consent as their own link.
@@ -574,8 +579,8 @@ test('hand-over: the employee confirms on this device, recorded in person', asyn
   await expect(page.getByText(/Confirmed in person on a staff device by Ona Kazlauskienė/)).toBeVisible()
 })
 
-test('columns sort: History on the server across pages, other lists in place', async () => {
-  await openTab('History')
+test('columns sort: Orders on the server across pages, other lists in place', async () => {
+  await openTab('Orders')
   const records = async () => (await page.getByRole('row').filter({ hasText: /WE-\d{6}/ }).allTextContents()).map((t) => /WE-\d{6}/.exec(t)![0])
   const byRecord = page.getByRole('columnheader', { name: 'Record' })
   await expect(page.getByRole('columnheader', { name: 'Date' })).toHaveAttribute('aria-sort', 'descending')
@@ -701,14 +706,14 @@ test('a reorder link starts the order with the item at the quantity given; the s
   await expect(page.getByText('No items yet.')).toBeVisible()
 })
 
-test('History beside an open order: one line a row; J and K move through it, Escape closes it', async () => {
-  await openTab('History')
+test('Orders beside an open order: one line a row; J and K move through it, Escape closes it', async () => {
+  await openTab('Orders')
   const detail = await openOrder(recordNumber)
   await expect(detail.getByRole('heading', { name: recordNumber })).toBeVisible()
   // Beside the order the list keeps its short columns, one line a row, rather than stacking.
   await expect(page.getByRole('columnheader', { name: 'Record' })).toBeVisible()
   await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
-  expect((await page.getByRole('row', { name: new RegExp(recordNumber) }).boundingBox())!.height, 'a History row beside an order').toBeLessThan(48)
+  expect((await page.getByRole('row', { name: new RegExp(recordNumber) }).boundingBox())!.height, 'an Orders row beside an order').toBeLessThan(48)
   await expect(detail.getByText('next or previous order')).toBeVisible()
   const opened = page.url()
   await page.keyboard.press('k')
@@ -717,12 +722,12 @@ test('History beside an open order: one line a row; J and K move through it, Esc
   await page.keyboard.press('j')
   await expect(page).toHaveURL(opened)
   await page.keyboard.press('Escape')
-  await expect(page).toHaveURL(/\/history$/)
+  await expect(page).toHaveURL(/\/orders$/)
   await expect(page.getByRole('columnheader', { name: 'Usage time' })).toBeVisible()
 })
 
 test('desktop power layer: relative dates, a record previewed on hover, Compact rows kept per user', async () => {
-  await openTab('History')
+  await openTab('Orders')
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   // This run's orders are from today (or, run across midnight, yesterday); the exact time is on hover.
   const when = row.locator('time:visible')
@@ -734,7 +739,7 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
   const preview = page.locator('[data-slot=record-preview]')
   await expect(preview).toContainText(recordNumber)
   await expect(preview).toContainText(/Total\s*€/)
-  await page.getByRole('heading', { name: 'History' }).hover()
+  await page.getByRole('heading', { name: 'Orders', exact: true }).hover()
   await expect(preview).toBeHidden()
 
   const height = async () => (await row.boundingBox())!.height
@@ -742,7 +747,7 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
   await page.keyboard.press('ControlOrMeta+k')
   await page.getByRole('dialog', { name: 'Search or jump to' }).getByRole('combobox').fill('compact')
   await page.getByRole('option', { name: 'Compact table rows' }).click()
-  await expect.poll(height, { message: 'a Compact History row' }).toBeLessThanOrEqual(33)
+  await expect.poll(height, { message: 'a compact Orders row' }).toBeLessThanOrEqual(33)
   expect(comfortable).toBeGreaterThan(33)
   // Saved for this user on this device: a reload keeps it; Account switches it back.
   await page.reload()
@@ -752,7 +757,7 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
   await expect(rows.getByRole('button', { name: 'Compact' })).toHaveAttribute('aria-pressed', 'true')
   await rows.getByRole('button', { name: 'Comfortable' }).click()
   await expect(rows.getByRole('button', { name: 'Comfortable' })).toHaveAttribute('aria-pressed', 'true')
-  await openTab('History')
+  await openTab('Orders')
   await expect.poll(height).toBeGreaterThan(33)
 })
 
@@ -767,7 +772,7 @@ test('⌘K finds an order by its record number, however it is typed', async () =
   await expect(option).toBeVisible()
   await expect(option).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('Enter')
-  await expect(page).toHaveURL(/\/history\/[0-9a-f-]{36}$/)
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('complementary', { name: 'Order' })).toContainText(recordNumber)
 })
 
@@ -784,7 +789,7 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
   await page.getByRole('heading', { name: 'Create Order' }).click()
   await page.keyboard.press('g')
   await page.keyboard.press('h')
-  await expect(page.getByRole('heading', { name: 'History' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible()
   await page.keyboard.press('?')
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible()
   await page.keyboard.press('Escape')
@@ -799,13 +804,13 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
 test('phone and tablet: no screen scrolls sideways', async () => {
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
-  // The phone bar puts New order in the middle, raised: Home, History, New order, Employees, More.
+  // The phone bar puts New order in the middle, raised: Home, Orders, New order, Employees, More.
   const phoneNav = page.getByRole('navigation', { name: 'Main' })
   const newOrder = phoneNav.getByRole('link', { name: /^Create Order/ })
   await expect(newOrder).toHaveText(/New order/)
   const middle = await newOrder.boundingBox()
   expect(Math.abs(middle!.x + middle!.width / 2 - 375 / 2), 'New order is in the middle of the bar').toBeLessThan(2)
-  const history = await phoneNav.getByRole('link', { name: /^History/ }).boundingBox()
+  const history = await phoneNav.getByRole('link', { name: /^Orders/ }).boundingBox()
   expect(history!.x).toBeLessThan(middle!.x)
   // Neither the page nor any table (which scrolls inside its own box) runs sideways.
   const fits = () =>
@@ -818,7 +823,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   // Each screen is measured once its data is in: a table measured while loading always fits.
   for (const [tab, content] of [
     ['Dashboard', 'Spending by month'],
-    ['History', recordNumber],
+    ['Orders', recordNumber],
     ['Employees', 'Ona Kazlauskienė'],
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
@@ -840,12 +845,12 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const needsYou = page.getByRole('region', { name: /^Needs you/ })
   expect((await needsYou.boundingBox())!.y, 'Needs you starts in the first screen').toBeLessThan(420)
 
-  // History on a phone: one list of two-line rows under month headings; the sort order and the
+  // Orders on a phone: one list of two-line rows under month headings; the sort order and the
   // time zone note fold away with the filters, so the orders start near the top.
-  await openTab('History')
+  await openTab('Orders')
   await expect(page.getByRole('row', { name: /^[a-z]+ \d{4}$/i }).first()).toBeVisible()
   const historyRow = page.getByRole('row', { name: new RegExp(recordNumber) })
-  expect((await historyRow.boundingBox())!.height, 'a History row on a phone').toBeLessThan(80)
+  expect((await historyRow.boundingBox())!.height, 'an Orders row on a phone').toBeLessThan(80)
   await expect(page.getByLabel('Sort by').filter({ visible: true })).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
@@ -885,32 +890,32 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(reviewButton()).toBeInViewport()
   expect(await fits()).toBe(true)
   // Away from Create Order, the button says a draft is waiting, with its line count, and reopens it.
-  await openTab('History')
+  await openTab('Orders')
   await expect(newOrder).toHaveAccessibleName(/^Create Order \(draft, \d+ lines?\)$/)
   await expect(newOrder).toHaveText(/Draft/)
   await newOrder.click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
-  // Left ORDERED, so History has a row waiting for confirmation.
+  // Left ORDERED, so Orders has a row waiting for confirmation.
   await markAsOrdered()
   await page.getByRole('button', { name: 'Start a new order' }).click()
 
   // On a phone an order opens instead of the list, with the way back to it.
-  await openTab('History')
+  await openTab('Orders')
   await openOrder(recordNumber)
-  await expect(page.getByRole('heading', { name: 'History' })).toBeHidden()
+  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeHidden()
   expect(await fits(), 'an order scrolls sideways').toBe(true)
   await page.getByRole('button', { name: 'View Record' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   expect(await fits(), 'the record scrolls sideways').toBe(true)
 
   // Tablet and narrow-laptop widths, beside the side rail: a table either fits
-  // side by side or stacks, never scrolls. 920px left History 8rem too narrow.
+  // side by side or stacks, never scrolls. 920px left Orders 8rem too narrow.
   for (const width of [768, 920, 1100, desktop.width]) {
     await page.setViewportSize({ width, height: 900 })
     for (const [tab, content] of [
       ['Dashboard', 'Spending by month'],
       ['Create Order', 'Assigned to'],
-      ['History', recordNumber],
+      ['Orders', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
       ['Users', admin.email],
@@ -997,11 +1002,11 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(priceChange).toContainText('+20%')
   await expect(other.getByRole('region', { name: 'Without a price or service period' })).toContainText('Safety helmet')
   await expect(other.getByText('Size 42: 1 employee')).toBeAttached()
-  // A figure with a list behind it opens that list: On order opens History on its Awaiting tab.
+  // A figure with a list behind it opens that list: On order opens Orders on its Awaiting tab.
   await other.getByRole('list', { name: 'Key figures' }).getByRole('button', { name: /^On order/ }).click()
-  await expect(other.getByRole('heading', { name: 'History' })).toBeVisible()
+  await expect(other.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible()
   await expect(other.getByRole('button', { name: /^Awaiting/ })).toHaveAttribute('aria-pressed', 'true')
-  await expect(other).toHaveURL(/\/history\?status=ORDERED$/)
+  await expect(other).toHaveURL(/\/orders\?status=ORDERED$/)
   await other.goBack()
   await other.setViewportSize({ width: 375, height: 812 })
   expect(
@@ -1079,9 +1084,9 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await other.context().close()
 })
 
-test('History: only a manager deletes an order, after asking; it then leaves History', async ({ browser }) => {
+test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {
   // The administrator has no Delete order: the order pane has no ⋯ for it.
-  await openTab('History')
+  await openTab('Orders')
   const detail = await openOrder(paperRecord)
   await expect(detail.getByRole('heading', { name: paperRecord })).toBeVisible()
   await expect(detail.getByRole('button', { name: `More actions for ${paperRecord}` })).toHaveCount(0)
@@ -1089,7 +1094,9 @@ test('History: only a manager deletes an order, after asking; it then leaves His
   // Mia, the manager from the Users step, with the password reset there.
   const other = await signInElsewhere(browser, 'mia@example.com', 'mia-password-2')
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
+  // The old address, from bookmarks and links already sent, opens the screen at its own.
   await other.goto(webURL + '/history')
+  await expect(other).toHaveURL(/\/orders$/)
   await other.getByRole('link', { name: paperRecord, exact: true }).click()
   const pane = other.getByRole('complementary', { name: 'Order' })
   const more = pane.getByRole('button', { name: `More actions for ${paperRecord}` })
@@ -1108,21 +1115,21 @@ test('History: only a manager deletes an order, after asking; it then leaves His
   other.once('dialog', (d) => void d.accept())
   await more.click()
   await other.getByRole('menuitem', { name: 'Delete order…' }).click()
-  await expect(other).toHaveURL(/\/history$/)
-  await expect(other.getByRole('heading', { name: 'History' })).toBeVisible()
+  await expect(other).toHaveURL(/\/orders$/)
+  await expect(other.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible()
   await expect(other.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
 
   // Help shows a manager what their role can do: Delete order, but not Users.
   await other.getByRole('link', { name: 'Help' }).click()
   await expect(other.getByRole('heading', { name: 'User guide' })).toBeVisible()
-  await expect(other.locator('#history')).toContainText('Delete order…')
+  await expect(other.locator('#orders')).toContainText('Delete order…')
   await expect(other.locator('#users')).toHaveCount(0)
   await other.context().close()
 
   // Gone for everyone: the administrator's open copy no longer loads, and the list leaves it out.
   await page.reload()
   await expect(page.getByRole('complementary', { name: 'Order' })).toContainText('order not found')
-  await openTab('History')
+  await openTab('Orders')
   await expect(page.getByRole('link', { name: recordNumber, exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: paperRecord, exact: true })).toHaveCount(0)
 })
@@ -1137,8 +1144,8 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await languages.getByRole('button', { name: 'Lietuvių' }).click()
   await expect(page.getByRole('heading', { name: 'Paskyra' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('lang', 'lt')
-  await page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Istorija' }).click()
-  await expect(page.getByRole('heading', { name: 'Istorija' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Užsakymai' }).click()
+  await expect(page.getByRole('heading', { name: 'Užsakymai', exact: true })).toBeVisible()
   // The record stays English / Russian whatever the interface language.
   await openOrder(recordNumber)
   await page.getByRole('button', { name: 'Peržiūrėti įrašą' }).click()
@@ -1155,7 +1162,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(page.getByRole('heading', { name: 'Naudotojo vadovas' })).toBeVisible()
   // An administrator's guide has Users and no Delete order, which is the manager's.
   await expect(page.locator('#users')).toBeVisible()
-  await expect(page.locator('#history')).not.toContainText('Ištrinti užsakymą')
+  await expect(page.locator('#orders')).not.toContainText('Ištrinti užsakymą')
   await page.getByRole('group', { name: 'Vadovo kalba' }).getByRole('button', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'User guide' })).toBeVisible()
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/desktop\/create-order\.png$/)
@@ -1164,12 +1171,12 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   // screenshots and words; the switch shows another device's, until the window is resized.
   const devices = page.getByRole('group', { name: 'Device' })
   await expect(devices.getByRole('button', { name: 'Desktop' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('#history')).toContainText('J and K move between orders')
+  await expect(page.locator('#orders')).toContainText('J and K move between orders')
   const desk = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
   await expect(devices.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
-  await expect(page.locator('#history')).toContainText('Filters holds the employee and date filters')
+  await expect(page.locator('#orders')).toContainText('Filters holds the employee and date filters')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
   await devices.getByRole('button', { name: 'Tablet' }).click()
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)
@@ -1177,7 +1184,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(devices.getByRole('button', { name: 'Tablet' })).toHaveAttribute('aria-pressed', 'true')
   await devices.getByRole('button', { name: 'Desktop' }).click()
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search and shortcuts$/)
-  await expect(page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Istorija' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Užsakymai' })).toBeVisible()
 
   // Longer labels wrap inside their buttons, not into the padding or past it: Create Order's panel at desktop width.
   await page.goto('/orders/new')
@@ -1206,7 +1213,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   // Longer words must not push any screen sideways on a phone.
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
-  for (const path of ['/dashboard', '/orders/new', '/history', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/help', '/account']) {
+  for (const path of ['/dashboard', '/orders/new', '/orders', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/help', '/account']) {
     await page.goto(path)
     await expect(page.locator('main h1')).toBeVisible()
     await page.waitForLoadState('networkidle')
@@ -1251,7 +1258,7 @@ test('the confirmation page and hand-over open in the employee’s preferred lan
   await phone.context().close()
 
   // Hand-over on this (English) staff device opens in Russian too.
-  await openTab('History')
+  await openTab('Orders')
   const order = await openOrder(record)
   await order.getByRole('button', { name: 'Hand over now' }).click()
   const screen = page.getByRole('dialog', { name: 'Hand-over / Выдача' })

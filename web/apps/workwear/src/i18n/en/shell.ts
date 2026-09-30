@@ -4,7 +4,7 @@ import { plural } from '../plural'
 export const shell = {
   // Section names: the navigation's full labels, and the palette's screens.
   createOrder: 'Create Order',
-  history: 'History',
+  history: 'Orders',
   employees: 'Employees',
   catalogue: 'Item Catalogue',
   itemSets: 'Item Sets',
@@ -14,7 +14,7 @@ export const shell = {
   accountAndPassword: 'Account and password',
   // Short labels under the icons in the phone tab bar and tablet rail.
   shortOrder: 'Order',
-  shortHistory: 'History',
+  shortHistory: 'Orders',
   shortEmployees: 'Employees',
   shortCatalogue: 'Catalogue',
   shortItemSets: 'Sets',
@@ -42,9 +42,9 @@ export const shell = {
     newOrder: 'New order',
     /** The key names stay; only the word between them is translated. */
     goToKeys: 'G then D, O, H, E, C, S, U',
-    goTo: 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets, Users',
-    nextPrevious: 'History: the next or previous order, beside the list',
-    closeOrder: 'History: close the order beside the list',
+    goTo: 'Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets, Users',
+    nextPrevious: 'Orders: the next or previous order, beside the list',
+    closeOrder: 'Orders: close the order beside the list',
     review: 'Create Order: review the order before Mark as Ordered',
     quantity: 'Create Order: one more or one fewer, in a quantity field',
     help: 'Show these shortcuts',

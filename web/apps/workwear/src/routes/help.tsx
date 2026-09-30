@@ -26,7 +26,7 @@ function useDevice(): Device {
  * looks on the device in use: its screenshots and, where the screens differ,
  * its words. It opens in the user's language and on this window's device;
  * the switches change the guide only, not the app. Each section has its own
- * address, /help#history.
+ * address, /help#orders.
  */
 export function Help() {
   const session = useSession()
@@ -37,7 +37,7 @@ export function Help() {
   const device = chosen ?? current
   const guide = forReader(guides[lang], { roles: session.roles, device })
 
-  // An address with a section (/help#history) opens there once the guide is drawn.
+  // An address with a section (/help#orders) opens there once the guide is drawn.
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.slice(1))
     if (id) document.getElementById(id)?.scrollIntoView()

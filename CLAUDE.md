@@ -14,7 +14,7 @@ item sets, Create Order resolution (`order/resolve.go`, read-only), and the
 `web/apps/workwear` app (Create Order, Employees with a per-employee page of items given,
 Item Catalogue with a per-item page, Item Sets, and Users for admins) — and
 Slice 4: Mark as Ordered (`POST /api/v1/orders`, snapshot copy in one transaction) and
-Copy for WhatsApp — and Slice 5: History (`GET /api/v1/orders`, query-parameter filters
+Copy for WhatsApp — and Slice 5: History, the Orders screen at `/orders` (`GET /api/v1/orders`, query-parameter filters
 in the organisation timezone `API_ORG_TIMEZONE`, server-computed `usage_months`).
 — and Slice 6: confirmation links (hashed tokens, sent in request bodies), paper
 confirmation, in-person confirmation on a staff device (hand-over mode, method `IN_PERSON`,

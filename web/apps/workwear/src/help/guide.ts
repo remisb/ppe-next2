@@ -29,7 +29,7 @@ export interface Guide {
 }
 
 export interface Section {
-  /** The section's address on the Help screen and in the docs: /help#history. */
+  /** The section's address on the Help screen and in the docs: /help#orders. */
   id: SectionId
   title: string
   /** Another title on these devices, where the section is about something else there. */
@@ -58,7 +58,7 @@ export type SectionId =
   | 'create'
   | 'review'
   | 'confirm'
-  | 'history'
+  | 'orders'
   | 'record'
   | 'employees'
   | 'catalogue'

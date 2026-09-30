@@ -30,7 +30,7 @@ export const lt: Guide = {
             },
           ],
         },
-        { p: 'Apatinėje juostoje yra **Pradžia**, **Istorija**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: 'Apatinėje juostoje yra **Pradžia**, **Užsakymai**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
         { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
         { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu ir slaptažodžiu', phone: true }] },
@@ -118,15 +118,16 @@ export const lt: Guide = {
       ],
     },
     {
-      id: 'history',
-      title: 'Istorija',
+      id: 'orders',
+      title: 'Užsakymai',
       blocks: [
+        { p: '**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.' },
         {
           p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
           devices: ['desktop'],
         },
-        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Istorija** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
-        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną; mygtuke **Filtrai** – filtrai pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Istorija** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
+        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
+        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną; mygtuke **Filtrai** – filtrai pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
         { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
         {
           ul: [
@@ -137,7 +138,7 @@ export const lt: Guide = {
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
-        { shots: [{ name: 'history', alt: 'Istorija su atidarytu užsakymu' }] },
+        { shots: [{ name: 'history', alt: 'Užsakymai su atidarytu užsakymu' }] },
       ],
     },
     {
@@ -223,8 +224,8 @@ export const lt: Guide = {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
-            ['`G`, tada `D` `O` `H` `E` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Istoriją, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus.'],
-            ['`J` / `K`, `Esc`', 'Pereina per Istoriją arba uždaro atidarytą užsakymą.'],
+            ['`G`, tada `D` `O` `H` `E` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus.'],
+            ['`J` / `K`, `Esc`', 'Pereina per Užsakymus arba uždaro atidarytą užsakymą.'],
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],
           ],

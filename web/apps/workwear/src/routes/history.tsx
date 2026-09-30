@@ -1,5 +1,5 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
-import { ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { Fragment, useEffect, useState } from 'react'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
@@ -9,7 +9,7 @@ import { RelativeDate } from '@/components/relative-date'
 import { SortControl, SortableHead } from '@/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { t } from '@/i18n'
@@ -178,9 +178,15 @@ export function History({
           // A phone needs its height for the orders; the filters say the rest.
           descriptionClassName="max-md:hidden"
           actions={
-            <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
-              <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.history.filtersCount(activeFilters) : t.history.filters}
-            </Button>
+            <>
+              {/* As Employees has Add New Employee: a link, so it also opens in a new tab. */}
+              <a {...linkTo({ name: 'createOrder' }, navigate)} className={buttonVariants()}>
+                <Plus aria-hidden /> {t.shell.createOrder}
+              </a>
+              <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
+                <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.history.filtersCount(activeFilters) : t.history.filters}
+              </Button>
+            </>
           }
         />
 

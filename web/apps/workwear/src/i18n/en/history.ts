@@ -2,7 +2,7 @@ import { plural } from '../plural'
 
 /** History: the list, an open order, the staff side of confirmation, the record page's chrome, and History's date wording. */
 export const history = {
-  title: 'History',
+  title: 'Orders',
   description: 'Stored orders, newest activity first. Values are as they were when ordered.',
   filters: 'Filters',
   filtersCount: (n: number) => `Filters (${n})`,
@@ -53,9 +53,9 @@ export const history = {
   copyWhatsApp: 'Copy for WhatsApp',
   deleteOrder: 'Delete order…',
   deleteOrdered: (record: string, name: string) =>
-    `Delete ${record} for ${name}? It leaves History and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.`,
+    `Delete ${record} for ${name}? It leaves Orders and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.`,
   deleteGiven: (record: string, name: string) =>
-    `Delete ${record} for ${name}? It was given and confirmed: it leaves History, the dashboards and Replacements due, and its record can no longer be opened. Only for demo and test orders; this cannot be undone in the app.`,
+    `Delete ${record} for ${name}? It was given and confirmed: it leaves Orders, the dashboards and Replacements due, and its record can no longer be opened. Only for demo and test orders; this cannot be undone in the app.`,
 
   // The staff side of confirmation.
   confirmationDescription: (record: string, name: string) =>

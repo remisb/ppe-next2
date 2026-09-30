@@ -23,7 +23,7 @@ export const users: UsersText = {
   manager: 'Vadovas',
   managerGrants: 'Tvarko prekių katalogo kainas ir prekių rinkinius, taip pat gali viską, ką gali darbuotojas.',
   employee: 'Darbuotojas',
-  employeeGrants: 'Rengia užsakymus, tvarko darbuotojus ir jų dydžius, naudojasi istorija.',
+  employeeGrants: 'Rengia užsakymus ir seka juos Užsakymuose, tvarko darbuotojus ir jų dydžius.',
 
   editUser: (name: string) => `Redaguoti naudotoją: ${name}`,
   editDescription: 'Rolės pakeitimas įsigalioja kitą kartą naudotojui prisijungus.',

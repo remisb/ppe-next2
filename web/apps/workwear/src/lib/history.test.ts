@@ -94,7 +94,7 @@ describe('deleteQuestion', () => {
   const o = { record_number: 'WE-000004', employee_first_name: 'Ona', employee_last_name: 'Kazlauskienė' }
   it('names the order and what deleting it does', () => {
     expect(deleteQuestion({ ...o, status: 'ORDERED' })).toBe(
-      'Delete WE-000004 for Ona Kazlauskienė? It leaves History and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.',
+      'Delete WE-000004 for Ona Kazlauskienė? It leaves Orders and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.',
     )
   })
   it('warns that a given order takes its signed record with it', () => {

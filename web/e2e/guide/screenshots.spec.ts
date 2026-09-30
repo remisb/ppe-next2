@@ -95,7 +95,7 @@ test('the employee confirms on their phone', async ({ browser }) => {
   await phone.close()
 })
 
-test('history, an order and its record', async () => {
+test('orders, an order and its record', async () => {
   await page.getByRole('button', { name: T.order.startNewOrder }).click()
   await openTab(T.shell.history)
   await page.getByRole('link', { name: /^WE-\d{6}$/ }).filter({ visible: true }).first().click()
@@ -111,7 +111,7 @@ test('history, an order and its record', async () => {
     await shot('history')
   }
 
-  await page.goto('/history?status=GIVEN')
+  await page.goto('/orders?status=GIVEN')
   await page.getByRole('link', { name: /^WE-\d{6}$/ }).filter({ visible: true }).first().click()
   await order().getByRole('button', { name: T.history.viewRecord }).click()
   await expect(page.getByText(/Items Given Record/i).first()).toBeVisible()

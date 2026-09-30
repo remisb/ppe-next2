@@ -30,7 +30,7 @@ export const en: Guide = {
             },
           ],
         },
-        { p: 'The bar at the bottom holds **Home**, **History**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
+        { p: 'The bar at the bottom holds **Home**, **Orders**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
         { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
         { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
         { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email and password', phone: true }] },
@@ -115,15 +115,16 @@ export const en: Guide = {
       ],
     },
     {
-      id: 'history',
-      title: 'History',
+      id: 'orders',
+      title: 'Orders',
       blocks: [
+        { p: '**Orders** lists every order placed. **Create Order**, at the top, starts a new one.' },
         {
           p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
           devices: ['desktop'],
         },
-        { p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **History** at its top takes you back to the list.', devices: ['tablet'] },
-        { p: '**Awaiting**, **Given** and **All** filter the orders by status; **Filters** holds the employee and date filters. Tap an order to open it; **History** at its top takes you back to the list.', devices: ['phone'] },
+        { p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['tablet'] },
+        { p: '**Awaiting**, **Given** and **All** filter the orders by status; **Filters** holds the employee and date filters. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
         { p: 'An **Ordered** order has these actions:' },
         {
           ul: [
@@ -134,7 +135,7 @@ export const en: Guide = {
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
-        { shots: [{ name: 'history', alt: 'History with an ordered order open' }] },
+        { shots: [{ name: 'history', alt: 'Orders with an ordered order open' }] },
       ],
     },
     {
@@ -217,8 +218,8 @@ export const en: Guide = {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.'],
             ['`/`', 'Go to the search or Add Item field.'],
-            ['`G` then `D` `O` `H` `E` `C` `S` `U`', 'Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets or Users.'],
-            ['`J` / `K`, `Esc`', 'Move through History, or close the open order.'],
+            ['`G` then `D` `O` `H` `E` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users.'],
+            ['`J` / `K`, `Esc`', 'Move through Orders, or close the open order.'],
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],
           ],

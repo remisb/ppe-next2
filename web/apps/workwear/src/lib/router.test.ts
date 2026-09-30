@@ -26,10 +26,19 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
   })
-  it('opens History on a status tab and Employees on the missing-size filter', () => {
-    expect(pathOf({ name: 'history', status: 'ORDERED' })).toBe('/history?status=ORDERED')
-    expect(parsePath('/history', '?status=ORDERED')).toEqual({ name: 'history', status: 'ORDERED' })
-    expect(parsePath('/history', '?status=DRAFT')).toEqual({ name: 'history' })
+  it('keeps the old History addresses, and tells an order from a new one and a record', () => {
+    expect(pathOf({ name: 'history' })).toBe('/orders')
+    expect(pathOf({ name: 'history', order: 'o1' })).toBe('/orders/o1')
+    expect(parsePath('/history')).toEqual({ name: 'history' })
+    expect(parsePath('/history', '?status=GIVEN')).toEqual({ name: 'history', status: 'GIVEN' })
+    expect(parsePath('/history/o1')).toEqual({ name: 'history', order: 'o1' })
+    expect(parsePath('/orders/new')).toEqual({ name: 'createOrder' })
+    expect(parsePath('/orders/o1/record')).toEqual({ name: 'record', id: 'o1' })
+  })
+  it('opens Orders on a status tab and Employees on the missing-size filter', () => {
+    expect(pathOf({ name: 'history', status: 'ORDERED' })).toBe('/orders?status=ORDERED')
+    expect(parsePath('/orders', '?status=ORDERED')).toEqual({ name: 'history', status: 'ORDERED' })
+    expect(parsePath('/orders', '?status=DRAFT')).toEqual({ name: 'history' })
     expect(pathOf({ name: 'employees', missing: true })).toBe('/employees?missing=1')
     expect(parsePath('/employees', '?missing=1')).toEqual({ name: 'employees', missing: true })
     expect(parsePath('/employees', '?missing=yes')).toEqual({ name: 'employees' })

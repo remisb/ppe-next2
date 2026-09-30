@@ -2,7 +2,7 @@ import type { HistoryText } from '../en/history'
 import { plural } from '../plural'
 
 export const history: HistoryText = {
-  title: 'Istorija',
+  title: 'Užsakymai',
   description: 'Išsaugoti užsakymai, naujausi viršuje. Vertės tokios, kokios buvo užsakant.',
   filters: 'Filtrai',
   filtersCount: (n: number) => `Filtrai (${n})`,
@@ -52,9 +52,9 @@ export const history: HistoryText = {
   copyWhatsApp: 'Kopijuoti į WhatsApp',
   deleteOrder: 'Ištrinti užsakymą…',
   deleteOrdered: (record: string, name: string) =>
-    `Ištrinti ${record} (${name})? Užsakymas dings iš istorijos ir suvestinių, o jo patvirtinimo nuoroda nebeveiks. Tik demonstraciniams ir bandomiesiems užsakymams; programėlėje to atšaukti negalima.`,
+    `Ištrinti ${record} (${name})? Užsakymas dings iš Užsakymų ir suvestinių, o jo patvirtinimo nuoroda nebeveiks. Tik demonstraciniams ir bandomiesiems užsakymams; programėlėje to atšaukti negalima.`,
   deleteGiven: (record: string, name: string) =>
-    `Ištrinti ${record} (${name})? Užsakymas išduotas ir patvirtintas: jis dings iš istorijos, suvestinių ir sąrašo „Reikia pakeisti“, o jo įrašo nebebus galima atidaryti. Tik demonstraciniams ir bandomiesiems užsakymams; programėlėje to atšaukti negalima.`,
+    `Ištrinti ${record} (${name})? Užsakymas išduotas ir patvirtintas: jis dings iš Užsakymų, suvestinių ir sąrašo „Reikia pakeisti“, o jo įrašo nebebus galima atidaryti. Tik demonstraciniams ir bandomiesiems užsakymams; programėlėje to atšaukti negalima.`,
 
   confirmationDescription: (record: string, name: string) =>
     `${record} · ${name}. Darbuotojas patvirtina gavimą saugiame puslapyje arba pasirašo atspausdintą įrašą.`,

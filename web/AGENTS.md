@@ -95,32 +95,35 @@ The workwear app is the reference.
   keeps one order for the rail and sidebar. From
   `md` those links flow on in the rail (`md:contents`), never a second list. An
   administrator has seven sections (Dashboard first, Users last), a manager or the employee
-  role six (their Dashboard first). History shows the number of orders waiting for
+  role six (their Dashboard first). Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
   label), never `aria-label`, which would also match label lookups such as a field named
   "Item Set".
 - **Tables** that can run wider than a phone use `<Table stack>` (or `stack="grid"` for
   two cards to a row where they fit). Below 48rem *of the table's own width* each row
   becomes a card; give every `TableCell` a `label` for its column. A table whose columns
-  need more than 48rem side by side (History, Item Catalogue) adds `stackBelow="lg"` to
+  need more than 48rem side by side (Orders, Item Catalogue) adds `stackBelow="lg"` to
   stack below 60rem instead; measure it beside the `md` rail. Restyle cards with the
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
   an A4 print and would print the receipt as cards. Never render a list twice (a table
-  for desktop plus cards for phones). Lists people scan to find a record (History,
+  for desktop plus cards for phones). Lists people scan to find a record (Orders,
   Employees, Item Catalogue, Users) use `stack="list"`: stacked, they are one bordered list
   of short rows, a title line and a facts line (a stacked row may lay its cells out on a
   `stacked:grid` so a picture or avatar spans both lines, hiding the table-only cells with
   `stacked:hidden`). A row that opens a page carries no buttons while stacked; its actions
-  live on that page. `TableGroupRow` heads a group of rows (History's months while sorted
+  live on that page. `TableGroupRow` heads a group of rows (Orders' months while sorted
   by date, the Catalogue's size groups while sorted by size group). Other lists (order
   lines) keep one compact card a row rather than `stack="grid"`: from 36rem of room
   (`stacked-wide:`, a tablet in portrait) a card's actions move beside its title and its
   facts share a line.
-- **List and detail**: a row that has more to show opens it at its own address (History:
-  `/history/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
+- **Orders** is the screen the code still calls History (`routes/history.tsx`, `t.history`,
+  the route `history`): it was renamed for users only, so `t.orders` never sits beside
+  `t.order`. Its address is `/orders`; `/history` addresses still open it.
+- **List and detail**: a row that has more to show opens it at its own address (Orders:
+  `/orders/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. The row's actions live in the
   detail, not in an Actions column. Beside a detail the list drops to the columns that
-  find the next record (History: no Usage time, no time of day, the wait as the status)
+  find the next record (Orders: no Usage time, no time of day, the wait as the status)
   and stacks only under 30rem (`stackBelow="sm"`), so from about 1200px it stays one line
   a row; J / K step through it and Escape closes the detail.
 - **Sorting**: sortable columns use `SortableHead` (`components/sortable.tsx`, `aria-sort`
@@ -128,7 +131,7 @@ The workwear app is the reference.
   `sortControl`, which shows only while the table is stacked and its header hidden.
   Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
   their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
-  list (History) sends `sort`/`dir` to the API.
+  list (Orders) sends `sort`/`dir` to the API.
 - **Density**: Comfortable (the default) or Compact, a user's choice on Account and in
   ⌘K, saved per user on the device (`lib/density.ts`, `<html data-density>`). Style it
   with the `compact:` variant, which needs a screen with a fine pointer: Compact never
@@ -141,7 +144,7 @@ The workwear app is the reference.
 - **Record previews**: a record number that links away from a list is a `RecordPreview`,
   which shows the order's status, lines and total on hover or focus and stays a link;
   a tap on a touch screen follows it. Not where the row already opens the order beside
-  the list (History with an order open).
+  the list (Orders with an order open).
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
@@ -155,7 +158,7 @@ The workwear app is the reference.
   the same with a pointer; the ⌘K palette also opens from Search in the sidebar and More.
 - **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
   Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
-  (Delete, Deactivate, and Reset password on Users; Delete order in History's order pane,
+  (Delete, Deactivate, and Reset password on Users; Delete order in Orders' order pane,
   for the manager role only). A record with its own page (an
   employee, a catalogue item) has the same ⋯ on that page, the only place a phone reaches it. The ⋯ button is always shown, never revealed on hover: touch
   screens have no hover.

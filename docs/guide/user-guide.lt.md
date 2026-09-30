@@ -75,7 +75,9 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 
 ![Patvirtinimo puslapis telefone](../../web/apps/workwear/public/help-img/lt/phone/confirm-phone.png)
 
-## 6. Istorija
+## 6. Užsakymai
+
+**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.
 
 **Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.
 
@@ -90,7 +92,7 @@ Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 
 **⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.
 
-![Istorija su atidarytu užsakymu](../../web/apps/workwear/public/help-img/lt/desktop/history.png)
+![Užsakymai su atidarytu užsakymu](../../web/apps/workwear/public/help-img/lt/desktop/history.png)
 
 ## 7. Išdavimo įrašas
 
@@ -153,8 +155,8 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 | --- | --- |
 | `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
 | `/` | Pereina į paieškos arba „Pridėti prekę“ lauką. |
-| `G`, tada `D` `O` `H` `E` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Istoriją, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus. |
-| `J` / `K`, `Esc` | Pereina per Istoriją arba uždaro atidarytą užsakymą. |
+| `G`, tada `D` `O` `H` `E` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus. |
+| `J` / `K`, `Esc` | Pereina per Užsakymus arba uždaro atidarytą užsakymą. |
 | `⌘/Ctrl` `Enter` | Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą. |
 | `?` | Rodo visus sparčiuosius klavišus. |
 

@@ -55,7 +55,7 @@ const fixed = {
   managerDashboard: '/manager',
   employeeDashboard: '/my-orders',
   createOrder: '/orders/new',
-  history: '/history',
+  history: '/orders',
   employees: '/employees',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
@@ -73,7 +73,8 @@ export function parsePath(pathname: string, search = ''): Route {
     const prefill = parsePrefill(query)
     return prefill ? { name: 'createOrder', prefill } : { name: 'createOrder' }
   }
-  if (path === fixed.history) {
+  // /history is the screen's old address (it was called History), kept for bookmarks and links already sent.
+  if (path === fixed.history || path === '/history') {
     const status = query.get('status')
     return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
   }
@@ -81,7 +82,7 @@ export function parsePath(pathname: string, search = ''): Route {
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
-  const order = /^\/history\/([^/]+)$/.exec(path)
+  const order = /^\/(?:orders|history)\/([^/]+)$/.exec(path)
   if (order?.[1]) return { name: 'history', order: decodeURIComponent(order[1]) }
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
@@ -119,7 +120,7 @@ export function pathOf(route: Route): string {
       return `${fixed.createOrder}?${q}`
     }
     case 'history':
-      if (route.order) return `/history/${encodeURIComponent(route.order)}`
+      if (route.order) return `${fixed.history}/${encodeURIComponent(route.order)}`
       return route.status ? `${fixed.history}?status=${route.status}` : fixed.history
     case 'employees':
       return route.missing ? `${fixed.employees}?missing=1` : fixed.employees
@@ -152,6 +153,11 @@ export interface Router {
 
 export function useRouter(): Router {
   const [route, setRoute] = useState<Route>(() => parsePath(stripBase(window.location.pathname), window.location.search))
+
+  useEffect(() => {
+    // An old /history address shows as the screen's own, /orders; once, for the address the page opened at.
+    if (/^\/history(\/|$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(route))
+  }, [])
 
   useEffect(() => {
     const onPop = () => setRoute(parsePath(stripBase(window.location.pathname), window.location.search))

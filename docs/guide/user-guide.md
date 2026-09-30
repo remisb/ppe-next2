@@ -75,7 +75,9 @@ If the employee will sign on paper, choose **Print record** instead.
 
 ![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/phone/confirm-phone.png)
 
-## 6. History
+## 6. Orders
+
+**Orders** lists every order placed. **Create Order**, at the top, starts a new one.
 
 **Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
 
@@ -90,7 +92,7 @@ An **Ordered** order has these actions:
 
 **⋯ → Delete order…** removes an order, such as a test order, after asking.
 
-![History with an ordered order open](../../web/apps/workwear/public/help-img/en/desktop/history.png)
+![Orders with an ordered order open](../../web/apps/workwear/public/help-img/en/desktop/history.png)
 
 ## 7. Items Given Record
 
@@ -153,8 +155,8 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 | --- | --- |
 | `⌘K` / `Ctrl K` | Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
-| `G` then `D` `O` `H` `E` `C` `S` `U` | Go to Dashboard, Create Order, History, Employees, Catalogue, Item Sets or Users. |
-| `J` / `K`, `Esc` | Move through History, or close the open order. |
+| `G` then `D` `O` `H` `E` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users. |
+| `J` / `K`, `Esc` | Move through Orders, or close the open order. |
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |
 
