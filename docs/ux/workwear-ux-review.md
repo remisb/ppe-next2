@@ -23,8 +23,9 @@ status: phases 1–3 shipped, plus follow-ups (`4462e56`)
 > Lithuanian and Russian in `08dc9b5`, the Lithuanian review button fixed in `f0fb0bd`,
 > the guide on a Help screen in the app in `397bfd4`, employees' notes in the list in
 > `c3036e7`, Help for each device in `d19c604`, and the sign-in page in Gavort's colours
-> in `f0986d4`, employees' preferred language and the theme switch in `0a4bf0b`, and
-> the confirmation page in the employee's language in `4462e56`.
+> in `f0986d4`, employees' preferred language and the theme switch in `0a4bf0b`,
+> the confirmation page in the employee's language in `4462e56`, and Gavort's logo from
+> its brand book on the sign-in page in `2d9e6d3`.
 > Each came with its e2e steps (39 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -925,6 +926,7 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] The sign-in page in Gavort's quiet colours, chosen from two rounds of options: a pale panel with Gavort's mark, the app's name, a line on what it is for and a faint contour pattern, beside the form on white, with a navy Sign in button (a short band above the form on a phone or tablet; the panel turns navy in dark mode). Gavort's navy is a set of brand tokens used only on this page; the rest of the app keeps its neutral palette
 - [x] Employees have an optional preferred language, one of those the app speaks (English, Lietuvių, Русский, each named in itself), set in the employee form and shown on the employee's page. The employee's confirmation page and hand-over mode open in it when it is English or Russian, ahead of the device's last choice; EN / RU still switches, and a Lithuanian preference falls back to the device, since those screens speak English and Russian only. The language is looked up when the page is viewed, so the locked record and its hash never change with it
 - [x] A Light / Dark / System theme on Account and in ⌘K, kept on the device and applied before the first paint, the sign-in page included. Dark mode now also turns the browser's own controls and bar dark
+- [x] The sign-in page carries Gavort's logo from its brand book, traced as vector shapes in place of the hard-hat mark: navy, and in dark mode the book's gold foil; the full logo with its tagline on a desktop, without the tagline on a phone or tablet. At the owner's request it sits on the page's own background, so the pale panel (navy in dark mode) is gone, and the contours fade out around the logo to keep the book's clear space. The brand navy is now the logo's exact `#110F36`
 
 ### Still open
 
