@@ -76,6 +76,10 @@ async function addCatalogueItem(item: { name: string; details: string; group: st
 
 test('sign in', async () => {
   await page.goto('/')
+  // Gavort's logo from the brand book, navy on the page's own background (one drawn at a time: with its tagline from lg).
+  const logo = page.getByRole('img', { name: 'GAVORT' })
+  await expect(logo).toBeVisible()
+  expect(await logo.evaluate((e) => getComputedStyle(e).fill)).not.toMatch(/^url/)
   await page.getByLabel('Email').fill(admin.email)
   const password = page.getByLabel(/^Password/)
   await password.fill(admin.password)
@@ -1265,6 +1269,8 @@ test('Theme: light, dark or the device’s own, kept on this device through a re
   await tab.goto(webURL)
   await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await expect(tab.locator('html')).toHaveAttribute('data-theme', 'dark')
+  // In dark mode the logo is the book's gold foil.
+  expect(await tab.getByRole('img', { name: 'GAVORT' }).evaluate((e) => getComputedStyle(e).fill)).toMatch(/^url/)
   await tab.close()
   // A browser that never chose follows its own setting.
   const fresh = await browser.newPage({ colorScheme: 'dark' })

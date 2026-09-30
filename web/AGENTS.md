@@ -47,9 +47,14 @@ Order is wider than the button in Lithuanian.
 
 The app's colours are tokens in `src/index.css`, defined once for light and once for dark
 (the media query and `.dark` share the same values). The screens use the neutral shadcn
-palette. Gavort's navy is the `brand` tokens (`bg-brand`, `bg-brand-panel`, and their
-foregrounds), used only by the sign-in page: its mark, its button and its panel, which
-turns navy in dark mode. A new colour gets a token in all three places, never a literal.
+palette. Gavort's navy is the `brand` tokens (`bg-brand` and its foreground for the
+button, `text-brand-mark` for the logo and the app's name, white in dark mode), used only
+by the sign-in page, which sets them on the page's own background, never a panel colour
+of its own. A new colour gets a token in all three places, never a literal.
+The logo is `components/gavort-logo.tsx`, traced from the brand book: it takes the text
+colour (navy) and in dark mode the book's gold foil, a gradient kept
+in that file with the shapes because it is part of the artwork, not a screen colour.
+Keep the book's clear space around it, an eighth of its width.
 The theme is the device's choice on Account (and ⌘K): Light or Dark pin `<html
 data-theme>`, System leaves it to the media query. `lib/theme.ts` keeps it in
 localStorage, and an inline script in `index.html` applies it before the first paint;

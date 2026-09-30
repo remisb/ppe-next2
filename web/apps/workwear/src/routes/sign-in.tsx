@@ -1,6 +1,6 @@
-import { HardHat } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 
+import { GavortLogo } from '@/components/gavort-logo'
 import { Button } from '@/components/ui/button'
 import { Field, Input, PasswordInput, controlProps } from '@/components/ui/field'
 import { t } from '@/i18n'
@@ -8,10 +8,11 @@ import { useApi } from '@/lib/api'
 import { errorText } from '@/lib/use-load'
 
 /**
- * Sign in, in Gavort's quiet colours: a pale panel with the company's mark,
- * the app's name and a faint contour pattern, and the form on white beside it
- * (from lg; above it on a phone and a tablet, as a short band). In dark mode the
- * panel turns navy. The page is in the device's language (deviceLanguage).
+ * Sign in, in Gavort's quiet colours: the company's logo, the app's name and a
+ * faint contour pattern on the page's own background, and the form beside them
+ * (from lg, past a rule; above it on a phone and a tablet, as a short band, where
+ * the logo drops its tagline). The logo is navy, and gold in dark mode. The page
+ * is in the device's language (deviceLanguage).
  */
 export function SignIn() {
   const { signIn } = useApi()
@@ -35,10 +36,15 @@ export function SignIn() {
 
   return (
     <main className="grid min-h-dvh grid-rows-[auto_1fr] bg-background lg:grid-cols-[5fr_6fr] lg:grid-rows-none">
-      <div className="relative overflow-hidden bg-brand-panel px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-between lg:p-10">
+      <div className="relative overflow-hidden px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 text-brand-mark lg:flex lg:flex-col lg:border-r lg:border-border lg:p-10">
         <Contours />
-        <Brand />
-        <div className="relative mt-16 hidden lg:block">
+        {/* The book's clear space around the logo is an eighth of its width: 30px at w-60. */}
+        <div className="relative flex flex-col items-center gap-4 lg:flex-1 lg:justify-center">
+          <GavortLogo className="h-16 w-auto lg:hidden" />
+          <GavortLogo withTagline className="hidden h-auto w-60 lg:block" />
+          <p className="text-xs opacity-70 lg:hidden">{t.common.appName}</p>
+        </div>
+        <div className="relative hidden lg:block">
           <p className="max-w-[16ch] text-2xl font-semibold tracking-tight">{t.common.appName}</p>
           <p className="mt-2 max-w-[34ch] text-sm opacity-70">{t.shell.signInTagline}</p>
         </div>
@@ -71,22 +77,7 @@ export function SignIn() {
   )
 }
 
-/** Gavort's mark: the app's hard hat on navy, the company's name (the same in every language) and the app's. */
-function Brand() {
-  return (
-    <div className="relative flex items-center gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground">
-        <HardHat aria-hidden className="size-5" />
-      </span>
-      <span className="flex flex-col leading-tight">
-        <span className="text-[0.95rem] font-extrabold tracking-[0.08em]">GAVORT</span>
-        <span className="text-xs opacity-70">{t.common.appName}</span>
-      </span>
-    </div>
-  )
-}
-
-/** A faint contour pattern behind the panel: decoration only. */
+/** A faint contour pattern behind the panel, faded out around the logo to keep its clear space: decoration only. */
 function Contours() {
   const lines = [180, 210, 240, 270, 300, 330, 360]
   return (
@@ -94,7 +85,7 @@ function Contours() {
       aria-hidden
       viewBox="0 0 400 400"
       preserveAspectRatio="xMidYMid slice"
-      className="pointer-events-none absolute inset-0 size-full stroke-current opacity-[0.09]"
+      className="pointer-events-none absolute inset-0 size-full stroke-current opacity-[0.09] [mask-image:radial-gradient(closest-side,transparent_55%,black)] lg:[mask-image:radial-gradient(closest-side_at_50%_45%,transparent_60%,black)]"
       fill="none"
     >
       {lines.map((y) => (
