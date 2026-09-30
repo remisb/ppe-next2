@@ -80,6 +80,16 @@ test('sign in', async () => {
   const logo = page.getByRole('img', { name: 'GAVORT' })
   await expect(logo).toBeVisible()
   expect(await logo.evaluate((e) => getComputedStyle(e).fill)).not.toMatch(/^url/)
+  // Its emblem is the tab's icon and the home-screen icon: every one the page and its manifest name is served.
+  const icons = await page.locator('link[rel=icon], link[rel=apple-touch-icon]').evaluateAll((links) => links.map((l) => (l as HTMLLinkElement).href))
+  const manifest = (await (await page.request.get('/manifest.json')).json()) as { icons: { src: string }[] }
+  expect(icons).toHaveLength(3)
+  expect(manifest.icons.length).toBeGreaterThan(0)
+  for (const src of [...icons, ...manifest.icons.map((i) => i.src)]) {
+    const icon = await page.request.get(src)
+    expect(icon.ok(), src).toBe(true)
+    expect(icon.headers()['content-type'], src).toMatch(/^image\//)
+  }
   await page.getByLabel('Email').fill(admin.email)
   const password = page.getByLabel(/^Password/)
   await password.fill(admin.password)

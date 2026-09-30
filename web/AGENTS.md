@@ -54,7 +54,11 @@ of its own. A new colour gets a token in all three places, never a literal.
 The logo is `components/gavort-logo.tsx`, traced from the brand book: it takes the text
 colour (navy) and in dark mode the book's gold foil, a gradient kept
 in that file with the shapes because it is part of the artwork, not a screen colour.
-Keep the book's clear space around it, an eighth of its width.
+Keep the book's clear space around it, an eighth of its width. `GavortEmblem` is its emblem alone, the
+app's mark in the app bar and on the confirmation page. The favicon (`public/favicon.svg`,
+navy on a light tab, gold on a dark one) and the home-screen icons (gold on navy, in
+`manifest.json` and `apple-touch-icon.png`) are the same emblem; `icons/build.sh` redraws
+the PNGs with `rsvg-convert`.
 The theme is the device's choice on Account (and ⌘K): Light or Dark pin `<html
 data-theme>`, System leaves it to the media query. `lib/theme.ts` keeps it in
 localStorage, and an inline script in `index.html` applies it before the first paint;

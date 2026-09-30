@@ -1,4 +1,4 @@
-import { type CSSProperties, useId } from 'react'
+import { type CSSProperties, type ReactNode, useId } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -18,32 +18,57 @@ const gold = [
   [1, '#f4d470'],
 ] as const
 
+type Box = readonly [x: number, y: number, width: number, height: number]
+
 /**
  * Gavort's logo: navy (the text colour) on a light background, gold on navy in
  * dark mode, as the brand book pairs them. Without the tagline where it would be
  * too small to read. Size it with a width or a height class; it keeps its shape.
  */
-export function GavortLogo({ withTagline = false, className }: { withTagline?: boolean; className?: string }) {
-  // One gradient per logo on the page: two drawn at once must not share an id.
+export function GavortLogo({ withTagline = false, className }: { withTagline?: boolean; className?: string | undefined }) {
+  return (
+    <Mark box={[0, 0, 391.8, withTagline ? 242.6 : 210.1]} label="GAVORT" className={className}>
+      <path d={emblem} />
+      <path d={wordmark} />
+      {withTagline ? <path d={tagline} /> : null}
+    </Mark>
+  )
+}
+
+/**
+ * The logo's emblem alone, the app's mark where the whole logo does not fit (the
+ * app bar, the confirmation page; the favicon and home-screen icon in public/ are
+ * drawn from the same shape). Unnamed unless given a label: beside the app's name
+ * it adds nothing to read.
+ */
+export function GavortEmblem({ label, className }: { label?: string | undefined; className?: string | undefined }) {
+  return (
+    <Mark box={[127, 0, 137.8, 134]} label={label} className={className}>
+      <path d={emblem} />
+    </Mark>
+  )
+}
+
+function Mark({ box, label, className, children }: { box: Box; label?: string | undefined; className?: string | undefined; children: ReactNode }) {
+  // One gradient per mark on the page: two drawn at once must not share an id.
   const id = useId()
+  const [x, y, width, height] = box
   return (
     <svg
-      role="img"
-      aria-label="GAVORT"
-      viewBox={`0 0 391.8 ${withTagline ? 242.6 : 210.1}`}
+      {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
+      viewBox={`${x} ${y} ${width} ${height}`}
       style={{ '--gold': `url(#${CSS.escape(id)})` } as CSSProperties}
       className={cn('fill-current dark:fill-(--gold)', className)}
     >
       <defs>
-        <linearGradient id={id} gradientUnits="userSpaceOnUse" x2="391.8">
+        {/* Across the mark drawn, so the emblem alone gets the whole sweep. */}
+        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x} x2={x + width}>
           {gold.map(([offset, color]) => (
             <stop key={offset} offset={offset} stopColor={color} />
           ))}
         </linearGradient>
       </defs>
-      <path d={emblem} />
-      <path d={wordmark} />
-      {withTagline ? <path d={tagline} /> : null}
+      {children}
     </svg>
   )
 }

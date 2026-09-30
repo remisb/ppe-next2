@@ -1,7 +1,8 @@
-import { BookOpen, ClipboardList, Ellipsis, HardHat, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { BookOpen, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
+import { GavortEmblem } from '@/components/gavort-logo'
 import { Loading } from '@/components/states'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { t } from '@/i18n'
@@ -553,13 +554,11 @@ function Count({ n, className }: { n: number; className?: string }) {
   )
 }
 
-/** The app mark; the name shows where there is room for it (phone bar, desktop sidebar). */
+/** The app mark, Gavort's emblem; the name shows where there is room for it (phone bar, desktop sidebar). */
 function Brand() {
   return (
     <span className="flex items-center gap-2 font-semibold">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <HardHat aria-hidden className="size-4.5" />
-      </span>
+      <GavortEmblem className="size-8 shrink-0 text-brand-mark" />
       <span className="leading-tight md:sr-only xl:not-sr-only">{t.common.appName}</span>
     </span>
   )

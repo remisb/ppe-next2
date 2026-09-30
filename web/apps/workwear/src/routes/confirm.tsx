@@ -1,9 +1,9 @@
 import type { OrderRecord } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { HardHat } from 'lucide-react'
 import { useState } from 'react'
 
 import { ConfirmSummary, Confirmed, ConsentBar, FullRecord, LanguageSwitch } from '@/components/confirmation'
+import { GavortEmblem } from '@/components/gavort-logo'
 import { Loading } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -64,8 +64,8 @@ export function ConfirmPage({ token }: { token: string }) {
       )}
     >
       <header className="mb-4 flex items-center justify-between gap-3 print:hidden">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <HardHat aria-hidden className="size-5" />
+        <span className="flex items-center text-brand-mark">
+          <GavortEmblem className="size-9" />
           <span className="sr-only">Workwear &amp; Equipment</span>
         </span>
         <LanguageSwitch lang={lang} onChange={choose} />
