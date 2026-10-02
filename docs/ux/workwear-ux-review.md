@@ -25,9 +25,12 @@ status: phases 1–3 shipped, plus follow-ups (`4462e56`)
 > `c3036e7`, Help for each device in `d19c604`, and the sign-in page in Gavort's colours
 > in `f0986d4`, employees' preferred language and the theme switch in `0a4bf0b`,
 > the confirmation page in the employee's language in `4462e56`, Gavort's logo from
-> its brand book on the sign-in page in `2d9e6d3`, and its emblem as the app icon and
-> favicon in `48a23e5`.
-> Each came with its e2e steps (39 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> its brand book on the sign-in page in `2d9e6d3`, its emblem as the app icon and
+> favicon in `48a23e5`, History renamed Orders with Create Order on the list in `f426dba`,
+> the supplier's WhatsApp group on a Settings screen in `a8433da`, Copy for WhatsApp kept to
+> the review and the confirmation link created for every new order in `4fac2b9`, and the
+> sign-in refreshed every few minutes in `5d10430`.
+> Each came with its e2e steps (41 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -929,6 +932,10 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] A Light / Dark / System theme on Account and in ⌘K, kept on the device and applied before the first paint, the sign-in page included. Dark mode now also turns the browser's own controls and bar dark
 - [x] The sign-in page carries Gavort's logo from its brand book, traced as vector shapes in place of the hard-hat mark: navy, and in dark mode the book's gold foil; the full logo with its tagline on a desktop, without the tagline on a phone or tablet. At the owner's request it sits on the page's own background, so the pale panel (navy in dark mode) is gone, and the contours fade out around the logo to keep the book's clear space. The brand navy is now the logo's exact `#110F36`
 - [x] The logo's emblem is the app's icon: the favicon (navy on a light browser tab, gold on a dark one), the home-screen icon (gold on navy, as the brand book pairs them, for iPhone and Android), and the mark in the app bar and on the employee's confirmation page in place of the hard-hat tile, navy and gold in dark mode like the sign-in logo. Adding the app to a home screen still opens it in the browser
+- [x] History is renamed **Orders** in all three languages (Užsakymai, Заказы), at `/orders`; old `/history` links still open it. The list has **Create Order** at its top, as Employees has Add New Employee
+- [x] Administrators set the supplier's WhatsApp group (its name and invite link) on a new **Settings** screen. WhatsApp cannot open a group with a message already typed in, so Copy for WhatsApp copies the order message and then offers **Open Superman Rubai Group**, where staff paste it. The link must be a WhatsApp group invite and is stored without WhatsApp's `?mode=…`; every change is audited. The supplier message is also shorter: the record number, the employee and the lines, without the preparer and the date
+- [x] Copy for WhatsApp is now only in Create Order's review: it left the order panel, the screen after Mark as Ordered and an ordered order in Orders. The review no longer asks whether to create the confirmation link: every new order gets one, shown ready to send; if creating it fails, the order stands and Send confirmation link is offered
+- [x] The sign-in no longer ends 15 minutes after signing in: while the app is open it swaps its token for a new one every few minutes. Each refresh checks the account again, so a deactivated user is signed out within minutes and role changes apply without signing in again. A sign-in lasts at most 12 hours (`API_SESSION_MAX_AGE`); a tab closed or a device asleep for more than 15 minutes asks to sign in again
 
 ### Still open
 
