@@ -49,6 +49,13 @@ export function formatDay(iso: string, lang: ConfirmLang, timeZone?: string): st
   return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' }).format(d)
 }
 
+const money = { en: new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }), ru: new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR' }) }
+
+/** An amount as "€274.90" (en, as on the record) or "274,90 €" (ru). */
+export function formatMoney(cents: number, lang: ConfirmLang): string {
+  return money[lang].format(cents / 100)
+}
+
 /** A time of day as "14:02", in timeZone. */
 export function formatTime(iso: string, timeZone?: string): string {
   const d = new Date(iso)
@@ -65,6 +72,9 @@ export interface ConfirmText {
   ask: (firstName: string, items: number) => string
   meta: (record: string, from: string, day: string) => string
   items: string
+  /** A line's quantity and unit price: "2 × €45.50". */
+  each: (quantity: number, unitPrice: string) => string
+  total: string
   statement: string
   viewRecord: string
   hideRecord: string
@@ -90,6 +100,8 @@ export const confirmText: Record<ConfirmLang, ConfirmText> = {
     ask: (name, n) => `${name}, please confirm you received ${n === 1 ? '1 item' : `${n} items`}`,
     meta: (record, from, day) => `Order ${record} · from ${from} · ${day}`,
     items: 'Items',
+    each: (n, price) => `${n} × ${price}`,
+    total: 'Total',
     statement: 'What you confirm',
     viewRecord: 'View full record (EN / RU)',
     hideRecord: 'Hide full record',
@@ -114,6 +126,8 @@ export const confirmText: Record<ConfirmLang, ConfirmText> = {
     ask: (name, n) => `${name}, пожалуйста, подтвердите получение ${n} ${ruOne.select(n) === 'one' ? 'предмета' : 'предметов'}`,
     meta: (record, from, day) => `Заказ ${record} · подготовил(а) ${from} · ${day}`,
     items: 'Предметы',
+    each: (n, price) => `${n} × ${price}`,
+    total: 'Итого',
     statement: 'Что вы подтверждаете',
     viewRecord: 'Полный документ (EN / RU)',
     hideRecord: 'Скрыть документ',

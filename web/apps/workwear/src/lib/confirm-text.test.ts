@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { confirmText, employeeLang, formatDay, formatTime, initialLang } from './confirm-text'
+import { confirmText, employeeLang, formatDay, formatMoney, formatTime, initialLang } from './confirm-text'
 
 describe('initialLang', () => {
   it('keeps the language chosen last on this device', () => {
@@ -49,5 +49,13 @@ describe('employeeLang', () => {
     expect([employeeLang('ru'), employeeLang('en')]).toEqual(['ru', 'en'])
     // Lithuanian is not on the page (English / Russian); the device decides.
     expect([employeeLang('lt'), employeeLang(null), employeeLang(undefined)]).toEqual([undefined, undefined, undefined])
+  })
+})
+
+describe('formatMoney', () => {
+  it('shows amounts as the record does in English, and the Russian way in Russian', () => {
+    expect(formatMoney(27490, 'en')).toBe('€274.90')
+    expect(formatMoney(27490, 'ru').replace(/\s/g, ' ')).toBe('274,90 €')
+    expect(confirmText.en.each(2, '€45.50')).toBe('2 × €45.50')
   })
 })

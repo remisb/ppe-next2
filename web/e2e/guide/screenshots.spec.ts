@@ -38,6 +38,12 @@ async function shot(name: ShotName, { target = page, phone = false }: { target?:
 async function openTab(name: string) {
   const nav = page.getByRole('navigation', { name: T.shell.mainNav })
   const link = nav.getByRole('link', { name })
+  // The rail and sidebar have no Create Order: it is Orders' Create Order button there.
+  if (name === T.shell.createOrder && !(await link.isVisible())) {
+    await openTab(T.shell.history)
+    await page.getByRole('main').getByRole('link', { name: T.shell.createOrder }).click()
+    return
+  }
   if (!(await link.isVisible())) await nav.getByRole('button', { name: T.shell.more }).click()
   await link.click()
 }

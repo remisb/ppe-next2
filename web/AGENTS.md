@@ -92,10 +92,13 @@ The workwear app is the reference.
   above it with the rest (Item Catalogue, Item Sets, Users), the account and Sign out.
   Create Order is the raised New order button in the middle of that bar (Draft, with the
   line count, while a draft is saved); the bar reorders with `max-md:order-*`, so the markup
-  keeps one order for the rail and sidebar. From
+  keeps one order for the rail and sidebar. The rail and sidebar leave Create Order out
+  (`md:hidden`): there it is the Create Order button on Orders, which stays the current
+  section while Create Order is open, and ⌘K or G then O. From
   `md` those links flow on in the rail (`md:contents`), never a second list. An
-  administrator has seven sections (Dashboard first, Users last), a manager or the employee
-  role six (their Dashboard first). Orders shows the number of orders waiting for
+  administrator has eight sections on a phone (Dashboard first, Users and Settings last),
+  a manager or the employee role six (their Dashboard first); the rail and sidebar show one
+  fewer, without Create Order. Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
   label), never `aria-label`, which would also match label lookups such as a field named
   "Item Set".

@@ -10,14 +10,12 @@ import { ErrorState, Loading } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { WhatsAppButton } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { LONG_WAIT_DAYS, deleteQuestion, formatDateTime, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { cn } from '@/lib/utils'
-import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
 
 /**
  * One stored order from History: who and when, its snapshot lines and the
@@ -149,8 +147,8 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
 /**
  * ORDERED: Open Employee Confirmation, Hand over now (the employee confirms on
  * this device, at the counter), and Print Record for a paper signature; the
- * supplier message is Create Order's, not here. GIVEN: View Record, Print Record, Share via WhatsApp. The items
- * (View Items in the manual) are always shown above.
+ * supplier message is Create Order's, not here. GIVEN: View Record and Print
+ * Record. The items (View Items in the manual) are always shown above.
  */
 function Actions({
   order: o,
@@ -167,7 +165,6 @@ function Actions({
   onDelete?: (() => void) | undefined
 }) {
   const actions = historyActions(o.status)
-  const whatsapp = formatWhatsApp(messageFromOrder(o))
   return (
     <div className="grid gap-2 sm:flex sm:flex-wrap">
       {actions.includes('openConfirmation') ? (
@@ -188,7 +185,6 @@ function Actions({
       <Button variant="outline" onClick={() => onOpenRecord(true)}>
         <Printer aria-hidden /> {t.history.printRecord}
       </Button>
-      {actions.includes('shareWhatsApp') ? <WhatsAppButton label={t.history.shareWhatsApp} text={whatsapp} /> : null}
       {onDelete ? (
         <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
           <DropdownMenuItem variant="destructive" onClick={onDelete}>

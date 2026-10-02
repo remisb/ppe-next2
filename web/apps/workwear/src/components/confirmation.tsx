@@ -4,7 +4,7 @@ import { type ReactNode, useId, useState } from 'react'
 
 import { ReceiptDocument } from '@/components/receipt'
 import { Button } from '@/components/ui/button'
-import { type ConfirmLang, confirmText, formatDay, formatTime } from '@/lib/confirm-text'
+import { type ConfirmLang, confirmText, formatDay, formatMoney, formatTime } from '@/lib/confirm-text'
 import { cn, formatSize } from '@/lib/utils'
 
 /*
@@ -51,17 +51,25 @@ export function ConfirmSummary({ record, lang, timeZone }: { record: OrderRecord
         {t.ask(r.employee_first_name, r.lines.length)}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">{t.meta(r.record_number, r.prepared_by_name, formatDay(r.ordered_at, lang, timeZone))}</p>
-      <ul aria-label={t.items} className="mt-3 divide-y divide-border rounded-lg border border-border bg-card">
-        {r.lines.map((l) => (
-          <li key={l.line_no} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
-            <span className="min-w-0">
-              <span className="font-medium">{l.item_name}</span>
-              {l.size ? <span className="text-muted-foreground"> · {formatSize(l.size)}</span> : null}
-            </span>
-            <span className="shrink-0 tabular-nums">× {l.quantity}</span>
-          </li>
-        ))}
-      </ul>
+      {/* Each line's quantity, unit price and amount, and the order's total, as on the record. */}
+      <div className="mt-3 rounded-lg border border-border bg-card">
+        <ul aria-label={t.items} className="divide-y divide-border">
+          {r.lines.map((l) => (
+            <li key={l.line_no} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
+              <span className="min-w-0">
+                <span className="font-medium">{l.item_name}</span>
+                {l.size ? <span className="text-muted-foreground"> · {formatSize(l.size)}</span> : null}
+                <span className="block text-sm text-muted-foreground tabular-nums">{t.each(l.quantity, formatMoney(l.unit_price_cents, lang))}</span>
+              </span>
+              <span className="shrink-0 font-medium tabular-nums">{formatMoney(l.total_cents, lang)}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="flex items-baseline justify-between gap-3 border-t border-border px-4 py-3 font-semibold">
+          <span>{t.total}</span>
+          <span className="text-lg tabular-nums">{formatMoney(r.total_cents, lang)}</span>
+        </p>
+      </div>
       <figure className="mt-3 rounded-lg bg-muted/60 px-4 py-3 text-sm">
         <figcaption className="mb-1 text-xs font-medium text-muted-foreground">{t.statement}</figcaption>
         <blockquote>{lang === 'ru' ? r.confirmation_text_ru : r.confirmation_text_en}</blockquote>

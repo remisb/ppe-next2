@@ -68,15 +68,16 @@ const usersTab = (): Tab => ({ route: { name: 'users' }, label: t.shell.users, s
 const settingsTab = (): Tab => ({ route: { name: 'settings' }, label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon })
 
 /**
- * A record belongs to History, an employee to Employees and an item to Item
- * Catalogue, so those stay the
- * current section; so does a user's one Dashboard tab for another role's
+ * A record belongs to Orders (History in the code), an employee to Employees
+ * and an item to Item Catalogue, so those stay the current section; so does
+ * Orders for Create Order, which the rail and sidebar reach through it; so does a user's one Dashboard tab for another role's
  * dashboard opened from it.
  */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
   return (
     current === tab ||
     (current === 'record' && tab === 'history') ||
+    (current === 'createOrder' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
     (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
@@ -497,8 +498,8 @@ function NavLink({
 /**
  * Create Order. On a phone it is the raised button in the middle of the tab
  * bar, labelled New order, or Draft with its line count when a draft is
- * saved: the button reopens it, as Create Order always does. In the rail and
- * sidebar it is an ordinary section.
+ * saved: the button reopens it, as Create Order always does. The rail and
+ * sidebar leave it out: there it is Orders' Create Order button (and ⌘K, G O).
  */
 function NewOrderLink({
   tab: { route: r, label, short, icon: Icon },
@@ -513,7 +514,7 @@ function NewOrderLink({
 }) {
   const draft = draftLines > 0
   return (
-    <a {...link(r)} aria-current={current ? 'page' : undefined} className={cn(navItem, 'max-md:order-3 max-md:justify-end max-md:pb-1.5')}>
+    <a {...link(r)} aria-current={current ? 'page' : undefined} className={cn(navItem, 'max-md:order-3 max-md:justify-end max-md:pb-1.5 md:hidden')}>
       <span
         className={cn(
           navIcon,

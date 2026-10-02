@@ -32,6 +32,12 @@ test.afterAll(async () => {
 async function openTab(name: string) {
   const nav = page.getByRole('navigation', { name: 'Main' })
   const link = nav.getByRole('link', { name })
+  // The rail and sidebar have no Create Order: it is Orders' Create Order button there.
+  if (name === 'Create Order' && !(await link.isVisible())) {
+    await openTab('Orders')
+    await page.getByRole('main').getByRole('link', { name: 'Create Order' }).click()
+    return
+  }
   if (!(await link.isVisible())) await nav.getByRole('button', { name: 'More' }).click()
   await link.click()
 }
@@ -365,7 +371,8 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
 
 test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await openTab('Orders')
-  // The screen once called History; as Employees has Add New Employee, it has Create Order.
+  // The sidebar has no Create Order: the screen once called History has it, as Employees has Add New Employee.
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /^Create Order/ })).toBeHidden()
   const create = page.getByRole('main').getByRole('link', { name: 'Create Order' })
   await create.click()
   await expect(page).toHaveURL(/\/orders\/new$/)
@@ -408,7 +415,13 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   // First what is asked, in plain words, the items and the statement agreed to; the full record is one tap away.
   await expect(employee.getByRole('heading', { name: 'Ona, please confirm you received 3 items' })).toBeVisible()
   await expect(employee.getByText(/^Order WE-\d{6} · from /)).toBeVisible()
-  await expect(employee.getByRole('list', { name: 'Items' }).getByRole('listitem')).toHaveCount(3)
+  const items = employee.getByRole('list', { name: 'Items' })
+  await expect(items.getByRole('listitem')).toHaveCount(3)
+  // Each line's quantity, unit price and amount, and the total, as on the record.
+  await expect(items.getByRole('listitem').filter({ hasText: 'gloves' })).toContainText('10 × €2.50')
+  await expect(items.getByRole('listitem').filter({ hasText: 'gloves' })).toContainText('€25.00')
+  await expect(employee.getByText('Total', { exact: true })).toBeVisible()
+  await expect(employee.getByText('€114.98', { exact: true })).toBeVisible()
   await expect(employee.getByText('What you confirm')).toBeVisible()
   // A new order carries the current wording (2026-09-v2).
   await expect(employee.getByText('I confirm receipt of the listed items in the stated sizes and quantities', { exact: false })).toBeVisible()
@@ -421,6 +434,7 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   // EN / RU changes the interface wording; the record stays bilingual.
   await employee.getByRole('button', { name: 'Русский' }).click()
   await expect(employee.getByRole('heading', { name: 'Ona, пожалуйста, подтвердите получение 3 предметов' })).toBeVisible()
+  await expect(employee.getByText('Итого', { exact: true })).toBeVisible()
   await expect(employee.getByRole('button', { name: 'Подтвердить получение' })).toBeDisabled()
   await expect(employee.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await employee.getByRole('button', { name: 'English' }).click()
@@ -461,6 +475,8 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Record' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Print Record' })).toBeVisible()
+  // No WhatsApp on a given order: the supplier message is Create Order's review's.
+  await expect(order.getByRole('button', { name: /WhatsApp/ })).toHaveCount(0)
 })
 
 test('a later price change does not alter the stored record', async () => {

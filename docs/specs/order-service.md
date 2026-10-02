@@ -53,8 +53,9 @@ History and receipts use only these values.
 ## Copy for WhatsApp (algorithm E)
 
 Formatted client-side (`web/apps/workwear/src/lib/whatsapp.ts`): Copy for WhatsApp from the
-working order in Create Order's review (the only place it is offered), Share via WhatsApp
-from a GIVEN order's snapshot. Record number when stored, employee (and code), each line's
+working order in Create Order's review (the only place it is offered for an order), Share
+via WhatsApp from a GIVEN order's locked receipt on its record page (`/orders/<id>/record`;
+not in the order pane). Record number when stored, employee (and code), each line's
 item, details, size when applicable and quantity. No prices, and since 2026-10-02 no
 preparer or date. Copying or opening
 WhatsApp changes no status and never claims delivery.
