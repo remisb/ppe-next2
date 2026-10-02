@@ -23,6 +23,7 @@ import type {
   ResolveInput,
   Settings,
   Sizes,
+  SupplierChatInput,
   User,
   UserCreateInput,
   UserUpdateInput,
@@ -83,6 +84,8 @@ export function createClient(options: ClientOptions) {
     setOwnLanguage: (language: Language) => request<User>('PUT', '/api/v1/users/me/language', { language }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
+    /** Set or clear the supplier's WhatsApp group; administrators only. Returns the settings. */
+    updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
     /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */

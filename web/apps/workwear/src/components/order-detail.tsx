@@ -1,4 +1,4 @@
-import type { Order } from '@ppe/api-client'
+import type { Order, SupplierChat } from '@ppe/api-client'
 import { ArrowLeft, FileText, Handshake, Link2, Printer, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -27,6 +27,7 @@ import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
 export function OrderDetail({
   id,
   timeZone,
+  supplierChat,
   navigate,
   onClose,
   onOpenRecord,
@@ -35,6 +36,8 @@ export function OrderDetail({
 }: {
   id: string
   timeZone: string | undefined
+  /** The supplier's WhatsApp group, which Copy for WhatsApp opens on an ORDERED order. */
+  supplierChat: SupplierChat | null
   navigate: (to: Route) => void
   onClose: () => void
   onOpenRecord: (id: string, print: boolean) => void
@@ -83,6 +86,7 @@ export function OrderDetail({
           <Summary order={o} timeZone={timeZone} navigate={navigate} />
           <OrderLinesTable order={o} />
           <Actions
+            supplierChat={supplierChat}
             order={o}
             onConfirm={() => setConfirming(true)}
             onHandOver={() => setHandingOver(true)}
@@ -154,12 +158,14 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
  */
 function Actions({
   order: o,
+  supplierChat,
   onConfirm,
   onHandOver,
   onOpenRecord,
   onDelete,
 }: {
   order: Order
+  supplierChat: SupplierChat | null
   onConfirm: () => void
   onHandOver: () => void
   onOpenRecord: (print: boolean) => void
@@ -188,7 +194,12 @@ function Actions({
       <Button variant="outline" onClick={() => onOpenRecord(true)}>
         <Printer aria-hidden /> {t.history.printRecord}
       </Button>
-      <WhatsAppButton label={actions.includes('shareWhatsApp') ? t.history.shareWhatsApp : t.history.copyWhatsApp} text={whatsapp} />
+      {/* The supplier's group for the order message; a given order's record is shared wherever the user picks. */}
+      {actions.includes('shareWhatsApp') ? (
+        <WhatsAppButton label={t.history.shareWhatsApp} text={whatsapp} />
+      ) : (
+        <WhatsAppButton label={t.history.copyWhatsApp} text={whatsapp} chat={supplierChat} />
+      )}
       {onDelete ? (
         <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
           <DropdownMenuItem variant="destructive" onClick={onDelete}>

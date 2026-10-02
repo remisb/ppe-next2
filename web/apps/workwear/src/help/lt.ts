@@ -77,8 +77,7 @@ export const lt: Guide = {
             { text: 'Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.', devices: ['phone', 'tablet'] },
-        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.', devices: ['desktop'] },
+        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.' },
         { shots: [{ name: 'create-order', alt: 'Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai' }] },
       ],
     },
@@ -196,6 +195,19 @@ export const lt: Guide = {
           ],
         },
         { shots: [{ name: 'users', alt: 'Naudotojų ekranas' }] },
+      ],
+    },
+    {
+      id: 'settings',
+      title: 'Nustatymai',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Tiekėjo WhatsApp grupė**: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada **Pakviesti per nuorodą** ir **Kopijuoti nuorodą**.',
+        },
+        {
+          p: '**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.',
+        },
       ],
     },
     {

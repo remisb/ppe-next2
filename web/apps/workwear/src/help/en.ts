@@ -74,8 +74,7 @@ export const en: Guide = {
             { text: 'Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier\'s message, is in the review.', devices: ['phone', 'tablet'] },
-        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp** copies the message for the supplier.', devices: ['desktop'] },
+        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier\'s message, is in the review.' },
         { shots: [{ name: 'create-order', alt: 'Create Order with an employee, a kit applied and sizes chosen' }] },
       ],
     },
@@ -190,6 +189,19 @@ export const en: Guide = {
           ul: ['Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.', 'To reset a password, use **⋯ → Reset password…**.'],
         },
         { shots: [{ name: 'users', alt: 'The Users screen' }] },
+      ],
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: "**Supplier's WhatsApp group**: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then **Invite via link** and **Copy link**.",
+        },
+        {
+          p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
+        },
       ],
     },
     {

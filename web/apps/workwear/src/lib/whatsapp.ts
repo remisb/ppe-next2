@@ -38,9 +38,9 @@ export function formatWhatsApp(m: WhatsAppMessage): string {
     parts.push(t.order.waQty(l.quantity))
     out.push(`${i + 1}. ${parts.join(' – ')}`)
   })
-  out.push('')
-  out.push(t.order.waPreparedBy(m.preparedBy))
-  out.push(t.order.waDate(m.date))
+  // out.push('')
+  // out.push(t.order.waPreparedBy(m.preparedBy))
+  // out.push(t.order.waDate(m.date))
   return out.join('\n')
 }
 

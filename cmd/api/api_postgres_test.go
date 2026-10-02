@@ -17,6 +17,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -46,6 +47,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
+		settings.NewPostgresRepository(pool),
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123")
 	if err != nil {
@@ -653,5 +655,56 @@ func TestPostgresOwnLanguageHTTP(t *testing.T) {
 	rec = api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "admin@example.com", "password": "password123"})
 	if u := decode[map[string]any](t, rec.Body.Bytes())["user"].(map[string]any); u["language"] != "en" {
 		t.Errorf("login user = %v", u)
+	}
+}
+
+// TestPostgresSupplierChatHTTP: an administrator sets the supplier's WhatsApp
+// group; every signed-in user reads it in the settings; a bad link is a 400.
+func TestPostgresSupplierChatHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	_, staff := api.userWith(t, user.RoleEmployee)
+	_, adminTok := api.userWith(t, user.RoleAdmin)
+	type chatJSON struct {
+		Timezone     string             `json:"timezone"`
+		SupplierChat *map[string]string `json:"supplier_chat"`
+	}
+
+	rec := api.do(t, "GET", "/api/v1/settings", staff, nil)
+	if got := decode[chatJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || got.Timezone != "Europe/Vilnius" || got.SupplierChat != nil {
+		t.Fatalf("settings before = %d %s", rec.Code, rec.Body)
+	}
+
+	body := map[string]string{"name": "Superman Rubai Group", "link": "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv?mode=ems_copy_t"}
+	if rec := api.do(t, "PUT", "/api/v1/settings/supplier-chat", staff, body); rec.Code != http.StatusForbidden {
+		t.Fatalf("staff PUT = %d, want 403", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/supplier-chat", adminTok, map[string]string{"name": "X", "link": "https://wa.me/370600"}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("a person's link = %d %s, want 400", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/supplier-chat", adminTok, map[string]any{"name": "X", "link": "https://chat.whatsapp.com/AbCdEfGhIjKl", "updated_by_user_id": uuid.NewString()}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("an actor in the body = %d, want 400", rec.Code)
+	}
+	rec = api.do(t, "PUT", "/api/v1/settings/supplier-chat", adminTok, body)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("admin PUT = %d %s", rec.Code, rec.Body)
+	}
+
+	// Staff read it, the link without what WhatsApp appended when it was copied.
+	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
+	got := decode[chatJSON](t, rec.Body.Bytes())
+	if got.SupplierChat == nil || (*got.SupplierChat)["name"] != "Superman Rubai Group" || (*got.SupplierChat)["link"] != "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv" {
+		t.Fatalf("settings after = %s", rec.Body)
+	}
+	var events int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE event = 'settings.supplier_chat_changed'`).Scan(&events); err != nil || events != 1 {
+		t.Fatalf("audit events = %d, %v", events, err)
+	}
+
+	// Both empty clears it.
+	if rec := api.do(t, "PUT", "/api/v1/settings/supplier-chat", adminTok, map[string]string{"name": "", "link": ""}); rec.Code != http.StatusOK {
+		t.Fatalf("clear = %d", rec.Code)
+	}
+	if got := decode[chatJSON](t, api.do(t, "GET", "/api/v1/settings", staff, nil).Body.Bytes()); got.SupplierChat != nil {
+		t.Fatalf("cleared settings still have %v", *got.SupplierChat)
 	}
 }

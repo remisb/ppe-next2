@@ -81,8 +81,8 @@ Response: `{orders, page, page_size, total}`. Each order carries its lines, `rec
 `total_cents` and `usage_months` — algorithm D, only for GIVEN orders: days since
 `given_at` / 30.44, rounded to one decimal.
 
-`GET /api/v1/settings` returns `{timezone, currency}` so clients display dates in the zone
-the filters use.
+`GET /api/v1/settings` returns `{timezone, currency, supplier_chat}`, so clients display dates in
+the zone the filters use; `supplier_chat` is in the [settings service](settings-service.md).
 
 ## Employee Confirmation and the Items Given Record (algorithm C, manual §3.6, §8)
 

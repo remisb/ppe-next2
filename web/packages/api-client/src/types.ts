@@ -296,6 +296,20 @@ export interface HistoryQuery {
 export interface Settings {
   timezone: string
   currency: 'EUR'
+  /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
+  supplier_chat: SupplierChat | null
+}
+
+/** A WhatsApp group: its name as staff know it and its invite link (https://chat.whatsapp.com/<code>). */
+export interface SupplierChat {
+  name: string
+  link: string
+}
+
+/** Sets the supplier's group; both empty clears it. The server tidies the link. */
+export interface SupplierChatInput {
+  name: string
+  link: string
 }
 
 export interface ReceiptLine {

@@ -1,4 +1,4 @@
-import type { CatalogueIcon, CatalogueItem, ConfirmationLink, Employee, ItemSet, ListedOrder, Order, ResolvedEmployee, Sizes } from '@ppe/api-client'
+import type { CatalogueIcon, CatalogueItem, ConfirmationLink, Employee, ItemSet, ListedOrder, Order, ResolvedEmployee, Sizes, SupplierChat } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { Check, CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -295,7 +295,8 @@ export function CreateOrder({
     return () => window.removeEventListener('keydown', onKey)
   }, [v.valid, busy, placed])
 
-  if (placed) return <OrderedPanel placed={placed} navigate={navigate} onNew={() => setPlaced(null)} />
+  const supplierChat = settings.data?.supplier_chat ?? null
+  if (placed) return <OrderedPanel placed={placed} supplierChat={supplierChat} navigate={navigate} onNew={() => setPlaced(null)} />
   const whatsappText = formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))
 
   return (
@@ -509,7 +510,6 @@ export function CreateOrder({
         onThisOrder={onThisOrder}
         last={last}
         tz={tz}
-        whatsappText={whatsappText}
         navigate={navigate}
         onReview={() => setReviewing(true)}
       />
@@ -521,6 +521,7 @@ export function CreateOrder({
         order={order}
         busy={busy}
         whatsappText={whatsappText}
+        supplierChat={supplierChat}
         createLink={createLink}
         onCreateLink={(on) => {
           setCreateLink(on)
@@ -553,7 +554,8 @@ export function CreateOrder({
  * pinned above the phone tab bar holding one Review button with the line count
  * and total. Where the composer has room (composer-wide) it is a sticky panel
  * beside the lines: who the order is for and their last order, what they are
- * due, the lines and total, Review, Copy for WhatsApp, and the keyboard keys.
+ * due, the lines and total, Review, and the keyboard keys. Copy for WhatsApp is
+ * in the review, not here.
  */
 function OrderSummary({
   order,
@@ -563,7 +565,6 @@ function OrderSummary({
   onThisOrder,
   last,
   tz,
-  whatsappText,
   navigate,
   onReview,
 }: {
@@ -574,7 +575,6 @@ function OrderSummary({
   onThisOrder: Set<string>
   last: ListedOrder | undefined
   tz: string
-  whatsappText: string
   navigate: (to: Route) => void
   onReview: () => void
 }) {
@@ -649,7 +649,6 @@ function OrderSummary({
         <Button disabled={!valid || busy} onClick={onReview} className="h-auto min-h-11 py-2 text-center whitespace-normal">
           {busy ? t.order.working : t.order.reviewAndMark}
         </Button>
-        <WhatsAppButton disabled={!valid || busy} text={whatsappText} />
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pointer-coarse:hidden">
           <span>
             <kbd className="rounded border border-border px-1 font-mono">/</kbd> {t.order.keyAddItem}
@@ -676,6 +675,7 @@ function ReviewSheet({
   order,
   busy,
   whatsappText,
+  supplierChat,
   createLink,
   onCreateLink,
   onClose,
@@ -686,6 +686,8 @@ function ReviewSheet({
   busy: boolean
   /** The order as a message to the supplier, before it is marked as ordered. */
   whatsappText: string
+  /** The supplier's WhatsApp group, opened after the message is copied. */
+  supplierChat: SupplierChat | null
   createLink: boolean
   onCreateLink: (on: boolean) => void
   onClose: () => void
@@ -699,7 +701,7 @@ function ReviewSheet({
       description={t.order.reviewDescription(`${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}`)}
       footer={
         <>
-          <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} />
+          <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} chat={supplierChat} />
           <Button disabled={busy} onClick={onConfirm}>
             {t.order.markAsOrdered}
           </Button>
@@ -741,7 +743,17 @@ function ReviewSheet({
  * from the server's snapshot, and the next step: the employee confirms receipt
  * by a secure link or on the printed record.
  */
-function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (to: Route) => void; onNew: () => void }) {
+function OrderedPanel({
+  placed,
+  supplierChat,
+  navigate,
+  onNew,
+}: {
+  placed: Placed
+  supplierChat: SupplierChat | null
+  navigate: (to: Route) => void
+  onNew: () => void
+}) {
   const { order, link } = placed
   const [confirming, setConfirming] = useState(false)
   const [given, setGiven] = useState(false)
@@ -785,7 +797,7 @@ function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (
                 <LinkIcon aria-hidden /> {t.order.sendConfirmationLink}
               </Button>
             )}
-            <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} />
+            <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} chat={supplierChat} />
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate({ name: 'record', id: order.id, print: true })}>
               <Printer aria-hidden /> {t.order.printRecord}
             </Button>

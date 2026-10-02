@@ -162,6 +162,10 @@ export const order = {
   copyBlockedLink: 'open WhatsApp',
   copyBlockedAfter: '.',
   whatsappText: 'Order text for WhatsApp',
+  /** "Copied. [Open Superman Rubai Group] and paste it there.": the supplier's group, set on Settings. */
+  openChat: (name: string) => `Open ${name}`,
+  pasteThere: ' and paste it there.',
+  copyBlockedChat: 'Copying is blocked here: select the text below and copy it.',
   /** The supplier message, in the staff member's language. */
   waOrder: 'Workwear order',
   waOrderNumber: (recordNumber: string) => `Workwear order ${recordNumber}`,

@@ -26,7 +26,9 @@ Dashboard (`internal/domain/dashboard`, read-only figures, `GET /api/v1/dashboar
 only, `/dashboard/manager` managers only, `/dashboard/employee` the employee role only, for
 the signed-in user's own orders; spec `docs/specs/dashboard-service.md`). Slice 7 added the
 Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/testing.md`,
-which maps every manual §7 rule and status transition to its tests.
+which maps every manual §7 rule and status transition to its tests. Administrators set the
+supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
+at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages.
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
@@ -203,6 +205,11 @@ in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `ap
 - The user guide is the Help screen (`/help`): typed text in `src/help/{en,lt,ru}.ts`, each
   part limited to the roles that can do it and, where screens differ, to a phone, tablet or
   desktop, with that device's screenshots; `pnpm guide` writes `docs/guide` from it.
+- **Do not update the user documentation as part of a change** (the Help text in
+  `src/help/*.ts`, its screenshots in `public/help-img`, `docs/guide`, `pnpm guide`):
+  the user asks for those updates separately. When a change leaves them out of date, say
+  so in one line. Developer docs (`docs/testing.md`, `docs/specs/`, `web/AGENTS.md`, this
+  file) are still updated with the change.
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if

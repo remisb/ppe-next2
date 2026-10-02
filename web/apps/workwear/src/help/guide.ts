@@ -63,6 +63,7 @@ export type SectionId =
   | 'employees'
   | 'catalogue'
   | 'users'
+  | 'settings'
   | 'account'
   | 'shortcuts'
 

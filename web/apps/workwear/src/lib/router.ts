@@ -29,6 +29,8 @@ export type Route =
   | { name: 'itemSets' }
   /** User accounts; administrators only. */
   | { name: 'users' }
+  /** The organisation's settings (the supplier's WhatsApp group); administrators only. */
+  | { name: 'settings' }
   /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
   | { name: 'replacements' }
   | { name: 'account' }
@@ -60,6 +62,7 @@ const fixed = {
   catalogue: '/catalogue',
   itemSets: '/item-sets',
   users: '/users',
+  settings: '/settings',
   replacements: '/replacements',
   account: '/account',
   help: '/help',
@@ -217,5 +220,6 @@ export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: b
   if (route.name === 'dashboard' && !roles.isAdmin) return home
   if (route.name === 'managerDashboard' && !roles.isManager) return home
   if (route.name === 'employeeDashboard' && !roles.isEmployee) return home
+  if (route.name === 'settings' && !roles.isAdmin) return home
   return route
 }

@@ -10,6 +10,7 @@ export const shell = {
   itemSets: 'Item Sets',
   dashboard: 'Dashboard',
   users: 'Users',
+  settings: 'Settings',
   replacements: 'Replacements due',
   accountAndPassword: 'Account and password',
   // Short labels under the icons in the phone tab bar and tablet rail.
@@ -20,6 +21,7 @@ export const shell = {
   shortItemSets: 'Sets',
   shortDashboard: 'Home',
   shortUsers: 'Users',
+  shortSettings: 'Settings',
   shortKeys: 'Keys',
   shortAccount: 'Account',
   mainNav: 'Main',

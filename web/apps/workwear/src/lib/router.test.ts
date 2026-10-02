@@ -14,6 +14,7 @@ describe('router', () => {
       'catalogue',
       'itemSets',
       'users',
+      'settings',
       'history',
       'account',
       'replacements',
@@ -92,5 +93,9 @@ describe('router', () => {
     expect(startRoute({ name: 'employeeDashboard' }, manager)).toEqual({ name: 'managerDashboard' })
     expect(startRoute({ name: 'employeeDashboard' }, managerEmployee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'history' }, employee)).toEqual({ name: 'history' })
+    // Settings are the administrator's: anyone else asking gets their own start screen.
+    expect(startRoute({ name: 'settings' }, admin)).toEqual({ name: 'settings' })
+    expect(startRoute({ name: 'settings' }, manager)).toEqual({ name: 'managerDashboard' })
+    expect(startRoute({ name: 'settings' }, employee)).toEqual({ name: 'employeeDashboard' })
   })
 })

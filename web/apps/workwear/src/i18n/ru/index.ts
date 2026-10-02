@@ -7,5 +7,6 @@ import { order } from './order'
 import { shell } from './shell'
 import { users } from './users'
 import { account } from './account'
+import { settings } from './settings'
 
-export const ru = { common, shell, order, history, dashboard, employees, catalogue, users, account }
+export const ru = { common, shell, order, history, dashboard, employees, catalogue, users, account, settings }

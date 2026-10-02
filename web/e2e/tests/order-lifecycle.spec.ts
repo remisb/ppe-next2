@@ -109,6 +109,29 @@ test('sign in', async () => {
   await expect(page.getByText('Nothing needs you: every order is confirmed and nothing is due.')).toBeVisible()
 })
 
+test("Settings: an administrator sets the supplier's WhatsApp group", async () => {
+  await openTab('Settings')
+  const card = page.getByRole('main')
+  await expect(card.getByRole('status')).toContainText('Not set')
+  const name = page.getByLabel('Group name')
+  const link = page.getByLabel('Invite link')
+  // A person's link is not a group's; a link needs a name.
+  await name.fill('Superman Rubai Group')
+  await link.fill('https://wa.me/37060000000')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('it starts with https://chat.whatsapp.com/')).toBeVisible()
+  await name.fill('')
+  await link.fill('https://chat.whatsapp.com/E2eSupplierGroup123?mode=ems_copy_t')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Give the group a name')).toBeVisible()
+  // Saved as WhatsApp copied it; the server drops the ?mode=… suffix.
+  await name.fill('Superman Rubai Group')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(card.getByRole('status')).toContainText('Saved. Copy for WhatsApp opens Superman Rubai Group.')
+  await expect(link).toHaveValue('https://chat.whatsapp.com/E2eSupplierGroup123')
+  await expect(card.getByRole('link', { name: 'Open the group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
+})
+
 test('Item Catalogue: items with and without a price', async () => {
   await openTab('Item Catalogue')
   await addCatalogueItem({ name: 'Safety shoes', details: 'S3 SRC', group: 'SHOES', price: '49.99', months: '12', rank: '1' })
@@ -315,8 +338,11 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   await expect(review).toContainText('Ona Kazlauskienė')
   await expect(review.getByRole('listitem').filter({ hasText: 'Safety shoes' })).toContainText('42')
   await expect(review).toContainText('€114.98') // 39.99 + 49.99 + 10 × 2.50
-  // The supplier message is sent from here; the confirmation link is created as well unless unticked.
-  await expect(review.getByRole('button', { name: 'Copy for WhatsApp' })).toBeEnabled()
+  // The supplier message is sent from here, not from the order panel: copied, then the supplier's
+  // group (Settings) opens for it to be pasted. The confirmation link is created as well unless unticked.
+  await review.getByRole('button', { name: 'Copy for WhatsApp' }).click()
+  await expect(review.getByRole('link', { name: 'Open Superman Rubai Group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
+  await expect(page.getByRole('complementary', { name: 'Order summary' }).getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
   await expect(review.getByRole('checkbox', { name: /Create the confirmation link as well/ })).toBeChecked()
   await review.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
@@ -329,6 +355,7 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // The next step is the employee's confirmation: the link is ready to send.
   await expect(page.getByLabel('Confirmation link')).toHaveValue(/\/confirm\/[\w-]{40,}$/)
   await expect(page.getByRole('button', { name: 'Share link via WhatsApp' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Copy for WhatsApp' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Send confirmation link' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Print record' })).toBeVisible()
   await page.getByRole('button', { name: 'Start a new order' }).click()
@@ -828,6 +855,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
     ['Users', admin.email],
+    ['Settings', 'Invite link'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
@@ -919,6 +947,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
       ['Users', admin.email],
+      ['Settings', 'Invite link'],
     ] as const) {
       await openTab(tab)
       await expect(page.getByText(content).first()).toBeVisible()

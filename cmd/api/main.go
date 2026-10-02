@@ -21,6 +21,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -63,6 +64,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
+		settings.NewPostgresRepository(pool),
 	)
 
 	if cfg.SeedAdmin {
@@ -109,16 +111,18 @@ type services struct {
 	itemSets  *itemset.Service
 	orders    *order.Service
 	dashboard *dashboard.Service
+	settings  *settings.Service
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository) services {
 	s := services{
 		users:     users,
 		employees: employee.NewService(employees),
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
+		settings:  settings.NewService(prefs),
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -135,10 +139,6 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.public("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
-	// Settings the UI needs to show dates in the zone History filters use.
-	rt.authenticated("GET /api/v1/settings", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"timezone": cfg.OrgTimezone, "currency": "EUR"})
-	})
 	registerAuthRoutes(rt, svc.users, tok, cfg.LoginRateLimit, cfg.LoginRateInterval)
 	registerUserRoutes(rt, svc.users)
 	registerEmployeeRoutes(rt, svc.employees)
@@ -147,6 +147,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerDashboardRoutes(rt, svc.dashboard)
+	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	return rt
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -66,6 +67,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
+	{settings.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
@@ -91,6 +93,7 @@ var errorStatuses = []struct {
 	{itemset.ErrUnknownItem, http.StatusBadRequest},
 	{order.ErrInvalid, http.StatusBadRequest},
 	{dashboard.ErrInvalid, http.StatusBadRequest},
+	{settings.ErrInvalid, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated

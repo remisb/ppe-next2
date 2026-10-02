@@ -5,7 +5,7 @@ import { formatWhatsApp, localDate, messageFromOrder, messageFromWorkingOrder, r
 import type { WorkingOrder } from './working-order'
 
 describe('formatWhatsApp', () => {
-  it('lists employee, lines with sizes when applicable, preparer and date', () => {
+  it('lists employee and lines with sizes when applicable, ending on the last line', () => {
     const text = formatWhatsApp({
       recordNumber: 'WE-000042',
       employeeName: 'Jonas Petraitis',
@@ -24,9 +24,6 @@ describe('formatWhatsApp', () => {
         '',
         '1. Safety shoes – S3 model – size 43 – qty 1',
         '2. Protective gloves – qty 10',
-        '',
-        'Prepared by: Admin',
-        'Date: 2026-09-24',
       ].join('\n'),
     )
   })
@@ -84,6 +81,6 @@ describe('recordMessage', () => {
     }))
     expect(text).toContain('Workwear order WE-000007')
     expect(text).toContain('1. Gloves – qty 2')
-    expect(text).toContain('Date: 2026-09-20')
+    expect(text).not.toMatch(/Prepared by|Date:/)
   })
 })

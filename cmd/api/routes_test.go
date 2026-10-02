@@ -24,6 +24,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -215,6 +216,19 @@ func (stubDashboard) ReadReplacements(context.Context, time.Time, time.Time, int
 	return dashboard.Replacements{}, nil
 }
 
+// stubSettings keeps the settings in memory: the policy test only needs a
+// repository that answers.
+type stubSettings struct{ cur settings.Settings }
+
+func (s *stubSettings) Get(context.Context) (settings.Settings, error) { return s.cur, nil }
+func (s *stubSettings) Update(_ context.Context, m settings.Mutation) (settings.Settings, error) {
+	next, _, err := m(s.cur)
+	if err == nil {
+		s.cur = next
+	}
+	return next, err
+}
+
 var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 func testConfig() config {
@@ -236,7 +250,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{})
+	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{})
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
@@ -319,6 +333,7 @@ var policy = map[string]string{
 	"POST /api/v1/orders":                           "any",
 	"GET /api/v1/orders":                            "any",
 	"GET /api/v1/settings":                          "any",
+	"PUT /api/v1/settings/supplier-chat":            "admins",
 	"POST /api/v1/orders/{id}/confirmation-link":    "any",
 	"POST /api/v1/orders/{id}/confirm-paper":        "any",
 	"POST /api/v1/orders/{id}/confirm-in-person":    "any",
