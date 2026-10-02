@@ -3,7 +3,6 @@ import { plural } from '../plural'
 /** History: the list, an open order, the staff side of confirmation, the record page's chrome, and History's date wording. */
 export const history = {
   title: 'Orders',
-  description: 'Stored orders, newest activity first. Values are as they were when ordered.',
   filters: 'Filters',
   filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
@@ -12,7 +11,6 @@ export const history = {
   from: 'From',
   to: 'To',
   clearFilters: 'Clear filters',
-  timezoneNote: (tz: string) => `Dates and times are shown in ${tz}.`,
   fromAfterTo: 'From must not be after To.',
   noMatch: 'No orders match these filters.',
   nothingWaiting: 'Nothing is waiting: every order is confirmed.',

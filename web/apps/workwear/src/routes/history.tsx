@@ -174,9 +174,6 @@ export function History({
       <div className={cn('min-w-0', selected && 'max-lg:hidden')}>
         <PageHeader
           title={t.history.title}
-          description={t.history.description}
-          // A phone needs its height for the orders; the filters say the rest.
-          descriptionClassName="max-md:hidden"
           actions={
             <>
               {/* As Employees has Add New Employee: a link, so it also opens in a new tab. */}
@@ -251,7 +248,6 @@ export function History({
           <div className="md:hidden">
             <SortControl columns={columns} {...sortProps} />
           </div>
-          {tz ? <p className="text-xs text-muted-foreground sm:col-span-full">{t.history.timezoneNote(tz)}</p> : null}
         </section>
         {dateError ? <p role="alert" className="mb-4 text-sm text-destructive">{dateError}</p> : null}
 

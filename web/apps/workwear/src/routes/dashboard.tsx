@@ -33,7 +33,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `${t.dashboard.adminIntro} ${t.dashboard.timezoneNote(d.timezone, formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            ? `${t.dashboard.adminIntro} ${t.dashboard.updated(formatDateTime(d.generated_at, d.timezone).slice(11))}`
             : t.dashboard.adminIntro
         }
         actions={

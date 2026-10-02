@@ -893,8 +893,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const needsYou = page.getByRole('region', { name: /^Needs you/ })
   expect((await needsYou.boundingBox())!.y, 'Needs you starts in the first screen').toBeLessThan(420)
 
-  // Orders on a phone: one list of two-line rows under month headings; the sort order and the
-  // time zone note fold away with the filters, so the orders start near the top.
+  // Orders on a phone: one list of two-line rows under month headings; the sort order folds
+  // away with the filters, so the orders start near the top.
   await openTab('Orders')
   await expect(page.getByRole('row', { name: /^[a-z]+ \d{4}$/i }).first()).toBeVisible()
   const historyRow = page.getByRole('row', { name: new RegExp(recordNumber) })
@@ -902,7 +902,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page.getByLabel('Sort by').filter({ visible: true })).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
-  await expect(page.getByText(/Dates and times are shown in/)).toBeVisible()
+  // No time zone note on Orders.
+  await expect(page.getByText(/Dates and times are shown in/)).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()
   // Records lists on a phone: short rows that open the record, whose page holds the actions.
   await openTab('Employees')

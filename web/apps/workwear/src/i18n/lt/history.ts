@@ -3,7 +3,6 @@ import { plural } from '../plural'
 
 export const history: HistoryText = {
   title: 'Užsakymai',
-  description: 'Išsaugoti užsakymai, naujausi viršuje. Vertės tokios, kokios buvo užsakant.',
   filters: 'Filtrai',
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
@@ -12,7 +11,6 @@ export const history: HistoryText = {
   from: 'Nuo',
   to: 'Iki',
   clearFilters: 'Išvalyti filtrus',
-  timezoneNote: (tz: string) => `Datos ir laikas rodomi pagal ${tz} laiko juostą.`,
   fromAfterTo: 'Data „Nuo“ negali būti vėlesnė nei „Iki“.',
   noMatch: 'Pagal šiuos filtrus užsakymų nėra.',
   nothingWaiting: 'Niekas nelaukia: visi užsakymai patvirtinti.',

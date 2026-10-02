@@ -41,7 +41,7 @@ export const dashboard: DashboardText = {
   needsYouCount: (n: number) => `Требует внимания · ${n}`,
   needsYouDescription: 'Что сделать дальше, сначала самое срочное.',
 
-  timezoneNote: (tz: string, time: string) => `Месяцы и даты указаны в часовом поясе ${tz}; обновлено в ${time}.`,
+  updated: (time: string) => `Обновлено в ${time}.`,
   managerDashboard: 'Сводка менеджера',
   employeeDashboard: 'Сводка сотрудника',
   awaitingConfirmation: 'Ожидают подтверждения',

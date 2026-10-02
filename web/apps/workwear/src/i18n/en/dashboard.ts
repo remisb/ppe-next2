@@ -37,7 +37,7 @@ export const dashboard = {
   needsYouDescription: 'What to do next, most urgent first.',
 
   // Words the dashboards share.
-  timezoneNote: (tz: string, time: string) => `Months and dates are in ${tz}; updated ${time}.`,
+  updated: (time: string) => `Updated ${time}.`,
   managerDashboard: 'Manager Dashboard',
   employeeDashboard: 'Employee Dashboard',
   awaitingConfirmation: 'Awaiting confirmation',

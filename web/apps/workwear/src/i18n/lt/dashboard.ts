@@ -37,7 +37,7 @@ export const dashboard: DashboardText = {
   needsYouCount: (n: number) => `Reikia jūsų dėmesio · ${n}`,
   needsYouDescription: 'Ką daryti toliau, skubiausi pirmiausia.',
 
-  timezoneNote: (tz: string, time: string) => `Mėnesiai ir datos nurodyti ${tz} laiko juosta; atnaujinta ${time}.`,
+  updated: (time: string) => `Atnaujinta ${time}.`,
   managerDashboard: 'Vadovo suvestinė',
   employeeDashboard: 'Darbuotojo suvestinė',
   awaitingConfirmation: 'Laukia patvirtinimo',

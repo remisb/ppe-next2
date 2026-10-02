@@ -3,7 +3,6 @@ import { plural } from '../plural'
 
 export const history: HistoryText = {
   title: 'Заказы',
-  description: 'Сохранённые заказы, последние действия сверху. Значения — на момент заказа.',
   filters: 'Фильтры',
   filtersCount: (n: number) => `Фильтры (${n})`,
   status: 'Статус',
@@ -12,7 +11,6 @@ export const history: HistoryText = {
   from: 'С',
   to: 'По',
   clearFilters: 'Сбросить фильтры',
-  timezoneNote: (tz: string) => `Дата и время указаны в часовом поясе ${tz}.`,
   fromAfterTo: 'Дата «С» не может быть позже даты «По».',
   noMatch: 'Нет заказов по этим фильтрам.',
   nothingWaiting: 'Ничего не ожидает: все заказы подтверждены.',

@@ -35,7 +35,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `${t.dashboard.managerIntro} ${t.dashboard.timezoneNote(d.timezone, formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            ? `${t.dashboard.managerIntro} ${t.dashboard.updated(formatDateTime(d.generated_at, d.timezone).slice(11))}`
             : t.dashboard.managerIntro
         }
         actions={
