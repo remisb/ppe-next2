@@ -95,6 +95,7 @@ export type ShotName =
   | 'catalogue'
   | 'item-sets'
   | 'users'
+  | 'settings'
   | 'account'
   | 'palette'
 

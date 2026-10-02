@@ -33,6 +33,7 @@ export const lt: Guide = {
         { p: 'Apatinėje juostoje yra **Pradžia**, **Užsakymai**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
         { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
+        { p: 'Kol programėlė atidaryta, liekate prisijungę iki 12 valandų. Jei kortelė buvo uždaryta arba įrenginys miegojo ilgiau nei 15 minučių, prisijunkite iš naujo.' },
         { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu ir slaptažodžiu', phone: true }] },
       ],
     },
@@ -88,12 +89,12 @@ export const lt: Guide = {
         {
           ol: [
             'Patikrinkite eilutes ir bendrą sumą.',
-            'Jei darbuotojas patvirtins telefonu, palikite pažymėtą **Kartu sukurti patvirtinimo nuorodą**.',
-            'Pasirinkite **Pažymėti kaip užsakytą**. Užsakymo būsena tampa **Užsakyta**, ir jo nebegalima keisti.',
+            'Pasirinkite **Pažymėti kaip užsakytą**. Užsakymo būsena tampa **Užsakyta**, ir jo nebegalima keisti. Programa kartu sukuria darbuotojo patvirtinimo nuorodą.',
             'Nusiųskite darbuotojui nuorodą: **Siųsti nuorodą per WhatsApp** arba **Kopijuoti nuorodą**. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.',
           ],
         },
         { p: 'Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įrašą**.' },
+        { p: '**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Nustatymuose** yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.' },
         {
           shots: [
             { name: 'review', alt: 'Užsakymo peržiūros langas' },
@@ -133,7 +134,6 @@ export const lt: Guide = {
             '**Atidaryti darbuotojo patvirtinimą** sukuria naują nuorodą. Ten pat galima pažymėti pasirašytą popierinį egzempliorių (**Pažymėti pasirašytą popierinį patvirtinimą**).',
             '**Išduoti dabar** perduoda šį įrenginį darbuotojui, ir jis patvirtina gavimą vietoje.',
             '**Spausdinti įrašą** atspausdina įrašą pasirašyti.',
-            '**Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.',
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
@@ -208,6 +208,7 @@ export const lt: Guide = {
         {
           p: '**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.',
         },
+        { shots: [{ name: 'settings', alt: 'Nustatymai: tiekėjo WhatsApp grupė' }] },
       ],
     },
     {

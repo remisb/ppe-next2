@@ -33,6 +33,7 @@ export const en: Guide = {
         { p: 'The bar at the bottom holds **Home**, **Orders**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
         { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
         { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
+        { p: 'You stay signed in while the app is open, for up to 12 hours. After the tab has been closed, or the device asleep, for more than 15 minutes, sign in again.' },
         { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email and password', phone: true }] },
       ],
     },
@@ -85,12 +86,12 @@ export const en: Guide = {
         {
           ol: [
             'Check the lines and the total.',
-            'If the employee will confirm on their phone, leave **Create the confirmation link as well** ticked.',
-            'Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it.',
+            'Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it. The app also creates the employee\'s confirmation link.',
             'Send the employee the link with **Share link via WhatsApp** or **Copy link**. The link is valid for 7 days, and the app shows it only once.',
           ],
         },
         { p: 'If the employee will sign on paper, choose **Print record** instead.' },
+        { p: "**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Settings**, it then offers to open that group: paste the message there." },
         {
           shots: [
             { name: 'review', alt: 'The Review order dialog' },
@@ -130,7 +131,6 @@ export const en: Guide = {
             '**Open Employee Confirmation** makes a new link. It also records a signed paper copy (**Record signed paper confirmation**).',
             '**Hand over now** turns this device to the employee, who confirms on it in person.',
             '**Print Record** prints the record for signing.',
-            '**Copy for WhatsApp** copies the supplier message.',
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
@@ -202,6 +202,7 @@ export const en: Guide = {
         {
           p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
         },
+        { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
       ],
     },
     {

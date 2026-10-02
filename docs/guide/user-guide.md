@@ -14,6 +14,8 @@ The app records workwear and safety equipment given to employees. You prepare an
 
 The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
 
+You stay signed in while the app is open, for up to 12 hours. After the tab has been closed, or the device asleep, for more than 15 minutes, sign in again.
+
 ![The sign-in screen with email and password](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
 
 ## 2. Dashboard
@@ -51,18 +53,19 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
    - You can't order until every missing size is chosen.
 5. Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.
 
-This device keeps a draft of the order while you work. **Copy for WhatsApp** copies the message for the supplier.
+This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier's message, is in the review.
 
 ![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/desktop/create-order.png)
 
 ## 4. Review and Mark as Ordered
 
 1. Check the lines and the total.
-2. If the employee will confirm on their phone, leave **Create the confirmation link as well** ticked.
-3. Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it.
-4. Send the employee the link with **Share link via WhatsApp** or **Copy link**. The link is valid for 7 days, and the app shows it only once.
+2. Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it. The app also creates the employee's confirmation link.
+3. Send the employee the link with **Share link via WhatsApp** or **Copy link**. The link is valid for 7 days, and the app shows it only once.
 
 If the employee will sign on paper, choose **Print record** instead.
+
+**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Settings**, it then offers to open that group: paste the message there.
 
 ![The Review order dialog](../../web/apps/workwear/public/help-img/en/desktop/review.png)
 ![The ordered order with its confirmation link](../../web/apps/workwear/public/help-img/en/desktop/ordered.png)
@@ -86,7 +89,6 @@ An **Ordered** order has these actions:
 - **Open Employee Confirmation** makes a new link. It also records a signed paper copy (**Record signed paper confirmation**).
 - **Hand over now** turns this device to the employee, who confirms on it in person.
 - **Print Record** prints the record for signing.
-- **Copy for WhatsApp** copies the supplier message.
 
 *Managers only:*
 
@@ -140,7 +142,17 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 11. Your account
+## 11. Settings
+
+*Administrators only.*
+
+**Supplier's WhatsApp group**: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then **Invite via link** and **Copy link**.
+
+**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.
+
+![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
+
+## 12. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -149,7 +161,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ![Account: language, password and table rows](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 
-## 12. Search and shortcuts
+## 13. Search and shortcuts
 
 | Key | Does |
 | --- | --- |

@@ -85,8 +85,9 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
     <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
     <li><a href="#users"><b>10</b>Naudotojai</a></li>
-    <li><a href="#account"><b>11</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>12</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#settings"><b>11</b>Nustatymai</a></li>
+    <li><a href="#account"><b>12</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>13</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -103,6 +104,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       </li>
     </ol>
     <p>Šoninėje juostoje yra visi skyriai ir <b>Ieškoti…</b> (<kbd>⌘K</kbd>). <b>Pagalba</b>, <b>Spartieji klavišai</b>, jūsų paskyra ir <b>Atsijungti</b> yra jos apačioje.</p>
+    <p>Kol programėlė atidaryta, liekate prisijungę iki 12 valandų. Jei kortelė buvo uždaryta arba įrenginys miegojo ilgiau nei 15 minučių, prisijunkite iš naujo.</p>
     <div class="shots">
       <figure class="phone"><img src="../../web/apps/workwear/public/help-img/lt/phone/sign-in.png" alt="Prisijungimo ekranas su el. paštu ir slaptažodžiu" loading="lazy"></figure>
     </div>
@@ -147,7 +149,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       </li>
       <li>Dešinėje esančiame skydelyje pasirinkite <b>Peržiūrėti ir pažymėti kaip užsakytą</b> arba paspauskite <kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd>.</li>
     </ol>
-    <p>Kol dirbate, šis įrenginys saugo užsakymo juodraštį. <b>Kopijuoti į WhatsApp</b> nukopijuoja žinutę tiekėjui.</p>
+    <p>Kol dirbate, šis įrenginys saugo užsakymo juodraštį. <b>Kopijuoti į WhatsApp</b> (žinutė tiekėjui) yra peržiūroje.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/create-order.png" alt="Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai" loading="lazy"></figure>
     </div>
@@ -157,11 +159,11 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
   <h2><span class="n">4</span>Peržiūra ir „Pažymėti kaip užsakytą“</h2>
     <ol>
       <li>Patikrinkite eilutes ir bendrą sumą.</li>
-      <li>Jei darbuotojas patvirtins telefonu, palikite pažymėtą <b>Kartu sukurti patvirtinimo nuorodą</b>.</li>
-      <li>Pasirinkite <b>Pažymėti kaip užsakytą</b>. Užsakymo būsena tampa <b>Užsakyta</b>, ir jo nebegalima keisti.</li>
+      <li>Pasirinkite <b>Pažymėti kaip užsakytą</b>. Užsakymo būsena tampa <b>Užsakyta</b>, ir jo nebegalima keisti. Programa kartu sukuria darbuotojo patvirtinimo nuorodą.</li>
       <li>Nusiųskite darbuotojui nuorodą: <b>Siųsti nuorodą per WhatsApp</b> arba <b>Kopijuoti nuorodą</b>. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.</li>
     </ol>
     <p>Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite <b>Spausdinti įrašą</b>.</p>
+    <p><b>Kopijuoti į WhatsApp</b> peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius <b>Nustatymuose</b> yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.</p>
     <div class="pair">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/review.png" alt="Užsakymo peržiūros langas" loading="lazy"></figure>
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/ordered.png" alt="Užsakytas užsakymas su patvirtinimo nuoroda" loading="lazy"></figure>
@@ -189,7 +191,6 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li><b>Atidaryti darbuotojo patvirtinimą</b> sukuria naują nuorodą. Ten pat galima pažymėti pasirašytą popierinį egzempliorių (<b>Pažymėti pasirašytą popierinį patvirtinimą</b>).</li>
       <li><b>Išduoti dabar</b> perduoda šį įrenginį darbuotojui, ir jis patvirtina gavimą vietoje.</li>
       <li><b>Spausdinti įrašą</b> atspausdina įrašą pasirašyti.</li>
-      <li><b>Kopijuoti į WhatsApp</b> nukopijuoja žinutę tiekėjui.</li>
     </ul>
     <p class="who">Tik vadovams</p>
     <p><b>⋯ → Ištrinti užsakymą…</b> pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.</p>
@@ -250,8 +251,18 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="settings">
+  <h2><span class="n">11</span>Nustatymai</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
+    <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/settings.png" alt="Nustatymai: tiekėjo WhatsApp grupė" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">11</span>Jūsų paskyra</h2>
+  <h2><span class="n">12</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -264,7 +275,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">12</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">13</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>

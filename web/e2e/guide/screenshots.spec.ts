@@ -135,6 +135,13 @@ test('employees, catalogue, item sets, users', async () => {
   await openTab(T.shell.users)
   await expect(page.getByRole('heading', { name: T.users.title })).toBeVisible()
   await shot('users')
+  // The supplier's group, as an administrator sets it (the link is a made-up one).
+  await openTab(T.shell.settings)
+  await page.getByLabel(T.settings.groupName).fill('Superman Rubai Group')
+  await page.getByLabel(T.settings.inviteLink).fill('https://chat.whatsapp.com/DemoSupplierGroup01')
+  await page.getByRole('button', { name: T.settings.save }).click()
+  await expect(page.getByRole('main').getByRole('status')).toContainText('Superman Rubai Group')
+  await shot('settings')
 })
 
 test('account and the search', async () => {

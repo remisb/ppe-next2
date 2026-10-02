@@ -14,6 +14,8 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
 
 Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
 
+Kol programėlė atidaryta, liekate prisijungę iki 12 valandų. Jei kortelė buvo uždaryta arba įrenginys miegojo ilgiau nei 15 minučių, prisijunkite iš naujo.
+
 ![Prisijungimo ekranas su el. paštu ir slaptažodžiu](../../web/apps/workwear/public/help-img/lt/phone/sign-in.png)
 
 ## 2. Suvestinė
@@ -51,18 +53,19 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
    - Kol nepasirinkti visi trūkstami dydžiai, užsakyti negalima.
 5. Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.
 
-Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.
+Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.
 
 ![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](../../web/apps/workwear/public/help-img/lt/desktop/create-order.png)
 
 ## 4. Peržiūra ir „Pažymėti kaip užsakytą“
 
 1. Patikrinkite eilutes ir bendrą sumą.
-2. Jei darbuotojas patvirtins telefonu, palikite pažymėtą **Kartu sukurti patvirtinimo nuorodą**.
-3. Pasirinkite **Pažymėti kaip užsakytą**. Užsakymo būsena tampa **Užsakyta**, ir jo nebegalima keisti.
-4. Nusiųskite darbuotojui nuorodą: **Siųsti nuorodą per WhatsApp** arba **Kopijuoti nuorodą**. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.
+2. Pasirinkite **Pažymėti kaip užsakytą**. Užsakymo būsena tampa **Užsakyta**, ir jo nebegalima keisti. Programa kartu sukuria darbuotojo patvirtinimo nuorodą.
+3. Nusiųskite darbuotojui nuorodą: **Siųsti nuorodą per WhatsApp** arba **Kopijuoti nuorodą**. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.
 
 Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įrašą**.
+
+**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Nustatymuose** yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.
 
 ![Užsakymo peržiūros langas](../../web/apps/workwear/public/help-img/lt/desktop/review.png)
 ![Užsakytas užsakymas su patvirtinimo nuoroda](../../web/apps/workwear/public/help-img/lt/desktop/ordered.png)
@@ -86,7 +89,6 @@ Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 - **Atidaryti darbuotojo patvirtinimą** sukuria naują nuorodą. Ten pat galima pažymėti pasirašytą popierinį egzempliorių (**Pažymėti pasirašytą popierinį patvirtinimą**).
 - **Išduoti dabar** perduoda šį įrenginį darbuotojui, ir jis patvirtina gavimą vietoje.
 - **Spausdinti įrašą** atspausdina įrašą pasirašyti.
-- **Kopijuoti į WhatsApp** nukopijuoja žinutę tiekėjui.
 
 *Tik vadovams:*
 
@@ -140,7 +142,17 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 11. Jūsų paskyra
+## 11. Nustatymai
+
+*Tik administratoriams.*
+
+**Tiekėjo WhatsApp grupė**: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada **Pakviesti per nuorodą** ir **Kopijuoti nuorodą**.
+
+**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.
+
+![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
+
+## 12. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -149,7 +161,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ![Paskyra: kalba, slaptažodis ir lentelės eilutės](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 
-## 12. Paieška ir spartieji klavišai
+## 13. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |
