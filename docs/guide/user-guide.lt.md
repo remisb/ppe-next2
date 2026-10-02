@@ -43,7 +43,7 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
 
 ## 3. Užsakymo kūrimas
 
-1. Atidarykite **Kurti užsakymą**.
+1. Skyriuje **Užsakymai** viršuje pasirinkite **Kurti užsakymą**.
 2. Lauke **Kam skirta** įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite **+ Naujas darbuotojas**.
 3. Pridėkite prekes:
    - **Prekių rinkinys** vienu paspaudimu prideda visą komplektą.
@@ -73,7 +73,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 ## 5. Darbuotojas patvirtina
 
 1. Darbuotojas atidaro nuorodą. Paskyros jam nereikia.
-2. Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.
+2. Jis peržiūri prekes, jų kainas ir bendrą sumą anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.
 3. Jis pažymi sutikimą ir paspaudžia **Confirm receipt** (**Подтвердить получение**). Užsakymo būsena tampa **Išduota**.
 
 ![Patvirtinimo puslapis telefone](../../web/apps/workwear/public/help-img/lt/phone/confirm-phone.png)

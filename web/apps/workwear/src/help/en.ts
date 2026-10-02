@@ -64,7 +64,8 @@ export const en: Guide = {
       blocks: [
         {
           ol: [
-            'Open **Create Order**.',
+            { text: 'Tap **New order** in the bar at the bottom, or **Create Order** at the top of **Orders**.', devices: ['phone'] },
+            { text: 'On **Orders**, choose **Create Order** at the top.', devices: ['tablet', 'desktop'] },
             "In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.",
             { text: 'Add the items:', items: ['**Item Set** adds a whole kit in one tap.', { text: '**Add Item** adds one item.', devices: ['phone', 'tablet'] }, { text: '**Add Item** adds one item. Press `/` to jump to it.', devices: ['desktop'] }] },
             {
@@ -107,7 +108,7 @@ export const en: Guide = {
         {
           ol: [
             "The employee opens the link. They don't need an account.",
-            'They check the items, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.',
+            'They check the items, their prices and the total, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.',
             'They tick the statement and tap **Confirm receipt**. The order becomes **Given**.',
           ],
         },

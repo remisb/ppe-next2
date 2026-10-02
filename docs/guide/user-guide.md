@@ -43,7 +43,7 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
 
 ## 3. Create an order
 
-1. Open **Create Order**.
+1. On **Orders**, choose **Create Order** at the top.
 2. In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.
 3. Add the items:
    - **Item Set** adds a whole kit in one tap.
@@ -73,7 +73,7 @@ If the employee will sign on paper, choose **Print record** instead.
 ## 5. The employee confirms
 
 1. The employee opens the link. They don't need an account.
-2. They check the items, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.
+2. They check the items, their prices and the total, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.
 3. They tick the statement and tap **Confirm receipt**. The order becomes **Given**.
 
 ![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/phone/confirm-phone.png)

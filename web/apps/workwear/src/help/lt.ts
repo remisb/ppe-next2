@@ -64,7 +64,8 @@ export const lt: Guide = {
       blocks: [
         {
           ol: [
-            'Atidarykite **Kurti užsakymą**.',
+            { text: 'Palieskite **Užsakyti** apatinėje juostoje arba **Kurti užsakymą** skyriaus **Užsakymai** viršuje.', devices: ['phone'] },
+            { text: 'Skyriuje **Užsakymai** viršuje pasirinkite **Kurti užsakymą**.', devices: ['tablet', 'desktop'] },
             'Lauke **Kam skirta** įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite **+ Naujas darbuotojas**.',
             {
               text: 'Pridėkite prekes:',
@@ -110,7 +111,7 @@ export const lt: Guide = {
         {
           ol: [
             'Darbuotojas atidaro nuorodą. Paskyros jam nereikia.',
-            'Jis peržiūri prekes anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.',
+            'Jis peržiūri prekes, jų kainas ir bendrą sumą anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.',
             'Jis pažymi sutikimą ir paspaudžia **Confirm receipt** (**Подтвердить получение**). Užsakymo būsena tampa **Išduota**.',
           ],
         },
