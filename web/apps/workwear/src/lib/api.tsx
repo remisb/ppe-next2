@@ -3,7 +3,7 @@ import { Fragment, type ReactNode, createContext, useCallback, useContext, useEf
 
 import { type Lang, deviceLanguage, isLang, rememberDeviceLanguage, setLanguage } from '@/i18n'
 
-import { type Session, clearSession, loadSession, sessionFromToken, storeSession } from './session'
+import { type Session, clearSession, loadSession, refreshDue, sessionFromToken, storeSession } from './session'
 import { clearDraft } from './working-order'
 
 interface ApiContext {
@@ -81,6 +81,50 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       () => {},
     )
   }, [client, userId, applyLanguage])
+
+  // Keeps the sign-in alive while the app is open: a token past a third of its
+  // life is swapped for a new one (about every 5 minutes for the 15-minute
+  // token). Checked each minute, when the tab is shown again and when the
+  // device is back online. A refused refresh (the account deactivated, or the
+  // sign-in older than the server allows) is a 401, which signs out through
+  // onUnauthenticated; a network error waits for the next check.
+  const refreshing = useRef(false)
+  useEffect(() => {
+    if (!userId) return
+    const check = () => {
+      const cur = sessionRef.current
+      if (!cur || refreshing.current || !refreshDue(cur.token)) return
+      refreshing.current = true
+      client
+        .refresh()
+        .then(
+          (res) => {
+            const latest = sessionRef.current
+            if (!latest || latest.userId !== res.user.id) return
+            const next = sessionFromToken(res.access_token, res.user.name, latest.language)
+            if (!next) return
+            storeSession(next)
+            setSession(next)
+          },
+          () => {},
+        )
+        .finally(() => {
+          refreshing.current = false
+        })
+    }
+    check()
+    const timer = window.setInterval(check, 60_000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', check)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', check)
+    }
+  }, [client, userId])
 
   // The whole app remounts when the language changes, so nothing keeps text,
   // dates or amounts in the old one. Before sign-in, the device's language.

@@ -76,6 +76,8 @@ export function createClient(options: ClientOptions) {
   return {
     login: (email: string, password: string) =>
       request<LoginResponse>('POST', '/api/v1/auth/login', { email, password }),
+    /** A new token for the signed-in user, keeping their sign-in time; 401 once the account is inactive or the sign-in too old. */
+    refresh: () => request<LoginResponse>('POST', '/api/v1/auth/refresh'),
     me: () => request<User>('GET', '/api/v1/users/me'),
     /** Change the signed-in user's own password; the current one must be supplied. */
     changeOwnPassword: (currentPassword: string, newPassword: string) =>

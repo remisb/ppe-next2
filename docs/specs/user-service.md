@@ -23,6 +23,7 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 | Route | Access | Kind |
 | --- | --- | --- |
 | `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) | returns `{access_token, token_type, expires_in, expires_at, user}` |
+| `POST /api/v1/auth/refresh` | any authenticated user | a new token, same shape as login; 401 if the user is deactivated or deleted, or signed in more than `API_SESSION_MAX_AGE` ago |
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
 | `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}` |
 | `PUT /api/v1/users/me/language` | any authenticated user | body `{language}` (`en`, `lt` or `ru`, else 400); returns the user. No one sets another user's language |
@@ -41,10 +42,19 @@ An admin cannot deactivate, delete, or remove the `admin` role from their own ac
 ## Tokens
 
 HS256 JWTs signed with `API_JWT_SECRET` (≥ 32 bytes), TTL `API_JWT_TTL` (default 15m,
-max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `roles`. The algorithm is
-pinned; `exp` is required; a non-UUID subject is rejected. Roles are read from the token
-without a DB lookup, so a role change takes effect when the user's current token expires.
-There are no refresh tokens.
+max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `roles`, `auth_time` = when the
+user signed in. The algorithm is pinned; `exp` is required; a non-UUID subject is rejected.
+Roles are read from the token without a DB lookup.
+
+There are no separate refresh tokens: a valid access token is swapped for a new one at
+`POST /api/v1/auth/refresh`. The refresh reads the account again, so a deactivated or
+deleted user is refused and a role change takes effect at the next refresh; the new token
+keeps the original `auth_time` (a token without one counts from its `iat`). Once the sign-in
+is `API_SESSION_MAX_AGE` old (default 12h, at least `API_JWT_TTL`, at most 720h) the refresh
+is a 401 and the user signs in again. The web app refreshes when a token has less than 10
+minutes left, so about every 5 minutes for a 15-minute token, checking each minute, when the
+tab is shown again and when the device comes back online; a closed tab or a sleeping device
+lets the token lapse after `API_JWT_TTL`.
 
 Authentication and role checks use `muxstack/middleware.Authenticator` and `Authorizer`;
 their 401/403 bodies are plain text, not the API's JSON error shape.

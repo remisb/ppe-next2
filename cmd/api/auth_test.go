@@ -14,7 +14,7 @@ import (
 const testSecret = "test-secret-test-secret-test-secret-0123"
 
 func testTokens(now time.Time) *tokens {
-	return &tokens{secret: []byte(testSecret), issuer: "ppe-next2", ttl: 15 * time.Minute, leeway: 30 * time.Second, now: func() time.Time { return now }}
+	return &tokens{secret: []byte(testSecret), issuer: "ppe-next2", ttl: 15 * time.Minute, sessionMax: 12 * time.Hour, leeway: 30 * time.Second, now: func() time.Time { return now }}
 }
 
 func signClaims(t *testing.T, method jwt.SigningMethod, key any, c accessClaims) string {

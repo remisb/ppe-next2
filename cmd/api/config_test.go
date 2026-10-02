@@ -8,7 +8,7 @@ import (
 
 func TestConfigValidate(t *testing.T) {
 	ok := config{
-		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute,
+		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute, SessionMaxAge: 12 * time.Hour,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
 		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour,
 	}
@@ -16,13 +16,15 @@ func TestConfigValidate(t *testing.T) {
 		t.Fatalf("valid config: %v", err)
 	}
 	for name, mutate := range map[string]func(*config){
-		"no dsn":       func(c *config) { c.DBDSN = "" },
-		"short secret": func(c *config) { c.JWTSecret = "short" },
-		"ttl too long": func(c *config) { c.JWTTTL = 48 * time.Hour },
-		"no rate":      func(c *config) { c.LoginRateLimit = 0 },
-		"bad timezone": func(c *config) { c.OrgTimezone = "Mars/Olympus" },
-		"relative url": func(c *config) { c.PublicBaseURL = "/confirm" },
-		"zero ttl":     func(c *config) { c.ConfirmTTL = 0 },
+		"no dsn":                       func(c *config) { c.DBDSN = "" },
+		"short secret":                 func(c *config) { c.JWTSecret = "short" },
+		"ttl too long":                 func(c *config) { c.JWTTTL = 48 * time.Hour },
+		"session shorter than a token": func(c *config) { c.SessionMaxAge = 5 * time.Minute },
+		"session too long":             func(c *config) { c.SessionMaxAge = 31 * 24 * time.Hour },
+		"no rate":                      func(c *config) { c.LoginRateLimit = 0 },
+		"bad timezone":                 func(c *config) { c.OrgTimezone = "Mars/Olympus" },
+		"relative url":                 func(c *config) { c.PublicBaseURL = "/confirm" },
+		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
 	} {
 		c := ok
 		mutate(&c)
@@ -51,7 +53,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_TRUSTED_PROXIES"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_TRUSTED_PROXIES"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -63,7 +65,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if err := c.validate(); err != nil {
 		t.Fatalf("defaults do not validate: %v", err)
 	}
-	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" {
+	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" ||
+		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour {
 		t.Errorf("defaults = %+v", c)
 	}
 	if len(c.TrustedProxies) != 0 {

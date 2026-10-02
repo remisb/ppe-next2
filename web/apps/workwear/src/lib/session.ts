@@ -3,8 +3,20 @@ import { type Role, decodeToken, hasAnyRole, isTokenExpired } from '@ppe/api-cli
 import { type Lang, isLang } from '@/i18n'
 
 // sessionStorage: tokens live 15 minutes and cannot be revoked, so they should
-// not outlive the tab.
+// not outlive the tab. While the tab is open the app refreshes them (refreshDue).
 const TOKEN_KEY = 'workwear.token'
+
+/**
+ * A token with less than this left is refreshed: for the 15-minute token, once
+ * it is 5 minutes old, so about every 5 minutes while the app is open.
+ */
+export const REFRESH_WHEN_LEFT_MS = 10 * 60_000
+
+/** Whether token should be swapped for a new one now (also true once it has expired). */
+export function refreshDue(token: string, now: number = Date.now()): boolean {
+  const claims = decodeToken(token)
+  return claims !== null && claims.exp * 1000 - now < REFRESH_WHEN_LEFT_MS
+}
 
 export interface Session {
   token: string

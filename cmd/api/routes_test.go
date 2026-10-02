@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
@@ -289,8 +290,9 @@ func (a *testAPI) do(t *testing.T, method, path, token string, body any) *httpte
 // policy pins who may call every route. Changing a route's access, or adding
 // a route, must change this table: TestRoutePolicy fails otherwise.
 var policy = map[string]string{
-	"GET /health":             "public",
-	"POST /api/v1/auth/login": "public",
+	"GET /health":               "public",
+	"POST /api/v1/auth/login":   "public",
+	"POST /api/v1/auth/refresh": "any",
 
 	"GET /api/v1/users/me":               "any",
 	"PUT /api/v1/users/me/password":      "any",
@@ -522,5 +524,85 @@ func TestHealthIsOpen(t *testing.T) {
 	api := newTestAPI(t)
 	if rec := api.do(t, "GET", "/health", "", nil); rec.Code != http.StatusOK {
 		t.Fatalf("health = %d", rec.Code)
+	}
+}
+
+// TestRefresh: a valid token is swapped for a new one that keeps the sign-in
+// time and reads the account again; a deactivated or deleted user, or a
+// sign-in older than the session cap, gets a 401.
+func TestRefresh(t *testing.T) {
+	api := newTestAPI(t)
+	ctx := context.Background()
+	type refreshed struct {
+		AccessToken string    `json:"access_token"`
+		ExpiresIn   int64     `json:"expires_in"`
+		User        user.User `json:"user"`
+	}
+	refresh := func(tok string) *httptest.ResponseRecorder {
+		return api.do(t, "POST", "/api/v1/auth/refresh", tok, nil)
+	}
+
+	u, tok := api.userWith(t, user.RoleEmployee)
+	before, err := api.tokens.parse(tok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A role given since sign-in is in the new token.
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee, user.RoleManager}, IsActive: true}, api.admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec := refresh(tok)
+	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("refresh = %d %s", rec.Code, rec.Body)
+	}
+	got := decode[refreshed](t, rec.Body.Bytes())
+	after, err := api.tokens.parse(got.AccessToken)
+	if err != nil {
+		t.Fatalf("the new token does not verify: %v", err)
+	}
+	if after.Subject != u.ID.String() || !after.signedInAt().Equal(before.signedInAt()) || got.ExpiresIn != int64((15*time.Minute).Seconds()) {
+		t.Fatalf("new token: sub %s, signed in %v (was %v), expires in %d", after.Subject, after.signedInAt(), before.signedInAt(), got.ExpiresIn)
+	}
+	if !slices.Contains(after.Roles, user.RoleManager) || got.User.ID != u.ID {
+		t.Fatalf("new token roles %v, user %v", after.Roles, got.User.ID)
+	}
+
+	// A token issued before auth_time existed counts from its issue time.
+	legacy := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
+		Roles: []string{user.RoleEmployee},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject: u.ID.String(), Issuer: "ppe-next2",
+			IssuedAt: jwt.NewNumericDate(time.Now().Add(-time.Minute)), ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
+		},
+	})
+	if rec := refresh(legacy); rec.Code != http.StatusOK {
+		t.Errorf("a token without auth_time = %d, want 200", rec.Code)
+	}
+
+	// Signed in longer ago than the session cap: sign in again.
+	stale := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
+		Roles:    []string{user.RoleEmployee},
+		AuthTime: jwt.NewNumericDate(time.Now().Add(-13 * time.Hour)),
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject: u.ID.String(), Issuer: "ppe-next2",
+			IssuedAt: jwt.NewNumericDate(time.Now().Add(-time.Minute)), ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
+		},
+	})
+	if rec := refresh(stale); rec.Code != http.StatusUnauthorized {
+		t.Errorf("a sign-in older than the cap = %d, want 401", rec.Code)
+	}
+
+	// Deactivated, then deleted: no new token.
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee}, IsActive: false}, api.admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if rec := refresh(tok); rec.Code != http.StatusUnauthorized {
+		t.Errorf("deactivated user = %d, want 401", rec.Code)
+	}
+	if err := api.svc.users.Delete(ctx, u.ID, api.admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if rec := refresh(tok); rec.Code != http.StatusUnauthorized {
+		t.Errorf("deleted user = %d, want 401", rec.Code)
 	}
 }

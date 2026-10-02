@@ -55,6 +55,7 @@ services:
       API_DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
       API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
       API_JWT_TTL: ${API_JWT_TTL:-15m}
+      API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

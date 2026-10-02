@@ -24,6 +24,9 @@ type config struct {
 	JWTSecret string
 	JWTIssuer string
 	JWTTTL    time.Duration
+	// SessionMaxAge caps how long refreshing keeps a sign-in alive: a token
+	// whose sign-in (auth_time) is older is not refreshed, so the user signs in again.
+	SessionMaxAge time.Duration
 
 	LoginRateLimit    int
 	LoginRateInterval time.Duration
@@ -83,6 +86,7 @@ func loadConfig(args []string) (config, error) {
 		{&c.RequestTimeout, "API_REQUEST_TIMEOUT", 10 * time.Second},
 		{&c.ShutdownTimeout, "API_SHUTDOWN_TIMEOUT", 10 * time.Second},
 		{&c.JWTTTL, "API_JWT_TTL", 15 * time.Minute},
+		{&c.SessionMaxAge, "API_SESSION_MAX_AGE", 12 * time.Hour},
 		{&c.LoginRateInterval, "API_LOGIN_RATE_INTERVAL", time.Minute},
 		{&c.ConfirmTTL, "API_CONFIRM_TTL", 7 * 24 * time.Hour},
 	} {
@@ -127,6 +131,9 @@ func (c config) validate() error {
 	}
 	if c.JWTTTL < time.Minute || c.JWTTTL > 24*time.Hour {
 		errs = append(errs, errors.New("API_JWT_TTL must be between 1m and 24h"))
+	}
+	if c.SessionMaxAge < c.JWTTTL || c.SessionMaxAge > 30*24*time.Hour {
+		errs = append(errs, errors.New("API_SESSION_MAX_AGE must be at least API_JWT_TTL and at most 720h"))
 	}
 	if c.LoginRateLimit < 1 || c.LoginRateInterval <= 0 {
 		errs = append(errs, errors.New("API_LOGIN_RATE_LIMIT and API_LOGIN_RATE_INTERVAL must be positive"))

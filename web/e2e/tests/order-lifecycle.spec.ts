@@ -1343,6 +1343,35 @@ test('Theme: light, dark or the device’s own, kept on this device through a re
   await expect(page.locator('html')).not.toHaveAttribute('data-theme')
 })
 
+test('the sign-in renews itself every few minutes while the app is open', async ({ browser }) => {
+  // A fake clock in this tab only: the server keeps real time, so its tokens stay valid.
+  const tab = await (await browser.newContext()).newPage()
+  await tab.clock.install()
+  await tab.goto(webURL + '/')
+  await tab.getByLabel('Email').fill('mia@example.com')
+  await tab.getByLabel(/^Password/).fill('mia-password-2')
+  await tab.getByRole('button', { name: 'Sign in' }).click()
+  await expect(tab.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
+  const token = () => tab.evaluate(() => JSON.parse(sessionStorage.getItem('workwear.token') ?? '{}').token as string | undefined)
+
+  // Once less than 10 minutes are left (5 minutes into a 15-minute token; this server's tokens may live
+  // longer), the token is swapped for a new one, and Mia is still signed in.
+  const left = await tab.evaluate(() => {
+    const t = JSON.parse(sessionStorage.getItem('workwear.token') ?? '{}').token as string
+    return (JSON.parse(atob(t.split('.')[1]!)).exp as number) * 1000 - Date.now()
+  })
+  const refreshed = tab.waitForResponse((r) => r.url().endsWith('/api/v1/auth/refresh'))
+  await tab.clock.fastForward(Math.round(left - 9.5 * 60_000))
+  const res = await refreshed
+  expect(res.status()).toBe(200)
+  // The tab keeps the token it was given (the server's clock is real, so it may match the first to the second).
+  const issued = ((await res.json()) as { access_token: string }).access_token
+  await expect.poll(token).toBe(issued)
+  await tab.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' }).click()
+  await expect(tab.getByRole('heading', { name: 'Employees' })).toBeVisible()
+  await tab.context().close()
+})
+
 test('Account: change password, then only the new one signs in', async () => {
   const newPassword = 'e2e-new-password-456'
   await page.getByRole('link', { name: admin.name }).click()

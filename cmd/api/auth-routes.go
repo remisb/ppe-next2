@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/remisb/muxstack/middleware"
@@ -27,6 +29,7 @@ func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, limit i
 		KeyFunc:             middleware.ClientAddr,
 	})
 	rt.public("POST /api/v1/auth/login", middleware.Chain(http.HandlerFunc(h.login), limiter))
+	rt.authenticated("POST /api/v1/auth/refresh", h.refresh)
 }
 
 type loginRequest struct {
@@ -53,7 +56,50 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	token, exp, err := h.tokens.issue(u)
+	h.writeToken(w, r, u, h.tokens.now())
+}
+
+// refresh swaps a valid token for a new one, so a signed-in user who keeps the
+// app open is not signed out every API_JWT_TTL. It reads the account again: a
+// deactivated or deleted user is refused, and role changes take effect. The
+// new token keeps the original sign-in time; once that is API_SESSION_MAX_AGE
+// old the refresh is refused and the user signs in again.
+func (h *authHandler) refresh(w http.ResponseWriter, r *http.Request) {
+	raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !ok {
+		writeError(w, r, errUnauthenticated)
+		return
+	}
+	claims, err := h.tokens.parse(strings.TrimSpace(raw))
+	if err != nil {
+		writeError(w, r, errUnauthenticated)
+		return
+	}
+	signedIn := claims.signedInAt()
+	if signedIn.IsZero() || h.tokens.now().Sub(signedIn) > h.tokens.sessionMax {
+		writeError(w, r, errUnauthenticated)
+		return
+	}
+	id, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	u, err := h.users.Get(r.Context(), id)
+	if errors.Is(err, user.ErrNotFound) || (err == nil && !u.IsActive) {
+		writeError(w, r, errUnauthenticated)
+		return
+	}
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.writeToken(w, r, u, signedIn)
+}
+
+// writeToken issues u a token for the sign-in at signedIn and writes it.
+func (h *authHandler) writeToken(w http.ResponseWriter, r *http.Request, u user.User, signedIn time.Time) {
+	token, exp, err := h.tokens.issueFor(u, signedIn)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -62,7 +108,7 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, loginResponse{
 		AccessToken: token,
 		TokenType:   "Bearer",
-		ExpiresIn:   int64(time.Until(exp).Seconds()),
+		ExpiresIn:   int64(exp.Sub(h.tokens.now()).Seconds()),
 		ExpiresAt:   exp.UTC(),
 		User:        u,
 	})
