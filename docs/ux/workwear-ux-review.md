@@ -28,8 +28,10 @@ status: phases 1–3 shipped, plus follow-ups (`4462e56`)
 > its brand book on the sign-in page in `2d9e6d3`, its emblem as the app icon and
 > favicon in `48a23e5`, History renamed Orders with Create Order on the list in `f426dba`,
 > the supplier's WhatsApp group on a Settings screen in `a8433da`, Copy for WhatsApp kept to
-> the review and the confirmation link created for every new order in `4fac2b9`, and the
-> sign-in refreshed every few minutes in `5d10430`.
+> the review and the confirmation link created for every new order in `4fac2b9`, the
+> sign-in refreshed every few minutes in `5d10430`, prices and a total on the confirmation page,
+> Create Order reached from Orders and no WhatsApp on a given order in `93bf9af`, and the
+> time zone notes dropped in `43cabd1`.
 > Each came with its e2e steps (41 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
@@ -936,6 +938,10 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Administrators set the supplier's WhatsApp group (its name and invite link) on a new **Settings** screen. WhatsApp cannot open a group with a message already typed in, so Copy for WhatsApp copies the order message and then offers **Open Superman Rubai Group**, where staff paste it. The link must be a WhatsApp group invite and is stored without WhatsApp's `?mode=…`; every change is audited. The supplier message is also shorter: the record number, the employee and the lines, without the preparer and the date
 - [x] Copy for WhatsApp is now only in Create Order's review: it left the order panel, the screen after Mark as Ordered and an ordered order in Orders. The review no longer asks whether to create the confirmation link: every new order gets one, shown ready to send; if creating it fails, the order stands and Send confirmation link is offered
 - [x] The sign-in no longer ends 15 minutes after signing in: while the app is open it swaps its token for a new one every few minutes. Each refresh checks the account again, so a deactivated user is signed out within minutes and role changes apply without signing in again. A sign-in lasts at most 12 hours (`API_SESSION_MAX_AGE`); a tab closed or a device asleep for more than 15 minutes asks to sign in again
+- [x] The employee confirmation page shows prices: each line its quantity × unit price and line total, and the order total below (Total / Итого), in the employee's language. The receipt and its document hash are unchanged
+- [x] Create Order left the sidebar; it opens from **+ Create Order** on Orders, which stays highlighted while an order is composed. The phone's raised New order button stays
+- [x] A given order no longer offers Share via WhatsApp in its Orders pane, on the phone too; it stays on the locked record page
+- [x] Orders lost its description line and its time zone note, and the dashboards their time zone note: they now end with “Updated 14:05.”. Dates still follow the organisation's time zone
 
 ### Still open
 
