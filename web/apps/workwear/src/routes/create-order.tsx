@@ -22,12 +22,12 @@ import { FormSheet } from '@/components/ui/form-sheet'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@/components/ui/table'
 import { intlLocale, t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
-import { lastOrder, linesText, loadCreateLink, saveCreateLink, setOnOrder, sizeParts } from '@/lib/composer'
+import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
 import { type Due, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
 import { clothingBandValue, clothingBands, cn, formatEuro, formatMonths } from '@/lib/utils'
-import { formatWhatsApp, messageFromOrder, messageFromWorkingOrder } from '@/lib/whatsapp'
+import { formatWhatsApp, messageFromWorkingOrder } from '@/lib/whatsapp'
 import {
   type SizeConflict,
   type WorkingLine,
@@ -97,8 +97,6 @@ export function CreateOrder({
   const [placed, setPlaced] = useState<Placed | null>(null)
   // Mark as Ordered cannot be undone, so it is confirmed on a summary first.
   const [reviewing, setReviewing] = useState(false)
-  // The review creates the employee's confirmation link as well, unless this device turned that off.
-  const [createLink, setCreateLink] = useState(loadCreateLink)
   const [order, setOrder] = useState<WorkingOrder>(() => loadDraft(session.userId))
   const [conflicts, setConflicts] = useState<SizeConflict[]>([])
   const [pendingDefault, setPendingDefault] = useState<PendingDefault | null>(null)
@@ -249,24 +247,22 @@ export function CreateOrder({
   }
 
   /**
-   * Mark as Ordered (algorithm B). On failure the working order is kept. The
-   * confirmation link is created after, when asked; the order stands even if
-   * that fails, and the success screen offers to send one.
+   * Mark as Ordered (algorithm B). On failure the working order is kept. Every
+   * new order's confirmation link is created right after; the order stands even
+   * if that fails, and the success screen offers to send one.
    */
-  const markAsOrdered = (withLink: boolean) =>
+  const markAsOrdered = () =>
     run(async () => {
       const o = await client.orders.markAsOrdered(toMarkAsOrderedInput(order))
       clearDraft(session.userId)
       setOrder(emptyOrder)
       setConflicts([])
       setPendingDefault(null)
-      let next: Placed = { order: o }
-      if (withLink) {
-        try {
-          next = { order: o, link: await client.orders.createConfirmationLink(o.id) }
-        } catch (linkError) {
-          next = { order: o, linkError }
-        }
+      let next: Placed
+      try {
+        next = { order: o, link: await client.orders.createConfirmationLink(o.id) }
+      } catch (linkError) {
+        next = { order: o, linkError }
       }
       setPlaced(next)
     })
@@ -295,9 +291,9 @@ export function CreateOrder({
     return () => window.removeEventListener('keydown', onKey)
   }, [v.valid, busy, placed])
 
-  const supplierChat = settings.data?.supplier_chat ?? null
-  if (placed) return <OrderedPanel placed={placed} supplierChat={supplierChat} navigate={navigate} onNew={() => setPlaced(null)} />
+  if (placed) return <OrderedPanel placed={placed} navigate={navigate} onNew={() => setPlaced(null)} />
   const whatsappText = formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))
+  const supplierChat = settings.data?.supplier_chat ?? null
 
   return (
     <>
@@ -522,16 +518,11 @@ export function CreateOrder({
         busy={busy}
         whatsappText={whatsappText}
         supplierChat={supplierChat}
-        createLink={createLink}
-        onCreateLink={(on) => {
-          setCreateLink(on)
-          saveCreateLink(on)
-        }}
         onClose={() => setReviewing(false)}
         onConfirm={() => {
           // A failure shows on the page, with Retry, and keeps the order.
           setReviewing(false)
-          void markAsOrdered(createLink)
+          void markAsOrdered()
         }}
       />
 
@@ -676,8 +667,6 @@ function ReviewSheet({
   busy,
   whatsappText,
   supplierChat,
-  createLink,
-  onCreateLink,
   onClose,
   onConfirm,
 }: {
@@ -688,8 +677,6 @@ function ReviewSheet({
   whatsappText: string
   /** The supplier's WhatsApp group, opened after the message is copied. */
   supplierChat: SupplierChat | null
-  createLink: boolean
-  onCreateLink: (on: boolean) => void
   onClose: () => void
   onConfirm: () => void
 }) {
@@ -725,15 +712,6 @@ function ReviewSheet({
         <span>{t.common.total}</span>
         <span className="text-base tabular-nums">{formatEuro(totalCents(order))}</span>
       </p>
-      <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md p-1 text-sm">
-        <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" checked={createLink} onChange={(e) => onCreateLink(e.target.checked)} />
-        <span>
-          {t.order.createLinkToo}
-          <span className="block text-xs text-muted-foreground">
-            {t.order.createLinkHint(order.employee?.first_name ?? null)}
-          </span>
-        </span>
-      </label>
     </FormSheet>
   )
 }
@@ -743,17 +721,7 @@ function ReviewSheet({
  * from the server's snapshot, and the next step: the employee confirms receipt
  * by a secure link or on the printed record.
  */
-function OrderedPanel({
-  placed,
-  supplierChat,
-  navigate,
-  onNew,
-}: {
-  placed: Placed
-  supplierChat: SupplierChat | null
-  navigate: (to: Route) => void
-  onNew: () => void
-}) {
+function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (to: Route) => void; onNew: () => void }) {
   const { order, link } = placed
   const [confirming, setConfirming] = useState(false)
   const [given, setGiven] = useState(false)
@@ -797,7 +765,6 @@ function OrderedPanel({
                 <LinkIcon aria-hidden /> {t.order.sendConfirmationLink}
               </Button>
             )}
-            <WhatsAppButton className="w-full sm:w-auto" text={formatWhatsApp(messageFromOrder(order))} chat={supplierChat} />
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate({ name: 'record', id: order.id, print: true })}>
               <Printer aria-hidden /> {t.order.printRecord}
             </Button>

@@ -81,9 +81,6 @@ export const order: OrderText = {
   reviewDescription: (who: string) => `Kam: ${who}. Pažymėjus kaip užsakytą, šio įrašo pakeisti nebebus galima.`,
   markAsOrdered: 'Pažymėti kaip užsakytą',
   orderLines: 'Užsakymo eilutės',
-  createLinkToo: 'Kartu sukurti patvirtinimo nuorodą',
-  createLinkHint: (firstName: string | null) =>
-    `${firstName ?? 'Darbuotojas'} ja patvirtins gavimą; vietoj to vis tiek galite atspausdinti įrašą pasirašyti.`,
 
   // After Mark as Ordered
   orderIsOrdered: (recordNumber: string) => `Užsakymas ${recordNumber} pažymėtas kaip užsakytas`,

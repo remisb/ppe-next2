@@ -49,7 +49,6 @@ export const history: HistoryText = {
   viewRecord: 'Peržiūrėti įrašą',
   printRecord: 'Spausdinti įrašą',
   shareWhatsApp: 'Siųsti per WhatsApp',
-  copyWhatsApp: 'Kopijuoti į WhatsApp',
   deleteOrder: 'Ištrinti užsakymą…',
   deleteOrdered: (record: string, name: string) =>
     `Ištrinti ${record} (${name})? Užsakymas dings iš Užsakymų ir suvestinių, o jo patvirtinimo nuoroda nebeveiks. Tik demonstraciniams ir bandomiesiems užsakymams; programėlėje to atšaukti negalima.`,

@@ -53,23 +53,3 @@ export function setOnOrder(set: Pick<ItemSet, 'lines'>, lines: readonly Pick<Wor
 export function linesText(n: number): string {
   return t.common.lines(n)
 }
-
-const REVIEW_LINK_KEY = 'workwear.review-link'
-
-/** Whether the review sheet creates the confirmation link as well: on unless this device turned it off. */
-export function loadCreateLink(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(REVIEW_LINK_KEY) !== 'off'
-  } catch {
-    return true
-  }
-}
-
-/** Remembers the choice on this device, a convenience only. */
-export function saveCreateLink(on: boolean): void {
-  try {
-    globalThis.localStorage?.setItem(REVIEW_LINK_KEY, on ? 'on' : 'off')
-  } catch {
-    // Not remembered; the sheet still works.
-  }
-}

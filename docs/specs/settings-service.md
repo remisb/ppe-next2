@@ -22,8 +22,8 @@ copies the message and, when the group is set, offers to open it by its invite l
 ("Open Superman Rubai Group"); staff paste the message there. Unset, WhatsApp opens with
 the message and staff pick the chat.
 
-It applies to order messages only: Create Order's review, the screen after Mark as
-Ordered, and an ORDERED order in Orders. Sharing an employee's confirmation link and a
+It applies to the order message, which is sent from Create Order's review only (neither
+the screen after Mark as Ordered nor an order in Orders has Copy for WhatsApp). Sharing an employee's confirmation link and a
 GIVEN order's Share via WhatsApp still let the user pick the chat.
 
 - `name` is trimmed with inner spaces collapsed, at most 100 characters; it is what staff see.

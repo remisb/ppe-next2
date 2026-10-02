@@ -50,7 +50,6 @@ export const history = {
   viewRecord: 'View Record',
   printRecord: 'Print Record',
   shareWhatsApp: 'Share via WhatsApp',
-  copyWhatsApp: 'Copy for WhatsApp',
   deleteOrder: 'Delete order…',
   deleteOrdered: (record: string, name: string) =>
     `Delete ${record} for ${name}? It leaves Orders and the dashboards, and its confirmation link stops working. Only for demo and test orders; this cannot be undone in the app.`,

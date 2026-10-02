@@ -53,11 +53,10 @@ function reviewButton() {
   return page.getByRole('button', { name: /^Review/ })
 }
 
-/** Mark as Ordered asks for a review first; confirm it there, with or without the confirmation link (remembered on the device). */
-async function markAsOrdered({ link }: { link?: boolean } = {}) {
+/** Mark as Ordered asks for a review first; confirm it there. Every new order gets its confirmation link. */
+async function markAsOrdered() {
   await reviewButton().click()
   const review = page.getByRole('dialog', { name: 'Review order' })
-  if (link !== undefined) await review.getByRole('checkbox', { name: /Create the confirmation link as well/ }).setChecked(link)
   await review.getByRole('button', { name: 'Mark as Ordered' }).click()
 }
 
@@ -343,7 +342,8 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   await review.getByRole('button', { name: 'Copy for WhatsApp' }).click()
   await expect(review.getByRole('link', { name: 'Open Superman Rubai Group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
   await expect(page.getByRole('complementary', { name: 'Order summary' }).getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
-  await expect(review.getByRole('checkbox', { name: /Create the confirmation link as well/ })).toBeChecked()
+  // Nothing to choose about the confirmation link: every new order gets one.
+  await expect(review.getByRole('checkbox')).toHaveCount(0)
   await review.getByRole('button', { name: 'Close' }).click()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
 
@@ -355,7 +355,8 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // The next step is the employee's confirmation: the link is ready to send.
   await expect(page.getByLabel('Confirmation link')).toHaveValue(/\/confirm\/[\w-]{40,}$/)
   await expect(page.getByRole('button', { name: 'Share link via WhatsApp' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Copy for WhatsApp' })).toBeVisible()
+  // The supplier message was the review's: the ordered screen has no Copy for WhatsApp.
+  await expect(page.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Send confirmation link' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Print record' })).toBeVisible()
   await page.getByRole('button', { name: 'Start a new order' }).click()
@@ -384,6 +385,8 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(order.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'View Record' })).toHaveCount(0)
+  // The supplier message is Create Order's review's, not the order's.
+  await expect(order.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
 })
 
 test('Open Employee Confirmation creates a link', async () => {
@@ -499,11 +502,12 @@ test('paper confirmation: a second order signed on paper', async () => {
   await addItem('shoes', /^Safety shoes/)
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
   await expect(page.getByRole('complementary', { name: 'Order summary' })).toContainText(`Last order ${recordNumber}`)
-  // Signed on paper, so no link this time; the success screen still offers one.
-  await markAsOrdered({ link: false })
+  // It gets its confirmation link like every new order, though it is signed on paper below.
+  await markAsOrdered()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
   paperRecord = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
-  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toBeVisible()
+  await expect(page.getByLabel('Confirmation link')).toHaveValue(/\/confirm\/[\w-]{40,}$/)
+  await expect(page.getByRole('button', { name: 'Send confirmation link' })).toHaveCount(0)
   // The new order was placed at the new price.
   await expect(page.getByRole('cell', { name: '€59.99' }).first()).toBeVisible()
 
@@ -1271,7 +1275,7 @@ test('the confirmation page and hand-over open in the employee’s preferred lan
   await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   await addItem('nitrile', /^Protective gloves/)
-  await markAsOrdered({ link: true })
+  await markAsOrdered()
   const record = /WE-\d{6}/.exec((await page.getByText(/Order WE-\d{6} is ordered/).textContent()) ?? '')![0]
   const link = await page.getByLabel('Confirmation link').inputValue()
   await page.getByRole('button', { name: 'Start a new order' }).click()

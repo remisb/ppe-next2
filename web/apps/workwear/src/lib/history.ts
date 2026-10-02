@@ -9,19 +9,19 @@ import { currentLang, intlLocale, t } from '@/i18n'
 export type HistoryAction =
   | 'viewItems'
   | 'openConfirmation'
-  | 'copyWhatsApp'
   | 'viewRecord'
   | 'printRecord'
   | 'shareWhatsApp'
 
 /**
- * Manual §6: ORDERED shows View Items, Open Employee Confirmation and Copy for
- * WhatsApp; GIVEN shows View Items, View Record, Print Record and Share via
- * WhatsApp, and never confirmation or edit actions.
+ * Manual §6: ORDERED shows View Items and Open Employee Confirmation; GIVEN
+ * shows View Items, View Record, Print Record and Share via WhatsApp, and never
+ * confirmation or edit actions. The manual's Copy for WhatsApp on ORDERED is
+ * left out: the supplier message is sent from Create Order's review.
  */
 export function historyActions(status: OrderStatus): HistoryAction[] {
   return status === 'ORDERED'
-    ? ['viewItems', 'openConfirmation', 'copyWhatsApp']
+    ? ['viewItems', 'openConfirmation']
     : ['viewItems', 'viewRecord', 'printRecord', 'shareWhatsApp']
 }
 

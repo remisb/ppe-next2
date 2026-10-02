@@ -81,9 +81,6 @@ export const order: OrderText = {
   reviewDescription: (who: string) => `Для: ${who}. После отметки «Заказано» эту запись нельзя будет изменить.`,
   markAsOrdered: 'Отметить как заказанный',
   orderLines: 'Строки заказа',
-  createLinkToo: 'Также создать ссылку для подтверждения',
-  createLinkHint: (firstName: string | null) =>
-    `${firstName ?? 'Сотрудник'} подтвердит по ней получение; вместо этого можно распечатать запись для подписи.`,
 
   // After Mark as Ordered
   orderIsOrdered: (recordNumber: string) => `Заказ ${recordNumber} отмечен как заказанный`,

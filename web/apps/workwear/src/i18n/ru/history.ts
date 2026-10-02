@@ -50,7 +50,6 @@ export const history: HistoryText = {
   viewRecord: 'Открыть запись',
   printRecord: 'Печать записи',
   shareWhatsApp: 'Отправить в WhatsApp',
-  copyWhatsApp: 'Копировать для WhatsApp',
   deleteOrder: 'Удалить заказ…',
   deleteOrdered: (record: string, name: string) =>
     `Удалить ${record} (${name})? Заказ исчезнет из Заказов и сводок, а его ссылка для подтверждения перестанет работать. Только для демонстрационных и тестовых заказов; в приложении это нельзя отменить.`,

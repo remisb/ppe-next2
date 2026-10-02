@@ -4,7 +4,7 @@ import { activityAt, capitalize, deleteQuestion, formatDateTime, formatRelative,
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
-    expect(historyActions('ORDERED')).toEqual(['viewItems', 'openConfirmation', 'copyWhatsApp'])
+    expect(historyActions('ORDERED')).toEqual(['viewItems', 'openConfirmation'])
     expect(historyActions('GIVEN')).toEqual(['viewItems', 'viewRecord', 'printRecord', 'shareWhatsApp'])
     expect(historyActions('GIVEN')).not.toContain('openConfirmation')
   })

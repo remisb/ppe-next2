@@ -83,9 +83,6 @@ export const order = {
   reviewDescription: (who: string) => `For ${who}. After Mark as Ordered this record cannot be changed.`,
   markAsOrdered: 'Mark as Ordered',
   orderLines: 'Order lines',
-  createLinkToo: 'Create the confirmation link as well',
-  createLinkHint: (firstName: string | null) =>
-    `${firstName ?? 'The employee'} confirms receipt with it; you can still print the record for signing instead.`,
 
   // After Mark as Ordered
   orderIsOrdered: (recordNumber: string) => `Order ${recordNumber} is ordered`,
