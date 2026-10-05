@@ -5,7 +5,7 @@ import { type Browser, type Page, expect, test } from '@playwright/test'
 import { type ShotName, shotPath } from '../../apps/workwear/src/help/index.ts'
 import { admin } from '../env.ts'
 import { writeDocs } from './docs.ts'
-import { T, device, deviceWindow, lang, locale } from './lang.ts'
+import { T, agents, device, deviceWindow, lang, locale } from './lang.ts'
 
 // Screenshots for the Help screen, taken from the demo data in order: each
 // step leaves the app where the next one starts. GUIDE_LANG and GUIDE_DEVICE
@@ -23,7 +23,8 @@ let page: Page
 let confirmationURL = ''
 
 test.beforeAll(async ({ browser }) => {
-  page = await browser.newPage({ ...deviceWindow, locale })
+  // Behind the e2e API's trusted proxy, so Signed-in devices shows an address from the documentation range.
+  page = await browser.newPage({ ...deviceWindow, locale, extraHTTPHeaders: { 'X-Forwarded-For': '203.0.113.24' } })
 })
 
 /** Settles the page (no hover, no pending requests, finished transitions) and saves it. */
@@ -154,10 +155,28 @@ test('employees, catalogue, item sets, users, settings, backups', async () => {
   await shot('backups')
 })
 
-test('account and the search', async () => {
+test('account and the search', async ({ browser }) => {
+  // Signed in on a second device too: a phone, or a laptop when the guide is a phone's or tablet's.
+  const other = await browser.newPage({
+    locale,
+    userAgent: device === 'desktop' ? agents.iphone : agents.windows,
+    extraHTTPHeaders: { 'X-Forwarded-For': '198.51.100.7' },
+  })
+  await other.goto('/')
+  await other.getByLabel(T.shell.email).fill(admin.email)
+  await other.getByLabel(new RegExp(`^${T.shell.password}`)).fill(admin.password)
+  await other.getByRole('button', { name: T.shell.signIn }).click()
+  await expect(other.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
+  await other.close()
+
   await page.goto('/account')
   await expect(page.getByRole('heading', { name: T.account.title })).toBeVisible()
   await shot('account')
+  const devices = page.getByRole('list', { name: T.account.devices })
+  await expect(devices.getByRole('listitem')).toHaveCount(2)
+  await devices.scrollIntoViewIfNeeded()
+  await page.getByText(T.account.devicesHint).evaluate((e) => e.closest('[data-slot=card]')?.scrollIntoView({ block: 'center' }))
+  await shot('devices')
   await openTab(T.shell.history)
   // Search as each device reaches it: ⌘K on a desktop, the rail's Search on a tablet, More's on a phone.
   if (device === 'desktop') await page.keyboard.press('ControlOrMeta+k')

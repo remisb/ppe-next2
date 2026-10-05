@@ -16,13 +16,20 @@ export const locale = { en: 'en-GB', lt: 'lt-LT', ru: 'ru-RU' }[lang]
 export const device = (process.env['GUIDE_DEVICE'] ?? 'desktop') as Device
 if (!deviceOrder.includes(device)) throw new Error(`GUIDE_DEVICE must be phone, tablet or desktop, not ${device}`)
 
+/** What each device's browser calls itself, so Signed-in devices names it as people would see it. */
+export const agents = {
+  iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
+  ipad: 'Mozilla/5.0 (iPad; CPU OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',
+  windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+}
+
 /**
  * A window of that device: a phone and a portrait tablet held in the hand
  * (touch, so the app's touch targets), a desktop with a mouse. Each at a
  * pixel ratio that keeps text sharp where Help shows it.
  */
 export const deviceWindow = {
-  phone: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
-  tablet: { viewport: { width: 768, height: 1024 }, deviceScaleFactor: 1.5, isMobile: true, hasTouch: true },
-  desktop: { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, isMobile: false, hasTouch: false },
+  phone: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: agents.iphone },
+  tablet: { viewport: { width: 768, height: 1024 }, deviceScaleFactor: 1.5, isMobile: true, hasTouch: true, userAgent: agents.ipad },
+  desktop: { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, isMobile: false, hasTouch: false, userAgent: agents.windows },
 }[device]

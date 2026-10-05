@@ -14,9 +14,11 @@ The app records workwear and safety equipment given to employees. You prepare an
 
 The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
 
-You stay signed in while the app is open, for up to 12 hours. After the tab has been closed, or the device asleep, for more than 15 minutes, sign in again.
+With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.
 
-![The sign-in screen with email and password](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
+**Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.
+
+![The sign-in screen with email, password and Keep me signed in](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
 
 ## 2. Dashboard
 
@@ -141,6 +143,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 - Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.
 - To reset a password, use **⋯ → Reset password…**.
+- If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
@@ -177,10 +180,12 @@ The settings are made on the server, and a backup is restored there too: the app
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
-- **Change password**.
+- **Change password**: your other devices are signed out, and this one stays signed in.
+- **Signed-in devices**: every browser you are signed in on, with when it was last used. **This device** comes first. Sign out a device you no longer use or do not recognise, or choose **Sign out all other devices**.
 - **Table rows**: **Compact** fits more rows on the screen.
 
-![Account: language, password and table rows](../../web/apps/workwear/public/help-img/en/desktop/account.png)
+![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
+![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
 ## 14. Search and shortcuts
 

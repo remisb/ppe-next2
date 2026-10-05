@@ -99,6 +99,7 @@ export type ShotName =
   | 'settings'
   | 'backups'
   | 'account'
+  | 'devices'
   | 'palette'
 
 export interface Shot {

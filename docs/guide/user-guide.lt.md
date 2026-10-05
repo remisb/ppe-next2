@@ -14,9 +14,11 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
 
 Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
 
-Kol programėlė atidaryta, liekate prisijungę iki 12 valandų. Jei kortelė buvo uždaryta arba įrenginys miegojo ilgiau nei 15 minučių, prisijunkite iš naujo.
+Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.
 
-![Prisijungimo ekranas su el. paštu ir slaptažodžiu](../../web/apps/workwear/public/help-img/lt/phone/sign-in.png)
+**Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.
+
+![Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“](../../web/apps/workwear/public/help-img/lt/phone/sign-in.png)
 
 ## 2. Suvestinė
 
@@ -141,6 +143,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 - Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.
 - Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.
+- Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
@@ -177,10 +180,12 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
-- **Keisti slaptažodį**.
+- **Keisti slaptažodį**: kiti jūsų įrenginiai atjungiami, o šis lieka prisijungęs.
+- **Prisijungę įrenginiai**: visos naršyklės, kuriose esate prisijungę, ir kada jos naudotos paskutinį kartą. **Šis įrenginys** – pirmas. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate, arba pasirinkite **Atjungti visus kitus įrenginius**.
 - **Lentelės eilutės**: **Kompaktiškos** ekrane sutalpina daugiau eilučių.
 
-![Paskyra: kalba, slaptažodis ir lentelės eilutės](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
+![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
+![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
 ## 14. Paieška ir spartieji klavišai
 

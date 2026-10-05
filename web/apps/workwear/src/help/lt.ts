@@ -33,8 +33,9 @@ export const lt: Guide = {
         { p: 'Apatinėje juostoje yra **Pradžia**, **Užsakymai**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
         { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
-        { p: 'Kol programėlė atidaryta, liekate prisijungę iki 12 valandų. Jei kortelė buvo uždaryta arba įrenginys miegojo ilgiau nei 15 minučių, prisijunkite iš naujo.' },
-        { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu ir slaptažodžiu', phone: true }] },
+        { p: 'Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.' },
+        { p: '**Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.' },
+        { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“', phone: true }] },
       ],
     },
     {
@@ -194,6 +195,7 @@ export const lt: Guide = {
           ul: [
             'Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.',
             'Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.',
+            'Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).',
           ],
         },
         { shots: [{ name: 'users', alt: 'Naudotojų ekranas' }] },
@@ -245,11 +247,12 @@ export const lt: Guide = {
           ul: [
             '**Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.',
             '**Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.',
-            '**Keisti slaptažodį**.',
+            '**Keisti slaptažodį**: kiti jūsų įrenginiai atjungiami, o šis lieka prisijungęs.',
+            '**Prisijungę įrenginiai**: visos naršyklės, kuriose esate prisijungę, ir kada jos naudotos paskutinį kartą. **Šis įrenginys** – pirmas. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate, arba pasirinkite **Atjungti visus kitus įrenginius**.',
             { text: '**Lentelės eilutės**: **Kompaktiškos** ekrane sutalpina daugiau eilučių.', devices: ['desktop'] },
           ],
         },
-        { shots: [{ name: 'account', alt: 'Paskyra: kalba, slaptažodis ir lentelės eilutės' }] },
+        { shots: [{ name: 'account', alt: 'Paskyra: kalba, tema ir slaptažodis' }, { name: 'devices', alt: 'Prisijungę įrenginiai: šis įrenginys ir telefonas' }] },
       ],
     },
     {

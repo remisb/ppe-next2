@@ -33,8 +33,9 @@ export const en: Guide = {
         { p: 'The bar at the bottom holds **Home**, **Orders**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
         { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
         { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
-        { p: 'You stay signed in while the app is open, for up to 12 hours. After the tab has been closed, or the device asleep, for more than 15 minutes, sign in again.' },
-        { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email and password', phone: true }] },
+        { p: 'With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.' },
+        { p: '**Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.' },
+        { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email, password and Keep me signed in', phone: true }] },
       ],
     },
     {
@@ -188,7 +189,7 @@ export const en: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          ul: ['Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.', 'To reset a password, use **⋯ → Reset password…**.'],
+          ul: ['Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.', 'To reset a password, use **⋯ → Reset password…**.', 'If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.'],
         },
         { shots: [{ name: 'users', alt: 'The Users screen' }] },
       ],
@@ -239,11 +240,12 @@ export const en: Guide = {
           ul: [
             "**Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.",
             '**Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.',
-            '**Change password**.',
+            '**Change password**: your other devices are signed out, and this one stays signed in.',
+            '**Signed-in devices**: every browser you are signed in on, with when it was last used. **This device** comes first. Sign out a device you no longer use or do not recognise, or choose **Sign out all other devices**.',
             { text: '**Table rows**: **Compact** fits more rows on the screen.', devices: ['desktop'] },
           ],
         },
-        { shots: [{ name: 'account', alt: 'Account: language, password and table rows' }] },
+        { shots: [{ name: 'account', alt: 'Account: language, theme and password' }, { name: 'devices', alt: 'Signed-in devices: this device and a phone' }] },
       ],
     },
     {
