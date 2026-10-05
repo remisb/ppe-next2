@@ -31,6 +31,8 @@ The figures at the top show the orders awaiting confirmation, this month's spend
 - A missing size: **Add sizes**.
 - An item without a price: **Fix**.
 
+The **Backups** card says whether the database is backed up. Choose it to open **Backups**.
+
 ![The Dashboard: figures and the Needs you list](../../web/apps/workwear/public/help-img/en/desktop/dashboard.png)
 
 *Managers only:*
@@ -152,7 +154,26 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
 
-## 12. Your account
+## 12. Backups
+
+*Administrators only.*
+
+**Backups** shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.
+
+The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.
+
+A second warning shows while the backups are kept only on the server itself, because they would be lost with it.
+
+- **Last backup** and **Next backup**: when, with the last one's size and how long it took.
+- **Stored** and **Total size**: the backups kept now.
+- **Recent backups**: every attempt, newest first, with the error of a failed one.
+- **Settings**: the schedule, where backups are saved, how long they are kept and whether they are encrypted.
+
+The settings are made on the server, and a backup is restored there too: the app only shows them.
+
+![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
+
+## 13. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -161,7 +182,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ![Account: language, password and table rows](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 
-## 13. Search and shortcuts
+## 14. Search and shortcuts
 
 | Key | Does |
 | --- | --- |

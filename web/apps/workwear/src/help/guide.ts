@@ -64,6 +64,7 @@ export type SectionId =
   | 'catalogue'
   | 'users'
   | 'settings'
+  | 'backups'
   | 'account'
   | 'shortcuts'
 
@@ -96,6 +97,7 @@ export type ShotName =
   | 'item-sets'
   | 'users'
   | 'settings'
+  | 'backups'
   | 'account'
   | 'palette'
 

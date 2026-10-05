@@ -124,7 +124,7 @@ test('orders, an order and its record', async () => {
   await shot('record')
 })
 
-test('employees, catalogue, item sets, users', async () => {
+test('employees, catalogue, item sets, users, settings, backups', async () => {
   await openTab(T.shell.employees)
   await expect(page.getByRole('row', { name: /Rasa Stankevičiūtė/ })).toBeVisible()
   await shot('employees')
@@ -148,6 +148,10 @@ test('employees, catalogue, item sets, users', async () => {
   await page.getByRole('button', { name: T.settings.save }).click()
   await expect(page.getByRole('main').getByRole('status')).toContainText('Superman Rubai Group')
   await shot('settings')
+  // The backup history guide/setup.ts inserted.
+  await openTab(T.shell.backups)
+  await expect(page.getByRole('heading', { name: T.backups.recent })).toBeVisible()
+  await shot('backups')
 })
 
 test('account and the search', async () => {

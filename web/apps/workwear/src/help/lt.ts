@@ -47,6 +47,7 @@ export const lt: Guide = {
           ul: ['pavėluota prekė – **Užsakyti vėl**;', 'nepatvirtintas užsakymas – **Siųsti nuorodą**;', 'trūkstamas dydis – **Pridėti dydžius**;', 'prekė be kainos – **Taisyti**.'],
           roles: ['admin'],
         },
+        { p: 'Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte **Atsarginės kopijos**.', roles: ['admin'] },
         { shots: [{ name: 'dashboard', alt: 'Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“' }], roles: ['admin'] },
         {
           p: '**Vadovo suvestinė** skirta prekėms, kainoms ir pirkimams: kas užsakyta, išlaidos pagal prekes, kokius pakeitimus teks pirkti, naujausi kainų pokyčiai, kas kataloge ir rinkiniuose trukdo užsakyti, ir kokių dydžių laikyti atsargų.',
@@ -210,6 +211,30 @@ export const lt: Guide = {
           p: '**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.',
         },
         { shots: [{ name: 'settings', alt: 'Nustatymai: tiekėjo WhatsApp grupė' }] },
+      ],
+    },
+    {
+      id: 'backups',
+      title: 'Atsarginės kopijos',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.',
+        },
+        {
+          p: 'Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.',
+        },
+        { p: 'Antras įspėjimas rodomas, kol kopijos laikomos tik pačiame serveryje, nes jos dingtų kartu su juo.' },
+        {
+          ul: [
+            '**Paskutinė kopija** ir **Kita kopija**: kada, paskutinės dydis ir kiek ji užtruko.',
+            '**Laikoma** ir **Bendras dydis**: dabar laikomos kopijos.',
+            '**Naujausios kopijos**: kiekvienas bandymas, naujausi pirmi, nepavykusio – su klaida.',
+            '**Nustatymai**: tvarkaraštis, kur kopijos saugomos, kiek laiko laikomos ir ar užšifruotos.',
+          ],
+        },
+        { p: 'Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik rodo.' },
+        { shots: [{ name: 'backups', alt: 'Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai' }] },
       ],
     },
     {

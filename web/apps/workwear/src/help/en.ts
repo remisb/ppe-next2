@@ -47,6 +47,7 @@ export const en: Guide = {
           ul: ['An overdue item: **Reorder**.', 'An unconfirmed order: **Send link**.', 'A missing size: **Add sizes**.', 'An item without a price: **Fix**.'],
           roles: ['admin'],
         },
+        { p: 'The **Backups** card says whether the database is backed up. Choose it to open **Backups**.', roles: ['admin'] },
         { shots: [{ name: 'dashboard', alt: 'The Dashboard: figures and the Needs you list' }], roles: ['admin'] },
         {
           p: 'The **Manager Dashboard** covers items, prices and purchasing: what is on order, spending by item, the replacements that will need buying, recent price changes, what holds up ordering in the catalogue and item sets, and the sizes to stock.',
@@ -204,6 +205,30 @@ export const en: Guide = {
           p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
         },
         { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
+      ],
+    },
+    {
+      id: 'backups',
+      title: 'Backups',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Backups** shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.',
+        },
+        {
+          p: 'The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.',
+        },
+        { p: 'A second warning shows while the backups are kept only on the server itself, because they would be lost with it.' },
+        {
+          ul: [
+            '**Last backup** and **Next backup**: when, with the last one\'s size and how long it took.',
+            '**Stored** and **Total size**: the backups kept now.',
+            '**Recent backups**: every attempt, newest first, with the error of a failed one.',
+            '**Settings**: the schedule, where backups are saved, how long they are kept and whether they are encrypted.',
+          ],
+        },
+        { p: 'The settings are made on the server, and a backup is restored there too: the app only shows them.' },
+        { shots: [{ name: 'backups', alt: 'Backups: the last backup, the recent ones and the settings' }] },
       ],
     },
     {

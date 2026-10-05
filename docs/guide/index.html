@@ -86,8 +86,9 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#catalogue"><b>9</b>Item Catalogue and Item Sets</a></li>
     <li><a href="#users"><b>10</b>Users</a></li>
     <li><a href="#settings"><b>11</b>Settings</a></li>
-    <li><a href="#account"><b>12</b>Your account</a></li>
-    <li><a href="#shortcuts"><b>13</b>Search and shortcuts</a></li>
+    <li><a href="#backups"><b>12</b>Backups</a></li>
+    <li><a href="#account"><b>13</b>Your account</a></li>
+    <li><a href="#shortcuts"><b>14</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -121,6 +122,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>A missing size: <b>Add sizes</b>.</li>
       <li>An item without a price: <b>Fix</b>.</li>
     </ul>
+    <p>The <b>Backups</b> card says whether the database is backed up. Choose it to open <b>Backups</b>.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/dashboard.png" alt="The Dashboard: figures and the Needs you list" loading="lazy"></figure>
     </div>
@@ -261,8 +263,26 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="backups">
+  <h2><span class="n">12</span>Backups</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
+    <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
+    <p>A second warning shows while the backups are kept only on the server itself, because they would be lost with it.</p>
+    <ul>
+      <li><b>Last backup</b> and <b>Next backup</b>: when, with the last one's size and how long it took.</li>
+      <li><b>Stored</b> and <b>Total size</b>: the backups kept now.</li>
+      <li><b>Recent backups</b>: every attempt, newest first, with the error of a failed one.</li>
+      <li><b>Settings</b>: the schedule, where backups are saved, how long they are kept and whether they are encrypted.</li>
+    </ul>
+    <p>The settings are made on the server, and a backup is restored there too: the app only shows them.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/backups.png" alt="Backups: the last backup, the recent ones and the settings" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">12</span>Your account</h2>
+  <h2><span class="n">13</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -275,7 +295,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">13</span>Search and shortcuts</h2>
+  <h2><span class="n">14</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>

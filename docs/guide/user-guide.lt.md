@@ -31,6 +31,8 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
 - trūkstamas dydis – **Pridėti dydžius**;
 - prekė be kainos – **Taisyti**.
 
+Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte **Atsarginės kopijos**.
+
 ![Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“](../../web/apps/workwear/public/help-img/lt/desktop/dashboard.png)
 
 *Tik vadovams:*
@@ -152,7 +154,26 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
 
-## 12. Jūsų paskyra
+## 12. Atsarginės kopijos
+
+*Tik administratoriams.*
+
+**Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.
+
+Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.
+
+Antras įspėjimas rodomas, kol kopijos laikomos tik pačiame serveryje, nes jos dingtų kartu su juo.
+
+- **Paskutinė kopija** ir **Kita kopija**: kada, paskutinės dydis ir kiek ji užtruko.
+- **Laikoma** ir **Bendras dydis**: dabar laikomos kopijos.
+- **Naujausios kopijos**: kiekvienas bandymas, naujausi pirmi, nepavykusio – su klaida.
+- **Nustatymai**: tvarkaraštis, kur kopijos saugomos, kiek laiko laikomos ir ar užšifruotos.
+
+Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik rodo.
+
+![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
+
+## 13. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -161,7 +182,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ![Paskyra: kalba, slaptažodis ir lentelės eilutės](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 
-## 13. Paieška ir spartieji klavišai
+## 14. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |

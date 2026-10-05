@@ -59,9 +59,11 @@ describe('forReader', () => {
   const words = (g: Guide) => texts(g).join('\n')
   const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
-  it('keeps Users and the Dashboard tour for administrators only', () => {
-    expect(ids(forRoles(guides.en, ['admin']))).toContain('users')
+  it('keeps Users, Backups and the Dashboard tour for administrators only', () => {
+    expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(['users', 'backups']))
     expect(ids(forRoles(guides.en, ['manager']))).not.toContain('users')
+    expect(ids(forRoles(guides.en, ['manager']))).not.toContain('backups')
+    expect(words(forRoles(guides.en, ['manager']))).not.toContain('Backups')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Needs you')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
   })

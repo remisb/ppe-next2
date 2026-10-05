@@ -86,8 +86,9 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
     <li><a href="#users"><b>10</b>Naudotojai</a></li>
     <li><a href="#settings"><b>11</b>Nustatymai</a></li>
-    <li><a href="#account"><b>12</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>13</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#backups"><b>12</b>Atsarginės kopijos</a></li>
+    <li><a href="#account"><b>13</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>14</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -121,6 +122,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>trūkstamas dydis – <b>Pridėti dydžius</b>;</li>
       <li>prekė be kainos – <b>Taisyti</b>.</li>
     </ul>
+    <p>Kortelė <b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte <b>Atsarginės kopijos</b>.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/dashboard.png" alt="Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“" loading="lazy"></figure>
     </div>
@@ -261,8 +263,26 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="backups">
+  <h2><span class="n">12</span>Atsarginės kopijos</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
+    <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
+    <p>Antras įspėjimas rodomas, kol kopijos laikomos tik pačiame serveryje, nes jos dingtų kartu su juo.</p>
+    <ul>
+      <li><b>Paskutinė kopija</b> ir <b>Kita kopija</b>: kada, paskutinės dydis ir kiek ji užtruko.</li>
+      <li><b>Laikoma</b> ir <b>Bendras dydis</b>: dabar laikomos kopijos.</li>
+      <li><b>Naujausios kopijos</b>: kiekvienas bandymas, naujausi pirmi, nepavykusio – su klaida.</li>
+      <li><b>Nustatymai</b>: tvarkaraštis, kur kopijos saugomos, kiek laiko laikomos ir ar užšifruotos.</li>
+    </ul>
+    <p>Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik rodo.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/backups.png" alt="Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">12</span>Jūsų paskyra</h2>
+  <h2><span class="n">13</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -275,7 +295,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">13</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">14</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>
