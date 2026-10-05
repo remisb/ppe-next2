@@ -479,6 +479,48 @@ func TestLoginRateLimited(t *testing.T) {
 	}
 }
 
+// Failed sign-ins for one account are limited whatever address they come
+// from; another account is not affected, and the account's owner can sign in
+// again once the window ends.
+func TestLoginLimitedPerEmail(t *testing.T) {
+	api := newTestAPI(t)
+	trusted, _ := middleware.ParseTrustedProxies([]string{"127.0.0.1"})
+	cfg := testConfig()
+	cfg.TrustedProxies, cfg.LoginEmailFailures, cfg.LoginEmailInterval = trusted, 2, time.Minute
+	api.handler = routes(cfg, api.svc, api.tokens, testLogger)
+	login := func(client, email, password string) *httptest.ResponseRecorder {
+		body, _ := json.Marshal(map[string]string{"email": email, "password": password})
+		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(body))
+		req.RemoteAddr = "127.0.0.1:40000"
+		req.Header.Set("X-Forwarded-For", client)
+		rec := httptest.NewRecorder()
+		api.handler.ServeHTTP(rec, req)
+		return rec
+	}
+	// A success clears earlier failures.
+	login("203.0.113.1", "admin@example.com", "wrong-password")
+	if rec := login("203.0.113.1", "admin@example.com", "password123"); rec.Code != http.StatusOK {
+		t.Fatalf("sign-in after one failure = %d, want 200", rec.Code)
+	}
+	// Two failures from two addresses, then even the right password is refused.
+	login("203.0.113.1", "admin@example.com", "wrong-password")
+	login("203.0.113.2", "ADMIN@example.com", "wrong-password")
+	rec := login("203.0.113.3", "admin@example.com", "password123")
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("third attempt = %d, want 429", rec.Code)
+	}
+	if ra := rec.Header().Get("Retry-After"); ra == "" || ra == "0" {
+		t.Errorf("Retry-After = %q, want seconds", ra)
+	}
+	if !strings.Contains(rec.Body.String(), "too many failed sign-ins") {
+		t.Errorf("body = %s", rec.Body)
+	}
+	// Another account still signs in (it has no such user, so 401, not 429).
+	if rec := login("203.0.113.3", "someone@example.com", "password123"); rec.Code != http.StatusUnauthorized {
+		t.Errorf("other account = %d, want 401", rec.Code)
+	}
+}
+
 // Behind a trusted proxy each client has its own login budget; without the
 // proxy setting, every client behind it would share one.
 func TestLoginRateLimitPerClientBehindProxy(t *testing.T) {

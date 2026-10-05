@@ -57,6 +57,7 @@ var errorStatuses = []struct {
 	status int
 }{
 	{errBadRequest, http.StatusBadRequest},
+	{errTooManyAttempts, http.StatusTooManyRequests},
 
 	// The actor comes from a verified token, so an unknown actor is an
 	// authentication problem, not a bad request.

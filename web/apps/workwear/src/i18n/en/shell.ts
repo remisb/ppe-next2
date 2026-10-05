@@ -90,6 +90,7 @@ export const shell = {
   password: 'Password',
   wrongPassword: 'Wrong email or password.',
   enterEmailAndPassword: 'Enter your email and password.',
+  tooManyAttempts: 'Too many sign-in attempts. Wait a few minutes, then try again.',
   // Shared controls.
   retry: 'Retry',
   sortBy: 'Sort by',

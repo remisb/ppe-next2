@@ -2,7 +2,9 @@ package main
 
 import (
 	"errors"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,18 +16,24 @@ import (
 type authHandler struct {
 	users  *user.Service
 	tokens *tokens
+	emails *emailLimiter
 }
 
-// registerAuthRoutes mounts the only unauthenticated API route: login. It is
-// rate-limited per client address (middleware.ClientAddr, resolved by the
-// global ClientIP middleware) to slow password guessing. The email is not
-// part of the key: keying on it would let one address spread guesses across
-// many accounts unthrottled.
-func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, limit int, interval time.Duration) {
+// registerAuthRoutes mounts the only unauthenticated API route: login. Two
+// limits slow password guessing. Every attempt counts against the client
+// address (middleware.ClientAddr, resolved by the global ClientIP middleware),
+// which stops one address spreading guesses across many accounts. Failed
+// attempts also count against the email (emailLimiter), which stops many
+// addresses guessing at one account. A config without the per-email limit
+// (LoginEmailFailures 0, as in tests that build one by hand) leaves it off.
+func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, cfg config) {
 	h := &authHandler{users: users, tokens: tokens}
+	if cfg.LoginEmailFailures > 0 {
+		h.emails = newEmailLimiter(cfg.LoginEmailFailures, cfg.LoginEmailInterval)
+	}
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
-		RequestsPerInterval: limit,
-		Interval:            interval,
+		RequestsPerInterval: cfg.LoginRateLimit,
+		Interval:            cfg.LoginRateInterval,
 		KeyFunc:             middleware.ClientAddr,
 	})
 	rt.public("POST /api/v1/auth/login", middleware.Chain(http.HandlerFunc(h.login), limiter))
@@ -51,11 +59,20 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
+	if blocked, wait := h.emails.blocked(req.Email); blocked {
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
+		writeError(w, r, errTooManyAttempts)
+		return
+	}
 	u, err := h.users.Authenticate(r.Context(), req.Email, req.Password)
+	if errors.Is(err, user.ErrInvalidCredentials) {
+		h.emails.failed(req.Email)
+	}
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
+	h.emails.succeeded(req.Email)
 	h.writeToken(w, r, u, h.tokens.now())
 }
 

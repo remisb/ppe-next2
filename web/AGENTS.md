@@ -185,3 +185,19 @@ able to fill and save every credential form:
   listens for. Empty fields get a message instead.
 - `/.well-known/change-password` redirects to `/account` (`deploy/Caddyfile`), where
   password managers send people to change a saved password.
+
+## Content-Security-Policy
+
+Caddy sends a Content-Security-Policy (`deploy/Caddyfile`): scripts, styles, fonts,
+images and requests come from the app's own origin only. So:
+
+- No script, stylesheet, font or image from another host, and no `eval` or `new Function`.
+  Self-host what you need, as the Geist font is.
+- The only inline script is the theme in `index.html`, allowed by its hash. Changing it,
+  whitespace included, changes the hash: `src/csp.test.ts` fails and names the new value
+  to put in the Caddyfile. Do not add another inline script.
+- React's `style` props are fine (they go through the DOM, which `style-src` does not
+  restrict); a `<style>` element or a `style` attribute written as HTML is not.
+- Links to other sites (WhatsApp) are navigation and are not affected.
+- The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
+

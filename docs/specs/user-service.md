@@ -22,7 +22,7 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 
 | Route | Access | Kind |
 | --- | --- | --- |
-| `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) | returns `{access_token, token_type, expires_in, expires_at, user}` |
+| `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) and per email for failed attempts (see Login) | returns `{access_token, token_type, expires_in, expires_at, user}` |
 | `POST /api/v1/auth/refresh` | any authenticated user | a new token, same shape as login; 401 if the user is deactivated or deleted, or signed in more than `API_SESSION_MAX_AGE` ago |
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
 | `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}` |
@@ -63,6 +63,21 @@ their 401/403 bodies are plain text, not the API's JSON error shape.
 
 Unknown email, wrong password and inactive account all return the same 401. An unknown
 email still runs a bcrypt comparison so timing does not reveal which accounts exist.
+
+Two limits slow password guessing; both answer 429 with `Retry-After`, and the sign-in
+screen says to wait a few minutes.
+
+- **Per client address:** every attempt counts, `API_LOGIN_RATE_LIMIT` (5) per
+  `API_LOGIN_RATE_INTERVAL` (1m). It stops one address trying many accounts.
+- **Per email:** only failed attempts count. After `API_LOGIN_EMAIL_FAILURES` (10) within
+  `API_LOGIN_EMAIL_INTERVAL` (15m, counted from the first failure), that email is refused
+  until the interval ends, whatever address tries, even with the right password. A
+  successful sign-in clears the count. It stops many addresses guessing at one account.
+  An email with no account counts the same way, so the answer reveals nothing. Someone who
+  knows an email can keep that account locked for the interval by failing on purpose,
+  which is why the interval is short.
+
+Both counts live in the API process's memory and start again when it restarts.
 
 ## Bootstrap
 

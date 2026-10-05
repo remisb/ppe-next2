@@ -79,6 +79,7 @@ export const shell: ShellText = {
   password: 'Slaptažodis',
   wrongPassword: 'Neteisingas el. pašto adresas arba slaptažodis.',
   enterEmailAndPassword: 'Įveskite el. pašto adresą ir slaptažodį.',
+  tooManyAttempts: 'Per daug bandymų prisijungti. Palaukite kelias minutes ir bandykite dar kartą.',
   retry: 'Bandyti dar kartą',
   sortBy: 'Rikiuoti pagal',
   defaultOrder: 'Numatytoji tvarka',

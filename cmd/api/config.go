@@ -30,7 +30,12 @@ type config struct {
 
 	LoginRateLimit    int
 	LoginRateInterval time.Duration
-	AllowedOrigins    []string
+	// LoginEmailFailures failed sign-ins for one email within
+	// LoginEmailInterval refuse that email until the interval ends, whatever
+	// address the attempts come from (emailLimiter).
+	LoginEmailFailures int
+	LoginEmailInterval time.Duration
+	AllowedOrigins     []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
 	TrustedProxies []netip.Prefix
@@ -78,6 +83,9 @@ func loadConfig(args []string) (config, error) {
 	if c.LoginRateLimit, err = envInt("API_LOGIN_RATE_LIMIT", 5); err != nil {
 		return c, err
 	}
+	if c.LoginEmailFailures, err = envInt("API_LOGIN_EMAIL_FAILURES", 10); err != nil {
+		return c, err
+	}
 	for _, d := range []struct {
 		dst *time.Duration
 		key string
@@ -88,6 +96,7 @@ func loadConfig(args []string) (config, error) {
 		{&c.JWTTTL, "API_JWT_TTL", 15 * time.Minute},
 		{&c.SessionMaxAge, "API_SESSION_MAX_AGE", 12 * time.Hour},
 		{&c.LoginRateInterval, "API_LOGIN_RATE_INTERVAL", time.Minute},
+		{&c.LoginEmailInterval, "API_LOGIN_EMAIL_INTERVAL", 15 * time.Minute},
 		{&c.ConfirmTTL, "API_CONFIRM_TTL", 7 * 24 * time.Hour},
 	} {
 		if *d.dst, err = envDuration(d.key, d.def); err != nil {
@@ -137,6 +146,9 @@ func (c config) validate() error {
 	}
 	if c.LoginRateLimit < 1 || c.LoginRateInterval <= 0 {
 		errs = append(errs, errors.New("API_LOGIN_RATE_LIMIT and API_LOGIN_RATE_INTERVAL must be positive"))
+	}
+	if c.LoginEmailFailures < 1 || c.LoginEmailInterval <= 0 || c.LoginEmailInterval > 24*time.Hour {
+		errs = append(errs, errors.New("API_LOGIN_EMAIL_FAILURES must be positive and API_LOGIN_EMAIL_INTERVAL positive and at most 24h"))
 	}
 	if c.RequestTimeout <= 0 {
 		errs = append(errs, errors.New("API_REQUEST_TIMEOUT must be positive"))

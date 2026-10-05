@@ -12,10 +12,16 @@ let recordNumber = ''
 /** The second order, signed on paper after the price change. */
 let paperRecord = ''
 let confirmationURL = ''
+/** What the browser refused under the Content-Security-Policy, in any tab of the run's context (Caddy sends it; Vite does not). */
+const cspViolations: string[] = []
 
 test.beforeAll(async ({ browser }) => {
   // Its own context, so a step can open a second tab in it (a tab closed and reopened shares localStorage).
-  page = await (await browser.newContext({ baseURL: webURL })).newPage()
+  const context = await browser.newContext({ baseURL: webURL })
+  context.on('console', (msg) => {
+    if (/Content Security Policy/i.test(msg.text())) cspViolations.push(`${msg.location().url}: ${msg.text()}`)
+  })
+  page = await context.newPage()
   // Print Record opens the print dialog; record the call instead.
   await page.addInitScript(() => {
     window.print = () => {
@@ -1446,4 +1452,30 @@ test('Account: change password, then only the new one signs in', async () => {
   await page.getByLabel(/^Password/).fill(newPassword)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByRole('link', { name: admin.name })).toBeVisible()
+})
+
+test('Sign in: too many failed attempts for one account are refused for a while', async ({ browser }) => {
+  // API_LOGIN_EMAIL_FAILURES (10) failures for one email within 15 minutes; an email with no account counts too.
+  const other = await (await browser.newContext({ baseURL: webURL })).newPage()
+  await other.goto('/')
+  await other.getByLabel('Email').fill('nobody@example.com')
+  for (let i = 0; i < 10; i++) {
+    await other.getByLabel(/^Password/).fill(`guess-${i}`)
+    await other.getByRole('button', { name: 'Sign in' }).click()
+    await expect(other.getByText('Wrong email or password.')).toBeVisible()
+    await other.getByLabel(/^Password/).fill('')
+  }
+  await other.getByLabel(/^Password/).fill('guess-10')
+  await other.getByRole('button', { name: 'Sign in' }).click()
+  await expect(other.getByText('Too many sign-in attempts. Wait a few minutes, then try again.')).toBeVisible()
+  await other.context().close()
+})
+
+test('no screen broke the Content-Security-Policy', async () => {
+  // Behind Caddy (E2E_WEB_SERVER=caddy, as in CI) every step above ran under the policy.
+  if (process.env['E2E_WEB_SERVER'] === 'caddy') {
+    const res = await page.request.get('/')
+    expect(res.headers()['content-security-policy']).toContain("default-src 'self'")
+  }
+  expect(cspViolations).toEqual([])
 })

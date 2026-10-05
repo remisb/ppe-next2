@@ -1,3 +1,4 @@
+import { ApiError } from '@ppe/api-client'
 import { type FormEvent, useState } from 'react'
 
 import { GavortLogo } from '@/components/gavort-logo'
@@ -38,7 +39,9 @@ export function SignIn() {
     try {
       await signIn(email, password)
     } catch (err) {
-      setError(errorText(err) === 'unauthenticated' ? t.shell.wrongPassword : errorText(err))
+      // 429: too many attempts from this address, or failed ones for this account.
+      if (err instanceof ApiError && err.status === 429) setError(t.shell.tooManyAttempts)
+      else setError(errorText(err) === 'unauthenticated' ? t.shell.wrongPassword : errorText(err))
     } finally {
       setBusy(false)
     }

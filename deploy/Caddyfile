@@ -44,6 +44,12 @@ import sites/*.caddy
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# Only the app's own files may run or load, which keeps an injected script
+		# from running or sending data anywhere. The one inline script, the theme
+		# in index.html, is allowed by its hash; web/apps/workwear/src/csp.test.ts
+		# fails when the two drift apart. Inline styles React sets through the DOM
+		# are not affected by style-src.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
 }

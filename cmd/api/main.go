@@ -143,7 +143,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.public("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
-	registerAuthRoutes(rt, svc.users, tok, cfg.LoginRateLimit, cfg.LoginRateInterval)
+	registerAuthRoutes(rt, svc.users, tok, cfg)
 	registerUserRoutes(rt, svc.users)
 	registerEmployeeRoutes(rt, svc.employees)
 	registerCatalogueRoutes(rt, svc.catalogue)

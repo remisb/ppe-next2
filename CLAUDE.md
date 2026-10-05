@@ -81,6 +81,9 @@ because Postgres tests truncate tables.
 `.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
 → api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
 built app into the Caddy image; `deploy/Caddyfile`). Only Caddy publishes ports.
+Caddy also sends the security headers, including a Content-Security-Policy that allows
+`index.html`'s inline theme script by its hash (`web/apps/workwear/src/csp.test.ts` keeps them
+in step; rules in `web/AGENTS.md`).
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
 `prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`; they run compose under `env -i` so `.env` values cannot leak in.
 The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`

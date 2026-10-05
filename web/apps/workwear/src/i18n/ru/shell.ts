@@ -81,6 +81,7 @@ export const shell: ShellText = {
   password: 'Пароль',
   wrongPassword: 'Неверный адрес эл. почты или пароль.',
   enterEmailAndPassword: 'Введите адрес эл. почты и пароль.',
+  tooManyAttempts: 'Слишком много попыток входа. Подождите несколько минут и попробуйте снова.',
   retry: 'Повторить',
   sortBy: 'Сортировать по',
   defaultOrder: 'Порядок по умолчанию',
