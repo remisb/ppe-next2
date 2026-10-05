@@ -120,6 +120,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` exists).
 - `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
+- `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
+  words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.
 - `../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx` — the product
   contract (ORDERED/GIVEN orders, immutable line snapshots, bilingual receipts).
