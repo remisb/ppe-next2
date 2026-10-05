@@ -35,6 +35,11 @@ Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
 (migration 0019, dbbackup's schema copied verbatim); administrators read them on the
 Backups screen and a Dashboard card (`internal/domain/backup`, `GET /api/v1/backups`, read-only;
 spec `docs/specs/backup-service.md`, operations and Postgres upgrades `docs/backups.md`).
+Sign-ins are sessions (`internal/domain/session`, migration 0020, spec
+`docs/specs/session-service.md`): an HttpOnly refresh cookie rotated on every refresh, with
+reuse detection, "Keep me signed in" (30 days, 14 idle; else 12h and the browser's life),
+signed-in devices on Account, sessions ended on password change or reset, deactivation and
+deletion, and a recent sign-in (password within `API_RECENT_SIGN_IN`) for managing users.
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
@@ -121,7 +126,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
-- `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` exists).
+- `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
+  `session-service.md` cover sign-in).
 - `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.

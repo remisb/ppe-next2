@@ -22,39 +22,39 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 
 | Route | Access | Kind |
 | --- | --- | --- |
-| `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) and per email for failed attempts (see Login) | returns `{access_token, token_type, expires_in, expires_at, user}` |
-| `POST /api/v1/auth/refresh` | any authenticated user | a new token, same shape as login; 401 if the user is deactivated or deleted, or signed in more than `API_SESSION_MAX_AGE` ago |
+| `POST /api/v1/auth/login` | public, rate-limited per client IP (from `X-Forwarded-For` only when the peer is in `API_TRUSTED_PROXIES`) and per email for failed attempts (see Login) | body `{email, password, keep_signed_in}`; returns `{access_token, token_type, expires_in, expires_at, user}` and sets the refresh cookie |
+| `POST /api/v1/auth/refresh`, `/logout`, `/reauth`, `GET`/`DELETE /api/v1/auth/sessions[/{id}]` | see `docs/specs/session-service.md` | sign-ins: the refresh cookie, signing out, confirming the password, signed-in devices |
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
-| `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}` |
+| `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}`; signs the user out on their other devices |
 | `PUT /api/v1/users/me/language` | any authenticated user | body `{language}` (`en`, `lt` or `ru`, else 400); returns the user. No one sets another user's language |
 | `GET /api/v1/users` | admin, manager | list |
 | `GET /api/v1/users/{id}` | admin, manager | single object, 404 on miss |
 | `GET /api/v1/users/by-email/{email}` | admin, manager | single-object lookup, 404 on miss |
-| `POST /api/v1/users` | admin | body `{email, name, password, roles}` |
-| `PUT /api/v1/users/{id}` | admin | body `{email, name, roles, is_active}`, all required (full replace) |
-| `PUT /api/v1/users/{id}/password` | admin | body `{password}`, admin reset |
-| `DELETE /api/v1/users/{id}` | admin | soft delete |
+| `POST /api/v1/users` | admin, recent sign-in | body `{email, name, password, roles}` |
+| `PUT /api/v1/users/{id}` | admin, recent sign-in | body `{email, name, roles, is_active}`, all required (full replace); deactivating signs the user out everywhere |
+| `PUT /api/v1/users/{id}/password` | admin, recent sign-in | body `{password}`, admin reset; signs the user out everywhere |
+| `DELETE /api/v1/users/{id}` | admin, recent sign-in | soft delete; signs the user out everywhere |
 
-`GET /health` is the only other unauthenticated route.
+"Recent sign-in": the administrator's password was entered within `API_RECENT_SIGN_IN`
+(12h), else 403 `recent sign-in required` until it is confirmed at `POST /api/v1/auth/reauth`
+(session spec). Sessions are ended through the `user.Sessions` interface (`WithSessions`).
+
+`GET /health`, the confirmation routes and the sign-in routes are the only other unauthenticated routes.
 
 An admin cannot deactivate, delete, or remove the `admin` role from their own account (400).
 
 ## Tokens
 
 HS256 JWTs signed with `API_JWT_SECRET` (≥ 32 bytes), TTL `API_JWT_TTL` (default 15m,
-max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `roles`, `auth_time` = when the
-user signed in. The algorithm is pinned; `exp` is required; a non-UUID subject is rejected.
-Roles are read from the token without a DB lookup.
+max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `roles`, `sid` = the sign-in
+(session) it was issued for, `auth_time` = when the password was last entered in it (a token
+without one counts from its `iat`). The algorithm is pinned; `exp` is required; a non-UUID
+subject is rejected. Roles are read from the token without a DB lookup.
 
-There are no separate refresh tokens: a valid access token is swapped for a new one at
-`POST /api/v1/auth/refresh`. The refresh reads the account again, so a deactivated or
-deleted user is refused and a role change takes effect at the next refresh; the new token
-keeps the original `auth_time` (a token without one counts from its `iat`). Once the sign-in
-is `API_SESSION_MAX_AGE` old (default 12h, at least `API_JWT_TTL`, at most 720h) the refresh
-is a 401 and the user signs in again. The web app refreshes when a token has less than 10
-minutes left, so about every 5 minutes for a 15-minute token, checking each minute, when the
-tab is shown again and when the device comes back online; a closed tab or a sleeping device
-lets the token lapse after `API_JWT_TTL`.
+A new access token comes from the HttpOnly refresh cookie at `POST /api/v1/auth/refresh`,
+which reads the account again, so a deactivated or deleted user is refused and a role change
+takes effect at the next refresh. How long a sign-in lasts (12 hours, or with Keep me signed
+in 30 days and 14 days idle) and what ends it is in `docs/specs/session-service.md`.
 
 Authentication and role checks use `muxstack/middleware.Authenticator` and `Authorizer`;
 their 401/403 bodies are plain text, not the API's JSON error shape.

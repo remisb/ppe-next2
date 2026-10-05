@@ -23,6 +23,7 @@ import type {
   Resolution,
   ResolveInput,
   Settings,
+  SignedInDevice,
   Sizes,
   SupplierChatInput,
   User,
@@ -35,38 +36,72 @@ export interface ClientOptions {
   baseUrl?: string
   /** The current bearer token, or null when signed out. */
   getToken: () => string | null
-  /** Called on any 401, e.g. to drop an expired session. */
+  /**
+   * Called when a request is refused with 401, as when the access token ran
+   * out while the device slept: get a new one from the refresh cookie and
+   * resolve true to send the request once more with it.
+   */
+  renew?: () => Promise<boolean>
+  /** Called on a 401 that stands, e.g. to drop the session. */
   onUnauthenticated?: () => void
+  /**
+   * Called when the server wants the password confirmed first (403
+   * RECENT_SIGN_IN_REQUIRED): ask for it, confirm it (reauthenticate), and
+   * resolve true to send the request once more.
+   */
+  confirmPassword?: () => Promise<boolean>
   fetch?: typeof fetch
 }
 
+/** The API's 403 message when managing users needs the password entered again. */
+export const RECENT_SIGN_IN_REQUIRED = 'recent sign-in required'
+
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+/**
+ * How a request handles refusals. The sign-in routes answer with the cookie,
+ * not the token, so their 401 neither renews nor signs out: login's is a wrong
+ * password, refresh's means signed out, which the caller handles.
+ */
+interface Handling {
+  renew: boolean
+  signOut: boolean
+}
+const normal: Handling = { renew: true, signOut: true }
+const signInRoute: Handling = { renew: false, signOut: false }
 
 export function createClient(options: ClientOptions) {
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis)
   const base = options.baseUrl ?? ''
 
-  async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+  async function send(method: Method, path: string, body: unknown): Promise<{ res: Response; text: string }> {
     const headers: Record<string, string> = { Accept: 'application/json' }
     const token = options.getToken()
     if (token) headers['Authorization'] = `Bearer ${token}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
-
-    let res: Response
     try {
-      res = await doFetch(base + path, {
+      const res = await doFetch(base + path, {
         method,
         headers,
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       })
+      return { res, text: res.status === 204 ? '' : await res.text() }
     } catch (err) {
       throw new NetworkError(err)
     }
+  }
 
+  async function request<T>(method: Method, path: string, body?: unknown, handling: Handling = normal): Promise<T> {
+    let { res, text } = await send(method, path, body)
+    if (res.status === 401 && handling.renew && options.renew && (await options.renew())) {
+      ;({ res, text } = await send(method, path, body))
+    }
+    if (res.status === 403 && errorMessage(text, 403) === RECENT_SIGN_IN_REQUIRED && options.confirmPassword && (await options.confirmPassword())) {
+      ;({ res, text } = await send(method, path, body))
+    }
     if (res.status === 204) return undefined as T
-    const text = await res.text()
     if (!res.ok) {
-      if (res.status === 401) options.onUnauthenticated?.()
+      if (res.status === 401 && handling.signOut) options.onUnauthenticated?.()
       throw new ApiError(res.status, errorMessage(text, res.status))
     }
     return (text ? JSON.parse(text) : undefined) as T
@@ -75,10 +110,23 @@ export function createClient(options: ClientOptions) {
   const seg = encodeURIComponent
 
   return {
-    login: (email: string, password: string) =>
-      request<LoginResponse>('POST', '/api/v1/auth/login', { email, password }),
-    /** A new token for the signed-in user, keeping their sign-in time; 401 once the account is inactive or the sign-in too old. */
-    refresh: () => request<LoginResponse>('POST', '/api/v1/auth/refresh'),
+    /** Sign in; the server also sets the refresh cookie, outliving the browser with keepSignedIn. */
+    login: (email: string, password: string, keepSignedIn: boolean) =>
+      request<LoginResponse>('POST', '/api/v1/auth/login', { email, password, keep_signed_in: keepSignedIn }, signInRoute),
+    /** A new access token from the refresh cookie, which it replaces; 401 when signed out (no cookie, ended or expired). */
+    refresh: () => request<LoginResponse>('POST', '/api/v1/auth/refresh', undefined, signInRoute),
+    /** Sign out this browser: ends its sign-in and clears the cookie. */
+    logout: () => request<void>('POST', '/api/v1/auth/logout', undefined, signInRoute),
+    /** Confirm the password for an action that needs a recent sign-in; a new access token. 400 when it is wrong. */
+    reauthenticate: (password: string) => request<LoginResponse>('POST', '/api/v1/auth/reauth', { password }, { renew: false, signOut: true }),
+    /** The signed-in user's devices (sign-ins), this one marked current. */
+    sessions: {
+      list: () => request<SignedInDevice[]>('GET', '/api/v1/auth/sessions'),
+      /** Sign out one of the user's other devices. */
+      end: (id: string) => request<void>('DELETE', `/api/v1/auth/sessions/${encodeURIComponent(id)}`),
+      /** Sign out every device but this one. */
+      endOthers: () => request<void>('DELETE', '/api/v1/auth/sessions'),
+    },
     me: () => request<User>('GET', '/api/v1/users/me'),
     /** Change the signed-in user's own password; the current one must be supplied. */
     changeOwnPassword: (currentPassword: string, newPassword: string) =>

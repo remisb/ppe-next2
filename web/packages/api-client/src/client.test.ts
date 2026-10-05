@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { ApiError, NetworkError } from './errors.ts'
-import { createClient, historyQueryString } from './client.ts'
+import { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString } from './client.ts'
 
 function fakeFetch(status: number, body: string) {
   return vi.fn(async (_url: string, _init?: RequestInit) => new Response(status === 204 ? null : body, { status }))
@@ -108,6 +108,80 @@ describe('createClient', () => {
     })
     const client = createClient({ getToken: () => null, fetch: f as unknown as typeof fetch })
     await expect(client.me()).rejects.toBeInstanceOf(NetworkError)
+  })
+})
+
+describe('sign-in', () => {
+  /** Answers each call with the next of responses. */
+  function sequence(...responses: [number, string][]) {
+    return vi.fn(async (_url: string, _init?: RequestInit) => {
+      const [status, body] = responses.shift()!
+      return new Response(status === 204 ? null : body, { status })
+    })
+  }
+
+  it('signs in with Keep me signed in; a wrong password neither renews nor signs out', async () => {
+    const renew = vi.fn(async () => true)
+    const onUnauth = vi.fn()
+    const f = sequence([401, '{"error":"unauthenticated"}'])
+    const client = createClient({ getToken: () => null, renew, onUnauthenticated: onUnauth, fetch: f as unknown as typeof fetch })
+    await expect(client.login('a@b.c', 'pw', true)).rejects.toBeInstanceOf(ApiError)
+    expect(f.mock.calls[0]![1]?.body).toBe('{"email":"a@b.c","password":"pw","keep_signed_in":true}')
+    expect(renew).not.toHaveBeenCalled()
+    expect(onUnauth).not.toHaveBeenCalled()
+  })
+
+  it('renews the token on a 401 and sends the request again with the new one', async () => {
+    let token = 'old'
+    const renew = vi.fn(async () => {
+      token = 'new'
+      return true
+    })
+    const onUnauth = vi.fn()
+    const f = sequence([401, 'invalid token'], [200, '{"id":"u1"}'])
+    const client = createClient({ getToken: () => token, renew, onUnauthenticated: onUnauth, fetch: f as unknown as typeof fetch })
+    await expect(client.me()).resolves.toEqual({ id: 'u1' })
+    expect((f.mock.calls[1]![1]?.headers as Record<string, string>)['Authorization']).toBe('Bearer new')
+    expect(onUnauth).not.toHaveBeenCalled()
+  })
+
+  it('signs out when the token cannot be renewed', async () => {
+    const onUnauth = vi.fn()
+    const client = createClient({ getToken: () => 'x', renew: async () => false, onUnauthenticated: onUnauth, fetch: sequence([401, 'invalid token']) as unknown as typeof fetch })
+    await expect(client.me()).rejects.toBeInstanceOf(ApiError)
+    expect(onUnauth).toHaveBeenCalledOnce()
+  })
+
+  it('asks for the password when the server wants a recent sign-in, then tries again', async () => {
+    const confirmPassword = vi.fn(async () => true)
+    const f = sequence([403, '{"error":"recent sign-in required"}'], [201, '{"id":"u2"}'])
+    const client = createClient({ getToken: () => 't', confirmPassword, fetch: f as unknown as typeof fetch })
+    await expect(client.users.create({ email: 'n@b.c', name: 'N', password: 'pw-123456', roles: ['employee'] })).resolves.toEqual({ id: 'u2' })
+    expect(confirmPassword).toHaveBeenCalledOnce()
+    expect(f).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves the 403 when the password is not confirmed, and asks for no other 403', async () => {
+    const confirmPassword = vi.fn(async () => false)
+    const client = createClient({ getToken: () => 't', confirmPassword, fetch: sequence([403, '{"error":"recent sign-in required"}'], [403, 'forbidden']) as unknown as typeof fetch })
+    const err = (await client.users.create({} as never).catch((e: unknown) => e)) as ApiError
+    expect(err.status).toBe(403)
+    expect(err.message).toBe(RECENT_SIGN_IN_REQUIRED)
+    await expect(client.dashboard()).rejects.toBeInstanceOf(ApiError)
+    expect(confirmPassword).toHaveBeenCalledOnce()
+  })
+
+  it('lists and signs out devices', async () => {
+    const f = sequence([200, '[]'], [204, ''], [204, ''])
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    await client.sessions.list()
+    await client.sessions.end('s1')
+    await client.sessions.endOthers()
+    expect(f.mock.calls.map((c) => `${c[1]?.method} ${c[0]}`)).toEqual([
+      'GET /api/v1/auth/sessions',
+      'DELETE /api/v1/auth/sessions/s1',
+      'DELETE /api/v1/auth/sessions',
+    ])
   })
 })
 

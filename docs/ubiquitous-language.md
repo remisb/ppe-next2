@@ -61,11 +61,38 @@ Rules for using it:
   and `*_by_user_id` columns.
 - **Code:** `actorID(r)` in `cmd/api/auth.go`.
 
-### Sign-in session
-- **Brief:** how long a user stays signed in.
-- **Detail:** up to 12 hours while the app is open. The token is refreshed every few minutes;
-  after the tab has been closed or the device asleep for more than 15 minutes, sign in again.
+### Sign-in (session)
+- **Brief:** one browser's signed-in state for one user, which lasts across closed tabs,
+  reloads and a sleeping device.
+- **Detail:** kept by the server as a session and in the browser as an HttpOnly refresh
+  cookie that no script can read; the access token the app sends lives minutes and only in
+  the open tab's memory. With **Keep me signed in** a sign-in lasts up to 30 days and ends
+  after 14 days unused; without it, it ends when the browser closes and at most 12 hours
+  after signing in. It also ends on **Sign out**, when signed out from another device,
+  when the password is changed elsewhere or reset by an administrator, and when the account
+  is deactivated or deleted. A role change applies within minutes, at the next refresh.
 - **UI:** Sign in, Sign out.
+- **Code:** `internal/domain/session`, `cmd/api/auth-routes.go`; spec
+  `docs/specs/session-service.md`.
+
+### Keep me signed in
+- **Brief:** the box on Sign in that keeps the sign-in after the browser closes.
+- **Detail:** ticked by default (staff devices are mostly their own); unticked on a shared
+  computer, and then it stays unticked at the next sign-in on that device.
+
+### Signed-in devices
+- **Brief:** the card on Account listing every browser the user is signed in on.
+- **Detail:** each with its browser and system ("Chrome on Windows"), when it was last used
+  and from which address, and whether it is kept signed in. **This device** is first and
+  signs out with the usual Sign out; each other has its own **Sign out**, and **Sign out all
+  other devices** ends the rest.
+
+### Confirm your password (recent sign-in)
+- **Brief:** the dialog asking for the password again before managing users, when it was last
+  entered more than 12 hours ago (`API_RECENT_SIGN_IN`).
+- **Detail:** **Continue** confirms it and the change goes ahead; **Cancel** leaves it undone.
+  A phone left signed in for weeks cannot add an administrator or reset a password without
+  it.
 
 ---
 
@@ -655,6 +682,10 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Setup | Sąranka | Настройка |
 | Last backup | Paskutinė kopija | Последняя копия |
 | Recent backups | Naujausios kopijos | Последние копии |
+| Keep me signed in | Likti prisijungus | Оставаться в системе |
+| Signed-in devices / This device | Prisijungę įrenginiai / Šis įrenginys | Устройства со входом / Это устройство |
+| Sign out all other devices | Atjungti visus kitus įrenginius | Выйти на всех других устройствах |
+| Confirm your password | Patvirtinkite slaptažodį | Подтвердите пароль |
 
 The dictionaries in `web/apps/workwear/src/i18n/{en,lt,ru}` are the source; this
 table follows them.
@@ -679,3 +710,5 @@ table follows them.
 | edit an order | (not possible) | After Mark as Ordered an order is immutable; delete is for demo and test orders only. |
 | backup settings (as editable) | **backup service settings**, set on the server | The app only shows them. |
 | Settings (for Account or Backups' panel) | **Account**; Backups **Settings** panel | Settings is the organisation's screen. |
+| remember me, stay logged in, session (in the UI) | **Keep me signed in**; **sign-in** | One phrase on every screen; "session" is the code name. |
+| log in, log out | **sign in**, **sign out** | |

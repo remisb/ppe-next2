@@ -5,29 +5,44 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
+// errRecentSignInRequired refuses managing users when the password was last
+// entered longer than API_RECENT_SIGN_IN ago (403). The web app recognises the
+// message, asks for the password (POST /api/v1/auth/reauth) and tries again.
+var errRecentSignInRequired = errors.New("recent sign-in required")
+
 type authHandler struct {
-	users  *user.Service
-	tokens *tokens
-	emails *emailLimiter
+	users    *user.Service
+	sessions *session.Service
+	tokens   *tokens
+	emails   *emailLimiter
+	cookies  cookiePolicy
 }
 
-// registerAuthRoutes mounts the only unauthenticated API route: login. Two
-// limits slow password guessing. Every attempt counts against the client
-// address (middleware.ClientAddr, resolved by the global ClientIP middleware),
-// which stops one address spreading guesses across many accounts. Failed
-// attempts also count against the email (emailLimiter), which stops many
-// addresses guessing at one account. A config without the per-email limit
+// registerAuthRoutes mounts sign-in and the signed-in devices.
+//
+// A sign-in is a session (internal/domain/session) whose refresh token lives
+// in an HttpOnly cookie scoped to /api/v1/auth (auth-cookie.go); the API's
+// other routes take the short access token as a Bearer header. login, refresh
+// and logout are public because the cookie, not a token, says who is asking.
+//
+// Two limits slow password guessing, at login and when the password is
+// confirmed again (reauth). Every attempt counts against the client address
+// (middleware.ClientAddr, resolved by the global ClientIP middleware), which
+// stops one address spreading guesses across many accounts. Failed attempts
+// also count against the email (emailLimiter), which stops many addresses
+// guessing at one account. A config without the per-email limit
 // (LoginEmailFailures 0, as in tests that build one by hand) leaves it off.
-func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, cfg config) {
-	h := &authHandler{users: users, tokens: tokens}
+func registerAuthRoutes(rt *router, users *user.Service, sessions *session.Service, tokens *tokens, cfg config) {
+	h := &authHandler{users: users, sessions: sessions, tokens: tokens, cookies: newCookiePolicy(cfg)}
 	if cfg.LoginEmailFailures > 0 {
 		h.emails = newEmailLimiter(cfg.LoginEmailFailures, cfg.LoginEmailInterval)
 	}
@@ -37,12 +52,20 @@ func registerAuthRoutes(rt *router, users *user.Service, tokens *tokens, cfg con
 		KeyFunc:             middleware.ClientAddr,
 	})
 	rt.public("POST /api/v1/auth/login", middleware.Chain(http.HandlerFunc(h.login), limiter))
-	rt.authenticated("POST /api/v1/auth/refresh", h.refresh)
+	rt.public("POST /api/v1/auth/refresh", http.HandlerFunc(h.refresh))
+	rt.public("POST /api/v1/auth/logout", http.HandlerFunc(h.logout))
+	rt.authenticated("POST /api/v1/auth/reauth", limiter(http.HandlerFunc(h.reauth)).ServeHTTP)
+	rt.authenticated("GET /api/v1/auth/sessions", h.listSessions)
+	rt.authenticated("DELETE /api/v1/auth/sessions", h.endOtherSessions)
+	rt.authenticated("DELETE /api/v1/auth/sessions/{id}", h.endSession)
 }
 
 type loginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	// KeepSignedIn is "Keep me signed in": a cookie that outlives the browser
+	// and the longer session limits.
+	KeepSignedIn bool `json:"keep_signed_in"`
 }
 
 type loginResponse struct {
@@ -53,7 +76,16 @@ type loginResponse struct {
 	User        user.User `json:"user"`
 }
 
+// seen is the browser and client address a request comes from.
+func seen(r *http.Request) session.Seen {
+	return session.Seen{UserAgent: r.UserAgent(), IP: middleware.ClientAddr(r)}
+}
+
 func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
+	if !h.cookies.sameOrigin(r) {
+		writeError(w, r, errCrossOrigin)
+		return
+	}
 	var req loginRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, r, err)
@@ -73,50 +105,137 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.emails.succeeded(req.Email)
-	h.writeToken(w, r, u, h.tokens.now())
+	by := seen(r)
+	s, refresh, err := h.sessions.Start(r.Context(), session.StartParams{
+		UserID: u.ID, KeepSignedIn: req.KeepSignedIn, UserAgent: by.UserAgent, IP: by.IP,
+	})
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.cookies.set(w, refresh, s, h.tokens.now())
+	h.writeToken(w, r, u, s)
 }
 
-// refresh swaps a valid token for a new one, so a signed-in user who keeps the
-// app open is not signed out every API_JWT_TTL. It reads the account again: a
-// deactivated or deleted user is refused, and role changes take effect. The
-// new token keeps the original sign-in time; once that is API_SESSION_MAX_AGE
-// old the refresh is refused and the user signs in again.
+// refresh swaps the refresh cookie for the next one and a new access token,
+// so a signed-in browser stays signed in without the password: across closed
+// tabs, reloads and a sleeping device, until the session's limits. It reads
+// the account again: a deactivated or deleted user is refused, and role
+// changes take effect. Any refusal clears the cookie and is a 401.
 func (h *authHandler) refresh(w http.ResponseWriter, r *http.Request) {
-	raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if !ok {
-		writeError(w, r, errUnauthenticated)
+	if !h.cookies.sameOrigin(r) {
+		writeError(w, r, errCrossOrigin)
 		return
 	}
-	claims, err := h.tokens.parse(strings.TrimSpace(raw))
+	c, err := r.Cookie(refreshCookie)
 	if err != nil {
-		writeError(w, r, errUnauthenticated)
+		h.refuse(w, r)
 		return
 	}
-	signedIn := claims.signedInAt()
-	if signedIn.IsZero() || h.tokens.now().Sub(signedIn) > h.tokens.sessionMax {
-		writeError(w, r, errUnauthenticated)
+	s, token, err := h.sessions.Refresh(r.Context(), c.Value, seen(r))
+	if errors.Is(err, session.ErrInvalidToken) {
+		h.refuse(w, r)
 		return
 	}
-	id, err := actorID(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	u, err := h.users.Get(r.Context(), id)
+	u, err := h.users.Get(r.Context(), s.UserID)
 	if errors.Is(err, user.ErrNotFound) || (err == nil && !u.IsActive) {
-		writeError(w, r, errUnauthenticated)
+		h.refuse(w, r)
 		return
 	}
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	h.writeToken(w, r, u, signedIn)
+	h.cookies.set(w, token, s, h.tokens.now())
+	h.writeToken(w, r, u, s)
 }
 
-// writeToken issues u a token for the sign-in at signedIn and writes it.
-func (h *authHandler) writeToken(w http.ResponseWriter, r *http.Request, u user.User, signedIn time.Time) {
-	token, exp, err := h.tokens.issueFor(u, signedIn)
+// refuse clears the refresh cookie and answers 401.
+func (h *authHandler) refuse(w http.ResponseWriter, r *http.Request) {
+	h.cookies.clear(w)
+	writeError(w, r, errUnauthenticated)
+}
+
+// logout ends the cookie's session and clears the cookie. It always succeeds:
+// a missing, unknown or already ended session leaves nothing to end.
+func (h *authHandler) logout(w http.ResponseWriter, r *http.Request) {
+	if !h.cookies.sameOrigin(r) {
+		writeError(w, r, errCrossOrigin)
+		return
+	}
+	if c, err := r.Cookie(refreshCookie); err == nil {
+		if err := h.sessions.SignOut(r.Context(), c.Value); err != nil && !errors.Is(err, session.ErrInvalidToken) {
+			writeError(w, r, err)
+			return
+		}
+	}
+	h.cookies.clear(w)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+type reauthRequest struct {
+	Password string `json:"password"`
+}
+
+// reauth confirms the signed-in user's password in this sign-in and returns a
+// new access token whose auth_time is now, for actions that need a recent
+// sign-in (requireRecentSignIn). A wrong password is a 400 naming the field,
+// not a 401, which would sign the app out.
+func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
+	claims, err := h.tokens.bearer(r)
+	if err != nil || claims.sessionID() == uuid.Nil {
+		writeError(w, r, errUnauthenticated)
+		return
+	}
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req reauthRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	u, err := h.users.Get(r.Context(), actor)
+	if errors.Is(err, user.ErrNotFound) {
+		err = errUnauthenticated
+	}
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if blocked, wait := h.emails.blocked(u.Email); blocked {
+		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
+		writeError(w, r, errTooManyAttempts)
+		return
+	}
+	if err := h.users.CheckPassword(r.Context(), actor, req.Password); err != nil {
+		if errors.Is(err, user.ErrInvalid) {
+			h.emails.failed(u.Email)
+		}
+		writeError(w, r, err)
+		return
+	}
+	h.emails.succeeded(u.Email)
+	s, err := h.sessions.Reauthenticated(r.Context(), actor, claims.sessionID())
+	if errors.Is(err, session.ErrNotFound) {
+		err = errUnauthenticated
+	}
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.writeToken(w, r, u, s)
+}
+
+// writeToken issues u an access token for session s and writes it.
+func (h *authHandler) writeToken(w http.ResponseWriter, r *http.Request, u user.User, s session.Session) {
+	token, exp, err := h.tokens.issue(u, s.ID, s.AuthenticatedAt)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -129,4 +248,107 @@ func (h *authHandler) writeToken(w http.ResponseWriter, r *http.Request, u user.
 		ExpiresAt:   exp.UTC(),
 		User:        u,
 	})
+}
+
+// signedInDevice is one of the user's sessions as Account lists it.
+type signedInDevice struct {
+	ID string `json:"id"`
+	// Current is the session the request's token belongs to: this device.
+	Current      bool      `json:"current"`
+	KeepSignedIn bool      `json:"keep_signed_in"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastUsedAt   time.Time `json:"last_used_at"`
+	// ExpiresAt is when it ends if not used before: the earlier of its idle
+	// and absolute limits.
+	ExpiresAt time.Time `json:"expires_at"`
+	UserAgent string    `json:"user_agent"`
+	IP        string    `json:"ip"`
+}
+
+func (h *authHandler) listSessions(w http.ResponseWriter, r *http.Request) {
+	actor, claims, ok := h.signedIn(w, r)
+	if !ok {
+		return
+	}
+	list, err := h.sessions.List(r.Context(), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	out := make([]signedInDevice, 0, len(list))
+	for _, s := range list {
+		ends := s.ExpiresAt
+		if s.IdleExpiresAt.Before(ends) {
+			ends = s.IdleExpiresAt
+		}
+		out = append(out, signedInDevice{
+			ID: s.ID.String(), Current: s.ID == claims.sessionID(), KeepSignedIn: s.KeepSignedIn,
+			CreatedAt: s.CreatedAt, LastUsedAt: s.LastUsedAt, ExpiresAt: ends, UserAgent: s.UserAgent, IP: s.IP,
+		})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// endOtherSessions signs the user out everywhere but this device.
+func (h *authHandler) endOtherSessions(w http.ResponseWriter, r *http.Request) {
+	actor, claims, ok := h.signedIn(w, r)
+	if !ok {
+		return
+	}
+	if err := h.sessions.EndAll(r.Context(), actor, claims.sessionID(), session.ReasonEndedElsewhere); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// endSession signs one of the user's devices out; another user's is a 404.
+func (h *authHandler) endSession(w http.ResponseWriter, r *http.Request) {
+	actor, _, ok := h.signedIn(w, r)
+	if !ok {
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.sessions.End(r.Context(), actor, id); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// signedIn reads the actor and the token's claims, writing the error if it fails.
+func (h *authHandler) signedIn(w http.ResponseWriter, r *http.Request) (actor uuid.UUID, claims accessClaims, ok bool) {
+	actor, err := actorID(r)
+	if err == nil {
+		claims, err = h.tokens.bearer(r)
+	}
+	if err != nil {
+		writeError(w, r, err)
+		return actor, claims, false
+	}
+	return actor, claims, true
+}
+
+// requireRecentSignIn wraps a handler that needs the password to have been
+// entered within maxAge: at sign-in or confirmed since (reauth). Older, it is
+// a 403 errRecentSignInRequired.
+func requireRecentSignIn(tok *tokens, maxAge time.Duration) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			claims, err := tok.bearer(r)
+			if err != nil {
+				writeError(w, r, err)
+				return
+			}
+			if at := claims.signedInAt(); at.IsZero() || tok.now().Sub(at) > maxAge {
+				writeError(w, r, errRecentSignInRequired)
+				return
+			}
+			next(w, r)
+		}
+	}
 }

@@ -2,8 +2,9 @@ import { BookOpen, ClipboardList, DatabaseBackup, Ellipsis, History as HistoryIc
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
+import { ConfirmPassword } from '@/components/confirm-password'
 import { GavortEmblem } from '@/components/gavort-logo'
-import { Loading } from '@/components/states'
+import { ErrorState, Loading } from '@/components/states'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
@@ -131,7 +132,7 @@ const moreItem = cn(
 const moreIcon = cn(navIcon, 'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-hover:bg-transparent')
 
 export function App() {
-  const { session, signOut, client } = useApi()
+  const { session, status, retry, signOut, client, passwordPrompt } = useApi()
   const { route: asked, navigate } = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -188,6 +189,23 @@ export function App() {
   // The public confirmation page is checked before the session gate: its
   // visitor is an employee with a link, not a signed-in user.
   if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
+  // The refresh cookie answers whether this browser is signed in; until then, neither the app nor Sign in.
+  if (status === 'starting') {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-background">
+        <Loading label={t.shell.checkingSignIn} />
+      </main>
+    )
+  }
+  if (status === 'offline') {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-background p-5">
+        <div className="w-full max-w-sm">
+          <ErrorState title={t.shell.offlineTitle} error={new Error(t.shell.offlineHint)} onRetry={retry} />
+        </div>
+      </main>
+    )
+  }
   if (!session) return <SignIn />
   const route = startRoute(asked, session)
   const shownTabs = session.isAdmin
@@ -422,6 +440,7 @@ export function App() {
           <RecordPage id={route.id} autoPrint={route.print ?? false} onBack={back({ name: 'history' })} />
         ) : null}
       </main>
+      <ConfirmPassword prompt={passwordPrompt} />
       <CommandPalette open={paletteOpen} sections={sections} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
       <FormSheet
         open={helpOpen}

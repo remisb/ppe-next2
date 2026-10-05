@@ -5,7 +5,7 @@ export const account = {
   changePassword: 'Change password',
   changing: 'Changing…',
   passwordChanged: 'Password changed',
-  useNewPassword: 'Use the new password the next time you sign in.',
+  useNewPassword: 'Use the new password the next time you sign in. Your other devices have been signed out.',
   currentPassword: 'Current password',
   newPassword: 'New password',
   confirmNewPassword: 'Confirm new password',
@@ -29,6 +29,17 @@ export const account = {
   system: 'System',
   themeHint: "Kept on this device, before sign-in too. System follows the device's own light or dark setting.",
   signOut: 'Sign out',
+  devices: 'Signed-in devices',
+  devicesHint: 'Where you are signed in now. Sign out a device you no longer use or do not recognise.',
+  thisDevice: 'This device',
+  deviceOn: (browser: string, system: string) => `${browser} on ${system}`,
+  unknownDevice: 'Unknown browser',
+  lastUsed: 'Last used',
+  keptSignedIn: 'Kept signed in',
+  untilBrowserCloses: 'Until the browser closes',
+  signOutDevice: (device: string) => `Sign out ${device}`,
+  signOutOthers: 'Sign out all other devices',
+  noOtherDevices: 'You are not signed in anywhere else.',
 }
 
 export type AccountText = typeof account

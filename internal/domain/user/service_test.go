@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -266,10 +267,10 @@ func TestPasswords(t *testing.T) {
 	svc, _, admin := newTestService(t)
 	ctx := context.Background()
 
-	if err := svc.ChangePassword(ctx, admin.ID, "wrong-current", "newpassword1"); !errors.Is(err, ErrInvalid) {
+	if err := svc.ChangePassword(ctx, admin.ID, uuid.Nil, "wrong-current", "newpassword1"); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("wrong current err = %v, want ErrInvalid", err)
 	}
-	if err := svc.ChangePassword(ctx, admin.ID, "password123", "newpassword1"); err != nil {
+	if err := svc.ChangePassword(ctx, admin.ID, uuid.Nil, "password123", "newpassword1"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := svc.Authenticate(ctx, admin.Email, "newpassword1"); err != nil {
@@ -289,6 +290,75 @@ func TestPasswords(t *testing.T) {
 	if _, err := svc.Authenticate(ctx, other.Email, "password456"); err != nil {
 		t.Errorf("login after reset: %v", err)
 	}
+}
+
+// endedSessions records the sign-ins the service asks to end.
+type endedSessions struct{ calls []string }
+
+func (e *endedSessions) EndAll(_ context.Context, userID, keep uuid.UUID, reason string) error {
+	e.calls = append(e.calls, userID.String()+" keep "+keep.String()+" "+reason)
+	return nil
+}
+
+// A password change ends the user's other sign-ins; a reset, deactivation or
+// deletion ends them all. A failed change, a profile edit or a reactivation
+// ends none.
+func TestSessionsEnd(t *testing.T) {
+	ended := &endedSessions{}
+	svc := NewService(newFakeRepo(), WithClock(func() time.Time { return testNow }), WithHasher(fakeHash, fakeVerify), WithSessions(ended))
+	ctx := context.Background()
+	admin, _ := svc.Bootstrap(ctx, "admin@example.com", "Admin", "password123")
+	u, _ := svc.Create(ctx, CreateParams{Email: "u@example.com", Name: "U", Password: "password123", Roles: []string{RoleEmployee}}, admin.ID)
+	here := uuid.New()
+	expect := func(want ...string) {
+		t.Helper()
+		if !slices.Equal(ended.calls, want) {
+			t.Errorf("ended = %v, want %v", ended.calls, want)
+		}
+		ended.calls = nil
+	}
+
+	_ = svc.ChangePassword(ctx, u.ID, here, "wrong-password", "password456")
+	expect()
+	if err := svc.ChangePassword(ctx, u.ID, here, "password123", "password456"); err != nil {
+		t.Fatal(err)
+	}
+	expect(u.ID.String() + " keep " + here.String() + " " + EndPasswordChanged)
+	if err := svc.CheckPassword(ctx, u.ID, "password456"); err != nil {
+		t.Errorf("check the new password: %v", err)
+	}
+	if err := svc.CheckPassword(ctx, u.ID, "password123"); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "password is incorrect") {
+		t.Errorf("check the old password: %v", err)
+	}
+
+	if err := svc.SetPassword(ctx, u.ID, "password789", admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	expect(u.ID.String() + " keep " + uuid.Nil.String() + " " + EndPasswordReset)
+
+	p := UpdateParams{Email: u.Email, Name: "Renamed", Roles: u.Roles, IsActive: true}
+	if _, err := svc.Update(ctx, u.ID, p, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	expect()
+	p.IsActive = false
+	if _, err := svc.Update(ctx, u.ID, p, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	expect(u.ID.String() + " keep " + uuid.Nil.String() + " " + EndDeactivated)
+	if _, err := svc.Update(ctx, u.ID, p, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	p.IsActive = true
+	if _, err := svc.Update(ctx, u.ID, p, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	expect()
+
+	if err := svc.Delete(ctx, u.ID, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	expect(u.ID.String() + " keep " + uuid.Nil.String() + " " + EndDeleted)
 }
 
 func TestDeleteIsSoftAndFreesEmail(t *testing.T) {

@@ -45,6 +45,20 @@ export interface LoginResponse {
   user: User
 }
 
+/** One of the signed-in user's sign-ins, as Account lists it (GET /api/v1/auth/sessions). */
+export interface SignedInDevice {
+  id: string
+  /** This browser's own sign-in. */
+  current: boolean
+  keep_signed_in: boolean
+  created_at: string
+  last_used_at: string
+  /** When it ends if not used before. */
+  expires_at: string
+  user_agent: string
+  ip: string
+}
+
 /** A clothing size; six carry the height range a suggestion is made from, the rest null. */
 export interface ClothingSize {
   code: string

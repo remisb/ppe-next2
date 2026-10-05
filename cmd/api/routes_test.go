@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -127,6 +127,62 @@ func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.
 	m.users[id] = u
 	return nil
 }
+
+// memSessions is an in-memory session.Repository, so the HTTP tests run the
+// real session service.
+type memSessions struct {
+	mu   sync.Mutex
+	rows map[uuid.UUID]session.Session
+}
+
+func (m *memSessions) Create(_ context.Context, s session.Session) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.rows[s.ID] = s
+	return nil
+}
+
+func (m *memSessions) Update(_ context.Context, id uuid.UUID, mut session.Mutation) (session.Session, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cur, ok := m.rows[id]
+	if !ok {
+		return session.Session{}, session.ErrNotFound
+	}
+	next, err := mut(cur)
+	if err != nil {
+		return session.Session{}, err
+	}
+	m.rows[id] = next
+	return next, nil
+}
+
+func (m *memSessions) ListLive(_ context.Context, userID uuid.UUID, now time.Time) ([]session.Session, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]session.Session, 0)
+	for _, s := range m.rows {
+		if s.UserID == userID && s.Live(now) {
+			out = append(out, s)
+		}
+	}
+	slices.SortFunc(out, func(a, b session.Session) int { return b.LastUsedAt.Compare(a.LastUsedAt) })
+	return out, nil
+}
+
+func (m *memSessions) EndAll(_ context.Context, userID, keep uuid.UUID, at time.Time, reason string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for id, s := range m.rows {
+		if s.UserID == userID && id != keep && s.EndedAt == nil {
+			s.EndedAt, s.EndReason = &at, reason
+			m.rows[id] = s
+		}
+	}
+	return nil
+}
+
+func (m *memSessions) Prune(context.Context, uuid.UUID, time.Time) error { return nil }
 
 // stubEmployees and stubCatalogue satisfy their repositories for tests that
 // only exercise routing and authorization: reads find nothing, writes succeed.
@@ -238,7 +294,10 @@ func (stubBackups) Read(context.Context, int) (backup.Status, error) { return ba
 var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 func testConfig() config {
-	return config{LoginRateLimit: 100, LoginRateInterval: time.Minute, RequestTimeout: 5 * time.Second, OrgTimezone: "Europe/Vilnius", PublicBaseURL: "https://work.example.com"}
+	return config{
+		LoginRateLimit: 100, LoginRateInterval: time.Minute, RequestTimeout: 5 * time.Second, OrgTimezone: "Europe/Vilnius", PublicBaseURL: "https://work.example.com",
+		JWTSecret: testSecret, SessionMaxAge: 12 * time.Hour, SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
+	}
 }
 
 type testAPI struct {
@@ -250,13 +309,15 @@ type testAPI struct {
 
 func newTestAPI(t *testing.T) *testAPI {
 	t.Helper()
+	sessions := session.NewService(&memSessions{rows: map[uuid.UUID]session.Session{}}, sessionKey(testSecret), sessionLimits(testConfig()))
 	users := user.NewService(&memRepo{users: map[uuid.UUID]user.User{}},
-		user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p }))
+		user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p }),
+		user.WithSessions(userSessions{sessions}))
 	admin, err := users.Bootstrap(context.Background(), "admin@example.com", "Admin", "password123")
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
+	svc := newServices(time.UTC, time.Hour, sessions, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
@@ -269,11 +330,21 @@ func (a *testAPI) userWith(t *testing.T, roles ...string) (user.User, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tok, _, err := a.tokens.issue(u)
+	return u, a.signIn(t, u)
+}
+
+// signIn starts a session for u, as login would, and returns its access token.
+func (a *testAPI) signIn(t *testing.T, u user.User) string {
+	t.Helper()
+	s, _, err := a.svc.sessions.Start(context.Background(), session.StartParams{UserID: u.ID, KeepSignedIn: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return u, tok
+	tok, _, err := a.tokens.issue(u, s.ID, s.AuthenticatedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tok
 }
 
 func (a *testAPI) do(t *testing.T, method, path, token string, body any) *httptest.ResponseRecorder {
@@ -295,9 +366,14 @@ func (a *testAPI) do(t *testing.T, method, path, token string, body any) *httpte
 // policy pins who may call every route. Changing a route's access, or adding
 // a route, must change this table: TestRoutePolicy fails otherwise.
 var policy = map[string]string{
-	"GET /health":               "public",
-	"POST /api/v1/auth/login":   "public",
-	"POST /api/v1/auth/refresh": "any",
+	"GET /health":                       "public",
+	"POST /api/v1/auth/login":           "public",
+	"POST /api/v1/auth/refresh":         "public",
+	"POST /api/v1/auth/logout":          "public",
+	"POST /api/v1/auth/reauth":          "any",
+	"GET /api/v1/auth/sessions":         "any",
+	"DELETE /api/v1/auth/sessions":      "any",
+	"DELETE /api/v1/auth/sessions/{id}": "any",
 
 	"GET /api/v1/users/me":               "any",
 	"PUT /api/v1/users/me/password":      "any",
@@ -572,85 +648,5 @@ func TestHealthIsOpen(t *testing.T) {
 	api := newTestAPI(t)
 	if rec := api.do(t, "GET", "/health", "", nil); rec.Code != http.StatusOK {
 		t.Fatalf("health = %d", rec.Code)
-	}
-}
-
-// TestRefresh: a valid token is swapped for a new one that keeps the sign-in
-// time and reads the account again; a deactivated or deleted user, or a
-// sign-in older than the session cap, gets a 401.
-func TestRefresh(t *testing.T) {
-	api := newTestAPI(t)
-	ctx := context.Background()
-	type refreshed struct {
-		AccessToken string    `json:"access_token"`
-		ExpiresIn   int64     `json:"expires_in"`
-		User        user.User `json:"user"`
-	}
-	refresh := func(tok string) *httptest.ResponseRecorder {
-		return api.do(t, "POST", "/api/v1/auth/refresh", tok, nil)
-	}
-
-	u, tok := api.userWith(t, user.RoleEmployee)
-	before, err := api.tokens.parse(tok)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// A role given since sign-in is in the new token.
-	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee, user.RoleManager}, IsActive: true}, api.admin.ID); err != nil {
-		t.Fatal(err)
-	}
-	rec := refresh(tok)
-	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "no-store" {
-		t.Fatalf("refresh = %d %s", rec.Code, rec.Body)
-	}
-	got := decode[refreshed](t, rec.Body.Bytes())
-	after, err := api.tokens.parse(got.AccessToken)
-	if err != nil {
-		t.Fatalf("the new token does not verify: %v", err)
-	}
-	if after.Subject != u.ID.String() || !after.signedInAt().Equal(before.signedInAt()) || got.ExpiresIn != int64((15*time.Minute).Seconds()) {
-		t.Fatalf("new token: sub %s, signed in %v (was %v), expires in %d", after.Subject, after.signedInAt(), before.signedInAt(), got.ExpiresIn)
-	}
-	if !slices.Contains(after.Roles, user.RoleManager) || got.User.ID != u.ID {
-		t.Fatalf("new token roles %v, user %v", after.Roles, got.User.ID)
-	}
-
-	// A token issued before auth_time existed counts from its issue time.
-	legacy := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
-		Roles: []string{user.RoleEmployee},
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject: u.ID.String(), Issuer: "ppe-next2",
-			IssuedAt: jwt.NewNumericDate(time.Now().Add(-time.Minute)), ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
-		},
-	})
-	if rec := refresh(legacy); rec.Code != http.StatusOK {
-		t.Errorf("a token without auth_time = %d, want 200", rec.Code)
-	}
-
-	// Signed in longer ago than the session cap: sign in again.
-	stale := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
-		Roles:    []string{user.RoleEmployee},
-		AuthTime: jwt.NewNumericDate(time.Now().Add(-13 * time.Hour)),
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject: u.ID.String(), Issuer: "ppe-next2",
-			IssuedAt: jwt.NewNumericDate(time.Now().Add(-time.Minute)), ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
-		},
-	})
-	if rec := refresh(stale); rec.Code != http.StatusUnauthorized {
-		t.Errorf("a sign-in older than the cap = %d, want 401", rec.Code)
-	}
-
-	// Deactivated, then deleted: no new token.
-	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee}, IsActive: false}, api.admin.ID); err != nil {
-		t.Fatal(err)
-	}
-	if rec := refresh(tok); rec.Code != http.StatusUnauthorized {
-		t.Errorf("deactivated user = %d, want 401", rec.Code)
-	}
-	if err := api.svc.users.Delete(ctx, u.ID, api.admin.ID); err != nil {
-		t.Fatal(err)
-	}
-	if rec := refresh(tok); rec.Code != http.StatusUnauthorized {
-		t.Errorf("deleted user = %d, want 401", rec.Code)
 	}
 }

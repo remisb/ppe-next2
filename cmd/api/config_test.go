@@ -9,6 +9,7 @@ import (
 func TestConfigValidate(t *testing.T) {
 	ok := config{
 		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute, SessionMaxAge: 12 * time.Hour,
+		SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, LoginEmailFailures: 10, LoginEmailInterval: 15 * time.Minute,
 		RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
 		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour,
@@ -22,6 +23,11 @@ func TestConfigValidate(t *testing.T) {
 		"ttl too long":                 func(c *config) { c.JWTTTL = 48 * time.Hour },
 		"session shorter than a token": func(c *config) { c.SessionMaxAge = 5 * time.Minute },
 		"session too long":             func(c *config) { c.SessionMaxAge = 31 * 24 * time.Hour },
+		"kept shorter than not":        func(c *config) { c.SessionKeepMaxAge = 6 * time.Hour },
+		"kept too long":                func(c *config) { c.SessionKeepMaxAge = 91 * 24 * time.Hour },
+		"idle longer than kept":        func(c *config) { c.SessionKeepIdle = 31 * 24 * time.Hour },
+		"idle shorter than a token":    func(c *config) { c.SessionKeepIdle = time.Minute },
+		"recent sign-in too short":     func(c *config) { c.RecentSignIn = time.Minute },
 		"no rate":                      func(c *config) { c.LoginRateLimit = 0 },
 		"no email limit":               func(c *config) { c.LoginEmailFailures = 0 },
 		"email interval too long":      func(c *config) { c.LoginEmailInterval = 25 * time.Hour },
@@ -56,7 +62,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -69,7 +75,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 		t.Fatalf("defaults do not validate: %v", err)
 	}
 	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" ||
-		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour || c.LoginEmailFailures != 10 || c.LoginEmailInterval != 15*time.Minute {
+		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour || c.LoginEmailFailures != 10 || c.LoginEmailInterval != 15*time.Minute ||
+		c.SessionKeepMaxAge != 30*24*time.Hour || c.SessionKeepIdle != 14*24*time.Hour || c.RecentSignIn != 12*time.Hour {
 		t.Errorf("defaults = %+v", c)
 	}
 	if len(c.TrustedProxies) != 0 {

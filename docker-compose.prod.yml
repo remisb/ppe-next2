@@ -62,6 +62,9 @@ services:
       API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
       API_JWT_TTL: ${API_JWT_TTL:-15m}
       API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
+      API_SESSION_KEEP_MAX_AGE: ${API_SESSION_KEEP_MAX_AGE:-720h}
+      API_SESSION_KEEP_IDLE: ${API_SESSION_KEEP_IDLE:-336h}
+      API_RECENT_SIGN_IN: ${API_RECENT_SIGN_IN:-12h}
       # Failed sign-ins per email before that email waits out the interval.
       API_LOGIN_EMAIL_FAILURES: ${API_LOGIN_EMAIL_FAILURES:-10}
       API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}

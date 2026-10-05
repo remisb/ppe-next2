@@ -21,48 +21,43 @@ var errInvalidToken = errors.New("invalid token")
 
 // accessClaims is the JWT payload: sub is the user ID, roles the user's roles
 // when the token was issued (a refresh reads them again, so a role change
-// takes effect within minutes), auth_time when the user signed in, kept
-// through refreshes so a session cannot outlive API_SESSION_MAX_AGE.
+// takes effect within minutes), sid the sign-in (session) it was issued for,
+// and auth_time when the password was last entered in that sign-in, which
+// managing users checks (requireRecentSignIn).
 type accessClaims struct {
-	Roles    []string         `json:"roles"`
-	AuthTime *jwt.NumericDate `json:"auth_time,omitempty"`
+	Roles     []string         `json:"roles"`
+	SessionID string           `json:"sid,omitempty"`
+	AuthTime  *jwt.NumericDate `json:"auth_time,omitempty"`
 	jwt.RegisteredClaims
 }
 
 // tokens issues and verifies HS256 access tokens.
 type tokens struct {
-	secret     []byte
-	issuer     string
-	ttl        time.Duration
-	sessionMax time.Duration
-	leeway     time.Duration
-	now        func() time.Time
+	secret []byte
+	issuer string
+	ttl    time.Duration
+	leeway time.Duration
+	now    func() time.Time
 }
 
 func newTokens(cfg config) *tokens {
 	return &tokens{
-		secret:     []byte(cfg.JWTSecret),
-		issuer:     cfg.JWTIssuer,
-		ttl:        cfg.JWTTTL,
-		sessionMax: cfg.SessionMaxAge,
-		leeway:     30 * time.Second,
-		now:        time.Now,
+		secret: []byte(cfg.JWTSecret),
+		issuer: cfg.JWTIssuer,
+		ttl:    cfg.JWTTTL,
+		leeway: 30 * time.Second,
+		now:    time.Now,
 	}
 }
 
-// issue signs a token for a fresh sign-in.
-func (t *tokens) issue(u user.User) (string, time.Time, error) {
-	return t.issueFor(u, t.now())
-}
-
-// issueFor signs a token for u's sign-in at authTime: now for a login, the
-// original sign-in for a refresh.
-func (t *tokens) issueFor(u user.User, authTime time.Time) (string, time.Time, error) {
+// issue signs a token for u in sign-in sid, whose password was entered at authTime.
+func (t *tokens) issue(u user.User, sid uuid.UUID, authTime time.Time) (string, time.Time, error) {
 	now := t.now()
 	exp := now.Add(t.ttl)
 	claims := accessClaims{
-		Roles:    slices.Clone(u.Roles),
-		AuthTime: jwt.NewNumericDate(authTime),
+		Roles:     slices.Clone(u.Roles),
+		SessionID: sid.String(),
+		AuthTime:  jwt.NewNumericDate(authTime),
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   u.ID.String(),
 			Issuer:    t.issuer,
@@ -90,8 +85,8 @@ func (t *tokens) verify(_ context.Context, raw string) (*middleware.Claims, erro
 	return &middleware.Claims{Subject: claims.Subject, Roles: roles}, nil
 }
 
-// signedInAt is when the token's user signed in: auth_time, or for a token
-// issued before auth_time existed, its issue time.
+// signedInAt is when the token's user last entered their password: auth_time,
+// or for a token issued before auth_time existed, its issue time.
 func (c accessClaims) signedInAt() time.Time {
 	switch {
 	case c.AuthTime != nil:
@@ -124,6 +119,31 @@ func (t *tokens) parse(raw string) (accessClaims, error) {
 	// rather than letting a handler turn it into a 400.
 	if _, err := uuid.Parse(claims.Subject); err != nil {
 		return accessClaims{}, errInvalidToken
+	}
+	return claims, nil
+}
+
+// sessionID is the sign-in the token was issued for; uuid.Nil for a token
+// issued before sign-ins were kept.
+func (c accessClaims) sessionID() uuid.UUID {
+	id, err := uuid.Parse(c.SessionID)
+	if err != nil {
+		return uuid.Nil
+	}
+	return id
+}
+
+// bearer parses the request's access token. Routes calling it sit behind
+// middleware.Authenticator, which has already verified it; this reads the
+// claims muxstack does not keep (sid, auth_time).
+func (t *tokens) bearer(r *http.Request) (accessClaims, error) {
+	raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !ok {
+		return accessClaims{}, errUnauthenticated
+	}
+	claims, err := t.parse(strings.TrimSpace(raw))
+	if err != nil {
+		return accessClaims{}, errUnauthenticated
 	}
 	return claims, nil
 }

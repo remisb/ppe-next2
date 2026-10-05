@@ -186,6 +186,21 @@ able to fill and save every credential form:
 - `/.well-known/change-password` redirects to `/account` (`deploy/Caddyfile`), where
   password managers send people to change a saved password.
 
+## Sign-in state
+
+The sign-in is an HttpOnly refresh cookie the server sets (`docs/specs/session-service.md`);
+the access token lives in memory only (`lib/api.tsx`, `lib/session.ts`):
+
+- Never store a token in localStorage, sessionStorage, IndexedDB or a readable cookie: an
+  injected script could take it. The e2e step *the sign-in survives a reload…* checks.
+- The app starts on "Checking your sign-in…" while `POST /auth/refresh` answers; render
+  nothing that needs a session before `status` is `ready`.
+- Calls go through `client`; a 401 refreshes once and repeats the call, and a 403
+  `recent sign-in required` opens Confirm your password (`components/confirm-password.tsx`)
+  and repeats it. Screens need no handling of their own; `errorText` words the cancelled case.
+- The Vite proxy keeps the browser's `Host` header (`changeOrigin: false`): the sign-in
+  routes check `Origin` against it.
+
 ## Content-Security-Policy
 
 Caddy sends a Content-Security-Policy (`deploy/Caddyfile`): scripts, styles, fonts,

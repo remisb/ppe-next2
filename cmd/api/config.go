@@ -24,9 +24,16 @@ type config struct {
 	JWTSecret string
 	JWTIssuer string
 	JWTTTL    time.Duration
-	// SessionMaxAge caps how long refreshing keeps a sign-in alive: a token
-	// whose sign-in (auth_time) is older is not refreshed, so the user signs in again.
+	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
+	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
+	// SessionKeepMaxAge ends one with it this long after it began, and
+	// SessionKeepIdle once it has gone unused this long.
+	SessionKeepMaxAge time.Duration
+	SessionKeepIdle   time.Duration
+	// RecentSignIn is how recently the password must have been entered to
+	// manage users; older, the app asks for it again (POST /api/v1/auth/reauth).
+	RecentSignIn time.Duration
 
 	LoginRateLimit    int
 	LoginRateInterval time.Duration
@@ -95,6 +102,9 @@ func loadConfig(args []string) (config, error) {
 		{&c.ShutdownTimeout, "API_SHUTDOWN_TIMEOUT", 10 * time.Second},
 		{&c.JWTTTL, "API_JWT_TTL", 15 * time.Minute},
 		{&c.SessionMaxAge, "API_SESSION_MAX_AGE", 12 * time.Hour},
+		{&c.SessionKeepMaxAge, "API_SESSION_KEEP_MAX_AGE", 30 * 24 * time.Hour},
+		{&c.SessionKeepIdle, "API_SESSION_KEEP_IDLE", 14 * 24 * time.Hour},
+		{&c.RecentSignIn, "API_RECENT_SIGN_IN", 12 * time.Hour},
 		{&c.LoginRateInterval, "API_LOGIN_RATE_INTERVAL", time.Minute},
 		{&c.LoginEmailInterval, "API_LOGIN_EMAIL_INTERVAL", 15 * time.Minute},
 		{&c.ConfirmTTL, "API_CONFIRM_TTL", 7 * 24 * time.Hour},
@@ -143,6 +153,15 @@ func (c config) validate() error {
 	}
 	if c.SessionMaxAge < c.JWTTTL || c.SessionMaxAge > 30*24*time.Hour {
 		errs = append(errs, errors.New("API_SESSION_MAX_AGE must be at least API_JWT_TTL and at most 720h"))
+	}
+	if c.SessionKeepMaxAge < c.SessionMaxAge || c.SessionKeepMaxAge > 90*24*time.Hour {
+		errs = append(errs, errors.New("API_SESSION_KEEP_MAX_AGE must be at least API_SESSION_MAX_AGE and at most 2160h"))
+	}
+	if c.SessionKeepIdle < c.JWTTTL || c.SessionKeepIdle > c.SessionKeepMaxAge {
+		errs = append(errs, errors.New("API_SESSION_KEEP_IDLE must be at least API_JWT_TTL and at most API_SESSION_KEEP_MAX_AGE"))
+	}
+	if c.RecentSignIn < 5*time.Minute || c.RecentSignIn > c.SessionKeepMaxAge {
+		errs = append(errs, errors.New("API_RECENT_SIGN_IN must be at least 5m and at most API_SESSION_KEEP_MAX_AGE"))
 	}
 	if c.LoginRateLimit < 1 || c.LoginRateInterval <= 0 {
 		errs = append(errs, errors.New("API_LOGIN_RATE_LIMIT and API_LOGIN_RATE_INTERVAL must be positive"))

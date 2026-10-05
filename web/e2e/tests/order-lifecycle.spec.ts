@@ -1,4 +1,4 @@
-import { type Browser, type Page, expect, test } from '@playwright/test'
+import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
 import { admin, webURL } from '../env.ts'
 
@@ -108,6 +108,8 @@ test('sign in', async () => {
   await expect(email).toHaveAttribute('autocomplete', 'username')
   await expect(password).toHaveAttribute('name', 'password')
   await expect(password).toHaveAttribute('autocomplete', 'current-password')
+  // Keep me signed in starts ticked (staff devices are mostly their own).
+  await expect(page.getByRole('checkbox', { name: /^Keep me signed in/ })).toBeChecked()
   // Sign in is never disabled, since autofill may not tell the page: it says what is missing.
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByText('Enter your email and password.')).toBeVisible()
@@ -133,6 +135,27 @@ test('sign in', async () => {
   // An administrator starts on the Dashboard; an empty database still gives a whole one.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await expect(page.getByText('Nothing needs you: every order is confirmed and nothing is due.')).toBeVisible()
+})
+
+/** The refresh cookie the API set in context, if any. */
+async function refreshCookie(context: BrowserContext) {
+  return (await context.cookies()).find((c) => c.name === 'ppe_refresh')
+}
+
+test('the sign-in survives a reload and a new tab, kept in a cookie no script can read', async () => {
+  // HttpOnly, sent only to the sign-in routes, never from another site's page; with Keep me signed in, for 30 days.
+  const cookie = await refreshCookie(page.context())
+  expect(cookie).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/api/v1/auth' })
+  expect(cookie!.expires * 1000).toBeGreaterThan(Date.now() + 29 * 24 * 60 * 60_000)
+  // No token in the page's reach: not in document.cookie, not in storage.
+  expect(await page.evaluate(() => document.cookie)).toBe('')
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }))).not.toMatch(/eyJ/)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  const tab = await page.context().newPage()
+  await tab.goto('/')
+  await expect(tab.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await tab.close()
 })
 
 test('Backups: an administrator sees whether the database is backed up', async () => {
@@ -348,12 +371,9 @@ test('the draft survives a reload', async () => {
 })
 
 test('the draft survives a closed tab, for the same user only', async ({ browser }) => {
-  // A new tab has no session (it lives in the tab), but the draft stays on the device for this user.
+  // A new tab is signed in already, and the draft stays on the device for this user.
   const tab = await page.context().newPage()
   await tab.goto('/')
-  await tab.getByLabel('Email').fill(admin.email)
-  await tab.getByLabel(/^Password/).fill(admin.password)
-  await tab.getByRole('button', { name: 'Sign in' }).click()
   await expect(tab.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await tab.goto('/orders/new')
   await expect(tab.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
@@ -1023,7 +1043,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.setViewportSize(desktop)
 })
 
-/** Signs in as someone else in a fresh browser context (its own sessionStorage); returns its page. */
+/** Signs in as someone else in a fresh browser context (its own cookies and storage); returns its page. */
 async function signInElsewhere(browser: Browser, email: string, password: string) {
   const other = await (await browser.newContext()).newPage()
   await other.goto(webURL + '/')
@@ -1141,12 +1161,17 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   }
   await other.context().close()
 
-  // Deactivated: can no longer sign in.
+  // Deactivated: signed out where she is signed in, and can no longer sign in.
+  const miaPhone = await signInElsewhere(browser, mia.email, mia.password)
+  await expect(miaPhone.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await page.getByRole('button', { name: `Edit ${mia.name}` }).click()
   dialog = page.getByRole('dialog')
   await dialog.getByRole('checkbox', { name: /^Active/ }).uncheck()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(row).toContainText('Inactive')
+  await miaPhone.reload()
+  await expect(miaPhone.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await miaPhone.context().close()
   other = await signInElsewhere(browser, mia.email, mia.password)
   await expect(other.getByText('Wrong email or password.')).toBeVisible()
   await other.context().close()
@@ -1367,14 +1392,15 @@ test('Theme: light, dark or the device’s own, kept on this device through a re
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(theme.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true')
-  // The device's, not the account's: a new tab in this browser shows the sign-in page dark too.
-  const tab = await page.context().newPage()
+  // The device's, not the account's: this browser's storage without its sign-in shows the sign-in page dark too.
+  const deviceOnly = await browser.newContext({ storageState: { cookies: [], origins: (await page.context().storageState()).origins } })
+  const tab = await deviceOnly.newPage()
   await tab.goto(webURL)
   await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await expect(tab.locator('html')).toHaveAttribute('data-theme', 'dark')
   // In dark mode the logo is the book's gold foil.
   expect(await tab.getByRole('img', { name: 'GAVORT' }).evaluate((e) => getComputedStyle(e).fill)).toMatch(/^url/)
-  await tab.close()
+  await deviceOnly.close()
   // A browser that never chose follows its own setting.
   const fresh = await browser.newPage({ colorScheme: 'dark' })
   await fresh.goto(webURL)
@@ -1398,35 +1424,73 @@ test('Theme: light, dark or the device’s own, kept on this device through a re
 
 test('the sign-in renews itself every few minutes while the app is open', async ({ browser }) => {
   // A fake clock in this tab only: the server keeps real time, so its tokens stay valid.
-  const tab = await (await browser.newContext()).newPage()
+  const context = await browser.newContext({ baseURL: webURL })
+  const tab = await context.newPage()
   await tab.clock.install()
-  await tab.goto(webURL + '/')
+  await tab.goto('/')
   await tab.getByLabel('Email').fill('mia@example.com')
   await tab.getByLabel(/^Password/).fill('mia-password-2')
+  const login = tab.waitForResponse((r) => r.url().endsWith('/api/v1/auth/login'))
   await tab.getByRole('button', { name: 'Sign in' }).click()
+  const { access_token } = (await (await login).json()) as { access_token: string }
   await expect(tab.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
-  const token = () => tab.evaluate(() => JSON.parse(sessionStorage.getItem('workwear.token') ?? '{}').token as string | undefined)
+  const first = (await refreshCookie(context))?.value
 
   // Once less than 10 minutes are left (5 minutes into a 15-minute token; this server's tokens may live
-  // longer), the token is swapped for a new one, and Mia is still signed in.
-  const left = await tab.evaluate(() => {
-    const t = JSON.parse(sessionStorage.getItem('workwear.token') ?? '{}').token as string
-    return (JSON.parse(atob(t.split('.')[1]!)).exp as number) * 1000 - Date.now()
-  })
+  // longer), the tab gets a new token with the refresh cookie, which is replaced too, and Mia is still signed in.
+  const exp = (JSON.parse(Buffer.from(access_token.split('.')[1]!, 'base64url').toString()) as { exp: number }).exp * 1000
+  const left = exp - (await tab.evaluate(() => Date.now()))
   const refreshed = tab.waitForResponse((r) => r.url().endsWith('/api/v1/auth/refresh'))
   await tab.clock.fastForward(Math.round(left - 9.5 * 60_000))
-  const res = await refreshed
-  expect(res.status()).toBe(200)
-  // The tab keeps the token it was given (the server's clock is real, so it may match the first to the second).
-  const issued = ((await res.json()) as { access_token: string }).access_token
-  await expect.poll(token).toBe(issued)
+  expect((await refreshed).status()).toBe(200)
+  await expect.poll(async () => (await refreshCookie(context))?.value).not.toBe(first)
   await tab.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' }).click()
   await expect(tab.getByRole('heading', { name: 'Employees' })).toBeVisible()
-  await tab.context().close()
+  await context.close()
 })
 
-test('Account: change password, then only the new one signs in', async () => {
+test('Keep me signed in unticked: signed in until the browser closes, and remembered for the next sign-in', async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: webURL })
+  const tab = await context.newPage()
+  await tab.goto('/')
+  await tab.getByLabel('Email').fill('eli@example.com')
+  await tab.getByLabel(/^Password/).fill('eli-password-1')
+  await tab.getByRole('checkbox', { name: /^Keep me signed in/ }).uncheck()
+  await tab.getByRole('button', { name: 'Sign in' }).click()
+  await expect(tab.getByRole('heading', { name: 'Employee Dashboard' })).toBeVisible()
+  // A browser-session cookie: no expiry of its own.
+  expect((await refreshCookie(context))?.expires).toBe(-1)
+  await tab.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await expect(tab.getByRole('checkbox', { name: /^Keep me signed in/ })).not.toBeChecked()
+  await context.close()
+})
+
+test('Account: signed-in devices, each but this one with Sign out', async ({ browser }) => {
+  await page.getByRole('link', { name: admin.name }).click()
+  const devices = page.getByRole('list', { name: 'Signed-in devices' })
+  // Earlier steps signed in on other browsers: closing them did not sign them out.
+  await expect(devices.getByRole('listitem').first()).toContainText('This device')
+  await expect(devices.getByRole('listitem').first()).toContainText('Kept signed in')
+  await page.getByRole('button', { name: 'Sign out all other devices' }).click()
+  await expect(devices.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByText('You are not signed in anywhere else.')).toBeVisible()
+
+  // A laptop signs in; Account lists it with its own Sign out, which signs it out.
+  const laptop = await signInElsewhere(browser, admin.email, admin.password)
+  await expect(laptop.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await page.reload()
+  await expect(devices.getByRole('listitem')).toHaveCount(2)
+  await devices.getByRole('button', { name: /^Sign out Chrome/ }).click()
+  await expect(devices.getByRole('listitem')).toHaveCount(1)
+  await laptop.reload()
+  await expect(laptop.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await laptop.context().close()
+})
+
+test('Account: change password, then only the new one signs in, and the other devices are signed out', async ({ browser }) => {
   const newPassword = 'e2e-new-password-456'
+  const laptop = await signInElsewhere(browser, admin.email, admin.password)
+  await expect(laptop.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await page.getByRole('link', { name: admin.name }).click()
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
   // A hidden username field tells a password manager whose password changes.
@@ -1442,8 +1506,19 @@ test('Account: change password, then only the new one signs in', async () => {
   await page.getByLabel('Current password').fill(admin.password)
   await page.getByRole('button', { name: 'Change password' }).click()
   await expect(page.getByText('Password changed')).toBeVisible()
+  await expect(page.getByText('Your other devices have been signed out.')).toBeVisible()
+  // The laptop is signed out; this device is not.
+  await laptop.reload()
+  await expect(laptop.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await laptop.context().close()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  // Sign out ends the sign-in on the server: a reload does not bring it back.
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  expect(await refreshCookie(page.context())).toBeUndefined()
+  await page.reload()
   await page.getByLabel('Email').fill(admin.email)
   await page.getByLabel(/^Password/).fill(admin.password)
   await page.getByRole('button', { name: 'Sign in' }).click()

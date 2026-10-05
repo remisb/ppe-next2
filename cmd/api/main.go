@@ -3,6 +3,8 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -22,6 +24,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -57,9 +60,11 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(cfg.JWTSecret), sessionLimits(cfg))
 	svc := newServices(
 		loc, cfg.ConfirmTTL,
-		user.NewService(user.NewPostgresRepository(pool)),
+		sessions,
+		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions})),
 		employee.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
@@ -107,6 +112,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 
 // services are the domain services the API exposes.
 type services struct {
+	sessions  *session.Service
 	users     *user.Service
 	employees *employee.Service
 	catalogue *catalogue.Service
@@ -119,8 +125,9 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
 	s := services{
+		sessions:  sessions,
 		users:     users,
 		employees: employee.NewService(employees),
 		catalogue: catalogue.NewService(items),
@@ -143,8 +150,8 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.public("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
-	registerAuthRoutes(rt, svc.users, tok, cfg)
-	registerUserRoutes(rt, svc.users)
+	registerAuthRoutes(rt, svc.users, svc.sessions, tok, cfg)
+	registerUserRoutes(rt, svc.users, tok, requireRecentSignIn(tok, cfg.RecentSignIn))
 	registerEmployeeRoutes(rt, svc.employees)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerItemSetRoutes(rt, svc.itemSets)
@@ -173,6 +180,19 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 	}
 	global = append(global, middleware.Timeout(cfg.RequestTimeout))
 	return middleware.Chain(mux, global...)
+}
+
+// sessionKey derives the key that signs refresh tokens from the JWT secret, so
+// one secret signs both while neither key can stand in for the other. A new
+// API_JWT_SECRET signs everyone out.
+func sessionKey(secret string) []byte {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte("ppe-next2 refresh tokens v1"))
+	return h.Sum(nil)
+}
+
+func sessionLimits(cfg config) session.Limits {
+	return session.Limits{MaxAge: cfg.SessionMaxAge, KeepMaxAge: cfg.SessionKeepMaxAge, KeepIdle: cfg.SessionKeepIdle}
 }
 
 func openDB(ctx context.Context, cfg config) (*pgxpool.Pool, error) {

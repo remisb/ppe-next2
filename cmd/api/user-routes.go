@@ -8,7 +8,8 @@ import (
 )
 
 type userHandler struct {
-	users *user.Service
+	users  *user.Service
+	tokens *tokens
 }
 
 // registerUserRoutes mounts /api/v1/users.
@@ -16,8 +17,13 @@ type userHandler struct {
 //	any authenticated user   GET /me, PUT /me/password
 //	admin, manager           GET list, by id, by email
 //	admin                    create, update, reset password, delete
-func registerUserRoutes(rt *router, users *user.Service) {
-	h := &userHandler{users: users}
+//
+// The administrator's changes need a recent sign-in (recent, from
+// requireRecentSignIn): a phone left signed in for weeks cannot be used to
+// add an administrator or reset someone's password without the password.
+// Changing one's own password asks for the current one anyway.
+func registerUserRoutes(rt *router, users *user.Service, tok *tokens, recent func(http.HandlerFunc) http.HandlerFunc) {
+	h := &userHandler{users: users, tokens: tok}
 
 	rt.authenticated("GET /api/v1/users/me", h.me)
 	rt.authenticated("PUT /api/v1/users/me/password", h.changeOwnPassword)
@@ -27,10 +33,10 @@ func registerUserRoutes(rt *router, users *user.Service) {
 	rt.restricted("GET /api/v1/users/{id}", h.get, managers...)
 	rt.restricted("GET /api/v1/users/by-email/{email}", h.byEmail, managers...)
 
-	rt.restricted("POST /api/v1/users", h.create, admins...)
-	rt.restricted("PUT /api/v1/users/{id}", h.update, admins...)
-	rt.restricted("PUT /api/v1/users/{id}/password", h.setPassword, admins...)
-	rt.restricted("DELETE /api/v1/users/{id}", h.delete, admins...)
+	rt.restricted("POST /api/v1/users", recent(h.create), admins...)
+	rt.restricted("PUT /api/v1/users/{id}", recent(h.update), admins...)
+	rt.restricted("PUT /api/v1/users/{id}/password", recent(h.setPassword), admins...)
+	rt.restricted("DELETE /api/v1/users/{id}", recent(h.delete), admins...)
 }
 
 type createUserRequest struct {
@@ -98,8 +104,15 @@ func (h *userHandler) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
+// changeOwnPassword changes the signed-in user's password and signs them out
+// on their other devices; this one stays signed in.
 func (h *userHandler) changeOwnPassword(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	claims, err := h.tokens.bearer(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -109,7 +122,7 @@ func (h *userHandler) changeOwnPassword(w http.ResponseWriter, r *http.Request) 
 		writeError(w, r, err)
 		return
 	}
-	if err := h.users.ChangePassword(r.Context(), actor, req.CurrentPassword, req.NewPassword); err != nil {
+	if err := h.users.ChangePassword(r.Context(), actor, claims.sessionID(), req.CurrentPassword, req.NewPassword); err != nil {
 		writeError(w, r, err)
 		return
 	}

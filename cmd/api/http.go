@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -58,12 +59,15 @@ var errorStatuses = []struct {
 }{
 	{errBadRequest, http.StatusBadRequest},
 	{errTooManyAttempts, http.StatusTooManyRequests},
+	{errCrossOrigin, http.StatusForbidden},
+	{errRecentSignInRequired, http.StatusForbidden},
 
 	// The actor comes from a verified token, so an unknown actor is an
 	// authentication problem, not a bad request.
 	{errUnauthenticated, http.StatusUnauthorized},
 	{user.ErrInvalidCredentials, http.StatusUnauthorized},
 	{user.ErrActorNotFound, http.StatusUnauthorized},
+	{session.ErrInvalidToken, http.StatusUnauthorized},
 	{employee.ErrActorNotFound, http.StatusUnauthorized},
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
@@ -71,6 +75,7 @@ var errorStatuses = []struct {
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
+	{session.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
 	{itemset.ErrNotFound, http.StatusNotFound},
@@ -88,6 +93,7 @@ var errorStatuses = []struct {
 	{order.ErrLinkExpired, http.StatusGone},
 
 	{user.ErrInvalid, http.StatusBadRequest},
+	{session.ErrInvalid, http.StatusBadRequest},
 	{employee.ErrInvalid, http.StatusBadRequest},
 	{catalogue.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},

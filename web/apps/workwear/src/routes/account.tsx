@@ -2,17 +2,20 @@ import { ApiError } from '@ppe/api-client'
 import { CheckCircle2, LogOut } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 
-import { PageHeader } from '@/components/states'
+import { RelativeDate } from '@/components/relative-date'
+import { ErrorState, Loading, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, controlProps } from '@/components/ui/field'
 import { type Lang, languages, t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
 import { type Density, useDensity } from '@/lib/density'
+import { deviceLabel, sortDevices } from '@/lib/devices'
 import { themes, useTheme } from '@/lib/theme'
 import { MIN_PASSWORD_LENGTH, type PasswordChange, type PasswordErrors, validatePasswordChange } from '@/lib/password'
-import { errorText } from '@/lib/use-load'
+import { errorText, useLoad } from '@/lib/use-load'
 
 const empty: PasswordChange = { current: '', next: '', confirm: '' }
 
@@ -24,7 +27,7 @@ const choice =
 
 /**
  * Account: the signed-in user's interface language (saved on their account),
- * their own password, and, with a mouse, the table density. On a phone Sign out is here, since the bottom bar holds only
+ * their own password, the devices they are signed in on, and, with a mouse, the table density. On a phone Sign out is here, since the bottom bar holds only
  * the sections; from md it is in the sidebar.
  */
 export function Account({ onSignOut }: { onSignOut: () => void }) {
@@ -160,6 +163,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </form>
         </CardContent>
       </Card>
+      <Devices />
       {/* Compact rows need a mouse or trackpad: a touch screen keeps its 44px rows, so it has nothing to choose. */}
       <Card className="mt-6 md:max-w-md pointer-coarse:hidden">
         <CardHeader>
@@ -180,5 +184,86 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <LogOut aria-hidden /> {t.account.signOut}
       </Button>
     </>
+  )
+}
+
+/**
+ * Signed-in devices: every browser the user is signed in on, this one first,
+ * each but this one with Sign out, and Sign out all other devices. This one
+ * signs out with the usual Sign out. A password change signs the others out too.
+ */
+function Devices() {
+  const { client } = useApi()
+  const devices = useLoad(() => client.sessions.list(), [client])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+
+  const end = async (id?: string) => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      if (id) await client.sessions.end(id)
+      else await client.sessions.endOthers()
+      devices.reload()
+    } catch (err) {
+      setError(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const list = sortDevices(devices.data ?? [])
+  const others = list.filter((d) => !d.current).length
+  return (
+    <Card className="mt-6 md:max-w-md">
+      <CardHeader>
+        <CardTitle>{t.account.devices}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">{t.account.devicesHint}</p>
+        {devices.error ? (
+          <ErrorState error={devices.error} onRetry={devices.reload} />
+        ) : !devices.data ? (
+          <Loading />
+        ) : (
+          <ul aria-label={t.account.devices} className="divide-y divide-border">
+            {list.map((d) => {
+              const label = deviceLabel(d.user_agent)
+              return (
+                <li key={d.id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 font-medium">
+                      {label}
+                      {d.current ? <Badge variant="secondary">{t.account.thisDevice}</Badge> : null}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t.account.lastUsed} <RelativeDate iso={d.last_used_at} timeZone={undefined} time sentence />
+                      {d.ip ? ` · ${d.ip}` : null}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{d.keep_signed_in ? t.account.keptSignedIn : t.account.untilBrowserCloses}</p>
+                  </div>
+                  {d.current ? null : (
+                    <Button size="sm" variant="outline" className="shrink-0 pointer-coarse:h-11" aria-label={t.account.signOutDevice(label)} disabled={busy} onClick={() => void end(d.id)}>
+                      {t.account.signOut}
+                    </Button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {devices.data && others === 0 ? <p className="text-sm text-muted-foreground">{t.account.noOtherDevices}</p> : null}
+        {others > 0 ? (
+          <Button variant="outline" className="w-full sm:w-fit" disabled={busy} onClick={() => void end()}>
+            {t.account.signOutOthers}
+          </Button>
+        ) : null}
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

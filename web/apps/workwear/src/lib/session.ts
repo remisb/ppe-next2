@@ -1,10 +1,14 @@
 import { type Role, decodeToken, hasAnyRole, isTokenExpired } from '@ppe/api-client'
 
-import { type Lang, isLang } from '@/i18n'
+import { type Lang } from '@/i18n'
 
-// sessionStorage: tokens live 15 minutes and cannot be revoked, so they should
-// not outlive the tab. While the tab is open the app refreshes them (refreshDue).
-const TOKEN_KEY = 'workwear.token'
+/*
+ * The sign-in lives in an HttpOnly refresh cookie that the server sets and no
+ * script can read; the access token, valid for minutes, lives only in memory.
+ * Each tab gets its own from the cookie when it opens (lib/api.tsx), so a
+ * reload, a new tab or a device that slept stays signed in, and nothing an
+ * injected script could take is stored.
+ */
 
 /**
  * A token with less than this left is refreshed: for the 15-minute token, once
@@ -54,37 +58,46 @@ export function sessionFromToken(token: string, name: string, language: Lang = '
   }
 }
 
-interface Stored {
-  token: string
-  name: string
-  language?: string
-}
+/** Where the app kept the token before sign-ins moved to a cookie; cleared at start-up. */
+const LEGACY_TOKEN_KEY = 'workwear.token'
 
-export function loadSession(): Session | null {
+export function clearLegacyToken(): void {
   try {
-    const raw = globalThis.sessionStorage?.getItem(TOKEN_KEY)
-    if (!raw) return null
-    const s = JSON.parse(raw) as Stored
-    const session = sessionFromToken(s.token, s.name, isLang(s.language) ? s.language : 'en')
-    if (!session) clearSession()
-    return session
-  } catch {
-    return null
-  }
-}
-
-export function storeSession(s: Session): void {
-  try {
-    globalThis.sessionStorage?.setItem(TOKEN_KEY, JSON.stringify({ token: s.token, name: s.name, language: s.language } satisfies Stored))
-  } catch {
-    // The session still works in memory for this tab.
-  }
-}
-
-export function clearSession(): void {
-  try {
-    globalThis.sessionStorage?.removeItem(TOKEN_KEY)
+    globalThis.sessionStorage?.removeItem(LEGACY_TOKEN_KEY)
   } catch {
     // Nothing to clear.
   }
+}
+
+const KEEP_KEY = 'workwear.keepSignedIn'
+
+/**
+ * Whether Keep me signed in starts ticked on this device: yes, unless it was
+ * unticked at the last sign-in here (a shared device stays unticked).
+ */
+export function keepSignedInChoice(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(KEEP_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+export function rememberKeepSignedIn(keep: boolean): void {
+  try {
+    globalThis.localStorage?.setItem(KEEP_KEY, String(keep))
+  } catch {
+    // The box starts ticked next time.
+  }
+}
+
+/**
+ * Runs refresh with the browser's lock on it where there is one (Web Locks), so
+ * tabs refreshing at the same moment take turns: each sends the cookie the one
+ * before it received. The server also tolerates the replaced cookie for a
+ * moment, so a browser without locks is only less tidy.
+ */
+export function withRefreshLock<T>(refresh: () => Promise<T>): Promise<T> {
+  const locks = (globalThis.navigator as Navigator | undefined)?.locks
+  return locks ? locks.request('workwear.refresh', refresh) : refresh()
 }

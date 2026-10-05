@@ -10,13 +10,32 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Sessions ends a user's sign-ins (the session service, through an adapter in
+// cmd/api/checkers.go). reason is one of the End* values.
+type Sessions interface {
+	EndAll(ctx context.Context, userID, keep uuid.UUID, reason string) error
+}
+
+// Why a user's sign-ins end, as the session service records it.
+const (
+	EndPasswordChanged = "password_changed"
+	EndPasswordReset   = "password_reset"
+	EndDeactivated     = "deactivated"
+	EndDeleted         = "deleted"
+)
+
+type noSessions struct{}
+
+func (noSessions) EndAll(context.Context, uuid.UUID, uuid.UUID, string) error { return nil }
+
 // Service owns user policy: validation, IDs, timestamps and password hashing.
 type Service struct {
-	repo   Repository
-	now    func() time.Time
-	newID  func() uuid.UUID
-	hash   func(password string) (string, error)
-	verify func(hash, password string) bool
+	repo     Repository
+	sessions Sessions
+	now      func() time.Time
+	newID    func() uuid.UUID
+	hash     func(password string) (string, error)
+	verify   func(hash, password string) bool
 	// dummyHash is compared against when no user matches, so a login for an
 	// unknown email costs the same as one with a wrong password.
 	dummyHash string
@@ -27,6 +46,10 @@ type Option func(*Service)
 func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// WithSessions ends a user's sign-ins when their password changes or the
+// account is deactivated or deleted. Without it nothing is ended.
+func WithSessions(sessions Sessions) Option { return func(s *Service) { s.sessions = sessions } }
+
 // WithHasher replaces bcrypt, which is deliberately slow, in tests.
 func WithHasher(hash func(string) (string, error), verify func(hash, password string) bool) Option {
 	return func(s *Service) { s.hash, s.verify = hash, verify }
@@ -34,11 +57,12 @@ func WithHasher(hash func(string) (string, error), verify func(hash, password st
 
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{
-		repo:   repo,
-		now:    func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
-		newID:  uuid.New,
-		hash:   bcryptHash,
-		verify: bcryptVerify,
+		repo:     repo,
+		sessions: noSessions{},
+		now:      func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
+		newID:    uuid.New,
+		hash:     bcryptHash,
+		verify:   bcryptVerify,
 	}
 	for _, o := range opts {
 		o(s)
@@ -115,6 +139,8 @@ func (s *Service) List(ctx context.Context) ([]User, error) {
 
 // Update replaces the profile fields of user id. An actor cannot deactivate
 // themselves or drop their own admin role, which would lock them out mid-session.
+// Deactivating a user ends their sign-ins; a role change reaches them at their
+// next refresh.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, actor uuid.UUID) (User, error) {
 	if actor == uuid.Nil {
 		return User{}, fieldError("actor", "is required")
@@ -134,6 +160,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 			return User{}, fieldError("roles", "cannot remove admin from your own account")
 		}
 	}
+	deactivated := u.IsActive && !p.IsActive
 	u.Email = p.Email
 	u.Name = p.Name
 	u.Roles = p.Roles
@@ -143,11 +170,24 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 	if err := s.repo.Update(ctx, u); err != nil {
 		return User{}, err
 	}
+	if deactivated {
+		if err := s.sessions.EndAll(ctx, id, uuid.Nil, EndDeactivated); err != nil {
+			return User{}, err
+		}
+	}
 	return u, nil
 }
 
-// SetPassword replaces a user's password without knowing the old one (admin reset).
+// SetPassword replaces a user's password without knowing the old one (admin
+// reset), and ends every sign-in of theirs.
 func (s *Service) SetPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID) error {
+	if err := s.setPassword(ctx, id, password, actor); err != nil {
+		return err
+	}
+	return s.sessions.EndAll(ctx, id, uuid.Nil, EndPasswordReset)
+}
+
+func (s *Service) setPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
 	}
@@ -161,16 +201,31 @@ func (s *Service) SetPassword(ctx context.Context, id uuid.UUID, password string
 	return s.repo.SetPasswordHash(ctx, id, hash, s.now(), actor)
 }
 
-// ChangePassword lets a user replace their own password after proving the current one.
-func (s *Service) ChangePassword(ctx context.Context, self uuid.UUID, current, next string) error {
+// ChangePassword lets a user replace their own password after proving the
+// current one. Their other sign-ins end; keep, the one they changed it in, stays.
+func (s *Service) ChangePassword(ctx context.Context, self, keep uuid.UUID, current, next string) error {
+	if err := s.CheckPassword(ctx, self, current); errors.Is(err, ErrInvalid) {
+		return fieldError("current_password", "is incorrect")
+	} else if err != nil {
+		return err
+	}
+	if err := s.setPassword(ctx, self, next, self); err != nil {
+		return err
+	}
+	return s.sessions.EndAll(ctx, self, keep, EndPasswordChanged)
+}
+
+// CheckPassword confirms the signed-in user's own password, before an action
+// that asks for it again. A wrong one is ErrInvalid naming the password.
+func (s *Service) CheckPassword(ctx context.Context, self uuid.UUID, password string) error {
 	u, err := s.repo.Get(ctx, self)
 	if err != nil {
 		return err
 	}
-	if !s.verify(u.PasswordHash, current) {
-		return fieldError("current_password", "is incorrect")
+	if !s.verify(u.PasswordHash, password) {
+		return fieldError("password", "is incorrect")
 	}
-	return s.SetPassword(ctx, self, next, self)
+	return nil
 }
 
 // SetLanguage sets the signed-in user's own interface language; no one sets
@@ -188,7 +243,8 @@ func (s *Service) SetLanguage(ctx context.Context, self uuid.UUID, lang string) 
 	return s.repo.Get(ctx, self)
 }
 
-// Delete soft-deletes user id. Deleting your own account is refused.
+// Delete soft-deletes user id and ends their sign-ins. Deleting your own
+// account is refused.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
@@ -196,7 +252,10 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	if id == actor {
 		return fieldError("id", "cannot delete your own account")
 	}
-	return s.repo.Delete(ctx, id, s.now(), actor)
+	if err := s.repo.Delete(ctx, id, s.now(), actor); err != nil {
+		return err
+	}
+	return s.sessions.EndAll(ctx, id, uuid.Nil, EndDeleted)
 }
 
 // Authenticate returns the active user matching email and password. Every

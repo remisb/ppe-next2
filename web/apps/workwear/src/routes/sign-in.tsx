@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, PasswordInput, controlProps } from '@/components/ui/field'
 import { t } from '@/i18n'
 import { useApi } from '@/lib/api'
+import { keepSignedInChoice } from '@/lib/session'
 import { errorText } from '@/lib/use-load'
 
 /**
@@ -30,6 +31,7 @@ export function SignIn() {
     const data = new FormData(e.currentTarget)
     const email = String(data.get('email') ?? '').trim()
     const password = String(data.get('password') ?? '')
+    const keepSignedIn = data.get('keep-signed-in') !== null
     if (!email || !password) {
       setError(t.shell.enterEmailAndPassword)
       return
@@ -37,7 +39,7 @@ export function SignIn() {
     setBusy(true)
     setError(undefined)
     try {
-      await signIn(email, password)
+      await signIn(email, password, keepSignedIn)
     } catch (err) {
       // 429: too many attempts from this address, or failed ones for this account.
       if (err instanceof ApiError && err.status === 429) setError(t.shell.tooManyAttempts)
@@ -79,6 +81,14 @@ export function SignIn() {
             <Field label={t.shell.password} required error={error}>
               {(p) => <PasswordInput {...controlProps(p)} name="password" autoComplete="current-password" />}
             </Field>
+            {/* Ticked unless it was unticked at the last sign-in on this device (a shared one). */}
+            <label className="flex min-h-11 items-start gap-3 text-sm">
+              <input type="checkbox" name="keep-signed-in" defaultChecked={keepSignedInChoice()} className="mt-0.5 size-5 shrink-0 accent-primary" />
+              <span>
+                <span className="font-medium">{t.shell.keepSignedIn}</span>
+                <span className="block text-muted-foreground">{t.shell.keepSignedInHint}</span>
+              </span>
+            </label>
             <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90" disabled={busy}>
               {busy ? t.shell.signingIn : t.shell.signIn}
             </Button>

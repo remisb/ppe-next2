@@ -14,7 +14,7 @@ import (
 const testSecret = "test-secret-test-secret-test-secret-0123"
 
 func testTokens(now time.Time) *tokens {
-	return &tokens{secret: []byte(testSecret), issuer: "ppe-next2", ttl: 15 * time.Minute, sessionMax: 12 * time.Hour, leeway: 30 * time.Second, now: func() time.Time { return now }}
+	return &tokens{secret: []byte(testSecret), issuer: "ppe-next2", ttl: 15 * time.Minute, leeway: 30 * time.Second, now: func() time.Time { return now }}
 }
 
 func signClaims(t *testing.T, method jwt.SigningMethod, key any, c accessClaims) string {
@@ -30,9 +30,14 @@ func TestTokenRoundTrip(t *testing.T) {
 	now := time.Now()
 	tok := testTokens(now)
 	u := user.User{ID: uuid.New(), Roles: []string{user.RoleManager, user.RoleEmployee}}
-	raw, exp, err := tok.issue(u)
+	sid := uuid.New()
+	raw, exp, err := tok.issue(u, sid, now.Add(-time.Hour))
 	if err != nil {
 		t.Fatal(err)
+	}
+	claims, err := tok.parse(raw)
+	if err != nil || claims.sessionID() != sid || !claims.signedInAt().Equal(now.Add(-time.Hour).Truncate(time.Second)) {
+		t.Errorf("sid %v, auth_time %v, %v", claims.sessionID(), claims.signedInAt(), err)
 	}
 	if !exp.Equal(now.Add(15 * time.Minute)) {
 		t.Errorf("exp = %v", exp)

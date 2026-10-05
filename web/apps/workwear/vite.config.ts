@@ -7,14 +7,16 @@ import { defineConfig } from 'vitest/config'
 
 // The dev server proxies /api to the Go API so the browser sees one origin and
 // no CORS is needed. VITE_API_TARGET in .env.local overrides the target, e.g.
-// another port when 8090 is taken.
+// another port when 8090 is taken. The proxy keeps the browser's Host header
+// (Vite's shorthand would rewrite it to the target's): the sign-in routes accept
+// an Origin that matches it, whatever port this server runs on.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
   return {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { port: 5180, strictPort: true, proxy: { '/api': target, '/health': target } },
+    server: { port: 5180, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target } },
     test: { environment: 'jsdom', globals: true },
   }
 })

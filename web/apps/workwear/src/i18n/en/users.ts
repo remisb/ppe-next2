@@ -27,14 +27,14 @@ export const users = {
 
   // Add User / Edit User
   editUser: (name: string) => `Edit User: ${name}`,
-  editDescription: 'A role change applies from the user’s next sign-in.',
+  editDescription: 'A role change reaches the user within minutes, without signing in again.',
   addDescription: 'They sign in with this email and password, and can change the password under Account.',
   /** Follows the admin role's description on the admin's own account. */
   adminLocked: ' You cannot remove it from your own account.',
   password: 'Password',
   confirmPassword: 'Confirm password',
   cannotDeactivateOwn: 'You cannot deactivate your own account.',
-  inactiveExplained: 'An inactive user cannot sign in. A token they already hold lasts until it expires.',
+  inactiveExplained: 'An inactive user cannot sign in, and is signed out on every device within minutes.',
   enterName: 'Enter a name.',
   nameTooLong: 'Use at most 200 characters.',
   enterEmail: 'Enter an email address.',

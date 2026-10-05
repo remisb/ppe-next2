@@ -18,6 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -40,9 +41,11 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	fastHash := user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p })
+	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(testSecret), sessionLimits(testConfig()))
 	svc := newServices(
 		time.UTC, time.Hour,
-		user.NewService(user.NewPostgresRepository(pool), fastHash),
+		sessions,
+		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(userSessions{sessions})),
 		employee.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
@@ -732,5 +735,33 @@ func TestPostgresSupplierChatHTTP(t *testing.T) {
 	}
 	if got := decode[chatJSON](t, api.do(t, "GET", "/api/v1/settings", staff, nil).Body.Bytes()); got.SupplierChat != nil {
 		t.Fatalf("cleared settings still have %v", *got.SupplierChat)
+	}
+}
+
+// TestPostgresSessionsHTTP: a sign-in stored in user_sessions refreshes with
+// its cookie, rotating it; deactivating the account ends it.
+func TestPostgresSessionsHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	ctx := context.Background()
+	u, _ := api.userWith(t, user.RoleEmployee)
+	_, _, c := api.login(t, u.Email, "password123", true)
+	rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: c.Value, origin: appOrigin})
+	next := refreshCookieOf(rec)
+	if rec.Code != http.StatusOK || next == nil || next.Value == c.Value {
+		t.Fatalf("refresh = %d %s", rec.Code, rec.Body)
+	}
+	var generation int
+	if err := pool.QueryRow(ctx, `SELECT generation FROM user_sessions WHERE id = $1`, strings.Split(c.Value, ".")[0]).Scan(&generation); err != nil || generation != 2 {
+		t.Fatalf("generation = %d, %v", generation, err)
+	}
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: u.Roles, IsActive: false}, api.admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	var live int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM user_sessions WHERE user_id = $1 AND ended_at IS NULL`, u.ID).Scan(&live); err != nil || live != 0 {
+		t.Errorf("live sessions after deactivation = %d, %v", live, err)
+	}
+	if rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: next.Value}); rec.Code != http.StatusUnauthorized {
+		t.Errorf("refresh after deactivation = %d, want 401", rec.Code)
 	}
 }

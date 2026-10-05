@@ -1,3 +1,4 @@
+import { ApiError, RECENT_SIGN_IN_REQUIRED } from '@ppe/api-client'
 import { useCallback, useEffect, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -38,5 +39,7 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
 }
 
 export function errorText(err: unknown): string {
+  // An action that needed the password again, when the user cancelled the prompt.
+  if (err instanceof ApiError && err.status === 403 && err.message === RECENT_SIGN_IN_REQUIRED) return t.shell.passwordNotConfirmed
   return err instanceof Error ? err.message : t.common.somethingWentWrong
 }
