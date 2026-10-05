@@ -15,6 +15,10 @@ github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/remisb/dbbackup v0.1.0 h1:PcRGBPs7by2I+fjzSz9/OivV2FglO8WbhowsGaYnefE=
+github.com/remisb/dbbackup v0.1.0/go.mod h1:364/TzrrTKy0wMkwm8+7x5W+z2QpeTAP95QwapSZ9M0=
+github.com/remisb/dbbackup/postgres v0.1.0 h1:hOmquCK4khVJR0554veKMzKJXw+GlwBTszfiHQ/XrGw=
+github.com/remisb/dbbackup/postgres v0.1.0/go.mod h1:0XEMkpCV0AjzsdDmx9hALc0oj7DzOqMqrY5Dp0sV3wA=
 github.com/remisb/go-error-trace v0.0.0-20260607132049-e609dc64ad9a h1:m0/xtahHsTHGpjzyMzRfGFhIVHDPANga2ho9MszFw64=
 github.com/remisb/go-error-trace v0.0.0-20260607132049-e609dc64ad9a/go.mod h1:yndulbmGrRyzod2i/me1OuiB5DdjuZQVUh70SXmb0fU=
 github.com/remisb/muxstack v0.0.0-20260925104553-e61b35f6e625 h1:c1mQC9Y1c5qO0EYBhTJoImPykppPtYZW91UM9YFjvEY=

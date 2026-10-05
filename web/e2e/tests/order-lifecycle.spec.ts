@@ -114,6 +114,19 @@ test('sign in', async () => {
   await expect(page.getByText('Nothing needs you: every order is confirmed and nothing is due.')).toBeVisible()
 })
 
+test('Backups: an administrator sees whether the database is backed up', async () => {
+  // The test database has no backup service, so the screen and the Dashboard say so.
+  await openTab('Backups')
+  await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('status')).toContainText('The backup service has not reported')
+  await expect(page.getByText('No backups yet.')).toBeVisible()
+  await openTab('Dashboard')
+  const card = page.getByRole('region', { name: 'Backups' })
+  await expect(card).toContainText('The backup service has not reported')
+  await card.getByRole('link').click()
+  await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible()
+})
+
 test("Settings: an administrator sets the supplier's WhatsApp group", async () => {
   await openTab('Settings')
   const card = page.getByRole('main')
@@ -876,10 +889,11 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Item Sets', 'Starter kit'],
     ['Users', admin.email],
     ['Settings', 'Invite link'],
+    ['Backups', 'Recent backups'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
-    await expect(page.getByRole('heading', { name: tab })).toBeVisible()
+    await expect(page.getByRole('heading', { name: tab, exact: true })).toBeVisible()
     await expect(page.getByText(content).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
   }
@@ -969,6 +983,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Item Catalogue', 'Protective gloves'],
       ['Users', admin.email],
       ['Settings', 'Invite link'],
+      ['Backups', 'Recent backups'],
     ] as const) {
       await openTab(tab)
       await expect(page.getByText(content).first()).toBeVisible()

@@ -309,7 +309,9 @@ Confirmation links carry a bearer token, and the page sets a `no-referrer` polic
 links should still only be served over HTTPS.
 
 **Backups:** the order records, confirmation evidence and audit trail exist only in
-Postgres. Back up the database, for example with `pg_dump` on a schedule.
+Postgres. The `backup` service in `docker-compose.prod.yml` backs it up nightly and
+administrators see the result on the Backups screen; set an off-server target (a Spaces
+bucket) as described in [docs/backups.md](docs/backups.md).
 
 ## Further reading
 

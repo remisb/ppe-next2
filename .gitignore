@@ -11,3 +11,7 @@ test-results/
 !.env.prod.example
 # Host-specific Caddy sites for other applications (deploy/sites/README.md).
 /deploy/sites/*.caddy
+
+# The GitHub token that reads the private dbbackup module during image builds
+# (docs/backups.md); never committed.
+/.github-token

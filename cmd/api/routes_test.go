@@ -20,6 +20,7 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -230,6 +231,10 @@ func (s *stubSettings) Update(_ context.Context, m settings.Mutation) (settings.
 	return next, err
 }
 
+type stubBackups struct{}
+
+func (stubBackups) Read(context.Context, int) (backup.Status, error) { return backup.Status{}, nil }
+
 var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 func testConfig() config {
@@ -251,7 +256,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{})
+	svc := newServices(time.UTC, time.Hour, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
@@ -348,6 +353,7 @@ var policy = map[string]string{
 	"GET /api/v1/dashboard/manager":                 "manager",
 	"GET /api/v1/dashboard/employee":                "employee",
 	"GET /api/v1/replacements":                      "any",
+	"GET /api/v1/backups":                           "admins",
 }
 
 var allowedRoles = map[string][]string{

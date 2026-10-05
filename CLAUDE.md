@@ -29,6 +29,12 @@ Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/test
 which maps every manual §7 rule and status transition to its tests. Administrators set the
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
 at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages.
+Database backups: the `backup` compose service is the agent from the separate library
+`github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
+Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
+(migration 0019, dbbackup's schema copied verbatim); administrators read them on the
+Backups screen and a Dashboard card (`internal/domain/backup`, `GET /api/v1/backups`, read-only;
+spec `docs/specs/backup-service.md`, operations and Postgres upgrades `docs/backups.md`).
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
@@ -49,6 +55,7 @@ make migrate          # apply pending internal/db/migrations/*.up.sql via psql i
 make migrate-down     # revert all; make migrate-status lists applied files
 make seed-admin       # create the first admin from API_SEED_USER_*
 make seed-demo        # demo data via the services (cmd/api/seed-demo.go); refuses a non-empty DB
+make backup-once      # back up the dev DB now (docker-compose.yml backup profile; volume ppe-next2-backups)
 make run              # go run ./cmd/api
 make vet
 make test             # go test -p 1 ./... — Postgres tests skip without API_TEST_DB_DSN
@@ -75,7 +82,17 @@ because Postgres tests truncate tables.
 → api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
 built app into the Caddy image; `deploy/Caddyfile`). Only Caddy publishes ports.
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
-`prod-seed-demo`; they run compose under `env -i` so `.env` values cannot leak in.
+`prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`; they run compose under `env -i` so `.env` values cannot leak in.
+The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
+(`go install` of dbbackup `DBBACKUP_VERSION`) on `POSTGRES_IMAGE`, the image `db` and
+`migrate` also use, so `pg_dump` always matches the server; it backs up to `DBBACKUP_TARGET` (default the `backups`
+volume, on the droplet only; `docs/backups.md` sets up a Spaces bucket, encryption,
+restore and the major-upgrade steps). The db volume is named by `POSTGRES_VOLUME`
+(default `ppe-next2-prod_db-data`, the name compose gave it).
+dbbackup is a **private** repository: the `api` and `backup` image builds read it with the
+`github_token` build secret, the gitignored file `.github-token` (a fine-grained token,
+read-only on remisb/dbbackup) beside `.env.prod`; CI uses the `DBBACKUP_READ_TOKEN` secret.
+Locally, Go fetches it over your own git credentials with `GOPRIVATE=github.com/remisb/*`.
 The DigitalOcean droplet serves it at `https://workwear.gavort.nl` (an A record in
 gavort.nl's Hostinger DNS; the domain's own website stays at Hostinger) from
 `/opt/ppe-next2`, a git checkout of this repository with `.env.prod` (chmod 600, never
@@ -88,7 +105,7 @@ before the move still work. Deploy a pushed commit on the droplet:
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 ```
 
-`prod-up` runs migrations before the API starts and then always recreates `api` and `caddy`
+`prod-up` runs migrations before the API starts and then always recreates `api`, `caddy` and `backup`
 (about a second of downtime; certificates live in the `caddy-data` volume), because compose
 has left either running the previous image after a rebuild. `db` is recreated only when its
 config changes.
@@ -102,6 +119,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` exists).
+- `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
 - `web/AGENTS.md` — binding rules for frontend apps.
 - `../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx` — the product
   contract (ORDERED/GIVEN orders, immutable line snapshots, bilingual receipts).

@@ -4,7 +4,16 @@ FROM golang:1.27-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
-RUN go mod download
+# github.com/remisb/dbbackup is private, so it comes straight from GitHub with
+# the github_token build secret (the file .github-token; docs/backups.md). The
+# token exists only during this RUN: it is in no layer and no image.
+RUN apk add --no-cache git
+ENV GOPRIVATE=github.com/remisb/dbbackup
+RUN --mount=type=secret,id=github_token \
+    GIT_CONFIG_COUNT=1 \
+    GIT_CONFIG_KEY_0="url.https://x-access-token:$(cat /run/secrets/github_token 2>/dev/null)@github.com/remisb/dbbackup.insteadOf" \
+    GIT_CONFIG_VALUE_0="https://github.com/remisb/dbbackup" \
+    go mod download
 
 COPY cmd/ cmd/
 COPY internal/ internal/

@@ -15,6 +15,7 @@ describe('router', () => {
       'itemSets',
       'users',
       'settings',
+      'backups',
       'history',
       'account',
       'replacements',
@@ -97,5 +98,7 @@ describe('router', () => {
     expect(startRoute({ name: 'settings' }, admin)).toEqual({ name: 'settings' })
     expect(startRoute({ name: 'settings' }, manager)).toEqual({ name: 'managerDashboard' })
     expect(startRoute({ name: 'settings' }, employee)).toEqual({ name: 'employeeDashboard' })
+    expect(startRoute({ name: 'backups' }, admin)).toEqual({ name: 'backups' })
+    expect(startRoute({ name: 'backups' }, manager)).toEqual({ name: 'managerDashboard' })
   })
 })

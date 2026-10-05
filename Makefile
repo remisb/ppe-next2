@@ -15,7 +15,8 @@ TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
 .PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo \
-	prod-build prod-up prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo
+	prod-build prod-up prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo \
+	prod-backup prod-backups prod-restore backup-once
 
 help: ## List targets
 	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -95,7 +96,7 @@ prod-build: ## Build the API and web images (separate from prod-up, so building 
 # its config changes; the first `up` runs migrate before the API starts.
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
 	$(PROD) up -d
-	$(PROD) up -d --force-recreate --no-deps api caddy
+	$(PROD) up -d --force-recreate --no-deps api caddy backup
 
 prod-down: ## Stop the deployment stack (volumes are kept)
 	$(PROD) down
@@ -111,3 +112,19 @@ prod-seed-admin: ## Create the first admin from API_SEED_USER_* in .env.prod and
 
 prod-seed-demo: ## Fill an empty deployment database with demo data as that admin
 	$(PROD) run --rm --no-deps api -seed-demo
+
+prod-backup: ## Back up the deployment database now (it also backs up on DBBACKUP_SCHEDULE)
+	$(PROD) run --rm --no-deps backup once
+
+prod-backups: ## List the stored backups, newest first
+	$(PROD) run --rm --no-deps backup list
+
+# Replaces the database's contents. Without CONFIRM=yes it only names the backup
+# it would restore. KEY= picks one from prod-backups (default: the newest);
+# IDENTITY= is the age private key file for an encrypted backup.
+prod-restore: ## Restore a backup: KEY=<key> (default newest) IDENTITY=<age key file> CONFIRM=yes
+	$(PROD) run --rm --no-deps $(if $(IDENTITY),-v $(abspath $(IDENTITY)):/run/backup.key:ro -e DBBACKUP_AGE_IDENTITY_FILE=/run/backup.key) \
+		backup restore $(if $(filter yes,$(CONFIRM)),--yes) $(if $(KEY),$(KEY),--latest)
+
+backup-once: ## Back up the development database now (docker-compose.yml backup profile)
+	docker compose --profile backup run --rm backup once

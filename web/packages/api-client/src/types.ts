@@ -574,3 +574,61 @@ export interface ManagerPriceChange {
   before_service_months: number | null
   after_service_months: number | null
 }
+
+/**
+ * The database backups (GET /api/v1/backups, administrators only), as the
+ * backup agent records them. stale, agent_offline and last_run_failed are the
+ * server's verdicts the screen warns with.
+ */
+export interface BackupStatus {
+  generated_at: string
+  /** The organisation's timezone, which times are shown in. */
+  timezone: string
+  /** The agent that reported last; null when none ever has. */
+  agent: BackupAgent | null
+  /** The newest successful backup; null when there is none. */
+  last_success: BackupRun | null
+  /** The newest 30 runs, newest first. */
+  runs: BackupRun[]
+  /** Successful backups whose file is still stored. */
+  kept: { count: number; bytes: number }
+  /** No successful backup, or the newest is older than the schedule allows. */
+  stale: boolean
+  /** No agent, or none reported in the last 15 minutes. */
+  agent_offline: boolean
+  last_run_failed: boolean
+}
+
+export interface BackupAgent {
+  name: string
+  /** As configured, e.g. "0 3 * * *" (cron). */
+  schedule: string
+  timezone: string
+  interval_seconds: number
+  /** Where backups go, without credentials, e.g. "file:///backups" or "s3://bucket (fra1.digitaloceanspaces.com)". */
+  target: string
+  /** E.g. "14 days, at least 7". */
+  retention: string
+  encrypted: boolean
+  version: string
+  next_run_at: string | null
+  last_seen_at: string
+}
+
+export interface BackupRun {
+  id: string
+  started_at: string
+  finished_at: string
+  duration_ms: number
+  status: 'succeeded' | 'failed'
+  /** Empty on success; the agent's message (English) on failure. */
+  error: string
+  size_bytes: number
+  server_version: string
+  tool_version: string
+  target: string
+  key: string
+  encrypted: boolean
+  /** Retention has deleted the file. */
+  pruned: boolean
+}

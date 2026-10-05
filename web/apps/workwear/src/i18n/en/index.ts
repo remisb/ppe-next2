@@ -8,5 +8,6 @@ import { shell } from './shell'
 import { users } from './users'
 import { account } from './account'
 import { settings } from './settings'
+import { backups } from './backups'
 
-export const en = { common, shell, order, history, dashboard, employees, catalogue, users, account, settings }
+export const en = { common, shell, order, history, dashboard, employees, catalogue, users, account, settings, backups }

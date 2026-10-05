@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -65,6 +66,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		order.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
+		backup.NewPostgresRepository(pool),
 	)
 
 	if cfg.SeedAdmin {
@@ -112,17 +114,19 @@ type services struct {
 	orders    *order.Service
 	dashboard *dashboard.Service
 	settings  *settings.Service
+	backups   *backup.Service
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
 	s := services{
 		users:     users,
 		employees: employee.NewService(employees),
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
+		backups:   backup.NewService(backups, backup.WithLocation(loc)),
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -148,6 +152,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
+	registerBackupRoutes(rt, svc.backups)
 	return rt
 }
 

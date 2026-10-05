@@ -99,3 +99,18 @@ Only `ORDERED` and `GIVEN` exist; the only transition is ORDERED → GIVEN.
 | A dashboard figure with a list behind it is one tappable tile with a chevron: Awaiting / On order open Orders on the Awaiting tab (`/orders?status=ORDERED`), Replacements due opens the Replacements due screen (the manager's jumps to the forecast), Missing sizes opens Employees filtered (`/employees?missing=1`); Missing sizes names the one person and what they miss | web `router`, `dashboard` (`missingSizesText`) tests; e2e *Employees: the Missing sizes tile's address opens the list filtered*, manager part of *Users: …* (On order) |
 | Replacements due screen (`/replacements`): every replacement due within 30 days by the dashboards' rule, up to 500, tabs All / Overdue / Due soon, Reorder per row; under the user's Dashboard tab | `dashboard.TestReplacementsScreen`, `TestPostgresOverview` (the screen's list), `TestRoutePolicy`; web `router` tests; e2e *Replacements due: the whole list at its own address*, *phone and tablet: …* |
 | User guide on Help (`/help`, from the sidebar or rail foot, the phone's More sheet, ⌘K and the shortcuts sheet): opens in the user's language and on the window's device (phone below 768px, tablet to 1279px, desktop), following a resize, with that device's screenshots and words; its own switches change only the guide; only the sections and parts the user's roles can do (Users for administrators, Delete order for managers, each role's dashboard); the three languages have the same sections, parts, roles and screenshots; `docs/guide` is written from the same text | web `help.test.ts` (languages in step, roles, devices, markup); e2e *Orders: only a manager deletes an order…* (a manager's guide), *Language: …* (Lithuanian by default, English on the switch, screenshots load, the phone's guide in a phone-sized window, the device switch, no sideways scroll in Russian); `pnpm guide` in `web/e2e` (screenshots and docs) |
+
+## Backups
+
+Not a manual rule: the backups are taken by the dbbackup agent (its own tests live in that
+repository: `scripts/check.sh`, including a Postgres 18 dump and restore). The app only
+reports them ([specs/backup-service.md](specs/backup-service.md)).
+
+| Rule | Covered by |
+| --- | --- |
+| Migration 0019 is dbbackup's schema, unchanged | `backup.TestMigrationMatchesLibrarySchema` |
+| Overdue = no success, or the newest older than the agent's interval (a day without one) plus 2 hours; agent offline after 15 minutes without a heartbeat; the newest run failed | `backup.TestNothingYet`, `TestStaleness`, `TestAgentOfflineAndFailedRun` |
+| Reads the agent's rows: the latest-reporting agent, newest runs first, last success, kept totals without pruned files, encryption from the transforms | `backup.TestPostgresRead` |
+| `GET /api/v1/backups` is for administrators only; an empty database gives `runs: []`, `agent: null`, overdue | `TestRoutePolicy`, `TestPostgresBackupsHTTP` |
+| The screen names the worst first (no agent, offline, failed, none yet, overdue, up to date), in the organisation timezone; sizes, durations and simple schedules in words, in the user's language | web `backups.test.ts` |
+| Backups screen and the Dashboard card (opens Backups), administrators only; no sideways scroll on a phone or tablet | web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |

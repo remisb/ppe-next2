@@ -6,11 +6,12 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states
 import { Button } from '@/components/ui/button'
 import { t } from '@/i18n'
 import { useApi, useSession } from '@/lib/api'
+import { backupHealth, formatBytes, healthText } from '@/lib/backups'
 import { type Need, changeText, formatDays, monthLabel, share } from '@/lib/dashboard'
 import { formatDateTime } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { formatEuro } from '@/lib/utils'
+import { cn, formatEuro } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 
@@ -72,7 +73,10 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
                 ) : null
               }
             />
-            <SetupCard d={d} navigate={navigate} />
+            <div className="flex flex-col gap-4 md:gap-6">
+              <SetupCard d={d} navigate={navigate} />
+              <BackupCard navigate={navigate} />
+            </div>
           </div>
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <MonthlyChart months={d.months} className="lg:col-span-2" />
@@ -292,6 +296,39 @@ function TopItemsCard({ d }: { d: DashboardData }) {
 }
 
 /** Master data at a glance, with what in it stops or slows ordering and where to fix it. */
+/**
+ * Whether the database is being backed up, in one line that opens Backups. It
+ * loads on its own, so the dashboard never waits for it, and a failure to load
+ * leaves it out rather than the dashboard.
+ */
+function BackupCard({ navigate }: { navigate: Navigate }) {
+  const { client } = useApi()
+  const loaded = useLoad(() => client.backups())
+  const s = loaded.data
+  if (!s) return null
+  const ok = backupHealth(s) === 'ok'
+  return (
+    <Panel title={t.backups.title}>
+      <a
+        {...linkTo({ name: 'backups' }, navigate)}
+        className="-mx-2 flex min-h-11 items-center gap-3 rounded-md px-2 py-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {ok ? (
+          <CheckCircle2 aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+        ) : (
+          <AlertTriangle aria-hidden className="size-4 shrink-0 text-destructive" />
+        )}
+        <span className="min-w-0 flex-1 text-sm">
+          <span className={cn(!ok && 'text-destructive')}>{healthText(s, new Date())}</span>
+          {s.last_success ? <span className="block text-xs text-muted-foreground">{formatBytes(s.last_success.size_bytes)}</span> : null}
+          <span className="sr-only">. {t.backups.open}</span>
+        </span>
+        <ArrowRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      </a>
+    </Panel>
+  )
+}
+
 function SetupCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
   const s = d.setup
   const rows: { label: string; count: number; issue: string | null; to: Route }[] = [

@@ -22,6 +22,40 @@ services:
       timeout: 3s
       retries: 30
 
+  # The backup agent, only with the backup profile:
+  #   make backup-once          (or docker compose --profile backup run --rm backup list)
+  # Builds like production (deploy/backup.Dockerfile), so it needs the token
+  # file .github-token for the private dbbackup module (docs/backups.md).
+  backup:
+    profiles: [backup]
+    build:
+      context: .
+      dockerfile: deploy/backup.Dockerfile
+      secrets: [github_token]
+      args:
+        POSTGRES_IMAGE: postgres:18-alpine
+    image: ppe-next2-backup:dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-ppe2}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-ppe2}
+      PGDATABASE: ${POSTGRES_DB:-ppe2}
+      PGSSLMODE: disable
+      DBBACKUP_NAME: ppe-next2-dev
+      DBBACKUP_TZ: ${API_ORG_TIMEZONE:-Europe/Vilnius}
+      DBBACKUP_TARGET: file:///backups
+    volumes:
+      - backups:/backups
+
+secrets:
+  github_token:
+    file: ${GITHUB_TOKEN_FILE:-.github-token}
+
 volumes:
   pgdata:
     name: ppe-next2-pgdata
+  backups:
+    name: ppe-next2-backups

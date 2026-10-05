@@ -6,6 +6,8 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
+	github.com/remisb/dbbackup v0.1.0
+	github.com/remisb/dbbackup/postgres v0.1.0
 	github.com/remisb/muxstack v0.0.0-20260925104553-e61b35f6e625
 	golang.org/x/crypto v0.57.0
 )

@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -48,6 +49,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		order.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
+		backup.NewPostgresRepository(pool),
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123")
 	if err != nil {
@@ -565,6 +567,30 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 	pool.QueryRow(context.Background(), `SELECT count(*) FROM order_confirmations WHERE token_hash = $1`, token).Scan(&n)
 	if n != 0 {
 		t.Error("plaintext token stored")
+	}
+}
+
+// Before the backup agent has reported, the report is complete and says so:
+// no agent, no runs (an empty list, never null), overdue.
+func TestPostgresBackupsHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	if _, err := pool.Exec(context.Background(), `TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
+		t.Fatal(err)
+	}
+	_, adminTok := api.userWith(t, user.RoleAdmin)
+	_, managerTok := api.userWith(t, user.RoleManager)
+	if code := api.do(t, "GET", "/api/v1/backups", managerTok, nil).Code; code != http.StatusForbidden {
+		t.Errorf("manager: %d, want 403", code)
+	}
+	rec := api.do(t, "GET", "/api/v1/backups", adminTok, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("admin: %d %s", rec.Code, rec.Body)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{`"agent":null`, `"last_success":null`, `"runs":[]`, `"stale":true`, `"agent_offline":true`, `"kept":{"count":0,"bytes":0}`, `"timezone":"UTC"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %s: %s", want, body)
+		}
 	}
 }
 

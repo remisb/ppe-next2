@@ -6,3 +6,5 @@
 web/e2e/test-results
 web/e2e/playwright-report
 /api
+# Reaches builds only as a build secret, never in the context.
+.github-token

@@ -31,6 +31,8 @@ export type Route =
   | { name: 'users' }
   /** The organisation's settings (the supplier's WhatsApp group); administrators only. */
   | { name: 'settings' }
+  /** The database backups the backup service takes; administrators only. */
+  | { name: 'backups' }
   /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
   | { name: 'replacements' }
   | { name: 'account' }
@@ -63,6 +65,7 @@ const fixed = {
   itemSets: '/item-sets',
   users: '/users',
   settings: '/settings',
+  backups: '/backups',
   replacements: '/replacements',
   account: '/account',
   help: '/help',
@@ -220,6 +223,6 @@ export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: b
   if (route.name === 'dashboard' && !roles.isAdmin) return home
   if (route.name === 'managerDashboard' && !roles.isManager) return home
   if (route.name === 'employeeDashboard' && !roles.isEmployee) return home
-  if (route.name === 'settings' && !roles.isAdmin) return home
+  if ((route.name === 'settings' || route.name === 'backups') && !roles.isAdmin) return home
   return route
 }

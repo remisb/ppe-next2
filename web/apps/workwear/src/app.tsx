@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Settings as SettingsIcon, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { BookOpen, ClipboardList, DatabaseBackup, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Settings as SettingsIcon, Shirt, UserCog, UserRound, Users } from 'lucide-react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
@@ -29,6 +29,7 @@ import { ManagerDashboard } from './routes/manager-dashboard'
 import { Replacements } from './routes/replacements'
 import { RecordPage } from './routes/record'
 import { SignIn } from './routes/sign-in'
+import { BackupsPage } from './routes/backups'
 import { SettingsPage } from './routes/settings'
 import { UsersPage } from './routes/users'
 
@@ -58,14 +59,15 @@ const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): 
   icon: LayoutDashboard,
 })
 /*
- * Administrators: the Dashboard first, as their start screen, and Users and
- * Settings after the everyday sections. Managers get managerDashboard first in their tabs; an
+ * Administrators: the Dashboard first, as their start screen, and Users,
+ * Settings and Backups after the everyday sections. Managers get managerDashboard first in their tabs; an
  * administrator who is also a manager keeps the one Dashboard tab and reaches
  * that one from the Dashboard. The employee role's start screen,
  * employeeDashboard, is first in their tabs, as for managers.
  */
 const usersTab = (): Tab => ({ route: { name: 'users' }, label: t.shell.users, short: t.shell.shortUsers, icon: UserCog })
 const settingsTab = (): Tab => ({ route: { name: 'settings' }, label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon })
+const backupsTab = (): Tab => ({ route: { name: 'backups' }, label: t.shell.backups, short: t.shell.shortBackups, icon: DatabaseBackup })
 
 /**
  * A record belongs to Orders (History in the code), an employee to Employees
@@ -189,7 +191,7 @@ export function App() {
   if (!session) return <SignIn />
   const route = startRoute(asked, session)
   const shownTabs = session.isAdmin
-    ? [homeTab('dashboard'), ...tabs(), usersTab(), settingsTab()]
+    ? [homeTab('dashboard'), ...tabs(), usersTab(), settingsTab(), backupsTab()]
     : session.isManager
       ? [homeTab('managerDashboard'), ...tabs()]
       : session.isEmployee
@@ -400,6 +402,7 @@ export function App() {
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
         {route.name === 'users' ? <UsersPage /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
+        {route.name === 'backups' ? <BackupsPage /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'help' ? (

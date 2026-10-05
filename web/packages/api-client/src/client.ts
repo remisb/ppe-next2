@@ -1,5 +1,6 @@
 import { ApiError, NetworkError } from './errors.ts'
 import type {
+  BackupStatus,
   CatalogueItem,
   CatalogueItemInput,
   ConfirmationLink,
@@ -90,6 +91,8 @@ export function createClient(options: ClientOptions) {
     updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
+    /** The database backups the backup agent recorded; admins only. */
+    backups: () => request<BackupStatus>('GET', '/api/v1/backups'),
     /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */
     replacements: () => request<Dashboard['replacements']>('GET', '/api/v1/replacements'),
     /** The manager's dashboard; managers only. */

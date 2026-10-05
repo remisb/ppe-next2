@@ -96,7 +96,7 @@ The workwear app is the reference.
   (`md:hidden`): there it is the Create Order button on Orders, which stays the current
   section while Create Order is open, and ⌘K or G then O. From
   `md` those links flow on in the rail (`md:contents`), never a second list. An
-  administrator has eight sections on a phone (Dashboard first, Users and Settings last),
+  administrator has nine sections on a phone (Dashboard first, Users, Settings and Backups last),
   a manager or the employee role six (their Dashboard first); the rail and sidebar show one
   fewer, without Create Order. Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
