@@ -5,9 +5,9 @@ phone (375 px), tablet (768–1366 px) and desktop (1280 px) widths. For each pr
 design options, each with a sample screen, pros and cons, and a recommendation.
 
 27 Sep 2026 · reviewed build `1ff7a0c` · demo data · roles: admin, manager, employee ·
-status: phases 1–3 shipped, plus follow-ups (`4462e56`)
+status: phases 1–3 shipped, plus follow-ups (`7f466c7`)
 
-> **Status, updated 29 Sep 2026.** Phases 1–3 are built and live at the production site:
+> **Status, updated 5 Oct 2026.** Phases 1–3 are built and live at the production site:
 > every recommendation in the table below is done. Phase 1 shipped in `3c76945`, phase 2
 > in `aee8829` and phase 3 in `a663ce0`; record-number search and tappable dashboard
 > figures followed in `13214e8`, the Replacements due screen in `65da1ad`, the
@@ -30,9 +30,13 @@ status: phases 1–3 shipped, plus follow-ups (`4462e56`)
 > the supplier's WhatsApp group on a Settings screen in `a8433da`, Copy for WhatsApp kept to
 > the review and the confirmation link created for every new order in `4fac2b9`, the
 > sign-in refreshed every few minutes in `5d10430`, prices and a total on the confirmation page,
-> Create Order reached from Orders and no WhatsApp on a given order in `93bf9af`, and the
-> time zone notes dropped in `43cabd1`.
-> Each came with its e2e steps (41 in total, all passing). The findings, figures and "today" samples in this report describe the app as
+> Create Order reached from Orders and no WhatsApp on a given order in `93bf9af`, the
+> time zone notes dropped in `43cabd1`, the user guide brought up to date in `26ef3f5`
+> and `8bd9f3c`, database backups with a Backups screen in `c2f3d2c` (in the guide in
+> `5f48913`), a glossary of the app's terms in `de5d262`, sign-in with password managers in
+> `afcb7dd`, a sign-in limit per account in `745742b`, and staying signed in for up to 30
+> days with signed-in devices on Account in `7f466c7`.
+> Each came with its e2e steps (47 in total, all passing). The findings, figures and "today" samples in this report describe the app as
 > reviewed, build `1ff7a0c`, before these changes. The [roadmap](#10-roadmap-phases-13-shipped)
 > lists what shipped in each phase, where it differs from the proposal, and what is still
 > open.
@@ -924,11 +928,11 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Employees: the clothing size shows as its band, "M (48–50)", in the list and on the employee page, as the size pickers and Create Order name it
 - [x] Delete order for the manager role, under ⋯ in History's order pane: it asks first, and the order leaves History, the dashboards and Replacements due while its row, evidence and audit trail stay (a soft delete)
 - [x] The staff app in English, Lithuanian and Russian: each user picks the language on Account; it is saved on their account, so every device follows it, and before sign-in the device's last language is used. Plurals, amounts ("274,90 €") and dates follow the language, and the Items Given Record, the employee's confirmation page and hand-over mode keep English / Russian
-- [x] A [user guide](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U) for staff (`docs/guide`) in English, Lithuanian and Russian, with a language switch: twelve short sections from sign-in to shortcuts, each a few steps above its screenshot, and each language shows the app in that language and names its buttons as the app does. `pnpm guide` in `web/e2e` retakes the screenshots from the demo data, on each device in each language, so the guide can follow the UI
+- [x] A [user guide](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U) for staff (`docs/guide`) in English, Lithuanian and Russian, with a language switch: fourteen short sections from sign-in to shortcuts, each a few steps above its screenshot, and each language shows the app in that language and names its buttons as the app does. `pnpm guide` in `web/e2e` retakes the screenshots from the demo data, on each device in each language, so the guide can follow the UI
 - [x] Create Order's Review and mark as ordered button wraps a long label onto two lines (the Lithuanian one ran into its edges at desktop width); the e2e Language step fails when a visible button on Create Order holds text wider than itself in Lithuanian
 - [x] A Help screen (`/help`) shows the user guide in the app, from the sidebar or rail foot, the phone's More sheet, ⌘K and the shortcuts sheet. It opens in the user's language, with its own English / Lietuvių / Русский switch that changes only the guide, and leaves out what the user's roles cannot do: Users for administrators, Delete order for managers, and each role's own dashboard. Each section has its own address (`/help#history`). The guide is typed text in the app (`src/help`), kept in step across the three languages by a unit test, and `docs/guide` is written from it
 - [x] Employees shows each employee's note on one line under the name, in full on hover; on a phone it is a third line in the row
-- [x] Help follows the device it is read on, by the app's own layout: a phone below 768px, a tablet to 1279px, a desktop from 1280px, following a resize. Each device has its own screenshots (123 in all, per language and device) and, where the screens differ, its own words: the bottom bar and More, the rail or the sidebar; Review in the bar or the panel; tap an order or open it beside the list; keys and hover on the desktop only. A Phone / Tablet / Desktop switch shows another device's guide
+- [x] Help follows the device it is read on, by the app's own layout: a phone below 768px, a tablet to 1279px, a desktop from 1280px, following a resize. Each device has its own screenshots (150 in all, per language and device) and, where the screens differ, its own words: the bottom bar and More, the rail or the sidebar; Review in the bar or the panel; tap an order or open it beside the list; keys and hover on the desktop only. A Phone / Tablet / Desktop switch shows another device's guide
 - [x] The sign-in page in Gavort's quiet colours, chosen from two rounds of options: a pale panel with Gavort's mark, the app's name, a line on what it is for and a faint contour pattern, beside the form on white, with a navy Sign in button (a short band above the form on a phone or tablet; the panel turns navy in dark mode). Gavort's navy is a set of brand tokens used only on this page; the rest of the app keeps its neutral palette
 - [x] Employees have an optional preferred language, one of those the app speaks (English, Lietuvių, Русский, each named in itself), set in the employee form and shown on the employee's page. The employee's confirmation page and hand-over mode open in it when it is English or Russian, ahead of the device's last choice; EN / RU still switches, and a Lithuanian preference falls back to the device, since those screens speak English and Russian only. The language is looked up when the page is viewed, so the locked record and its hash never change with it
 - [x] A Light / Dark / System theme on Account and in ⌘K, kept on the device and applied before the first paint, the sign-in page included. Dark mode now also turns the browser's own controls and bar dark
@@ -942,6 +946,12 @@ kept in localStorage per user on the device, cleared by Sign out.
 - [x] Create Order left the sidebar; it opens from **+ Create Order** on Orders, which stays highlighted while an order is composed. The phone's raised New order button stays
 - [x] A given order no longer offers Share via WhatsApp in its Orders pane, on the phone too; it stays on the locked record page
 - [x] Orders lost its description line and its time zone note, and the dashboards their time zone note: they now end with “Updated 14:05.”. Dates still follow the organisation's time zone
+- [x] The user guide follows these changes, in the Help screen and the [shared copy](https://claude.ai/artifact/Bb5LtHPdFxVURdmc6evB4U), in all three languages: a Settings section for the supplier's WhatsApp group, the confirmation link created by Mark as Ordered, Copy for WhatsApp in the review only, how long a sign-in lasts, Create Order started from Orders (or New order on a phone), and the prices and total the employee checks. Every screenshot was retaken
+- [x] Administrators see whether the database is backed up: a **Backups** screen with the last backup, the recent ones and the backup service's settings (when it runs, where the copies go, how long they are kept), and a Backups card on the Dashboard that turns red when a backup failed or the service stopped reporting. The service is the dbbackup agent on the server; the app only reads what it records
+- [x] A [glossary](../ubiquitous-language.md) of the app's terms and the names of its screens and controls, in English, Lithuanian and Russian, with the words to avoid ("employee" for a user, "delivered" for Given), so new screens, the guide and the translations name things one way
+- [x] Sign in works with password managers (iCloud Keychain, Google Password Manager, 1Password, Bitwarden): the fields carry stable names and autocomplete tokens, Sign in is never disabled because autofill does not always tell the page (it names the empty fields instead), Change password tells the manager whose password changed, and a manager's "change password" link opens Account. After ten failed sign-ins for one account within 15 minutes, from any address, that account waits: "Too many sign-in attempts. Wait a few minutes, then try again."
+- [x] Staff stay signed in, as the [Staying Signed In](https://claude.ai/artifact/SdwbXJBC1iZDRiRc8PPNtk) report recommended: closing the app, a reload, a new tab or a device that slept no longer asks for the password. **Keep me signed in**, ticked by default, keeps a sign-in for up to 30 days, or until it has gone 14 days unused; unticked on a shared computer, it ends when the browser closes and after 12 hours at most, and the box stays unticked there next time. Account lists the **Signed-in devices** ("Safari on iPhone", when last used), this one first, with Sign out on each other one and **Sign out all other devices**. Changing your password signs out your other devices; a reset, deactivation or deletion signs the user out everywhere. Before adding, editing, resetting or deleting a user, an administrator who signed in over 12 hours ago is asked to **Confirm your password**, and the change then goes ahead. Under the hood the sign-in is a server session in a cookie no script can read, replaced at every use
+- [x] The user guide follows these changes in all three languages: a Backups section for administrators, and staying signed in (Keep me signed in, Sign out, Signed-in devices with a screenshot of its own, and Confirm your password on Users). Every screenshot was retaken
 
 ### Still open
 
@@ -951,6 +961,9 @@ kept in localStorage per user on the device, cleared by Sign out.
   starter kit, change one size, send", was not run before building. Running it now would
   measure the new flow.
 - **Native-speaker review** of the Lithuanian and Russian wording, which was drafted for review, on the [translation review page](https://claude.ai/artifact/5HXjeDapxp7umudiqDnD6Q): all 718 texts beside the English, counted phrases at 1, 3, 5 and 21, where a reviewer with Contributor access marks each draft right or suggests wording, and progress shows per language. First the short navigation labels (the phone's raised button reads "Užsakyti"; the tablet rail's Users reads "Польз."), "Kam skirta" / "Для кого" for Assigned to, and "Reikia pakeisti" / "Требуется замена" for Replacements due, and the user guide's Lithuanian and Russian pages, drafted the same way. Whether WhatsApp messages should follow the sender's language, as now, or always go out in English / Russian is a product owner's call.
+- **The sign-in report's later phases**: shorter limits for administrators (optional), then an
+  installable app and passkeys (Face ID, Touch ID, Windows Hello), as the
+  [Staying Signed In](https://claude.ai/artifact/SdwbXJBC1iZDRiRc8PPNtk) report plans.
 - **Product owner sign-off** for in-person confirmation and for deleting orders, a given
   one with its signed record, both of which go beyond the manual; and iPad Guided Access on
   any tablet left at a counter.
