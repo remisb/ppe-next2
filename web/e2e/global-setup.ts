@@ -17,6 +17,8 @@ export default async function globalSetup() {
   await client.connect()
   try {
     await client.query('TRUNCATE users CASCADE')
+    // The backup agent's tables reference no user; the guide's setup fills them.
+    await client.query('TRUNCATE dbbackup_runs, dbbackup_agents')
   } finally {
     await client.end()
   }

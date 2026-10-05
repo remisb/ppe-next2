@@ -95,8 +95,23 @@ test('sign in', async () => {
     expect(icon.ok(), src).toBe(true)
     expect(icon.headers()['content-type'], src).toMatch(/^image\//)
   }
-  await page.getByLabel('Email').fill(admin.email)
+  // Password managers find the account by the fields' names and autocomplete tokens.
+  const email = page.getByLabel('Email')
   const password = page.getByLabel(/^Password/)
+  await expect(email).toHaveAttribute('name', 'email')
+  await expect(email).toHaveAttribute('autocomplete', 'username')
+  await expect(password).toHaveAttribute('name', 'password')
+  await expect(password).toHaveAttribute('autocomplete', 'current-password')
+  // Sign in is never disabled, since autofill may not tell the page: it says what is missing.
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByText('Enter your email and password.')).toBeVisible()
+  // Behind Caddy, a password manager's "change password" link lands on Account.
+  if (process.env['E2E_WEB_SERVER'] === 'caddy') {
+    const res = await page.request.get('/.well-known/change-password', { maxRedirects: 0 })
+    expect(res.status()).toBe(302)
+    expect(res.headers()['location']).toBe('/account')
+  }
+  await email.fill(admin.email)
   await password.fill(admin.password)
   // Show password checks what was typed, and hides it again.
   const show = page.getByRole('button', { name: 'Show password' })
@@ -1408,6 +1423,8 @@ test('Account: change password, then only the new one signs in', async () => {
   const newPassword = 'e2e-new-password-456'
   await page.getByRole('link', { name: admin.name }).click()
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
+  // A hidden username field tells a password manager whose password changes.
+  await expect(page.locator('input[autocomplete=username]')).toHaveValue(admin.email)
 
   // Wrong current password is reported on its field.
   await page.getByLabel('Current password').fill('not-the-password')

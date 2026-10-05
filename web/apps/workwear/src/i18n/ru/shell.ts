@@ -80,6 +80,7 @@ export const shell: ShellText = {
   email: 'Эл. почта',
   password: 'Пароль',
   wrongPassword: 'Неверный адрес эл. почты или пароль.',
+  enterEmailAndPassword: 'Введите адрес эл. почты и пароль.',
   retry: 'Повторить',
   sortBy: 'Сортировать по',
   defaultOrder: 'Порядок по умолчанию',

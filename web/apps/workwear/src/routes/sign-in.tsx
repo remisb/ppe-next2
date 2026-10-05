@@ -16,13 +16,23 @@ import { errorText } from '@/lib/use-load'
  */
 export function SignIn() {
   const { signIn } = useApi()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
 
-  const submit = async (e: FormEvent) => {
+  // The values are read from the form, not from React state: a browser or
+  // password manager that fills the fields does not always send the events
+  // React listens for (Chrome holds an autofilled value back until the first
+  // tap on the page), so a button disabled until the fields "changed" could
+  // not be pressed after autofill.
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const data = new FormData(e.currentTarget)
+    const email = String(data.get('email') ?? '').trim()
+    const password = String(data.get('password') ?? '')
+    if (!email || !password) {
+      setError(t.shell.enterEmailAndPassword)
+      return
+    }
     setBusy(true)
     setError(undefined)
     try {
@@ -53,21 +63,20 @@ export function SignIn() {
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold tracking-tight">{t.shell.signIn}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t.shell.signInHint}</p>
-          <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+          {/*
+           * Password managers find the account by the fields' stable names and
+           * autocomplete tokens (email / username, password / current-password),
+           * and offer to save it when this form is submitted with a password
+           * field in it. Keep both if the form changes.
+           */}
+          <form method="post" onSubmit={submit} className="mt-6 flex flex-col gap-4" noValidate>
             <Field label={t.shell.email} required>
-              {(p) => <Input {...controlProps(p)} type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />}
+              {(p) => <Input {...controlProps(p)} name="email" type="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" autoFocus />}
             </Field>
             <Field label={t.shell.password} required error={error}>
-              {(p) => (
-                <PasswordInput
-                  {...controlProps(p)}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              )}
+              {(p) => <PasswordInput {...controlProps(p)} name="password" autoComplete="current-password" />}
             </Field>
-            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90" disabled={busy || !email || !password}>
+            <Button type="submit" className="bg-brand text-brand-foreground hover:bg-brand/90" disabled={busy}>
               {busy ? t.shell.signingIn : t.shell.signIn}
             </Button>
           </form>

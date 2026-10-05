@@ -169,3 +169,19 @@ The workwear app is the reference.
   second button with the same name.
 - **Safe areas**: the viewport is `viewport-fit=cover`; bars pad with
   `env(safe-area-inset-*)`.
+
+## Sign-in and password forms
+
+Password managers (iCloud Keychain, Google Password Manager, 1Password, Bitwarden) must be
+able to fill and save every credential form:
+
+- Every credential field has a stable `name` and the right `autocomplete` token: sign-in
+  `name="email"` / `autocomplete="username"` and `name="password"` /
+  `autocomplete="current-password"`; a new password `autocomplete="new-password"`.
+- A form that changes the signed-in user's password carries a hidden
+  `autocomplete="username"` field with their email, so the manager updates that account.
+- Sign in reads its values from the form on submit, not from React state, and its button
+  is never disabled for empty fields: autofill does not always fire the events React
+  listens for. Empty fields get a message instead.
+- `/.well-known/change-password` redirects to `/account` (`deploy/Caddyfile`), where
+  password managers send people to change a saved password.

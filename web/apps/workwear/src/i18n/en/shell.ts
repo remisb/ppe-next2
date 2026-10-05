@@ -89,6 +89,7 @@ export const shell = {
   email: 'Email',
   password: 'Password',
   wrongPassword: 'Wrong email or password.',
+  enterEmailAndPassword: 'Enter your email and password.',
   // Shared controls.
   retry: 'Retry',
   sortBy: 'Sort by',

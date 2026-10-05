@@ -1,6 +1,6 @@
 import { ApiError } from '@ppe/api-client'
 import { CheckCircle2, LogOut } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 
 import { PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -38,6 +38,14 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
   const [done, setDone] = useState(false)
   const [density, setDensity] = useDensity(session.userId)
   const [theme, setTheme] = useTheme()
+  // The account's email, for the change-password form's hidden username field.
+  const [email, setEmail] = useState('')
+  useEffect(() => {
+    client.me().then(
+      (u) => setEmail(u.email),
+      () => {},
+    )
+  }, [client])
 
   const set = (k: keyof PasswordChange) => (e: { target: { value: string } }) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -130,14 +138,16 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             </Alert>
           ) : null}
           <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+            {/* Tells a password manager whose password changes, so it updates that saved sign-in. */}
+            <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
             <Field label={t.account.currentPassword} required error={errors.current}>
-              {(p) => <Input {...controlProps(p)} type="password" autoComplete="current-password" value={form.current} onChange={set('current')} />}
+              {(p) => <Input {...controlProps(p)} type="password" name="current-password" autoComplete="current-password" value={form.current} onChange={set('current')} />}
             </Field>
             <Field label={t.account.newPassword} required error={errors.next} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
-              {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={form.next} onChange={set('next')} />}
+              {(p) => <Input {...controlProps(p)} type="password" name="new-password" autoComplete="new-password" value={form.next} onChange={set('next')} />}
             </Field>
             <Field label={t.account.confirmNewPassword} required error={errors.confirm}>
-              {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={form.confirm} onChange={set('confirm')} />}
+              {(p) => <Input {...controlProps(p)} type="password" name="confirm-password" autoComplete="new-password" value={form.confirm} onChange={set('confirm')} />}
             </Field>
             {serverError ? (
               <p role="alert" className="text-sm text-destructive">

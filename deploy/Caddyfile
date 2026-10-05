@@ -16,6 +16,10 @@ import sites/*.caddy
 {$SITE_ADDRESS:localhost} {
 	encode zstd gzip
 
+	# Where password managers send people to change a saved password (the W3C
+	# "well-known URL for changing passwords"): the Account screen, after sign-in.
+	redir /.well-known/change-password /account 302
+
 	handle /api/* {
 		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
