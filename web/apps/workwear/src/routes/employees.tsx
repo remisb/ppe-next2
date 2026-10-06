@@ -200,7 +200,8 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     </TableCell>
                   ) : null}
                   <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
-                  <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : '—'}</TableCell>
+                  {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
+                  <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
                   <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
                   <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
                   <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_3]">
@@ -252,9 +253,10 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
 }
 
 /** A size Create Order will flag: set it before ordering clothing or shoes. */
-export function MissingBadge() {
+/** A size Create Order will ask for; `optional`, one it can do without (a height beside a saved clothing size). */
+export function MissingBadge({ optional = false }: { optional?: boolean }) {
   return (
-    <Badge variant="destructive" title={t.employees.missingTitle}>
+    <Badge variant={optional ? 'secondary' : 'destructive'} title={optional ? undefined : t.employees.missingTitle}>
       {t.employees.missing}
     </Badge>
   )
