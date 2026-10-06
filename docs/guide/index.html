@@ -84,11 +84,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#record"><b>7</b>Items Given Record</a></li>
     <li><a href="#employees"><b>8</b>Employees</a></li>
     <li><a href="#catalogue"><b>9</b>Item Catalogue and Item Sets</a></li>
-    <li><a href="#users"><b>10</b>Users</a></li>
-    <li><a href="#settings"><b>11</b>Settings</a></li>
-    <li><a href="#backups"><b>12</b>Backups</a></li>
-    <li><a href="#account"><b>13</b>Your account</a></li>
-    <li><a href="#shortcuts"><b>14</b>Search and shortcuts</a></li>
+    <li><a href="#administration"><b>10</b>Administration</a></li>
+    <li><a href="#users"><b>11</b>Users</a></li>
+    <li><a href="#roles"><b>12</b>Roles &amp; permissions</a></li>
+    <li><a href="#settings"><b>13</b>Settings</a></li>
+    <li><a href="#backups"><b>14</b>Backups</a></li>
+    <li><a href="#account"><b>15</b>Your account</a></li>
+    <li><a href="#shortcuts"><b>16</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -123,7 +125,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>A missing size: <b>Add sizes</b>.</li>
       <li>An item without a price: <b>Fix</b>.</li>
     </ul>
-    <p>The <b>Backups</b> card says whether the database is backed up. Choose it to open <b>Backups</b>.</p>
+    <p>The <b>Backups</b> card says whether the database is backed up. Choose it to open <b>Backups</b> in <b>Administration</b>.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/dashboard.png" alt="The Dashboard: figures and the Needs you list" loading="lazy"></figure>
     </div>
@@ -167,7 +169,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Send the employee the link with <b>Share link via WhatsApp</b> or <b>Copy link</b>. The link is valid for 7 days, and the app shows it only once.</li>
     </ol>
     <p>If the employee will sign on paper, choose <b>Print record</b> instead.</p>
-    <p><b>Copy for WhatsApp</b>, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in <b>Settings</b>, it then offers to open that group: paste the message there.</p>
+    <p><b>Copy for WhatsApp</b>, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in <b>Administration</b>, on <b>Settings</b>, it then offers to open that group: paste the message there.</p>
     <div class="pair">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/review.png" alt="The Review order dialog" loading="lazy"></figure>
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/ordered.png" alt="The ordered order with its confirmation link" loading="lazy"></figure>
@@ -244,12 +246,22 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="administration">
+  <h2><span class="n">10</span>Administration</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Administration</b> is where you manage who may use the app and what they may do, and the organisation's settings. It has four screens: <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Settings</b> and <b>Backups</b>.</p>
+    <p>Open it with <b>Administration</b> at the foot of the sidebar. It has a sidebar of its own; <b>Workwear &amp; Equipment</b>, at its foot, takes you back.</p>
+    <p>You are signed in to both at once, and <b>Sign out</b> in either signs you out of both. Anyone whose roles let them manage users, roles, settings or backups sees <b>Administration</b>, with only the screens their roles open.</p>
+</section>
+
 <section id="users">
-  <h2><span class="n">10</span>Users</h2>
+  <h2><span class="n">11</span>Users</h2>
   <p class="who">Administrators only</p>
     <ul>
-      <li>Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.</li>
+      <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
+      <li>A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.</li>
       <li>To reset a password, use <b>⋯ → Reset password…</b>.</li>
+      <li>You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds <b>Administrator</b>.</li>
       <li>If you signed in more than 12 hours ago, the app asks you to <b>Confirm your password</b> before saving the change.</li>
     </ul>
     <div class="shots">
@@ -257,8 +269,25 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="roles">
+  <h2><span class="n">12</span>Roles &amp; permissions</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Roles &amp; permissions</b> lists each role, what it allows and how many users hold it. A role is a set of permissions, such as <b>Manage Item Catalogue</b> or <b>Delete employees</b>. You give roles to users on <b>Users</b>.</p>
+    <ul>
+      <li><b>Administrator</b>, <b>Manager</b> and <b>Employee</b> are built in. <b>Administrator</b> can do everything and cannot be changed: <b>View</b> shows what it allows. You can change what <b>Manager</b> and <b>Employee</b> allow, but not their names, and you cannot delete them.</li>
+      <li><b>Add Role</b> makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: <b>Manage users</b> needs <b>See users</b>.</li>
+      <li>A change reaches the users who hold the role within minutes.</li>
+      <li><b>⋯ → Delete role…</b> deletes a role that no user holds. Take it from its users on <b>Users</b> first.</li>
+      <li>If you signed in more than 12 hours ago, the app asks you to <b>Confirm your password</b> before saving the change.</li>
+    </ul>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/roles.png" alt="Roles &amp; permissions: the built-in roles and the users holding them" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/role.png" alt="A role's permissions, grouped, each with what it allows" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="settings">
-  <h2><span class="n">11</span>Settings</h2>
+  <h2><span class="n">13</span>Settings</h2>
   <p class="who">Administrators only</p>
     <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
     <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
@@ -268,7 +297,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">12</span>Backups</h2>
+  <h2><span class="n">14</span>Backups</h2>
   <p class="who">Administrators only</p>
     <p><b>Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
     <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
@@ -286,7 +315,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">13</span>Your account</h2>
+  <h2><span class="n">15</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -301,13 +330,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">14</span>Search and shortcuts</h2>
+  <h2><span class="n">16</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>
       <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Go to the search or Add Item field.</td></tr>
-      <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users.</td></tr>
+      <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Move through Orders, or close the open order.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>On Create Order, review the order.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show all shortcuts.</td></tr>

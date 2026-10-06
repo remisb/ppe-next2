@@ -59,10 +59,13 @@ describe('forReader', () => {
   const words = (g: Guide) => texts(g).join('\n')
   const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
-  it('keeps Users, Backups and the Dashboard tour for administrators only', () => {
-    expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(['users', 'backups']))
-    expect(ids(forRoles(guides.en, ['manager']))).not.toContain('users')
-    expect(ids(forRoles(guides.en, ['manager']))).not.toContain('backups')
+  it('keeps Administration, its screens and the Dashboard tour for administrators only', () => {
+    const administration = ['administration', 'users', 'roles', 'settings', 'backups']
+    expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(administration))
+    for (const id of administration) {
+      expect(ids(forRoles(guides.en, ['manager']))).not.toContain(id)
+      expect(ids(forRoles(guides.en, ['employee']))).not.toContain(id)
+    }
     expect(words(forRoles(guides.en, ['manager']))).not.toContain('Backups')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Needs you')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
@@ -93,6 +96,13 @@ describe('devices', () => {
     expect(words('phone')).toContain('**More** holds the rest')
     expect(words('tablet')).toContain('The rail on the left')
     expect(words('desktop')).toContain('The sidebar holds')
+  })
+
+  it('name the way into Administration and back as each device shows it', () => {
+    expect(words('phone')).toContain('Open it from **More**')
+    expect(words('tablet')).toContain('**Admin** at the foot of the rail')
+    expect(words('desktop')).toContain('**Administration** at the foot of the sidebar')
+    expect(words('desktop')).not.toContain('**Admin** at')
   })
 
   it('retitle Search and shortcuts where there is no keyboard', () => {
