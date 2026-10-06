@@ -210,11 +210,11 @@ test('Item Catalogue: items with and without a price', async () => {
   await form.getByLabel('Item name').fill('Insulated jacket')
   await expect(form.getByRole('radio', { name: 'Insulated jacket' })).toBeChecked()
   await form.getByRole('button', { name: 'Cancel' }).click()
-  // One status per item: the chips count the items and show one status at a time.
-  await page.getByRole('button', { name: 'Incomplete · 1' }).click()
+  // One status per item: the tabs count the items and show one status at a time.
+  await page.getByRole('button', { name: 'Incomplete 1' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toHaveCount(0)
   await expect(page.getByRole('row', { name: /Safety helmet/ })).toBeVisible()
-  await page.getByRole('button', { name: 'All · 4' }).click()
+  await page.getByRole('button', { name: 'All 4' }).click()
 
   // Deactivate is under ⋯ and asks first; dismissing keeps the item active.
   const shoes = page.getByRole('row', { name: /Safety shoes/ })

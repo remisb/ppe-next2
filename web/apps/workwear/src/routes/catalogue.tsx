@@ -130,16 +130,25 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
         }
       />
       {counts.all > 0 ? (
-        // One status per item; a chip with nothing in it is left out unless it is the one chosen.
-        // On a phone the chips scroll sideways in their own row rather than take two lines.
-        <div role="group" aria-label={t.catalogue.show} className="mb-4 flex gap-2 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none] md:flex-wrap">
-          {statusChips()
-            .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
-            .map((c) => (
-              <Button key={c.status} className="shrink-0" variant={status === c.status ? 'secondary' : 'outline'} aria-pressed={status === c.status} onClick={() => setStatus(c.status)}>
-                {c.label} · {counts[c.status]}
-              </Button>
-            ))}
+        // One status per item; a tab with nothing in it is left out unless it is the one chosen.
+        // The same tabs as Orders, equal where they fit; on a phone each narrows to its words, and four that still do not fit scroll sideways.
+        <div className="mb-4 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]">
+          <div role="group" aria-label={t.catalogue.show} className="flex w-max min-w-full gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto sm:min-w-0 sm:grid-flow-col sm:auto-cols-fr">
+            {statusChips()
+              .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
+              .map((c) => (
+                <button
+                  key={c.status}
+                  type="button"
+                  aria-pressed={status === c.status}
+                  onClick={() => setStatus(c.status)}
+                  className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
+                >
+                  {c.label}
+                  <span className="tabular-nums text-muted-foreground">{counts[c.status]}</span>
+                </button>
+              ))}
+          </div>
         </div>
       ) : null}
       {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
