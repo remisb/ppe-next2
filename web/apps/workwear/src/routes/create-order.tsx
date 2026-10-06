@@ -703,7 +703,7 @@ function ReviewSheet({
               {l.size ? <span className="text-muted-foreground"> · {l.size}</span> : null}
             </span>
             <span className="shrink-0 text-right tabular-nums">
-              {l.quantity} × {formatEuro(l.unitPriceCents)}
+              {l.quantity} × {formatEuro(l.accountingPriceCents)}
             </span>
           </li>
         ))}
@@ -828,7 +828,7 @@ function LinesTable({
           <TableHead>{t.order.item}</TableHead>
           <TableHead>{t.order.size}</TableHead>
           <TableHead>{t.order.quantity}</TableHead>
-          <TableHead className="text-right">{t.order.unitPrice}</TableHead>
+          <TableHead className="text-right">{t.order.accountingPrice}</TableHead>
           <TableHead>{t.order.servicePeriod}</TableHead>
           <TableHead className="text-right">{t.common.total}</TableHead>
           <TableHead className="w-10">
@@ -856,7 +856,7 @@ function LinesTable({
                     {l.itemDetails ? <div className="text-xs text-muted-foreground stacked:hidden">{l.itemDetails}</div> : null}
                     {/* The unit price and service period columns are hidden in a row: shown here instead. */}
                     <div className="hidden text-xs text-muted-foreground tabular-nums stacked:block">
-                      {formatEuro(l.unitPriceCents)} · {formatMonths(l.servicePeriodMonths)}
+                      {formatEuro(l.accountingPriceCents)} · {formatMonths(l.servicePeriodMonths)}
                     </div>
                     {lineProblems?.map((p) => (
                       <div key={p} role="alert" className="mt-1 text-xs text-destructive">
@@ -873,11 +873,11 @@ function LinesTable({
               <TableCell className="align-top stacked:order-3 stacked:w-auto">
                 <QuantityStepper value={l.quantity} itemName={l.itemName} onChange={(q) => onChange((o) => setQuantity(o, l.catalogueItemId, q))} />
               </TableCell>
-              <TableCell className="text-right align-top tabular-nums stacked:hidden">{formatEuro(l.unitPriceCents)}</TableCell>
+              <TableCell className="text-right align-top tabular-nums stacked:hidden">{formatEuro(l.accountingPriceCents)}</TableCell>
               <TableCell className="align-top stacked:hidden">{formatMonths(l.servicePeriodMonths)}</TableCell>
               {/* In a narrow row the total sits beside the item, leaving the second line to the controls. */}
               <TableCell className="text-right align-top font-medium tabular-nums stacked:order-1 stacked:w-auto stacked:self-start stacked-wide:order-3 stacked-wide:self-center">
-                {l.unitPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.unitPriceCents * l.quantity) : '—'}
+                {l.accountingPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.accountingPriceCents * l.quantity) : '—'}
               </TableCell>
               <TableCell className="align-top stacked:order-1 stacked:w-auto stacked:-my-1.5 stacked:-mr-2 stacked-wide:order-4 stacked-wide:my-0">
                 <Button size="icon-sm" variant="ghost" aria-label={t.order.removeItem(l.itemName)} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>

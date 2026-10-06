@@ -101,7 +101,7 @@ export const order: OrderText = {
   item: 'Prekė',
   size: 'Dydis',
   quantity: 'Kiekis',
-  unitPrice: 'Vieneto kaina',
+  accountingPrice: 'Apskaitos kaina',
   servicePeriod: 'Naudojimo laikotarpis',
   remove: 'Pašalinti',
   totalValue: 'Bendra vertė',
@@ -122,7 +122,7 @@ export const order: OrderText = {
   itemUnavailable: 'Ši prekė nebetiekiama. Pašalinkite ją iš užsakymo.',
   quantityInvalid: 'Kiekis turi būti sveikasis skaičius, ne mažesnis nei 1.',
   selectSize: 'Pasirinkite dydį.',
-  priceMissing: 'Prekių kataloge nenurodyta kaina arba naudojimo laikotarpis. Įgaliotas naudotojas turi juos papildyti.',
+  priceMissing: 'Prekių kataloge nenurodyta apskaitos kaina arba naudojimo laikotarpis. Įgaliotas naudotojas turi juos papildyti.',
 
   // The employee's saved sizes
   heightCm: (cm: number) => `${cm} cm`,

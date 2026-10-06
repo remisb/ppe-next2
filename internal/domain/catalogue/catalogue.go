@@ -1,5 +1,5 @@
 // Package catalogue is the Item Catalogue: the only normal source of item name,
-// details, size group, unit price and service period. Values are copied into
+// details, size group, prices and service period. Values are copied into
 // order lines at Mark as Ordered, so editing an item never changes history.
 package catalogue
 
@@ -56,60 +56,69 @@ func (i Icon) Valid() bool {
 	return false
 }
 
-// Item is one orderable catalogue entry. UnitPriceCents and
+// Item is one orderable catalogue entry. It has two prices: the purchase
+// price, what the supplier charges, and the accounting price, what the
+// organisation books and orders show. AccountingPriceCents and
 // ServicePeriodMonths may be nil while an item is being set up; Mark as Ordered
-// refuses such an item (see Orderable).
+// refuses such an item (see Orderable). PurchasePriceCents is optional.
 type Item struct {
-	ID                  uuid.UUID  `json:"id"`
-	Name                string     `json:"name"`
-	Details             string     `json:"details"`
-	SizeGroup           size.Group `json:"size_group"`
-	UnitPriceCents      *int64     `json:"unit_price_cents"`
-	Currency            string     `json:"currency"`
-	ServicePeriodMonths *int       `json:"service_period_months"`
-	Active              bool       `json:"active"`
-	DisplayRank         int        `json:"display_rank"`
-	Icon                Icon       `json:"icon"`
-	CreatedAt           time.Time  `json:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at"`
-	DeletedAt           *time.Time `json:"deleted_at,omitempty"`
-	CreatedByUserID     uuid.UUID  `json:"created_by_user_id"`
-	UpdatedByUserID     uuid.UUID  `json:"updated_by_user_id"`
-	DeletedByUserID     *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	ID                   uuid.UUID  `json:"id"`
+	Name                 string     `json:"name"`
+	Details              string     `json:"details"`
+	SizeGroup            size.Group `json:"size_group"`
+	PurchasePriceCents   *int64     `json:"purchase_price_cents"`
+	AccountingPriceCents *int64     `json:"accounting_price_cents"`
+	Currency             string     `json:"currency"`
+	ServicePeriodMonths  *int       `json:"service_period_months"`
+	Active               bool       `json:"active"`
+	DisplayRank          int        `json:"display_rank"`
+	Icon                 Icon       `json:"icon"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+	DeletedAt            *time.Time `json:"deleted_at,omitempty"`
+	CreatedByUserID      uuid.UUID  `json:"created_by_user_id"`
+	UpdatedByUserID      uuid.UUID  `json:"updated_by_user_id"`
+	DeletedByUserID      *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
 // PriceEntry is one step of an item's price history, from its audit events:
-// the price and service period it was created with, then each change.
+// the prices and service period it was created with, then each change.
 type PriceEntry struct {
 	At     time.Time `json:"at"`
 	Event  string    `json:"event"`   // EventCreated or EventPriceChanged
 	ByName *string   `json:"by_name"` // the user's current name; nil if unknown
-	// UnitPriceCents and ServicePeriodMonths are the values from At on.
-	UnitPriceCents      *int64 `json:"unit_price_cents"`
-	ServicePeriodMonths *int   `json:"service_period_months"`
-	// Before* are the values replaced; both nil for EventCreated.
-	BeforeCents         *int64 `json:"before_cents"`
-	BeforeServiceMonths *int   `json:"before_service_months"`
+	// PurchasePriceCents, AccountingPriceCents and ServicePeriodMonths are the
+	// values from At on. Events from before the purchase price existed have
+	// none.
+	PurchasePriceCents   *int64 `json:"purchase_price_cents"`
+	AccountingPriceCents *int64 `json:"accounting_price_cents"`
+	ServicePeriodMonths  *int   `json:"service_period_months"`
+	// Before* are the values replaced; all nil for EventCreated.
+	BeforePurchaseCents   *int64 `json:"before_purchase_cents"`
+	BeforeAccountingCents *int64 `json:"before_accounting_cents"`
+	BeforeServiceMonths   *int   `json:"before_service_months"`
 }
 
 func (i Item) Deleted() bool { return i.DeletedAt != nil }
 
 // Orderable reports whether the item can go on a new order: live, active, and
-// with both a price and a service period.
+// with both an accounting price and a service period. The purchase price is
+// optional.
 func (i Item) Orderable() bool {
-	return !i.Deleted() && i.Active && i.UnitPriceCents != nil && i.ServicePeriodMonths != nil
+	return !i.Deleted() && i.Active && i.AccountingPriceCents != nil && i.ServicePeriodMonths != nil
 }
 
 // Params are the client-settable fields; Update replaces all of them.
 // Currency is not settable: it is always EUR.
 type Params struct {
-	Name                string
-	Details             string
-	SizeGroup           size.Group
-	UnitPriceCents      *int64
-	ServicePeriodMonths *int
-	Active              bool
-	DisplayRank         *int
+	Name                 string
+	Details              string
+	SizeGroup            size.Group
+	PurchasePriceCents   *int64
+	AccountingPriceCents *int64
+	ServicePeriodMonths  *int
+	Active               bool
+	DisplayRank          *int
 	// Icon is the pictogram; empty is IconOther.
 	Icon Icon
 }
@@ -139,8 +148,10 @@ func (p *Params) Validate() error {
 		return fieldError("details", "is too long")
 	case !p.SizeGroup.Valid():
 		return fieldError("size_group", "must be CLOTHING, SHOES or NONE")
-	case p.UnitPriceCents != nil && *p.UnitPriceCents < 0:
-		return fieldError("unit_price_cents", "must not be negative")
+	case p.PurchasePriceCents != nil && *p.PurchasePriceCents < 0:
+		return fieldError("purchase_price_cents", "must not be negative")
+	case p.AccountingPriceCents != nil && *p.AccountingPriceCents < 0:
+		return fieldError("accounting_price_cents", "must not be negative")
 	case p.ServicePeriodMonths != nil && *p.ServicePeriodMonths < 1:
 		return fieldError("service_period_months", "must be at least 1")
 	case *p.DisplayRank < 0:

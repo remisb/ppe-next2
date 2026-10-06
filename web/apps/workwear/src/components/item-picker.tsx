@@ -102,7 +102,7 @@ export function ItemPicker({
           className="absolute z-40 mt-1 max-h-[min(20rem,50dvh)] w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 shadow-md"
         >
           {shown.map((i) => {
-            const incomplete = i.unit_price_cents === null || i.service_period_months === null
+            const incomplete = i.accounting_price_cents === null || i.service_period_months === null
             return (
               <li key={i.id} role="option" aria-selected={false}>
                 <button
@@ -116,7 +116,7 @@ export function ItemPicker({
                     {i.details ? <span className="block truncate text-xs text-muted-foreground">{i.details}</span> : null}
                   </span>
                   <span className={cn('shrink-0 text-xs tabular-nums', incomplete ? 'text-destructive' : 'text-muted-foreground')}>
-                    {incomplete ? t.order.noPrice : formatEuro(i.unit_price_cents)}
+                    {incomplete ? t.order.noPrice : formatEuro(i.accounting_price_cents)}
                   </span>
                 </button>
               </li>

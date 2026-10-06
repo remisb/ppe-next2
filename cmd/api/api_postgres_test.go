@@ -156,7 +156,7 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 	_, staff := api.userWith(t, user.RoleEmployee)
 	_, mgr := api.userWith(t, user.RoleManager)
 
-	item := map[string]any{"name": "Safety shoes", "size_group": "SHOES", "unit_price_cents": 4999, "service_period_months": 12, "active": true, "display_rank": 1}
+	item := map[string]any{"name": "Safety shoes", "size_group": "SHOES", "accounting_price_cents": 4999, "service_period_months": 12, "active": true, "display_rank": 1}
 	if rec := api.do(t, "POST", "/api/v1/catalogue", staff, item); rec.Code != http.StatusForbidden {
 		t.Errorf("employee create = %d, want 403", rec.Code)
 	}
@@ -184,7 +184,7 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 		t.Fatalf("draft item = %d %s", rec.Code, rec.Body)
 	}
 	helmet := decode[map[string]any](t, rec.Body.Bytes())
-	if helmet["unit_price_cents"] != nil || helmet["currency"] != "EUR" {
+	if helmet["accounting_price_cents"] != nil || helmet["currency"] != "EUR" {
 		t.Errorf("draft = %v", helmet)
 	}
 
@@ -201,7 +201,7 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 		t.Errorf("all = %s", rec.Body)
 	}
 
-	item["unit_price_cents"] = 5499
+	item["accounting_price_cents"] = 5499
 	if rec := api.do(t, "PUT", "/api/v1/catalogue/"+id, mgr, item); rec.Code != http.StatusOK {
 		t.Errorf("update = %d %s", rec.Code, rec.Body)
 	}
@@ -223,9 +223,9 @@ func TestPostgresCreateOrderResolution(t *testing.T) {
 		}
 		return decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	}
-	shoes := mkItem(map[string]any{"name": "Safety shoes", "size_group": "SHOES", "unit_price_cents": 4999, "service_period_months": 12})
-	jacket := mkItem(map[string]any{"name": "Work jacket", "size_group": "CLOTHING", "unit_price_cents": 3999, "service_period_months": 24})
-	gloves := mkItem(map[string]any{"name": "Protective gloves", "size_group": "NONE", "unit_price_cents": 250, "service_period_months": 1})
+	shoes := mkItem(map[string]any{"name": "Safety shoes", "size_group": "SHOES", "accounting_price_cents": 4999, "service_period_months": 12})
+	jacket := mkItem(map[string]any{"name": "Work jacket", "size_group": "CLOTHING", "accounting_price_cents": 3999, "service_period_months": 24})
+	gloves := mkItem(map[string]any{"name": "Protective gloves", "size_group": "NONE", "accounting_price_cents": 250, "service_period_months": 1})
 
 	rec := api.do(t, "POST", "/api/v1/employees", staff, map[string]any{"first_name": "Ona", "last_name": "K", "height_cm": 170})
 	emp := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
@@ -245,12 +245,12 @@ func TestPostgresCreateOrderResolution(t *testing.T) {
 	setID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 
 	type line struct {
-		CatalogueItemID string  `json:"catalogue_item_id"`
-		Size            *string `json:"size"`
-		SizeSuggested   bool    `json:"size_suggested"`
-		SizeMissing     bool    `json:"size_missing"`
-		Quantity        int     `json:"quantity"`
-		UnitPriceCents  *int64  `json:"unit_price_cents"`
+		CatalogueItemID      string  `json:"catalogue_item_id"`
+		Size                 *string `json:"size"`
+		SizeSuggested        bool    `json:"size_suggested"`
+		SizeMissing          bool    `json:"size_missing"`
+		Quantity             int     `json:"quantity"`
+		AccountingPriceCents *int64  `json:"accounting_price_cents"`
 	}
 	type resolution struct {
 		Employee  map[string]any `json:"employee"`
@@ -321,7 +321,7 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 		}
 		return decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	}
-	shoes := mk(map[string]any{"name": "Safety shoes", "details": "S3", "size_group": "SHOES", "unit_price_cents": 4999, "service_period_months": 12})
+	shoes := mk(map[string]any{"name": "Safety shoes", "details": "S3", "size_group": "SHOES", "purchase_price_cents": 3800, "accounting_price_cents": 4999, "service_period_months": 12})
 	helmet := mk(map[string]any{"name": "Safety helmet", "size_group": "NONE"})
 	rec := api.do(t, "POST", "/api/v1/employees", staff, map[string]any{"first_name": "Jonas", "last_name": "P", "code": "W-17"})
 	emp := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
@@ -339,7 +339,8 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 		t.Errorf("record number = %v", o["record_number"])
 	}
 	lines := o["lines"].([]any)
-	if l := lines[0].(map[string]any); l["item_details"] != "S3" || l["size"] != "43" || l["unit_price_cents"] != float64(4999) {
+	if l := lines[0].(map[string]any); l["item_details"] != "S3" || l["size"] != "43" || l["accounting_price_cents"] != float64(4999) ||
+		l["purchase_price_cents"] != float64(3800) {
 		t.Errorf("line = %v", l)
 	}
 
@@ -348,7 +349,7 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 		t.Errorf("get = %d %s", rec.Code, rec.Body)
 	}
 
-	withPrice := map[string]any{"employee_id": emp, "lines": []map[string]any{{"catalogue_item_id": shoes, "quantity": 1, "size": "43", "unit_price_cents": 1}}}
+	withPrice := map[string]any{"employee_id": emp, "lines": []map[string]any{{"catalogue_item_id": shoes, "quantity": 1, "size": "43", "accounting_price_cents": 1}}}
 	if rec := api.do(t, "POST", "/api/v1/orders", staff, withPrice); rec.Code != http.StatusBadRequest {
 		t.Errorf("client price accepted: %d", rec.Code)
 	}
@@ -394,7 +395,7 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	_, staff := api.userWith(t, user.RoleEmployee)
 	_, mgr := api.userWith(t, user.RoleManager)
 
-	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "unit_price_cents": 250, "service_period_months": 1, "active": true})
+	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
 	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	var emps []string
 	for _, n := range []string{"Jonas", "Ona"} {
@@ -455,7 +456,7 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	}
 
 	// The item page lists the orders holding an item, and its price history.
-	rec = api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Vest", "size_group": "NONE", "unit_price_cents": 900, "service_period_months": 12, "active": true})
+	rec = api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Vest", "size_group": "NONE", "accounting_price_cents": 900, "service_period_months": 12, "active": true})
 	vest := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	body := map[string]any{"employee_id": emps[1], "lines": []map[string]any{{"catalogue_item_id": vest, "quantity": 2}}}
 	if rec := api.do(t, "POST", "/api/v1/orders", staff, body); rec.Code != http.StatusCreated {
@@ -472,7 +473,7 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	}
 	rec = api.do(t, "GET", "/api/v1/catalogue/"+vest+"/price-history", staff, nil)
 	if h := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(h) != 1 || h[0]["event"] != "catalogue.created" ||
-		h[0]["unit_price_cents"] != float64(900) || h[0]["before_cents"] != nil {
+		h[0]["accounting_price_cents"] != float64(900) || h[0]["before_accounting_cents"] != nil {
 		t.Errorf("price history = %d %s", rec.Code, rec.Body)
 	}
 	if rec := api.do(t, "GET", "/api/v1/catalogue/"+uuid.NewString()+"/price-history", staff, nil); rec.Code != http.StatusNotFound {
@@ -491,7 +492,7 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 	_, staff := api.userWith(t, user.RoleEmployee)
 	_, mgr := api.userWith(t, user.RoleManager)
 
-	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "unit_price_cents": 250, "service_period_months": 1, "active": true})
+	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
 	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	rec = api.do(t, "POST", "/api/v1/employees", staff, map[string]any{"first_name": "Ona", "last_name": "K"})
 	emp := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)

@@ -47,11 +47,12 @@ func newPGFixture(t *testing.T) pgFixture {
 	exec(`INSERT INTO employees (id, first_name, last_name, code, shoe_size, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Jonas', 'Petraitis', 'W-17', '43', now(), now(), $2, $2)`, f.emp, f.actor)
 	item := func(id uuid.UUID, name, group string, cents *int64, months *int) {
-		exec(`INSERT INTO catalogue_items (id, name, details, size_group, unit_price_cents, service_period_months,
+		exec(`INSERT INTO catalogue_items (id, name, details, size_group, accounting_price_cents, service_period_months,
 			created_at, updated_at, created_by_user_id, updated_by_user_id)
 			VALUES ($1, $2, 'model', $3, $4, $5, now(), now(), $6, $6)`, id, name, group, cents, months, f.actor)
 	}
 	item(f.shoes, "Safety shoes", "SHOES", i64(4999), ip(12))
+	exec(`UPDATE catalogue_items SET purchase_price_cents = 3800 WHERE id = $1`, f.shoes) // the others have none
 	item(f.gloves, "Protective gloves", "NONE", i64(250), ip(1))
 	item(f.draft, "Helmet", "NONE", nil, ip(24))
 	f.svc = NewService(NewPostgresRepository(pool), Readers{})
@@ -75,16 +76,19 @@ func TestPostgresMarkAsOrdered(t *testing.T) {
 		len(got.Lines) != 2 || *got.Lines[0].Size != "43" || got.Lines[1].Size != nil || got.Lines[1].Quantity != 5 || got.TotalCents() != 4999+1250 {
 		t.Fatalf("stored = %+v", got)
 	}
+	if got.Lines[0].PurchasePriceCents == nil || *got.Lines[0].PurchasePriceCents != 3800 || got.Lines[1].PurchasePriceCents != nil {
+		t.Errorf("purchase prices = %v, %v", got.Lines[0].PurchasePriceCents, got.Lines[1].PurchasePriceCents)
+	}
 
 	// Later catalogue and employee edits leave the record alone.
-	if _, err := f.pool.Exec(ctx, `UPDATE catalogue_items SET unit_price_cents = 9999, name = 'Renamed' WHERE id = $1`, f.shoes); err != nil {
+	if _, err := f.pool.Exec(ctx, `UPDATE catalogue_items SET accounting_price_cents = 9999, purchase_price_cents = 7000, name = 'Renamed' WHERE id = $1`, f.shoes); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.pool.Exec(ctx, `UPDATE employees SET first_name = 'Changed' WHERE id = $1`, f.emp); err != nil {
 		t.Fatal(err)
 	}
 	got, _ = f.svc.Get(ctx, o.ID)
-	if got.Lines[0].UnitPriceCents != 4999 || got.Lines[0].ItemName != "Safety shoes" || got.EmployeeFirstName != "Jonas" {
+	if got.Lines[0].AccountingPriceCents != 4999 || *got.Lines[0].PurchasePriceCents != 3800 || got.Lines[0].ItemName != "Safety shoes" || got.EmployeeFirstName != "Jonas" {
 		t.Errorf("snapshot followed live data: %+v", got)
 	}
 
@@ -443,8 +447,8 @@ func TestPostgresStatusInvariants(t *testing.T) {
 		"partially given":           `UPDATE orders SET status = 'PARTIALLY_GIVEN' WHERE id = $1`,
 		"GIVEN without evidence":    `UPDATE orders SET status = 'GIVEN' WHERE id = $1`,
 		"given_at on ORDERED":       `UPDATE orders SET given_at = now() WHERE id = $1`,
-		"size on no-size line":      `INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity, unit_price_cents, currency, service_period_months) SELECT gen_random_uuid(), $1, 9, catalogue_item_id, 'x', '', 'NONE', 'M', 1, 1, 'EUR', 1 FROM order_lines WHERE order_id = $1 LIMIT 1`,
-		"quantity zero line":        `INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity, unit_price_cents, currency, service_period_months) SELECT gen_random_uuid(), $1, 9, gen_random_uuid(), 'x', '', 'NONE', NULL, 0, 1, 'EUR', 1`,
+		"size on no-size line":      `INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity, accounting_price_cents, currency, service_period_months) SELECT gen_random_uuid(), $1, 9, catalogue_item_id, 'x', '', 'NONE', 'M', 1, 1, 'EUR', 1 FROM order_lines WHERE order_id = $1 LIMIT 1`,
+		"quantity zero line":        `INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity, accounting_price_cents, currency, service_period_months) SELECT gen_random_uuid(), $1, 9, gen_random_uuid(), 'x', '', 'NONE', NULL, 0, 1, 'EUR', 1`,
 		"delete snapshot line":      `DELETE FROM order_lines WHERE order_id = $1`,
 		"second confirmed evidence": `INSERT INTO order_confirmations (id, order_id, method, confirmed_at, confirmed_name, document_hash, created_at, created_by_user_id) SELECT gen_random_uuid(), $1, 'PAPER', now(), 'x', 'h', now(), prepared_by_user_id FROM orders WHERE id = $1 UNION ALL SELECT gen_random_uuid(), $1, 'PAPER', now(), 'y', 'h', now(), prepared_by_user_id FROM orders WHERE id = $1`,
 	} {

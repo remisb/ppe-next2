@@ -41,7 +41,7 @@ const columns = (): SortColumn<CatalogueSort>[] => [
   { key: 'name', label: t.catalogue.colItem },
   { key: 'details', label: t.catalogue.colDetails },
   { key: 'group', label: t.catalogue.sizeGroup },
-  { key: 'price', label: t.catalogue.unitPrice },
+  { key: 'price', label: t.catalogue.accountingPrice },
   { key: 'period', label: t.catalogue.servicePeriod },
   { key: 'status', label: t.catalogue.colStatus },
 ]
@@ -63,7 +63,7 @@ const statusChips = (): { status: ItemStatus | 'all'; label: string; empty: stri
 
 /** Active before inactive; an item missing its price or period sorts with the inactive ones, after them. */
 function statusRank(i: CatalogueItem): number {
-  return (i.active ? 0 : 2) + (i.unit_price_cents === null || i.service_period_months === null ? 1 : 0)
+  return (i.active ? 0 : 2) + (i.accounting_price_cents === null || i.service_period_months === null ? 1 : 0)
 }
 
 export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
@@ -95,7 +95,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
           case 'group':
             return sizeGroupLabel[i.size_group]
           case 'price':
-            return i.unit_price_cents
+            return i.accounting_price_cents
           case 'period':
             return i.service_period_months
           case 'status':
@@ -167,7 +167,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
           </TableHeader>
           <TableBody>
             {shown.map((i, n, list) => {
-              const incomplete = i.unit_price_cents === null || i.service_period_months === null
+              const incomplete = i.accounting_price_cents === null || i.service_period_months === null
               // Sorted by size group, a heading starts each group: the way sizes are resolved.
               const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
               return (
@@ -202,7 +202,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                       {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
                     </TableCell>
                     <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>
-                    <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.unit_price_cents)}</TableCell>
+                    <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.accounting_price_cents)}</TableCell>
                     <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>
                     <TableCell
                       className={cn(
@@ -260,6 +260,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   const [name, setName] = useState('')
   const [details, setDetails] = useState('')
   const [group, setGroup] = useState<SizeGroup>('NONE')
+  const [purchase, setPurchase] = useState('')
   const [price, setPrice] = useState('')
   const [period, setPeriod] = useState('')
   const [rank, setRank] = useState('1000')
@@ -273,7 +274,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     setName(existing?.name ?? '')
     setDetails(existing?.details ?? '')
     setGroup(existing?.size_group ?? 'NONE')
-    setPrice(existing?.unit_price_cents != null ? (existing.unit_price_cents / 100).toFixed(2) : '')
+    setPurchase(existing?.purchase_price_cents != null ? (existing.purchase_price_cents / 100).toFixed(2) : '')
+    setPrice(existing?.accounting_price_cents != null ? (existing.accounting_price_cents / 100).toFixed(2) : '')
     setPeriod(existing?.service_period_months?.toString() ?? '')
     setRank(existing?.display_rank.toString() ?? '1000')
     setActive(existing?.active ?? true)
@@ -282,6 +284,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     setError(undefined)
   }, [item, existing])
 
+  const purchaseCents = parseEuro(purchase)
+  const purchaseError = Number.isNaN(purchaseCents) ? t.catalogue.priceInvalid : undefined
   const priceCents = parseEuro(price)
   const priceError = Number.isNaN(priceCents) ? t.catalogue.priceInvalid : undefined
   const months = period.trim() === '' ? null : Number(period)
@@ -291,12 +295,13 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (priceError || periodError || rankError) return
+    if (purchaseError || priceError || periodError || rankError) return
     const input: CatalogueItemInput = {
       name,
       details,
       size_group: group,
-      unit_price_cents: priceCents,
+      purchase_price_cents: purchaseCents,
+      accounting_price_cents: priceCents,
       service_period_months: months,
       active,
       display_rank: rankNum,
@@ -353,7 +358,12 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
             </Select>
           )}
         </Field>
-        <Field label={t.catalogue.unitPriceEuro} error={priceError}>{(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={price} onChange={(e) => setPrice(e.target.value)} />}</Field>
+        <Field label={t.catalogue.purchasePriceEuro} hint={t.catalogue.purchasePriceHint} error={purchaseError}>
+          {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={purchase} onChange={(e) => setPurchase(e.target.value)} />}
+        </Field>
+        <Field label={t.catalogue.accountingPriceEuro} hint={t.catalogue.accountingPriceHint} error={priceError}>
+          {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={price} onChange={(e) => setPrice(e.target.value)} />}
+        </Field>
         <Field label={t.catalogue.servicePeriodMonths} error={periodError}>{(p) => <Input {...controlProps(p)} inputMode="numeric" value={period} onChange={(e) => setPeriod(e.target.value)} />}</Field>
         <Field label={t.catalogue.displayOrder} hint={t.catalogue.displayOrderHint} error={rankError}>
           {(p) => <Input {...controlProps(p)} inputMode="numeric" value={rank} onChange={(e) => setRank(e.target.value)} />}

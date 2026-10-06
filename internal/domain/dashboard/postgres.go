@@ -38,7 +38,7 @@ func splitPrevious[T any](rows []T) ([]T, T) {
 }
 
 // lineTotal is an order's value from its snapshot lines.
-const lineTotal = `(SELECT coalesce(sum(l.unit_price_cents * l.quantity), 0)::bigint FROM order_lines l WHERE l.order_id = o.id)`
+const lineTotal = `(SELECT coalesce(sum(l.accounting_price_cents * l.quantity), 0)::bigint FROM order_lines l WHERE l.order_id = o.id)`
 
 // Read runs every query in one read-only REPEATABLE READ transaction, so the
 // figures agree with each other even while orders are being confirmed.
@@ -85,7 +85,7 @@ func readMonths(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 		WITH m AS (
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
 		), t AS (
-			SELECT o.ordered_at, o.given_at, sum(l.unit_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
+			SELECT o.ordered_at, o.given_at, sum(l.accounting_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
 			FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL
 			WHERE o.ordered_at >= $3 OR o.given_at >= $3
 			GROUP BY o.id
@@ -125,7 +125,7 @@ func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 
 func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	rows, err := tx.Query(ctx, `SELECT l.catalogue_item_id, (array_agg(l.item_name ORDER BY o.given_at DESC))[1],
-			sum(l.quantity), sum(l.unit_price_cents * l.quantity)::bigint
+			sum(l.quantity), sum(l.accounting_price_cents * l.quantity)::bigint
 		FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 		WHERE o.status = 'GIVEN' AND o.given_at >= $1
 		GROUP BY l.catalogue_item_id
@@ -201,7 +201,7 @@ func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
 			AND (shoe_size IS NULL OR (clothing_size IS NULL AND height_cm IS NULL))),
 		(SELECT count(*) FROM catalogue_items WHERE deleted_at IS NULL AND active),
 		(SELECT count(*) FROM catalogue_items WHERE deleted_at IS NULL AND active
-			AND (unit_price_cents IS NULL OR service_period_months IS NULL)),
+			AND (accounting_price_cents IS NULL OR service_period_months IS NULL)),
 		(SELECT count(*) FROM item_sets WHERE deleted_at IS NULL AND active),
 		(SELECT count(*) FROM users WHERE deleted_at IS NULL AND is_active),
 		(SELECT count(*) FROM users WHERE deleted_at IS NULL AND is_active AND 'admin' = ANY (roles))`).
@@ -226,7 +226,7 @@ func (r *PostgresRepository) ReadManager(ctx context.Context, w ManagerWindow) (
 
 func readOnOrder(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigures) error {
 	o := &f.OnOrder
-	return tx.QueryRow(ctx, `SELECT count(DISTINCT o.id), coalesce(sum(l.quantity), 0), coalesce(sum(l.unit_price_cents * l.quantity), 0)::bigint
+	return tx.QueryRow(ctx, `SELECT count(DISTINCT o.id), coalesce(sum(l.quantity), 0), coalesce(sum(l.accounting_price_cents * l.quantity), 0)::bigint
 		FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL WHERE o.status = 'ORDERED'`).Scan(&o.Orders, &o.Items, &o.ValueCents)
 }
 
@@ -237,7 +237,7 @@ func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manag
 		WITH m AS (
 			SELECT s, e, i FROM unnest($1::timestamptz[], $2::timestamptz[]) WITH ORDINALITY AS m (s, e, i)
 		), t AS (
-			SELECT o.ordered_at, sum(l.unit_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
+			SELECT o.ordered_at, sum(l.accounting_price_cents * l.quantity)::bigint AS cents, sum(l.quantity)::bigint AS qty
 			FROM orders o JOIN order_lines l ON l.order_id = o.id AND o.deleted_at IS NULL
 			WHERE o.ordered_at >= $3
 			GROUP BY o.id
@@ -263,7 +263,7 @@ func readOrderedMonths(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manag
 // readSpendByItem ranks items by the value ordered over the window, from the snapshots.
 func readSpendByItem(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFigures) error {
 	rows, err := tx.Query(ctx, `SELECT l.catalogue_item_id, (array_agg(l.item_name ORDER BY o.ordered_at DESC))[1],
-			sum(l.quantity), sum(l.unit_price_cents * l.quantity)::bigint
+			sum(l.quantity), sum(l.accounting_price_cents * l.quantity)::bigint
 		FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 		WHERE o.ordered_at >= $1
 		GROUP BY l.catalogue_item_id
@@ -300,27 +300,30 @@ func readForecast(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFig
 		SELECT d.catalogue_item_id,
 			coalesce(CASE WHEN c.deleted_at IS NULL THEN c.name END, (array_agg(d.item_name ORDER BY d.given_at DESC))[1]),
 			sum(d.quantity), count(DISTINCT d.employee_id),
-			CASE WHEN c.deleted_at IS NULL AND c.active AND c.service_period_months IS NOT NULL THEN c.unit_price_cents END,
+			CASE WHEN c.deleted_at IS NULL AND c.active AND c.service_period_months IS NOT NULL THEN c.accounting_price_cents END,
 			coalesce(sum(d.quantity) FILTER (WHERE d.due_at <= $2), 0)
 		FROM due d LEFT JOIN catalogue_items c ON c.id = d.catalogue_item_id
-		GROUP BY d.catalogue_item_id, c.name, c.deleted_at, c.active, c.service_period_months, c.unit_price_cents
+		GROUP BY d.catalogue_item_id, c.name, c.deleted_at, c.active, c.service_period_months, c.accounting_price_cents
 		ORDER BY 3 DESC, 2`, w.ForecastBy, w.Now)
 	if err != nil {
 		return err
 	}
 	f.Forecast.Lines, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (ForecastLine, error) {
 		var x ForecastLine
-		err := row.Scan(&x.CatalogueItemID, &x.ItemName, &x.Quantity, &x.Employees, &x.UnitPriceCents, &x.Overdue)
+		err := row.Scan(&x.CatalogueItemID, &x.ItemName, &x.Quantity, &x.Employees, &x.AccountingPriceCents, &x.Overdue)
 		return x, err
 	})
 	return err
 }
 
 // readPriceChanges reads the catalogue.price_changed audit events since
-// w.PriceChangesSince, newest first.
+// w.PriceChangesSince, newest first. Events written before migration 0021 hold
+// the accounting price as unit_price_cents.
 func readPriceChanges(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFigures) error {
 	rows, err := tx.Query(ctx, `SELECT a.entity_id, c.name, a.occurred_at, u.name,
-			(a.before ->> 'unit_price_cents')::bigint, (a.after ->> 'unit_price_cents')::bigint,
+			(a.before ->> 'purchase_price_cents')::bigint, (a.after ->> 'purchase_price_cents')::bigint,
+			coalesce(a.before ->> 'accounting_price_cents', a.before ->> 'unit_price_cents')::bigint,
+			coalesce(a.after ->> 'accounting_price_cents', a.after ->> 'unit_price_cents')::bigint,
 			(a.before ->> 'service_period_months')::int, (a.after ->> 'service_period_months')::int
 		FROM audit_events a
 			JOIN catalogue_items c ON c.id = a.entity_id
@@ -332,7 +335,8 @@ func readPriceChanges(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manage
 	}
 	f.PriceChanges, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (PriceChange, error) {
 		var x PriceChange
-		err := row.Scan(&x.CatalogueItemID, &x.ItemName, &x.At, &x.ByName, &x.BeforeCents, &x.AfterCents,
+		err := row.Scan(&x.CatalogueItemID, &x.ItemName, &x.At, &x.ByName,
+			&x.BeforePurchaseCents, &x.AfterPurchaseCents, &x.BeforeAccountingCents, &x.AfterAccountingCents,
 			&x.BeforeServiceMonths, &x.AfterServiceMonths)
 		x.At = x.At.UTC()
 		return x, err
@@ -359,13 +363,13 @@ func readCatalogueCheck(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Mana
 	}
 	var err error
 	c.Unpriced, err = refs(`SELECT id, name FROM catalogue_items
-		WHERE deleted_at IS NULL AND active AND (unit_price_cents IS NULL OR service_period_months IS NULL)
+		WHERE deleted_at IS NULL AND active AND (accounting_price_cents IS NULL OR service_period_months IS NULL)
 		ORDER BY display_rank, lower(name)`)
 	if err != nil {
 		return err
 	}
 	c.NotOrdered, err = refs(`SELECT c.id, c.name FROM catalogue_items c
-		WHERE c.deleted_at IS NULL AND c.active AND c.unit_price_cents IS NOT NULL AND c.service_period_months IS NOT NULL
+		WHERE c.deleted_at IS NULL AND c.active AND c.accounting_price_cents IS NOT NULL AND c.service_period_months IS NOT NULL
 			AND NOT EXISTS (SELECT 1 FROM order_lines l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
 				WHERE l.catalogue_item_id = c.id AND o.ordered_at >= $1)
 		ORDER BY c.display_rank, lower(c.name)`, w.MonthStarts[0])
@@ -376,14 +380,14 @@ func readCatalogueCheck(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Mana
 func readItemSetIssues(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigures) error {
 	rows, err := tx.Query(ctx, `SELECT s.id, s.name,
 			count(*) FILTER (WHERE c.deleted_at IS NOT NULL OR NOT c.active),
-			count(*) FILTER (WHERE c.deleted_at IS NULL AND c.active AND (c.unit_price_cents IS NULL OR c.service_period_months IS NULL))
+			count(*) FILTER (WHERE c.deleted_at IS NULL AND c.active AND (c.accounting_price_cents IS NULL OR c.service_period_months IS NULL))
 		FROM item_sets s
 			JOIN item_set_lines l ON l.item_set_id = s.id
 			JOIN catalogue_items c ON c.id = l.catalogue_item_id
 		WHERE s.deleted_at IS NULL AND s.active
 		GROUP BY s.id, s.name
 		HAVING count(*) FILTER (WHERE c.deleted_at IS NOT NULL OR NOT c.active
-			OR c.unit_price_cents IS NULL OR c.service_period_months IS NULL) > 0
+			OR c.accounting_price_cents IS NULL OR c.service_period_months IS NULL) > 0
 		ORDER BY lower(s.name)`)
 	if err != nil {
 		return err

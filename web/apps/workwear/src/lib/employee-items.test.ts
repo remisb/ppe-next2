@@ -13,7 +13,8 @@ function line(no: number, name: string): OrderLine {
     size_group: 'NONE',
     size: null,
     quantity: 1,
-    unit_price_cents: 100,
+    purchase_price_cents: null,
+    accounting_price_cents: 100,
     currency: 'EUR',
     service_period_months: 6,
   }

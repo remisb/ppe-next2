@@ -32,14 +32,15 @@ calendar (`API_ORG_TIMEZONE`); timestamps stay UTC.
 | `confirmation` | Orders given in the last 90 days: count, electronic, paper and in person (`in_person`, hand-over mode), median days from ordered to given (one decimal) |
 | `top_items` | The 8 items with the largest quantity given over the 12 months, by catalogue item, named as on their latest receipt |
 | `replacements` | For each live employee and item, the most recent GIVEN line, due at `given_at` + its service period. Listed when due within 30 days (`overdue` when due now or earlier), unless the item is already on an ORDERED order for that employee. Counts, and the 8 soonest due, each with the `quantity` given on that line (the web app's Reorder starts from it) |
-| `setup` | Live employees and those missing a size (no shoe size, or neither a clothing size nor a height), active catalogue items and those without a price or service period (Mark as Ordered refuses them), active item sets, active users and administrators |
+| `setup` | Live employees and those missing a size (no shoe size, or neither a clothing size nor a height), active catalogue items and those without an accounting price or service period (Mark as Ordered refuses them), active item sets, active users and administrators |
 
 Lists are `[]`, never null; an empty database gives a complete dashboard.
 
 ## Manager Dashboard
 
 Items, prices and purchasing. Ordered figures come from the order snapshots; prices,
-the catalogue, item sets and sizes are live, since the manager maintains them.
+the catalogue, item sets and sizes are live, since the manager maintains them. Every value
+is at the accounting price; the purchase price appears only in `price_changes`.
 
 | Field | Meaning |
 | --- | --- |
@@ -47,10 +48,10 @@ the catalogue, item sets and sizes are live, since the manager maintains them.
 | `months` | 12 calendar months by `ordered_at`: orders, items, value |
 | `previous_to_date`, `through_day` | As on the administrator's dashboard |
 | `spend_by_item` | The 8 items with the largest value ordered over the 12 months |
-| `forecast` | Replacements due within 90 days, overdue included, by the same rule as the administrator's (latest GIVEN line per live employee and item, not already on an ORDERED order), grouped by item: the same quantity again, costed at the item's current price when it is active and complete. Totals cover every item; `lines` keeps the 8 largest |
-| `price_changes` | The 8 newest `catalogue.price_changed` audit events of the 12 months: price and service period before and after, who and when |
-| `catalogue` | Active and inactive counts; active items without a price or service period; active, priced items on no order in the 12 months |
-| `item_sets` | Active sets with a line whose item is inactive, deleted, or has no price or service period |
+| `forecast` | Replacements due within 90 days, overdue included, by the same rule as the administrator's (latest GIVEN line per live employee and item, not already on an ORDERED order), grouped by item: the same quantity again, costed at the item's current accounting price when it is active and complete. Totals cover every item; `lines` keeps the 8 largest |
+| `price_changes` | The 8 newest `catalogue.price_changed` audit events of the 12 months: purchase price, accounting price and service period before and after (`before_/after_purchase_cents`, `before_/after_accounting_cents`; events from before migration `0021` have no purchase price), who and when |
+| `catalogue` | Active and inactive counts; active items without an accounting price or service period; active, priced items on no order in the 12 months |
+| `item_sets` | Active sets with a line whose item is inactive, deleted, or has no accounting price or service period |
 | `sizes` | Live employees per clothing size (saved, or suggested from height as in Create Order) and shoe size, in vocabulary order with zeros (12 clothing sizes, `"44"` … `"66"`; 8 shoe sizes); how many have none, and how many clothing sizes are suggested |
 
 ## Employee Dashboard

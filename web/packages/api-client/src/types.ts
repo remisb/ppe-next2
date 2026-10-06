@@ -128,7 +128,10 @@ export interface CatalogueItem {
   name: string
   details: string
   size_group: SizeGroup
-  unit_price_cents: number | null
+  /** What the supplier charges; optional, never needed to order. */
+  purchase_price_cents: number | null
+  /** What the organisation books and orders show; needed to order. */
+  accounting_price_cents: number | null
   currency: 'EUR'
   service_period_months: number | null
   active: boolean
@@ -143,11 +146,13 @@ export interface PriceEntry {
   at: string
   event: 'catalogue.created' | 'catalogue.price_changed'
   by_name: string | null
-  /** The values from `at` on. */
-  unit_price_cents: number | null
+  /** The values from `at` on. Events from before the purchase price existed have none. */
+  purchase_price_cents: number | null
+  accounting_price_cents: number | null
   service_period_months: number | null
   /** The values replaced; null for catalogue.created. */
-  before_cents: number | null
+  before_purchase_cents: number | null
+  before_accounting_cents: number | null
   before_service_months: number | null
 }
 
@@ -155,7 +160,8 @@ export interface CatalogueItemInput {
   name: string
   details: string
   size_group: SizeGroup
-  unit_price_cents: number | null
+  purchase_price_cents: number | null
+  accounting_price_cents: number | null
   service_period_months: number | null
   active: boolean
   display_rank?: number
@@ -208,7 +214,7 @@ export interface ResolvedLine {
   size_suggested: boolean
   size_missing: boolean
   quantity: number
-  unit_price_cents: number | null
+  accounting_price_cents: number | null
   currency: string
   service_period_months: number | null
   price_missing: boolean
@@ -240,7 +246,10 @@ export interface OrderLine {
   size_group: SizeGroup
   size: string | null
   quantity: number
-  unit_price_cents: number
+  /** Null when the item had none, or the line predates purchase prices. */
+  purchase_price_cents: number | null
+  /** The price the order shows and totals. */
+  accounting_price_cents: number
   currency: 'EUR'
   service_period_months: number
 }
@@ -332,6 +341,7 @@ export interface ReceiptLine {
   item_details: string
   size: string | null
   quantity: number
+  /** The line's accounting price; the record keeps this key (it is part of the document hash). */
   unit_price_cents: number
   total_cents: number
   currency: 'EUR'
@@ -573,7 +583,7 @@ export interface ManagerForecastLine {
   item_name: string
   quantity: number
   employees: number
-  unit_price_cents: number | null
+  accounting_price_cents: number | null
   estimated_cents: number | null
   overdue: number
 }
@@ -583,8 +593,11 @@ export interface ManagerPriceChange {
   item_name: string
   at: string
   by_name: string | null
-  before_cents: number | null
-  after_cents: number | null
+  /** Null for events from before the purchase price existed. */
+  before_purchase_cents: number | null
+  after_purchase_cents: number | null
+  before_accounting_cents: number | null
+  after_accounting_cents: number | null
   before_service_months: number | null
   after_service_months: number | null
 }

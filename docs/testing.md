@@ -19,12 +19,14 @@ time, and never point them at dev data (e2e refuses a database whose name does n
 | Condition | Required response | Covered by |
 | --- | --- | --- |
 | Required size missing | Keep all work, highlight the line, show its dropdown | `size.TestResolve`; `order.TestResolveMissingSizesKeepLines`; web `validate` tests; server `CheckSize` (`TestMarkAsOrderedRejections` "missing size"); e2e *apply the set*, *missing size* |
-| Catalogue price missing | Block Mark as Ordered, direct to Item Catalogue | `order.TestMarkAsOrderedRejections` "price missing"; `TestPostgresMarkAsOrderedRollsBack`; `TestPostgresMarkAsOrderedHTTP` (409); web `validate`; e2e *missing catalogue price* |
+| Catalogue accounting price missing | Block Mark as Ordered, direct to Item Catalogue | `order.TestMarkAsOrderedRejections` "price missing"; `TestPostgresMarkAsOrderedRollsBack`; `TestPostgresMarkAsOrderedHTTP` (409); web `validate`; e2e *missing catalogue price* |
 | Quantity < 1 or not an integer | Reject at field and server | `order.TestMarkAsOrderedValidate`, `TestResolveErrors`; HTTP 0, -1, 1.5, "2" → 400 (`TestPostgresMarkAsOrderedHTTP`, `TestPostgresCreateOrderResolution`); DB CHECK (`TestPostgresStatusInvariants`); web `validate`; e2e *quantity below 1* |
 | Network / server error | Preserve form state, offer Retry | web draft persistence tests; e2e *network error keeps the form*, *draft survives a reload* |
 | Expired / revoked token | Explain a new link must be requested | `order.TestLinkExpiryAndReplacement`; `TestPostgresConfirmation` (replaced link); HTTP 410 (`TestPostgresConfirmationHTTP`); e2e unknown link |
 | Second confirmation | Return the existing GIVEN record as a no-op | `order.TestElectronicConfirmation`, `TestPaperConfirmation`; concurrent race in `TestPostgresConfirmation`; HTTP repeat; e2e reload after confirm |
 | Catalogue / employee data changed | Orders and receipts keep the snapshots | `order.TestMarkAsOrderedSnapshots`; `TestPostgresMarkAsOrdered` (price, name, employee edits); e2e *a later price change does not alter the stored record* |
+| An item has a purchase price (optional, never blocks an order) and an accounting price (what orders show and total); order lines snapshot both, and the record shows only the accounting price, under its original key | `catalogue.TestParamsValidate`, `TestPriceChangeAudited` (a purchase price change alone is a price change), `TestPostgresCatalogue`; `order.TestMarkAsOrderedSnapshots`, `TestPostgresMarkAsOrdered`, `TestPostgresMarkAsOrderedHTTP`, `TestReceiptIsSnapshotOnlyAndHashStable`; web `whatsapp` (no prices); e2e *a later price change does not alter the stored record*, *Item page: price history …* |
+| Price events written before migration 0021 (accounting price as `unit_price_cents`, no purchase price) still read in the price history and the Manager Dashboard's price changes | `TestPostgresCatalogue` (legacy event), `dashboard.TestPostgresManager`; web `working-order` (a saved draft's old price field) |
 
 ## Status transitions
 

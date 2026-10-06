@@ -51,7 +51,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
   )
   const tz = settings.data?.timezone
   const i = item.data
-  const incomplete = i ? i.unit_price_cents === null || i.service_period_months === null : false
+  const incomplete = i ? i.accounting_price_cents === null || i.service_period_months === null : false
 
   const toggle = async () => {
     if (!i || !confirmActiveChange(i)) return
@@ -110,7 +110,8 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
 
           <dl aria-label={t.catalogue.itemDetails} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-3">
             <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
-            <Fact label={t.catalogue.unitPrice}>{formatEuro(i.unit_price_cents)}</Fact>
+            <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
+            <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
             <Fact label={t.catalogue.servicePeriod}>{formatMonths(i.service_period_months)}</Fact>
             <Fact label={t.catalogue.displayOrder}>{i.display_rank}</Fact>
             <Fact label={t.catalogue.added}>{formatDateTime(i.created_at, tz)}</Fact>
@@ -216,28 +217,51 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   )
 }
 
-/** One price step: what it changed to, from what, when and by whom. */
+/**
+ * One price step: what it changed to, from what, when and by whom. The
+ * accounting price is the figure on the right; the purchase price and service
+ * period follow the date.
+ */
 function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
   const created = p.event === 'catalogue.created'
-  const priceChanged = !created && p.before_cents !== p.unit_price_cents
+  const priceChanged = !created && p.before_accounting_cents !== p.accounting_price_cents
+  const purchaseChanged = !created && p.before_purchase_cents !== p.purchase_price_cents
   const periodChanged = !created && p.before_service_months !== p.service_period_months
-  const pct = priceChanged && p.before_cents !== null && p.unit_price_cents !== null ? percentChange(p.unit_price_cents, p.before_cents) : null
+  const pct =
+    priceChanged && p.before_accounting_cents !== null && p.accounting_price_cents !== null
+      ? percentChange(p.accounting_price_cents, p.before_accounting_cents)
+      : null
+  const title = created
+    ? t.catalogue.stepAdded
+    : (priceChanged || purchaseChanged) && periodChanged
+      ? t.catalogue.priceAndPeriodChanged
+      : priceChanged && purchaseChanged
+        ? t.catalogue.pricesChanged
+        : priceChanged
+          ? t.catalogue.accountingPriceChanged
+          : purchaseChanged
+            ? t.catalogue.purchasePriceChanged
+            : t.catalogue.periodChanged
   return (
     <li className="flex items-start justify-between gap-3 px-4 py-2.5">
       <div className="min-w-0">
-        <span className="block font-medium">
-          {created ? t.catalogue.stepAdded : priceChanged && periodChanged ? t.catalogue.priceAndPeriodChanged : priceChanged ? t.catalogue.priceChanged : t.catalogue.periodChanged}
-        </span>
+        <span className="block font-medium">{title}</span>
         <span className="block text-xs text-muted-foreground tabular-nums">
           {formatDateTime(p.at, tz)}
           {p.by_name ? ` · ${p.by_name}` : ''}
+          {created && p.purchase_price_cents !== null ? t.catalogue.stepPurchase(formatEuro(p.purchase_price_cents)) : ''}
+          {purchaseChanged
+            ? p.before_purchase_cents === null
+              ? t.catalogue.stepPurchase(formatEuro(p.purchase_price_cents))
+              : t.catalogue.stepPurchaseChange(formatEuro(p.before_purchase_cents), formatEuro(p.purchase_price_cents))
+            : ''}
           {created ? t.catalogue.stepPeriod(formatMonths(p.service_period_months)) : ''}
           {periodChanged ? t.catalogue.stepPeriodChange(formatMonths(p.before_service_months), formatMonths(p.service_period_months)) : ''}
         </span>
       </div>
       <div className="shrink-0 text-right text-sm tabular-nums">
-        {priceChanged ? <span className="text-muted-foreground">{formatEuro(p.before_cents)} → </span> : null}
-        <span className="font-medium">{formatEuro(p.unit_price_cents)}</span>
+        {priceChanged ? <span className="text-muted-foreground">{formatEuro(p.before_accounting_cents)} → </span> : null}
+        <span className="font-medium">{formatEuro(p.accounting_price_cents)}</span>
         {pct !== null && pct !== 0 ? (
           <span className={cn('flex items-center justify-end gap-0.5 text-xs', pct > 0 ? 'text-destructive' : 'text-muted-foreground')}>
             {pct > 0 ? <ArrowUp aria-hidden className="size-3" /> : <ArrowDown aria-hidden className="size-3" />}
@@ -251,7 +275,7 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
 
 /**
  * The orders holding the item, one row per order with its line for the item:
- * the size, quantity and unit price it was ordered at. A GIVEN order links to
+ * the size, quantity and accounting price it was ordered at. A GIVEN order links to
  * its receipt; an ORDERED one has none yet.
  */
 function ItemOrders({
@@ -290,7 +314,7 @@ function ItemOrders({
             <TableHead>{t.catalogue.colDate}</TableHead>
             <TableHead>{t.catalogue.colSize}</TableHead>
             <TableHead className="text-right">{t.catalogue.colQuantity}</TableHead>
-            <TableHead className="text-right">{t.catalogue.unitPrice}</TableHead>
+            <TableHead className="text-right">{t.catalogue.accountingPrice}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -336,7 +360,7 @@ function ItemOrders({
               </TableCell>
               <TableCell label={t.catalogue.colSize} className="stacked:order-2">{line.size ?? '–'}</TableCell>
               <TableCell label={t.catalogue.colQuantity} className="text-right tabular-nums stacked:order-2">{line.quantity}</TableCell>
-              <TableCell label={t.catalogue.unitPrice} className="text-right tabular-nums stacked:order-2">{formatEuro(line.unit_price_cents)}</TableCell>
+              <TableCell label={t.catalogue.accountingPrice} className="text-right tabular-nums stacked:order-2">{formatEuro(line.accounting_price_cents)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

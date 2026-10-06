@@ -35,10 +35,10 @@ describe('missingLabel', () => {
 
 describe('itemStatus', () => {
   it('is inactive first, then incomplete without a price or period', () => {
-    expect(itemStatus({ active: true, unit_price_cents: 4999, service_period_months: 12 })).toBe('active')
-    expect(itemStatus({ active: true, unit_price_cents: null, service_period_months: 12 })).toBe('incomplete')
-    expect(itemStatus({ active: true, unit_price_cents: 250, service_period_months: null })).toBe('incomplete')
-    expect(itemStatus({ active: false, unit_price_cents: null, service_period_months: null })).toBe('inactive')
+    expect(itemStatus({ active: true, accounting_price_cents: 4999, service_period_months: 12 })).toBe('active')
+    expect(itemStatus({ active: true, accounting_price_cents: null, service_period_months: 12 })).toBe('incomplete')
+    expect(itemStatus({ active: true, accounting_price_cents: 250, service_period_months: null })).toBe('incomplete')
+    expect(itemStatus({ active: false, accounting_price_cents: null, service_period_months: null })).toBe('inactive')
   })
 })
 
@@ -48,11 +48,11 @@ describe('setTotal', () => {
     { catalogue_item_id: 'gloves', default_quantity: 10, display_order: 2 },
   ]
   it('sums default quantities at current prices', () => {
-    const items = new Map([['shoes', { unit_price_cents: 4999 }], ['gloves', { unit_price_cents: 250 }]])
+    const items = new Map([['shoes', { accounting_price_cents: 4999 }], ['gloves', { accounting_price_cents: 250 }]])
     expect(setTotal({ lines }, items)).toEqual({ items: 2, cents: 7499, complete: true })
   })
   it('leaves out an item without a price, and says so', () => {
-    const items = new Map([['shoes', { unit_price_cents: 4999 }], ['gloves', { unit_price_cents: null }]])
+    const items = new Map([['shoes', { accounting_price_cents: 4999 }], ['gloves', { accounting_price_cents: null }]])
     expect(setTotal({ lines }, items)).toEqual({ items: 2, cents: 4999, complete: false })
     expect(setTotal({ lines }, new Map()).complete).toBe(false)
   })

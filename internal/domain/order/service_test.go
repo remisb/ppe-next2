@@ -175,16 +175,19 @@ type markFixture struct {
 func newMarkFixture() markFixture {
 	f := markFixture{actor: uuid.New(), emp: uuid.New(), shoes: uuid.New(), jacket: uuid.New(), gloves: uuid.New(), draft: uuid.New(), retired: uuid.New()}
 	item := func(id uuid.UUID, name string, g size.Group, cents int64) ItemView {
-		return ItemView{ID: id, Name: name, Details: name + " model", SizeGroup: g, UnitPriceCents: i64(cents), Currency: "EUR", ServicePeriodMonths: ip(12), Active: true}
+		return ItemView{ID: id, Name: name, Details: name + " model", SizeGroup: g, AccountingPriceCents: i64(cents), Currency: "EUR", ServicePeriodMonths: ip(12), Active: true}
 	}
 	draft := item(f.draft, "Helmet", size.GroupNone, 0)
 	draft.ServicePeriodMonths = nil
 	retired := item(f.retired, "Old vest", size.GroupNone, 100)
 	retired.Active = false
+	// Shoes have a purchase price; the other items have none, which never blocks an order.
+	shoes := item(f.shoes, "Safety shoes", size.GroupShoes, 4999)
+	shoes.PurchasePriceCents = i64(3800)
 	f.repo = &fakeRepo{
 		employees: map[uuid.UUID]EmployeeView{f.emp: {ID: f.emp, FirstName: "Jonas", LastName: "Petraitis", Code: sp("W-17")}},
 		items: map[uuid.UUID]ItemView{
-			f.shoes: item(f.shoes, "Safety shoes", size.GroupShoes, 4999), f.jacket: item(f.jacket, "Work jacket", size.GroupClothing, 3999),
+			f.shoes: shoes, f.jacket: item(f.jacket, "Work jacket", size.GroupClothing, 3999),
 			f.gloves: item(f.gloves, "Protective gloves", size.GroupNone, 250), f.draft: draft, f.retired: retired,
 		},
 		users:  map[uuid.UUID]string{f.actor: "Admin"},
@@ -208,8 +211,12 @@ func TestMarkAsOrderedSnapshots(t *testing.T) {
 	}
 	l := o.Lines
 	if len(l) != 3 || l[0].LineNo != 1 || l[0].ItemName != "Work jacket" || *l[0].Size != "54" ||
-		l[1].UnitPriceCents != 4999 || l[2].Size != nil || l[2].Quantity != 10 || l[2].ServicePeriodMonths != 12 {
+		l[1].AccountingPriceCents != 4999 || l[2].Size != nil || l[2].Quantity != 10 || l[2].ServicePeriodMonths != 12 {
 		t.Errorf("lines = %+v", l)
+	}
+	// Both prices are snapshotted; the order shows and totals the accounting price.
+	if l[1].PurchasePriceCents == nil || *l[1].PurchasePriceCents != 3800 || l[0].PurchasePriceCents != nil {
+		t.Errorf("purchase prices = %v, %v", l[1].PurchasePriceCents, l[0].PurchasePriceCents)
 	}
 	if o.TotalCents() != 3999+4999+2500 {
 		t.Errorf("total = %d", o.TotalCents())
@@ -220,10 +227,10 @@ func TestMarkAsOrderedSnapshots(t *testing.T) {
 
 	// The catalogue changing afterwards does not touch the stored snapshot.
 	it := f.repo.items[f.shoes]
-	it.UnitPriceCents = i64(9999)
+	it.AccountingPriceCents, it.PurchasePriceCents = i64(9999), i64(7000)
 	f.repo.items[f.shoes] = it
 	stored, _ := f.svc.Get(context.Background(), o.ID)
-	if stored.Lines[1].UnitPriceCents != 4999 {
+	if stored.Lines[1].AccountingPriceCents != 4999 || *stored.Lines[1].PurchasePriceCents != 3800 {
 		t.Errorf("snapshot changed with the catalogue")
 	}
 }

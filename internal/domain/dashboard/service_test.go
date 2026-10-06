@@ -156,11 +156,11 @@ func i64(i int64) *int64  { return &i }
 func TestManagerDerivedFields(t *testing.T) {
 	now := utc("2026-09-15T10:00:00Z")
 	lines := []ForecastLine{
-		{ItemName: "Gloves", Quantity: 20, UnitPriceCents: i64(250)},
+		{ItemName: "Gloves", Quantity: 20, AccountingPriceCents: i64(250)},
 		{ItemName: "Helmet", Quantity: 3},
 	}
 	for i := range ListLimit {
-		lines = append(lines, ForecastLine{ItemName: "Filler", Quantity: 1, UnitPriceCents: i64(int64(100 + i))})
+		lines = append(lines, ForecastLine{ItemName: "Filler", Quantity: 1, AccountingPriceCents: i64(int64(100 + i))})
 	}
 	repo := &fakeRepo{outMgr: ManagerFigures{
 		ManagerOverview: ManagerOverview{Months: make([]OrderedMonth, Months), Forecast: Forecast{Lines: lines}},

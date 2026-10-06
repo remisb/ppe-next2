@@ -24,16 +24,17 @@ type EmployeeView struct {
 	PreferredLanguage *string
 }
 
-// ItemView is the part of a catalogue item resolution needs.
+// ItemView is the part of a catalogue item resolution and Mark as Ordered need.
 type ItemView struct {
-	ID                  uuid.UUID
-	Name                string
-	Details             string
-	SizeGroup           size.Group
-	UnitPriceCents      *int64
-	Currency            string
-	ServicePeriodMonths *int
-	Active              bool
+	ID                   uuid.UUID
+	Name                 string
+	Details              string
+	SizeGroup            size.Group
+	PurchasePriceCents   *int64
+	AccountingPriceCents *int64
+	Currency             string
+	ServicePeriodMonths  *int
+	Active               bool
 }
 
 // SetLineView is one line of an item set, in display order.
@@ -76,18 +77,18 @@ type ResolveLine struct {
 // WorkingLine is a resolved, editable line (manual algorithm A). It is a
 // preview of current data, not a snapshot.
 type WorkingLine struct {
-	CatalogueItemID     uuid.UUID  `json:"catalogue_item_id"`
-	ItemName            string     `json:"item_name"`
-	ItemDetails         string     `json:"item_details"`
-	SizeGroup           size.Group `json:"size_group"`
-	Size                *string    `json:"size"`
-	SizeSuggested       bool       `json:"size_suggested"`
-	SizeMissing         bool       `json:"size_missing"`
-	Quantity            int        `json:"quantity"`
-	UnitPriceCents      *int64     `json:"unit_price_cents"`
-	Currency            string     `json:"currency"`
-	ServicePeriodMonths *int       `json:"service_period_months"`
-	// PriceMissing: the item has no price or service period yet; Mark as
+	CatalogueItemID      uuid.UUID  `json:"catalogue_item_id"`
+	ItemName             string     `json:"item_name"`
+	ItemDetails          string     `json:"item_details"`
+	SizeGroup            size.Group `json:"size_group"`
+	Size                 *string    `json:"size"`
+	SizeSuggested        bool       `json:"size_suggested"`
+	SizeMissing          bool       `json:"size_missing"`
+	Quantity             int        `json:"quantity"`
+	AccountingPriceCents *int64     `json:"accounting_price_cents"`
+	Currency             string     `json:"currency"`
+	ServicePeriodMonths  *int       `json:"service_period_months"`
+	// PriceMissing: the item has no accounting price or service period yet; Mark as
 	// Ordered will refuse it until the catalogue is completed.
 	PriceMissing bool `json:"price_missing"`
 	// Unavailable: the item is inactive or deleted and cannot be ordered.
@@ -170,9 +171,9 @@ func resolveLine(emp EmployeeView, item ItemView, l ResolveLine) WorkingLine {
 		return w
 	}
 	w.ItemName, w.ItemDetails, w.SizeGroup = item.Name, item.Details, item.SizeGroup
-	w.UnitPriceCents, w.Currency, w.ServicePeriodMonths = item.UnitPriceCents, item.Currency, item.ServicePeriodMonths
+	w.AccountingPriceCents, w.Currency, w.ServicePeriodMonths = item.AccountingPriceCents, item.Currency, item.ServicePeriodMonths
 	w.Unavailable = !item.Active
-	w.PriceMissing = item.UnitPriceCents == nil || item.ServicePeriodMonths == nil
+	w.PriceMissing = item.AccountingPriceCents == nil || item.ServicePeriodMonths == nil
 	r := size.Resolve(item.SizeGroup, emp.Sizes)
 	w.Size, w.SizeSuggested, w.SizeMissing = r.Size, r.Suggested, r.Missing
 	return w

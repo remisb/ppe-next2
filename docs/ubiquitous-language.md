@@ -171,22 +171,37 @@ Rules for using it:
 - **Code:** `internal/domain/catalogue`, table `catalogue_items`. **UI:** Item Catalogue.
 
 ### Catalogue item (item)
-- **Brief:** one orderable entry: name, details (manufacturer / model), size group, unit
-  price, service period, display order, picture.
-- **Detail:** price and service period may be empty while the item is being set up. Such
-  an item is **Incomplete** and cannot be ordered. **Inactive** items are not offered in Add
+- **Brief:** one orderable entry: name, details (manufacturer / model), size group,
+  purchase price, accounting price, service period, display order, picture.
+- **Detail:** the accounting price and service period may be empty while the item is being
+  set up. Such an item is **Incomplete** and cannot be ordered. The purchase price is always
+  optional. **Inactive** items are not offered in Add
   Item; orders that hold them keep them. Currency is always EUR.
 - **UI:** **Add Item** / **Edit Item**, Active, Inactive, Incomplete, **Deactivate item…**.
 
 ### Orderable
-- **Brief:** an item that can go on a new order: live, active, with a price and a service period.
+- **Brief:** an item that can go on a new order: live, active, with an accounting price and a
+  service period.
 - **Code:** `catalogue.Item.Orderable()`.
 
-### Unit price
-- **Brief:** the price of one unit, in euro cents in code.
-- **Detail:** the catalogue holds the current price; each order line keeps the price it was
-  ordered at. Every price change is an audit event and shows in an item's **price history**
-  and the Manager Dashboard's **Price changes**.
+### Purchase price
+- **Brief:** what we pay the supplier for one unit, in euro cents in code.
+- **Detail:** optional: an item without one can still be ordered. Each order line keeps the
+  purchase price the item had when it was ordered (none on lines from before migration 0021).
+  Orders, records and dashboards never show or total it.
+- **Code:** `purchase_price_cents`. **UI:** Purchase price, Purchase price (€).
+
+### Accounting price
+- **Brief:** what the organisation books for one unit, in euro cents in code: the price
+  orders show.
+- **Detail:** the catalogue holds the current one; each order line keeps the one it was
+  ordered at, and order totals, records and dashboards use it. Every change to either price
+  is an audit event and shows in an item's **price history** and the Manager Dashboard's
+  **Price changes**. Called the unit price before items had two prices.
+- **Code:** `accounting_price_cents` (`unit_price_cents` before migration 0021, and still on
+  the Items Given Record, whose keys are part of its hash). **UI:** Accounting price,
+  Accounting price (€); the Items Given Record and the confirmation page, which the employee
+  reads, say Unit price / Цена.
 
 ### Service period
 - **Brief:** how many months an item is meant to last after it is given.
@@ -237,14 +252,15 @@ Rules for using it:
 - **Code:** `web/.../lib/working-order.ts`, `order.WorkingLine`. **UI:** Draft, "(draft, 3 lines)".
 
 ### Order line (line)
-- **Brief:** one item on an order: item, size, quantity, unit price, service period.
+- **Brief:** one item on an order: item, size, quantity, accounting price, purchase price,
+  service period.
 - **Detail:** one line per catalogue item; adding the item again raises the quantity.
   Stored lines are **snapshots** that the database refuses to update or delete.
 - **Code:** `order.Line`, table `order_lines`. **UI:** Order lines, Remove line.
 
 ### Snapshot
 - **Brief:** values copied onto the order at Mark as Ordered so it never depends on live data.
-- **Detail:** item name, details, size group, size, price, currency, service period, and
+- **Detail:** item name, details, size group, size, both prices, currency, service period, and
   the employee and preparer names. Records, History and receipts read only snapshots.
 
 ### Create Order
@@ -671,7 +687,8 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Preferred language | Pageidaujama kalba | Предпочитаемый язык |
 | Size group | Dydžių grupė | Группа размеров |
 | Clothing / Shoes / No size | Drabužiai / Avalynė / Be dydžio | Одежда / Обувь / Без размера |
-| Unit price | Vieneto kaina | Цена за единицу |
+| Purchase price | Pirkimo kaina | Закупочная цена |
+| Accounting price | Apskaitos kaina | Учётная цена |
 | Service period | Naudojimo laikotarpis | Срок службы |
 | Usage time | Naudojimo trukmė | Срок использования |
 | Items given | Išduotos prekės | Выданные предметы |
@@ -702,6 +719,9 @@ table follows them.
 | receipt (in the UI) | **Items Given Record** / **record** | `Receipt` is the code name. The UI says "Receipt WE-…" only on an employee's page. |
 | History (in the UI) | **Orders** | `history` is the route and namespace name; the screen is Orders. |
 | product, article, SKU | **item** / **catalogue item** | |
+| cost, cost price, savikaina, supplier price, buy price | **purchase price** | "Cost" says nothing about to whom; *savikaina* is production cost. |
+| sell price, sale price, net / gross price | **accounting price** | Nothing is sold to employees, and net / gross suggest VAT. |
+| unit price, price (alone, on staff screens) | **accounting price** or **purchase price** | An item has two prices. The Items Given Record keeps "Unit price". |
 | kit, bundle, template | **Item Set** | |
 | expiry, lifetime, warranty | **service period** | |
 | age, worn for | **usage time** | |

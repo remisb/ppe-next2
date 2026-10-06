@@ -28,13 +28,14 @@ func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 }
 
 type catalogueRequest struct {
-	Name                string     `json:"name"`
-	Details             string     `json:"details"`
-	SizeGroup           size.Group `json:"size_group"`
-	UnitPriceCents      *int64     `json:"unit_price_cents"`
-	ServicePeriodMonths *int       `json:"service_period_months"`
-	Active              *bool      `json:"active"`
-	DisplayRank         *int       `json:"display_rank"`
+	Name                 string     `json:"name"`
+	Details              string     `json:"details"`
+	SizeGroup            size.Group `json:"size_group"`
+	PurchasePriceCents   *int64     `json:"purchase_price_cents"`
+	AccountingPriceCents *int64     `json:"accounting_price_cents"`
+	ServicePeriodMonths  *int       `json:"service_period_months"`
+	Active               *bool      `json:"active"`
+	DisplayRank          *int       `json:"display_rank"`
 	// Icon is optional: omitted is "other".
 	Icon catalogue.Icon `json:"icon"`
 }
@@ -45,7 +46,8 @@ func (req catalogueRequest) params() (catalogue.Params, error) {
 		return catalogue.Params{}, err
 	}
 	return catalogue.Params{
-		Name: req.Name, Details: req.Details, SizeGroup: req.SizeGroup, UnitPriceCents: req.UnitPriceCents,
+		Name: req.Name, Details: req.Details, SizeGroup: req.SizeGroup,
+		PurchasePriceCents: req.PurchasePriceCents, AccountingPriceCents: req.AccountingPriceCents,
 		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank, Icon: req.Icon,
 	}, nil
 }

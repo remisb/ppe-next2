@@ -37,19 +37,24 @@ func NewService(repo Repository, opts ...Option) *Service {
 	return s
 }
 
-// priceSnapshot is what price events record.
+// priceSnapshot is what price events record. Events written before migration
+// 0021 hold the accounting price as unit_price_cents and no purchase price;
+// readers fall back to that key, since audit events are never rewritten.
 type priceSnapshot struct {
-	UnitPriceCents      *int64 `json:"unit_price_cents"`
-	Currency            string `json:"currency"`
-	ServicePeriodMonths *int   `json:"service_period_months"`
+	PurchasePriceCents   *int64 `json:"purchase_price_cents"`
+	AccountingPriceCents *int64 `json:"accounting_price_cents"`
+	Currency             string `json:"currency"`
+	ServicePeriodMonths  *int   `json:"service_period_months"`
 }
 
 func priceOf(i Item) priceSnapshot {
-	return priceSnapshot{UnitPriceCents: i.UnitPriceCents, Currency: i.Currency, ServicePeriodMonths: i.ServicePeriodMonths}
+	return priceSnapshot{PurchasePriceCents: i.PurchasePriceCents, AccountingPriceCents: i.AccountingPriceCents,
+		Currency: i.Currency, ServicePeriodMonths: i.ServicePeriodMonths}
 }
 
 func (a priceSnapshot) equal(b priceSnapshot) bool {
-	return eqPtr(a.UnitPriceCents, b.UnitPriceCents) && a.Currency == b.Currency && eqPtr(a.ServicePeriodMonths, b.ServicePeriodMonths)
+	return eqPtr(a.PurchasePriceCents, b.PurchasePriceCents) && eqPtr(a.AccountingPriceCents, b.AccountingPriceCents) &&
+		a.Currency == b.Currency && eqPtr(a.ServicePeriodMonths, b.ServicePeriodMonths)
 }
 
 func eqPtr[T comparable](a, b *T) bool {
@@ -74,7 +79,8 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Item, 
 	now := s.now()
 	i := Item{
 		ID: s.newID(), Name: p.Name, Details: p.Details, SizeGroup: p.SizeGroup,
-		UnitPriceCents: p.UnitPriceCents, Currency: CurrencyEUR, ServicePeriodMonths: p.ServicePeriodMonths,
+		PurchasePriceCents: p.PurchasePriceCents, AccountingPriceCents: p.AccountingPriceCents,
+		Currency: CurrencyEUR, ServicePeriodMonths: p.ServicePeriodMonths,
 		Active: p.Active, DisplayRank: *p.DisplayRank, Icon: p.Icon,
 		CreatedAt: now, UpdatedAt: now, CreatedByUserID: actor, UpdatedByUserID: actor,
 	}
@@ -95,9 +101,9 @@ func (s *Service) List(ctx context.Context) ([]Item, error)            { return 
 // though they stay visible in order snapshots.
 func (s *Service) ListActive(ctx context.Context) ([]Item, error) { return s.repo.ListActive(ctx) }
 
-// Update replaces every mutable field. A price or service-period change records
-// catalogue.price_changed with the before and after values; an active-flag
-// change records activated/deactivated.
+// Update replaces every mutable field. A change to either price or the service
+// period records catalogue.price_changed with the before and after values; an
+// active-flag change records activated/deactivated.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
@@ -108,7 +114,8 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	return s.repo.Update(ctx, id, func(cur Item) (Item, *audit.Event, error) {
 		next := cur
 		next.Name, next.Details, next.SizeGroup = p.Name, p.Details, p.SizeGroup
-		next.UnitPriceCents, next.ServicePeriodMonths = p.UnitPriceCents, p.ServicePeriodMonths
+		next.PurchasePriceCents, next.AccountingPriceCents = p.PurchasePriceCents, p.AccountingPriceCents
+		next.ServicePeriodMonths = p.ServicePeriodMonths
 		next.Active, next.DisplayRank, next.Icon = p.Active, *p.DisplayRank, p.Icon
 		return s.touch(cur, next, actor)
 	})
@@ -163,7 +170,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	return err
 }
 
-// PriceHistory is the live item's price and service period over time, newest
+// PriceHistory is the live item's prices and service period over time, newest
 // first: each change, then the values it was created with.
 func (s *Service) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error) {
 	if _, err := s.repo.Get(ctx, id); err != nil {

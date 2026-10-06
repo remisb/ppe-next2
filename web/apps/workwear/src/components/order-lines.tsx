@@ -19,7 +19,7 @@ export function OrderLinesTable({ order }: { order: Order }) {
           <TableHead>{t.order.item}</TableHead>
           <TableHead>{t.order.size}</TableHead>
           <TableHead className="text-right">{t.order.quantity}</TableHead>
-          <TableHead className="text-right">{t.order.unitPrice}</TableHead>
+          <TableHead className="text-right">{t.order.accountingPrice}</TableHead>
           <TableHead>{t.order.servicePeriod}</TableHead>
           <TableHead className="text-right">{t.common.total}</TableHead>
         </TableRow>
@@ -33,10 +33,10 @@ export function OrderLinesTable({ order }: { order: Order }) {
             </TableCell>
             <TableCell label={t.order.cardSize} className={fact}>{formatSize(l.size)}</TableCell>
             <TableCell label={t.order.cardQty} className={cn('text-right tabular-nums', fact)}>{l.quantity}</TableCell>
-            <TableCell label={t.order.cardUnit} className={cn('text-right tabular-nums', fact)}>{formatEuro(l.unit_price_cents)}</TableCell>
+            <TableCell label={t.order.cardUnit} className={cn('text-right tabular-nums', fact)}>{formatEuro(l.accounting_price_cents)}</TableCell>
             <TableCell label={t.order.cardService} className={fact}>{formatMonths(l.service_period_months)}</TableCell>
             <TableCell className="text-right font-medium tabular-nums stacked:order-1 stacked:w-auto stacked:self-start">
-              {formatEuro(l.unit_price_cents * l.quantity)}
+              {formatEuro(l.accounting_price_cents * l.quantity)}
             </TableCell>
           </TableRow>
         ))}

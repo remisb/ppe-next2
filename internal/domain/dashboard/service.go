@@ -244,11 +244,11 @@ func forecast(lines []ForecastLine, limit int) Forecast {
 	for i := range f.Lines {
 		l := &f.Lines[i]
 		f.Items += l.Quantity
-		if l.UnitPriceCents == nil {
+		if l.AccountingPriceCents == nil {
 			f.Unpriced += l.Quantity
 			continue
 		}
-		c := *l.UnitPriceCents * int64(l.Quantity)
+		c := *l.AccountingPriceCents * int64(l.Quantity)
 		l.EstimatedCents = &c
 		f.EstimatedCents += c
 	}

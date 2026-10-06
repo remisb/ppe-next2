@@ -19,7 +19,7 @@ export interface WorkingLine {
   size: string | null
   sizeSource: SizeSource
   quantity: number
-  unitPriceCents: number | null
+  accountingPriceCents: number | null
   servicePeriodMonths: number | null
   priceMissing: boolean
   unavailable: boolean
@@ -41,7 +41,7 @@ export function toWorkingLine(r: ResolvedLine): WorkingLine {
     size: r.size,
     sizeSource: r.size === null ? 'none' : r.size_suggested ? 'suggested' : 'saved',
     quantity: r.quantity,
-    unitPriceCents: r.unit_price_cents,
+    accountingPriceCents: r.accounting_price_cents,
     servicePeriodMonths: r.service_period_months,
     priceMissing: r.price_missing,
     unavailable: r.unavailable,
@@ -62,10 +62,10 @@ export function lineFromCatalogue(item: CatalogueItem, quantity = 1): ResolvedLi
     size_suggested: false,
     size_missing: item.size_group !== 'NONE',
     quantity,
-    unit_price_cents: item.unit_price_cents,
+    accounting_price_cents: item.accounting_price_cents,
     currency: item.currency,
     service_period_months: item.service_period_months,
-    price_missing: item.unit_price_cents === null || item.service_period_months === null,
+    price_missing: item.accounting_price_cents === null || item.service_period_months === null,
     unavailable: !item.active,
   }
 }
@@ -220,7 +220,7 @@ export function toMarkAsOrderedInput(order: WorkingOrder): MarkAsOrderedInput {
 
 /** Sum of lines with a known price. */
 export function totalCents(order: WorkingOrder): number {
-  return order.lines.reduce((sum, l) => sum + (l.unitPriceCents ?? 0) * (Number.isInteger(l.quantity) ? l.quantity : 0), 0)
+  return order.lines.reduce((sum, l) => sum + (l.accountingPriceCents ?? 0) * (Number.isInteger(l.quantity) ? l.quantity : 0), 0)
 }
 
 function mapLine(order: WorkingOrder, id: string, f: (l: WorkingLine) => WorkingLine): WorkingOrder {
@@ -253,12 +253,16 @@ export function saveDraft(order: WorkingOrder, userId: string, storage: Storage 
   }
 }
 
+/** Drafts saved before items had two prices hold the accounting price as unitPriceCents. */
+type SavedLine = WorkingLine & { unitPriceCents?: number | null }
+
 function parseDraft(raw: string | null | undefined): WorkingOrder | null {
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as Partial<WorkingOrder>
+    const parsed = JSON.parse(raw) as Partial<Omit<WorkingOrder, 'lines'>> & { lines?: SavedLine[] }
     if (!Array.isArray(parsed.lines)) return null
-    return { employee: parsed.employee ?? null, lines: parsed.lines }
+    const lines = parsed.lines.map(({ unitPriceCents, ...l }) => ({ ...l, accountingPriceCents: l.accountingPriceCents ?? unitPriceCents ?? null }))
+    return { employee: parsed.employee ?? null, lines }
   } catch {
     return null
   }

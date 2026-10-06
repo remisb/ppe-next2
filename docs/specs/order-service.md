@@ -35,7 +35,7 @@ accepted (a client-sent price is a 400). In one SQL transaction the repository:
 3. share-locks the requested catalogue items,
 4. takes `nextval('order_record_seq')`,
 5. calls the service's build closure, which requires each item to be live and active
-   (`ErrItemUnavailable`, 409), to have a price and service period (`ErrPriceMissing`,
+   (`ErrItemUnavailable`, 409), to have an accounting price and service period (`ErrPriceMissing`,
    409, naming the item), and each size to fit the item's size group (400): a CLOTHING
    line takes an EU code `"44"`–`"66"` (even) and no longer a letter, which lines ordered
    before migration 0012 keep and History and receipts still show,
@@ -45,8 +45,11 @@ Any failure rolls everything back (a record number may be skipped). The response
 the stored order with derived `record_number` (`WE-000123`) and `total_cents`.
 
 Snapshotted on the order: employee first/last name and code, preparer name. On each line:
-item name, details, size group, size, quantity, unit price, currency, service period.
-History and receipts use only these values.
+item name, details, size group, size, quantity, purchase price, accounting price, currency,
+service period. History and receipts use only these values. The order shows and totals the
+accounting price (`accounting_price_cents`); the purchase price (`purchase_price_cents`) is
+null when the item had none, which never blocks an order, and on lines written before
+migration `0021`. No screen shows it on an order yet.
 
 `GET /api/v1/orders/{id}` returns a stored order with its lines.
 
@@ -124,7 +127,9 @@ still changes it.
 name and code, ordered date, preparer, lines (item, details, size, quantity, unit price,
 line total, currency, service period), total, and the English and Russian confirmation
 texts with their `text_version`. `document_hash` is SHA-256 of its canonical JSON and is
-stored as evidence; the record of a GIVEN order returns the stored hash.
+stored as evidence; the record of a GIVEN order returns the stored hash. The record's
+unit price is the line's accounting price, under the key `unit_price_cents`; it never
+shows the purchase price. Its keys are part of the hash, so they never change.
 
 **Wording versions.** Each order stores the wording it was placed under
 (`orders.receipt_text_version`, migration `0013`), and its receipt always shows and hashes

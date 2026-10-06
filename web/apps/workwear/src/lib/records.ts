@@ -47,9 +47,9 @@ export type ItemStatus = 'active' | 'incomplete' | 'inactive'
  * incomplete (offered, but Mark as Ordered refuses it without a price and a
  * service period) or active.
  */
-export function itemStatus(i: Pick<CatalogueItem, 'active' | 'unit_price_cents' | 'service_period_months'>): ItemStatus {
+export function itemStatus(i: Pick<CatalogueItem, 'active' | 'accounting_price_cents' | 'service_period_months'>): ItemStatus {
   if (!i.active) return 'inactive'
-  return i.unit_price_cents === null || i.service_period_months === null ? 'incomplete' : 'active'
+  return i.accounting_price_cents === null || i.service_period_months === null ? 'incomplete' : 'active'
 }
 
 export interface SetTotal {
@@ -62,11 +62,11 @@ export interface SetTotal {
 }
 
 /** What a set comes to at today's prices: "3 items · €274.90". Applying it resolves prices again. */
-export function setTotal(set: Pick<ItemSet, 'lines'>, itemsById: ReadonlyMap<string, Pick<CatalogueItem, 'unit_price_cents'>>): SetTotal {
+export function setTotal(set: Pick<ItemSet, 'lines'>, itemsById: ReadonlyMap<string, Pick<CatalogueItem, 'accounting_price_cents'>>): SetTotal {
   let cents = 0
   let complete = true
   for (const l of set.lines) {
-    const price = itemsById.get(l.catalogue_item_id)?.unit_price_cents ?? null
+    const price = itemsById.get(l.catalogue_item_id)?.accounting_price_cents ?? null
     if (price === null) complete = false
     else cents += price * l.default_quantity
   }

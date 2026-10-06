@@ -77,20 +77,22 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	s := seeder{ctx: ctx, actor: admin.ID, items: items, employees: employees, sets: sets, orders: orders}
 
 	// Catalogue, in the manual's default order.
-	shoes := s.item("Safety shoes", "S3 SRC, steel toe cap", size.GroupShoes, 5490, 12, 10, catalogue.IconShoes)
-	jacket := s.item("Work jacket", "Polyester/cotton, reflective strips", size.GroupClothing, 7900, 24, 20, catalogue.IconJacket)
-	trousers := s.item("Work trousers", "Knee-pad pockets", size.GroupClothing, 4550, 12, 30, catalogue.IconTrousers)
-	gloves := s.item("Protective gloves", "Nitrile-coated, pair", size.GroupNone, 320, 1, 40, catalogue.IconGloves)
-	helmet := s.item("Safety helmet", "EN 397, adjustable", size.GroupNone, 1800, 36, 50, catalogue.IconHelmet)
-	vest := s.item("Hi-vis vest", "Class 2, yellow", size.GroupClothing, 990, 12, 60, catalogue.IconVest)
-	glasses := s.item("Safety glasses", "Anti-fog, clear lens", size.GroupNone, 650, 12, 70, catalogue.IconGlasses)
-	s.item("Ear defenders", "SNR 30 dB", size.GroupNone, 2200, 24, 80, catalogue.IconEar)
-	// No price or service period yet: selectable, but Mark as Ordered refuses it.
+	// Purchase price, then accounting price, in cents.
+	shoes := s.item("Safety shoes", "S3 SRC, steel toe cap", size.GroupShoes, ptr[int64](4200), 5490, 12, 10, catalogue.IconShoes)
+	jacket := s.item("Work jacket", "Polyester/cotton, reflective strips", size.GroupClothing, ptr[int64](6150), 7900, 24, 20, catalogue.IconJacket)
+	trousers := s.item("Work trousers", "Knee-pad pockets", size.GroupClothing, ptr[int64](3480), 4550, 12, 30, catalogue.IconTrousers)
+	gloves := s.item("Protective gloves", "Nitrile-coated, pair", size.GroupNone, ptr[int64](245), 320, 1, 40, catalogue.IconGloves)
+	helmet := s.item("Safety helmet", "EN 397, adjustable", size.GroupNone, ptr[int64](1390), 1800, 36, 50, catalogue.IconHelmet)
+	vest := s.item("Hi-vis vest", "Class 2, yellow", size.GroupClothing, ptr[int64](720), 990, 12, 60, catalogue.IconVest)
+	glasses := s.item("Safety glasses", "Anti-fog, clear lens", size.GroupNone, ptr[int64](480), 650, 12, 70, catalogue.IconGlasses)
+	// No purchase price: optional, so it can still be ordered.
+	s.item("Ear defenders", "SNR 30 dB", size.GroupNone, nil, 2200, 24, 80, catalogue.IconEar)
+	// No prices or service period yet: selectable, but Mark as Ordered refuses it.
 	s.itemWith(catalogue.Params{Name: "Winter jacket", Details: "Insulated, waterproof", SizeGroup: size.GroupClothing, Active: true, DisplayRank: ptr(90),
 		Icon: catalogue.IconJacket})
 	// Inactive: hidden from Add Item, still in old snapshots.
 	s.itemWith(catalogue.Params{Name: "Rain coat", Details: "Discontinued model", SizeGroup: size.GroupClothing,
-		UnitPriceCents: ptr[int64](2500), ServicePeriodMonths: ptr(24), Active: false, DisplayRank: ptr(100), Icon: catalogue.IconJacket})
+		AccountingPriceCents: ptr[int64](2500), ServicePeriodMonths: ptr(24), Active: false, DisplayRank: ptr(100), Icon: catalogue.IconJacket})
 
 	starter := s.set("Warehouse starter kit", "Everything a new warehouse worker needs",
 		shoes, 1, jacket, 1, trousers, 2, gloves, 10, helmet, 1)
@@ -160,9 +162,9 @@ func (s *seeder) fail(what string, err error) {
 	}
 }
 
-func (s *seeder) item(name, details string, g size.Group, cents int64, months, rank int, icon catalogue.Icon) uuid.UUID {
-	return s.itemWith(catalogue.Params{Name: name, Details: details, SizeGroup: g,
-		UnitPriceCents: &cents, ServicePeriodMonths: &months, Active: true, DisplayRank: &rank, Icon: icon})
+func (s *seeder) item(name, details string, g size.Group, purchase *int64, cents int64, months, rank int, icon catalogue.Icon) uuid.UUID {
+	return s.itemWith(catalogue.Params{Name: name, Details: details, SizeGroup: g, PurchasePriceCents: purchase,
+		AccountingPriceCents: &cents, ServicePeriodMonths: &months, Active: true, DisplayRank: &rank, Icon: icon})
 }
 
 func (s *seeder) itemWith(p catalogue.Params) uuid.UUID {

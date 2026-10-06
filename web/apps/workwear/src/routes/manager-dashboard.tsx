@@ -211,7 +211,7 @@ function ForecastCard({ d }: { d: Data }) {
               <TableHead>{t.dashboard.item}</TableHead>
               <TableHead className="text-right">{t.dashboard.quantity}</TableHead>
               <TableHead className="text-right">{t.dashboard.employees}</TableHead>
-              <TableHead className="text-right">{t.dashboard.unitPrice}</TableHead>
+              <TableHead className="text-right">{t.dashboard.accountingPrice}</TableHead>
               <TableHead className="text-right">{t.dashboard.estimated}</TableHead>
             </TableRow>
           </TableHeader>
@@ -228,8 +228,8 @@ function ForecastCard({ d }: { d: Data }) {
                 <TableCell label={t.dashboard.employees} className="text-right tabular-nums">
                   {l.employees}
                 </TableCell>
-                <TableCell label={t.dashboard.unitPrice} className="text-right tabular-nums">
-                  {l.unit_price_cents === null ? <Badge variant="outline">{t.dashboard.noPrice}</Badge> : formatEuro(l.unit_price_cents)}
+                <TableCell label={t.dashboard.accountingPrice} className="text-right tabular-nums">
+                  {l.accounting_price_cents === null ? <Badge variant="outline">{t.dashboard.noPrice}</Badge> : formatEuro(l.accounting_price_cents)}
                 </TableCell>
                 <TableCell label={t.dashboard.estimated} className="text-right font-medium tabular-nums">
                   {formatEuro(l.estimated_cents)}
@@ -273,7 +273,11 @@ function PriceChangesCard({ d }: { d: Data }) {
       ) : (
         <ul className="divide-y divide-border">
           {d.price_changes.map((p, i) => {
-            const pct = p.before_cents !== null && p.after_cents !== null ? percentChange(p.after_cents, p.before_cents) : null
+            const pct =
+              p.before_accounting_cents !== null && p.after_accounting_cents !== null
+                ? percentChange(p.after_accounting_cents, p.before_accounting_cents)
+                : null
+            const purchaseChanged = p.before_purchase_cents !== p.after_purchase_cents
             const periodChanged = p.before_service_months !== p.after_service_months
             return (
               <li key={`${p.catalogue_item_id}-${p.at}-${i}`} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
@@ -282,14 +286,21 @@ function PriceChangesCard({ d }: { d: Data }) {
                   <span className="text-xs text-muted-foreground">
                     {formatDate(p.at, d.timezone)}
                     {p.by_name ? ` · ${p.by_name}` : ''}
+                    {purchaseChanged
+                      ? ` · ${
+                          p.before_purchase_cents === null
+                            ? t.dashboard.purchasePrice(formatEuro(p.after_purchase_cents))
+                            : t.dashboard.purchasePriceChange(formatEuro(p.before_purchase_cents), formatEuro(p.after_purchase_cents))
+                        }`
+                      : ''}
                     {periodChanged
                       ? ` · ${t.dashboard.servicePeriodChange(formatMonths(p.before_service_months), formatMonths(p.after_service_months))}`
                       : ''}
                   </span>
                 </div>
                 <div className="shrink-0 text-right text-sm tabular-nums">
-                  <span className="text-muted-foreground">{formatEuro(p.before_cents)} → </span>
-                  <span className="font-medium">{formatEuro(p.after_cents)}</span>
+                  <span className="text-muted-foreground">{formatEuro(p.before_accounting_cents)} → </span>
+                  <span className="font-medium">{formatEuro(p.after_accounting_cents)}</span>
                   {pct !== null && pct !== 0 ? (
                     <span className={cn('flex items-center justify-end gap-0.5 text-xs', pct > 0 ? 'text-destructive' : 'text-muted-foreground')}>
                       {pct > 0 ? <ArrowUp aria-hidden className="size-3" /> : <ArrowDown aria-hidden className="size-3" />}

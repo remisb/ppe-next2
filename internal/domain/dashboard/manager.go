@@ -77,23 +77,27 @@ type ForecastLine struct {
 	ItemName        string    `json:"item_name"`
 	Quantity        int       `json:"quantity"`
 	Employees       int       `json:"employees"`
-	// UnitPriceCents is the current catalogue price; nil when the item has
-	// none, is inactive or was deleted, and then EstimatedCents is nil too.
-	UnitPriceCents *int64 `json:"unit_price_cents"`
-	EstimatedCents *int64 `json:"estimated_cents"`
-	Overdue        int    `json:"overdue"` // of Quantity, already past due
+	// AccountingPriceCents is the item's current accounting price; nil when
+	// the item has none, is inactive or was deleted, and then EstimatedCents
+	// is nil too.
+	AccountingPriceCents *int64 `json:"accounting_price_cents"`
+	EstimatedCents       *int64 `json:"estimated_cents"`
+	Overdue              int    `json:"overdue"` // of Quantity, already past due
 }
 
-// PriceChange is one catalogue.price_changed audit event.
+// PriceChange is one catalogue.price_changed audit event. Events from before
+// the purchase price existed have no purchase prices.
 type PriceChange struct {
-	CatalogueItemID     uuid.UUID `json:"catalogue_item_id"`
-	ItemName            string    `json:"item_name"`
-	At                  time.Time `json:"at"`
-	ByName              *string   `json:"by_name"`
-	BeforeCents         *int64    `json:"before_cents"`
-	AfterCents          *int64    `json:"after_cents"`
-	BeforeServiceMonths *int      `json:"before_service_months"`
-	AfterServiceMonths  *int      `json:"after_service_months"`
+	CatalogueItemID       uuid.UUID `json:"catalogue_item_id"`
+	ItemName              string    `json:"item_name"`
+	At                    time.Time `json:"at"`
+	ByName                *string   `json:"by_name"`
+	BeforePurchaseCents   *int64    `json:"before_purchase_cents"`
+	AfterPurchaseCents    *int64    `json:"after_purchase_cents"`
+	BeforeAccountingCents *int64    `json:"before_accounting_cents"`
+	AfterAccountingCents  *int64    `json:"after_accounting_cents"`
+	BeforeServiceMonths   *int      `json:"before_service_months"`
+	AfterServiceMonths    *int      `json:"after_service_months"`
 }
 
 // CatalogueCheck is the live catalogue's state.

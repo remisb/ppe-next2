@@ -72,7 +72,7 @@ func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs 
 		return Snapshot{}, err
 	}
 
-	rows, err := tx.Query(ctx, `SELECT id, name, details, size_group, unit_price_cents, currency,
+	rows, err := tx.Query(ctx, `SELECT id, name, details, size_group, purchase_price_cents, accounting_price_cents, currency,
 			service_period_months, active
 		FROM catalogue_items WHERE id = ANY($1) AND deleted_at IS NULL
 		ORDER BY id FOR SHARE`, itemIDs)
@@ -82,7 +82,7 @@ func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs 
 	s.Items = make(map[uuid.UUID]ItemView, len(itemIDs))
 	for rows.Next() {
 		var it ItemView
-		if err := rows.Scan(&it.ID, &it.Name, &it.Details, &it.SizeGroup, &it.UnitPriceCents, &it.Currency,
+		if err := rows.Scan(&it.ID, &it.Name, &it.Details, &it.SizeGroup, &it.PurchasePriceCents, &it.AccountingPriceCents, &it.Currency,
 			&it.ServicePeriodMonths, &it.Active); err != nil {
 			rows.Close()
 			return Snapshot{}, err
@@ -112,10 +112,10 @@ func insertOrder(ctx context.Context, tx pgx.Tx, o Order) error {
 	for _, l := range o.Lines {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group,
-				size, quantity, unit_price_cents, currency, service_period_months)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+				size, quantity, purchase_price_cents, accounting_price_cents, currency, service_period_months)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 			l.ID, o.ID, l.LineNo, l.CatalogueItemID, l.ItemName, l.ItemDetails, l.SizeGroup,
-			l.Size, l.Quantity, l.UnitPriceCents, l.Currency, l.ServicePeriodMonths); err != nil {
+			l.Size, l.Quantity, l.PurchasePriceCents, l.AccountingPriceCents, l.Currency, l.ServicePeriodMonths); err != nil {
 			return err
 		}
 	}
@@ -173,7 +173,7 @@ var sortColumns = map[SortKey]struct {
 	SortEmployee: {expr: `lower(employee_first_name || ' ' || employee_last_name)`},
 	SortStatus:   {expr: `status`},
 	SortUsage:    {expr: `given_at`, reverse: true},
-	SortTotal:    {expr: `(SELECT sum(l.unit_price_cents * l.quantity) FROM order_lines l WHERE l.order_id = orders.id)`},
+	SortTotal:    {expr: `(SELECT sum(l.accounting_price_cents * l.quantity) FROM order_lines l WHERE l.order_id = orders.id)`},
 }
 
 // orderBy is the ORDER BY clause for f: its sort, then newest activity first.
@@ -253,7 +253,7 @@ func (r *PostgresRepository) withLines(ctx context.Context, orders []Order) ([]O
 		ids[i], index[o.ID] = o.ID, i
 	}
 	rows, err := r.pool.Query(ctx, `SELECT order_id, id, line_no, catalogue_item_id, item_name, item_details, size_group,
-			size, quantity, unit_price_cents, currency, service_period_months
+			size, quantity, purchase_price_cents, accounting_price_cents, currency, service_period_months
 		FROM order_lines WHERE order_id = ANY($1) ORDER BY order_id, line_no`, ids)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func (r *PostgresRepository) withLines(ctx context.Context, orders []Order) ([]O
 		var orderID uuid.UUID
 		var l Line
 		if err := rows.Scan(&orderID, &l.ID, &l.LineNo, &l.CatalogueItemID, &l.ItemName, &l.ItemDetails, &l.SizeGroup,
-			&l.Size, &l.Quantity, &l.UnitPriceCents, &l.Currency, &l.ServicePeriodMonths); err != nil {
+			&l.Size, &l.Quantity, &l.PurchasePriceCents, &l.AccountingPriceCents, &l.Currency, &l.ServicePeriodMonths); err != nil {
 			return nil, err
 		}
 		i := index[orderID]
@@ -300,7 +300,7 @@ func lockOrder(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Order, error) {
 		return Order{}, err
 	}
 	rows, err := tx.Query(ctx, `SELECT id, line_no, catalogue_item_id, item_name, item_details, size_group,
-			size, quantity, unit_price_cents, currency, service_period_months
+			size, quantity, purchase_price_cents, accounting_price_cents, currency, service_period_months
 		FROM order_lines WHERE order_id = $1 ORDER BY line_no`, id)
 	if err != nil {
 		return Order{}, err
@@ -309,7 +309,7 @@ func lockOrder(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Order, error) {
 	for rows.Next() {
 		var l Line
 		if err := rows.Scan(&l.ID, &l.LineNo, &l.CatalogueItemID, &l.ItemName, &l.ItemDetails, &l.SizeGroup,
-			&l.Size, &l.Quantity, &l.UnitPriceCents, &l.Currency, &l.ServicePeriodMonths); err != nil {
+			&l.Size, &l.Quantity, &l.PurchasePriceCents, &l.AccountingPriceCents, &l.Currency, &l.ServicePeriodMonths); err != nil {
 			return Order{}, err
 		}
 		o.Lines = append(o.Lines, l)

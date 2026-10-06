@@ -8,9 +8,10 @@ import (
 var (
 	ErrNotFound = errors.New("order not found")
 	ErrInvalid  = errors.New("invalid order")
-	// ErrPriceMissing: a catalogue item lacks a price or service period, so
-	// Mark as Ordered is blocked until an authorised user fixes the catalogue.
-	ErrPriceMissing = errors.New("catalogue item has no price or service period")
+	// ErrPriceMissing: a catalogue item lacks an accounting price or a service
+	// period, so Mark as Ordered is blocked until an authorised user fixes the
+	// catalogue.
+	ErrPriceMissing = errors.New("catalogue item has no accounting price or service period")
 	// ErrItemUnavailable: a catalogue item is inactive or deleted.
 	ErrItemUnavailable = errors.New("catalogue item is not available")
 	// ErrNotOrdered: the action needs an ORDERED order (e.g. a confirmation link).

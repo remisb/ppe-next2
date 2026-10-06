@@ -69,8 +69,8 @@ func (o orderCatalogue) Items(ctx context.Context, ids []uuid.UUID) (map[uuid.UU
 			return nil, err
 		}
 		out[id] = order.ItemView{
-			ID: i.ID, Name: i.Name, Details: i.Details, SizeGroup: i.SizeGroup, UnitPriceCents: i.UnitPriceCents,
-			Currency: i.Currency, ServicePeriodMonths: i.ServicePeriodMonths, Active: i.Active,
+			ID: i.ID, Name: i.Name, Details: i.Details, SizeGroup: i.SizeGroup,
+			PurchasePriceCents: i.PurchasePriceCents, AccountingPriceCents: i.AccountingPriceCents, Currency: i.Currency, ServicePeriodMonths: i.ServicePeriodMonths, Active: i.Active,
 		}
 	}
 	return out, nil

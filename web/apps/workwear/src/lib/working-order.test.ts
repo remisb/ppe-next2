@@ -31,7 +31,7 @@ function line(id: string, over: Partial<ResolvedLine> = {}): ResolvedLine {
     size_suggested: false,
     size_missing: false,
     quantity: 1,
-    unit_price_cents: 1000,
+    accounting_price_cents: 1000,
     currency: 'EUR',
     service_period_months: 12,
     price_missing: false,
@@ -139,7 +139,7 @@ describe('validate', () => {
     let o: WorkingOrder = addLines({ employee: ona, lines: [] }, [
       line('ok'),
       line('shoes', { size_group: 'SHOES', size_missing: true }),
-      line('draft', { unit_price_cents: null, price_missing: true }),
+      line('draft', { accounting_price_cents: null, price_missing: true }),
       line('gone', { unavailable: true }),
     ])
     o = setQuantity(o, 'ok', 1.5)
@@ -204,6 +204,14 @@ describe('draft persistence', () => {
     expect(draftLineCount('u1', storage)).toBe(0)
   })
 
+  it('reads the accounting price of a draft saved before items had two prices', () => {
+    const { storage } = memory()
+    const o = addLines({ employee: ona, lines: [] }, [line('a')])
+    const old = { ...o, lines: o.lines.map(({ accountingPriceCents, ...l }) => ({ ...l, unitPriceCents: accountingPriceCents })) }
+    storage.setItem('workwear.createOrder.v3.u1', JSON.stringify(old))
+    expect(loadDraft('u1', storage, memory().storage)).toEqual(o)
+  })
+
   it('drops drafts saved before clothing sizes became numbers', () => {
     const { store, storage } = memory()
     const { store: tab, storage: legacy } = memory()
@@ -219,7 +227,7 @@ describe('draft persistence', () => {
 describe('lineFromCatalogue', () => {
   it('builds an unresolved line from catalogue data', () => {
     const l = lineFromCatalogue({
-      id: 'i', name: 'Safety shoes', details: 'S3', size_group: 'SHOES', unit_price_cents: null, currency: 'EUR',
+      id: 'i', name: 'Safety shoes', details: 'S3', size_group: 'SHOES', purchase_price_cents: null, accounting_price_cents: null, currency: 'EUR',
       service_period_months: 12, active: true, display_rank: 1, icon: 'shoes', created_at: '', updated_at: '',
     })
     expect(l).toMatchObject({ size: null, size_missing: true, price_missing: true, unavailable: false, quantity: 1 })

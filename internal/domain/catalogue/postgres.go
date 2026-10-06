@@ -24,14 +24,14 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
-const columns = `id, name, details, size_group, unit_price_cents, currency, service_period_months,
+const columns = `id, name, details, size_group, purchase_price_cents, accounting_price_cents, currency, service_period_months,
 	active, display_rank, icon, created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
 
 const selectorOrder = `ORDER BY display_rank, lower(name), id`
 
 func scan(row pgx.Row) (Item, error) {
 	var i Item
-	err := row.Scan(&i.ID, &i.Name, &i.Details, &i.SizeGroup, &i.UnitPriceCents, &i.Currency, &i.ServicePeriodMonths,
+	err := row.Scan(&i.ID, &i.Name, &i.Details, &i.SizeGroup, &i.PurchasePriceCents, &i.AccountingPriceCents, &i.Currency, &i.ServicePeriodMonths,
 		&i.Active, &i.DisplayRank, &i.Icon, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt, &i.CreatedByUserID, &i.UpdatedByUserID, &i.DeletedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
@@ -63,11 +63,13 @@ func (r *PostgresRepository) query(ctx context.Context, sql string, args ...any)
 func (r *PostgresRepository) Create(ctx context.Context, i Item, ev *audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO catalogue_items (id, name, details, size_group, unit_price_cents, currency,
-				service_period_months, active, display_rank, icon, created_at, updated_at, created_by_user_id, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-			i.ID, i.Name, i.Details, i.SizeGroup, i.UnitPriceCents, i.Currency, i.ServicePeriodMonths,
-			i.Active, i.DisplayRank, i.Icon, i.CreatedAt, i.UpdatedAt, i.CreatedByUserID, i.UpdatedByUserID); err != nil {
+			INSERT INTO catalogue_items (id, name, details, size_group, accounting_price_cents, currency,
+				service_period_months, active, display_rank, icon, created_at, updated_at, created_by_user_id, updated_by_user_id,
+				purchase_price_cents)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+			i.ID, i.Name, i.Details, i.SizeGroup, i.AccountingPriceCents, i.Currency, i.ServicePeriodMonths,
+			i.Active, i.DisplayRank, i.Icon, i.CreatedAt, i.UpdatedAt, i.CreatedByUserID, i.UpdatedByUserID,
+			i.PurchasePriceCents); err != nil {
 			return err
 		}
 		return insertEvent(ctx, tx, ev)
@@ -99,12 +101,14 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 			return err
 		}
 		if _, err := tx.Exec(ctx, `
-			UPDATE catalogue_items SET name = $2, details = $3, size_group = $4, unit_price_cents = $5,
+			UPDATE catalogue_items SET name = $2, details = $3, size_group = $4, accounting_price_cents = $5,
 				service_period_months = $6, active = $7, display_rank = $8, updated_at = $9,
-				updated_by_user_id = $10, deleted_at = $11, deleted_by_user_id = $12, icon = $13
+				updated_by_user_id = $10, deleted_at = $11, deleted_by_user_id = $12, icon = $13,
+				purchase_price_cents = $14
 			WHERE id = $1`,
-			id, next.Name, next.Details, next.SizeGroup, next.UnitPriceCents, next.ServicePeriodMonths,
-			next.Active, next.DisplayRank, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID, next.Icon); err != nil {
+			id, next.Name, next.Details, next.SizeGroup, next.AccountingPriceCents, next.ServicePeriodMonths,
+			next.Active, next.DisplayRank, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID, next.Icon,
+			next.PurchasePriceCents); err != nil {
 			return err
 		}
 		if err := insertEvent(ctx, tx, ev); err != nil {
@@ -116,10 +120,16 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+// PriceHistory reads the accounting price under its pre-0021 key
+// unit_price_cents too (see priceSnapshot).
 func (r *PostgresRepository) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error) {
 	rows, err := r.pool.Query(ctx, `SELECT a.occurred_at, a.event, u.name,
-			(a.after ->> 'unit_price_cents')::bigint, (a.after ->> 'service_period_months')::int,
-			(a.before ->> 'unit_price_cents')::bigint, (a.before ->> 'service_period_months')::int
+			(a.after ->> 'purchase_price_cents')::bigint,
+			coalesce(a.after ->> 'accounting_price_cents', a.after ->> 'unit_price_cents')::bigint,
+			(a.after ->> 'service_period_months')::int,
+			(a.before ->> 'purchase_price_cents')::bigint,
+			coalesce(a.before ->> 'accounting_price_cents', a.before ->> 'unit_price_cents')::bigint,
+			(a.before ->> 'service_period_months')::int
 		FROM audit_events a LEFT JOIN users u ON u.id = a.actor_user_id
 		WHERE a.entity_type = $1 AND a.entity_id = $2 AND a.event IN ($3, $4)
 		ORDER BY a.occurred_at DESC, a.id DESC`, auditEntity, id, EventCreated, EventPriceChanged)
@@ -128,7 +138,8 @@ func (r *PostgresRepository) PriceHistory(ctx context.Context, id uuid.UUID) ([]
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (PriceEntry, error) {
 		var e PriceEntry
-		err := row.Scan(&e.At, &e.Event, &e.ByName, &e.UnitPriceCents, &e.ServicePeriodMonths, &e.BeforeCents, &e.BeforeServiceMonths)
+		err := row.Scan(&e.At, &e.Event, &e.ByName, &e.PurchasePriceCents, &e.AccountingPriceCents, &e.ServicePeriodMonths,
+			&e.BeforePurchaseCents, &e.BeforeAccountingCents, &e.BeforeServiceMonths)
 		e.At = e.At.UTC()
 		return e, err
 	})

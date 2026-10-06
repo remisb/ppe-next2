@@ -40,6 +40,9 @@ var ConfirmationTexts = map[string]ConfirmationText{
 }
 
 // ReceiptLine is one line of the Items Given Record, from the snapshot only.
+// UnitPriceCents is the line's accounting price; the record shows no purchase
+// price. Field names and JSON keys are part of DocumentHash, so they never
+// change: renaming one would break every stored record's hash.
 type ReceiptLine struct {
 	LineNo              int     `json:"line_no"`
 	ItemName            string  `json:"item_name"`
@@ -99,7 +102,7 @@ func ReceiptOf(o Order) Receipt {
 	for i, l := range o.Lines {
 		r.Lines[i] = ReceiptLine{
 			LineNo: l.LineNo, ItemName: l.ItemName, ItemDetails: l.ItemDetails, Size: l.Size, Quantity: l.Quantity,
-			UnitPriceCents: l.UnitPriceCents, TotalCents: l.TotalCents(), Currency: l.Currency,
+			UnitPriceCents: l.AccountingPriceCents, TotalCents: l.TotalCents(), Currency: l.Currency,
 			ServicePeriodMonths: l.ServicePeriodMonths,
 		}
 	}

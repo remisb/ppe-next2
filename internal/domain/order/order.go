@@ -102,21 +102,25 @@ func (o Order) TotalCents() int64 {
 }
 
 // Line is an immutable snapshot of one item as displayed at Mark as Ordered.
+// It keeps both of the item's prices: the accounting price, which the order
+// shows and totals, and the purchase price, which is nil when the item had
+// none or the line predates it (migration 0021).
 type Line struct {
-	ID                  uuid.UUID  `json:"id"`
-	LineNo              int        `json:"line_no"`
-	CatalogueItemID     uuid.UUID  `json:"catalogue_item_id"`
-	ItemName            string     `json:"item_name"`
-	ItemDetails         string     `json:"item_details"`
-	SizeGroup           size.Group `json:"size_group"`
-	Size                *string    `json:"size"`
-	Quantity            int        `json:"quantity"`
-	UnitPriceCents      int64      `json:"unit_price_cents"`
-	Currency            string     `json:"currency"`
-	ServicePeriodMonths int        `json:"service_period_months"`
+	ID                   uuid.UUID  `json:"id"`
+	LineNo               int        `json:"line_no"`
+	CatalogueItemID      uuid.UUID  `json:"catalogue_item_id"`
+	ItemName             string     `json:"item_name"`
+	ItemDetails          string     `json:"item_details"`
+	SizeGroup            size.Group `json:"size_group"`
+	Size                 *string    `json:"size"`
+	Quantity             int        `json:"quantity"`
+	PurchasePriceCents   *int64     `json:"purchase_price_cents"`
+	AccountingPriceCents int64      `json:"accounting_price_cents"`
+	Currency             string     `json:"currency"`
+	ServicePeriodMonths  int        `json:"service_period_months"`
 }
 
-func (l Line) TotalCents() int64 { return l.UnitPriceCents * int64(l.Quantity) }
+func (l Line) TotalCents() int64 { return l.AccountingPriceCents * int64(l.Quantity) }
 
 // Confirmation is a confirmation link or a paper confirmation, with its
 // evidence once confirmed. Only the token's hash is ever stored.

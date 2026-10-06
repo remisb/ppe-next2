@@ -59,7 +59,7 @@ func seedPG(t *testing.T) pgData {
 		VALUES ($1, 'Gone', 'Away', 54, '44', now(), now(), now(), $2, $2, $2)`, gone, admin)
 
 	shoes, gloves, draft := uuid.New(), uuid.New(), uuid.New()
-	exec(`INSERT INTO catalogue_items (id, name, size_group, unit_price_cents, service_period_months, created_at, updated_at, created_by_user_id, updated_by_user_id)
+	exec(`INSERT INTO catalogue_items (id, name, size_group, accounting_price_cents, service_period_months, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Safety shoes', 'SHOES', 5000, 12, now(), now(), $4, $4),
 		       ($2, 'Gloves', 'NONE', 200, 1, now(), now(), $4, $4),
 		       ($3, 'Helmet', 'NONE', NULL, 24, now(), now(), $4, $4)`, shoes, gloves, draft, admin)
@@ -94,7 +94,7 @@ func seedPG(t *testing.T) pgData {
 		}
 		for i, l := range lines {
 			exec(`INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity,
-					unit_price_cents, currency, service_period_months)
+					accounting_price_cents, currency, service_period_months)
 				VALUES ($1, $2, $3, $4, $5, '', $6, $7, $8, $9, 'EUR', $10)`, uuid.New(), id, i+1, l.item, l.name, l.sizeGroup, l.size, l.qty, l.cents, l.months)
 		}
 		return id
@@ -224,18 +224,25 @@ func TestPostgresManager(t *testing.T) {
 		}
 	}
 	vest, plugs := uuid.New(), uuid.New()
-	exec(`INSERT INTO catalogue_items (id, name, size_group, unit_price_cents, service_period_months, active, created_at, updated_at, created_by_user_id, updated_by_user_id)
+	exec(`INSERT INTO catalogue_items (id, name, size_group, accounting_price_cents, service_period_months, active, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Old vest', 'CLOTHING', 1500, 12, FALSE, now(), now(), $3, $3),
 		       ($2, 'Ear plugs', 'NONE', 50, 1, TRUE, now(), now(), $3, $3)`, vest, plugs, d.admin)
-	price := func(at string, before, after int64) {
+	// Events written before migration 0021 name the accounting price
+	// unit_price_cents and have no purchase price.
+	legacyPrice := func(at string, before, after int64) {
 		exec(`INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after)
 			VALUES ($1, $2, 'catalogue.price_changed', 'catalogue_item', $3, $4,
 				jsonb_build_object('unit_price_cents', $5::bigint, 'currency', 'EUR', 'service_period_months', 12),
 				jsonb_build_object('unit_price_cents', $6::bigint, 'currency', 'EUR', 'service_period_months', 18))`,
 			uuid.New(), d.admin, d.shoes, utc(at), before, after)
 	}
-	price("2025-01-01T08:00:00Z", 3500, 4000) // before the twelve months
-	price("2026-06-01T08:00:00Z", 4000, 5000)
+	legacyPrice("2025-01-01T08:00:00Z", 3500, 4000) // before the twelve months
+	legacyPrice("2026-06-01T08:00:00Z", 4000, 5000)
+	exec(`INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after)
+		VALUES ($1, $2, 'catalogue.price_changed', 'catalogue_item', $3, $4,
+			jsonb_build_object('purchase_price_cents', NULL, 'accounting_price_cents', 5000, 'currency', 'EUR', 'service_period_months', 18),
+			jsonb_build_object('purchase_price_cents', 3900, 'accounting_price_cents', 5000, 'currency', 'EUR', 'service_period_months', 18))`,
+		uuid.New(), d.admin, d.shoes, utc("2026-07-01T08:00:00Z"))
 	starter, clean := uuid.New(), uuid.New()
 	exec(`INSERT INTO item_sets (id, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Clean', now(), now(), $2, $2)`, clean, d.admin)
@@ -279,15 +286,18 @@ func TestPostgresManager(t *testing.T) {
 	if f.Items != 5 || f.EstimatedCents != 4*200+5000 || f.Unpriced != 0 || len(f.Lines) != 2 {
 		t.Fatalf("forecast = %+v", f)
 	}
-	if l := f.Lines[0]; l.CatalogueItemID != d.gloves || l.Quantity != 4 || l.Overdue != 4 || l.Employees != 1 || *l.UnitPriceCents != 200 {
+	if l := f.Lines[0]; l.CatalogueItemID != d.gloves || l.Quantity != 4 || l.Overdue != 4 || l.Employees != 1 || *l.AccountingPriceCents != 200 {
 		t.Errorf("gloves line = %+v", l)
 	}
 	if l := f.Lines[1]; l.CatalogueItemID != d.shoes || l.Overdue != 0 || *l.EstimatedCents != 5000 {
 		t.Errorf("shoes line = %+v", l)
 	}
 
-	if p := o.PriceChanges; len(p) != 1 || p[0].ItemName != "Safety shoes" || *p[0].BeforeCents != 4000 || *p[0].AfterCents != 5000 ||
-		*p[0].BeforeServiceMonths != 12 || *p[0].AfterServiceMonths != 18 || *p[0].ByName != "Admin" {
+	if p := o.PriceChanges; len(p) != 2 ||
+		p[0].BeforePurchaseCents != nil || *p[0].AfterPurchaseCents != 3900 || *p[0].BeforeAccountingCents != 5000 || *p[0].AfterAccountingCents != 5000 ||
+		p[1].ItemName != "Safety shoes" || *p[1].BeforeAccountingCents != 4000 || *p[1].AfterAccountingCents != 5000 ||
+		p[1].BeforePurchaseCents != nil || p[1].AfterPurchaseCents != nil ||
+		*p[1].BeforeServiceMonths != 12 || *p[1].AfterServiceMonths != 18 || *p[1].ByName != "Admin" {
 		t.Errorf("price changes = %+v", p)
 	}
 
@@ -328,7 +338,7 @@ func TestPostgresEmployee(t *testing.T) {
 				prepared_by_user_id, prepared_by_name, updated_at, receipt_text_version)
 			VALUES ($1, $2, 'Ona', 'X', 'ORDERED', $3, $4, 'Someone', $3, '2026-09-v2')`, id, emp, utc(orderedAt), by)
 		exec(`INSERT INTO order_lines (id, order_id, line_no, catalogue_item_id, item_name, item_details, size_group, size, quantity,
-				unit_price_cents, currency, service_period_months)
+				accounting_price_cents, currency, service_period_months)
 			VALUES ($1, $2, 1, $3, 'Helmet', '', 'NONE', NULL, $4, $5, 'EUR', 24)`, uuid.New(), id, d.draft, qty, cents)
 		return id
 	}

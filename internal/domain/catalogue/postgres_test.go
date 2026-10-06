@@ -42,17 +42,21 @@ func TestPostgresCatalogue(t *testing.T) {
 	svc := NewService(NewPostgresRepository(pool))
 	ctx := context.Background()
 
-	p := Params{Name: "Work trousers", SizeGroup: size.GroupClothing, UnitPriceCents: i64(2500), ServicePeriodMonths: ip(12), Active: true, DisplayRank: ip(3)}
+	p := Params{Name: "Work trousers", SizeGroup: size.GroupClothing, PurchasePriceCents: i64(1900), AccountingPriceCents: i64(2500),
+		ServicePeriodMonths: ip(12), Active: true, DisplayRank: ip(3)}
 	i, err := svc.Create(ctx, p, actor)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if got, _ := svc.Get(ctx, i.ID); *got.PurchasePriceCents != 1900 || *got.AccountingPriceCents != 2500 {
+		t.Errorf("prices read back = %v, %v", got.PurchasePriceCents, got.AccountingPriceCents)
 	}
 	draft, err := svc.Create(ctx, Params{Name: "Helmet", SizeGroup: size.GroupNone, Active: true}, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
 	got, _ := svc.Get(ctx, draft.ID)
-	if got.UnitPriceCents != nil || got.ServicePeriodMonths != nil || got.Orderable() || got.Icon != IconOther {
+	if got.PurchasePriceCents != nil || got.AccountingPriceCents != nil || got.ServicePeriodMonths != nil || got.Orderable() || got.Icon != IconOther {
 		t.Errorf("draft item = %+v", got)
 	}
 	// The pictogram is stored and read back; the database refuses one the app cannot draw.
@@ -72,12 +76,12 @@ func TestPostgresCatalogue(t *testing.T) {
 		t.Error("the database accepted an unknown icon")
 	}
 
-	p.UnitPriceCents = i64(2750)
+	p.PurchasePriceCents, p.AccountingPriceCents = i64(2000), i64(2750)
 	if _, err := svc.Update(ctx, i.ID, p, actor); err != nil {
 		t.Fatal(err)
 	}
 	var before, after string
-	if err := pool.QueryRow(ctx, `SELECT before->>'unit_price_cents', after->>'unit_price_cents' FROM audit_events
+	if err := pool.QueryRow(ctx, `SELECT before->>'accounting_price_cents', after->>'accounting_price_cents' FROM audit_events
 		WHERE entity_id = $1 AND event = $2`, i.ID, EventPriceChanged).Scan(&before, &after); err != nil {
 		t.Fatalf("price event: %v", err)
 	}
@@ -88,10 +92,26 @@ func TestPostgresCatalogue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(h) != 2 || h[0].Event != EventPriceChanged || *h[0].BeforeCents != 2500 || *h[0].UnitPriceCents != 2750 ||
-		*h[0].ServicePeriodMonths != 12 || *h[0].ByName != "Actor" || h[1].Event != EventCreated || *h[1].UnitPriceCents != 2500 ||
-		h[1].BeforeCents != nil || h[0].At.Before(h[1].At) {
+	if len(h) != 2 || h[0].Event != EventPriceChanged || *h[0].BeforeAccountingCents != 2500 || *h[0].AccountingPriceCents != 2750 ||
+		*h[0].BeforePurchaseCents != 1900 || *h[0].PurchasePriceCents != 2000 ||
+		*h[0].ServicePeriodMonths != 12 || *h[0].ByName != "Actor" || h[1].Event != EventCreated || *h[1].AccountingPriceCents != 2500 ||
+		h[1].BeforeAccountingCents != nil || h[0].At.Before(h[1].At) {
 		t.Errorf("price history = %+v", h)
+	}
+
+	// Events written before migration 0021 name the accounting price
+	// unit_price_cents and have no purchase price; the history still reads them.
+	legacy := uuid.New()
+	if _, err := pool.Exec(ctx, `INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after)
+		VALUES ($1, $2, $3, $4, $5, now() + interval '1 minute', '{"unit_price_cents": 2400, "currency": "EUR", "service_period_months": 12}',
+			'{"unit_price_cents": 2500, "currency": "EUR", "service_period_months": 12}')`,
+		legacy, actor, EventPriceChanged, auditEntity, i.ID); err != nil {
+		t.Fatalf("insert legacy event: %v", err)
+	}
+	h, _ = svc.PriceHistory(ctx, i.ID)
+	if len(h) != 3 || *h[0].BeforeAccountingCents != 2400 || *h[0].AccountingPriceCents != 2500 ||
+		h[0].PurchasePriceCents != nil || h[0].BeforePurchaseCents != nil {
+		t.Errorf("legacy event in history = %+v", h)
 	}
 
 	if _, err := svc.SetActive(ctx, draft.ID, false, actor); err != nil {

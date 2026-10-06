@@ -2,7 +2,9 @@ package order
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +35,11 @@ func TestReceiptIsSnapshotOnlyAndHashStable(t *testing.T) {
 	h := DocumentHash(r)
 	if len(h) != 64 || DocumentHash(ReceiptOf(o)) != h {
 		t.Errorf("hash %q not stable", h)
+	}
+	// The record shows the accounting price, never the purchase price, under
+	// its original key: renaming a key would change every stored record's hash.
+	if b, _ := json.Marshal(r); !strings.Contains(string(b), `"unit_price_cents":4999`) || strings.Contains(string(b), "purchase") {
+		t.Errorf("receipt JSON = %s", b)
 	}
 	o.Lines[1].Quantity = 3
 	if DocumentHash(ReceiptOf(o)) == h {

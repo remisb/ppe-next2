@@ -61,7 +61,7 @@ func TestCheckSize(t *testing.T) {
 }
 
 func TestTotalsAndRecordNumber(t *testing.T) {
-	o := Order{RecordSeq: 42, Lines: []Line{{Quantity: 2, UnitPriceCents: 1250}, {Quantity: 1, UnitPriceCents: 499}}}
+	o := Order{RecordSeq: 42, Lines: []Line{{Quantity: 2, AccountingPriceCents: 1250}, {Quantity: 1, AccountingPriceCents: 499}}}
 	if o.TotalCents() != 2999 {
 		t.Errorf("total = %d", o.TotalCents())
 	}

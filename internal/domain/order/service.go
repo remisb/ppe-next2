@@ -95,24 +95,25 @@ func (s *Service) MarkAsOrdered(ctx context.Context, p MarkAsOrderedParams, acto
 					name = l.CatalogueItemID.String()
 				}
 				return Order{}, audit.Event{}, fmt.Errorf("%w: %s", ErrItemUnavailable, name)
-			case item.UnitPriceCents == nil || item.ServicePeriodMonths == nil:
+			case item.AccountingPriceCents == nil || item.ServicePeriodMonths == nil:
 				return Order{}, audit.Event{}, fmt.Errorf("%w: %s", ErrPriceMissing, item.Name)
 			}
 			if err := CheckSize(i, item.SizeGroup, l.Size); err != nil {
 				return Order{}, audit.Event{}, err
 			}
 			o.Lines = append(o.Lines, Line{
-				ID:                  s.newID(),
-				LineNo:              i + 1,
-				CatalogueItemID:     item.ID,
-				ItemName:            item.Name,
-				ItemDetails:         item.Details,
-				SizeGroup:           item.SizeGroup,
-				Size:                l.Size,
-				Quantity:            l.Quantity,
-				UnitPriceCents:      *item.UnitPriceCents,
-				Currency:            item.Currency,
-				ServicePeriodMonths: *item.ServicePeriodMonths,
+				ID:                   s.newID(),
+				LineNo:               i + 1,
+				CatalogueItemID:      item.ID,
+				ItemName:             item.Name,
+				ItemDetails:          item.Details,
+				SizeGroup:            item.SizeGroup,
+				Size:                 l.Size,
+				Quantity:             l.Quantity,
+				PurchasePriceCents:   item.PurchasePriceCents,
+				AccountingPriceCents: *item.AccountingPriceCents,
+				Currency:             item.Currency,
+				ServicePeriodMonths:  *item.ServicePeriodMonths,
 			})
 		}
 		ev, err := audit.New(s.newID(), &actor, EventOrdered, auditEntity, o.ID, now, nil, orderedSummary{

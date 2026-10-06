@@ -40,12 +40,12 @@ describe('formatWhatsApp', () => {
       prepared_by_name: 'Admin', given_at: null, given_by_user_id: null, given_by_name: null, confirmation_method: null,
       updated_at: '', receipt_text_version: '2026-09-v2', total_cents: 4999,
       lines: [{ id: 'l', line_no: 1, catalogue_item_id: 'i', item_name: 'Safety shoes', item_details: '', size_group: 'SHOES',
-        size: '40', quantity: 1, unit_price_cents: 4999, currency: 'EUR', service_period_months: 12 }],
+        size: '40', quantity: 1, purchase_price_cents: 3800, accounting_price_cents: 4999, currency: 'EUR', service_period_months: 12 }],
     }
     const text = formatWhatsApp(messageFromOrder(o))
     expect(text).toContain('Workwear order WE-000001')
     expect(text).toContain('size 40')
-    expect(text).not.toMatch(/€|49\.99|ORDERED|GIVEN|sent|delivered/i)
+    expect(text).not.toMatch(/€|49\.99|38\.00|ORDERED|GIVEN|sent|delivered/i)
   })
 })
 
@@ -54,7 +54,7 @@ describe('messages', () => {
     const o: WorkingOrder = {
       employee: { id: 'e', first_name: 'Ona', last_name: 'K', full_name: 'Ona K', code: 'X', height_cm: null, clothing_size: null, shoe_size: null },
       lines: [{ catalogueItemId: 'i', itemName: 'Helmet', itemDetails: '', sizeGroup: 'NONE', size: null, sizeSource: 'none',
-        quantity: 2, unitPriceCents: 100, servicePeriodMonths: 12, priceMissing: false, unavailable: false }],
+        quantity: 2, accountingPriceCents: 100, servicePeriodMonths: 12, priceMissing: false, unavailable: false }],
     }
     const m = messageFromWorkingOrder(o, 'Admin', new Date(2026, 8, 4))
     expect(m).toMatchObject({ employeeName: 'Ona K', employeeCode: 'X', date: '2026-09-04' })

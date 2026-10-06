@@ -95,9 +95,9 @@ export const dashboard: DashboardText = {
   itemsTag: 'Prekės',
   itemsUnpriced: (n: number) =>
     plural(n, {
-      one: '# prekė be kainos ar naudojimo laikotarpio',
-      few: '# prekės be kainos ar naudojimo laikotarpio',
-      other: '# prekių be kainos ar naudojimo laikotarpio',
+      one: '# prekė be apskaitos kainos ar naudojimo laikotarpio',
+      few: '# prekės be apskaitos kainos ar naudojimo laikotarpio',
+      other: '# prekių be apskaitos kainos ar naudojimo laikotarpio',
     }),
   markAsOrderedRefuses: '„Pažymėti kaip užsakytą“ jų nepriima',
   fix: 'Taisyti',
@@ -112,7 +112,7 @@ export const dashboard: DashboardText = {
   itemSets: 'Prekių rinkiniai',
   users: 'Naudotojai',
   missingASize: (n: number) => `be dydžio: ${n}`,
-  withoutPriceOrPeriod: (n: number) => `be kainos ar naudojimo laikotarpio: ${n}`,
+  withoutPriceOrPeriod: (n: number) => `be apskaitos kainos ar naudojimo laikotarpio: ${n}`,
   onlyOneAdmin: 'tik vienas administratorius',
 
   managerIntro: 'Prekės, kainos ir ką reikės pirkti.',
@@ -162,7 +162,7 @@ export const dashboard: DashboardText = {
     }),
   item: 'Prekė',
   quantity: 'Kiekis',
-  unitPrice: 'Vieneto kaina',
+  accountingPrice: 'Apskaitos kaina',
   estimated: 'Numatoma suma',
   noPrice: 'Be kainos',
   moreItems: (n: number) =>
@@ -176,14 +176,17 @@ export const dashboard: DashboardText = {
   nothingOrdered: 'Per šį laikotarpį nieko neužsakyta.',
   priceChanges: 'Kainų pokyčiai',
   priceChangesDescription:
-    'Per pastaruosius 12 mėnesių pakeistos katalogo kainos ir naudojimo laikotarpiai, naujausi pirmiausia. Esamų užsakymų kainos nesikeičia.',
+    'Per pastaruosius 12 mėnesių pakeistos katalogo kainos ir naudojimo laikotarpiai, naujausi pirmiausia; dešinėje – apskaitos kaina. Esamų užsakymų kainos nesikeičia.',
   noPriceChanges: 'Per šį laikotarpį kainos nesikeitė.',
   servicePeriodChange: (before: string, after: string) => `naudojimo laikotarpis ${before} → ${after}`,
+  /** The first purchase price an item gets. */
+  purchasePrice: (price: string) => `pirkimo kaina ${price}`,
+  purchasePriceChange: (before: string, after: string) => `pirkimo kaina ${before} → ${after}`,
   readiness: 'Katalogas ir prekių rinkiniai',
   readinessDescription: (active: number, inactive: number) =>
-    `${plural(active, { one: '# aktyvi prekė', few: '# aktyvios prekės', other: '# aktyvių prekių' })}, neaktyvių – ${inactive}. Prekių be kainos ar naudojimo laikotarpio užsakyti negalima; pritaikius rinkinį su tokiomis arba neaktyviomis prekėmis, jų eilutės pažymimos.`,
-  withoutPriceOrPeriodTitle: 'Be kainos ar naudojimo laikotarpio',
-  everyItemPriced: 'Visos aktyvios prekės turi kainą ir naudojimo laikotarpį.',
+    `${plural(active, { one: '# aktyvi prekė', few: '# aktyvios prekės', other: '# aktyvių prekių' })}, neaktyvių – ${inactive}. Prekių be apskaitos kainos ar naudojimo laikotarpio užsakyti negalima; pritaikius rinkinį su tokiomis arba neaktyviomis prekėmis, jų eilutės pažymimos.`,
+  withoutPriceOrPeriodTitle: 'Be apskaitos kainos ar naudojimo laikotarpio',
+  everyItemPriced: 'Visos aktyvios prekės turi apskaitos kainą ir naudojimo laikotarpį.',
   setsWithFlaggedLines: 'Rinkiniai su pažymėtomis eilutėmis',
   everySetClean: 'Visi aktyvūs rinkiniai pritaikomi be pastabų.',
   inactiveCount: (n: number) => `neaktyvių: ${n}`,

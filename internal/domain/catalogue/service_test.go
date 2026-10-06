@@ -66,9 +66,11 @@ func (f *fakeRepo) PriceHistory(_ context.Context, id uuid.UUID) ([]PriceEntry, 
 		}
 		var before, after priceSnapshot
 		json.Unmarshal(ev.After, &after)
-		e := PriceEntry{At: ev.OccurredAt, Event: ev.Event, UnitPriceCents: after.UnitPriceCents, ServicePeriodMonths: after.ServicePeriodMonths}
+		e := PriceEntry{At: ev.OccurredAt, Event: ev.Event, PurchasePriceCents: after.PurchasePriceCents,
+			AccountingPriceCents: after.AccountingPriceCents, ServicePeriodMonths: after.ServicePeriodMonths}
 		if len(ev.Before) > 0 && json.Unmarshal(ev.Before, &before) == nil {
-			e.BeforeCents, e.BeforeServiceMonths = before.UnitPriceCents, before.ServicePeriodMonths
+			e.BeforePurchaseCents, e.BeforeAccountingCents = before.PurchasePriceCents, before.AccountingPriceCents
+			e.BeforeServiceMonths = before.ServicePeriodMonths
 		}
 		out = append(out, e)
 	}
@@ -134,7 +136,7 @@ func newTestService() (*Service, *fakeRepo) {
 func TestCreate(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	i, err := svc.Create(ctx, Params{Name: "Safety shoes", SizeGroup: size.GroupShoes, UnitPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, testActor)
+	i, err := svc.Create(ctx, Params{Name: "Safety shoes", SizeGroup: size.GroupShoes, AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, testActor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +173,7 @@ func TestIcon(t *testing.T) {
 func TestPriceChangeAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	p := Params{Name: "Work jacket", SizeGroup: size.GroupClothing, UnitPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
+	p := Params{Name: "Work jacket", SizeGroup: size.GroupClothing, AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
 	i, _ := svc.Create(ctx, p, testActor)
 	repo.events = nil
 
@@ -183,13 +185,13 @@ func TestPriceChangeAudited(t *testing.T) {
 		t.Fatalf("details change recorded %+v", repo.events)
 	}
 
-	p.UnitPriceCents = i64(3500)
+	p.AccountingPriceCents = i64(3500)
 	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 || repo.events[0].Event != EventPriceChanged ||
-		!strings.Contains(string(repo.events[0].Before), `"unit_price_cents":3000`) ||
-		!strings.Contains(string(repo.events[0].After), `"unit_price_cents":3500`) {
+		!strings.Contains(string(repo.events[0].Before), `"accounting_price_cents":3000`) ||
+		!strings.Contains(string(repo.events[0].After), `"accounting_price_cents":3500`) {
 		t.Fatalf("events = %+v", repo.events)
 	}
 
@@ -197,6 +199,16 @@ func TestPriceChangeAudited(t *testing.T) {
 	svc.Update(ctx, i.ID, p, testActor)
 	if len(repo.events) != 2 || repo.events[1].Event != EventPriceChanged {
 		t.Errorf("service period change not recorded: %+v", repo.events)
+	}
+
+	// The purchase price is a price too: setting it alone records a change.
+	p.PurchasePriceCents = i64(2100)
+	svc.Update(ctx, i.ID, p, testActor)
+	if len(repo.events) != 3 || repo.events[2].Event != EventPriceChanged ||
+		!strings.Contains(string(repo.events[2].Before), `"purchase_price_cents":null`) ||
+		!strings.Contains(string(repo.events[2].After), `"purchase_price_cents":2100`) ||
+		!strings.Contains(string(repo.events[2].After), `"accounting_price_cents":3500`) {
+		t.Errorf("purchase price change: %+v", repo.events)
 	}
 }
 
@@ -256,9 +268,11 @@ func TestDelete(t *testing.T) {
 func TestPriceHistory(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	p := Params{Name: "Gloves", SizeGroup: size.GroupNone, UnitPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
+	p := Params{Name: "Gloves", SizeGroup: size.GroupNone, AccountingPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
 	i, _ := svc.Create(ctx, p, testActor)
-	p.UnitPriceCents = i64(250)
+	p.AccountingPriceCents = i64(250)
+	svc.Update(ctx, i.ID, p, testActor)
+	p.PurchasePriceCents = i64(180)
 	svc.Update(ctx, i.ID, p, testActor)
 	p.Details = "Nitrile" // not a price change
 	svc.Update(ctx, i.ID, p, testActor)
@@ -267,8 +281,10 @@ func TestPriceHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(h) != 2 || h[0].Event != EventPriceChanged || *h[0].UnitPriceCents != 250 || *h[0].BeforeCents != 200 ||
-		h[1].Event != EventCreated || *h[1].UnitPriceCents != 200 || h[1].BeforeCents != nil {
+	if len(h) != 3 || h[0].Event != EventPriceChanged || *h[0].PurchasePriceCents != 180 || h[0].BeforePurchaseCents != nil ||
+		*h[0].AccountingPriceCents != 250 || *h[0].BeforeAccountingCents != 250 ||
+		h[1].Event != EventPriceChanged || *h[1].AccountingPriceCents != 250 || *h[1].BeforeAccountingCents != 200 ||
+		h[2].Event != EventCreated || *h[2].AccountingPriceCents != 200 || h[2].BeforeAccountingCents != nil {
 		t.Errorf("history = %+v", h)
 	}
 	if _, err := svc.PriceHistory(ctx, uuid.New()); !errors.Is(err, ErrNotFound) {

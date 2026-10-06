@@ -59,10 +59,10 @@ func newFixture() fixture {
 		set: uuid.New(),
 	}
 	item := func(id uuid.UUID, name string, g size.Group) ItemView {
-		return ItemView{ID: id, Name: name, SizeGroup: g, UnitPriceCents: i64(1000), Currency: "EUR", ServicePeriodMonths: ip(12), Active: true}
+		return ItemView{ID: id, Name: name, SizeGroup: g, AccountingPriceCents: i64(1000), Currency: "EUR", ServicePeriodMonths: ip(12), Active: true}
 	}
 	draft := item(f.draft, "Helmet", size.GroupNone)
-	draft.UnitPriceCents = nil
+	draft.AccountingPriceCents = nil
 	retired := item(f.retired, "Old vest", size.GroupClothing)
 	retired.Active = false
 	f.svc = NewService(nil, Readers{

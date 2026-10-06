@@ -16,12 +16,13 @@ func TestParamsValidate(t *testing.T) {
 		p    Params
 		want error
 	}{
-		{"full", Params{Name: "Safety shoes", SizeGroup: "shoes", UnitPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, nil},
+		{"full", Params{Name: "Safety shoes", SizeGroup: "shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, nil},
 		{"price not yet set", Params{Name: "Helmet", SizeGroup: size.GroupNone}, nil},
-		{"free item", Params{Name: "Earplugs", SizeGroup: size.GroupNone, UnitPriceCents: i64(0)}, nil},
+		{"free item", Params{Name: "Earplugs", SizeGroup: size.GroupNone, AccountingPriceCents: i64(0)}, nil},
 		{"no name", Params{SizeGroup: size.GroupNone}, ErrInvalid},
 		{"bad group", Params{Name: "Gloves", SizeGroup: "GLOVES"}, ErrInvalid},
-		{"negative price", Params{Name: "X", SizeGroup: size.GroupNone, UnitPriceCents: i64(-1)}, ErrInvalid},
+		{"negative price", Params{Name: "X", SizeGroup: size.GroupNone, AccountingPriceCents: i64(-1)}, ErrInvalid},
+		{"negative purchase price", Params{Name: "X", SizeGroup: size.GroupNone, PurchasePriceCents: i64(-1)}, ErrInvalid},
 		{"zero period", Params{Name: "X", SizeGroup: size.GroupNone, ServicePeriodMonths: ip(0)}, ErrInvalid},
 		{"negative rank", Params{Name: "X", SizeGroup: size.GroupNone, DisplayRank: ip(-1)}, ErrInvalid},
 	}
@@ -42,13 +43,13 @@ func TestDefaultsAndOrderable(t *testing.T) {
 	if p.Name != "X" || p.SizeGroup != size.GroupClothing || *p.DisplayRank != DefaultDisplayRank {
 		t.Errorf("normalized = %+v", p)
 	}
-	item := Item{Active: true, UnitPriceCents: i64(100), ServicePeriodMonths: ip(6)}
+	item := Item{Active: true, AccountingPriceCents: i64(100), ServicePeriodMonths: ip(6)}
 	if !item.Orderable() {
 		t.Error("complete active item should be orderable")
 	}
 	for name, mutate := range map[string]func(*Item){
 		"inactive":  func(i *Item) { i.Active = false },
-		"no price":  func(i *Item) { i.UnitPriceCents = nil },
+		"no price":  func(i *Item) { i.AccountingPriceCents = nil },
 		"no period": func(i *Item) { i.ServicePeriodMonths = nil },
 	} {
 		it := item
