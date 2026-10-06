@@ -26,10 +26,13 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
   const td = 'border-b border-border px-2 py-1.5 align-top whitespace-normal print:border-black/40 stacked:border-b-0'
 
   return (
-    <article className="receipt mx-auto max-w-4xl rounded-lg border border-border bg-card p-4 text-card-foreground sm:p-6 print:max-w-none print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
+    // On paper it is never narrower than A4's printable width (index.css), so a
+    // phone that prints its narrow layout scaled to the page prints it at the
+    // same size as a desktop; every print style is fixed, never a breakpoint's.
+    <article className="receipt mx-auto max-w-4xl rounded-lg border border-border bg-card p-4 text-card-foreground sm:p-6 print:max-w-none print:min-w-[179mm] print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold sm:text-xl">Items Given Record / Акт выдачи</h1>
+          <h1 className="text-lg font-semibold">Items Given Record / Акт выдачи</h1>
           <p className="text-sm text-muted-foreground print:text-black">Record / Номер: {r.record_number}</p>
         </div>
         <Badge variant={given ? 'default' : 'secondary'} className="print:hidden">
@@ -37,7 +40,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         </Badge>
       </header>
 
-      <dl className="mb-6 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+      <dl className="mb-6 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 print:grid-cols-2">
         <Info label="Employee / Работник">
           {r.employee_first_name} {r.employee_last_name}
           {r.employee_code ? ` (${r.employee_code})` : ''}
@@ -115,7 +118,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
       </div>
       </div>
 
-      <p className="mt-6 break-all text-[10px] text-muted-foreground print:text-black/60">
+      <p className="mt-6 break-all text-[0.625rem] text-muted-foreground print:text-black/60">
         Document {r.text_version} · SHA-256 {record.document_hash}
       </p>
     </article>

@@ -367,11 +367,21 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-/* Print Record: A4, black on white, app navigation and buttons hidden via print:hidden. */
+/*
+ * Print Record: A4, black on white, app navigation and buttons hidden via
+ * print:hidden. The root size is fixed at 11pt (rem-sized text and spacing
+ * follow it: body text 9.6pt, labels 8.25pt), the same from a phone, a tablet
+ * or a desktop, and no browser may enlarge text on its own.
+ */
 @media print {
   @page {
     size: A4;
     margin: 15mm;
+  }
+  html {
+    font-size: 11pt;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
   html,
   body {

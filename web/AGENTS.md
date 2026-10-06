@@ -108,7 +108,10 @@ The workwear app is the reference.
   need more than 48rem side by side (Orders, Item Catalogue) adds `stackBelow="lg"` to
   stack below 60rem instead; measure it beside the `md` rail. Restyle cards with the
   `stacked:` variant, a screen-only container query: never `max-md:`, which also matches
-  an A4 print and would print the receipt as cards. Never render a list twice (a table
+  an A4 print and would print the receipt as cards. The printed Items Given Record is
+  the same from a phone, a tablet or a desktop: every style that differs by breakpoint
+  (`sm:`, `md:`) has a `print:` value, the print root size is fixed in `index.css`, and the
+  record keeps A4's printable width on paper. Never render a list twice (a table
   for desktop plus cards for phones). Lists people scan to find a record (Orders,
   Employees, Item Catalogue, Users) use `stack="list"`: stacked, they are one bordered list
   of short rows, a title line and a facts line (a stacked row may lay its cells out on a
