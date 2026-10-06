@@ -46,8 +46,9 @@ UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK t
 `given_*` columns to the status; a catalogue item's accounting price and service period are
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
-but shown on no order or record; the record's `unit_price_cents` key is the accounting price
-and never changes, because it is part of the document hash. A manager may
+but shown on no order or record. The app labels the accounting price "Price"; the record's
+`unit_price_cents` key holds it and never changes, because it is part of the document hash.
+A manager may
 soft-delete an order (`DELETE /api/v1/orders/{id}`, manager role only, migration 0015), so
 every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
 dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests

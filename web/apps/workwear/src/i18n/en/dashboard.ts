@@ -91,7 +91,7 @@ export const dashboard = {
   inEmployees: 'in Employees',
   itemsTag: 'Items',
   itemsUnpriced: (n: number) =>
-    plural(n, { one: '# item without an accounting price or service period', other: '# items without an accounting price or service period' }),
+    plural(n, { one: '# item without a price or service period', other: '# items without a price or service period' }),
   markAsOrderedRefuses: 'Mark as Ordered refuses them',
   fix: 'Fix',
   inCatalogue: 'in the Item Catalogue',
@@ -105,7 +105,7 @@ export const dashboard = {
   itemSets: 'Item sets',
   users: 'Users',
   missingASize: (n: number) => `${n} missing a size`,
-  withoutPriceOrPeriod: (n: number) => `${n} without an accounting price or service period`,
+  withoutPriceOrPeriod: (n: number) => `${n} without a price or service period`,
   onlyOneAdmin: 'only one administrator',
 
   // Manager Dashboard (routes/manager-dashboard.tsx).
@@ -139,7 +139,7 @@ export const dashboard = {
   forecastEmpty: (days: number) => `Nothing is due for replacement in the next ${days} days.`,
   item: 'Item',
   quantity: 'Quantity',
-  accountingPrice: 'Accounting price',
+  accountingPrice: 'Price',
   estimated: 'Estimated',
   noPrice: 'No price',
   moreItems: (n: number) =>
@@ -148,7 +148,7 @@ export const dashboard = {
   spendByItemDescription: 'Value ordered over the last 12 months, at the prices ordered.',
   nothingOrdered: 'Nothing was ordered in this period.',
   priceChanges: 'Price changes',
-  priceChangesDescription: 'Catalogue prices and service periods changed in the last 12 months, newest first; the figure on the right is the accounting price. Existing orders keep their prices.',
+  priceChangesDescription: 'Catalogue prices and service periods changed in the last 12 months, newest first. Existing orders keep their prices.',
   noPriceChanges: 'No prices changed in this period.',
   servicePeriodChange: (before: string, after: string) => `service period ${before} → ${after}`,
   /** The first purchase price an item gets. */
@@ -156,9 +156,9 @@ export const dashboard = {
   purchasePriceChange: (before: string, after: string) => `purchase price ${before} → ${after}`,
   readiness: 'Catalogue and item sets',
   readinessDescription: (active: number, inactive: number) =>
-    `${plural(active, { one: '# active item', other: '# active items' })}, ${inactive} inactive. Items without an accounting price or service period cannot be ordered; item sets holding them, or inactive items, get flagged lines when applied.`,
-  withoutPriceOrPeriodTitle: 'Without an accounting price or service period',
-  everyItemPriced: 'Every active item has an accounting price and service period.',
+    `${plural(active, { one: '# active item', other: '# active items' })}, ${inactive} inactive. Items without a price or service period cannot be ordered; item sets holding them, or inactive items, get flagged lines when applied.`,
+  withoutPriceOrPeriodTitle: 'Without a price or service period',
+  everyItemPriced: 'Every active item has a price and service period.',
   setsWithFlaggedLines: 'Item sets with flagged lines',
   everySetClean: 'Every active item set applies cleanly.',
   inactiveCount: (n: number) => `${n} inactive`,

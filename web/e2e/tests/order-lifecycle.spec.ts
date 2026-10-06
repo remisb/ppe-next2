@@ -78,7 +78,7 @@ async function addCatalogueItem(item: { name: string; details: string; group: st
   await dialog.getByLabel('Item name').fill(item.name)
   await dialog.getByLabel('Manufacturer / model').fill(item.details)
   await dialog.getByLabel('Size group').selectOption(item.group)
-  if (item.price) await dialog.getByLabel('Accounting price (€)').fill(item.price)
+  if (item.price) await dialog.getByLabel('Price (€)', { exact: true }).fill(item.price)
   if (item.months) await dialog.getByLabel('Service period (months)').fill(item.months)
   await dialog.getByLabel('Display order').fill(item.rank)
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -330,7 +330,7 @@ test('missing size: choose it and Save as Employee Default', async () => {
 
 test('missing catalogue price blocks Mark as Ordered', async () => {
   await addItem('helmet', /^Safety helmet/)
-  await expect(page.getByRole('alert').filter({ hasText: 'No accounting price or service period' })).toBeVisible()
+  await expect(page.getByRole('alert').filter({ hasText: 'No price or service period' })).toBeVisible()
   await expect(reviewButton()).toBeDisabled()
   await page.getByRole('button', { name: 'Remove Safety helmet' }).click()
   await expect(reviewButton()).toBeEnabled()
@@ -540,7 +540,7 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByRole('dialog').getByRole('radio', { name: 'Shoes' })).toBeChecked()
   // The purchase price is optional; the record never shows it.
   await page.getByRole('dialog').getByLabel('Purchase price (€)').fill('41.00')
-  await page.getByRole('dialog').getByLabel('Accounting price (€)').fill('59.99')
+  await page.getByRole('dialog').getByLabel('Price (€)', { exact: true }).fill('59.99')
   await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
 
@@ -598,7 +598,7 @@ test('Item page: price history and the orders that hold the item', async () => {
   await page.getByRole('link', { name: 'Safety shoes' }).click()
   await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
   // The change made earlier, newest first, then the price it was added at.
-  // The accounting price is the figure on the right; a first purchase price follows the date.
+  // The price is the figure on the right; a first purchase price follows the date.
   const steps = page.getByRole('list', { name: 'Price history' }).getByRole('listitem')
   await expect(steps).toHaveCount(2)
   await expect(steps.first()).toContainText('Prices changed')
@@ -628,10 +628,10 @@ test('Dashboard: the figures follow the orders', async () => {
   await expect(page.getByRole('region', { name: 'Most given items' }).getByRole('listitem').filter({ hasText: 'Protective gloves' })).toContainText('10 · €25.00')
   // Needs you: the unpriced helmet stops ordering, with the way to fix it.
   const needs = page.getByRole('list', { name: 'Needs you' })
-  await expect(needs.getByRole('listitem').filter({ hasText: '1 item without an accounting price or service period' })).toBeVisible()
+  await expect(needs.getByRole('listitem').filter({ hasText: '1 item without a price or service period' })).toBeVisible()
   // Safety helmet has no price, which Mark as Ordered refuses; the row leads to the catalogue.
   const catalogue = page.getByRole('link', { name: /Catalogue items/ })
-  await expect(catalogue).toContainText('1 without an accounting price or service period')
+  await expect(catalogue).toContainText('1 without a price or service period')
   await catalogue.click()
   await expect(page.getByRole('heading', { name: 'Item Catalogue' })).toBeVisible()
   // The Manager Dashboard is the managers' alone: an administrator gets their own.
@@ -1111,7 +1111,7 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   const priceChange = other.getByRole('listitem').filter({ hasText: 'Safety shoes' }).filter({ hasText: '→' })
   await expect(priceChange).toContainText('€49.99 → €59.99')
   await expect(priceChange).toContainText('+20%')
-  await expect(other.getByRole('region', { name: 'Without an accounting price or service period' })).toContainText('Safety helmet')
+  await expect(other.getByRole('region', { name: 'Without a price or service period' })).toContainText('Safety helmet')
   await expect(other.getByText('Size 42: 1 employee')).toBeAttached()
   // A figure with a list behind it opens that list: On order opens Orders on its Awaiting tab.
   await other.getByRole('list', { name: 'Key figures' }).getByRole('button', { name: /^On order/ }).click()

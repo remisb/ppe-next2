@@ -101,7 +101,7 @@ export const order: OrderText = {
   item: 'Предмет',
   size: 'Размер',
   quantity: 'Количество',
-  accountingPrice: 'Учётная цена',
+  accountingPrice: 'Цена',
   servicePeriod: 'Срок службы',
   remove: 'Удалить',
   totalValue: 'Общая сумма',
@@ -122,7 +122,7 @@ export const order: OrderText = {
   itemUnavailable: 'Этот предмет больше недоступен. Удалите его из заказа.',
   quantityInvalid: 'Количество должно быть целым числом не меньше 1.',
   selectSize: 'Выберите размер.',
-  priceMissing: 'В каталоге предметов не указаны учётная цена или срок службы. Уполномоченный пользователь должен их заполнить.',
+  priceMissing: 'В каталоге предметов не указаны цена или срок службы. Уполномоченный пользователь должен их заполнить.',
 
   // The employee's saved sizes
   heightCm: (cm: number) => `${cm} см`,

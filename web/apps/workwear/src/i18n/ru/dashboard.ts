@@ -105,10 +105,10 @@ export const dashboard: DashboardText = {
   itemsTag: 'Предметы',
   itemsUnpriced: (n: number) =>
     plural(n, {
-      one: '# предмет без учётной цены или срока службы',
-      few: '# предмета без учётной цены или срока службы',
-      many: '# предметов без учётной цены или срока службы',
-      other: '# предмета без учётной цены или срока службы',
+      one: '# предмет без цены или срока службы',
+      few: '# предмета без цены или срока службы',
+      many: '# предметов без цены или срока службы',
+      other: '# предмета без цены или срока службы',
     }),
   markAsOrderedRefuses: '«Отметить как заказанный» их не принимает',
   fix: 'Исправить',
@@ -123,7 +123,7 @@ export const dashboard: DashboardText = {
   itemSets: 'Наборы предметов',
   users: 'Пользователи',
   missingASize: (n: number) => `без размера: ${n}`,
-  withoutPriceOrPeriod: (n: number) => `без учётной цены или срока службы: ${n}`,
+  withoutPriceOrPeriod: (n: number) => `без цены или срока службы: ${n}`,
   onlyOneAdmin: 'только один администратор',
 
   managerIntro: 'Предметы, цены и что нужно будет закупить.',
@@ -176,7 +176,7 @@ export const dashboard: DashboardText = {
     }),
   item: 'Предмет',
   quantity: 'Количество',
-  accountingPrice: 'Учётная цена',
+  accountingPrice: 'Цена',
   estimated: 'Оценка',
   noPrice: 'Без цены',
   moreItems: (n: number) =>
@@ -191,7 +191,7 @@ export const dashboard: DashboardText = {
   nothingOrdered: 'За этот период ничего не заказано.',
   priceChanges: 'Изменения цен',
   priceChangesDescription:
-    'Цены и сроки службы в каталоге, изменённые за последние 12 месяцев, сначала новые; справа — учётная цена. Существующие заказы сохраняют свои цены.',
+    'Цены и сроки службы в каталоге, изменённые за последние 12 месяцев, сначала новые. Существующие заказы сохраняют свои цены.',
   noPriceChanges: 'За этот период цены не менялись.',
   servicePeriodChange: (before: string, after: string) => `срок службы ${before} → ${after}`,
   /** The first purchase price an item gets. */
@@ -199,9 +199,9 @@ export const dashboard: DashboardText = {
   purchasePriceChange: (before: string, after: string) => `закупочная цена ${before} → ${after}`,
   readiness: 'Каталог и наборы предметов',
   readinessDescription: (active: number, inactive: number) =>
-    `${plural(active, { one: '# активный предмет', few: '# активных предмета', many: '# активных предметов', other: '# активного предмета' })}, неактивных: ${inactive}. Предметы без учётной цены или срока службы заказать нельзя; при применении наборов с такими или неактивными предметами их строки помечаются.`,
-  withoutPriceOrPeriodTitle: 'Без учётной цены или срока службы',
-  everyItemPriced: 'У всех активных предметов есть учётная цена и срок службы.',
+    `${plural(active, { one: '# активный предмет', few: '# активных предмета', many: '# активных предметов', other: '# активного предмета' })}, неактивных: ${inactive}. Предметы без цены или срока службы заказать нельзя; при применении наборов с такими или неактивными предметами их строки помечаются.`,
+  withoutPriceOrPeriodTitle: 'Без цены или срока службы',
+  everyItemPriced: 'У всех активных предметов есть цена и срок службы.',
   setsWithFlaggedLines: 'Наборы с помеченными строками',
   everySetClean: 'Все активные наборы применяются без замечаний.',
   inactiveCount: (n: number) => `неактивных: ${n}`,

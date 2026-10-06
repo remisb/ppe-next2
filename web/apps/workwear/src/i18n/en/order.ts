@@ -103,7 +103,7 @@ export const order = {
   item: 'Item',
   size: 'Size',
   quantity: 'Quantity',
-  accountingPrice: 'Accounting price',
+  accountingPrice: 'Price',
   servicePeriod: 'Service period',
   remove: 'Remove',
   totalValue: 'Total value',
@@ -125,7 +125,7 @@ export const order = {
   itemUnavailable: 'This item is no longer available. Remove it from the order.',
   quantityInvalid: 'Quantity must be a whole number of at least 1.',
   selectSize: 'Select a size.',
-  priceMissing: 'No accounting price or service period in the Item Catalogue. An authorised user must complete it.',
+  priceMissing: 'No price or service period in the Item Catalogue. An authorised user must complete it.',
 
   // The employee's saved sizes
   heightCm: (cm: number) => `${cm} cm`,

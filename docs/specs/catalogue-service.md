@@ -12,7 +12,7 @@ migration `0004_catalogue_items` (prices from `0021_purchase_price`). Manual §3
 | `details` | Manufacturer / model, free text |
 | `size_group` | `CLOTHING`, `SHOES` or `NONE` |
 | `purchase_price_cents` | **Purchase price**: what the supplier charges. Always optional, never needed to order; ≥ 0. Snapshotted on order lines, shown on no order or record |
-| `accounting_price_cents` | **Accounting price**: what the organisation books; the price orders, records and dashboards show and total. Optional while the item is being set up; ≥ 0. Named `unit_price_cents` before migration `0021` |
+| `accounting_price_cents` | **Accounting price** (labelled **Price** in the app): what the organisation books; the price orders, records and dashboards show and total. Optional while the item is being set up; ≥ 0. Named `unit_price_cents` before migration `0021` |
 | `currency` | Always `EUR`; response only |
 | `service_period_months` | Optional while being set up; ≥ 1 |
 | `active` | Required in request bodies. Inactive items disappear from Add Item but stay in order snapshots |

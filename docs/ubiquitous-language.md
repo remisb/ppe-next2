@@ -199,9 +199,10 @@ Rules for using it:
   is an audit event and shows in an item's **price history** and the Manager Dashboard's
   **Price changes**. Called the unit price before items had two prices.
 - **Code:** `accounting_price_cents` (`unit_price_cents` before migration 0021, and still on
-  the Items Given Record, whose keys are part of its hash). **UI:** Accounting price,
-  Accounting price (€); the Items Given Record and the confirmation page, which the employee
-  reads, say Unit price / Цена.
+  the Items Given Record, whose keys are part of its hash). **UI:** **Price**, Price (€): the
+  app's plain "price" is the accounting price, and the other one is always called Purchase
+  price. The Items Given Record and the confirmation page, which the employee reads, say
+  Unit price / Цена.
 
 ### Service period
 - **Brief:** how many months an item is meant to last after it is given.
@@ -688,7 +689,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Size group | Dydžių grupė | Группа размеров |
 | Clothing / Shoes / No size | Drabužiai / Avalynė / Be dydžio | Одежда / Обувь / Без размера |
 | Purchase price | Pirkimo kaina | Закупочная цена |
-| Accounting price | Apskaitos kaina | Учётная цена |
+| Price (the accounting price) | Kaina | Цена |
 | Service period | Naudojimo laikotarpis | Срок службы |
 | Usage time | Naudojimo trukmė | Срок использования |
 | Items given | Išduotos prekės | Выданные предметы |
@@ -721,7 +722,7 @@ table follows them.
 | product, article, SKU | **item** / **catalogue item** | |
 | cost, cost price, savikaina, supplier price, buy price | **purchase price** | "Cost" says nothing about to whom; *savikaina* is production cost. |
 | sell price, sale price, net / gross price | **accounting price** | Nothing is sold to employees, and net / gross suggest VAT. |
-| unit price, price (alone, on staff screens) | **accounting price** or **purchase price** | An item has two prices. The Items Given Record keeps "Unit price". |
+| unit price, accounting price (in the UI) | **Price**; **Purchase price** for the other one | "Price" alone is the accounting price; the purchase price is never called just "price". The Items Given Record keeps "Unit price". |
 | kit, bundle, template | **Item Set** | |
 | expiry, lifetime, warranty | **service period** | |
 | age, worn for | **usage time** | |
