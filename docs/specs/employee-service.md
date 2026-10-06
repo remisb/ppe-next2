@@ -38,7 +38,7 @@ written before 0012 likewise keep `clothing_size` as a letter string.
 | `GET /api/v1/employees/by-name/{q}` | any authenticated | **filter** (Assigned to search): matches first, last, full name or code, case-insensitive substring, max 50; no match is `200 []` |
 | `POST /api/v1/employees` | any authenticated | body: all entity fields except derived |
 | `PUT /api/v1/employees/{id}` | any authenticated | full replace of the same body |
-| `PUT /api/v1/employees/{id}/sizes` | any authenticated | Edit Sizes / Save as Employee Default: `{height_cm, clothing_size, shoe_size}`, all three replaced |
+| `PUT /api/v1/employees/{id}/sizes` | any authenticated | Edit Sizes / the **Save** button of Create Order's size pop-up (`item-set-service.md`): `{height_cm, clothing_size, shoe_size}`, all three replaced |
 | `DELETE /api/v1/employees/{id}` | admin, manager | soft delete |
 
 ## Audit

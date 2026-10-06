@@ -8,6 +8,8 @@ import type { CatalogueItem, MarkAsOrderedInput, ResolvedEmployee, ResolvedLine,
 
 import { t } from '@/i18n'
 
+import { type ClothingBand, clothingBandValue } from './utils'
+
 /** Where a line's size came from. 'manual' sizes are never silently overwritten. */
 export type SizeSource = 'saved' | 'suggested' | 'manual' | 'none'
 
@@ -157,7 +159,28 @@ export function setManualSize(order: WorkingOrder, catalogueItemId: string, size
 }
 
 /**
- * Save as Employee Default accepted: the employee's default for the group is
+ * Whether a size picked by hand on a line differs from the employee's saved
+ * size for its group, so Create Order asks to save it to the employee profile.
+ * No saved size counts as different; a clothing size in the saved size's band
+ * does not (the picker shows a saved 48 as M, whose pick stores 50). No size,
+ * or a no-size item, never asks.
+ */
+export function differsFromSaved(
+  employee: ResolvedEmployee,
+  group: SizeGroup | '',
+  size: string | null,
+  bands: readonly ClothingBand[],
+): boolean {
+  if (size === null) return false
+  if (group === 'SHOES') return size !== employee.shoe_size
+  if (group === 'CLOTHING') {
+    return employee.clothing_size === null || clothingBandValue(bands, employee.clothing_size) !== clothingBandValue(bands, size)
+  }
+  return false
+}
+
+/**
+ * The size pop-up's Save: the employee's default for the group is
  * now size. The line that prompted it, and every other line of the same group
  * still missing a size, take it as a saved size. Other manual sizes stay.
  */

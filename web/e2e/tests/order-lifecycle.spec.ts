@@ -319,13 +319,28 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await expect(reviewButton()).toBeDisabled()
 })
 
-test('missing size: choose it and Save as Employee Default', async () => {
+const sizeChanged = () => page.getByRole('dialog', { name: 'Different size selected. Save it to employee profile?' })
+
+test('missing size: choose it and Save it to the employee profile', async () => {
   await page.getByLabel('Size of Safety shoes').selectOption('42')
-  await expect(page.getByText('Save as Employee Default?')).toBeVisible()
-  await page.getByRole('button', { name: 'Save as Employee Default' }).click()
-  await expect(page.getByText('Save as Employee Default?')).toBeHidden()
+  await expect(sizeChanged()).toBeVisible()
+  await expect(sizeChanged()).toContainText('Ona Kazlauskienė has no saved shoe size.')
+  await sizeChanged().getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(sizeChanged()).toBeHidden()
   await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toContainText('Shoes 42')
   await expect(reviewButton()).toBeEnabled()
+})
+
+test('a size other than the saved one asks again; Skip size update keeps it on this order only', async () => {
+  await page.getByLabel('Size of Safety shoes').selectOption('43')
+  await expect(sizeChanged()).toContainText('saved shoe size: 42')
+  await sizeChanged().getByRole('button', { name: 'Skip size update' }).click()
+  await expect(sizeChanged()).toBeHidden()
+  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('43')
+  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toContainText('Shoes 42')
+  // Back to the saved size: nothing to ask.
+  await page.getByLabel('Size of Safety shoes').selectOption('42')
+  await expect(sizeChanged()).toBeHidden()
 })
 
 test('missing catalogue price blocks Mark as Ordered', async () => {

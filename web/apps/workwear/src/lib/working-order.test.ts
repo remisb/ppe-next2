@@ -5,6 +5,7 @@ import {
   acceptResolvedSize,
   addLines,
   clearDraft,
+  differsFromSaved,
   draftLineCount,
   applySavedDefault,
   emptyOrder,
@@ -20,6 +21,7 @@ import {
   validate,
   type WorkingOrder,
 } from './working-order'
+import { clothingBands } from './utils'
 
 function line(id: string, over: Partial<ResolvedLine> = {}): ResolvedLine {
   return {
@@ -93,6 +95,39 @@ describe('reassign', () => {
     const { order, conflicts } = reassign(o, jonas, [line('jacket', { size_group: 'CLOTHING', size: '58' })])
     expect(conflicts).toEqual([])
     expect(order.lines[0]!.size).toBe('58')
+  })
+})
+
+describe('differsFromSaved', () => {
+  const bands = clothingBands(
+    [44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66].map((n, i) => ({
+      code: String(n),
+      band: ['S', 'M', 'L', 'XL', '2XL', '3XL'][Math.floor(i / 2)]!,
+      min_cm: null,
+      max_cm: null,
+    })),
+  )
+  const saved = { ...ona, clothing_size: 48, shoe_size: '42' }
+
+  it('asks when the employee has no saved size for the group', () => {
+    expect(differsFromSaved({ ...ona, shoe_size: null }, 'SHOES', '42', bands)).toBe(true)
+    expect(differsFromSaved({ ...ona, clothing_size: null }, 'CLOTHING', '50', bands)).toBe(true)
+  })
+
+  it('asks when the size differs from the saved one', () => {
+    expect(differsFromSaved(saved, 'SHOES', '43', bands)).toBe(true)
+    expect(differsFromSaved(saved, 'CLOTHING', '54', bands)).toBe(true)
+  })
+
+  it('does not ask for the saved size, or another size of its clothing band', () => {
+    expect(differsFromSaved(saved, 'SHOES', '42', bands)).toBe(false)
+    expect(differsFromSaved(saved, 'CLOTHING', '48', bands)).toBe(false)
+    expect(differsFromSaved(saved, 'CLOTHING', '50', bands)).toBe(false)
+  })
+
+  it('does not ask for a cleared size or a no-size item', () => {
+    expect(differsFromSaved({ ...ona, shoe_size: null }, 'SHOES', null, bands)).toBe(false)
+    expect(differsFromSaved(ona, 'NONE', '42', bands)).toBe(false)
   })
 })
 

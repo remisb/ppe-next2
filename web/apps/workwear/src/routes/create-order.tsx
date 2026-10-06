@@ -26,7 +26,7 @@ import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
 import { type Due, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { useLoad } from '@/lib/use-load'
-import { clothingBandValue, clothingBands, cn, formatEuro, formatMonths } from '@/lib/utils'
+import { type ClothingBand, clothingBandValue, clothingBands, clothingSizeLabel, cn, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromWorkingOrder } from '@/lib/whatsapp'
 import {
   type SizeConflict,
@@ -36,6 +36,7 @@ import {
   addLines,
   applySavedDefault,
   clearDraft,
+  differsFromSaved,
   emptyOrder,
   lineFromCatalogue,
   loadDraft,
@@ -224,11 +225,9 @@ export function CreateOrder({
     setConflicts((cs) => cs.filter((c) => c.catalogueItemId !== line.catalogueItemId))
     const emp = order.employee
     const group = line.sizeGroup
-    // Offer Save as Employee Default when the employee has no default for this group.
-    if (emp && size && (group === 'CLOTHING' || group === 'SHOES')) {
-      const saved = group === 'CLOTHING' ? emp.clothing_size : emp.shoe_size
-      setPendingDefault(saved === null ? { catalogueItemId: line.catalogueItemId, group, size } : null)
-    }
+    // A size other than the employee's saved one asks to save it to the profile.
+    const asks = emp && size && (group === 'CLOTHING' || group === 'SHOES') && differsFromSaved(emp, group, size, bands)
+    setPendingDefault(asks ? { catalogueItemId: line.catalogueItemId, group, size } : null)
   }
 
   const saveDefault = (p: PendingDefault) => {
@@ -452,27 +451,14 @@ export function CreateOrder({
         </Alert>
       ) : null}
 
-      {pendingDefault && order.employee ? (
-        <Alert className="mb-4">
-          <AlertTitle>{t.order.saveAsDefaultQuestion}</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-2">
-            <span>
-              {nodes(
-                (pendingDefault.group === 'CLOTHING' ? t.order.noSavedClothing : t.order.noSavedShoe)(
-                  order.employee.full_name,
-                  <strong>{pendingDefault.size}</strong>,
-                ),
-              )}
-            </span>
-            <Button size="sm" onClick={() => saveDefault(pendingDefault)} disabled={busy}>
-              {t.order.saveAsDefault}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setPendingDefault(null)}>
-              {t.order.thisOrderOnly}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <SizeChangedSheet
+        pending={pendingDefault}
+        order={order}
+        bands={bands}
+        busy={busy}
+        onSave={saveDefault}
+        onSkip={() => setPendingDefault(null)}
+      />
 
       {!catalogue.data && !loadError ? (
         <Loading />
@@ -721,6 +707,60 @@ function ReviewSheet({
  * from the server's snapshot, and the next step: the employee confirms receipt
  * by a secure link or on the printed record.
  */
+/**
+ * Asked when a size picked on a line differs from the employee's saved size:
+ * Save writes it to the employee profile, Skip size update (or closing) keeps
+ * it on this order only. The line keeps the size either way.
+ */
+function SizeChangedSheet({
+  pending,
+  order,
+  bands,
+  busy,
+  onSave,
+  onSkip,
+}: {
+  pending: PendingDefault | null
+  order: WorkingOrder
+  bands: readonly ClothingBand[]
+  busy: boolean
+  onSave: (p: PendingDefault) => void
+  onSkip: () => void
+}) {
+  const employee = order.employee
+  const line = pending ? order.lines.find((l) => l.catalogueItemId === pending.catalogueItemId) : undefined
+  const label = (size: string | number) => (pending?.group === 'CLOTHING' ? clothingSizeLabel(bands, size) : String(size))
+  const saved = pending && employee ? (pending.group === 'CLOTHING' ? employee.clothing_size : employee.shoe_size) : null
+  return (
+    <FormSheet
+      open={pending !== null && employee !== null}
+      onClose={onSkip}
+      title={t.order.sizeChangedQuestion}
+      footer={
+        <>
+          <Button variant="outline" onClick={onSkip}>
+            {t.order.skipSizeUpdate}
+          </Button>
+          <Button disabled={busy} onClick={() => pending && onSave(pending)}>
+            {t.order.saveSize}
+          </Button>
+        </>
+      }
+    >
+      {pending && employee ? (
+        <div className="flex flex-col gap-1 text-sm">
+          <p>{nodes(t.order.sizeChangedLine(line?.itemName ?? '', <strong>{label(pending.size)}</strong>))}</p>
+          <p className="text-muted-foreground">
+            {saved === null
+              ? (pending.group === 'CLOTHING' ? t.order.noSavedClothing : t.order.noSavedShoe)(employee.full_name)
+              : nodes((pending.group === 'CLOTHING' ? t.order.savedClothing : t.order.savedShoe)(employee.full_name, label(saved)))}
+          </p>
+        </div>
+      ) : null}
+    </FormSheet>
+  )
+}
+
 function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (to: Route) => void; onNew: () => void }) {
   const { order, link } = placed
   const [confirming, setConfirming] = useState(false)

@@ -65,3 +65,24 @@ group, never guessed from the value.
 
 Clients never send sizes to resolution. The client keeps sizes the user chose by hand and
 compares them with a fresh resolution when Assigned to changes (manual §4.1).
+
+### Changing a size on a Create Order line
+
+When the user picks a shoe or clothing size on a line (the inline picker), the line takes it
+as a hand-picked size. If it differs from the employee's saved size for that group — including
+when the employee has none saved, and when it only repeats the size suggested from height —
+the app shows a pop-up:
+
+> Different size selected. Save it to employee profile?
+
+with two buttons, **Save** and **Skip size update**:
+
+- **Save** saves it as the employee's size for that group (`PUT /api/v1/employees/{id}/sizes`,
+  the other two values unchanged; audited as `employee.sizes_changed`). The line, and every
+  other line of the same group still missing a size, then takes it as a saved size.
+- **Skip size update** closes the pop-up; the size applies to this order only and the employee
+  is not changed.
+
+Picking the employee's saved size, or clearing the size, shows no pop-up. The pop-up is shown
+once per change, so it asks again when the size is changed again. Either way the line keeps the
+size picked, and Mark as Ordered snapshots it.

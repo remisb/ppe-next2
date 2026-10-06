@@ -67,7 +67,7 @@ export function clothingSizeLabel(bands: readonly ClothingBand[], code: string |
  * The picker value for a saved size: its band's. A size that is the band's
  * smaller one still shows as its band, and keeps its number until another band is picked.
  */
-export function clothingBandValue(bands: ClothingBand[], code: string | number | null | undefined): string {
+export function clothingBandValue(bands: readonly ClothingBand[], code: string | number | null | undefined): string {
   if (code === null || code === undefined || code === '') return ''
   const c = String(code)
   return bands.find((b) => b.codes.includes(c))?.value ?? c

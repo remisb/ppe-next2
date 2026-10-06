@@ -150,9 +150,10 @@ Rules for using it:
 
 ### Save as Employee Default
 - **Brief:** keep a size picked by hand on an order as the employee's saved size.
-- **Detail:** offered when a hand-picked size fills a gap in the employee's size defaults.
-  **This order only** leaves the defaults alone.
-- **UI:** **Save as Employee Default**, **This order only**.
+- **Detail:** offered, in a pop-up ("Different size selected. Save it to employee profile?"),
+  whenever a size picked by hand on a line differs from the employee's saved size for that
+  group, or none is saved. **Skip size update** leaves the defaults alone.
+- **UI:** **Save**, **Skip size update**.
 
 ### Preferred language
 - **Brief:** the language an employee reads best: en, lt or ru, or not recorded.
