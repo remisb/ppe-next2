@@ -102,7 +102,8 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             }
           />
           <dl className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-4">
-            <Fact label={t.employees.height}>{e.height_cm ? t.employees.heightCm(e.height_cm) : '—'}</Fact>
+            {/* As in the list: grey when a saved clothing size makes the height unnecessary. */}
+            <Fact label={t.employees.height}>{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</Fact>
             <Fact label={t.employees.clothing}>{missing.clothing ? <MissingBadge /> : clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)}</Fact>
             <Fact label={t.employees.shoes}>{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</Fact>
             <Fact label={t.employees.preferredLanguage}>
