@@ -224,7 +224,7 @@ export const lt: Guide = {
         { p: '**Rolės ir teisės** rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, **Tvarkyti prekių katalogą** ar **Trinti darbuotojus**. Roles naudotojams skiriate skiltyje **Naudotojai**.' },
         {
           ul: [
-            '**Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus, o ištrinti jų negalima.',
+            '**Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus ar aprašymus, o ištrinti jų negalima.',
             '**Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.',
             'Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.',
             '**⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.',

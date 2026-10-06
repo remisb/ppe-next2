@@ -1275,6 +1275,15 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await expect(dialog.getByRole('checkbox', { name: /^Manage roles/ })).toBeDisabled()
   await expect(dialog.getByRole('checkbox', { name: /^Delete orders/ })).not.toBeChecked()
   await dialog.getByRole('button', { name: 'Close' }).last().click()
+  // Manager's permissions change, its name and description (in the reader's language) do not; saving keeps them.
+  await page.getByRole('button', { name: 'Edit Manager' }).click()
+  dialog = page.getByRole('dialog')
+  await expect(dialog.getByLabel('Name')).toBeDisabled()
+  await expect(dialog.getByLabel('Description')).toHaveValue('Manages Item Catalogue prices and Item Sets, plus everything an employee can do.')
+  await expect(dialog.getByLabel('Description')).toBeDisabled()
+  await expect(dialog.getByText('A built-in role keeps its name and description.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden()
 
   // A permission comes with what it needs: Manage users brings See users, which it then keeps ticked.
   await page.getByRole('button', { name: 'Add Role' }).click()

@@ -66,7 +66,7 @@ func TestPostgresBuiltinsMatchCode(t *testing.T) {
 	}
 	for i, b := range builtinRoles {
 		r := list[i]
-		if r.ID != b.id || r.Key == nil || *r.Key != b.key || r.Name != b.name || !slices.Equal(r.Permissions, builtins[b.key]) {
+		if r.ID != b.id || r.Key == nil || *r.Key != b.key || r.Name != b.name || r.Description != b.description || !slices.Equal(r.Permissions, builtins[b.key]) {
 			t.Errorf("built-in %d = %+v, want %s with %v", i, r, b.key, builtins[b.key])
 		}
 		if r.Locked != (b.key == KeyAdmin) || r.CreatedByUserID != nil {
@@ -74,7 +74,7 @@ func TestPostgresBuiltinsMatchCode(t *testing.T) {
 		}
 	}
 	admin := addUser(t, pool, AdminID)
-	if _, err := svc.Update(ctx, EmployeeID, Params{Name: "Employee", Permissions: []string{"dashboard.employee", "orders.delete"}}, admin); err != nil {
+	if _, err := svc.Update(ctx, EmployeeID, Params{Name: "Employee", Description: builtinRoles[2].description, Permissions: []string{"dashboard.employee", "orders.delete"}}, admin); err != nil {
 		t.Fatal(err)
 	}
 	if err := EnsureBuiltins(ctx, pool); err != nil {

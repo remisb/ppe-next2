@@ -149,6 +149,10 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 		if cur.Builtin() && p.Name != cur.Name {
 			return Role{}, nil, fieldError("name", "of a built-in role cannot change")
 		}
+		// The apps show a built-in role's description in the reader's language, from its key.
+		if cur.Builtin() && p.Description != cur.Description {
+			return Role{}, nil, fieldError("description", "of a built-in role cannot change")
+		}
 		if !MayGrant(changed(cur.Permissions, perms), mine) {
 			return Role{}, nil, ErrNotPermitted
 		}

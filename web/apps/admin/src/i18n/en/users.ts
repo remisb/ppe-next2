@@ -17,7 +17,8 @@ export const users = {
   editUserLabel: (name: string) => `Edit ${name}`,
   resetPassword: 'Reset password…',
 
-  // Roles, highest first, with what each grants
+  // The built-in roles, highest first, with what each grants: their names and descriptions never
+  // change, so they are translated here (the English is internal/domain/role/builtin.go's too)
   admin: 'Administrator',
   adminGrants: 'Manages users, plus everything a manager can do.',
   manager: 'Manager',

@@ -209,7 +209,7 @@ func TestCreateAndAudit(t *testing.T) {
 }
 
 func TestBuiltinRules(t *testing.T) {
-	svc, _, admin, _ := newTestService(t)
+	svc, repo, admin, _ := newTestService(t)
 	ctx := context.Background()
 	if _, err := svc.Update(ctx, AdminID, Params{Name: "Administrator"}, admin); !errors.Is(err, ErrBuiltIn) {
 		t.Errorf("change Administrator: %v, want ErrBuiltIn", err)
@@ -220,8 +220,12 @@ func TestBuiltinRules(t *testing.T) {
 	if _, err := svc.Update(ctx, ManagerID, Params{Name: "Boss", Permissions: []string{"orders.delete"}}, admin); !errors.Is(err, ErrInvalid) {
 		t.Errorf("rename Manager: %v, want ErrInvalid", err)
 	}
-	m, err := svc.Update(ctx, ManagerID, Params{Name: "Manager", Description: "Runs the store", Permissions: []string{"orders.delete", "dashboard.manager"}}, admin)
-	if err != nil || !slices.Equal(m.Permissions, []Permission{OrdersDelete, DashboardManager}) || m.Description != "Runs the store" {
+	manager := repo.roles[ManagerID].Description
+	if _, err := svc.Update(ctx, ManagerID, Params{Name: "Manager", Description: "Runs the store", Permissions: []string{"orders.delete"}}, admin); !errors.Is(err, ErrInvalid) {
+		t.Errorf("describe Manager anew: %v, want ErrInvalid", err)
+	}
+	m, err := svc.Update(ctx, ManagerID, Params{Name: "Manager", Description: manager, Permissions: []string{"orders.delete", "dashboard.manager"}}, admin)
+	if err != nil || !slices.Equal(m.Permissions, []Permission{OrdersDelete, DashboardManager}) || m.Description != manager {
 		t.Errorf("change Manager's permissions = %+v, %v", m, err)
 	}
 	if err := svc.Delete(ctx, EmployeeID, admin); !errors.Is(err, ErrInvalid) {
