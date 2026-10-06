@@ -1,11 +1,12 @@
 import type { OrderRecord } from '@ppe/api-client'
+import { Button } from '@ppe/ui/components/button'
+import { cn } from '@ppe/ui/lib/utils'
 import { CheckCircle2, ChevronDown, FileText } from 'lucide-react'
 import { type ReactNode, useId, useState } from 'react'
 
 import { ReceiptDocument } from '@/components/receipt'
-import { Button } from '@/components/ui/button'
 import { type ConfirmLang, confirmText, formatDay, formatMoney, formatTime } from '@/lib/confirm-text'
-import { cn, formatSize } from '@/lib/utils'
+import { formatSize } from '@/lib/utils'
 
 /*
  * What an employee sees to confirm receipt, on their own phone (the public

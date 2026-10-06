@@ -7,6 +7,8 @@ export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe2:ppe2@localhost:5442/ppe2_test?sslmode=disable'
 export const apiPort = 18090
 export const webPort = 5181
+/** Administration's Vite server; the staff app's proxies /admin to it, so tests open it at webURL/admin/. */
+export const adminPort = 5183
 export const webURL = `http://localhost:${webPort}`
 
 // A test-only account created by global setup; not a real credential.

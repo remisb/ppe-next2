@@ -1,15 +1,15 @@
 import type { ConfirmationLink, ListedOrder } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { Input } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { ErrorState } from '@ppe/ui/components/states'
 import { Copy, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { ErrorState } from '@/components/states'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/field'
-import { FormSheet } from '@/components/ui/form-sheet'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
-import { formatDateTime } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
 
 /**
  * Open Employee Confirmation for an ORDERED order: create a secure link for

@@ -1,24 +1,24 @@
 import type { Employee, Sizes } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
+import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeForm } from '@/components/employee-form'
-import { MoreActions } from '@/components/more-actions'
-import { SortControl, SortableHead } from '@/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Field, Input, Select, controlProps } from '@/components/ui/field'
-import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { employeeFacts, initials, missingLabel } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
-import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
-import { errorText, useLoad } from '@/lib/use-load'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
@@ -213,7 +213,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     </Button>{' '}
                     <MoreActions label={t.common.moreActions(e.full_name)}>
                       <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem>
-                      {session.canManageItems ? (
+                      {session.can('employees.delete') ? (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>

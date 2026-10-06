@@ -1,16 +1,16 @@
 import type { OrderRecord } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
+import { Button } from '@ppe/ui/components/button'
+import { GavortEmblem } from '@ppe/ui/components/gavort-logo'
+import { Loading } from '@ppe/ui/components/states'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { useState } from 'react'
 
 import { ConfirmSummary, Confirmed, ConsentBar, FullRecord, LanguageSwitch } from '@/components/confirmation'
-import { GavortEmblem } from '@/components/gavort-logo'
-import { Loading } from '@/components/states'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { useApi } from '@/lib/api'
 import { type ConfirmLang, confirmText, employeeLang, loadLang, saveLang } from '@/lib/confirm-text'
-import { errorText, useLoad } from '@/lib/use-load'
-import { cn } from '@/lib/utils'
 
 /**
  * The employee's secure confirmation page (manual §3.6). Reached by link, with

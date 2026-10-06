@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -19,13 +19,15 @@ import (
 // the 401 body, so it must not say why a token was rejected.
 var errInvalidToken = errors.New("invalid token")
 
-// accessClaims is the JWT payload: sub is the user ID, roles the user's roles
-// when the token was issued (a refresh reads them again, so a role change
-// takes effect within minutes), sid the sign-in (session) it was issued for,
-// and auth_time when the password was last entered in that sign-in, which
-// managing users checks (requireRecentSignIn).
+// accessClaims is the JWT payload: sub is the user ID, perms the permissions
+// the user's roles granted when the token was issued (a refresh reads them
+// again, so a role change takes effect within minutes), sid the sign-in
+// (session) it was issued for, and auth_time when the password was last
+// entered in that sign-in, which managing users checks (requireRecentSignIn).
+// roles is only read: tokens issued before permissions carried role names.
 type accessClaims struct {
-	Roles     []string         `json:"roles"`
+	Perms     []string         `json:"perms"`
+	Roles     []string         `json:"roles,omitempty"`
 	SessionID string           `json:"sid,omitempty"`
 	AuthTime  *jwt.NumericDate `json:"auth_time,omitempty"`
 	jwt.RegisteredClaims
@@ -50,12 +52,13 @@ func newTokens(cfg config) *tokens {
 	}
 }
 
-// issue signs a token for u in sign-in sid, whose password was entered at authTime.
-func (t *tokens) issue(u user.User, sid uuid.UUID, authTime time.Time) (string, time.Time, error) {
+// issue signs a token granting perms to u in sign-in sid, whose password was
+// entered at authTime.
+func (t *tokens) issue(u user.User, perms []role.Permission, sid uuid.UUID, authTime time.Time) (string, time.Time, error) {
 	now := t.now()
 	exp := now.Add(t.ttl)
 	claims := accessClaims{
-		Roles:     slices.Clone(u.Roles),
+		Perms:     role.Strings(perms),
 		SessionID: sid.String(),
 		AuthTime:  jwt.NewNumericDate(authTime),
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -70,19 +73,30 @@ func (t *tokens) issue(u user.User, sid uuid.UUID, authTime time.Time) (string, 
 	return signed, exp, err
 }
 
-// verify is the muxstack TokenVerifier.
+// verify is the muxstack TokenVerifier. muxstack calls them roles, and its
+// Authorizer admits a request holding any of the route's; here they are the
+// token's permission keys, and every route names exactly one. Unknown keys
+// are dropped.
 func (t *tokens) verify(_ context.Context, raw string) (*middleware.Claims, error) {
 	claims, err := t.parse(raw)
 	if err != nil {
 		return nil, err
 	}
-	roles := make([]string, 0, len(claims.Roles))
-	for _, r := range claims.Roles {
-		if r = strings.ToLower(strings.TrimSpace(r)); user.IsKnownRole(r) {
-			roles = append(roles, r)
+	return &middleware.Claims{Subject: claims.Subject, Roles: role.Strings(claims.permissions())}, nil
+}
+
+// permissions are the token's known permissions. A token issued before
+// permissions existed has only role names; until it expires (API_JWT_TTL
+// after the upgrade) it is granted the built-in roles' installed permissions.
+func (c accessClaims) permissions() []role.Permission {
+	if c.Perms == nil && c.Roles != nil {
+		keys := make([]string, len(c.Roles))
+		for i, r := range c.Roles {
+			keys[i] = strings.ToLower(strings.TrimSpace(r))
 		}
+		return role.BuiltinPermissions(keys)
 	}
-	return &middleware.Claims{Subject: claims.Subject, Roles: roles}, nil
+	return role.Known(c.Perms)
 }
 
 // signedInAt is when the token's user last entered their password: auth_time,

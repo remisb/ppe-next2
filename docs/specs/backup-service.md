@@ -9,11 +9,11 @@ restoring and upgrading Postgres: [docs/backups.md](../backups.md).
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/backups` | admin: the status below |
+| `GET /api/v1/backups` | `backups.read` (administrators): the status below |
 
-In the web app it is the Backups screen (`/backups`), in the administrator's navigation
-after Settings, and a Backups card under Setup on the administrator's Dashboard that opens
-it. Anyone else asking for `/backups` gets their own start screen.
+In the web app it is the Backups screen in Administration (`/admin/backups`), and a Backups
+card under Setup on the administrator's Dashboard in the staff app that opens it (the
+verdict's words are `@ppe/backups`'). The staff app's old `/backups` leads there.
 
 ## Status
 

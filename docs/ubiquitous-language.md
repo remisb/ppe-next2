@@ -33,15 +33,37 @@ Rules for using it:
 - **Code:** `internal/domain/user`, table `users`. **UI:** Users screen, Account.
 
 ### Role
-- **Brief:** what a user may do: `admin`, `manager` or `employee`.
-- **Detail:** roles stack. **Administrator** manages users, Settings and Backups, plus
-  everything a manager can do. **Manager** manages Item Catalogue prices and Item Sets, and
-  may delete an order, plus everything the employee role can do. **Employee** (the role)
-  prepares orders, follows them in Orders, and manages employees and sizes. A role change
-  applies from the user's next sign-in. Every route's role rule is pinned in
+- **Brief:** a named bundle of permissions a user holds: the built-in `admin`, `manager`
+  and `employee`, or a custom role an administrator adds.
+- **Detail:** roles stack: a user may do what any of their roles allows. **Administrator**
+  manages users, roles, Settings and Backups, plus everything a manager can do.
+  **Manager** manages Item Catalogue prices and Item Sets, and may delete an order, plus
+  everything the employee role can do. **Employee** (the role) prepares orders, follows
+  them in Orders, and manages employees and sizes. A role change reaches the user within
+  minutes (at their next token refresh). Every route's permission is pinned in
   `cmd/api/routes_test.go`.
-- **Code:** `user.RoleAdmin`, `RoleManager`, `RoleEmployee`; JWT `roles` claim.
-  **UI:** Administrator, Manager, Employee.
+- **Code:** `internal/domain/role` (`role.KeyAdmin`, `KeyManager`, `KeyEmployee`); JWT
+  `perms` claim. **UI:** Administrator, Manager, Employee.
+
+### Permission
+- **Brief:** one thing a role may allow, such as deleting orders or managing users.
+- **Detail:** a fixed catalogue in code (`resource.action` keys); a route requires one.
+  Administrators bundle permissions into roles; they never grant a permission to a user
+  directly. Everything else a signed-in user does needs no permission.
+- **Code:** `role.Permission`, `role.Catalogue()`; `web/packages/api-client/src/permissions.ts`.
+  **UI:** Permission (on **Roles & permissions**).
+
+### Built-in role
+- **Brief:** Administrator, Manager or Employee: the roles every installation has.
+- **Detail:** reproduce the access of the three fixed roles that came before permissions.
+  Administrator cannot be changed or deleted; at least one active user always holds it.
+
+### Administration
+- **Brief:** the separate app at `/admin` for managing users, roles, Settings and Backups.
+- **Detail:** shares the staff app's sign-in and look; the staff app links to it for users
+  who may open one of its screens. Not the same as the **Dashboard**, which stays in the
+  staff app.
+- **Code:** `web/apps/admin`. **UI:** Administration.
 
 ### Employee role
 - **Brief:** the role of staff who prepare orders; not the same thing as an Employee.
@@ -665,6 +687,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Item Catalogue | Prekių katalogas | Каталог предметов |
 | Item Set / Item Sets | Prekių rinkinys / Prekių rinkiniai | Набор предметов / Наборы предметов |
 | Users | Naudotojai | Пользователи |
+| Administration | Administravimas | Администрирование |
+| Roles & permissions | Rolės ir teisės | Роли и права |
+| Role / Permission | Rolė / Teisė | Роль / Право |
 | Settings | Nustatymai | Настройки |
 | Backups | Atsarginės kopijos | Резервные копии |
 | Replacements due | Reikia pakeisti | Требуется замена |

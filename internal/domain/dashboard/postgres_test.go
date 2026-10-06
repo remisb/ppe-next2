@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // pgData is the fixture shared by the dashboard tests.
@@ -44,9 +46,14 @@ func seedPG(t *testing.T) pgData {
 
 	now := utc("2026-09-15T10:00:00Z")
 	admin, manager := uuid.New(), uuid.New()
-	exec(`INSERT INTO users (id, email, name, password_hash, roles, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, 'a@example.com', 'Admin', 'x', '{admin}', now(), now(), $1, $1),
-		       ($2, 'm@example.com', 'Manager', 'x', '{manager}', now(), now(), $1, $1)`, admin, manager)
+	exec(`INSERT INTO users (id, email, name, password_hash, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'a@example.com', 'Admin', 'x', now(), now(), $1, $1),
+		       ($2, 'm@example.com', 'Manager', 'x', now(), now(), $1, $1)`, admin, manager)
+	// The truncation reaches roles through their actor keys.
+	if err := role.EnsureBuiltins(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	exec(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $3), ($2, $4)`, admin, manager, role.AdminID, role.ManagerID)
 
 	ona, jonas, gone := uuid.New(), uuid.New(), uuid.New()
 	// Ona has every size; Jonas has no shoe size; gone is deleted.

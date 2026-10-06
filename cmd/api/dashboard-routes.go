@@ -4,12 +4,14 @@ import (
 	"net/http"
 
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
-// registerDashboardRoutes mounts the dashboards. Each only reads, and each is
-// for its role alone: the administrator's summarises spending and every
-// employee, the manager's items, prices and purchasing, and the employee
-// role's the signed-in user's own orders and what to order next.
+// registerDashboardRoutes mounts the dashboards. Each only reads, and each has
+// its own permission, which only its built-in role holds: the administrator's
+// (the Dashboard) summarises spending and every employee, the manager's items,
+// prices and purchasing, and the employee role's the signed-in user's own
+// orders and what to order next.
 func registerDashboardRoutes(rt *router, svc *dashboard.Service) {
 	rt.restricted("GET /api/v1/dashboard", func(w http.ResponseWriter, r *http.Request) {
 		o, err := svc.Overview(r.Context())
@@ -18,7 +20,7 @@ func registerDashboardRoutes(rt *router, svc *dashboard.Service) {
 			return
 		}
 		writeJSON(w, http.StatusOK, o)
-	}, admins...)
+	}, role.DashboardOverview)
 	rt.restricted("GET /api/v1/dashboard/manager", func(w http.ResponseWriter, r *http.Request) {
 		o, err := svc.Manager(r.Context())
 		if err != nil {
@@ -26,7 +28,7 @@ func registerDashboardRoutes(rt *router, svc *dashboard.Service) {
 			return
 		}
 		writeJSON(w, http.StatusOK, o)
-	}, managerRole...)
+	}, role.DashboardManager)
 	rt.restricted("GET /api/v1/dashboard/employee", func(w http.ResponseWriter, r *http.Request) {
 		me, err := actorID(r)
 		if err != nil {
@@ -39,7 +41,7 @@ func registerDashboardRoutes(rt *router, svc *dashboard.Service) {
 			return
 		}
 		writeJSON(w, http.StatusOK, o)
-	}, employeeRole...)
+	}, role.DashboardEmployee)
 	// The Replacements due screen: the whole list the dashboards show the start
 	// of. Any signed-in user, like History, which holds the same orders.
 	rt.authenticated("GET /api/v1/replacements", func(w http.ResponseWriter, r *http.Request) {

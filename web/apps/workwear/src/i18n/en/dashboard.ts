@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 const items = (n: number) => plural(n, { one: '# item', other: '# items' })
 const orders = (n: number) => plural(n, { one: '# order', other: '# orders' })
@@ -27,9 +27,6 @@ export const dashboard = {
     plural(n, { one: '# employee without a size Create Order needs', other: '# employees without a size Create Order needs' }),
 
   // Shared parts (components/dashboard.tsx).
-  refresh: 'Refresh',
-  keyFigures: 'Key figures',
-  needsAttention: 'Needs attention',
   scale: (value: string) => `Scale ${value}`,
   month: 'Month',
   needsYou: 'Needs you',

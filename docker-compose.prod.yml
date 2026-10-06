@@ -136,6 +136,7 @@ services:
       SITE_ADDRESS: ${SITE_HOST:?set SITE_HOST in .env.prod}
       API_UPSTREAM: api:8090
       WEB_ROOT: /srv/workwear/dist
+      ADMIN_ROOT: /srv/admin/dist
       # 0 on a shared zone such as sslip.io; see deploy/Caddyfile.
       HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
     volumes:

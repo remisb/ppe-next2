@@ -1,7 +1,9 @@
 # User service
 
 Accounts that sign in to the API. Package `internal/domain/user`, routes in
-`cmd/api/user-routes.go` and `cmd/api/auth-routes.go`, table from migration `0001_users`.
+`cmd/api/user-routes.go` and `cmd/api/auth-routes.go`, table from migration `0001_users`;
+the roles each holds are in `user_roles` (migration 0022, roles: `docs/specs/role-service.md`).
+The Users screen is in Administration (`/admin/users`).
 
 ## Entity
 
@@ -11,14 +13,39 @@ Accounts that sign in to the API. Package `internal/domain/user`, routes in
 | `email` | Required, bare address, stored lowercase; unique among live users (case-insensitive) |
 | `name` | Required, ≤ 200 chars |
 | `password_hash` | bcrypt; never serialised (`json:"-"`) |
-| `roles` | Non-empty subset of `admin`, `manager`, `employee`; normalised, de-duplicated, sorted |
+| `role_ids` | Non-empty set of live roles (`user_roles`); de-duplicated, in id order. A user may do what any of them allows (see Permissions) |
 | `is_active` | Inactive users cannot log in |
 | `language` | Interface language: `en` (default for every new account), `lt` or `ru` (migration 0016). Each user sets their own; the staff app follows it on every device |
 | actor + timestamp columns | Per the domain contract; FK to `users` |
 
 Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 
-## Roles and access
+## Permissions
+
+A route requires one permission (`internal/domain/role/permission.go`, listed in the same
+order in `web/packages/api-client/src/permissions.ts`); a user may do what any of their
+roles allows. Roles are administrators' to define (`docs/specs/role-service.md`); the
+built-in roles (`role/builtin.go`) are installed allowing exactly what the three fixed
+roles did:
+
+| Permission | Allows | admin | manager | employee |
+| --- | --- | --- | --- | --- |
+| `users.read` | list and look up users | ✓ | ✓ | |
+| `users.manage` | add, edit, deactivate, reset, delete users (needs `users.read`) | ✓ | | |
+| `roles.manage` | manage roles, and give any permission (needs `users.read`) | ✓ | | |
+| `settings.manage` | change Settings | ✓ | | |
+| `backups.read` | read Backups | ✓ | | |
+| `employees.delete` | delete employees | ✓ | ✓ | |
+| `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
+| `item_sets.manage` | add, edit, delete item sets | ✓ | ✓ | |
+| `orders.delete` | delete orders | | ✓ | |
+| `dashboard.overview` | the Dashboard | ✓ | | |
+| `dashboard.manager` | the Manager Dashboard | | ✓ | |
+| `dashboard.employee` | the Employee Dashboard (the user's own orders) | | | ✓ |
+
+Everything else a signed-in user does needs no permission.
+
+## Access
 
 | Route | Access | Kind |
 | --- | --- | --- |
@@ -27,36 +54,51 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 | `GET /api/v1/users/me` | any authenticated user | 401 if the token's user was deleted |
 | `PUT /api/v1/users/me/password` | any authenticated user | body `{current_password, new_password}`; signs the user out on their other devices |
 | `PUT /api/v1/users/me/language` | any authenticated user | body `{language}` (`en`, `lt` or `ru`, else 400); returns the user. No one sets another user's language |
-| `GET /api/v1/users` | admin, manager | list |
-| `GET /api/v1/users/{id}` | admin, manager | single object, 404 on miss |
-| `GET /api/v1/users/by-email/{email}` | admin, manager | single-object lookup, 404 on miss |
-| `POST /api/v1/users` | admin, recent sign-in | body `{email, name, password, roles}` |
-| `PUT /api/v1/users/{id}` | admin, recent sign-in | body `{email, name, roles, is_active}`, all required (full replace); deactivating signs the user out everywhere |
-| `PUT /api/v1/users/{id}/password` | admin, recent sign-in | body `{password}`, admin reset; signs the user out everywhere |
-| `DELETE /api/v1/users/{id}` | admin, recent sign-in | soft delete; signs the user out everywhere |
+| `GET /api/v1/users` | `users.read` | list |
+| `GET /api/v1/users/{id}` | `users.read` | single object, 404 on miss |
+| `GET /api/v1/users/by-email/{email}` | `users.read` | single-object lookup, 404 on miss |
+| `POST /api/v1/users` | `users.manage`, sensitive | body `{email, name, password, role_ids}`; an unknown role 400 |
+| `PUT /api/v1/users/{id}` | `users.manage`, sensitive | body `{email, name, role_ids, is_active}`, all required (full replace); deactivating signs the user out everywhere; a role change is audited (`user.roles_changed`, `{role_ids}` before and after) |
+| `PUT /api/v1/users/{id}/password` | `users.manage`, sensitive | body `{password}`, admin reset; signs the user out everywhere |
+| `DELETE /api/v1/users/{id}` | `users.manage`, sensitive | soft delete; signs the user out everywhere |
 
-"Recent sign-in": the administrator's password was entered within `API_RECENT_SIGN_IN`
+"Sensitive" (`requireSensitive`): the password was entered within `API_RECENT_SIGN_IN`
 (12h), else 403 `recent sign-in required` until it is confirmed at `POST /api/v1/auth/reauth`
-(session spec). Sessions are ended through the `user.Sessions` interface (`WithSessions`).
+(session spec); and the user's roles still grant `users.manage`, read from the database,
+else 403. Sessions are ended through the `user.Sessions` interface (`WithSessions`).
 
 `GET /health`, the confirmation routes and the sign-in routes are the only other unauthenticated routes.
 
-An admin cannot deactivate, delete, or remove the `admin` role from their own account (400).
+No one deactivates or deletes their own account, or takes `users.manage` or `roles.manage`
+from themselves through their roles (400). At least one active, live user always holds
+Administrator: a demotion, deactivation or deletion that would leave none is refused (409
+`ErrLastAdministrator`; the check runs after the write under an advisory lock, so two
+administrators demoting each other at once cannot both succeed). Unless the actor holds
+`roles.manage`, they give or take away only roles whose permissions they hold, and manage
+(edit, reset, delete) only users whose roles grant nothing beyond theirs (403), so a user
+who manages users cannot take over an administrator's account. The user service asks the
+role service through `user.Roles` (`WithRoles`) and is told the guard role by
+`WithGuardRole(role.AdminID)`.
 
 ## Tokens
 
 HS256 JWTs signed with `API_JWT_SECRET` (≥ 32 bytes), TTL `API_JWT_TTL` (default 15m,
-max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `roles`, `sid` = the sign-in
-(session) it was issued for, `auth_time` = when the password was last entered in it (a token
-without one counts from its `iat`). The algorithm is pinned; `exp` is required; a non-UUID
-subject is rejected. Roles are read from the token without a DB lookup.
+max 24h), issuer `API_JWT_ISSUER`. Claims: `sub` = user ID, `perms` = the permissions the
+user's roles allow (read from the database at sign-in and every refresh), `sid` = the
+sign-in (session) it was issued for, `auth_time` =
+when the password was last entered in it (a token without one counts from its `iat`). The
+algorithm is pinned; `exp` is required; a non-UUID subject is rejected. Permissions are read
+from the token without a DB lookup, except on the sensitive routes; unknown keys are
+dropped, and a token issued before `perms` existed (it carried role names, `roles`) is
+granted those built-in roles' installed permissions until it expires.
 
 A new access token comes from the HttpOnly refresh cookie at `POST /api/v1/auth/refresh`,
 which reads the account again, so a deactivated or deleted user is refused and a role change
 takes effect at the next refresh. How long a sign-in lasts (12 hours, or with Keep me signed
 in 30 days and 14 days idle) and what ends it is in `docs/specs/session-service.md`.
 
-Authentication and role checks use `muxstack/middleware.Authenticator` and `Authorizer`;
+Authentication and permission checks use `muxstack/middleware.Authenticator` and
+`Authorizer` (which calls the token's permissions its roles);
 their 401/403 bodies are plain text, not the API's JSON error shape.
 
 ## Login

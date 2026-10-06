@@ -12,6 +12,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "web/apps/workwear", "dev"],
       "port": 5180
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/admin", "dev"],
+      "port": 5182
     }
   ]
 }

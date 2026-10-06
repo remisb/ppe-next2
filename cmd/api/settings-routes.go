@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 )
 
@@ -17,7 +18,7 @@ type settingsHandler struct {
 func registerSettingsRoutes(rt *router, svc *settings.Service, timezone string) {
 	h := &settingsHandler{settings: svc, timezone: timezone}
 	rt.authenticated("GET /api/v1/settings", h.get)
-	rt.restricted("PUT /api/v1/settings/supplier-chat", h.updateSupplierChat, admins...)
+	rt.restricted("PUT /api/v1/settings/supplier-chat", h.updateSupplierChat, role.SettingsManage)
 }
 
 // settingsJSON: timezone and currency come from config, the rest from the

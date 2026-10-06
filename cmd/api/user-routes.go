@@ -4,6 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -15,42 +18,43 @@ type userHandler struct {
 // registerUserRoutes mounts /api/v1/users.
 //
 //	any authenticated user   GET /me, PUT /me/password
-//	admin, manager           GET list, by id, by email
-//	admin                    create, update, reset password, delete
+//	users.read               GET list, by id, by email
+//	users.manage             create, update, reset password, delete
 //
-// The administrator's changes need a recent sign-in (recent, from
-// requireRecentSignIn): a phone left signed in for weeks cannot be used to
-// add an administrator or reset someone's password without the password.
-// Changing one's own password asks for the current one anyway.
-func registerUserRoutes(rt *router, users *user.Service, tok *tokens, recent func(http.HandlerFunc) http.HandlerFunc) {
+// Managing users is sensitive (requireSensitive): it needs a recent sign-in,
+// so a phone left signed in for weeks cannot be used to add an administrator
+// or reset someone's password without the password, and the user's roles
+// must still allow it. Changing one's own password asks for the current one
+// anyway.
+func registerUserRoutes(rt *router, users *user.Service, tok *tokens, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &userHandler{users: users, tokens: tok}
 
 	rt.authenticated("GET /api/v1/users/me", h.me)
 	rt.authenticated("PUT /api/v1/users/me/password", h.changeOwnPassword)
 	rt.authenticated("PUT /api/v1/users/me/language", h.setOwnLanguage)
 
-	rt.restricted("GET /api/v1/users", h.list, managers...)
-	rt.restricted("GET /api/v1/users/{id}", h.get, managers...)
-	rt.restricted("GET /api/v1/users/by-email/{email}", h.byEmail, managers...)
+	rt.restricted("GET /api/v1/users", h.list, role.UsersRead)
+	rt.restricted("GET /api/v1/users/{id}", h.get, role.UsersRead)
+	rt.restricted("GET /api/v1/users/by-email/{email}", h.byEmail, role.UsersRead)
 
-	rt.restricted("POST /api/v1/users", recent(h.create), admins...)
-	rt.restricted("PUT /api/v1/users/{id}", recent(h.update), admins...)
-	rt.restricted("PUT /api/v1/users/{id}/password", recent(h.setPassword), admins...)
-	rt.restricted("DELETE /api/v1/users/{id}", recent(h.delete), admins...)
+	rt.restricted("POST /api/v1/users", sensitive(role.UsersManage, h.create), role.UsersManage)
+	rt.restricted("PUT /api/v1/users/{id}", sensitive(role.UsersManage, h.update), role.UsersManage)
+	rt.restricted("PUT /api/v1/users/{id}/password", sensitive(role.UsersManage, h.setPassword), role.UsersManage)
+	rt.restricted("DELETE /api/v1/users/{id}", sensitive(role.UsersManage, h.delete), role.UsersManage)
 }
 
 type createUserRequest struct {
-	Email    string   `json:"email"`
-	Name     string   `json:"name"`
-	Password string   `json:"password"`
-	Roles    []string `json:"roles"`
+	Email    string      `json:"email"`
+	Name     string      `json:"name"`
+	Password string      `json:"password"`
+	RoleIDs  []uuid.UUID `json:"role_ids"`
 }
 
 type updateUserRequest struct {
-	Email    string   `json:"email"`
-	Name     string   `json:"name"`
-	Roles    []string `json:"roles"`
-	IsActive *bool    `json:"is_active"`
+	Email    string      `json:"email"`
+	Name     string      `json:"name"`
+	RoleIDs  []uuid.UUID `json:"role_ids"`
+	IsActive *bool       `json:"is_active"`
 }
 
 type setPasswordRequest struct {
@@ -175,7 +179,7 @@ func (h *userHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u, err := h.users.Create(r.Context(), user.CreateParams{
-		Email: req.Email, Name: req.Name, Password: req.Password, Roles: req.Roles,
+		Email: req.Email, Name: req.Name, Password: req.Password, RoleIDs: req.RoleIDs,
 	}, actor)
 	if err != nil {
 		writeError(w, r, err)
@@ -209,7 +213,7 @@ func (h *userHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u, err := h.users.Update(r.Context(), id, user.UpdateParams{
-		Email: req.Email, Name: req.Name, Roles: req.Roles, IsActive: active,
+		Email: req.Email, Name: req.Name, RoleIDs: req.RoleIDs, IsActive: active,
 	}, actor)
 	if err != nil {
 		writeError(w, r, err)

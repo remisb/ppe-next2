@@ -42,8 +42,8 @@ func newPGFixture(t *testing.T) pgFixture {
 	}
 	exec(`TRUNCATE users CASCADE`)
 	f := pgFixture{pool: pool, actor: uuid.New(), emp: uuid.New(), shoes: uuid.New(), gloves: uuid.New(), draft: uuid.New()}
-	exec(`INSERT INTO users (id, email, name, password_hash, roles, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, 'a@example.com', 'Admin', 'x', '{admin}', now(), now(), $1, $1)`, f.actor)
+	exec(`INSERT INTO users (id, email, name, password_hash, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'a@example.com', 'Admin', 'x', now(), now(), $1, $1)`, f.actor)
 	exec(`INSERT INTO employees (id, first_name, last_name, code, shoe_size, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Jonas', 'Petraitis', 'W-17', '43', now(), now(), $2, $2)`, f.emp, f.actor)
 	item := func(id uuid.UUID, name, group string, cents *int64, months *int) {

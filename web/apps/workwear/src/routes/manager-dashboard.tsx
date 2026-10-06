@@ -1,18 +1,20 @@
 import type { ManagerDashboard as Data } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, Panel, RefreshButton, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
+import { BarList, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
-import { formatDateTime } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
-import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatMonths } from '@/lib/utils'
+import { formatEuro, formatMonths } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 
@@ -24,7 +26,7 @@ type Navigate = (to: Route) => void
  */
 export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
-  const { isEmployee } = useSession()
+  const isEmployee = useSession().can('dashboard.employee')
   const board = useLoad(() => client.managerDashboard())
   const d = board.data
 

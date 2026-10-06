@@ -19,9 +19,12 @@ import type {
   Order,
   OrderPage,
   OrderRecord,
+  PermissionInfo,
   PriceEntry,
   Resolution,
   ResolveInput,
+  Role,
+  RoleInput,
   Settings,
   SignedInDevice,
   Sizes,
@@ -148,13 +151,25 @@ export function createClient(options: ClientOptions) {
     /** The employee role's dashboard, for the signed-in user; that role only. */
     employeeDashboard: () => request<EmployeeDashboard>('GET', '/api/v1/dashboard/employee'),
 
-    /** User accounts: listing is admin or manager, every change admin only. */
+    /** User accounts: listing needs users.read, every change users.manage. */
     users: {
       list: () => request<User[]>('GET', '/api/v1/users'),
       create: (input: UserCreateInput) => request<User>('POST', '/api/v1/users', input),
       update: (id: string, input: UserUpdateInput) => request<User>('PUT', `/api/v1/users/${seg(id)}`, input),
       /** Admin reset: replaces the password without the old one. */
       setPassword: (id: string, password: string) => request<void>('PUT', `/api/v1/users/${seg(id)}/password`, { password }),
+    },
+
+    /** The permission catalogue, in display order (users.read). */
+    permissions: () => request<PermissionInfo[]>('GET', '/api/v1/permissions'),
+
+    /** Roles: reading needs users.read, every change roles.manage. */
+    roles: {
+      list: () => request<Role[]>('GET', '/api/v1/roles'),
+      get: (id: string) => request<Role>('GET', `/api/v1/roles/${seg(id)}`),
+      create: (input: RoleInput) => request<Role>('POST', '/api/v1/roles', input),
+      update: (id: string, input: RoleInput) => request<Role>('PUT', `/api/v1/roles/${seg(id)}`, input),
+      remove: (id: string) => request<void>('DELETE', `/api/v1/roles/${seg(id)}`),
     },
 
     employees: {

@@ -13,9 +13,6 @@ describe('router', () => {
       'employees',
       'catalogue',
       'itemSets',
-      'users',
-      'settings',
-      'backups',
       'history',
       'account',
       'replacements',
@@ -27,6 +24,11 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
+  })
+  it('sends the old addresses of Users, Settings and Backups on to Administration', () => {
+    expect(parsePath('/users')).toEqual({ name: 'administration', path: '/users' })
+    expect(parsePath('/settings/')).toEqual({ name: 'administration', path: '/settings' })
+    expect(parsePath('/backups')).toEqual({ name: 'administration', path: '/backups' })
   })
   it('keeps the old History addresses, and tells an order from a new one and a record', () => {
     expect(pathOf({ name: 'history' })).toBe('/orders')
@@ -71,13 +73,14 @@ describe('router', () => {
     expect(parsePath('/employees/')).toEqual({ name: 'employees' })
     expect(parsePath('/confirm/')).toEqual({ name: 'home' })
   })
-  it('starts each role on its own dashboard, and keeps each dashboard to its role', () => {
-    const admin = { isAdmin: true, isManager: false, isEmployee: false }
-    const manager = { isAdmin: false, isManager: true, isEmployee: false }
-    const employee = { isAdmin: false, isManager: false, isEmployee: true }
-    const both = { isAdmin: true, isManager: true, isEmployee: false }
-    const managerEmployee = { isAdmin: false, isManager: true, isEmployee: true }
-    const none = { isAdmin: false, isManager: false, isEmployee: false }
+  it('starts each role on its own dashboard, and keeps each dashboard to its permission', () => {
+    const holding = (...perms: string[]) => (p: string) => perms.includes(p)
+    const admin = holding('users.manage', 'settings.manage', 'backups.read', 'dashboard.overview')
+    const manager = holding('orders.delete', 'dashboard.manager')
+    const employee = holding('dashboard.employee')
+    const both = holding('dashboard.overview', 'settings.manage', 'backups.read', 'dashboard.manager')
+    const managerEmployee = holding('dashboard.manager', 'dashboard.employee')
+    const none = holding('catalogue.manage')
     expect(startRoute({ name: 'home' }, admin)).toEqual({ name: 'dashboard' })
     expect(startRoute({ name: 'home' }, manager)).toEqual({ name: 'managerDashboard' })
     expect(startRoute({ name: 'home' }, employee)).toEqual({ name: 'employeeDashboard' })
@@ -94,11 +97,5 @@ describe('router', () => {
     expect(startRoute({ name: 'employeeDashboard' }, manager)).toEqual({ name: 'managerDashboard' })
     expect(startRoute({ name: 'employeeDashboard' }, managerEmployee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'history' }, employee)).toEqual({ name: 'history' })
-    // Settings are the administrator's: anyone else asking gets their own start screen.
-    expect(startRoute({ name: 'settings' }, admin)).toEqual({ name: 'settings' })
-    expect(startRoute({ name: 'settings' }, manager)).toEqual({ name: 'managerDashboard' })
-    expect(startRoute({ name: 'settings' }, employee)).toEqual({ name: 'employeeDashboard' })
-    expect(startRoute({ name: 'backups' }, admin)).toEqual({ name: 'backups' })
-    expect(startRoute({ name: 'backups' }, manager)).toEqual({ name: 'managerDashboard' })
   })
 })

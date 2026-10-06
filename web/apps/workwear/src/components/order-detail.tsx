@@ -1,21 +1,22 @@
 import type { Order } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, FileText, Handshake, Link2, Printer, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { ConfirmationSheet } from '@/components/confirmation-sheet'
 import { HandOver } from '@/components/hand-over'
-import { MoreActions } from '@/components/more-actions'
 import { OrderLinesTable } from '@/components/order-lines'
-import { ErrorState, Loading } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
-import { LONG_WAIT_DAYS, deleteQuestion, formatDateTime, historyActions, statusLabel, waitingDays } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
+import { LONG_WAIT_DAYS, deleteQuestion, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
-import { useLoad } from '@/lib/use-load'
-import { cn } from '@/lib/utils'
 
 /**
  * One stored order from History: who and when, its snapshot lines and the
@@ -86,7 +87,7 @@ export function OrderDetail({
             onHandOver={() => setHandingOver(true)}
             onOpenRecord={(print) => onOpenRecord(o.id, print)}
             // Only the manager role clears demo and test orders; the API allows no one else.
-            onDelete={session.isManager ? () => void remove(o) : undefined}
+            onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
           />
           {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
           {handingOver ? (

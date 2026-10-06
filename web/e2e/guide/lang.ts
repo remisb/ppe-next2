@@ -2,6 +2,10 @@ import { type Device, deviceOrder } from '../../apps/workwear/src/help/index.ts'
 import { en } from '../../apps/workwear/src/i18n/en/index.ts'
 import { lt } from '../../apps/workwear/src/i18n/lt/index.ts'
 import { ru } from '../../apps/workwear/src/i18n/ru/index.ts'
+import { en as adminEn } from '../../apps/admin/src/i18n/en/index.ts'
+import { lt as adminLt } from '../../apps/admin/src/i18n/lt/index.ts'
+import { ru as adminRu } from '../../apps/admin/src/i18n/ru/index.ts'
+import { dictionaries as shellText } from '../../packages/app-shell/src/text.ts'
 
 /** The guide's language, GUIDE_LANG (en, lt or ru): the admin's language and the browser's. */
 export const lang = (process.env['GUIDE_LANG'] ?? 'en') as 'en' | 'lt' | 'ru'
@@ -9,6 +13,12 @@ if (!['en', 'lt', 'ru'].includes(lang)) throw new Error(`GUIDE_LANG must be en, 
 
 /** The app's own text in that language, so the steps find controls by the names people see. */
 export const T = { en, lt, ru }[lang]
+
+/** Administration's text in that language. */
+export const A = { en: adminEn, lt: adminLt, ru: adminRu }[lang]
+
+/** The sign-in screen's text in that language (@ppe/app-shell's). */
+export const S = shellText[lang]
 
 export const locale = { en: 'en-GB', lt: 'lt-LT', ru: 'ru-RU' }[lang]
 

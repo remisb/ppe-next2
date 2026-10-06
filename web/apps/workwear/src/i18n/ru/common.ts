@@ -1,23 +1,20 @@
+import { plural } from '@ppe/i18n'
+
 import type { CommonText } from '../en/common'
-import { plural } from '../plural'
 
 export const common: CommonText = {
   appName: 'Спецодежда и снаряжение',
   cancel: 'Отмена',
   save: 'Сохранить',
   saving: 'Сохранение…',
-  close: 'Закрыть',
   back: 'Назад',
   edit: 'Изменить',
   delete: 'Удалить',
   add: 'Добавить',
   search: 'Поиск',
   retry: 'Повторить',
-  loading: 'Загрузка…',
-  couldNotLoad: 'Не удалось загрузить',
   actionFailed: 'Действие не выполнено',
   moreActions: (name: string) => `Другие действия: ${name}`,
-  somethingWentWrong: 'Что-то пошло не так.',
   ordered: 'Заказано',
   given: 'Выдано',
   active: 'Активен',

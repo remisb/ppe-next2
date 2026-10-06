@@ -1,26 +1,27 @@
 import type { CatalogueIcon, CatalogueItem, CatalogueItemInput, SizeGroup } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
 
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
-import { MoreActions } from '@/components/more-actions'
-import { SortControl, SortableHead } from '@/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { Field, Input, Select, controlProps } from '@/components/ui/field'
-import { FormSheet } from '@/components/ui/form-sheet'
-import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { guessIcon } from '@/lib/items'
 import { type ItemStatus, itemStatus } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
-import { type SortColumn, type SortState, sortRows } from '@/lib/sort'
-import { errorText, useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatMonths, parseEuro } from '@/lib/utils'
+import { formatEuro, formatMonths, parseEuro } from '@/lib/utils'
 
 /** Each size group's name in the current language; the getters read the text in use at each lookup. */
 export const sizeGroupLabel: Record<SizeGroup, string> = {
@@ -68,7 +69,7 @@ function statusRank(i: CatalogueItem): number {
 
 export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
-  const { canManageItems } = useSession()
+  const canManageItems = useSession().can('catalogue.manage')
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
   const [actionError, setActionError] = useState<unknown>()

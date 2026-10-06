@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
@@ -26,7 +27,7 @@ func registerOrderRoutes(rt *router, orders *order.Service) {
 	rt.authenticated("GET /api/v1/orders", h.list)
 	rt.authenticated("POST /api/v1/orders", h.markAsOrdered)
 	rt.authenticated("GET /api/v1/orders/{id}", h.get)
-	rt.restricted("DELETE /api/v1/orders/{id}", h.delete, managerRole...)
+	rt.restricted("DELETE /api/v1/orders/{id}", h.delete, role.OrdersDelete)
 }
 
 type markAsOrderedRequest struct {

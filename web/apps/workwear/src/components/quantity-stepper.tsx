@@ -1,9 +1,9 @@
+import { Button } from '@ppe/ui/components/button'
+import { Input } from '@ppe/ui/components/field'
+import { cn } from '@ppe/ui/lib/utils'
 import { Minus, Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/field'
 import { t } from '@/i18n'
-import { cn } from '@/lib/utils'
 
 /**
  * A quantity as − [n] +: the common change (one more, one fewer) is a tap,

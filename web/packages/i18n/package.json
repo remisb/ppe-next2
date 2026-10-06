@@ -1,0 +1,21 @@
+{
+  "name": "@ppe/i18n",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The interface languages (English, Lithuanian, Russian): the language in use, counted phrases, and dictionaries per package. Holds no app's words.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

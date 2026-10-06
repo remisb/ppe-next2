@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -117,10 +119,10 @@ func TestSignInSetsRefreshCookie(t *testing.T) {
 func TestRefreshWithCookie(t *testing.T) {
 	api := newTestAPI(t)
 	ctx := context.Background()
-	u, _ := api.userWith(t, user.RoleEmployee)
+	u, _ := api.userWith(t, role.KeyEmployee)
 	first, _, c1 := api.login(t, u.Email, "password123", true)
 
-	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee, user.RoleManager}, IsActive: true}, api.admin.ID); err != nil {
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, RoleIDs: []uuid.UUID{role.EmployeeID, role.ManagerID}, IsActive: true}, api.admin.ID); err != nil {
 		t.Fatal(err)
 	}
 	rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: c1.Value, origin: appOrigin})
@@ -135,8 +137,8 @@ func TestRefreshWithCookie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if after.sessionID() != first.sessionID() || !after.signedInAt().Equal(first.signedInAt()) || len(after.Roles) != 2 {
-		t.Errorf("refreshed token: sid %v (was %v), auth_time %v (was %v), roles %v", after.sessionID(), first.sessionID(), after.signedInAt(), first.signedInAt(), after.Roles)
+	if after.sessionID() != first.sessionID() || !after.signedInAt().Equal(first.signedInAt()) || !slices.Contains(after.Perms, string(role.OrdersDelete)) {
+		t.Errorf("refreshed token: sid %v (was %v), auth_time %v (was %v), perms %v; want the new role's permissions", after.sessionID(), first.sessionID(), after.signedInAt(), first.signedInAt(), after.Perms)
 	}
 
 	rec = api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: c1.Value})
@@ -151,7 +153,7 @@ func TestRefreshWithCookie(t *testing.T) {
 		}
 	}
 
-	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: []string{user.RoleEmployee}, IsActive: false}, api.admin.ID); err != nil {
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, RoleIDs: []uuid.UUID{role.EmployeeID}, IsActive: false}, api.admin.ID); err != nil {
 		t.Fatal(err)
 	}
 	if rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: c2.Value}); rec.Code != http.StatusUnauthorized {
@@ -212,7 +214,7 @@ func TestRecentSignIn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newUser := map[string]any{"email": "new@example.com", "name": "New", "password": "password123", "roles": []string{"employee"}}
+	newUser := map[string]any{"email": "new@example.com", "name": "New", "password": "password123", "role_ids": []uuid.UUID{role.EmployeeID}}
 
 	// The same sign-in, its password entered 13 hours ago.
 	claims.AuthTime = jwt.NewNumericDate(time.Now().Add(-13 * time.Hour))
@@ -254,7 +256,7 @@ func TestRecentSignIn(t *testing.T) {
 // others out, one or all; another user's device is a 404.
 func TestSignedInDevices(t *testing.T) {
 	api := newTestAPI(t)
-	u, _ := api.userWith(t, user.RoleEmployee)
+	u, _ := api.userWith(t, role.KeyEmployee)
 	here, tok, hereCookie := api.login(t, u.Email, "password123", true)
 	_, _, phone := api.login(t, u.Email, "password123", false)
 	_, _, laptop := api.login(t, u.Email, "password123", true)
@@ -314,7 +316,7 @@ func TestSignedInDevices(t *testing.T) {
 // administrator's reset, or deleting the account, signs out all of them.
 func TestPasswordChangesEndSessions(t *testing.T) {
 	api := newTestAPI(t)
-	u, _ := api.userWith(t, user.RoleEmployee)
+	u, _ := api.userWith(t, role.KeyEmployee)
 	_, tok, here := api.login(t, u.Email, "password123", true)
 	_, _, elsewhere := api.login(t, u.Email, "password123", true)
 	refreshes := func(c *http.Cookie) bool {

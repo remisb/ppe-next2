@@ -1,23 +1,25 @@
 import type { ListedOrder, PriceEntry } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { ItemTile } from '@/components/item-icon'
-import { MoreActions } from '@/components/more-actions'
 import { RecordPreview } from '@/components/record-preview'
-import { RelativeDate } from '@/components/relative-date'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { percentChange } from '@/lib/dashboard'
-import { activityAt, formatDateTime, statusLabel } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
+import { activityAt, statusLabel } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
-import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatMonths } from '@/lib/utils'
+import { formatEuro, formatMonths } from '@/lib/utils'
 
 import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
 
@@ -32,7 +34,7 @@ const ORDERS_SHOWN = 100
  */
 export function CatalogueItemPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
-  const { canManageItems } = useSession()
+  const canManageItems = useSession().can('catalogue.manage')
   const item = useLoad(() => client.catalogue.get(id), [id])
   const sets = useLoad(() => client.itemSets.list())
   const settings = useLoad(() => client.settings())

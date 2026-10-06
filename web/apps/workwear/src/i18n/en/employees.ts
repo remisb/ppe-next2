@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 /** Employees: the list, an employee's page, Add / Edit employee and Edit Sizes. */
 export const employees = {

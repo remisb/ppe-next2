@@ -1,16 +1,14 @@
 import type { CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
-import { ClipboardList, CornerDownLeft, FileText, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound, type LucideIcon } from 'lucide-react'
+import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
+import { cn } from '@ppe/ui/lib/utils'
+import { ClipboardList, CornerDownLeft, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
-import { useDensity } from '@/lib/density'
-import { type Theme, themes, useTheme } from '@/lib/theme'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
-import { cn } from '@/lib/utils'
 
 /** A screen the palette can jump to: the user's own navigation sections, and Account. */
 export interface PaletteSection {

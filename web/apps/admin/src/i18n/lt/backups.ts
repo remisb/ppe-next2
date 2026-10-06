@@ -1,0 +1,41 @@
+import { plural } from '@ppe/i18n'
+
+import type { BackupsText } from '../en/backups'
+
+export const backups: BackupsText = {
+  title: 'Atsarginės kopijos',
+  description: 'Visos duomenų bazės kopijos, kurias pagal tvarkaraštį daro atsarginių kopijų tarnyba.',
+  noAgent: 'Atsarginių kopijų tarnyba nepranešė: pagal tvarkaraštį niekas nekopijuojama. Patikrinkite, ar ji veikia serveryje.',
+  noneYet: 'Dar nepadaryta nė viena atsarginė kopija.',
+  localOnly:
+    'Atsarginės kopijos laikomos pačiame serveryje, todėl dingtų kartu su juo. Paprašykite serverį prižiūrinčio žmogaus laikyti jas saugykloje kitur.',
+  lastBackup: 'Paskutinė kopija',
+  nextBackup: 'Kita kopija',
+  stored: 'Laikoma',
+  storedSize: 'Bendras dydis',
+  none: 'Nėra',
+  unknown: 'Nežinoma',
+  backupsCount: (n: number) => plural(n, { one: '# kopija', few: '# kopijos', other: '# kopijų' }),
+  tookAndSize: (took: string, size: string) => `${size}, užtruko ${took}`,
+  settings: 'Nustatymai',
+  settingsDescription: 'Nustatoma serveryje, kuriame veikia atsarginių kopijų tarnyba.',
+  schedule: 'Tvarkaraštis',
+  savedTo: 'Saugoma',
+  keptFor: 'Laikoma',
+  encryption: 'Šifravimas',
+  encrypted: 'Užšifruotos',
+  notEncrypted: 'Nešifruotos',
+  lastReport: 'Tarnyba paskutinį kartą pranešė',
+  serviceVersion: 'Tarnybos versija',
+  recent: 'Naujausios kopijos',
+  recentDescription: 'Kiekvienas bandymas, naujausi pirmi.',
+  started: 'Pradėta',
+  result: 'Rezultatas',
+  size: 'Dydis',
+  took: 'Užtruko',
+  dbVersion: 'Duomenų bazės versija',
+  succeeded: 'Pavyko',
+  failed: 'Nepavyko',
+  deleted: 'Ištrinta pasibaigus laikymo laikui',
+  empty: 'Atsarginių kopijų dar nėra. Čia rodoma kiekviena tarnybos padaryta kopija.',
+}

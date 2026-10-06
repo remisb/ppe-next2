@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
@@ -61,10 +63,13 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		return err
 	}
 	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(cfg.JWTSecret), sessionLimits(cfg))
+	roles := role.NewService(role.NewPostgresRepository(pool))
 	svc := newServices(
 		loc, cfg.ConfirmTTL,
 		sessions,
-		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions})),
+		roles,
+		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions}),
+			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
 		employee.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
@@ -75,7 +80,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	)
 
 	if cfg.SeedAdmin {
-		return seedAdmin(ctx, svc.users, cfg, logger)
+		return seedAdmin(ctx, pool, svc.users, cfg, logger)
 	}
 	if cfg.SeedDemo {
 		return seedDemo(ctx, pool, svc.users, cfg, loc, logger)
@@ -113,6 +118,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 // services are the domain services the API exposes.
 type services struct {
 	sessions  *session.Service
+	roles     *role.Service
 	users     *user.Service
 	employees *employee.Service
 	catalogue *catalogue.Service
@@ -125,9 +131,10 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
 	s := services{
 		sessions:  sessions,
+		roles:     roles,
 		users:     users,
 		employees: employee.NewService(employees),
 		catalogue: catalogue.NewService(items),
@@ -150,8 +157,10 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.public("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
-	registerAuthRoutes(rt, svc.users, svc.sessions, tok, cfg)
-	registerUserRoutes(rt, svc.users, tok, requireRecentSignIn(tok, cfg.RecentSignIn))
+	registerAuthRoutes(rt, svc.users, svc.roles, svc.sessions, tok, cfg)
+	sensitive := requireSensitive(tok, cfg.RecentSignIn, svc.roles)
+	registerUserRoutes(rt, svc.users, tok, sensitive)
+	registerRoleRoutes(rt, svc.roles, sensitive)
 	registerEmployeeRoutes(rt, svc.employees)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerItemSetRoutes(rt, svc.itemSets)
@@ -214,10 +223,14 @@ func openDB(ctx context.Context, cfg config) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// seedAdmin creates the first admin. Running it again once the email exists is
-// a no-op, so it is safe in a deploy script.
-func seedAdmin(ctx context.Context, users *user.Service, cfg config, logger *slog.Logger) error {
-	u, err := users.Bootstrap(ctx, cfg.SeedUserEmail, cfg.SeedUserName, cfg.SeedUserPassword)
+// seedAdmin creates the first admin, holding the built-in Administrator role
+// (put back first, should the roles have been emptied). Running it again once
+// the email exists is a no-op, so it is safe in a deploy script.
+func seedAdmin(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg config, logger *slog.Logger) error {
+	if err := role.EnsureBuiltins(ctx, pool); err != nil {
+		return err
+	}
+	u, err := users.Bootstrap(ctx, cfg.SeedUserEmail, cfg.SeedUserName, cfg.SeedUserPassword, []uuid.UUID{role.AdminID})
 	if errors.Is(err, user.ErrEmailTaken) {
 		logger.Info("seed admin already exists", slog.String("email", cfg.SeedUserEmail))
 		return nil

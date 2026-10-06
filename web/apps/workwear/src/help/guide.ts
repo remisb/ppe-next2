@@ -1,4 +1,4 @@
-import type { Role } from '@ppe/api-client'
+import type { Permission, RoleKey as Role } from '@ppe/api-client'
 
 /**
  * The user guide as data, one Guide per language (help/en.ts, lt.ts, ru.ts):
@@ -107,6 +107,18 @@ export interface Shot {
   alt: string
   /** Always a phone's screen, whatever the device (sign-in, the employee's confirmation). */
   phone?: boolean
+}
+
+/**
+ * Whose parts of Help a user reads: each built-in role's, for the permissions
+ * that set that role apart. Help's text is written per role.
+ */
+export function helpAudiences(s: { can: (p: Permission) => boolean }): Role[] {
+  const out: Role[] = []
+  if (s.can('users.manage') || s.can('dashboard.overview')) out.push('admin')
+  if (s.can('orders.delete') || s.can('dashboard.manager')) out.push('manager')
+  if (s.can('dashboard.employee')) out.push('employee')
+  return out
 }
 
 /** Whether a part limited to `roles` is for a user with `user`. */

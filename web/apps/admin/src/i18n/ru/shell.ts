@@ -1,0 +1,24 @@
+import type { ShellText } from '../en/shell'
+
+export const shell: ShellText = {
+  signInTagline: 'Пользователи, роли и настройки организации для «Спецодежды и снаряжения».',
+  mainNav: 'Основная навигация',
+  skipToContent: 'Перейти к содержимому',
+  more: 'Ещё',
+  users: 'Пользователи',
+  shortUsers: 'Польз.',
+  roles: 'Роли и права',
+  shortRoles: 'Роли',
+  settings: 'Настройки',
+  shortSettings: 'Настройки',
+  backups: 'Резервные копии',
+  shortBackups: 'Копии',
+  workwear: 'Спецодежда и снаряжение',
+  shortWorkwear: 'Спецодежда',
+  accountAndPassword: 'Учётная запись и пароль',
+  shortAccount: 'Профиль',
+  signOut: 'Выйти',
+  notForYouTitle: 'Администрирование — для администраторов',
+  notForYou: 'Ваши роли не позволяют управлять пользователями, ролями, настройками или резервными копиями. При необходимости обратитесь к администратору.',
+  backToWorkwear: 'Вернуться в «Спецодежду и снаряжение»',
+}

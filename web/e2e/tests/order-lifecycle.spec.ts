@@ -34,8 +34,26 @@ test.afterAll(async () => {
   await page.context().close()
 })
 
-/** Opens a section from the Main navigation; on a phone the fifth and later are under More. */
+/** Administration's sections: the staff app links there, and it links back. */
+const administrationTabs = ['Users', 'Roles & permissions', 'Settings', 'Backups']
+
+/** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
+async function switchApp(linkName: string) {
+  const link = page.getByRole('link', { name: linkName, exact: true }).filter({ visible: true })
+  if ((await link.count()) === 0) await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click()
+  await link.click()
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+}
+
+/**
+ * Opens a section from the Main navigation; on a phone the fifth and later are
+ * under More. Users, Settings and Backups are in Administration, reached by
+ * its link and left by Workwear & Equipment, as people do.
+ */
 async function openTab(name: string) {
+  const inAdministration = new URL(page.url()).pathname.startsWith('/admin/')
+  if (administrationTabs.includes(name) && !inAdministration) await switchApp('Administration')
+  if (!administrationTabs.includes(name) && inAdministration) await switchApp('Workwear & Equipment')
   const nav = page.getByRole('navigation', { name: 'Main' })
   const link = nav.getByRole('link', { name })
   // The rail and sidebar have no Create Order: it is Orders' Create Order button there.
@@ -167,8 +185,30 @@ test('Backups: an administrator sees whether the database is backed up', async (
   await openTab('Dashboard')
   const card = page.getByRole('region', { name: 'Backups' })
   await expect(card).toContainText('The backup service has not reported')
+  // The card opens Backups in Administration.
   await card.getByRole('link').click()
   await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/backups$/)
+})
+
+test('Administration shares the sign-in: signed in there at once, and Sign out there signs the staff app out', async ({ browser }) => {
+  const staff = await signInElsewhere(browser, admin.email, admin.password)
+  await expect(staff.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  // The old addresses of its screens lead there.
+  await staff.goto(webURL + '/users')
+  await expect(staff).toHaveURL(/\/admin\/users$/)
+  await expect(staff.getByRole('heading', { name: 'Users' })).toBeVisible()
+  const nav = staff.getByRole('navigation', { name: 'Main' })
+  await expect(nav.getByRole('link', { name: 'Users' })).toHaveAttribute('aria-current', 'page')
+  await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveCount(0)
+  // Another tab of the staff app, then Sign out in Administration: both are signed out.
+  const tab = await staff.context().newPage()
+  await tab.goto(webURL + '/')
+  await expect(tab.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await staff.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click()
+  await expect(staff.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await staff.context().close()
 })
 
 test("Settings: an administrator sets the supplier's WhatsApp group", async () => {
@@ -949,6 +989,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
     ['Users', admin.email],
+    ['Roles & permissions', 'Built-in'],
     ['Settings', 'Invite link'],
     ['Backups', 'Recent backups'],
   ] as const) {
@@ -1043,6 +1084,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
       ['Users', admin.email],
+      ['Roles & permissions', 'Built-in'],
       ['Settings', 'Invite link'],
       ['Backups', 'Recent backups'],
     ] as const) {
@@ -1121,6 +1163,12 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Item Catalogue' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Users' })).toHaveCount(0)
+  // No way to Administration: a manager's roles open none of its screens.
+  await expect(other.getByRole('link', { name: 'Administration' })).toHaveCount(0)
+  await other.goto(webURL + '/admin/')
+  await expect(other.getByRole('heading', { name: 'Administration is for administrators' })).toBeVisible()
+  await other.goto(webURL + '/')
+  await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   // Items, prices and purchasing: the price change made earlier, the unpriced helmet,
   // the second pair of shoes not yet on order again.
   const priceChange = other.getByRole('listitem').filter({ hasText: 'Safety shoes' }).filter({ hasText: '→' })
@@ -1213,6 +1261,73 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   other = await signInElsewhere(browser, mia.email, 'mia-password-2')
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await other.context().close()
+})
+
+test('Roles & permissions: a role made of permissions, given to a user, lets them do what it allows', async ({ browser }) => {
+  await openTab('Roles & permissions')
+  await expect(page.getByRole('heading', { name: 'Roles & permissions' })).toBeVisible()
+  // Administrator is shown as it is: nothing in it can change, and it cannot be deleted.
+  const adminRow = page.getByRole('row', { name: /^Administrator/ })
+  await expect(adminRow.getByRole('button', { name: /^More actions/ })).toHaveCount(0)
+  await adminRow.getByRole('button', { name: 'View Administrator' }).click()
+  let dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('checkbox', { name: /^Manage roles/ })).toBeChecked()
+  await expect(dialog.getByRole('checkbox', { name: /^Manage roles/ })).toBeDisabled()
+  await expect(dialog.getByRole('checkbox', { name: /^Delete orders/ })).not.toBeChecked()
+  await dialog.getByRole('button', { name: 'Close' }).last().click()
+
+  // A permission comes with what it needs: Manage users brings See users, which it then keeps ticked.
+  await page.getByRole('button', { name: 'Add Role' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill('Storekeeper')
+  await dialog.getByRole('checkbox', { name: /^Manage users/ }).check()
+  await expect(dialog.getByRole('checkbox', { name: /^See users/ })).toBeChecked()
+  await expect(dialog.getByRole('checkbox', { name: /^See users/ })).toBeDisabled()
+  await dialog.getByRole('checkbox', { name: /^Manage users/ }).uncheck()
+  await expect(dialog.getByRole('checkbox', { name: /^See users/ })).toBeEnabled()
+  await dialog.getByRole('checkbox', { name: /^See users/ }).uncheck()
+  await dialog.getByRole('checkbox', { name: /^Manage Item Catalogue/ }).check()
+  await dialog.getByRole('button', { name: 'Add Role' }).click()
+  const storeRow = page.getByRole('row', { name: /^Storekeeper/ })
+  await expect(storeRow).toContainText('Manage Item Catalogue')
+  await expect(storeRow).toContainText('0 users')
+  // A second role of the same name is refused on its field.
+  await page.getByRole('button', { name: 'Add Role' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill('storekeeper')
+  await dialog.getByRole('button', { name: 'Add Role' }).click()
+  await expect(dialog.getByText('Another role already has this name.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+  // Given to a user besides the employee role: they manage the catalogue, which the employee role alone does not.
+  const sam = { name: 'Sam Storekeeper', email: 'sam@example.com', password: 'sam-password-1' }
+  await openTab('Users')
+  await page.getByRole('button', { name: 'Add User' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill(sam.name)
+  await dialog.getByLabel('Email').fill(sam.email)
+  await expect(dialog.getByRole('checkbox', { name: /^Employee/ })).toBeChecked()
+  await dialog.getByRole('checkbox', { name: /^Storekeeper/ }).check()
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill(sam.password)
+  await dialog.getByLabel('Confirm password').fill(sam.password)
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(sam.name) })).toContainText('Storekeeper')
+  const other = await signInElsewhere(browser, sam.email, sam.password)
+  await expect(other.getByRole('heading', { name: 'Employee Dashboard' })).toBeVisible()
+  await other.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Item Catalogue' }).click()
+  await expect(other.getByRole('button', { name: 'Add Item' })).toBeVisible()
+  // Not an administrator, so no way to Administration.
+  await expect(other.getByRole('link', { name: 'Administration' })).toHaveCount(0)
+  await other.context().close()
+
+  // A role someone holds is not deleted.
+  await openTab('Roles & permissions')
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toContainText('1 user')
+  await page.getByRole('row', { name: /^Storekeeper/ }).getByRole('button', { name: /^More actions/ }).click()
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('menuitem', { name: 'Delete role…' }).click()
+  await expect(page.getByText('Users hold this role. Take it from them on Users first.')).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toBeVisible()
 })
 
 test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {
@@ -1344,7 +1459,21 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   // Longer words must not push any screen sideways on a phone.
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
-  for (const path of ['/dashboard', '/orders/new', '/orders', '/employees', '/catalogue', '/item-sets', '/users', '/replacements', '/help', '/account']) {
+  for (const path of [
+    '/dashboard',
+    '/orders/new',
+    '/orders',
+    '/employees',
+    '/catalogue',
+    '/item-sets',
+    '/replacements',
+    '/help',
+    '/admin/users',
+    '/admin/roles',
+    '/admin/settings',
+    '/admin/backups',
+    '/account',
+  ]) {
     await page.goto(path)
     await expect(page.locator('main h1')).toBeVisible()
     await page.waitForLoadState('networkidle')
@@ -1569,8 +1698,10 @@ test('Sign in: too many failed attempts for one account are refused for a while'
 test('no screen broke the Content-Security-Policy', async () => {
   // Behind Caddy (E2E_WEB_SERVER=caddy, as in CI) every step above ran under the policy.
   if (process.env['E2E_WEB_SERVER'] === 'caddy') {
-    const res = await page.request.get('/')
-    expect(res.headers()['content-security-policy']).toContain("default-src 'self'")
+    for (const path of ['/', '/admin/', '/admin/users']) {
+      const res = await page.request.get(path)
+      expect(res.headers()['content-security-policy'], path).toContain("default-src 'self'")
+    }
   }
   expect(cspViolations).toEqual([])
 })

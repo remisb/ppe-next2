@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { HistoryText } from '../en/history'
-import { plural } from '../plural'
 
 export const history: HistoryText = {
   title: 'Užsakymai',
@@ -79,10 +80,4 @@ export const history: HistoryText = {
   // Always shown with one decimal, so always the fraction form: "2,1 mėnesio".
   usage: (months: string) => `${months} mėnesio`,
   today: 'šiandien',
-  todayAt: (time: string) => `šiandien ${time}`,
-  yesterday: 'vakar',
-  yesterdayAt: (time: string) => `vakar ${time}`,
-  tomorrow: 'rytoj',
-  daysAgo: (n: number) => plural(n, { one: 'prieš # dieną', few: 'prieš # dienas', other: 'prieš # dienų' }),
-  inDays: (n: number) => plural(n, { one: 'po # dienos', few: 'po # dienų', other: 'po # dienų' }),
 }

@@ -4,12 +4,14 @@ import (
 	"errors"
 	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
@@ -21,6 +23,7 @@ var errRecentSignInRequired = errors.New("recent sign-in required")
 
 type authHandler struct {
 	users    *user.Service
+	roles    *role.Service
 	sessions *session.Service
 	tokens   *tokens
 	emails   *emailLimiter
@@ -41,8 +44,8 @@ type authHandler struct {
 // also count against the email (emailLimiter), which stops many addresses
 // guessing at one account. A config without the per-email limit
 // (LoginEmailFailures 0, as in tests that build one by hand) leaves it off.
-func registerAuthRoutes(rt *router, users *user.Service, sessions *session.Service, tokens *tokens, cfg config) {
-	h := &authHandler{users: users, sessions: sessions, tokens: tokens, cookies: newCookiePolicy(cfg)}
+func registerAuthRoutes(rt *router, users *user.Service, roles *role.Service, sessions *session.Service, tokens *tokens, cfg config) {
+	h := &authHandler{users: users, roles: roles, sessions: sessions, tokens: tokens, cookies: newCookiePolicy(cfg)}
 	if cfg.LoginEmailFailures > 0 {
 		h.emails = newEmailLimiter(cfg.LoginEmailFailures, cfg.LoginEmailInterval)
 	}
@@ -233,9 +236,15 @@ func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
 	h.writeToken(w, r, u, s)
 }
 
-// writeToken issues u an access token for session s and writes it.
+// writeToken issues u an access token for session s, granting what u's roles
+// allow now, and writes it.
 func (h *authHandler) writeToken(w http.ResponseWriter, r *http.Request, u user.User, s session.Session) {
-	token, exp, err := h.tokens.issue(u, s.ID, s.AuthenticatedAt)
+	perms, err := h.roles.Permissions(r.Context(), u.RoleIDs)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	token, exp, err := h.tokens.issue(u, perms, s.ID, s.AuthenticatedAt)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -331,6 +340,38 @@ func (h *authHandler) signedIn(w http.ResponseWriter, r *http.Request) (actor uu
 		return actor, claims, false
 	}
 	return actor, claims, true
+}
+
+// errPermissionWithdrawn: the token grants the route's permission, but the
+// user's roles no longer do (changed since the token was issued).
+var errPermissionWithdrawn = errors.New("forbidden: your roles no longer allow this")
+
+// requireSensitive wraps the handlers of routes that manage users and roles:
+// besides the permission in the token (the route's Authorizer), the password
+// must have been entered recently (requireRecentSignIn), and the user's roles
+// must still grant perm now, read from the database, so a demoted
+// administrator is refused at once rather than at their next refresh.
+func requireSensitive(tok *tokens, maxAge time.Duration, roles *role.Service) func(role.Permission, http.HandlerFunc) http.HandlerFunc {
+	recent := requireRecentSignIn(tok, maxAge)
+	return func(perm role.Permission, next http.HandlerFunc) http.HandlerFunc {
+		return recent(func(w http.ResponseWriter, r *http.Request) {
+			actor, err := actorID(r)
+			if err != nil {
+				writeError(w, r, err)
+				return
+			}
+			perms, err := roles.PermissionsOf(r.Context(), actor)
+			if err != nil {
+				writeError(w, r, err)
+				return
+			}
+			if !slices.Contains(perms, perm) {
+				writeError(w, r, errPermissionWithdrawn)
+				return
+			}
+			next(w, r)
+		})
+	}
 }
 
 // requireRecentSignIn wraps a handler that needs the password to have been

@@ -1,13 +1,13 @@
 import type { OrderRecord } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { type PointerEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { ConfirmSummary, Confirmed, ConsentBar, FullRecord, LanguageSwitch } from '@/components/confirmation'
-import { ErrorState, Loading } from '@/components/states'
-import { Button } from '@/components/ui/button'
-import { useApi } from '@/lib/api'
 import { type ConfirmLang, confirmText, employeeLang, initialLang } from '@/lib/confirm-text'
-import { errorText, useLoad } from '@/lib/use-load'
-import { cn } from '@/lib/utils'
 
 /** How long Hand back must be held: long enough that a stray tap by the employee does nothing. */
 const HOLD_MS = 1500

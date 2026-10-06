@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { DashboardText } from '../en/dashboard'
-import { plural } from '../plural'
 
 const items = (n: number) => plural(n, { one: '# предмет', few: '# предмета', many: '# предметов', other: '# предмета' })
 const orders = (n: number) => plural(n, { one: '# заказ', few: '# заказа', many: '# заказов', other: '# заказа' })
@@ -32,9 +33,6 @@ export const dashboard: DashboardText = {
       other: '# сотрудника без размера, нужного для заказа',
     }),
 
-  refresh: 'Обновить',
-  keyFigures: 'Основные показатели',
-  needsAttention: 'Требует внимания',
   scale: (value: string) => `Шкала ${value}`,
   month: 'Месяц',
   needsYou: 'Требует внимания',

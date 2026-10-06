@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { CatalogueText } from '../en/catalogue'
-import { plural } from '../plural'
 
 export const catalogue: CatalogueText = {
   clothing: 'Drabužiai',

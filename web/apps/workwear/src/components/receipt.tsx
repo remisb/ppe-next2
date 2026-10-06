@@ -1,9 +1,11 @@
 import type { OrderRecord } from '@ppe/api-client'
+import { Badge } from '@ppe/ui/components/badge'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { cn } from '@ppe/ui/lib/utils'
 
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatDateTime, methodText } from '@/lib/history'
-import { cn, formatSize } from '@/lib/utils'
+import { formatDateTime } from '@ppe/ui/lib/dates'
+import { methodText } from '@/lib/history'
+import { formatSize } from '@/lib/utils'
 
 // The record reads the same whatever the staff member's interface language
 // (manual §8): English / Russian words, and amounts and periods as when it was

@@ -5,7 +5,7 @@ import { type Browser, type Page, expect, test } from '@playwright/test'
 import { type ShotName, shotPath } from '../../apps/workwear/src/help/index.ts'
 import { admin } from '../env.ts'
 import { writeDocs } from './docs.ts'
-import { T, agents, device, deviceWindow, lang, locale } from './lang.ts'
+import { A, S, T, agents, device, deviceWindow, lang, locale } from './lang.ts'
 
 // Screenshots for the Help screen, taken from the demo data in order: each
 // step leaves the app where the next one starts. GUIDE_LANG and GUIDE_DEVICE
@@ -57,11 +57,11 @@ const phoneOf = (browser: Browser) => browser.newPage({ viewport: { width: 390, 
 
 test('sign in and the dashboard', async () => {
   await page.goto('/')
-  await page.getByLabel(T.shell.email).fill(admin.email)
-  await page.getByLabel(new RegExp(`^${T.shell.password}`)).fill(admin.password)
+  await page.getByLabel(S.email).fill(admin.email)
+  await page.getByLabel(new RegExp(`^${S.password}`)).fill(admin.password)
   // Sign-in is the phone's on every device: wider, the form is a small card in an empty page.
   if (device === 'phone') await shot('sign-in', { phone: true })
-  await page.getByRole('button', { name: T.shell.signIn }).click()
+  await page.getByRole('button', { name: S.signIn }).click()
   await expect(page.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await shot('dashboard')
 })
@@ -139,19 +139,20 @@ test('employees, catalogue, item sets, users, settings, backups', async () => {
   await openTab(T.shell.itemSets)
   await expect(page.getByText('Warehouse starter kit').first()).toBeVisible()
   await shot('item-sets')
-  await openTab(T.shell.users)
-  await expect(page.getByRole('heading', { name: T.users.title })).toBeVisible()
+  // Users, Settings and Backups are Administration's, at /admin.
+  await page.goto('/admin/users')
+  await expect(page.getByRole('heading', { name: A.users.title })).toBeVisible()
   await shot('users')
   // The supplier's group, as an administrator sets it (the link is a made-up one).
-  await openTab(T.shell.settings)
-  await page.getByLabel(T.settings.groupName).fill('Superman Rubai Group')
-  await page.getByLabel(T.settings.inviteLink).fill('https://chat.whatsapp.com/DemoSupplierGroup01')
-  await page.getByRole('button', { name: T.settings.save }).click()
+  await page.goto('/admin/settings')
+  await page.getByLabel(A.settings.groupName).fill('Superman Rubai Group')
+  await page.getByLabel(A.settings.inviteLink).fill('https://chat.whatsapp.com/DemoSupplierGroup01')
+  await page.getByRole('button', { name: A.settings.save }).click()
   await expect(page.getByRole('main').getByRole('status')).toContainText('Superman Rubai Group')
   await shot('settings')
   // The backup history guide/setup.ts inserted.
-  await openTab(T.shell.backups)
-  await expect(page.getByRole('heading', { name: T.backups.recent })).toBeVisible()
+  await page.goto('/admin/backups')
+  await expect(page.getByRole('heading', { name: A.backups.recent })).toBeVisible()
   await shot('backups')
 })
 
@@ -163,9 +164,9 @@ test('account and the search', async ({ browser }) => {
     extraHTTPHeaders: { 'X-Forwarded-For': '198.51.100.7' },
   })
   await other.goto('/')
-  await other.getByLabel(T.shell.email).fill(admin.email)
-  await other.getByLabel(new RegExp(`^${T.shell.password}`)).fill(admin.password)
-  await other.getByRole('button', { name: T.shell.signIn }).click()
+  await other.getByLabel(S.email).fill(admin.email)
+  await other.getByLabel(new RegExp(`^${S.password}`)).fill(admin.password)
+  await other.getByRole('button', { name: S.signIn }).click()
   await expect(other.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await other.close()
 

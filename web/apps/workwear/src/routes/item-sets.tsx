@@ -1,21 +1,21 @@
 import type { CatalogueItem, ItemSet } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
-import { MoreActions } from '@/components/more-actions'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
-import { FormSheet } from '@/components/ui/form-sheet'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { type SetTotal, setTotal } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
-import { errorText, useLoad } from '@/lib/use-load'
 import { formatEuro } from '@/lib/utils'
 
 /**
@@ -26,7 +26,7 @@ import { formatEuro } from '@/lib/utils'
  */
 export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
-  const { canManageItems } = useSession()
+  const canManageItems = useSession().can('item_sets.manage')
   const sets = useLoad(() => client.itemSets.list())
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)

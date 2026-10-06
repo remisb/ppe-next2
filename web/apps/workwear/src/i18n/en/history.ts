@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 /** History: the list, an open order, the staff side of confirmation, the record page's chrome, and History's date wording. */
 export const history = {
@@ -82,12 +82,6 @@ export const history = {
   // Dates and durations in lists.
   usage: (months: string) => `${months} months`,
   today: 'today',
-  todayAt: (time: string) => `today ${time}`,
-  yesterday: 'yesterday',
-  yesterdayAt: (time: string) => `yesterday ${time}`,
-  tomorrow: 'tomorrow',
-  daysAgo: (n: number) => plural(n, { one: '# day ago', other: '# days ago' }),
-  inDays: (n: number) => plural(n, { one: 'in # day', other: 'in # days' }),
 }
 
 export type HistoryText = typeof history

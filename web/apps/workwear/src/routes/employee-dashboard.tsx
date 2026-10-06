@@ -1,15 +1,17 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 
-import { KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Button } from '@/components/ui/button'
+import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
+import { MonthChart, MoreLink, NeedsYouPanel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
 import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel } from '@/lib/dashboard'
-import { formatDateTime } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
-import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro } from '@/lib/utils'
+import { formatEuro } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 

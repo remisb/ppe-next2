@@ -1,12 +1,6 @@
 import type { ClothingSize } from '@ppe/api-client'
-import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 
 import { type Lang, currentLang, t } from '@/i18n'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
 
 // Irish English writes €49.99; Lithuanian and Russian 49,99 €.
 const euroLocales: Record<Lang, string> = { en: 'en-IE', lt: 'lt-LT', ru: 'ru-RU' }

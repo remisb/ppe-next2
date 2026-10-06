@@ -1,11 +1,11 @@
 import type { SupplierChat } from '@ppe/api-client'
+import { Button } from '@ppe/ui/components/button'
+import { Textarea } from '@ppe/ui/components/field'
+import { cn } from '@ppe/ui/lib/utils'
 import { Check, ExternalLink, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/field'
 import { t } from '@/i18n'
-import { cn } from '@/lib/utils'
 import { whatsappUrl } from '@/lib/whatsapp'
 
 /**

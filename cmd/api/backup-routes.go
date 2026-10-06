@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remisb/ppe-next2/internal/domain/backup"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // registerBackupRoutes mounts the backup report: when the database was last
@@ -17,5 +18,5 @@ func registerBackupRoutes(rt *router, svc *backup.Service) {
 			return
 		}
 		writeJSON(w, http.StatusOK, st)
-	}, admins...)
+	}, role.BackupsRead)
 }

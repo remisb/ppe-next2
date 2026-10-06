@@ -1,9 +1,9 @@
 import type { CatalogueIcon } from '@ppe/api-client'
+import { cn } from '@ppe/ui/lib/utils'
 import { Glasses, Hand, HardHat, Headphones, type LucideProps, Package, Shirt } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 
 import { t } from '@/i18n'
-import { cn } from '@/lib/utils'
 
 /*
  * Pictograms for catalogue items, so an item is recognised by its picture as

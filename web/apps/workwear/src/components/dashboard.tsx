@@ -1,14 +1,14 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, ChevronRight, RefreshCw } from 'lucide-react'
-import { type ReactNode, useId } from 'react'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { Panel } from '@ppe/ui/components/panel'
+import { formatDateTime } from '@ppe/ui/lib/dates'
+import { cn } from '@ppe/ui/lib/utils'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import type { ReactNode } from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { t } from '@/i18n'
 import { type Need, barPercent, monthLabel, niceCeiling, sortNeeds } from '@/lib/dashboard'
-import { formatDateTime } from '@/lib/history'
 import type { Route } from '@/lib/router'
-import { cn } from '@/lib/utils'
 
 /*
  * Building blocks shared by the dashboards. Charts are plain elements drawn for the eye (aria-hidden); each
@@ -19,135 +19,6 @@ import { cn } from '@/lib/utils'
 export const formatDate = (iso: string, tz: string) => formatDateTime(iso, tz).slice(0, 10)
 
 export const inlineLink = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
-
-/** A dashboard section: a card whose title is a level-2 heading, and a region named by it. */
-export function Panel({
-  title,
-  description,
-  className,
-  anchor,
-  descriptionClassName,
-  children,
-}: {
-  title: string
-  description?: ReactNode
-  /** Such as `max-md:hidden`, where the phone needs the height. */
-  descriptionClassName?: string
-  className?: string | undefined
-  /** A name to jump to it by (data-panel), for a tile that leads here. */
-  anchor?: string
-  children: ReactNode
-}) {
-  const id = useId()
-  return (
-    <Card
-      className={cn('transition-colors duration-700 data-flash:bg-accent/60', className)}
-      role="region"
-      aria-labelledby={id}
-      {...(anchor ? { 'data-panel': anchor } : {})}
-    >
-      <CardHeader>
-        <CardTitle>
-          <h2 id={id}>{title}</h2>
-        </CardTitle>
-        {description ? <CardDescription className={descriptionClassName}>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  )
-}
-
-/** Refresh for a dashboard: an icon on a phone, where the header has little room; labelled wider. */
-export function RefreshButton({ loading, onClick }: { loading: boolean; onClick: () => void }) {
-  return (
-    <Button variant="outline" onClick={onClick} disabled={loading} title={t.dashboard.refresh} className="max-md:size-11 max-md:px-0">
-      <RefreshCw aria-hidden className={cn(loading && 'animate-spin')} />
-      <span className="max-md:sr-only">{t.dashboard.refresh}</span>
-    </Button>
-  )
-}
-
-/** The row of headline figures. */
-export function KeyFigures({ children }: { children: ReactNode }) {
-  return (
-    // Two by two on a phone, in compact tiles: the four figures take about a fifth of the first screen, leaving it to what needs doing.
-    <ul aria-label={t.dashboard.keyFigures} className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-      {children}
-    </ul>
-  )
-}
-
-/**
- * A headline figure. With onOpen it is one button, the whole tile: it goes to
- * the list behind the figure (the rows in Needs you, History, Employees), and
- * a chevron says so. Without, it only reports.
- *
- * On a phone a tile is one fact beside the figure: `brief`, or else the
- * comparison. The full detail then stays for screen readers and shows from md.
- */
-export function Kpi({
-  label,
-  value,
-  detail,
-  brief,
-  change,
-  alert = false,
-  onOpen,
-  openHint,
-}: {
-  label: string
-  value: string
-  detail: string
-  /** The phone's one fact beside the figure, e.g. "oldest 12 days"; the comparison when absent. */
-  brief?: string
-  change?: string
-  alert?: boolean
-  onOpen?: (() => void) | undefined
-  /** Where the tile goes, for screen readers: "Show them in Needs you". */
-  openHint?: string
-}) {
-  const note = brief ?? (change || undefined)
-  const body = (
-    <Card size="sm" className={cn('h-full', onOpen && 'transition-colors group-hover:bg-accent/60')}>
-      <CardContent className="flex flex-col gap-1 max-md:gap-0.5">
-        <span className="flex items-center gap-1.5 text-muted-foreground max-md:text-xs">
-          <span className="min-w-0 truncate">{label}</span>
-          {alert ? <AlertTriangle aria-label={t.dashboard.needsAttention} className="size-3.5 shrink-0 text-destructive" /> : null}
-          {onOpen ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
-        </span>
-        <span className="flex flex-wrap items-baseline gap-x-2">
-          <span className="text-2xl font-semibold tracking-tight tabular-nums max-md:text-xl">{value}</span>
-          {/* The same words as the detail below, which screen readers get in full. */}
-          {note ? (
-            <span aria-hidden className="text-xs text-muted-foreground md:hidden">
-              {note}
-            </span>
-          ) : null}
-        </span>
-        <span className={cn('text-xs text-muted-foreground', note && 'max-md:sr-only')}>
-          {detail}
-          {change ? <span className="block">{change}</span> : null}
-        </span>
-        {onOpen && openHint ? <span className="sr-only">. {openHint}</span> : null}
-      </CardContent>
-    </Card>
-  )
-  return (
-    <li>
-      {onOpen ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="group block h-full w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {body}
-        </button>
-      ) : (
-        body
-      )}
-    </li>
-  )
-}
 
 /**
  * Scrolls to the first element matching selector (a row in Needs you, a

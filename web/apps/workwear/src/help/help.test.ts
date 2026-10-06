@@ -1,7 +1,7 @@
-import type { Role } from '@ppe/api-client'
+import type { RoleKey as Role } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { type Block, type Device, type Guide, type Item, deviceFor, forReader, guides, inline, shotPath } from './index'
+import { type Block, type Device, type Guide, type Item, deviceFor, forReader, guides, helpAudiences, inline, shotPath } from './index'
 
 /** A guide's shape without its words: what must match across languages. */
 function shape(g: Guide) {
@@ -117,5 +117,15 @@ describe('inline', () => {
       { kind: 'keys', text: 'Enter' },
       { kind: 'text', text: '.' },
     ])
+  })
+})
+
+describe('helpAudiences', () => {
+  const reader = (...perms: string[]) => ({ can: (p: string) => perms.includes(p) })
+  it("reads each built-in role's parts for the permissions that set it apart", () => {
+    expect(helpAudiences(reader('users.read', 'users.manage', 'dashboard.overview'))).toEqual(['admin'])
+    expect(helpAudiences(reader('users.read', 'orders.delete', 'dashboard.manager'))).toEqual(['manager'])
+    expect(helpAudiences(reader('dashboard.employee'))).toEqual(['employee'])
+    expect(helpAudiences(reader('catalogue.manage'))).toEqual([])
   })
 })

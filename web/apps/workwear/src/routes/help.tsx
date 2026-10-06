@@ -1,10 +1,10 @@
+import { useSession } from '@ppe/app-shell'
+import { PageHeader } from '@ppe/ui/components/states'
+import { cn } from '@ppe/ui/lib/utils'
 import { Fragment, useEffect, useState, useSyncExternalStore } from 'react'
 
-import { PageHeader } from '@/components/states'
-import { type Block, type Device, type Item, deviceFor, deviceOrder, forReader, guides, inline, shotPath } from '@/help'
+import { type Block, type Device, type Item, deviceFor, deviceOrder, forReader, guides, helpAudiences, inline, shotPath } from '@/help'
 import { type Lang, languages } from '@/i18n'
-import { useSession } from '@/lib/api'
-import { cn } from '@/lib/utils'
 
 /** A row of mutually exclusive choices, the pressed one raised, as on Account. */
 const choice =
@@ -35,7 +35,7 @@ export function Help() {
   // The window's device until the reader picks another one to read about.
   const [chosen, setChosen] = useState<Device>()
   const device = chosen ?? current
-  const guide = forReader(guides[lang], { roles: session.roles, device })
+  const guide = forReader(guides[lang], { roles: helpAudiences(session), device })
 
   // An address with a section (/help#orders) opens there once the guide is drawn.
   useEffect(() => {

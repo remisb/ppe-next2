@@ -8,10 +8,10 @@ currency) stay in config; `GET /api/v1/settings` returns both kinds together.
 | Route | Access |
 | --- | --- |
 | `GET /api/v1/settings` | any authenticated: `{timezone, currency, supplier_chat}`, `supplier_chat` being `{name, link}` or `null` when not set |
-| `PUT /api/v1/settings/supplier-chat` | admin: body `{name, link}`, both set or both empty to clear; returns the settings |
+| `PUT /api/v1/settings/supplier-chat` | `settings.manage` (administrators): body `{name, link}`, both set or both empty to clear; returns the settings |
 
-In the web app they are the Settings screen (`/settings`), in the administrator's
-navigation after Users; anyone else asking for `/settings` gets their own start screen.
+In the web app they are the Settings screen in Administration (`/admin/settings`); the
+staff app's old `/settings` leads there.
 
 ## The supplier's WhatsApp group
 

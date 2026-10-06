@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
@@ -61,6 +62,9 @@ var errorStatuses = []struct {
 	{errTooManyAttempts, http.StatusTooManyRequests},
 	{errCrossOrigin, http.StatusForbidden},
 	{errRecentSignInRequired, http.StatusForbidden},
+	{errPermissionWithdrawn, http.StatusForbidden},
+	{user.ErrNotPermitted, http.StatusForbidden},
+	{role.ErrNotPermitted, http.StatusForbidden},
 
 	// The actor comes from a verified token, so an unknown actor is an
 	// authentication problem, not a bad request.
@@ -73,8 +77,10 @@ var errorStatuses = []struct {
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
+	{role.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
+	{role.ErrNotFound, http.StatusNotFound},
 	{session.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
@@ -84,6 +90,10 @@ var errorStatuses = []struct {
 	{order.ErrItemSetNotFound, http.StatusNotFound},
 
 	{user.ErrEmailTaken, http.StatusConflict},
+	{user.ErrLastAdministrator, http.StatusConflict},
+	{role.ErrNameTaken, http.StatusConflict},
+	{role.ErrInUse, http.StatusConflict},
+	{role.ErrBuiltIn, http.StatusConflict},
 	{employee.ErrCodeTaken, http.StatusConflict},
 	{catalogue.ErrNameTaken, http.StatusConflict},
 	{itemset.ErrNameTaken, http.StatusConflict},
@@ -93,6 +103,7 @@ var errorStatuses = []struct {
 	{order.ErrLinkExpired, http.StatusGone},
 
 	{user.ErrInvalid, http.StatusBadRequest},
+	{role.ErrInvalid, http.StatusBadRequest},
 	{session.ErrInvalid, http.StatusBadRequest},
 	{employee.ErrInvalid, http.StatusBadRequest},
 	{catalogue.ErrInvalid, http.StatusBadRequest},

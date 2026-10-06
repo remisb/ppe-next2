@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { HistoryText } from '../en/history'
-import { plural } from '../plural'
 
 export const history: HistoryText = {
   title: 'Заказы',
@@ -80,10 +81,4 @@ export const history: HistoryText = {
   // Always shown with one decimal, so always the fraction form: "2,1 месяца".
   usage: (months: string) => `${months} месяца`,
   today: 'сегодня',
-  todayAt: (time: string) => `сегодня ${time}`,
-  yesterday: 'вчера',
-  yesterdayAt: (time: string) => `вчера ${time}`,
-  tomorrow: 'завтра',
-  daysAgo: (n: number) => plural(n, { one: '# день назад', few: '# дня назад', many: '# дней назад', other: '# дня назад' }),
-  inDays: (n: number) => plural(n, { one: 'через # день', few: 'через # дня', many: 'через # дней', other: 'через # дня' }),
 }

@@ -1,10 +1,10 @@
 import type { Employee } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Input } from '@ppe/ui/components/field'
 import { Search, UserPlus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Input } from '@/components/ui/field'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
 
 /** The minimum a picker needs to show the chosen employee. */
 export interface PickedEmployee {

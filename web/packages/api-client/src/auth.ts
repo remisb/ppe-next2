@@ -1,8 +1,9 @@
-import type { Role } from './types.ts'
+import { type Permission, isPermission } from './permissions.ts'
 
 export interface TokenClaims {
   sub: string
-  roles: Role[]
+  /** What the user's roles allow, when the token was issued. */
+  perms: Permission[]
   /** Seconds since the epoch. */
   exp: number
 }
@@ -10,6 +11,7 @@ export interface TokenClaims {
 /**
  * Read the claims of a JWT without verifying it. The server verifies every
  * request; this only lets the UI show the right controls and notice expiry.
+ * Permission keys this client does not know are dropped.
  */
 export function decodeToken(token: string): TokenClaims | null {
   const payload = token.split('.')[1]
@@ -24,8 +26,9 @@ export function decodeToken(token: string): TokenClaims | null {
     ) {
       return null
     }
-    const roles = Array.isArray((claims as TokenClaims).roles) ? (claims as TokenClaims).roles : []
-    return { sub: (claims as TokenClaims).sub, exp: (claims as TokenClaims).exp, roles }
+    const raw: unknown = (claims as { perms?: unknown }).perms
+    const perms = Array.isArray(raw) ? raw.filter(isPermission) : []
+    return { sub: (claims as TokenClaims).sub, exp: (claims as TokenClaims).exp, perms }
   } catch {
     return null
   }
@@ -33,8 +36,4 @@ export function decodeToken(token: string): TokenClaims | null {
 
 export function isTokenExpired(claims: TokenClaims, now: number = Date.now()): boolean {
   return claims.exp * 1000 <= now
-}
-
-export function hasAnyRole(roles: readonly Role[], ...wanted: Role[]): boolean {
-  return wanted.some((r) => roles.includes(r))
 }

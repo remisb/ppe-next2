@@ -10,13 +10,26 @@ import { defineConfig } from 'vitest/config'
 // another port when 8090 is taken. The proxy keeps the browser's Host header
 // (Vite's shorthand would rewrite it to the target's): the sign-in routes accept
 // an Origin that matches it, whatever port this server runs on.
+//
+// /admin goes to Administration's dev server (apps/admin, port 5182;
+// VITE_ADMIN_TARGET overrides it), websocket and all for its hot reload, so
+// both apps are on this one origin and share the sign-in, as behind Caddy.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
+  const admin = env['VITE_ADMIN_TARGET'] ?? 'http://localhost:5182'
   return {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { port: 5180, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target } },
+    server: {
+      port: 5180,
+      strictPort: true,
+      proxy: {
+        '/api': { target, changeOrigin: false },
+        '/health': target,
+        '/admin': { target: admin, changeOrigin: false, ws: true },
+      },
+    },
     test: { environment: 'jsdom', globals: true },
   }
 })
