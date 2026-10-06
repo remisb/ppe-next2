@@ -55,6 +55,7 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
 4. Check each line's size and quantity:
    - Sizes come from the employee's saved sizes. Clothing is picked by letter, for example `S (44–46)`.
    - You can't order until every missing size is chosen.
+   - If you choose a size other than the employee's saved one, you're asked **Different size selected. Save it to employee profile?** **Save** keeps it for their future orders; **Skip size update** uses it on this order only.
 5. Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.
 
 This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier's message, is in the review.
@@ -126,7 +127,9 @@ From that page, **New order** starts an order for them, and **Edit Sizes** chang
 
 ## 9. Item Catalogue and Item Sets
 
-Each catalogue item has a price, a service period and a size group. You can't order an item without a price or service period. Changing a price never alters existing orders.
+Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.
+
+An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed.
 
 An item set is a kit of items with default quantities. You apply it on Create Order in one tap.
 
