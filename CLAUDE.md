@@ -128,6 +128,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 
 ## Source-of-truth docs
 
+- `docs/architecture/` — the context map (bounded contexts and their dependencies) and the
+  ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

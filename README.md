@@ -316,6 +316,7 @@ bucket) as described in [docs/backups.md](docs/backups.md).
 ## Further reading
 
 - [CLAUDE.md](CLAUDE.md): architecture notes and conventions for contributors
+- [docs/architecture/](docs/architecture/): the context map and architecture decision records
 - [docs/domain-service-contract.md](docs/domain-service-contract.md): rules every Go
   domain service follows
 - [docs/specs/](docs/specs/): per-service requirements
