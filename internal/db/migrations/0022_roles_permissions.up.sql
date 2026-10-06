@@ -46,9 +46,9 @@ CREATE INDEX user_roles_role_idx ON user_roles (role_id);
 
 INSERT INTO roles (id, key, name, description, created_at, updated_at) VALUES
     ('a0e1d000-0000-4000-8000-000000000001', 'admin', 'Administrator',
-     'Manages users, roles, Settings and Backups, plus everything a manager can do.', now(), now()),
+     'Manages users, plus everything a manager can do.', now(), now()),
     ('a0e1d000-0000-4000-8000-000000000002', 'manager', 'Manager',
-     'Manages Item Catalogue prices and Item Sets, and may delete an order.', now(), now()),
+     'Manages Item Catalogue prices and Item Sets, plus everything an employee can do.', now(), now()),
     ('a0e1d000-0000-4000-8000-000000000003', 'employee', 'Employee',
      'Prepares orders and follows them in Orders, manages employees and sizes.', now(), now());
 

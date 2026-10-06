@@ -22,7 +22,7 @@ export const roles: RolesText = {
   editDescription: 'Pakeitimas rolę turinčius naudotojus pasieks per kelias minutes.',
   addDescription: 'Paskui skirkite ją naudotojams skiltyje Naudotojai.',
   lockedNote: 'Administratorius gali viską Administravime ir jo pakeisti negalima, kad kas nors visada galėtų tvarkyti naudotojus ir roles.',
-  builtInName: 'Įtaisytos rolės pavadinimas nesikeičia.',
+  builtInFixed: 'Įtaisytos rolės pavadinimas ir aprašymas nesikeičia.',
   neededBy: (names: string) => `Reikia teisei: ${names}.`,
   enterName: 'Įveskite pavadinimą.',
   nameTooLong: 'Naudokite ne daugiau kaip 100 simbolių.',

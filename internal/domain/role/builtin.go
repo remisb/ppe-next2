@@ -20,7 +20,9 @@ var (
 	EmployeeID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000003")
 )
 
-// builtin is a built-in role as migration 0022 creates it.
+// builtin is a built-in role as migration 0022 creates it. Its name and
+// description never change; the apps translate them by key (Administration's
+// users dictionaries hold the same English).
 type builtin struct {
 	id          uuid.UUID
 	key, name   string
@@ -28,8 +30,8 @@ type builtin struct {
 }
 
 var builtinRoles = []builtin{
-	{AdminID, KeyAdmin, "Administrator", "Manages users, roles, Settings and Backups, plus everything a manager can do."},
-	{ManagerID, KeyManager, "Manager", "Manages Item Catalogue prices and Item Sets, and may delete an order."},
+	{AdminID, KeyAdmin, "Administrator", "Manages users, plus everything a manager can do."},
+	{ManagerID, KeyManager, "Manager", "Manages Item Catalogue prices and Item Sets, plus everything an employee can do."},
 	{EmployeeID, KeyEmployee, "Employee", "Prepares orders and follows them in Orders, manages employees and sizes."},
 }
 

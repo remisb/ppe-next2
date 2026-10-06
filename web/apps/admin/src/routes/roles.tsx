@@ -145,7 +145,7 @@ export function RolesPage() {
   )
 }
 
-/** Add Role, Edit Role, or Administrator shown as it is (it cannot change). */
+/** Add Role, Edit Role, or Administrator shown as it is (it cannot change). A built-in role's name and description are fixed, shown in the language in use. */
 function RoleForm({
   open,
   role,
@@ -222,7 +222,7 @@ function RoleForm({
       }
     >
       <form id="role-form" onSubmit={submit} className="grid gap-4" noValidate>
-        <Field label={t.roles.name} required error={errors.name} hint={builtIn ? t.roles.builtInName : undefined}>
+        <Field label={t.roles.name} required error={errors.name}>
           {(p) => (
             <Input
               {...controlProps(p)}
@@ -234,13 +234,13 @@ function RoleForm({
             />
           )}
         </Field>
-        <Field label={t.roles.descriptionLabel} error={errors.description}>
+        <Field label={t.roles.descriptionLabel} error={errors.description} hint={builtIn ? t.roles.builtInFixed : undefined}>
           {(p) => (
             <Textarea
               {...controlProps(p)}
               rows={2}
-              value={d.description}
-              disabled={locked}
+              value={builtIn && role ? roleGrants(role) : d.description}
+              disabled={builtIn}
               onChange={(e) => setD((cur) => ({ ...cur, description: e.target.value }))}
             />
           )}

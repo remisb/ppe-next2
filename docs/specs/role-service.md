@@ -38,8 +38,8 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
   `TestSeededRolesKeepPolicy`, `TestPostgresBuiltinsMatchCode`).
 - **Administrator** cannot be changed or deleted (409); it holds `users.manage` and
   `roles.manage`, and at least one active user always holds it (user service), so someone
-  can always manage users and roles. **Manager** and **Employee** keep their names (the apps
-  translate them by key) and cannot be deleted; their description and permissions can change.
+  can always manage users and roles. **Manager** and **Employee** keep their names and descriptions (the apps
+  translate them by key) and cannot be deleted; their permissions can change.
 - A role a live user holds is not deleted (409); deletion is soft, and frees the name.
 - **No escalation.** Only whoever holds `roles.manage` grants any permission. Anyone else
   adds, changes, gives or takes away only permissions they hold themselves
@@ -60,7 +60,7 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
 | `GET /api/v1/roles` | `users.read` | live roles, built-ins first (admin, manager, employee), then by name |
 | `GET /api/v1/roles/{id}` | `users.read` | one role, 404 on miss |
 | `POST /api/v1/roles` | `roles.manage`, sensitive | body `{name, description, permissions}`; 201 with `Location` |
-| `PUT /api/v1/roles/{id}` | `roles.manage`, sensitive | full replace; Administrator 409, a built-in's new name 400 |
+| `PUT /api/v1/roles/{id}` | `roles.manage`, sensitive | full replace; Administrator 409, a built-in's new name or description 400 |
 | `DELETE /api/v1/roles/{id}` | `roles.manage`, sensitive | 204; a built-in or a held role 409 |
 
 `id`, `key`, `locked`, `user_count`, timestamps and actors are refused in request bodies.

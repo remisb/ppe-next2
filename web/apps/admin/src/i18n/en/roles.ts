@@ -23,7 +23,7 @@ export const roles = {
   editDescription: 'A change reaches the users who hold the role within minutes.',
   addDescription: 'Then give it to users on Users.',
   lockedNote: 'Administrator can do everything in Administration and cannot be changed, so someone can always manage users and roles.',
-  builtInName: 'A built-in role keeps its name.',
+  builtInFixed: 'A built-in role keeps its name and description.',
   neededBy: (names: string) => `Needed by ${names}.`,
   enterName: 'Enter a name.',
   nameTooLong: 'Use at most 100 characters.',
