@@ -1,23 +1,20 @@
+import { plural } from '@ppe/i18n'
+
 import type { CommonText } from '../en/common'
-import { plural } from '../plural'
 
 export const common: CommonText = {
   appName: 'Darbo drabužiai ir įranga',
   cancel: 'Atšaukti',
   save: 'Išsaugoti',
   saving: 'Saugoma…',
-  close: 'Uždaryti',
   back: 'Atgal',
   edit: 'Redaguoti',
   delete: 'Ištrinti',
   add: 'Pridėti',
   search: 'Paieška',
   retry: 'Bandyti dar kartą',
-  loading: 'Įkeliama…',
-  couldNotLoad: 'Nepavyko įkelti',
   actionFailed: 'Veiksmas nepavyko',
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
-  somethingWentWrong: 'Kažkas nepavyko.',
   ordered: 'Užsakyta',
   given: 'Išduota',
   active: 'Aktyvus',

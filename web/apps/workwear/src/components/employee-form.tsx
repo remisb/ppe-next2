@@ -1,14 +1,14 @@
 import type { Employee, EmployeeInput, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { errorText } from '@ppe/ui/lib/use-load'
 import { type FormEvent, useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Field, Input, Select, Textarea, controlProps } from '@/components/ui/field'
-import { FormSheet } from '@/components/ui/form-sheet'
 import { isLang, languages, t } from '@/i18n'
-import { useApi } from '@/lib/api'
 import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
-import { errorText } from '@/lib/use-load'
 
 interface Props {
   open: boolean

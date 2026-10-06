@@ -29,8 +29,8 @@ func newTestPool(t *testing.T) (*pgxpool.Pool, uuid.UUID) {
 		t.Fatal(err)
 	}
 	actor := uuid.New()
-	if _, err := pool.Exec(ctx, `INSERT INTO users (id, email, name, password_hash, roles, created_at, updated_at,
-		created_by_user_id, updated_by_user_id) VALUES ($1, 'a@example.com', 'A', 'x', '{admin}', now(), now(), $1, $1)`, actor); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO users (id, email, name, password_hash, created_at, updated_at,
+		created_by_user_id, updated_by_user_id) VALUES ($1, 'a@example.com', 'A', 'x', now(), now(), $1, $1)`, actor); err != nil {
 		t.Fatal(err)
 	}
 	return pool, actor

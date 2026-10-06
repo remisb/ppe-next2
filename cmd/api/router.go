@@ -5,25 +5,14 @@ import (
 
 	"github.com/remisb/muxstack/middleware"
 
-	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
-// Role groups used by route registrations.
-var (
-	// managers may manage items, prices and item sets ("Manage Items and Prices").
-	managers = []string{user.RoleAdmin, user.RoleManager}
-	admins   = []string{user.RoleAdmin}
-	// managerRole is the manager role alone: its dashboard is not the administrator's.
-	managerRole = []string{user.RoleManager}
-	// employeeRole is the employee role alone, for its own dashboard.
-	employeeRole = []string{user.RoleEmployee}
-)
-
-// access is a route's authorization rule. roles nil with public false means
+// access is a route's authorization rule. perm empty with public false means
 // any authenticated user.
 type access struct {
 	public bool
-	roles  []string
+	perm   role.Permission
 }
 
 type routeInfo struct {
@@ -58,8 +47,8 @@ func (rt *router) authenticated(pattern string, h http.HandlerFunc) {
 	rt.routes = append(rt.routes, routeInfo{pattern, access{}})
 }
 
-// restricted registers a route open to users holding at least one of roles.
-func (rt *router) restricted(pattern string, h http.HandlerFunc, roles ...string) {
-	rt.mux.Handle(pattern, rt.authed.Append(middleware.Authorizer(roles...)).ThenFunc(h))
-	rt.routes = append(rt.routes, routeInfo{pattern, access{roles: roles}})
+// restricted registers a route open to users whose token grants perm.
+func (rt *router) restricted(pattern string, h http.HandlerFunc, perm role.Permission) {
+	rt.mux.Handle(pattern, rt.authed.Append(middleware.Authorizer(string(perm))).ThenFunc(h))
+	rt.routes = append(rt.routes, routeInfo{pattern, access{perm: perm}})
 }

@@ -1,0 +1,38 @@
+{
+  "name": "@ppe/admin",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Administration, at /admin: Users, Roles & permissions, Settings and Backups. Shares the staff app's sign-in and look.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@ppe/api-client": "workspace:*",
+    "@ppe/app-shell": "workspace:*",
+    "@ppe/backups": "workspace:*",
+    "@ppe/i18n": "workspace:*",
+    "@ppe/routing": "workspace:*",
+    "@ppe/ui": "workspace:*",
+    "lucide-react": "^1.48.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1"
+  }
+}

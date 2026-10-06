@@ -8,7 +8,13 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
+
+// EventRolesChanged is recorded when a user's roles change (entity type "user").
+const EventRolesChanged = "user.roles_changed"
 
 // Sessions ends a user's sign-ins (the session service, through an adapter in
 // cmd/api/checkers.go). reason is one of the End* values.
@@ -28,14 +34,26 @@ type noSessions struct{}
 
 func (noSessions) EndAll(context.Context, uuid.UUID, uuid.UUID, string) error { return nil }
 
-// Service owns user policy: validation, IDs, timestamps and password hashing.
+// noRoles knows no roles: every id is accepted and grants nothing, so nothing
+// is refused for permissions. Production always passes WithRoles.
+type noRoles struct{}
+
+func (noRoles) Permissions(context.Context, []uuid.UUID) ([]role.Permission, error) { return nil, nil }
+func (noRoles) PermissionsOf(context.Context, uuid.UUID) ([]role.Permission, error) { return nil, nil }
+func (noRoles) Missing(context.Context, []uuid.UUID) ([]uuid.UUID, error)           { return nil, nil }
+
+// Service owns user policy: validation, IDs, timestamps and password hashing,
+// and who may give which roles to whom.
 type Service struct {
 	repo     Repository
 	sessions Sessions
-	now      func() time.Time
-	newID    func() uuid.UUID
-	hash     func(password string) (string, error)
-	verify   func(hash, password string) bool
+	roles    Roles
+	// guard is the role some active user must always hold (WithGuardRole).
+	guard  uuid.UUID
+	now    func() time.Time
+	newID  func() uuid.UUID
+	hash   func(password string) (string, error)
+	verify func(hash, password string) bool
 	// dummyHash is compared against when no user matches, so a login for an
 	// unknown email costs the same as one with a wrong password.
 	dummyHash string
@@ -50,6 +68,14 @@ func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.
 // account is deactivated or deleted. Without it nothing is ended.
 func WithSessions(sessions Sessions) Option { return func(s *Service) { s.sessions = sessions } }
 
+// WithRoles checks role ids and permissions against the role service: a user
+// may give, take away or manage only what their own roles allow.
+func WithRoles(roles Roles) Option { return func(s *Service) { s.roles = roles } }
+
+// WithGuardRole keeps at least one active user holding role id (the
+// Administrator): a change that would leave none is ErrLastAdministrator.
+func WithGuardRole(id uuid.UUID) Option { return func(s *Service) { s.guard = id } }
+
 // WithHasher replaces bcrypt, which is deliberately slow, in tests.
 func WithHasher(hash func(string) (string, error), verify func(hash, password string) bool) Option {
 	return func(s *Service) { s.hash, s.verify = hash, verify }
@@ -59,6 +85,7 @@ func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{
 		repo:     repo,
 		sessions: noSessions{},
+		roles:    noRoles{},
 		now:      func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
 		newID:    uuid.New,
 		hash:     bcryptHash,
@@ -85,20 +112,66 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 	if actor == uuid.Nil {
 		return User{}, fieldError("actor", "is required")
 	}
-	return s.create(ctx, p, func(uuid.UUID) uuid.UUID { return actor })
-}
-
-// Bootstrap creates an admin attributed to itself. It exists for the first
-// account, when there is no other user to act as the creator.
-func (s *Service) Bootstrap(ctx context.Context, email, name, password string) (User, error) {
-	p := CreateParams{Email: email, Name: name, Password: password, Roles: []string{RoleAdmin}}
-	return s.create(ctx, p, func(self uuid.UUID) uuid.UUID { return self })
-}
-
-func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self uuid.UUID) uuid.UUID) (User, error) {
 	if err := p.Validate(); err != nil {
 		return User{}, err
 	}
+	if err := s.knownRoles(ctx, p.RoleIDs); err != nil {
+		return User{}, err
+	}
+	if err := s.mayGrant(ctx, actor, p.RoleIDs); err != nil {
+		return User{}, err
+	}
+	return s.create(ctx, p, func(uuid.UUID) uuid.UUID { return actor })
+}
+
+// Bootstrap creates a user holding roleIDs (the first administrator),
+// attributed to itself. It exists for the first account, when there is no
+// other user to act as the creator.
+func (s *Service) Bootstrap(ctx context.Context, email, name, password string, roleIDs []uuid.UUID) (User, error) {
+	p := CreateParams{Email: email, Name: name, Password: password, RoleIDs: roleIDs}
+	if err := p.Validate(); err != nil {
+		return User{}, err
+	}
+	if err := s.knownRoles(ctx, p.RoleIDs); err != nil {
+		return User{}, err
+	}
+	return s.create(ctx, p, func(self uuid.UUID) uuid.UUID { return self })
+}
+
+// knownRoles refuses ids that name no live role.
+func (s *Service) knownRoles(ctx context.Context, ids []uuid.UUID) error {
+	missing, err := s.roles.Missing(ctx, ids)
+	if err != nil {
+		return err
+	}
+	if len(missing) > 0 {
+		return fieldError("role_ids", "contains unknown role "+missing[0].String())
+	}
+	return nil
+}
+
+// mayGrant refuses giving or taking away roleIDs when the actor may not grant
+// what they hold (role.MayGrant): only whoever manages roles may grant any
+// permission; anyone else only what their own roles allow.
+func (s *Service) mayGrant(ctx context.Context, actor uuid.UUID, roleIDs []uuid.UUID) error {
+	if len(roleIDs) == 0 {
+		return nil
+	}
+	perms, err := s.roles.Permissions(ctx, roleIDs)
+	if err != nil {
+		return err
+	}
+	mine, err := s.roles.PermissionsOf(ctx, actor)
+	if err != nil {
+		return err
+	}
+	if !role.MayGrant(perms, mine) {
+		return ErrNotPermitted
+	}
+	return nil
+}
+
+func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self uuid.UUID) uuid.UUID) (User, error) {
 	hash, err := s.hash(p.Password)
 	if err != nil {
 		return User{}, err
@@ -111,7 +184,7 @@ func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self
 		Email:           p.Email,
 		Name:            p.Name,
 		PasswordHash:    hash,
-		Roles:           p.Roles,
+		RoleIDs:         p.RoleIDs,
 		IsActive:        true,
 		Language:        LangEnglish,
 		CreatedAt:       now,
@@ -137,10 +210,12 @@ func (s *Service) List(ctx context.Context) ([]User, error) {
 	return s.repo.List(ctx)
 }
 
-// Update replaces the profile fields of user id. An actor cannot deactivate
-// themselves or drop their own admin role, which would lock them out mid-session.
-// Deactivating a user ends their sign-ins; a role change reaches them at their
-// next refresh.
+// Update replaces the profile fields of user id. Unless the actor manages
+// roles, they may manage only a user whose roles grant nothing beyond the
+// actor's own, and give or take away only such roles. An actor cannot deactivate themselves or take
+// managing users or roles away from themselves, which would lock them out
+// mid-session. Deactivating a user ends their sign-ins; a role change reaches
+// them at their next refresh, and is recorded (user.roles_changed).
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, actor uuid.UUID) (User, error) {
 	if actor == uuid.Nil {
 		return User{}, fieldError("actor", "is required")
@@ -152,22 +227,38 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 	if err != nil {
 		return User{}, err
 	}
+	if err := s.knownRoles(ctx, p.RoleIDs); err != nil {
+		return User{}, err
+	}
+	if err := s.mayGrant(ctx, actor, append(slices.Clone(u.RoleIDs), changedRoles(u.RoleIDs, p.RoleIDs)...)); err != nil {
+		return User{}, err
+	}
 	if id == actor {
 		if !p.IsActive {
 			return User{}, fieldError("is_active", "cannot be false for your own account")
 		}
-		if u.HasRole(RoleAdmin) && !slices.Contains(p.Roles, RoleAdmin) {
-			return User{}, fieldError("roles", "cannot remove admin from your own account")
+		if err := s.keepsOwnAccess(ctx, actor, p.RoleIDs); err != nil {
+			return User{}, err
 		}
+	}
+	now := s.now()
+	var ev *audit.Event
+	if !slices.Equal(u.RoleIDs, p.RoleIDs) {
+		e, err := audit.New(s.newID(), &actor, EventRolesChanged, "user", id, now,
+			map[string]any{"role_ids": u.RoleIDs}, map[string]any{"role_ids": p.RoleIDs})
+		if err != nil {
+			return User{}, err
+		}
+		ev = &e
 	}
 	deactivated := u.IsActive && !p.IsActive
 	u.Email = p.Email
 	u.Name = p.Name
-	u.Roles = p.Roles
+	u.RoleIDs = p.RoleIDs
 	u.IsActive = p.IsActive
-	u.UpdatedAt = s.now()
+	u.UpdatedAt = now
 	u.UpdatedByUserID = actor
-	if err := s.repo.Update(ctx, u); err != nil {
+	if err := s.repo.Update(ctx, u, s.guard, ev); err != nil {
 		return User{}, err
 	}
 	if deactivated {
@@ -178,9 +269,60 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 	return u, nil
 }
 
+// keepsOwnAccess refuses the actor's own new roles when they would drop
+// managing users or roles, which the actor holds now.
+func (s *Service) keepsOwnAccess(ctx context.Context, actor uuid.UUID, roleIDs []uuid.UUID) error {
+	mine, err := s.roles.PermissionsOf(ctx, actor)
+	if err != nil {
+		return err
+	}
+	after, err := s.roles.Permissions(ctx, roleIDs)
+	if err != nil {
+		return err
+	}
+	for _, keep := range []role.Permission{role.UsersManage, role.RolesManage} {
+		if slices.Contains(mine, keep) && !slices.Contains(after, keep) {
+			return fieldError("role_ids", "cannot take "+string(keep)+" from your own account")
+		}
+	}
+	return nil
+}
+
+// changedRoles are the ids in one of a and b and not the other.
+func changedRoles(a, b []uuid.UUID) []uuid.UUID {
+	var out []uuid.UUID
+	for _, id := range a {
+		if !slices.Contains(b, id) {
+			out = append(out, id)
+		}
+	}
+	for _, id := range b {
+		if !slices.Contains(a, id) {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// mayManage refuses managing user id (resetting their password, deleting
+// them) when the actor may not grant what their roles hold: a user who
+// manages users but not roles cannot take over an administrator's account.
+func (s *Service) mayManage(ctx context.Context, id, actor uuid.UUID) error {
+	u, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.mayGrant(ctx, actor, u.RoleIDs)
+}
+
 // SetPassword replaces a user's password without knowing the old one (admin
 // reset), and ends every sign-in of theirs.
 func (s *Service) SetPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID) error {
+	if actor != uuid.Nil {
+		if err := s.mayManage(ctx, id, actor); err != nil {
+			return err
+		}
+	}
 	if err := s.setPassword(ctx, id, password, actor); err != nil {
 		return err
 	}
@@ -252,7 +394,10 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	if id == actor {
 		return fieldError("id", "cannot delete your own account")
 	}
-	if err := s.repo.Delete(ctx, id, s.now(), actor); err != nil {
+	if err := s.mayManage(ctx, id, actor); err != nil {
+		return err
+	}
+	if err := s.repo.Delete(ctx, id, s.now(), actor, s.guard); err != nil {
 		return err
 	}
 	return s.sessions.EndAll(ctx, id, uuid.Nil, EndDeleted)

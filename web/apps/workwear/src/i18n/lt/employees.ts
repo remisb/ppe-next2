@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { EmployeesText } from '../en/employees'
-import { plural } from '../plural'
 
 export const employees: EmployeesText = {
   title: 'Darbuotojai',

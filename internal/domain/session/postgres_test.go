@@ -38,8 +38,8 @@ func insertUser(t *testing.T, pool *pgxpool.Pool, email string) uuid.UUID {
 	t.Helper()
 	id := uuid.New()
 	if _, err := pool.Exec(context.Background(), `
-		INSERT INTO users (id, email, name, password_hash, roles, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, $2, 'U', 'x', ARRAY['employee'], now(), now(), $1, $1)`, id, email); err != nil {
+		INSERT INTO users (id, email, name, password_hash, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, $2, 'U', 'x', now(), now(), $1, $1)`, id, email); err != nil {
 		t.Fatal(err)
 	}
 	return id

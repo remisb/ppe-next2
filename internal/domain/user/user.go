@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/mail"
+	"slices"
 	"strings"
 	"time"
 
@@ -23,8 +24,9 @@ type User struct {
 	Email        string    `json:"email"`
 	Name         string    `json:"name"`
 	PasswordHash string    `json:"-"`
-	Roles        []string  `json:"roles"`
-	IsActive     bool      `json:"is_active"`
+	// RoleIDs are the roles the user holds (user_roles), in id order.
+	RoleIDs  []uuid.UUID `json:"role_ids"`
+	IsActive bool        `json:"is_active"`
 	// Language is the user's interface language (LangEnglish, LangLithuanian or
 	// LangRussian); each user sets their own.
 	Language        string     `json:"language"`
@@ -55,33 +57,26 @@ func validateLanguage(lang string) error {
 // Deleted reports whether the user has been soft-deleted.
 func (u User) Deleted() bool { return u.DeletedAt != nil }
 
-// HasRole reports whether the user holds role r.
-func (u User) HasRole(r string) bool {
-	for _, have := range u.Roles {
-		if have == r {
-			return true
-		}
-	}
-	return false
-}
+// HasRole reports whether the user holds role id.
+func (u User) HasRole(id uuid.UUID) bool { return slices.Contains(u.RoleIDs, id) }
 
 // CreateParams are the client-settable fields of a new user.
 type CreateParams struct {
 	Email    string
 	Name     string
 	Password string
-	Roles    []string
+	RoleIDs  []uuid.UUID
 }
 
 func (p *CreateParams) Normalize() {
 	p.Email = normalizeEmail(p.Email)
 	p.Name = strings.TrimSpace(p.Name)
-	p.Roles = normalizeRoles(p.Roles)
+	p.RoleIDs = normalizeRoleIDs(p.RoleIDs)
 }
 
 func (p *CreateParams) Validate() error {
 	p.Normalize()
-	if err := validateProfile(p.Email, p.Name, p.Roles); err != nil {
+	if err := validateProfile(p.Email, p.Name, p.RoleIDs); err != nil {
 		return err
 	}
 	return validatePassword(p.Password)
@@ -92,24 +87,37 @@ func (p *CreateParams) Validate() error {
 type UpdateParams struct {
 	Email    string
 	Name     string
-	Roles    []string
+	RoleIDs  []uuid.UUID
 	IsActive bool
 }
 
 func (p *UpdateParams) Normalize() {
 	p.Email = normalizeEmail(p.Email)
 	p.Name = strings.TrimSpace(p.Name)
-	p.Roles = normalizeRoles(p.Roles)
+	p.RoleIDs = normalizeRoleIDs(p.RoleIDs)
 }
 
 func (p *UpdateParams) Validate() error {
 	p.Normalize()
-	return validateProfile(p.Email, p.Name, p.Roles)
+	return validateProfile(p.Email, p.Name, p.RoleIDs)
+}
+
+// normalizeRoleIDs de-duplicates and sorts role ids, so equal sets compare
+// and store identically.
+func normalizeRoleIDs(ids []uuid.UUID) []uuid.UUID {
+	out := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		if !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	slices.SortFunc(out, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	return out
 }
 
 func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
-func validateProfile(email, name string, roles []string) error {
+func validateProfile(email, name string, roles []uuid.UUID) error {
 	switch {
 	case email == "":
 		return fieldError("email", "is required")
@@ -127,12 +135,10 @@ func validateProfile(email, name string, roles []string) error {
 		return fieldError("name", "is too long")
 	}
 	if len(roles) == 0 {
-		return fieldError("roles", "must contain at least one role")
+		return fieldError("role_ids", "must contain at least one role")
 	}
-	for _, r := range roles {
-		if !IsKnownRole(r) {
-			return fieldError("roles", "contains unknown role "+r)
-		}
+	if slices.Contains(roles, uuid.Nil) {
+		return fieldError("role_ids", "contains unknown role")
 	}
 	return nil
 }

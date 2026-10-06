@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remisb/ppe-next2/internal/domain/employee"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 type employeeHandler struct {
@@ -20,7 +21,7 @@ func registerEmployeeRoutes(rt *router, employees *employee.Service) {
 	rt.authenticated("POST /api/v1/employees", h.create)
 	rt.authenticated("PUT /api/v1/employees/{id}", h.update)
 	rt.authenticated("PUT /api/v1/employees/{id}/sizes", h.updateSizes)
-	rt.restricted("DELETE /api/v1/employees/{id}", h.delete, managers...)
+	rt.restricted("DELETE /api/v1/employees/{id}", h.delete, role.EmployeesDelete)
 }
 
 // employeeJSON adds derived fields to the response; they are never accepted.

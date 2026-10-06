@@ -1,5 +1,6 @@
+import { plural } from '@ppe/i18n'
+
 import type { DashboardText } from '../en/dashboard'
-import { plural } from '../plural'
 
 const items = (n: number) => plural(n, { one: '# prekė', few: '# prekės', other: '# prekių' })
 const orders = (n: number) => plural(n, { one: '# užsakymas', few: '# užsakymai', other: '# užsakymų' })
@@ -28,9 +29,6 @@ export const dashboard: DashboardText = {
       other: '# darbuotojų be dydžio, kurio reikia užsakymui',
     }),
 
-  refresh: 'Atnaujinti',
-  keyFigures: 'Pagrindiniai rodikliai',
-  needsAttention: 'Reikia dėmesio',
   scale: (value: string) => `Skalė ${value}`,
   month: 'Mėnuo',
   needsYou: 'Reikia jūsų dėmesio',

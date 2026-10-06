@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 /** The app's frame: the Main navigation, ⌘K palette, shortcuts, sign-in and shared list controls. */
 export const shell = {
@@ -9,9 +9,7 @@ export const shell = {
   catalogue: 'Item Catalogue',
   itemSets: 'Item Sets',
   dashboard: 'Dashboard',
-  users: 'Users',
-  settings: 'Settings',
-  backups: 'Backups',
+  administration: 'Administration',
   replacements: 'Replacements due',
   accountAndPassword: 'Account and password',
   // Short labels under the icons in the phone tab bar and tablet rail.
@@ -21,9 +19,7 @@ export const shell = {
   shortCatalogue: 'Catalogue',
   shortItemSets: 'Sets',
   shortDashboard: 'Home',
-  shortUsers: 'Users',
-  shortSettings: 'Settings',
-  shortBackups: 'Backups',
+  shortAdministration: 'Admin',
   shortKeys: 'Keys',
   shortAccount: 'Account',
   mainNav: 'Main',
@@ -81,35 +77,8 @@ export const shell = {
   /** Beginnings of words that find the theme switch, besides the English ones the palette always knows. */
   themeWords: { theme: 'theme', light: 'light', dark: 'dark', system: 'system' },
   nothingMatches: (q: string) => `Nothing matches “${q}”.`,
-  // Sign in.
-  signIn: 'Sign in',
-  signInHint: 'Use your work email and password.',
+  // Sign in (the rest of its words are @ppe/app-shell's).
   signInTagline: 'Orders, hand-overs and signed receipts, in one place.',
-  signingIn: 'Signing in…',
-  email: 'Email',
-  password: 'Password',
-  wrongPassword: 'Wrong email or password.',
-  enterEmailAndPassword: 'Enter your email and password.',
-  tooManyAttempts: 'Too many sign-in attempts. Wait a few minutes, then try again.',
-  keepSignedIn: 'Keep me signed in',
-  keepSignedInHint: 'Stay signed in on this device. Untick it on a shared computer.',
-  checkingSignIn: 'Checking your sign-in…',
-  offlineTitle: 'The server cannot be reached',
-  offlineHint: 'Check your connection. The app tries again when you are back online.',
-  confirmPasswordTitle: 'Confirm your password',
-  confirmPasswordHint: 'You signed in a while ago. Enter your password to continue.',
-  confirmPasswordButton: 'Continue',
-  confirmingPassword: 'Checking…',
-  passwordIncorrect: 'The password is incorrect.',
-  passwordNotConfirmed: 'Your password was not confirmed, so nothing was changed.',
-  // Shared controls.
-  retry: 'Retry',
-  sortBy: 'Sort by',
-  defaultOrder: 'Default order',
-  ascending: 'Ascending; switch to descending',
-  descending: 'Descending; switch to ascending',
-  showPassword: 'Show password',
-  hidePassword: 'Hide password',
 }
 
 export type ShellText = typeof shell

@@ -1,13 +1,15 @@
 import { PreviewCard } from '@base-ui/react/preview-card'
+import { useApi } from '@ppe/app-shell'
+import { Badge } from '@ppe/ui/components/badge'
+import { Skeleton } from '@ppe/ui/components/skeleton'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import type { ComponentProps, ReactNode } from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
-import { formatShortDate, statusLabel } from '@/lib/history'
-import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro, formatSize } from '@/lib/utils'
+import { formatShortDate } from '@ppe/ui/lib/dates'
+import { statusLabel } from '@/lib/history'
+import { formatEuro, formatSize } from '@/lib/utils'
 
 /** How many lines the card lists before "and N more". */
 const SHOWN_LINES = 5

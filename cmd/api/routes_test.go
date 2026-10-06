@@ -25,6 +25,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
@@ -82,7 +83,7 @@ func (m *memRepo) List(_ context.Context) ([]user.User, error) {
 	return out, nil
 }
 
-func (m *memRepo) Update(_ context.Context, u user.User) error {
+func (m *memRepo) Update(_ context.Context, u user.User, _ uuid.UUID, _ *audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if x, ok := m.users[u.ID]; !ok || x.DeletedAt != nil {
@@ -90,6 +91,26 @@ func (m *memRepo) Update(_ context.Context, u user.User) error {
 	}
 	m.users[u.ID] = u
 	return nil
+}
+
+// holding counts the live users who hold role id.
+func (m *memRepo) holding(id uuid.UUID) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, u := range m.users {
+		if u.DeletedAt == nil && slices.Contains(u.RoleIDs, id) {
+			n++
+		}
+	}
+	return n
+}
+
+// roleIDs are the roles user id holds.
+func (m *memRepo) roleIDs(id uuid.UUID) []uuid.UUID {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.users[id].RoleIDs
 }
 
 func (m *memRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error {
@@ -116,7 +137,7 @@ func (m *memRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at t
 	return nil
 }
 
-func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID) error {
+func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID, _ uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	u, ok := m.users[id]
@@ -126,6 +147,101 @@ func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.
 	u.DeletedAt, u.DeletedByUserID = &at, &by
 	m.users[id] = u
 	return nil
+}
+
+// memRoles is an in-memory role.Repository holding the built-in roles, so the
+// HTTP tests run the real role service; who holds a role is memRepo's.
+type memRoles struct {
+	mu    sync.Mutex
+	users *memRepo
+	roles map[uuid.UUID]role.Role
+}
+
+func newMemRoles(users *memRepo) *memRoles {
+	m := &memRoles{users: users, roles: map[uuid.UUID]role.Role{}}
+	for _, key := range role.BuiltinKeys() {
+		k := key
+		id := role.BuiltinID(key)
+		m.roles[id] = role.Role{ID: id, Key: &k, Name: key, Permissions: role.BuiltinPermissions([]string{key}), Locked: key == role.KeyAdmin}
+	}
+	return m
+}
+
+func (m *memRoles) Create(_ context.Context, r role.Role, _ *audit.Event) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.roles[r.ID] = r
+	return nil
+}
+
+func (m *memRoles) Get(_ context.Context, id uuid.UUID) (role.Role, error) {
+	m.mu.Lock()
+	r, ok := m.roles[id]
+	m.mu.Unlock()
+	if !ok || r.DeletedAt != nil {
+		return role.Role{}, role.ErrNotFound
+	}
+	r.UserCount = m.users.holding(id)
+	return r, nil
+}
+
+func (m *memRoles) List(context.Context) ([]role.Role, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]role.Role, 0)
+	for _, r := range m.roles {
+		if r.DeletedAt == nil {
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
+
+func (m *memRoles) Update(ctx context.Context, id uuid.UUID, mut role.Mutation) (role.Role, error) {
+	cur, err := m.Get(ctx, id)
+	if err != nil {
+		return role.Role{}, err
+	}
+	next, _, err := mut(cur)
+	if err != nil {
+		return role.Role{}, err
+	}
+	m.mu.Lock()
+	m.roles[id] = next
+	m.mu.Unlock()
+	return next, nil
+}
+
+func (m *memRoles) Permissions(_ context.Context, ids []uuid.UUID) ([]role.Permission, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var all []string
+	for _, id := range ids {
+		if r, ok := m.roles[id]; ok && r.DeletedAt == nil {
+			all = append(all, role.Strings(r.Permissions)...)
+		}
+	}
+	return role.Known(all), nil
+}
+
+func (m *memRoles) OfUser(ctx context.Context, userID uuid.UUID) ([]role.Role, error) {
+	var out []role.Role
+	for _, id := range m.users.roleIDs(userID) {
+		if r, err := m.Get(ctx, id); err == nil {
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
+
+func (m *memRoles) Missing(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
+	var out []uuid.UUID
+	for _, id := range ids {
+		if _, err := m.Get(ctx, id); err != nil {
+			out = append(out, id)
+		}
+	}
+	return out, nil
 }
 
 // memSessions is an in-memory session.Repository, so the HTTP tests run the
@@ -310,22 +426,29 @@ type testAPI struct {
 func newTestAPI(t *testing.T) *testAPI {
 	t.Helper()
 	sessions := session.NewService(&memSessions{rows: map[uuid.UUID]session.Session{}}, sessionKey(testSecret), sessionLimits(testConfig()))
-	users := user.NewService(&memRepo{users: map[uuid.UUID]user.User{}},
+	userRepo := &memRepo{users: map[uuid.UUID]user.User{}}
+	roles := role.NewService(newMemRoles(userRepo))
+	users := user.NewService(userRepo,
 		user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p }),
-		user.WithSessions(userSessions{sessions}))
-	admin, err := users.Bootstrap(context.Background(), "admin@example.com", "Admin", "password123")
+		user.WithSessions(userSessions{sessions}), user.WithRoles(roles), user.WithGuardRole(role.AdminID))
+	admin, err := users.Bootstrap(context.Background(), "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, sessions, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
+	svc := newServices(time.UTC, time.Hour, sessions, roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
 
-func (a *testAPI) userWith(t *testing.T, roles ...string) (user.User, string) {
+// userWith adds a user holding the built-in roles named by keys and signs them in.
+func (a *testAPI) userWith(t *testing.T, keys ...string) (user.User, string) {
 	t.Helper()
+	ids := make([]uuid.UUID, len(keys))
+	for i, k := range keys {
+		ids[i] = role.BuiltinID(k)
+	}
 	u, err := a.svc.users.Create(context.Background(), user.CreateParams{
-		Email: uuid.NewString()[:8] + "@example.com", Name: "U", Password: "password123", Roles: roles,
+		Email: uuid.NewString()[:8] + "@example.com", Name: "U", Password: "password123", RoleIDs: ids,
 	}, a.admin.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -340,7 +463,26 @@ func (a *testAPI) signIn(t *testing.T, u user.User) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tok, _, err := a.tokens.issue(u, s.ID, s.AuthenticatedAt)
+	perms, err := a.svc.roles.Permissions(context.Background(), u.RoleIDs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _, err := a.tokens.issue(u, perms, s.ID, s.AuthenticatedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tok
+}
+
+// tokenWith returns a token for the administrator granting exactly perms,
+// whatever the administrator's roles grant.
+func (a *testAPI) tokenWith(t *testing.T, perms ...role.Permission) string {
+	t.Helper()
+	s, _, err := a.svc.sessions.Start(context.Background(), session.StartParams{UserID: a.admin.ID, KeepSignedIn: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _, err := a.tokens.issue(a.admin, perms, s.ID, s.AuthenticatedAt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,90 +505,126 @@ func (a *testAPI) do(t *testing.T, method, path, token string, body any) *httpte
 	return rec
 }
 
-// policy pins who may call every route. Changing a route's access, or adding
-// a route, must change this table: TestRoutePolicy fails otherwise.
-var policy = map[string]string{
-	"GET /health":                       "public",
-	"POST /api/v1/auth/login":           "public",
-	"POST /api/v1/auth/refresh":         "public",
-	"POST /api/v1/auth/logout":          "public",
-	"POST /api/v1/auth/reauth":          "any",
-	"GET /api/v1/auth/sessions":         "any",
-	"DELETE /api/v1/auth/sessions":      "any",
-	"DELETE /api/v1/auth/sessions/{id}": "any",
-
-	"GET /api/v1/users/me":               "any",
-	"PUT /api/v1/users/me/password":      "any",
-	"GET /api/v1/users":                  "managers",
-	"GET /api/v1/users/{id}":             "managers",
-	"GET /api/v1/users/by-email/{email}": "managers",
-	"POST /api/v1/users":                 "admins",
-	"PUT /api/v1/users/{id}":             "admins",
-	"PUT /api/v1/users/{id}/password":    "admins",
-	"PUT /api/v1/users/me/language":      "any",
-	"DELETE /api/v1/users/{id}":          "admins",
-
-	"GET /api/v1/employees":             "any",
-	"GET /api/v1/employees/{id}":        "any",
-	"GET /api/v1/employees/by-name/{q}": "any",
-	"POST /api/v1/employees":            "any",
-	"PUT /api/v1/employees/{id}":        "any",
-	"PUT /api/v1/employees/{id}/sizes":  "any",
-	"DELETE /api/v1/employees/{id}":     "managers",
-
-	"GET /api/v1/catalogue":                    "any",
-	"GET /api/v1/catalogue/active":             "any",
-	"GET /api/v1/catalogue/{id}":               "any",
-	"GET /api/v1/catalogue/{id}/price-history": "any",
-	"POST /api/v1/catalogue":                   "managers",
-	"PUT /api/v1/catalogue/{id}":               "managers",
-	"POST /api/v1/catalogue/{id}/activate":     "managers",
-	"POST /api/v1/catalogue/{id}/deactivate":   "managers",
-	"DELETE /api/v1/catalogue/{id}":            "managers",
-
-	"GET /api/v1/item-sets":                         "any",
-	"GET /api/v1/item-sets/active":                  "any",
-	"GET /api/v1/item-sets/{id}":                    "any",
-	"POST /api/v1/item-sets":                        "managers",
-	"PUT /api/v1/item-sets/{id}":                    "managers",
-	"DELETE /api/v1/item-sets/{id}":                 "managers",
-	"GET /api/v1/item-sets/{id}/apply/{employeeID}": "any",
-	"GET /api/v1/sizes":                             "any",
-	"POST /api/v1/orders/resolve":                   "any",
-	"POST /api/v1/orders":                           "any",
-	"GET /api/v1/orders":                            "any",
-	"GET /api/v1/settings":                          "any",
-	"PUT /api/v1/settings/supplier-chat":            "admins",
-	"POST /api/v1/orders/{id}/confirmation-link":    "any",
-	"POST /api/v1/orders/{id}/confirm-paper":        "any",
-	"POST /api/v1/orders/{id}/confirm-in-person":    "any",
-	"GET /api/v1/orders/{id}/record":                "any",
-	"POST /api/v1/confirmations/view":               "public",
-	"POST /api/v1/confirmations/confirm":            "public",
-	"GET /api/v1/orders/{id}":                       "any",
-	"DELETE /api/v1/orders/{id}":                    "manager",
-	"GET /api/v1/dashboard":                         "admins",
-	"GET /api/v1/dashboard/manager":                 "manager",
-	"GET /api/v1/dashboard/employee":                "employee",
-	"GET /api/v1/replacements":                      "any",
-	"GET /api/v1/backups":                           "admins",
+// rule is a route's access: the permission it requires ("" for any signed-in
+// user) and who could call it before permissions existed, which the built-in
+// roles must keep reproducing (TestSeededRolesKeepPolicy).
+type rule struct {
+	perm     role.Permission
+	audience string
 }
 
+// policy pins who may call every route. Changing a route's access, or adding
+// a route, must change this table: TestRoutePolicy fails otherwise.
+var policy = map[string]rule{
+	"GET /health":                       {"", "public"},
+	"POST /api/v1/auth/login":           {"", "public"},
+	"POST /api/v1/auth/refresh":         {"", "public"},
+	"POST /api/v1/auth/logout":          {"", "public"},
+	"POST /api/v1/auth/reauth":          {"", "any"},
+	"GET /api/v1/auth/sessions":         {"", "any"},
+	"DELETE /api/v1/auth/sessions":      {"", "any"},
+	"DELETE /api/v1/auth/sessions/{id}": {"", "any"},
+
+	"GET /api/v1/users/me":               {"", "any"},
+	"PUT /api/v1/users/me/password":      {"", "any"},
+	"GET /api/v1/users":                  {role.UsersRead, "managers"},
+	"GET /api/v1/users/{id}":             {role.UsersRead, "managers"},
+	"GET /api/v1/users/by-email/{email}": {role.UsersRead, "managers"},
+	"POST /api/v1/users":                 {role.UsersManage, "admins"},
+	"PUT /api/v1/users/{id}":             {role.UsersManage, "admins"},
+	"PUT /api/v1/users/{id}/password":    {role.UsersManage, "admins"},
+	"PUT /api/v1/users/me/language":      {"", "any"},
+	"DELETE /api/v1/users/{id}":          {role.UsersManage, "admins"},
+
+	"GET /api/v1/permissions":   {role.UsersRead, "managers"},
+	"GET /api/v1/roles":         {role.UsersRead, "managers"},
+	"GET /api/v1/roles/{id}":    {role.UsersRead, "managers"},
+	"POST /api/v1/roles":        {role.RolesManage, "admins"},
+	"PUT /api/v1/roles/{id}":    {role.RolesManage, "admins"},
+	"DELETE /api/v1/roles/{id}": {role.RolesManage, "admins"},
+
+	"GET /api/v1/employees":             {"", "any"},
+	"GET /api/v1/employees/{id}":        {"", "any"},
+	"GET /api/v1/employees/by-name/{q}": {"", "any"},
+	"POST /api/v1/employees":            {"", "any"},
+	"PUT /api/v1/employees/{id}":        {"", "any"},
+	"PUT /api/v1/employees/{id}/sizes":  {"", "any"},
+	"DELETE /api/v1/employees/{id}":     {role.EmployeesDelete, "managers"},
+
+	"GET /api/v1/catalogue":                    {"", "any"},
+	"GET /api/v1/catalogue/active":             {"", "any"},
+	"GET /api/v1/catalogue/{id}":               {"", "any"},
+	"GET /api/v1/catalogue/{id}/price-history": {"", "any"},
+	"POST /api/v1/catalogue":                   {role.CatalogueManage, "managers"},
+	"PUT /api/v1/catalogue/{id}":               {role.CatalogueManage, "managers"},
+	"POST /api/v1/catalogue/{id}/activate":     {role.CatalogueManage, "managers"},
+	"POST /api/v1/catalogue/{id}/deactivate":   {role.CatalogueManage, "managers"},
+	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
+
+	"GET /api/v1/item-sets":                         {"", "any"},
+	"GET /api/v1/item-sets/active":                  {"", "any"},
+	"GET /api/v1/item-sets/{id}":                    {"", "any"},
+	"POST /api/v1/item-sets":                        {role.ItemSetsManage, "managers"},
+	"PUT /api/v1/item-sets/{id}":                    {role.ItemSetsManage, "managers"},
+	"DELETE /api/v1/item-sets/{id}":                 {role.ItemSetsManage, "managers"},
+	"GET /api/v1/item-sets/{id}/apply/{employeeID}": {"", "any"},
+	"GET /api/v1/sizes":                             {"", "any"},
+	"POST /api/v1/orders/resolve":                   {"", "any"},
+	"POST /api/v1/orders":                           {"", "any"},
+	"GET /api/v1/orders":                            {"", "any"},
+	"GET /api/v1/settings":                          {"", "any"},
+	"PUT /api/v1/settings/supplier-chat":            {role.SettingsManage, "admins"},
+	"POST /api/v1/orders/{id}/confirmation-link":    {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-paper":        {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-in-person":    {"", "any"},
+	"GET /api/v1/orders/{id}/record":                {"", "any"},
+	"POST /api/v1/confirmations/view":               {"", "public"},
+	"POST /api/v1/confirmations/confirm":            {"", "public"},
+	"GET /api/v1/orders/{id}":                       {"", "any"},
+	"DELETE /api/v1/orders/{id}":                    {role.OrdersDelete, "manager"},
+	"GET /api/v1/dashboard":                         {role.DashboardOverview, "admins"},
+	"GET /api/v1/dashboard/manager":                 {role.DashboardManager, "manager"},
+	"GET /api/v1/dashboard/employee":                {role.DashboardEmployee, "employee"},
+	"GET /api/v1/replacements":                      {"", "any"},
+	"GET /api/v1/backups":                           {role.BackupsRead, "admins"},
+}
+
+// allowedRoles is who each audience was before permissions: the three fixed roles.
 var allowedRoles = map[string][]string{
-	"any":      {user.RoleAdmin, user.RoleManager, user.RoleEmployee},
-	"managers": {user.RoleAdmin, user.RoleManager},
-	"admins":   {user.RoleAdmin},
-	"manager":  {user.RoleManager},
-	"employee": {user.RoleEmployee},
+	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
+	"managers": {role.KeyAdmin, role.KeyManager},
+	"admins":   {role.KeyAdmin},
+	"manager":  {role.KeyManager},
+	"employee": {role.KeyEmployee},
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)
 
+// TestSeededRolesKeepPolicy pins that the built-in roles' permissions grant
+// each route to exactly the roles that could call it before permissions.
+func TestSeededRolesKeepPolicy(t *testing.T) {
+	for pattern, rule := range policy {
+		if rule.audience == "public" {
+			continue
+		}
+		for _, key := range role.BuiltinKeys() {
+			granted := rule.perm == "" || slices.Contains(role.BuiltinPermissions([]string{key}), rule.perm)
+			if want := slices.Contains(allowedRoles[rule.audience], key); granted != want {
+				t.Errorf("%s: role %s granted %v, want %v", pattern, key, granted, want)
+			}
+		}
+	}
+}
+
 func TestRoutePolicy(t *testing.T) {
 	api := newTestAPI(t)
-	tokens := map[string]string{}
-	for _, role := range user.KnownRoles() {
-		_, tokens[role] = api.userWith(t, role)
+	roleTokens := map[string]string{}
+	for _, key := range role.BuiltinKeys() {
+		_, roleTokens[key] = api.userWith(t, key)
+	}
+	all := make([]role.Permission, 0)
+	for _, p := range role.Catalogue() {
+		all = append(all, p.Key)
 	}
 
 	rt := buildRouter(testConfig(), api.svc, api.tokens)
@@ -458,16 +636,8 @@ func TestRoutePolicy(t *testing.T) {
 			t.Errorf("route %q has no entry in the policy table", r.pattern)
 			continue
 		}
-		got := "any"
-		switch {
-		case r.access.public:
-			got = "public"
-		case r.access.roles != nil:
-			got = strings.Join(r.access.roles, ",")
-			want = strings.Join(allowedRoles[want], ",")
-		}
-		if got != want {
-			t.Errorf("%s: registered access %q, policy says %q", r.pattern, got, want)
+		if r.access.public != (want.audience == "public") || r.access.perm != want.perm {
+			t.Errorf("%s: registered %+v, policy says %+v", r.pattern, r.access, want)
 		}
 	}
 	for pattern := range policy {
@@ -476,10 +646,11 @@ func TestRoutePolicy(t *testing.T) {
 		}
 	}
 
-	// Behaviour: no token is 401; a role outside the policy is 403; an allowed
-	// role gets past authorization (any status but 401/403).
+	// Behaviour: no token is 401; a token lacking the route's permission is
+	// 403 and one holding only it gets past authorization (any status but
+	// 401/403); and each built-in role gets exactly its old access.
 	for pattern, rule := range policy {
-		if rule == "public" {
+		if rule.audience == "public" {
 			continue
 		}
 		method, path, _ := strings.Cut(pattern, " ")
@@ -492,15 +663,24 @@ func TestRoutePolicy(t *testing.T) {
 			if code := api.do(t, method, path, "", body).Code; code != http.StatusUnauthorized {
 				t.Errorf("no token: %d, want 401", code)
 			}
-			for _, role := range user.KnownRoles() {
-				code := api.do(t, method, path, tokens[role], body).Code
-				allowed := slices.Contains(allowedRoles[rule], role)
+			check := func(who, token string, allowed bool) {
+				code := api.do(t, method, path, token, body).Code
 				switch {
 				case allowed && (code == http.StatusUnauthorized || code == http.StatusForbidden):
-					t.Errorf("%s: %d, want access", role, code)
+					t.Errorf("%s: %d, want access", who, code)
 				case !allowed && code != http.StatusForbidden:
-					t.Errorf("%s: %d, want 403", role, code)
+					t.Errorf("%s: %d, want 403", who, code)
 				}
+			}
+			if rule.perm != "" {
+				others := slices.DeleteFunc(slices.Clone(all), func(p role.Permission) bool { return p == rule.perm })
+				check("every other permission", api.tokenWith(t, others...), false)
+				check("only "+string(rule.perm), api.tokenWith(t, rule.perm), true)
+			} else {
+				check("no permissions", api.tokenWith(t), true)
+			}
+			for _, key := range role.BuiltinKeys() {
+				check("role "+key, roleTokens[key], slices.Contains(allowedRoles[rule.audience], key))
 			}
 		})
 	}
@@ -635,7 +815,7 @@ func TestLoginRateLimitPerClientBehindProxy(t *testing.T) {
 
 func TestDeletedUserTokenIsUnauthenticated(t *testing.T) {
 	api := newTestAPI(t)
-	u, tok := api.userWith(t, user.RoleEmployee)
+	u, tok := api.userWith(t, role.KeyEmployee)
 	if err := api.svc.users.Delete(context.Background(), u.ID, api.admin.ID); err != nil {
 		t.Fatal(err)
 	}

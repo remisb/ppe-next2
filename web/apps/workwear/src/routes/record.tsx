@@ -1,13 +1,13 @@
+import { useApi } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { useLoad } from '@ppe/ui/lib/use-load'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 import { ReceiptDocument } from '@/components/receipt'
-import { ErrorState, Loading } from '@/components/states'
-import { Button } from '@/components/ui/button'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
-import { useLoad } from '@/lib/use-load'
 import { formatWhatsApp, recordMessage } from '@/lib/whatsapp'
 
 /**

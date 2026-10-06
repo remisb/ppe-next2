@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 /** Item Catalogue, an item's own page, and Item Sets. */
 export const catalogue = {

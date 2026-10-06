@@ -1,7 +1,7 @@
-import { type MouseEvent, useCallback, useEffect, useState } from 'react'
-
-import type { OrderStatus } from '@ppe/api-client'
-import { basePath, stripBase } from '@ppe/routing'
+import type { OrderStatus, Permission } from '@ppe/api-client'
+import { type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
+import { adminHref, basePath, stripBase } from '@ppe/routing'
+import { type MouseEvent, useEffect } from 'react'
 
 export type Route =
   /** The root: the signed-in user's start screen (see startRoute). */
@@ -27,12 +27,11 @@ export type Route =
   /** One catalogue item: its current values and the item sets that hold it. */
   | { name: 'catalogueItem'; id: string }
   | { name: 'itemSets' }
-  /** User accounts; administrators only. */
-  | { name: 'users' }
-  /** The organisation's settings (the supplier's WhatsApp group); administrators only. */
-  | { name: 'settings' }
-  /** The database backups the backup service takes; administrators only. */
-  | { name: 'backups' }
+  /**
+   * An old address of a screen that moved to Administration (/users,
+   * /settings, /backups): the app sends the browser on to path there.
+   */
+  | { name: 'administration'; path: string }
   /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
   | { name: 'replacements' }
   | { name: 'account' }
@@ -63,13 +62,13 @@ const fixed = {
   employees: '/employees',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
-  users: '/users',
-  settings: '/settings',
-  backups: '/backups',
   replacements: '/replacements',
   account: '/account',
   help: '/help',
 } as const
+
+/** Screens that moved to Administration, at their old addresses here, which are their addresses there too. */
+const movedToAdministration = ['/users', '/settings', '/backups']
 
 /** Unknown paths (stale bookmarks) land on the start screen, as the root does. */
 export function parsePath(pathname: string, search = ''): Route {
@@ -85,6 +84,7 @@ export function parsePath(pathname: string, search = ''): Route {
     return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
+  if (movedToAdministration.includes(path)) return { name: 'administration', path }
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
@@ -138,55 +138,27 @@ export function pathOf(route: Route): string {
       return `/orders/${encodeURIComponent(route.id)}/record`
     case 'confirm':
       return `/confirm/${encodeURIComponent(route.token)}`
+    case 'administration':
+      return route.path
     default:
       return fixed[route.name]
   }
 }
 
-/**
- * replace: change the address without a new history entry (a consumed
- * prefill). scroll: false keeps the scroll position (a list beside its detail).
- */
-export interface NavigateOptions {
-  replace?: boolean
-  scroll?: boolean
-}
+export type { NavigateOptions } from '@ppe/app-shell'
+export { canGoBack } from '@ppe/app-shell'
 
-export interface Router {
-  route: Route
-  navigate: (to: Route, options?: NavigateOptions) => void
-}
+const addresses = { parse: parsePath, pathOf }
 
-export function useRouter(): Router {
-  const [route, setRoute] = useState<Route>(() => parsePath(stripBase(window.location.pathname), window.location.search))
+export function useRouter(): Router<Route> {
+  const router = useAddressRouter(addresses)
 
   useEffect(() => {
     // An old /history address shows as the screen's own, /orders; once, for the address the page opened at.
-    if (/^\/history(\/|$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(route))
+    if (/^\/history(\/|$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(router.route))
   }, [])
 
-  useEffect(() => {
-    const onPop = () => setRoute(parsePath(stripBase(window.location.pathname), window.location.search))
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [])
-
-  const navigate = useCallback((to: Route, { replace = false, scroll = true }: NavigateOptions = {}) => {
-    if (replace) window.history.replaceState(window.history.state, '', basePath + pathOf(to))
-    else window.history.pushState(inApp, '', basePath + pathOf(to))
-    setRoute(to)
-    if (scroll) window.scrollTo(0, 0)
-  }, [])
-
-  return { route, navigate }
-}
-
-/** Marks history entries pushed by navigate, so Back can return within the app. */
-const inApp = { inApp: true }
-
-/** True when the previous history entry is a screen of this app, not another site or a fresh tab. */
-export function canGoBack(): boolean {
-  return (window.history.state as typeof inApp | null)?.inApp === true
+  return router
 }
 
 /**
@@ -194,35 +166,28 @@ export function canGoBack(): boolean {
  * tab", middle click and copy link working; a plain click stays in the app.
  */
 export function linkTo(to: Route, navigate: (to: Route) => void) {
-  return {
-    href: basePath + pathOf(to),
-    onClick: (e: MouseEvent) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-      e.preventDefault()
-      navigate(to)
-    },
-  }
+  // Another app: a plain link, a full page load.
+  if (to.name === 'administration') return { href: adminHref(to.path), onClick: (_: MouseEvent) => {} }
+  return linkWith(pathOf, to, navigate)
 }
 
 /**
- * The screen to show for route. The root is the start screen: the Dashboard
- * for administrators, the Manager Dashboard for managers, the Employee
- * Dashboard for the employee role, in that order when a user holds several;
- * Create Order for anyone else. Each dashboard belongs to its role alone, so
- * anyone else asking for it gets their own start screen.
+ * The screen to show for route. The root is the start screen: the Dashboard,
+ * the Manager Dashboard or the Employee Dashboard, the first the user may
+ * open, in that order; Create Order for anyone else. Anyone asking for a
+ * screen they may not open gets their own start screen.
  */
-export function startRoute(route: Route, roles: { isAdmin: boolean; isManager: boolean; isEmployee: boolean }): Route {
-  const home: Route = roles.isAdmin
+export function startRoute(route: Route, can: (p: Permission) => boolean): Route {
+  const home: Route = can('dashboard.overview')
     ? { name: 'dashboard' }
-    : roles.isManager
+    : can('dashboard.manager')
       ? { name: 'managerDashboard' }
-      : roles.isEmployee
+      : can('dashboard.employee')
         ? { name: 'employeeDashboard' }
         : { name: 'createOrder' }
   if (route.name === 'home') return home
-  if (route.name === 'dashboard' && !roles.isAdmin) return home
-  if (route.name === 'managerDashboard' && !roles.isManager) return home
-  if (route.name === 'employeeDashboard' && !roles.isEmployee) return home
-  if ((route.name === 'settings' || route.name === 'backups') && !roles.isAdmin) return home
+  if (route.name === 'dashboard' && !can('dashboard.overview')) return home
+  if (route.name === 'managerDashboard' && !can('dashboard.manager')) return home
+  if (route.name === 'employeeDashboard' && !can('dashboard.employee')) return home
   return route
 }

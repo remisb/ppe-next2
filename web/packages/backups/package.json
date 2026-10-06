@@ -1,0 +1,23 @@
+{
+  "name": "@ppe/backups",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "How the database backups read (verdict, sizes, schedule), for the admin app's Backups screen and the staff app's Dashboard card.",
+  "exports": { ".": "./src/index.ts" },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ppe/api-client": "workspace:*",
+    "@ppe/i18n": "workspace:*",
+    "@ppe/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

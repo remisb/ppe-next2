@@ -1,28 +1,30 @@
 import type { Employee } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, FileText, Plus, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
-import { MoreActions } from '@/components/more-actions'
 import { RecordPreview } from '@/components/record-preview'
-import { RelativeDate } from '@/components/relative-date'
-import { SortControl, SortableHead } from '@/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table'
+import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { languages, t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
 import { missingSizes } from '@/lib/missing-sizes'
 import { type Route, linkTo } from '@/lib/router'
-import { type SortColumn, type SortState, sizeRank, sortRows } from '@/lib/sort'
-import { useLoad } from '@/lib/use-load'
-import { clothingBands, clothingSizeLabel, cn, formatMonths, formatSize } from '@/lib/utils'
+import { sizeRank } from '@/lib/sort'
+import { clothingBands, clothingSizeLabel, formatMonths, formatSize } from '@/lib/utils'
 
 import { EditSizes, MissingBadge } from './employees'
 
@@ -89,7 +91,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 </Button>
                 <MoreActions label={t.common.moreActions(e.full_name)}>
                   <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem>
-                  {session.canManageItems ? (
+                  {session.can('employees.delete') ? (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>

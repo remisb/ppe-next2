@@ -99,9 +99,11 @@ needs no ending: it reaches the user at their next refresh.
 
 ## Recent sign-in
 
-`POST`/`PUT`/`DELETE` on `/api/v1/users` (adding, editing, resetting the password of and
-deleting users) answer 403 `recent sign-in required` when the token's `auth_time` is older
-than `API_RECENT_SIGN_IN` (`requireRecentSignIn`). The web app's client recognises the
+`POST`/`PUT`/`DELETE` on `/api/v1/users` and `/api/v1/roles` (adding, editing, resetting
+the password of and deleting users; adding, changing and deleting roles) answer 403 `recent
+sign-in required` when the token's `auth_time` is older than `API_RECENT_SIGN_IN`
+(`requireRecentSignIn`, inside `requireSensitive`, which also checks the user's current
+roles). The web app's client recognises the
 message, asks for the password (Confirm your password), calls `POST /auth/reauth` and sends
 the request again; cancelling leaves the 403, which the screen reports as "nothing was
 changed". Changing one's own password needs the current one anyway.

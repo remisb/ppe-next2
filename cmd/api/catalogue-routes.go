@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
@@ -20,11 +21,11 @@ func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	rt.authenticated("GET /api/v1/catalogue/active", h.listActive)
 	rt.authenticated("GET /api/v1/catalogue/{id}", h.get)
 	rt.authenticated("GET /api/v1/catalogue/{id}/price-history", h.priceHistory)
-	rt.restricted("POST /api/v1/catalogue", h.create, managers...)
-	rt.restricted("PUT /api/v1/catalogue/{id}", h.update, managers...)
-	rt.restricted("POST /api/v1/catalogue/{id}/activate", h.activate, managers...)
-	rt.restricted("POST /api/v1/catalogue/{id}/deactivate", h.deactivate, managers...)
-	rt.restricted("DELETE /api/v1/catalogue/{id}", h.delete, managers...)
+	rt.restricted("POST /api/v1/catalogue", h.create, role.CatalogueManage)
+	rt.restricted("PUT /api/v1/catalogue/{id}", h.update, role.CatalogueManage)
+	rt.restricted("POST /api/v1/catalogue/{id}/activate", h.activate, role.CatalogueManage)
+	rt.restricted("POST /api/v1/catalogue/{id}/deactivate", h.deactivate, role.CatalogueManage)
+	rt.restricted("DELETE /api/v1/catalogue/{id}", h.delete, role.CatalogueManage)
 }
 
 type catalogueRequest struct {

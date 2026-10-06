@@ -1,8 +1,9 @@
 import type { Order } from '@ppe/api-client'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
+import { cn } from '@ppe/ui/lib/utils'
 
-import { Table, TableBody, stackedBreak, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { t } from '@/i18n'
-import { cn, formatEuro, formatMonths, formatSize } from '@/lib/utils'
+import { formatEuro, formatMonths, formatSize } from '@/lib/utils'
 
 /**
  * Stacked (a narrow table), a line is a compact card: item and line total, then size,

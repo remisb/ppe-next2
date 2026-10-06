@@ -1,4 +1,4 @@
-import { plural } from '../plural'
+import { plural } from '@ppe/i18n'
 
 /** Words many screens share. A screen's own wording lives in its own namespace. */
 export const common = {
@@ -6,18 +6,14 @@ export const common = {
   cancel: 'Cancel',
   save: 'Save',
   saving: 'Saving…',
-  close: 'Close',
   back: 'Back',
   edit: 'Edit',
   delete: 'Delete',
   add: 'Add',
   search: 'Search',
   retry: 'Try again',
-  loading: 'Loading…',
-  couldNotLoad: 'Could not load',
   actionFailed: 'Action failed',
   moreActions: (name: string) => `More actions for ${name}`,
-  somethingWentWrong: 'Something went wrong.',
   ordered: 'Ordered',
   given: 'Given',
   active: 'Active',

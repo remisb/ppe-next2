@@ -14,16 +14,43 @@ web/
   pnpm-workspace.yaml    which directories are workspace packages
   tsconfig.base.json     strict TypeScript settings apps extend
   packages/
-    api-client/          the typed client every app uses
-    routing/             where an app is mounted — the base path, and nothing else
+    api-client/          the typed client every app uses, and the permission catalogue
+    routing/             where each app is mounted (base path, staffHref, adminHref)
+    i18n/                the language in use, plural, localized(); no app's words
+    ui/                  the look: shadcn components (with Table stack), styles.css
+                         (tokens and variants), panels, relative dates, use-load
+    app-shell/           the sign-in and session (permissions, can()), Sign in, Confirm
+                         your password, theme, density, password rules, the router
+    backups/             how backups read, for Backups and the Dashboard's card
   apps/
-    _template/           copy this to start an app
-    <name>/              one directory per frontend
+    workwear/            the staff app, at /
+    admin/               Administration, at /admin/: Users, Roles & permissions,
+                         Settings, Backups
 ```
+
+**Two apps, one origin, one sign-in.** Administration is a separate app (ADR 0002) on the
+staff app's origin, so both share the refresh cookie, and so everything the session code
+keeps per origin: the Web Lock `workwear.refresh` (tabs of both apps take turns to
+refresh), the BroadcastChannel `workwear.session` (Sign out in one signs out every tab of
+both) and the device's `workwear.theme`, `workwear.language`, `workwear.keepSignedIn` and
+`workwear.density.*`. Never rename these per app. A link from one app to the other is a
+plain `<a href>` (`staffHref`, `adminHref`), a full page load. In development open
+Administration through the staff app's server, `http://localhost:5180/admin/`, which
+proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`).
+
+**Shared code lives in a package; an app keeps only its own screens and words.** A package
+is TypeScript source like `api-client` (explicit `.ts` imports, no build step). Import a
+component from `@ppe/ui/components/<name>`, never copy one into an app. An app's
+`index.css` starts with `@import '@ppe/ui/styles.css'`, which also tells Tailwind to scan
+the package. Run shadcn's CLI in `packages/ui` (its `components.json`).
+
+**Permissions, not roles, decide what a screen shows.** `session.can('orders.delete')`,
+from the token's `perms` (the user's roles may change; their names say nothing). The
+server checks every request again; the UI only hides what would be refused.
 
 ## Languages
 
-The staff app is in English, Lithuanian and Russian, each user's choice on Account, saved
+Both apps are in English, Lithuanian and Russian, each user's choice on Account, saved
 on their account (`PUT /api/v1/users/me/language`) and so on every device; before sign-in,
 the language last used on the device. Every word a user reads comes from `t` in `src/i18n`
 (`t.history.title`, `t.common.days(3)`): one typed dictionary per language, split into
@@ -37,7 +64,10 @@ build it in the component or a function. Dates and amounts use `intlLocale()`;
 Not translated: data (names, codes, sizes, record numbers), server error messages, and the
 employee-facing confirmation page, hand-over mode and the Items Given Record, which keep
 their English / Russian as the manual defines. `src/i18n/i18n.test.ts` fails when a
-Lithuanian or Russian text is missing, empty or left identical to the English.
+Lithuanian or Russian text is missing, empty or left identical to the English
+(`dictionaryProblems` from `@ppe/i18n/testing`). A package that draws words keeps a small
+dictionary of its own (`localized({ en, lt, ru })`, read as `uiText().close` when
+drawing), with the same test; a word moves to the package with the component that shows it.
 Lithuanian and Russian labels are often longer than the English, so a button
 in a narrow column wraps (`h-auto min-h-11 py-2 whitespace-normal`) rather than keep the
 Button's one line; the e2e *Language* step fails when a visible button's text on Create
@@ -45,13 +75,13 @@ Order is wider than the button in Lithuanian.
 
 ## Colours
 
-The app's colours are tokens in `src/index.css`, defined once for light and once for dark
+The apps' colours are tokens in `packages/ui/src/styles.css`, defined once for light and once for dark
 (the media query and `.dark` share the same values). The screens use the neutral shadcn
 palette. Gavort's navy is the `brand` tokens (`bg-brand` and its foreground for the
 button, `text-brand-mark` for the logo and the app's name, white in dark mode), used only
 by the sign-in page, which sets them on the page's own background, never a panel colour
 of its own. A new colour gets a token in all three places, never a literal.
-The logo is `components/gavort-logo.tsx`, traced from the brand book: it takes the text
+The logo is `@ppe/ui/components/gavort-logo`, traced from the brand book: it takes the text
 colour (navy) and in dark mode the book's gold foil, a gradient kept
 in that file with the shapes because it is part of the artwork, not a screen colour.
 Keep the book's clear space around it, an eighth of its width. `GavortEmblem` is its emblem alone, the
@@ -60,9 +90,9 @@ navy on a light tab, gold on a dark one) and the home-screen icons (gold on navy
 `manifest.json` and `apple-touch-icon.png`) are the same emblem; `icons/build.sh` redraws
 the PNGs with `rsvg-convert`.
 The theme is the device's choice on Account (and ⌘K): Light or Dark pin `<html
-data-theme>`, System leaves it to the media query. `lib/theme.ts` keeps it in
-localStorage, and an inline script in `index.html` applies it before the first paint;
-keep the two in step. The `dark:` variant follows all three triggers.
+data-theme>`, System leaves it to the media query. `@ppe/app-shell`'s `theme.ts` keeps it in
+localStorage, and an inline script in each app's `index.html` applies it before the first
+paint; keep the two in step, and the two apps' scripts byte for byte the same (CSP below). The `dark:` variant follows all three triggers.
 
 ## User guide
 
@@ -96,9 +126,12 @@ The workwear app is the reference.
   (`md:hidden`): there it is the Create Order button on Orders, which stays the current
   section while Create Order is open, and ⌘K or G then O. From
   `md` those links flow on in the rail (`md:contents`), never a second list. An
-  administrator has nine sections on a phone (Dashboard first, Users, Settings and Backups last),
-  a manager or the employee role six (their Dashboard first); the rail and sidebar show one
-  fewer, without Create Order. Orders shows the number of orders waiting for
+  administrator, a manager or the employee role has six sections on a phone (their
+  Dashboard first); the rail and sidebar show one fewer, without Create Order. Whoever may
+  open a screen in Administration also has its link, under More on a phone and at the foot
+  of the rail and sidebar. Administration's navigation (`@ppe/ui/components/main-nav`
+  styles, the same three shapes) holds the screens the user's permissions open, and under
+  More or at its foot the way back to the staff app, Account and Sign out. Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
   label), never `aria-label`, which would also match label lookups such as a field named
   "Item Set".
@@ -192,14 +225,15 @@ able to fill and save every credential form:
 ## Sign-in state
 
 The sign-in is an HttpOnly refresh cookie the server sets (`docs/specs/session-service.md`);
-the access token lives in memory only (`lib/api.tsx`, `lib/session.ts`):
+the access token lives in memory only (`@ppe/app-shell`: `api.tsx`, `session.ts`), and
+both apps share it (Layout above):
 
 - Never store a token in localStorage, sessionStorage, IndexedDB or a readable cookie: an
   injected script could take it. The e2e step *the sign-in survives a reload…* checks.
 - The app starts on "Checking your sign-in…" while `POST /auth/refresh` answers; render
   nothing that needs a session before `status` is `ready`.
 - Calls go through `client`; a 401 refreshes once and repeats the call, and a 403
-  `recent sign-in required` opens Confirm your password (`components/confirm-password.tsx`)
+  `recent sign-in required` opens Confirm your password (`@ppe/app-shell`'s `ConfirmPassword`)
   and repeats it. Screens need no handling of their own; `errorText` words the cancelled case.
 - The Vite proxy keeps the browser's `Host` header (`changeOrigin: false`): the sign-in
   routes check `Origin` against it.
@@ -211,9 +245,11 @@ images and requests come from the app's own origin only. So:
 
 - No script, stylesheet, font or image from another host, and no `eval` or `new Function`.
   Self-host what you need, as the Geist font is.
-- The only inline script is the theme in `index.html`, allowed by its hash. Changing it,
-  whitespace included, changes the hash: `src/csp.test.ts` fails and names the new value
-  to put in the Caddyfile. Do not add another inline script.
+- The only inline script is the theme in `index.html`, allowed by its hash, and it is the
+  same in both apps so one hash allows both. Changing it, whitespace included, changes the
+  hash: each app's `src/csp.test.ts` fails and names the new value to put in the
+  Caddyfile; Administration's also fails when its script differs from the staff app's.
+  Do not add another inline script.
 - React's `style` props are fine (they go through the DOM, which `style-src` does not
   restrict); a `<style>` element or a `style` attribute written as HTML is not.
 - Links to other sites (WhatsApp) are navigation and are not affected.

@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -29,9 +31,10 @@ func signClaims(t *testing.T, method jwt.SigningMethod, key any, c accessClaims)
 func TestTokenRoundTrip(t *testing.T) {
 	now := time.Now()
 	tok := testTokens(now)
-	u := user.User{ID: uuid.New(), Roles: []string{user.RoleManager, user.RoleEmployee}}
+	u := user.User{ID: uuid.New(), RoleIDs: []uuid.UUID{role.ManagerID, role.EmployeeID}}
 	sid := uuid.New()
-	raw, exp, err := tok.issue(u, sid, now.Add(-time.Hour))
+	granted := role.BuiltinPermissions([]string{role.KeyManager, role.KeyEmployee})
+	raw, exp, err := tok.issue(u, granted, sid, now.Add(-time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,8 +49,9 @@ func TestTokenRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Subject != u.ID.String() || len(c.Roles) != 2 {
-		t.Errorf("claims = %+v", c)
+	want := role.Strings(granted)
+	if c.Subject != u.ID.String() || !slices.Equal(c.Roles, want) {
+		t.Errorf("claims = %+v, want permissions %v", c, want)
 	}
 }
 
@@ -106,11 +110,12 @@ func TestTokenRejections(t *testing.T) {
 	}
 }
 
-func TestTokenDropsUnknownRoles(t *testing.T) {
+func TestTokenDropsUnknownPermissions(t *testing.T) {
 	now := time.Now()
 	tok := testTokens(now)
 	raw := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
-		Roles: []string{"ADMIN", "superuser"},
+		Perms: []string{"orders.delete", "everything", "USERS.READ"},
+		Roles: []string{"admin"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject: uuid.NewString(), Issuer: "ppe-next2", ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
 		},
@@ -119,7 +124,27 @@ func TestTokenDropsUnknownRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Roles) != 1 || c.Roles[0] != user.RoleAdmin {
-		t.Errorf("roles = %v, want [admin]", c.Roles)
+	if !slices.Equal(c.Roles, []string{"orders.delete"}) {
+		t.Errorf("permissions = %v, want [orders.delete]: unknown keys dropped, roles ignored when perms is present", c.Roles)
+	}
+}
+
+// A token issued before permissions existed carries only roles; until it
+// expires it grants its roles' built-in permissions.
+func TestTokenWithoutPermissionsUsesRoles(t *testing.T) {
+	now := time.Now()
+	tok := testTokens(now)
+	raw := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
+		Roles: []string{"MANAGER", "superuser"},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject: uuid.NewString(), Issuer: "ppe-next2", ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
+		},
+	})
+	c, err := tok.verify(context.Background(), raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := role.Strings(role.BuiltinPermissions([]string{role.KeyManager})); !slices.Equal(c.Roles, want) {
+		t.Errorf("permissions = %v, want %v", c.Roles, want)
 	}
 }

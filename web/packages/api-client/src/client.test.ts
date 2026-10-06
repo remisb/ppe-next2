@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { ApiError, NetworkError } from './errors.ts'
 import { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString } from './client.ts'
+import { ApiError, NetworkError } from './errors.ts'
 
 function fakeFetch(status: number, body: string) {
   return vi.fn(async (_url: string, _init?: RequestInit) => new Response(status === 204 ? null : body, { status }))
@@ -48,10 +48,10 @@ describe('createClient', () => {
   it('updates a user with a full replace and resets a password by id', async () => {
     const f = fakeFetch(200, '{"id":"u1"}')
     const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
-    await client.users.update('u1', { email: 'a@b.c', name: 'A', roles: ['manager'], is_active: false })
+    await client.users.update('u1', { email: 'a@b.c', name: 'A', role_ids: ['r1'], is_active: false })
     expect(f.mock.calls[0]![0]).toBe('/api/v1/users/u1')
     expect(f.mock.calls[0]![1]?.method).toBe('PUT')
-    expect(f.mock.calls[0]![1]?.body).toBe('{"email":"a@b.c","name":"A","roles":["manager"],"is_active":false}')
+    expect(f.mock.calls[0]![1]?.body).toBe('{"email":"a@b.c","name":"A","role_ids":["r1"],"is_active":false}')
     await client.users.setPassword('u1', 'new-pass-1')
     expect(f.mock.calls[1]![0]).toBe('/api/v1/users/u1/password')
     expect(f.mock.calls[1]![1]?.body).toBe('{"password":"new-pass-1"}')
@@ -156,7 +156,7 @@ describe('sign-in', () => {
     const confirmPassword = vi.fn(async () => true)
     const f = sequence([403, '{"error":"recent sign-in required"}'], [201, '{"id":"u2"}'])
     const client = createClient({ getToken: () => 't', confirmPassword, fetch: f as unknown as typeof fetch })
-    await expect(client.users.create({ email: 'n@b.c', name: 'N', password: 'pw-123456', roles: ['employee'] })).resolves.toEqual({ id: 'u2' })
+    await expect(client.users.create({ email: 'n@b.c', name: 'N', password: 'pw-123456', role_ids: ['r1'] })).resolves.toEqual({ id: 'u2' })
     expect(confirmPassword).toHaveBeenCalledOnce()
     expect(f).toHaveBeenCalledTimes(2)
   })

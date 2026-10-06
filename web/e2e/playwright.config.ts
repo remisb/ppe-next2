@@ -3,14 +3,15 @@ import { join } from 'node:path'
 
 import { defineConfig, devices } from '@playwright/test'
 
-import { apiEnv, apiPort, repoRoot, webPort, webURL } from './env.ts'
+import { adminPort, apiEnv, apiPort, repoRoot, webPort, webURL } from './env.ts'
 
 // E2E_WEB_SERVER=caddy serves the production bundle through deploy/Caddyfile,
 // as in a deployment (CI does this); the default is the Vite dev server.
 const webRoot = join(repoRoot, 'web/apps/workwear/dist')
+const adminRoot = join(repoRoot, 'web/apps/admin/dist')
 const caddy = process.env['E2E_WEB_SERVER'] === 'caddy'
-if (caddy && !existsSync(join(webRoot, 'index.html'))) {
-  throw new Error(`E2E_WEB_SERVER=caddy needs a web build at ${webRoot}: run pnpm build first`)
+for (const root of caddy ? [webRoot, adminRoot] : []) {
+  if (!existsSync(join(root, 'index.html'))) throw new Error(`E2E_WEB_SERVER=caddy needs a web build at ${root}: run pnpm build first`)
 }
 const webServerCommand = caddy
   ? `caddy run --adapter caddyfile --config ${join(repoRoot, 'deploy/Caddyfile')}`
@@ -19,8 +20,18 @@ const webServerCommand = caddy
     // reaches vite and the run hangs after the last test.
     `${join(repoRoot, 'web/apps/workwear/node_modules/.bin/vite')} --port ${webPort} --strictPort`
 const webServerEnv: Record<string, string> = caddy
-  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot }
-  : { VITE_API_TARGET: `http://localhost:${apiPort}` }
+  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot }
+  : { VITE_API_TARGET: `http://localhost:${apiPort}`, VITE_ADMIN_TARGET: `http://localhost:${adminPort}` }
+
+// With Vite, Administration runs on its own server, which the staff app's proxies /admin to.
+const adminServer = {
+  command: `${join(repoRoot, 'web/apps/admin/node_modules/.bin/vite')} --port ${adminPort} --strictPort`,
+  cwd: join(repoRoot, 'web/apps/admin'),
+  env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
+  url: `http://localhost:${adminPort}/admin/`,
+  reuseExistingServer: false,
+  timeout: 120_000,
+}
 
 export default defineConfig({
   testDir: './tests',
@@ -53,5 +64,6 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
+    ...(caddy ? [] : [adminServer]),
   ],
 })

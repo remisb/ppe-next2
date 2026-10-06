@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
@@ -40,12 +42,19 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE`); err != nil {
 		t.Fatal(err)
 	}
+	// The truncation reaches roles through their actor keys.
+	if err := role.EnsureBuiltins(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
 	fastHash := user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p })
 	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(testSecret), sessionLimits(testConfig()))
+	roles := role.NewService(role.NewPostgresRepository(pool))
 	svc := newServices(
 		time.UTC, time.Hour,
 		sessions,
-		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(userSessions{sessions})),
+		roles,
+		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(userSessions{sessions}),
+			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
 		employee.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
@@ -54,7 +63,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 	)
-	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123")
+	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,8 +82,8 @@ func decode[T any](t *testing.T, body []byte) T {
 
 func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	api, pool := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	// Add New Employee needs first and last name only.
 	rec := api.do(t, "POST", "/api/v1/employees", staff, map[string]any{"first_name": "Jonas", "last_name": "Petraitis"})
@@ -153,8 +162,8 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 
 func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	item := map[string]any{"name": "Safety shoes", "size_group": "SHOES", "accounting_price_cents": 4999, "service_period_months": 12, "active": true, "display_rank": 1}
 	if rec := api.do(t, "POST", "/api/v1/catalogue", staff, item); rec.Code != http.StatusForbidden {
@@ -211,8 +220,8 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 // end: item set CRUD, Apply Item Set, and resolving after a size is saved.
 func TestPostgresCreateOrderResolution(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	mkItem := func(body map[string]any) string {
 		t.Helper()
@@ -309,8 +318,8 @@ func TestPostgresCreateOrderResolution(t *testing.T) {
 // catalogue price blocks the order with 409.
 func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	mk := func(body map[string]any) string {
 		t.Helper()
@@ -370,7 +379,7 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 
 	// Only the manager role deletes an order (demo and test orders); it then leaves History.
 	id := o["id"].(string)
-	_, adminTok := api.userWith(t, user.RoleAdmin)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
 	for _, tok := range []string{staff, adminTok} {
 		if rec := api.do(t, "DELETE", "/api/v1/orders/"+id, tok, nil); rec.Code != http.StatusForbidden {
 			t.Errorf("delete by a non-manager = %d, want 403", rec.Code)
@@ -392,8 +401,8 @@ func TestPostgresMarkAsOrderedHTTP(t *testing.T) {
 
 func TestPostgresHistoryHTTP(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
 	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
@@ -489,8 +498,8 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 // → Confirm Receipt, and the paper path, over HTTP.
 func TestPostgresConfirmationHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, mgr := api.userWith(t, user.RoleManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
 
 	rec := api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "size_group": "NONE", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
 	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
@@ -581,8 +590,8 @@ func TestPostgresBackupsHTTP(t *testing.T) {
 	if _, err := pool.Exec(context.Background(), `TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
 		t.Fatal(err)
 	}
-	_, adminTok := api.userWith(t, user.RoleAdmin)
-	_, managerTok := api.userWith(t, user.RoleManager)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
+	_, managerTok := api.userWith(t, role.KeyManager)
 	if code := api.do(t, "GET", "/api/v1/backups", managerTok, nil).Code; code != http.StatusForbidden {
 		t.Errorf("manager: %d, want 403", code)
 	}
@@ -602,8 +611,8 @@ func TestPostgresBackupsHTTP(t *testing.T) {
 // lists (never null), so the page needs no special case for a new install.
 func TestPostgresDashboardHTTP(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, adminTok := api.userWith(t, user.RoleAdmin)
-	_, managerTok := api.userWith(t, user.RoleManager)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
+	_, managerTok := api.userWith(t, role.KeyManager)
 
 	if code := api.do(t, "GET", "/api/v1/dashboard", managerTok, nil).Code; code != http.StatusForbidden {
 		t.Errorf("manager: %d, want 403", code)
@@ -643,7 +652,7 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 	}
 
 	// So is the employee role's; it covers the signed-in user.
-	_, employeeTok := api.userWith(t, user.RoleEmployee)
+	_, employeeTok := api.userWith(t, role.KeyEmployee)
 	for _, tok := range []string{adminTok, managerTok} {
 		if code := api.do(t, "GET", "/api/v1/dashboard/employee", tok, nil).Code; code != http.StatusForbidden {
 			t.Errorf("other role on the employee dashboard: %d, want 403", code)
@@ -664,7 +673,7 @@ func TestPostgresDashboardHTTP(t *testing.T) {
 // Each user sets their own interface language; sign-in and /users/me return it.
 func TestPostgresOwnLanguageHTTP(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
+	_, staff := api.userWith(t, role.KeyEmployee)
 	rec := api.do(t, "GET", "/api/v1/users/me", staff, nil)
 	if decode[map[string]any](t, rec.Body.Bytes())["language"] != "en" {
 		t.Errorf("default language: %s", rec.Body)
@@ -692,8 +701,8 @@ func TestPostgresOwnLanguageHTTP(t *testing.T) {
 // group; every signed-in user reads it in the settings; a bad link is a 400.
 func TestPostgresSupplierChatHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
-	_, staff := api.userWith(t, user.RoleEmployee)
-	_, adminTok := api.userWith(t, user.RoleAdmin)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
 	type chatJSON struct {
 		Timezone     string             `json:"timezone"`
 		SupplierChat *map[string]string `json:"supplier_chat"`
@@ -744,7 +753,7 @@ func TestPostgresSupplierChatHTTP(t *testing.T) {
 func TestPostgresSessionsHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
 	ctx := context.Background()
-	u, _ := api.userWith(t, user.RoleEmployee)
+	u, _ := api.userWith(t, role.KeyEmployee)
 	_, _, c := api.login(t, u.Email, "password123", true)
 	rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: c.Value, origin: appOrigin})
 	next := refreshCookieOf(rec)
@@ -755,7 +764,7 @@ func TestPostgresSessionsHTTP(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT generation FROM user_sessions WHERE id = $1`, strings.Split(c.Value, ".")[0]).Scan(&generation); err != nil || generation != 2 {
 		t.Fatalf("generation = %d, %v", generation, err)
 	}
-	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, Roles: u.Roles, IsActive: false}, api.admin.ID); err != nil {
+	if _, err := api.svc.users.Update(ctx, u.ID, user.UpdateParams{Email: u.Email, Name: u.Name, RoleIDs: u.RoleIDs, IsActive: false}, api.admin.ID); err != nil {
 		t.Fatal(err)
 	}
 	var live int
@@ -764,5 +773,43 @@ func TestPostgresSessionsHTTP(t *testing.T) {
 	}
 	if rec := api.send(t, "POST", "/api/v1/auth/refresh", browserRequest{cookie: next.Value}); rec.Code != http.StatusUnauthorized {
 		t.Errorf("refresh after deactivation = %d, want 401", rec.Code)
+	}
+}
+
+// Roles against the real repositories: a role added, its name unique among
+// live roles, given to a user whose next token grants it, refused deletion
+// while held; the built-in Administrator as the database holds it.
+func TestPostgresRolesHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	adminTok := api.signIn(t, api.admin)
+
+	rec := api.do(t, "GET", "/api/v1/roles", adminTok, nil)
+	roles := decode[[]role.Role](t, rec.Body.Bytes())
+	if rec.Code != http.StatusOK || len(roles) != 3 || roles[0].ID != role.AdminID || !roles[0].Locked || roles[0].UserCount != 1 {
+		t.Fatalf("roles = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/roles", adminTok, map[string]any{"name": "Storekeeper", "permissions": []string{"catalogue.manage"}})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	store := decode[role.Role](t, rec.Body.Bytes())
+	if rec := api.do(t, "POST", "/api/v1/roles", adminTok, map[string]any{"name": "STOREKEEPER"}); rec.Code != http.StatusConflict {
+		t.Errorf("same name = %d", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/users", adminTok, map[string]any{"email": "k@example.com", "name": "K", "password": "password123", "role_ids": []uuid.UUID{store.ID, role.EmployeeID}})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add a user = %d %s", rec.Code, rec.Body)
+	}
+	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
+	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
+	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "dashboard.employee"}) || claims.Roles != nil {
+		t.Errorf("k's token perms %v roles %v, %v", claims.Perms, claims.Roles, err)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {
+		t.Errorf("delete a held role = %d", rec.Code)
+	}
+	var events int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE entity_type = 'role' AND entity_id = $1`, store.ID).Scan(&events); err != nil || events != 1 {
+		t.Errorf("role events = %d, %v", events, err)
 	}
 }

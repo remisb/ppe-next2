@@ -1,17 +1,19 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { Button } from '@ppe/ui/components/button'
+import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
 import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 
-import { BarList, KeyFigures, Kpi, MonthChart, MoreLink, NeedsYouPanel, Panel, RefreshButton, formatDate } from '@/components/dashboard'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@/components/states'
-import { Button } from '@/components/ui/button'
+import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
+import { BarList, MonthChart, MoreLink, NeedsYouPanel, formatDate } from '@/components/dashboard'
 import { t } from '@/i18n'
-import { useApi, useSession } from '@/lib/api'
-import { backupHealth, formatBytes, healthText } from '@/lib/backups'
+import { backupHealth, formatBytes, healthText } from '@ppe/backups'
 import { type Need, changeText, formatDays, monthLabel, share } from '@/lib/dashboard'
-import { formatDateTime } from '@/lib/history'
+import { formatDateTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
-import { useLoad } from '@/lib/use-load'
-import { cn, formatEuro } from '@/lib/utils'
+import { formatEuro } from '@/lib/utils'
 
 type Navigate = (to: Route) => void
 
@@ -23,7 +25,9 @@ type Navigate = (to: Route) => void
  */
 export function Dashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
-  const { isManager, isEmployee } = useSession()
+  const { can } = useSession()
+  const isManager = can('dashboard.manager')
+  const isEmployee = can('dashboard.employee')
   const board = useLoad(() => client.dashboard())
   const d = board.data
 
@@ -310,7 +314,7 @@ function BackupCard({ navigate }: { navigate: Navigate }) {
   return (
     <Panel title={t.backups.title}>
       <a
-        {...linkTo({ name: 'backups' }, navigate)}
+        {...linkTo({ name: 'administration', path: '/backups' }, navigate)}
         className="-mx-2 flex min-h-11 items-center gap-3 rounded-md px-2 py-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
       >
         {ok ? (
@@ -345,7 +349,7 @@ function SetupCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
       to: { name: 'catalogue' },
     },
     { label: t.dashboard.itemSets, count: s.item_sets_active, issue: null, to: { name: 'itemSets' } },
-    { label: t.dashboard.users, count: s.users, issue: s.admins === 1 ? t.dashboard.onlyOneAdmin : null, to: { name: 'users' } },
+    { label: t.dashboard.users, count: s.users, issue: s.admins === 1 ? t.dashboard.onlyOneAdmin : null, to: { name: 'administration', path: '/users' } },
   ]
   return (
     <Panel title={t.dashboard.setup} description={t.dashboard.setupDescription}>

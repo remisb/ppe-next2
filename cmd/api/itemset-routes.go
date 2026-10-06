@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 type itemSetHandler struct {
@@ -19,9 +20,9 @@ func registerItemSetRoutes(rt *router, sets *itemset.Service) {
 	rt.authenticated("GET /api/v1/item-sets", h.list)
 	rt.authenticated("GET /api/v1/item-sets/active", h.listActive)
 	rt.authenticated("GET /api/v1/item-sets/{id}", h.get)
-	rt.restricted("POST /api/v1/item-sets", h.create, managers...)
-	rt.restricted("PUT /api/v1/item-sets/{id}", h.update, managers...)
-	rt.restricted("DELETE /api/v1/item-sets/{id}", h.delete, managers...)
+	rt.restricted("POST /api/v1/item-sets", h.create, role.ItemSetsManage)
+	rt.restricted("PUT /api/v1/item-sets/{id}", h.update, role.ItemSetsManage)
+	rt.restricted("DELETE /api/v1/item-sets/{id}", h.delete, role.ItemSetsManage)
 }
 
 type itemSetLineRequest struct {

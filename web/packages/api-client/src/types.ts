@@ -4,7 +4,10 @@
 // order line holds a clothing size as its code ("54"), or as a letter (S … 3XL)
 // when it was ordered before clothing sizes became numbers.
 
-export type Role = 'admin' | 'manager' | 'employee'
+import type { Permission } from './permissions.ts'
+
+/** A built-in role's key; a role an administrator added has none. */
+export type RoleKey = 'admin' | 'manager' | 'employee'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
 /** A user's interface language; each user sets their own. */
@@ -14,7 +17,8 @@ export interface User {
   id: string
   email: string
   name: string
-  roles: Role[]
+  /** The roles the user holds (GET /api/v1/roles names them), in id order. */
+  role_ids: string[]
   is_active: boolean
   language: Language
   created_at: string
@@ -26,15 +30,48 @@ export interface UserCreateInput {
   email: string
   name: string
   password: string
-  roles: Role[]
+  role_ids: string[]
 }
 
 /** PUT /api/v1/users/{id}: a full replace, so is_active is always sent. */
 export interface UserUpdateInput {
   email: string
   name: string
-  roles: Role[]
+  role_ids: string[]
   is_active: boolean
+}
+
+/**
+ * A role: a named bundle of permissions users hold. The built-in roles have
+ * a key; Administrator is locked (never changed or deleted).
+ */
+export interface Role {
+  id: string
+  key: RoleKey | null
+  name: string
+  description: string
+  permissions: Permission[]
+  locked: boolean
+  /** Live users holding the role. */
+  user_count: number
+  created_at: string
+  updated_at: string
+  created_by_user_id: string | null
+  updated_by_user_id: string | null
+}
+
+/** POST /api/v1/roles and PUT /api/v1/roles/{id} (a full replace). */
+export interface RoleInput {
+  name: string
+  description: string
+  permissions: Permission[]
+}
+
+/** GET /api/v1/permissions: one permission of the catalogue, and those it cannot work without. */
+export interface PermissionInfo {
+  key: Permission
+  group: 'administration' | 'workwear' | 'dashboards'
+  requires: Permission[]
 }
 
 export interface LoginResponse {

@@ -1,38 +1,33 @@
-import { BookOpen, ClipboardList, DatabaseBackup, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, Settings as SettingsIcon, Shirt, UserCog, UserRound, Users } from 'lucide-react'
+import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
+import { adminHref } from '@ppe/routing'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
+import { Loading } from '@ppe/ui/components/states'
+import { useLoad } from '@ppe/ui/lib/use-load'
+import { cn } from '@ppe/ui/lib/utils'
+import { BookOpen, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
-import { ConfirmPassword } from '@/components/confirm-password'
-import { GavortEmblem } from '@/components/gavort-logo'
-import { ErrorState, Loading } from '@/components/states'
-import { FormSheet } from '@/components/ui/form-sheet'
 import { t } from '@/i18n'
-import { useApi } from '@/lib/api'
-import { applyDensity, loadDensity } from '@/lib/density'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
 import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
-import { useLoad } from '@/lib/use-load'
-import { cn } from '@/lib/utils'
 import { draftLineCount } from '@/lib/working-order'
 
 import { Account } from './routes/account'
 import { Catalogue } from './routes/catalogue'
 import { CatalogueItemPage } from './routes/catalogue-item'
+import { ConfirmPage } from './routes/confirm'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
 import { EmployeePage } from './routes/employee'
 import { EmployeeDashboard } from './routes/employee-dashboard'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
-import { ConfirmPage } from './routes/confirm'
 import { ItemSets } from './routes/item-sets'
 import { ManagerDashboard } from './routes/manager-dashboard'
-import { Replacements } from './routes/replacements'
 import { RecordPage } from './routes/record'
-import { SignIn } from './routes/sign-in'
-import { BackupsPage } from './routes/backups'
-import { SettingsPage } from './routes/settings'
-import { UsersPage } from './routes/users'
+import { Replacements } from './routes/replacements'
 
 // The guide's text in three languages is read rarely: its own chunk, loaded when Help opens.
 const Help = lazy(() => import('./routes/help').then((m) => ({ default: m.Help })))
@@ -59,17 +54,6 @@ const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): 
   short: t.shell.shortDashboard,
   icon: LayoutDashboard,
 })
-/*
- * Administrators: the Dashboard first, as their start screen, and Users,
- * Settings and Backups after the everyday sections. Managers get managerDashboard first in their tabs; an
- * administrator who is also a manager keeps the one Dashboard tab and reaches
- * that one from the Dashboard. The employee role's start screen,
- * employeeDashboard, is first in their tabs, as for managers.
- */
-const usersTab = (): Tab => ({ route: { name: 'users' }, label: t.shell.users, short: t.shell.shortUsers, icon: UserCog })
-const settingsTab = (): Tab => ({ route: { name: 'settings' }, label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon })
-const backupsTab = (): Tab => ({ route: { name: 'backups' }, label: t.shell.backups, short: t.shell.shortBackups, icon: DatabaseBackup })
-
 /**
  * A record belongs to Orders (History in the code), an employee to Employees
  * and an item to Item Catalogue, so those stay the current section; so does
@@ -99,38 +83,6 @@ const phoneTabs = 4
  */
 const phoneOrder = ['max-md:order-1', 'max-md:order-2', 'max-md:order-4', 'max-md:order-5']
 
-/*
- * One navigation, three layouts:
- *   phone (< md)   the first four sections are a bottom tab bar within thumb
- *                  reach, above the home bar, with Create Order as a raised
- *                  New order button in the middle; More opens a panel above it
- *                  with the other sections, the account and Sign out
- *   tablet (md)    a 5.5rem side rail: icon over a short label. It stays up to
- *                  xl so a landscape tablet (1024px) keeps room for tables
- *   desktop (xl)   a 15rem sidebar: icon beside the full label
- * The link's accessible name is always the full label, from its (visually
- * hidden) text rather than aria-label, which would also turn up in label
- * lookups such as a field's "Item Set".
- */
-const navItem = cn(
-  'group relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
-  'h-16 focus-visible:ring-2 focus-visible:ring-ring md:h-auto md:rounded-lg md:py-2',
-  'xl:flex-row xl:justify-start xl:gap-3 xl:px-3 xl:py-2.5 xl:text-sm',
-  'hover:text-foreground aria-[current=page]:text-foreground data-[active=true]:text-foreground xl:hover:bg-accent xl:aria-[current=page]:bg-accent',
-)
-/** The icon's pill is the phone and rail's active marker; the sidebar highlights the whole row. */
-const navIcon = cn(
-  'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-colors xl:h-auto xl:w-auto xl:max-w-none',
-  'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent group-data-[active=true]:bg-accent xl:group-hover:bg-transparent xl:group-aria-[current=page]:bg-transparent',
-)
-/** A section under More: a full-width row in the phone's panel, a normal item in the rail and sidebar. */
-const moreItem = cn(
-  navItem,
-  'max-md:h-12 max-md:flex-row max-md:justify-start max-md:gap-3 max-md:rounded-lg max-md:px-3 max-md:text-sm',
-  'max-md:hover:bg-accent max-md:aria-[current=page]:bg-accent',
-)
-const moreIcon = cn(navIcon, 'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-hover:bg-transparent')
-
 export function App() {
   const { session, status, retry, signOut, client, passwordPrompt } = useApi()
   const { route: asked, navigate } = useRouter()
@@ -153,7 +105,7 @@ export function App() {
     e: { name: 'employees' },
     c: { name: 'catalogue' },
     s: { name: 'itemSets' },
-    u: { name: 'users' },
+    u: { name: 'administration', path: '/users' },
   }
   useShortcuts(
     {
@@ -166,7 +118,7 @@ export function App() {
       },
       newOrder: () => navigate({ name: 'createOrder' }),
       go: (k) => {
-        if (k !== 'u' || session?.isAdmin) navigate(goTo[k])
+        if (k !== 'u' || session?.can('users.manage')) navigate(goTo[k])
       },
       help: () => setHelpOpen(true),
     },
@@ -178,6 +130,10 @@ export function App() {
 
   // More closes when a section is chosen (any navigation) and on Escape.
   useEffect(() => setMoreOpen(false), [asked])
+  // Users, Settings and Backups are Administration's now: their old addresses, links and G then U go there.
+  useEffect(() => {
+    if (asked.name === 'administration') window.location.replace(adminHref(asked.path))
+  }, [asked])
   useEffect(() => {
     if (!moreOpen) return
     morePanel.current?.querySelector<HTMLElement>('a, button')?.focus()
@@ -189,32 +145,20 @@ export function App() {
   // The public confirmation page is checked before the session gate: its
   // visitor is an employee with a link, not a signed-in user.
   if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
+  // A screen that moved to Administration: the effect above sends the browser there.
+  if (asked.name === 'administration') return <CheckingSignIn />
   // The refresh cookie answers whether this browser is signed in; until then, neither the app nor Sign in.
-  if (status === 'starting') {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-background">
-        <Loading label={t.shell.checkingSignIn} />
-      </main>
-    )
-  }
-  if (status === 'offline') {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-background p-5">
-        <div className="w-full max-w-sm">
-          <ErrorState title={t.shell.offlineTitle} error={new Error(t.shell.offlineHint)} onRetry={retry} />
-        </div>
-      </main>
-    )
-  }
-  if (!session) return <SignIn />
-  const route = startRoute(asked, session)
-  const shownTabs = session.isAdmin
-    ? [homeTab('dashboard'), ...tabs(), usersTab(), settingsTab(), backupsTab()]
-    : session.isManager
-      ? [homeTab('managerDashboard'), ...tabs()]
-      : session.isEmployee
-        ? [homeTab('employeeDashboard'), ...tabs()]
-        : tabs()
+  if (status === 'starting') return <CheckingSignIn />
+  if (status === 'offline') return <Offline onRetry={retry} />
+  if (!session) return <SignIn appName={t.common.appName} tagline={t.shell.signInTagline} />
+  const route = startRoute(asked, session.can)
+  // Administration's link, for users who may open one of its screens.
+  const administration = canAdminister(session)
+  const home = startRoute({ name: 'home' }, session.can)
+  const shownTabs = [
+    ...(home.name === 'dashboard' || home.name === 'managerDashboard' || home.name === 'employeeDashboard' ? [homeTab(home.name)] : []),
+    ...tabs(),
+  ]
 
   const sections: PaletteSection[] = [
     ...shownTabs.map((tab) => ({ route: tab.route, label: tab.label, icon: tab.icon })),
@@ -246,13 +190,13 @@ export function App() {
 
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden print:hidden">
         <div className="flex h-14 items-center px-4">
-          <Brand />
+          <Brand name={t.common.appName} />
         </div>
       </header>
 
       <aside className="print:hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:border-r md:border-border md:bg-sidebar">
         <div className="hidden h-16 shrink-0 items-center justify-center px-3 md:flex xl:justify-start xl:px-5">
-          <Brand />
+          <Brand name={t.common.appName} />
         </div>
         {/* The palette's way in for the mouse: an icon in the rail, a search field look in the sidebar. */}
         <div className="hidden px-2 pb-1 md:block xl:px-3">
@@ -340,6 +284,14 @@ export function App() {
             ))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
+              {administration ? (
+                <a href={adminHref('/')} className={moreItem}>
+                  <span className={moreIcon}>
+                    <ShieldCheck aria-hidden className="size-5" />
+                  </span>
+                  {t.shell.administration}
+                </a>
+              ) : null}
               <a {...link({ name: 'help' })} aria-current={route.name === 'help' ? 'page' : undefined} className={moreItem}>
                 <span className={moreIcon}>
                   <BookOpen aria-hidden className="size-5" />
@@ -365,6 +317,17 @@ export function App() {
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex xl:p-3">
+          {administration ? (
+            <a href={adminHref('/')} title={t.shell.administration} className={navItem}>
+              <span className={navIcon}>
+                <ShieldCheck aria-hidden className="size-5 xl:size-4" />
+              </span>
+              <span aria-hidden className="xl:hidden">
+                {t.shell.shortAdministration}
+              </span>
+              <span className="sr-only xl:not-sr-only">{t.shell.administration}</span>
+            </a>
+          ) : null}
           <a {...link({ name: 'help' })} aria-current={route.name === 'help' ? 'page' : undefined} title={t.shell.userGuide} className={navItem}>
             <span className={navIcon}>
               <BookOpen aria-hidden className="size-5 xl:size-4" />
@@ -418,9 +381,6 @@ export function App() {
           <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />
         ) : null}
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
-        {route.name === 'users' ? <UsersPage /> : null}
-        {route.name === 'settings' ? <SettingsPage /> : null}
-        {route.name === 'backups' ? <BackupsPage /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'help' ? (
@@ -576,16 +536,6 @@ function Count({ n, className }: { n: number; className?: string }) {
       className={cn('min-w-4 rounded-full bg-destructive px-1 text-center text-[0.625rem] leading-4 font-semibold text-white tabular-nums', className)}
     >
       {n > 99 ? '99+' : n}
-    </span>
-  )
-}
-
-/** The app mark, Gavort's emblem; the name shows where there is room for it (phone bar, desktop sidebar). */
-function Brand() {
-  return (
-    <span className="flex items-center gap-2 font-semibold">
-      <GavortEmblem className="size-8 shrink-0 text-brand-mark" />
-      <span className="leading-tight md:sr-only xl:not-sr-only">{t.common.appName}</span>
     </span>
   )
 }

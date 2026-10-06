@@ -204,7 +204,9 @@ func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
 			AND (accounting_price_cents IS NULL OR service_period_months IS NULL)),
 		(SELECT count(*) FROM item_sets WHERE deleted_at IS NULL AND active),
 		(SELECT count(*) FROM users WHERE deleted_at IS NULL AND is_active),
-		(SELECT count(*) FROM users WHERE deleted_at IS NULL AND is_active AND 'admin' = ANY (roles))`).
+		(SELECT count(*) FROM users u JOIN user_roles ur ON ur.user_id = u.id
+			JOIN roles r ON r.id = ur.role_id AND r.key = 'admin'
+			WHERE u.deleted_at IS NULL AND u.is_active)`).
 		Scan(&s.Employees, &s.EmployeesMissingSizes, &s.CatalogueActive, &s.CatalogueUnpriced, &s.ItemSetsActive, &s.Users, &s.Admins)
 }
 

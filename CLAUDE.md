@@ -40,6 +40,15 @@ Sign-ins are sessions (`internal/domain/session`, migration 0020, spec
 reuse detection, "Keep me signed in" (30 days, 14 idle; else 12h and the browser's life),
 signed-in devices on Account, sessions ended on password change or reset, deactivation and
 deletion, and a recent sign-in (password within `API_RECENT_SIGN_IN`) for managing users.
+Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/role`
+(`permission.go`), bundled into **roles** that are rows (migration 0022: `roles`,
+`role_permissions`, `user_roles`; spec `docs/specs/role-service.md`). The built-in
+Administrator, Manager and Employee reproduce the old three roles; administrators add and
+change others on Roles & permissions. The token's `perms` claim carries what the user's
+roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
+Roles & permissions, Settings, Backups) on the staff app's origin, sharing its sign-in and
+the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n` and `@ppe/backups`; the
+administrator's Dashboard stays in the staff app.
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
@@ -48,6 +57,11 @@ nullable (Mark as Ordered must refuse such items), while order-line snapshots re
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
 but shown on no order or record. The app labels the accounting price "Price"; the record's
 `unit_price_cents` key holds it and never changes, because it is part of the document hash.
+Users hold roles only through `user_roles` (no `users.roles` column since 0022); the
+built-in roles have fixed ids (`role.AdminID` …), Administrator is never changed or
+deleted, and at least one active user always holds it (checked after each user write under
+an advisory lock). `TRUNCATE users CASCADE` also empties `roles` (actor keys), so Postgres
+tests and e2e setup call `role.EnsureBuiltins` after it (`-seed-admin` does).
 A manager may
 soft-delete an order (`DELETE /api/v1/orders/{id}`, manager role only, migration 0015), so
 every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
@@ -77,7 +91,8 @@ cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, L
 ```
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
-8080, 5173–5175): Postgres 5442, API 8090, Vite 5180, e2e 18090/5181, compose project
+8080, 5173–5175): Postgres 5442, API 8090, Vite 5180 (Administration 5182, reached through
+5180 at `/admin/`), e2e 18090/5181 (Administration 5183), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
 new ports out of PPE-next's range.
 
@@ -88,11 +103,12 @@ because Postgres tests truncate tables.
 
 `docker-compose.prod.yml` (project `ppe-next2-prod`, env file `.env.prod` from
 `.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
-→ api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
-built app into the Caddy image; `deploy/Caddyfile`). Only Caddy publishes ports.
+→ api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes both
+built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/` and
+Administration at `ADMIN_ROOT` served at `/admin/`; `deploy/Caddyfile`). Only Caddy publishes ports.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
-`index.html`'s inline theme script by its hash (`web/apps/workwear/src/csp.test.ts` keeps them
-in step; rules in `web/AGENTS.md`).
+`index.html`'s inline theme script, the same in both apps, by its hash
+(`web/apps/{workwear,admin}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`).
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
 `prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`; they run compose under `env -i` so `.env` values cannot leak in.
 The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
@@ -147,7 +163,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   `github.com/remisb/muxstack/middleware`: global `Recoverer`, `Logger`, optional `CORS`,
   `Timeout` in `routes()`. Routes are registered through `router` (`cmd/api/router.go`):
   `rt.public`, `rt.authenticated` (any signed-in user) or `rt.restricted(pattern, h,
-  managers...)`, which apply muxstack `Authenticator`/`Authorizer` and record the rule.
+  role.CatalogueManage)`, which apply muxstack `Authenticator`/`Authorizer` and record the rule.
+  A route requires one **permission** from the catalogue in `internal/domain/role`
+  (`permission.go`); roles are bundles of permissions (built-ins in `builtin.go`), and the
+  token's `perms` claim carries what the user's roles allow.
   Handlers get the actor with `actorID(r)` (`cmd/api/auth.go`).
 - **Composition**: `buildRouter()` in `cmd/api/main.go` mounts every
   `register<Name>Routes(rt, svc)`; `run()` builds the `services` struct.
@@ -157,7 +176,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - **Config**: every setting must be read in `loadConfig` *and* checked in `validate`;
   `TestLoadConfigDefaults` loads the real defaults to catch a field that is never read.
 - **Adding a route** requires an entry in the `policy` table in `cmd/api/routes_test.go`
-  (`TestRoutePolicy` fails for unlisted routes and checks 401/403 per role), and any new
+  (`TestRoutePolicy` fails for unlisted routes and checks 401/403 per permission and per
+  built-in role; `TestSeededRolesKeepPolicy` keeps the built-ins' access), and any new
   domain sentinel errors in `errorStatuses` (`cmd/api/http.go`).
 - **Audited updates**: repositories take a `Mutation func(cur T) (T, *audit.Event, error)`;
   they lock the row `FOR UPDATE`, call it, then write the row and the event in one
@@ -208,8 +228,10 @@ The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), 
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
 needs `caddy` on your `PATH`. CI pins the Caddy version and its SHA-512 checksum in
 `ci.yml`, so a Caddy upgrade must update both.
-The Vite web server is started from `apps/workwear/node_modules/.bin/vite`, not `pnpm exec`:
+The Vite web servers are started from `apps/<app>/node_modules/.bin/vite`, not `pnpm exec`:
 pnpm 12 detaches the child, so Playwright could not stop it and the run hung after the last test.
+With Vite, Administration runs on 5183 and the staff app's server proxies `/admin` to it, so
+tests open it at `webURL/admin/` on one origin, as behind Caddy.
 
 ## Frontend (`web/`)
 
@@ -219,22 +241,30 @@ shadcn/ui on Base UI. Follow `web/AGENTS.md`.
 ```bash
 cd web && pnpm install
 pnpm typecheck && pnpm test && pnpm build           # whole workspace
-pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api
+pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api and /admin
+pnpm --dir apps/admin dev                            # Administration on 5182; open it at http://localhost:5180/admin/
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 
 The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
-in `apps/workwear/.env.local` when 8090 is taken). `.claude/launch.json` has `api` (port
-8090) and `workwear` (port 5180) configs.
+in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TARGET`
+(default `http://localhost:5182`). `.claude/launch.json` has `api` (port 8090), `workwear`
+(port 5180) and `admin` (port 5182) configs.
 
 - `packages/api-client` is a **hand-written** typed client (`types.ts` mirrors the Go JSON);
-  update it with every API change. `packages/routing` holds only the mount base path.
+  update it with every API change. Its `permissions.ts` lists the permission catalogue in
+  Go's order (a Go test compares them). `packages/routing` holds where each app is mounted.
+- Shared code is in packages, never copied into an app: `@ppe/ui` (shadcn components,
+  `styles.css` tokens and variants, panels, relative dates), `@ppe/app-shell` (sign-in,
+  session with `can(permission)`, Sign in, Confirm your password, theme, density, password
+  rules, the router), `@ppe/i18n` (language machinery; packages keep small dictionaries of
+  their own), `@ppe/backups`. A screen shows controls by `session.can(...)`, never by role.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
   Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.
 - Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
-- The staff app is in English, Lithuanian and Russian (each user's choice, `users.language`,
-  migration 0016): every visible word comes from `t` in `src/i18n` (typed dictionaries per
+- Both apps are in English, Lithuanian and Russian (each user's choice, `users.language`,
+  migration 0016): every visible word comes from `t` in the app's `src/i18n` (typed dictionaries per
   language and namespace; never read `t` at module level). The confirmation page, hand-over
   mode and the Items Given Record stay English / Russian. Rules in `web/AGENTS.md`.
 - The user guide is the Help screen (`/help`): typed text in `src/help/{en,lt,ru}.ts`, each

@@ -1,12 +1,13 @@
 import type { CatalogueItem } from '@ppe/api-client'
+import { Input } from '@ppe/ui/components/field'
+import { cn } from '@ppe/ui/lib/utils'
 import { Plus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemTile } from '@/components/item-icon'
-import { Input } from '@/components/ui/field'
 import { t } from '@/i18n'
 import { matchItems } from '@/lib/items'
-import { cn, formatEuro } from '@/lib/utils'
+import { formatEuro } from '@/lib/utils'
 
 /**
  * Add Item: a search over the active catalogue. Typing narrows the list by
