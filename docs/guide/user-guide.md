@@ -33,7 +33,7 @@ The figures at the top show the orders awaiting confirmation, this month's spend
 - A missing size: **Add sizes**.
 - An item without a price: **Fix**.
 
-The **Backups** card says whether the database is backed up. Choose it to open **Backups**.
+The **Backups** card says whether the database is backed up. Choose it to open **Backups** in **Administration**.
 
 ![The Dashboard: figures and the Needs you list](../../web/apps/workwear/public/help-img/en/desktop/dashboard.png)
 
@@ -70,7 +70,7 @@ This device keeps a draft of the order while you work. **Copy for WhatsApp**, fo
 
 If the employee will sign on paper, choose **Print record** instead.
 
-**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Settings**, it then offers to open that group: paste the message there.
+**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Administration**, on **Settings**, it then offers to open that group: paste the message there.
 
 ![The Review order dialog](../../web/apps/workwear/public/help-img/en/desktop/review.png)
 ![The ordered order with its confirmation link](../../web/apps/workwear/public/help-img/en/desktop/ordered.png)
@@ -140,17 +140,44 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 ![The Item Catalogue](../../web/apps/workwear/public/help-img/en/desktop/catalogue.png)
 ![Item Sets](../../web/apps/workwear/public/help-img/en/desktop/item-sets.png)
 
-## 10. Users
+## 10. Administration
 
 *Administrators only.*
 
-- Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.
+**Administration** is where you manage who may use the app and what they may do, and the organisation's settings. It has four screens: **Users**, **Roles & permissions**, **Settings** and **Backups**.
+
+Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.
+
+You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or backups sees **Administration**, with only the screens their roles open.
+
+## 11. Users
+
+*Administrators only.*
+
+- Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. **Roles & permissions** says what each role allows.
+- A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.
 - To reset a password, use **⋯ → Reset password…**.
+- You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds **Administrator**.
 - If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 11. Settings
+## 12. Roles & permissions
+
+*Administrators only.*
+
+**Roles & permissions** lists each role, what it allows and how many users hold it. A role is a set of permissions, such as **Manage Item Catalogue** or **Delete employees**. You give roles to users on **Users**.
+
+- **Administrator**, **Manager** and **Employee** are built in. **Administrator** can do everything and cannot be changed: **View** shows what it allows. You can change what **Manager** and **Employee** allow, but not their names, and you cannot delete them.
+- **Add Role** makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: **Manage users** needs **See users**.
+- A change reaches the users who hold the role within minutes.
+- **⋯ → Delete role…** deletes a role that no user holds. Take it from its users on **Users** first.
+- If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.
+
+![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
+![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
+
+## 13. Settings
 
 *Administrators only.*
 
@@ -160,7 +187,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
 
-## 12. Backups
+## 14. Backups
 
 *Administrators only.*
 
@@ -179,7 +206,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 13. Your account
+## 15. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -190,13 +217,13 @@ The settings are made on the server, and a backup is restored there too: the app
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 14. Search and shortcuts
+## 16. Search and shortcuts
 
 | Key | Does |
 | --- | --- |
 | `⌘K` / `Ctrl K` | Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
-| `G` then `D` `O` `H` `E` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users. |
+| `G` then `D` `O` `H` `E` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration). |
 | `J` / `K`, `Esc` | Move through Orders, or close the open order. |
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |

@@ -48,7 +48,7 @@ export const lt: Guide = {
           ul: ['pavėluota prekė – **Užsakyti vėl**;', 'nepatvirtintas užsakymas – **Siųsti nuorodą**;', 'trūkstamas dydis – **Pridėti dydžius**;', 'prekė be kainos – **Taisyti**.'],
           roles: ['admin'],
         },
-        { p: 'Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte **Atsarginės kopijos**.', roles: ['admin'] },
+        { p: 'Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad **Administravime** atidarytumėte **Atsarginės kopijos**.', roles: ['admin'] },
         { shots: [{ name: 'dashboard', alt: 'Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“' }], roles: ['admin'] },
         {
           p: '**Vadovo suvestinė** skirta prekėms, kainoms ir pirkimams: kas užsakyta, išlaidos pagal prekes, kokius pakeitimus teks pirkti, naujausi kainų pokyčiai, kas kataloge ir rinkiniuose trukdo užsakyti, ir kokių dydžių laikyti atsargų.',
@@ -97,7 +97,7 @@ export const lt: Guide = {
           ],
         },
         { p: 'Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įrašą**.' },
-        { p: '**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Nustatymuose** yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.' },
+        { p: '**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Administravime**, ekrane **Nustatymai**, yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.' },
         {
           shots: [
             { name: 'review', alt: 'Užsakymo peržiūros langas' },
@@ -188,18 +188,55 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'administration',
+      title: 'Administravimas',
+      roles: ['admin'],
+      blocks: [
+        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, bei organizacijos nustatymus. Jame keturi ekranai: **Naudotojai**, **Rolės ir teisės**, **Nustatymai** ir **Atsarginės kopijos**.' },
+        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą; jos **Daugiau** yra **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: 'Atidarykite jį mygtuku **Admin.** juostos apačioje. Jis turi savo juostą; **Drabužiai** jos apačioje grąžina atgal.', devices: ['tablet'] },
+        { p: 'Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.', devices: ['desktop'] },
+        { p: 'Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.' },
+      ],
+    },
+    {
       id: 'users',
       title: 'Naudotojai',
       roles: ['admin'],
       blocks: [
         {
           ul: [
-            'Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.',
+            'Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo **Rolės ir teisės**.',
+            'Rolės pakeitimas naudotoją pasiekia per kelias minutes, nereikia jungtis iš naujo. Deaktyvuotas naudotojas atjungiamas visuose įrenginiuose.',
             'Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.',
+            'Negalite deaktyvuoti savo paskyros ar atimti iš savęs rolės, kuri leidžia tvarkyti naudotojus ar roles. Rolę **Administratorius** visada turi bent vienas aktyvus naudotojas.',
             'Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).',
           ],
         },
         { shots: [{ name: 'users', alt: 'Naudotojų ekranas' }] },
+      ],
+    },
+    {
+      id: 'roles',
+      title: 'Rolės ir teisės',
+      roles: ['admin'],
+      blocks: [
+        { p: '**Rolės ir teisės** rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, **Tvarkyti prekių katalogą** ar **Trinti darbuotojus**. Roles naudotojams skiriate skiltyje **Naudotojai**.' },
+        {
+          ul: [
+            '**Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus, o ištrinti jų negalima.',
+            '**Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.',
+            'Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.',
+            '**⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.',
+            'Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).',
+          ],
+        },
+        {
+          shots: [
+            { name: 'roles', alt: 'Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai' },
+            { name: 'role', alt: 'Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia' },
+          ],
+        },
       ],
     },
     {
@@ -267,7 +304,7 @@ export const lt: Guide = {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
-            ['`G`, tada `D` `O` `H` `E` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus.'],
+            ['`G`, tada `D` `O` `H` `E` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
             ['`J` / `K`, `Esc`', 'Pereina per Užsakymus arba uždaro atidarytą užsakymą.'],
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],

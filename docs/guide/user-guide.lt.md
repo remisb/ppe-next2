@@ -33,7 +33,7 @@ Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir a
 - trūkstamas dydis – **Pridėti dydžius**;
 - prekė be kainos – **Taisyti**.
 
-Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte **Atsarginės kopijos**.
+Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad **Administravime** atidarytumėte **Atsarginės kopijos**.
 
 ![Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“](../../web/apps/workwear/public/help-img/lt/desktop/dashboard.png)
 
@@ -70,7 +70,7 @@ Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsAp
 
 Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įrašą**.
 
-**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Nustatymuose** yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.
+**Kopijuoti į WhatsApp** peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius **Administravime**, ekrane **Nustatymai**, yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.
 
 ![Užsakymo peržiūros langas](../../web/apps/workwear/public/help-img/lt/desktop/review.png)
 ![Užsakytas užsakymas su patvirtinimo nuoroda](../../web/apps/workwear/public/help-img/lt/desktop/ordered.png)
@@ -140,17 +140,44 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 ![Prekių katalogas](../../web/apps/workwear/public/help-img/lt/desktop/catalogue.png)
 ![Prekių rinkiniai](../../web/apps/workwear/public/help-img/lt/desktop/item-sets.png)
 
-## 10. Naudotojai
+## 10. Administravimas
 
 *Tik administratoriams.*
 
-- Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.
+**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, bei organizacijos nustatymus. Jame keturi ekranai: **Naudotojai**, **Rolės ir teisės**, **Nustatymai** ir **Atsarginės kopijos**.
+
+Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.
+
+Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
+
+## 11. Naudotojai
+
+*Tik administratoriams.*
+
+- Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo **Rolės ir teisės**.
+- Rolės pakeitimas naudotoją pasiekia per kelias minutes, nereikia jungtis iš naujo. Deaktyvuotas naudotojas atjungiamas visuose įrenginiuose.
 - Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.
+- Negalite deaktyvuoti savo paskyros ar atimti iš savęs rolės, kuri leidžia tvarkyti naudotojus ar roles. Rolę **Administratorius** visada turi bent vienas aktyvus naudotojas.
 - Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 11. Nustatymai
+## 12. Rolės ir teisės
+
+*Tik administratoriams.*
+
+**Rolės ir teisės** rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, **Tvarkyti prekių katalogą** ar **Trinti darbuotojus**. Roles naudotojams skiriate skiltyje **Naudotojai**.
+
+- **Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus, o ištrinti jų negalima.
+- **Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.
+- Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.
+- **⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.
+- Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (**Patvirtinkite slaptažodį**).
+
+![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
+![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
+
+## 13. Nustatymai
 
 *Tik administratoriams.*
 
@@ -160,7 +187,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
 
-## 12. Atsarginės kopijos
+## 14. Atsarginės kopijos
 
 *Tik administratoriams.*
 
@@ -179,7 +206,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 13. Jūsų paskyra
+## 15. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -190,13 +217,13 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 14. Paieška ir spartieji klavišai
+## 16. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |
 | `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
 | `/` | Pereina į paieškos arba „Pridėti prekę“ lauką. |
-| `G`, tada `D` `O` `H` `E` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus. |
+| `G`, tada `D` `O` `H` `E` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus (Administravime). |
 | `J` / `K`, `Esc` | Pereina per Užsakymus arba uždaro atidarytą užsakymą. |
 | `⌘/Ctrl` `Enter` | Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą. |
 | `?` | Rodo visus sparčiuosius klavišus. |

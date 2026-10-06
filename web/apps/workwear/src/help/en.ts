@@ -48,7 +48,7 @@ export const en: Guide = {
           ul: ['An overdue item: **Reorder**.', 'An unconfirmed order: **Send link**.', 'A missing size: **Add sizes**.', 'An item without a price: **Fix**.'],
           roles: ['admin'],
         },
-        { p: 'The **Backups** card says whether the database is backed up. Choose it to open **Backups**.', roles: ['admin'] },
+        { p: 'The **Backups** card says whether the database is backed up. Choose it to open **Backups** in **Administration**.', roles: ['admin'] },
         { shots: [{ name: 'dashboard', alt: 'The Dashboard: figures and the Needs you list' }], roles: ['admin'] },
         {
           p: 'The **Manager Dashboard** covers items, prices and purchasing: what is on order, spending by item, the replacements that will need buying, recent price changes, what holds up ordering in the catalogue and item sets, and the sizes to stock.',
@@ -94,7 +94,7 @@ export const en: Guide = {
           ],
         },
         { p: 'If the employee will sign on paper, choose **Print record** instead.' },
-        { p: "**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Settings**, it then offers to open that group: paste the message there." },
+        { p: "**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Administration**, on **Settings**, it then offers to open that group: paste the message there." },
         {
           shots: [
             { name: 'review', alt: 'The Review order dialog' },
@@ -185,14 +185,57 @@ export const en: Guide = {
       ],
     },
     {
+      id: 'administration',
+      title: 'Administration',
+      roles: ['admin'],
+      blocks: [
+        { p: '**Administration** is where you manage who may use the app and what they may do, and the organisation\'s settings. It has four screens: **Users**, **Roles & permissions**, **Settings** and **Backups**.' },
+        { p: 'Open it from **More**. It has a bar of its own at the bottom; its **More** holds **Workwear & Equipment**, which takes you back, your account and **Sign out**.', devices: ['phone'] },
+        { p: 'Open it with **Admin** at the foot of the rail. It has a rail of its own; **Workwear**, at its foot, takes you back.', devices: ['tablet'] },
+        { p: 'Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.', devices: ['desktop'] },
+        { p: 'You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or backups sees **Administration**, with only the screens their roles open.' },
+      ],
+    },
+    {
       id: 'users',
       title: 'Users',
       roles: ['admin'],
       blocks: [
         {
-          ul: ['Add, edit or deactivate accounts, and give each one roles: admin, manager or employee.', 'To reset a password, use **⋯ → Reset password…**.', 'If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.'],
+          ul: [
+            'Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. **Roles & permissions** says what each role allows.',
+            'A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.',
+            'To reset a password, use **⋯ → Reset password…**.',
+            "You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds **Administrator**.",
+            'If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.',
+          ],
         },
         { shots: [{ name: 'users', alt: 'The Users screen' }] },
+      ],
+    },
+    {
+      id: 'roles',
+      title: 'Roles & permissions',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Roles & permissions** lists each role, what it allows and how many users hold it. A role is a set of permissions, such as **Manage Item Catalogue** or **Delete employees**. You give roles to users on **Users**.',
+        },
+        {
+          ul: [
+            '**Administrator**, **Manager** and **Employee** are built in. **Administrator** can do everything and cannot be changed: **View** shows what it allows. You can change what **Manager** and **Employee** allow, but not their names, and you cannot delete them.',
+            '**Add Role** makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: **Manage users** needs **See users**.',
+            'A change reaches the users who hold the role within minutes.',
+            '**⋯ → Delete role…** deletes a role that no user holds. Take it from its users on **Users** first.',
+            'If you signed in more than 12 hours ago, the app asks you to **Confirm your password** before saving the change.',
+          ],
+        },
+        {
+          shots: [
+            { name: 'roles', alt: 'Roles & permissions: the built-in roles and the users holding them' },
+            { name: 'role', alt: "A role's permissions, grouped, each with what it allows" },
+          ],
+        },
       ],
     },
     {
@@ -260,7 +303,7 @@ export const en: Guide = {
           keys: [
             ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.'],
             ['`/`', 'Go to the search or Add Item field.'],
-            ['`G` then `D` `O` `H` `E` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users.'],
+            ['`G` then `D` `O` `H` `E` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration).'],
             ['`J` / `K`, `Esc`', 'Move through Orders, or close the open order.'],
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],

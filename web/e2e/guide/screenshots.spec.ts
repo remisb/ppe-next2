@@ -125,7 +125,7 @@ test('orders, an order and its record', async () => {
   await shot('record')
 })
 
-test('employees, catalogue, item sets, users, settings, backups', async () => {
+test('employees, catalogue, item sets, users, roles, settings, backups', async () => {
   await openTab(T.shell.employees)
   await expect(page.getByRole('row', { name: /Rasa Stankevičiūtė/ })).toBeVisible()
   await shot('employees')
@@ -143,6 +143,19 @@ test('employees, catalogue, item sets, users, settings, backups', async () => {
   await page.goto('/admin/users')
   await expect(page.getByRole('heading', { name: A.users.title })).toBeVisible()
   await shot('users')
+  await page.goto('/admin/roles')
+  await expect(page.getByRole('heading', { name: A.roles.title })).toBeVisible()
+  await shot('roles')
+  // A role's permissions, as Manager's form shows them (the demo data has no other role to edit),
+  // from Workwear & Equipment's: the description above them is the role's own, stored in English.
+  await page.getByRole('button', { name: A.roles.editRoleLabel(A.users.manager) }).click()
+  const form = page.getByRole('dialog', { name: A.roles.editRole(A.users.manager) })
+  const workwear = form.getByRole('group', { name: A.roles.groups.workwear })
+  await expect(workwear).toBeVisible()
+  await workwear.evaluate((e) => e.scrollIntoView({ block: 'start' }))
+  await shot('role')
+  await form.getByRole('button', { name: A.common.cancel }).click()
+  await expect(form).toBeHidden()
   // The supplier's group, as an administrator sets it (the link is a made-up one).
   await page.goto('/admin/settings')
   await page.getByLabel(A.settings.groupName).fill('Superman Rubai Group')

@@ -84,11 +84,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#record"><b>7</b>Išdavimo įrašas</a></li>
     <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
     <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
-    <li><a href="#users"><b>10</b>Naudotojai</a></li>
-    <li><a href="#settings"><b>11</b>Nustatymai</a></li>
-    <li><a href="#backups"><b>12</b>Atsarginės kopijos</a></li>
-    <li><a href="#account"><b>13</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>14</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#administration"><b>10</b>Administravimas</a></li>
+    <li><a href="#users"><b>11</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>12</b>Rolės ir teisės</a></li>
+    <li><a href="#settings"><b>13</b>Nustatymai</a></li>
+    <li><a href="#backups"><b>14</b>Atsarginės kopijos</a></li>
+    <li><a href="#account"><b>15</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>16</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -123,7 +125,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>trūkstamas dydis – <b>Pridėti dydžius</b>;</li>
       <li>prekė be kainos – <b>Taisyti</b>.</li>
     </ul>
-    <p>Kortelė <b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad atidarytumėte <b>Atsarginės kopijos</b>.</p>
+    <p>Kortelė <b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Pasirinkite ją, kad <b>Administravime</b> atidarytumėte <b>Atsarginės kopijos</b>.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/dashboard.png" alt="Suvestinė: rodikliai ir sąrašas „Reikia jūsų dėmesio“" loading="lazy"></figure>
     </div>
@@ -167,7 +169,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Nusiųskite darbuotojui nuorodą: <b>Siųsti nuorodą per WhatsApp</b> arba <b>Kopijuoti nuorodą</b>. Nuoroda galioja 7 dienas ir rodoma tik vieną kartą.</li>
     </ol>
     <p>Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite <b>Spausdinti įrašą</b>.</p>
-    <p><b>Kopijuoti į WhatsApp</b> peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius <b>Nustatymuose</b> yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.</p>
+    <p><b>Kopijuoti į WhatsApp</b> peržiūroje nukopijuoja žinutę tiekėjui. Kai administratorius <b>Administravime</b>, ekrane <b>Nustatymai</b>, yra nurodęs tiekėjo WhatsApp grupę, programa pasiūlo ją atidaryti: įklijuokite žinutę ten.</p>
     <div class="pair">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/review.png" alt="Užsakymo peržiūros langas" loading="lazy"></figure>
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/ordered.png" alt="Užsakytas užsakymas su patvirtinimo nuoroda" loading="lazy"></figure>
@@ -244,12 +246,22 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="administration">
+  <h2><span class="n">10</span>Administravimas</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, bei organizacijos nustatymus. Jame keturi ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Nustatymai</b> ir <b>Atsarginės kopijos</b>.</p>
+    <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
+    <p>Prisijungiate prie abiejų iš karto, o <b>Atsijungti</b> bet kuriame atjungia nuo abiejų. <b>Administravimą</b> mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.</p>
+</section>
+
 <section id="users">
-  <h2><span class="n">10</span>Naudotojai</h2>
+  <h2><span class="n">11</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
-      <li>Kurkite, redaguokite ar deaktyvuokite paskyras ir priskirkite roles: administratorius, vadovas arba darbuotojas.</li>
+      <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
+      <li>Rolės pakeitimas naudotoją pasiekia per kelias minutes, nereikia jungtis iš naujo. Deaktyvuotas naudotojas atjungiamas visuose įrenginiuose.</li>
       <li>Slaptažodžiui atkurti naudokite <b>⋯ → Nustatyti naują slaptažodį…</b>.</li>
+      <li>Negalite deaktyvuoti savo paskyros ar atimti iš savęs rolės, kuri leidžia tvarkyti naudotojus ar roles. Rolę <b>Administratorius</b> visada turi bent vienas aktyvus naudotojas.</li>
       <li>Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (<b>Patvirtinkite slaptažodį</b>).</li>
     </ul>
     <div class="shots">
@@ -257,8 +269,25 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="roles">
+  <h2><span class="n">12</span>Rolės ir teisės</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
+    <ul>
+      <li><b>Administratorius</b>, <b>Vadovas</b> ir <b>Darbuotojas</b> yra įtaisytos rolės. <b>Administratorius</b> gali viską ir jo pakeisti negalima: <b>Peržiūrėti</b> parodo, ką jis leidžia. Ką leidžia <b>Vadovas</b> ir <b>Darbuotojas</b>, galite keisti, bet ne jų pavadinimus, o ištrinti jų negalima.</li>
+      <li><b>Pridėti rolę</b> sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei <b>Tvarkyti naudotojus</b> reikia teisės <b>Matyti naudotojus</b>.</li>
+      <li>Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.</li>
+      <li><b>⋯ → Ištrinti rolę…</b> ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje <b>Naudotojai</b>.</li>
+      <li>Jei prisijungėte daugiau nei prieš 12 valandų, prieš išsaugant pakeitimą programėlė paprašys patvirtinti slaptažodį (<b>Patvirtinkite slaptažodį</b>).</li>
+    </ul>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/roles.png" alt="Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/role.png" alt="Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="settings">
-  <h2><span class="n">11</span>Nustatymai</h2>
+  <h2><span class="n">13</span>Nustatymai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
     <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
@@ -268,7 +297,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">12</span>Atsarginės kopijos</h2>
+  <h2><span class="n">14</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
@@ -286,7 +315,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">13</span>Jūsų paskyra</h2>
+  <h2><span class="n">15</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -301,13 +330,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">14</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">16</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>
       <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Pereina į paieškos arba „Pridėti prekę“ lauką.</td></tr>
-      <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus.</td></tr>
+      <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Pereina per Užsakymus arba uždaro atidarytą užsakymą.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Rodo visus sparčiuosius klavišus.</td></tr>

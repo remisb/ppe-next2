@@ -58,8 +58,8 @@ should Administration be a separate web app when ADR 0001 chose one staff app of
 - A new permission is a constant in `permission.go`, the same key in `permissions.ts`
   (a Go test compares them), and its words in Administration's `roles` dictionaries (typed
   per permission). A new route names its permission in `routes_test.go`'s policy.
-- Moving between the apps is a full page load. Administration has no Help of its own yet;
-  the Help guide in the staff app still describes the moved screens until the user guide
-  is updated.
+- Moving between the apps is a full page load. Administration has no Help of its own: the
+  staff app's Help describes it (sections Administration, Users, Roles & permissions,
+  Settings and Backups), and `pnpm guide` takes those screenshots at `/admin/`.
 - Access tokens stay HS256 for now; ADR 0001's move to EdDSA is still required before any
   context is extracted.
