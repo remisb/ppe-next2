@@ -106,13 +106,23 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
           className="min-w-48 flex-1 md:max-w-sm md:flex-none"
         />
         {missingCount > 0 || onlyMissing ? (
-          <div role="group" aria-label={t.employees.show} className="flex gap-2">
-            <Button variant={onlyMissing ? 'outline' : 'secondary'} aria-pressed={!onlyMissing} onClick={() => setOnlyMissing(false)}>
-              {t.employees.allChip(employees.data?.length ?? 0)}
-            </Button>
-            <Button variant={onlyMissing ? 'secondary' : 'outline'} aria-pressed={onlyMissing} onClick={() => setOnlyMissing((v) => !v)}>
-              {t.employees.missingChip(missingCount)}
-            </Button>
+          // The same tabs as Orders; on a phone they take their own row below the search.
+          <div role="group" aria-label={t.employees.show} className="grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
+            {[
+              { label: t.employees.allTab, count: employees.data?.length ?? 0, pressed: !onlyMissing, onClick: () => setOnlyMissing(false) },
+              { label: t.employees.missingTab, count: missingCount, pressed: onlyMissing, onClick: () => setOnlyMissing((v) => !v) },
+            ].map((tab) => (
+              <button
+                key={tab.label}
+                type="button"
+                aria-pressed={tab.pressed}
+                onClick={tab.onClick}
+                className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
+              >
+                {tab.label}
+                <span className="tabular-nums text-muted-foreground">{tab.count}</span>
+              </button>
+            ))}
           </div>
         ) : null}
       </div>
