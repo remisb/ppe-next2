@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0–5 built**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–5 built and in production (`609a0da`)**; what is left and what to do next: [section 8](#8-status-and-next-steps)
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -645,7 +645,107 @@ Administration update after Phases 1–3. That is a separate request.
 
 ---
 
-## 8. Open questions
+## 8. Status and next steps
+
+### 8.1 What is done (7 Oct 2026)
+
+All six phases are built, pass CI and run in production at https://workwear.gavort.nl.
+
+| Phase | Commit | In production |
+| --- | --- | --- |
+| 0 Monitoring quick wins | `a95aa61` | `/ready` with the commit, the healthcheck, log rotation, `make prod-up` waits for `/ready` |
+| 1 Audit log | `1f4cc7d` | Audit log screen, the missing events, request context, Changes on employees, items and orders |
+| 2 Security | `c2594f9` | `auth_events`, the Security screen, the access review, the per-email limit in Postgres |
+| 3 System and Overview | `7809d8b` | request IDs and references, `/metrics` (internal), the error list, System, the Overview |
+| 4 Integrity and retention | `cbe45f5` | 162 daily seals, all verified; the purge jobs, export, TRUNCATE guards, the `ppe_app` role and its grants |
+| 5 Usage | `609a0da` | the Usage screen, link openings, the daily data-quality sample, charts shared with the Dashboards |
+
+Administration now has eight screens: Overview, Users, Roles & permissions, Audit log,
+Security, System (with Backups), Usage and Settings. There are five new permissions
+(`audit.read`, `audit.export`, `security.read`, `system.read`, `usage.read`), all held by the
+Administrator.
+
+**Not done yet.** Each item is either a setting outside the code or left out on purpose:
+
+- **The API still connects as the database owner.** `.env.prod` has no
+  `API_DB_USER`/`API_DB_PASSWORD`, so `ppe_app` exists but cannot sign in. The Overview warns
+  about it.
+- **Backups stay on the droplet.** `DBBACKUP_TARGET` is the default `backups` volume. They
+  run (the last one succeeded on 7 Oct at 00:00 UTC), but the droplet holds the only copy.
+- **External uptime check and DigitalOcean alerts.** These are account settings
+  ([monitoring.md](../monitoring.md)), not visible from here, so they are unconfirmed.
+- **The Help guide for Administration.** The Help text, its screenshots and `docs/guide` say
+  nothing yet about the Overview, Audit log, Security, System or Usage.
+- **Left for later on purpose:**
+  - seals anchored outside the database (3.5 C);
+  - alerts by email or Telegram (5.4);
+  - the data sync writing through the API (3.2 A);
+  - the per-address sign-in limit in Postgres;
+  - a monitoring stack (5.3).
+
+### 8.2 What to do next
+
+**Now: small changes, most of the remaining risk**
+
+1. **Switch the API to `ppe_app`.** This takes about ten minutes.
+   - *Why:* Until then, phase 4 protects the trails only from the application's own code. An
+     API connected as the owner could disable the triggers or rewrite the seals.
+   - *How:* generate `API_DB_PASSWORD` into `.env.prod` on the droplet (never printed), set
+     `API_DB_USER=ppe_app`, then run `make prod-up`. The migrate step sets the password, and the
+     Overview's warning goes away. To undo, remove the two lines.
+2. **Copy backups off the droplet.**
+   - *Why:* A lost droplet loses the database and its backups together.
+   - *How:* create a Spaces bucket (EU), set `DBBACKUP_TARGET` and encryption as
+     [backups.md](../backups.md) describes, and check that the Backups tab shows the next run.
+     The same bucket can later hold the seal anchors (step 10).
+3. **Turn on the external uptime check and droplet alerts.**
+   - *Why:* Today nobody hears that the site is down unless they open it. The Overview helps
+     only someone who looks at it.
+   - *How:* use the free tier of an EU uptime service on `https://workwear.gavort.nl/ready`,
+     plus DigitalOcean CPU, memory and disk alerts. Both are in
+     [monitoring.md](../monitoring.md).
+4. **Confirm the retention periods.** Ask the accountant whether 10 years for the Audit log
+   and 180 days for sign-in records are right (question 1). A change is a config value, not
+   code.
+
+**Soon: within a few weeks**
+
+5. **Update the Help guide for Administration.** Cover the Overview, Audit log (with Export
+   and Verify), Security, System and Usage, then run `pnpm guide` for the screenshots and
+   `docs/guide`. This is a separate request.
+6. **Rehearse a restore.**
+   - Restore the latest backup with `make prod-restore` (on a copy, or in a quiet hour), then
+     run `make prod-up`.
+   - Check three things: `/ready` answers; Verify on the Audit log passes; `ppe_app`'s grants
+     are back.
+   - This proves backups, seals and grants together. It is the one path not run end to end in
+     production.
+7. **Set a review routine.**
+   - Open the Overview weekly, and look through the error list's new kinds.
+   - Do the first access review now. The Overview flags it after 90 days without one.
+8. **Read the Usage screen after real use, with three caveats:**
+   - "Opened" in the funnel counts only openings since 7 Oct, so for 90 days it understates
+     links sent earlier.
+   - The data-quality trend starts on 7 Oct.
+   - "Database grew fast" needs 30 days of size samples.
+
+**Later: when a need or decision arrives**
+
+9. **Alerts by email or Telegram.** This needs the outbox and worker from ADR 0001, and an
+   answer to question 3. Until then, the Overview and the uptime check are the alerts.
+10. **Anchor the seals off-site** (3.5 C). Write each day's seal hash to the backup bucket,
+    so that even the database owner cannot rewrite history unnoticed. It depends on step 2.
+11. **Import the data sync through the API** (3.2 A, ADR 0001). Synced changes are still not
+    on the Audit log.
+12. **A "Workwear auditor" role, or the Audit log for managers** (question 4). This is a role
+    on Roles & permissions holding `audit.read`, with no code needed.
+13. **When a second API instance arrives:**
+    - move the per-address sign-in limit to Postgres;
+    - add Grafana Cloud (EU) with Alloy reading the internal `/metrics` (5.3).
+
+---
+
+## 9. Open questions
 
 1. **Retention:** is 10 years right for business audit events, and 180 days for sign-in
    records? This needs the accountant or legal adviser's answer.

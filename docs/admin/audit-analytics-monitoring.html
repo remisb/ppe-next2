@@ -138,6 +138,14 @@ table.t th.rec{color:var(--accent)}
 .status .eyebrow{color:var(--good)}
 .open{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:8px;max-width:880px}
 .open ol{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.95rem}
+.gaps{background:var(--warn-soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;display:grid;gap:6px;max-width:880px}
+.gaps .eyebrow{color:var(--warn)}
+.gaps ul{margin:0;padding-left:1.1em;display:grid;gap:6px;font-size:.95rem}
+.gaps li{min-width:0}
+.steps{margin:0;padding-left:1.3em;display:grid;gap:10px;font-size:.92rem}
+.steps li{min-width:0}
+.size.soon{background:var(--warn-soft);color:var(--warn)}
+.size.later{background:var(--surface-2);color:var(--muted)}
 .refs{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.93rem;max-width:80ch}
 
 /* ============ Mockups: Administration, light theme ============ */
@@ -262,7 +270,7 @@ table.t th.rec{color:var(--accent)}
   <p class="eyebrow">Workwear &amp; Equipment · Administration · research and proposal</p>
   <h1>Audit, Analytics and Monitoring</h1>
   <p class="lede">What the system records and watches today, and what Administration should add: an audit log to review and manage, usage analytics, and monitoring. Each area has options, their trade-offs and a recommendation, ending in a roadmap of five phases.</p>
-  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0–5 built</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
+  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0–5 in production · 609a0da</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
 </header>
 
 <div class="layout">
@@ -275,8 +283,9 @@ table.t th.rec{color:var(--accent)}
     <li><a href="#monitoring"><span>05</span>Monitoring</a></li>
     <li><a href="#ia"><span>06</span>Administration after</a></li>
     <li><a href="#roadmap"><span>07</span>Roadmap</a></li>
-    <li><a href="#questions"><span>08</span>Open questions</a></li>
-    <li><a href="#refs"><span>09</span>References</a></li>
+    <li><a href="#next"><span>08</span>Status and next</a></li>
+    <li><a href="#questions"><span>09</span>Open questions</a></li>
+    <li><a href="#refs"><span>10</span>References</a></li>
   </ol>
 </nav>
 
@@ -286,7 +295,7 @@ table.t th.rec{color:var(--accent)}
   <ol>
     <li><a href="#summary">Summary</a></li><li><a href="#today">What exists today</a></li><li><a href="#audit">Audit log</a></li>
     <li><a href="#analytics">Analytics</a></li><li><a href="#monitoring">Monitoring</a></li><li><a href="#ia">Administration after</a></li>
-    <li><a href="#roadmap">Roadmap</a></li><li><a href="#questions">Open questions</a></li><li><a href="#refs">References</a></li>
+    <li><a href="#roadmap">Roadmap</a></li><li><a href="#next">Status and next</a></li><li><a href="#questions">Open questions</a></li><li><a href="#refs">References</a></li>
   </ol>
 </div>
 
@@ -301,6 +310,7 @@ table.t th.rec{color:var(--accent)}
     <p><b>Phase 3 is built</b> (<code>docs/specs/system-service.md</code>). Every log line names its request, and a 500 answers with a reference the apps show in the user's language. 5xx answers, recovered panics and the apps' browser errors go on an error list, folded by kind and kept 30 days. Prometheus <code>/metrics</code> is on an internal listener. A 24-hour request window is kept in memory. Administration now opens on the <b>Overview</b>, which shows what needs attention and then figures, each area by permission. <b>System</b> has Status, Errors, and Backups as a tab. Found while building it: muxstack's <code>Timeout</code> runs handlers on their own goroutine, so a handler's panic would have stopped the API. It is now recovered inside <code>Timeout</code>.</p>
     <p><b>Phase 4 is built</b> (<code>docs/specs/audit-service.md</code>, ADR 0003). Each UTC day of the Audit log is sealed an hour after it ends, chained to the day before. <b>Verify</b> recomputes every seal hourly and on demand, and a mismatch is a critical item on the Overview. Audit events are purged after <code>API_AUDIT_RETENTION</code> (10 years), only whole sealed days, through an owner's function, and each purge is recorded. <b>Export</b> (<code>audit.export</code>) downloads CSV or JSON lines of a year at most, and each export is itself on the log. The API connects as <code>ppe_app</code>, which cannot change, delete or truncate the trails, and a TRUNCATE guard protects them. Found while building it: restores drop grants, so the role's grants are applied on every migrate.</p>
     <p><b>Phase 5 is built</b> (<code>docs/specs/usage-service.md</code>). Administration's <b>Usage</b> screen (<code>usage.read</code>) shows active people per day by app and role, sign-ins and failures, changes per area per week with the most active people, devices and languages, the confirmation-link funnel (sent → opened → confirmed, with what is waiting, expired or replaced), and the data's quality over 90 days. No page is tracked: activity is one row per person, app and day, written by the API. An employee's first opening of a link is now recorded on the order. The charts moved into <code>@ppe/ui</code>, which the Dashboards share.</p>
+    <p><b>All six phases are in production</b> (<code>609a0da</code>). What is left, and what to do next, is in <a href="#next">section 08</a>.</p>
   </div>
   <div class="verdict">
     <p class="eyebrow">Verdict</p>
@@ -869,8 +879,58 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
 </section>
 
 <!-- 8 -->
+<section class="part" id="next">
+  <header><p class="eyebrow">08</p><h2>Status and next steps</h2></header>
+  <div class="prose"><p>All six phases are built, pass CI and run in production at <code>workwear.gavort.nl</code> (7 Oct 2026). Administration has eight screens: Overview, Users, Roles &amp; permissions, Audit log, Security, System (with Backups), Usage and Settings. The five new permissions are all held by the Administrator.</p></div>
+  <div class="tbl-wrap">
+    <table class="t">
+      <thead><tr><th>Phase</th><th>Commit</th><th>In production</th></tr></thead>
+      <tbody>
+        <tr><td>0 · Quick wins</td><td><code>a95aa61</code></td><td><code>/ready</code> with the commit, healthcheck, log rotation, <code>prod-up</code> waits for ready</td></tr>
+        <tr><td>1 · Audit log</td><td><code>1f4cc7d</code></td><td>Audit log screen, missing events, request context, Changes on records</td></tr>
+        <tr><td>2 · Security</td><td><code>c2594f9</code></td><td>Sign-in records, Security screen, access review, per-email limit in Postgres</td></tr>
+        <tr><td>3 · System, Overview</td><td><code>7809d8b</code></td><td>Request references, internal <code>/metrics</code>, error list, System, Overview</td></tr>
+        <tr><td>4 · Integrity</td><td><code>cbe45f5</code></td><td>162 daily seals, all verified; purges, export, TRUNCATE guards, <code>ppe_app</code> grants</td></tr>
+        <tr><td>5 · Usage</td><td><code>609a0da</code></td><td>Usage screen, link openings, daily data quality, shared charts</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="gaps">
+    <p class="eyebrow">Not done yet</p>
+    <ul>
+      <li><b>The API still connects as the database owner.</b> <code>.env.prod</code> has no <code>API_DB_USER</code>/<code>API_DB_PASSWORD</code>, so <code>ppe_app</code> exists but cannot sign in. The Overview warns about it.</li>
+      <li><b>Backups stay on the droplet.</b> The target is the default <code>backups</code> volume. Last night's run succeeded, but the droplet holds the only copy.</li>
+      <li><b>External uptime check and droplet alerts</b> are account settings, not visible from the repository, so they are unconfirmed.</li>
+      <li><b>The Help guide</b> does not cover the Overview, Audit log, Security, System or Usage yet.</li>
+      <li><b>Left for later on purpose:</b> off-site seal anchors, email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
+    </ul>
+  </div>
+  <div class="phases">
+    <div class="phase"><div class="ph-head"><h4>Now</h4><span class="size">small, most of the risk</span></div><ol class="steps">
+      <li><b>Switch the API to <code>ppe_app</code></b> (about 10 min). Until then, phase 4 protects the trails only from the app's own code: an API connected as the owner could disable triggers or rewrite seals. Generate the password into <code>.env.prod</code> on the droplet without printing it, set <code>API_DB_USER=ppe_app</code>, then run <code>make prod-up</code>.</li>
+      <li><b>Copy backups off the droplet.</b> A lost droplet loses the database and its backups together. Use a Spaces bucket (EU) with encryption, as <code>docs/backups.md</code> describes; it will also hold the seal anchors (step 10).</li>
+      <li><b>Turn on the uptime check and droplet alerts.</b> Today nobody hears of an outage unless they open the site. Watch <code>/ready</code> from an EU service, and add CPU, memory and disk alerts (<code>docs/monitoring.md</code>).</li>
+      <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>
+    </ol></div>
+    <div class="phase"><div class="ph-head"><h4>Soon</h4><span class="size soon">next few weeks</span></div><ol class="steps" start="5">
+      <li><b>Help guide for Administration:</b> the Overview, Audit log (with Export and Verify), Security, System and Usage, then <code>pnpm guide</code>. This is a separate request.</li>
+      <li><b>Rehearse a restore:</b> run <code>prod-restore</code>, then <code>prod-up</code>, then check <code>/ready</code>, Verify and the grants. It proves backups, seals and grants together; this is the one path not yet run end to end in production.</li>
+      <li><b>Set a routine:</b> look at the Overview and new error kinds weekly, and do the first access review now (the Overview flags 90 days without one).</li>
+      <li><b>Read Usage after real use.</b> "Opened" counts only openings from 7 Oct on, so it understates older links for 90 days. The quality trend starts 7 Oct. "Database grew fast" needs 30 days of samples.</li>
+    </ol></div>
+    <div class="phase"><div class="ph-head"><h4>Later</h4><span class="size later">on a need or decision</span></div><ol class="steps" start="9">
+      <li><b>Email or Telegram alerts</b>, once ADR 0001's outbox and worker exist and question 3 is answered.</li>
+      <li><b>Anchor the seals off-site:</b> write each day's seal hash to the bucket, so that even the database owner cannot rewrite history unnoticed. Needs step 2.</li>
+      <li><b>Import the data sync through the API</b> (3.2 A). Synced changes are not on the Audit log yet.</li>
+      <li><b>An auditor role, or the Audit log for managers:</b> a role holding <code>audit.read</code>, with no code needed (question 4).</li>
+      <li><b>For a second API instance:</b> move the per-address limit to Postgres, and add Grafana Cloud (EU) with Alloy on <code>/metrics</code>.</li>
+    </ol></div>
+  </div>
+</section>
+
+<!-- 9 -->
 <section class="part" id="questions">
-  <header><p class="eyebrow">08</p><h2>Open questions</h2></header>
+  <header><p class="eyebrow">09</p><h2>Open questions</h2></header>
   <div class="open">
     <ol>
       <li><b>Retention:</b> is 10 years right for business audit events, and 180 days for sign-in records? The accountant or legal adviser should answer.</li>
@@ -882,9 +942,9 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   </div>
 </section>
 
-<!-- 9 -->
+<!-- 10 -->
 <section class="part" id="refs">
-  <header><p class="eyebrow">09</p><h2>References</h2></header>
+  <header><p class="eyebrow">10</p><h2>References</h2></header>
   <ul class="refs">
     <li>Code: <code>internal/audit/audit.go</code>; migrations <code>0002_audit_events</code>, <code>0011_sync_user</code>, <code>0020_user_sessions</code>, <code>0022_roles_permissions</code>; <code>internal/domain/role/permission.go</code>; <code>cmd/api/login-limit.go</code>; <code>deploy/Caddyfile</code>; <code>docker-compose.prod.yml</code>; <code>web/apps/admin/src/lib/router.ts</code>.</li>
     <li>Decisions: ADR 0001 (per-schema roles, outbox and worker, Postgres limiter, HR audit rules) and ADR 0002 (permissions and the Administration app).</li>
