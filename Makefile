@@ -65,6 +65,12 @@ migrate: ## Apply pending *.up.sql migrations, each in its own transaction
 	done
 	@# The API role's grants, every run: idempotent, and lost by a restore.
 	@$(PSQL) -f - < internal/db/grants.sql
+	@# ppe_app signs in once .env gives it a password, as deploy/migrate.sh does.
+	@# The password goes to psql on stdin, never on a command line.
+	@if [ "$$API_DB_USER" = ppe_app ] && [ -n "$$API_DB_PASSWORD" ]; then \
+		printf '\\set pw %s\nALTER ROLE ppe_app WITH LOGIN PASSWORD :'"'"'pw'"'"';\n' "$$API_DB_PASSWORD" | $(PSQL) -f - || exit 1; \
+		echo "migrate: ppe_app can sign in"; \
+	fi
 
 migrate-down: ## Revert every applied migration, newest first
 	@for f in $$(ls $(MIGRATIONS)/*.down.sql | sort -r); do \

@@ -99,9 +99,11 @@ must `TRUNCATE ... CASCADE` because of the actor foreign keys, after
 `SET LOCAL ppe.allow_truncate = on` in the same `Exec`, and must name `audit_seals,
 audit_purges` when they empty `audit_events`.
 The API connects as the least-privilege role **`ppe_app`** in production (once
-`API_DB_USER`/`API_DB_PASSWORD` are set) and in the API's Postgres tests and e2e; its
-grants are `internal/db/grants.sql`, applied after the migrations on every `make migrate`
-and `deploy/migrate.sh` run. A new append-only table goes into its REVOKE line, and a
+`API_DB_USER`/`API_DB_PASSWORD` are set), in local dev (`.env.example`, with the tests'
+password `ppe-app-test`: roles are shared by `ppe2` and `ppe2_test`) and in the API's
+Postgres tests and e2e; its grants are `internal/db/grants.sql`, applied after the
+migrations on every `make migrate` and `deploy/migrate.sh` run, which also give it its
+password when `API_DB_USER=ppe_app`. A new append-only table goes into its REVOKE line, and a
 migration that needs ppe_app to do anything beyond DML on new tables changes grants.sql.
 
 ## Commands
