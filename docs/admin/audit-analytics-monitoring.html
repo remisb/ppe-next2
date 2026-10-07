@@ -270,7 +270,7 @@ table.t th.rec{color:var(--accent)}
   <p class="eyebrow">Workwear &amp; Equipment · Administration · research and proposal</p>
   <h1>Audit, Analytics and Monitoring</h1>
   <p class="lede">What the system records and watches today, and what Administration should add: an audit log to review and manage, usage analytics, and monitoring. Each area has options, their trade-offs and a recommendation, ending in a roadmap of five phases.</p>
-  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0–5 in production · 609a0da</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
+  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0–5 and follow-ups in production · 484a7cb</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
 </header>
 
 <div class="layout">
@@ -890,41 +890,44 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
         <tr><td>1 · Audit log</td><td><code>1f4cc7d</code></td><td>Audit log screen, missing events, request context, Changes on records</td></tr>
         <tr><td>2 · Security</td><td><code>c2594f9</code></td><td>Sign-in records, Security screen, access review, per-email limit in Postgres</td></tr>
         <tr><td>3 · System, Overview</td><td><code>7809d8b</code></td><td>Request references, internal <code>/metrics</code>, error list, System, Overview</td></tr>
-        <tr><td>4 · Integrity</td><td><code>cbe45f5</code></td><td>162 daily seals, all verified; purges, export, TRUNCATE guards, <code>ppe_app</code> grants</td></tr>
+        <tr><td>4 · Integrity</td><td><code>cbe45f5</code></td><td>Daily seals, purges, export, TRUNCATE guards, <code>ppe_app</code> grants</td></tr>
         <tr><td>5 · Usage</td><td><code>609a0da</code></td><td>Usage screen, link openings, daily data quality, shared charts</td></tr>
       </tbody>
     </table>
   </div>
   <div class="status">
-    <p class="eyebrow">Since then · 7 Oct</p>
-    <p><b>The API connects as <code>ppe_app</code>.</b> Its password was generated into <code>.env.prod</code> on the droplet and never shown, and the startup upkeep (seals, purges, samples) ran under it without an error.</p>
-    <p><b>Backups go off the server:</b> they go to the Spaces bucket <code>ppe-next2-backups</code> (fra1), encrypted with age. The first one succeeded at 15:16 UTC. The private key is kept off the server.</p>
-    <p><b>Outages and the droplet are watched:</b> the Uptime check of <code>/ready</code> and the CPU, memory and disk alerts are in DigitalOcean Insights (formerly Monitoring), and <code>do-agent</code> 3.18.14 runs on the droplet.</p>
-    <p><b>A restore works:</b> the rehearsal of the encrypted Spaces backup passed. It decrypted, the grants came back, the seals verified and the row counts matched.</p>
-    <p><b>The seals are anchored off-site:</b> each one gets a trusted timestamp (RFC 3161) from a public timestamp service, which Verify checks.</p>
+    <p class="eyebrow">Follow-ups, done 7 Oct</p>
+    <p><b>The API connects as <code>ppe_app</code></b>: the password was generated on the droplet and never shown.</p>
+    <p><b>Backups go off the server</b>: they are encrypted with age and saved to the Spaces bucket <code>ppe-next2-backups</code> (fra1). The private key is kept off the server.</p>
+    <p><b>Outages and the droplet are watched</b>: an Uptime check of <code>/ready</code>, and CPU, memory and disk alerts in DigitalOcean Insights, with <code>do-agent</code> on the droplet.</p>
+    <p><b>A restore works</b> (<code>f15dbf1</code>): <code>make prod-drill</code> restores the encrypted backup into a throwaway database. The grants come back, Verify passes and every table's count matches.</p>
+    <p><b>The Help guide covers Administration</b> (<code>1838e78</code>, <code>484a7cb</code>): the Overview, Audit log, Security, System and Usage, in three languages and on three devices.</p>
+    <p><b>The seals are anchored off-site</b> (<code>e78349d</code>): each gets a trusted timestamp (RFC 3161) from DigiCert. All 162 are stamped, and one was checked with <code>openssl ts -verify</code>.</p>
   </div>
   <div class="gaps">
-    <p class="eyebrow">Not done yet</p>
+    <p class="eyebrow">Still open</p>
     <ul>
-      <li><b>Left for later on purpose:</b> email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
+      <li><b>Decisions:</b> the retention periods (question 1), the alert channel (question 3), and an audit view for managers (question 4).</li>
+      <li><b>Left for later on purpose:</b> email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, a second timestamp service, and a monitoring stack.</li>
     </ul>
   </div>
   <div class="phases">
-    <div class="phase"><div class="ph-head"><h4>Now</h4><span class="size">small, most of the risk</span></div><ol class="steps">
-      <li><s><b>Switch the API to <code>ppe_app</code></b></s> <b>Done 7 Oct.</b> To undo it, remove the two <code>API_DB_*</code> lines from <code>.env.prod</code> and run <code>make prod-up</code>.</li>
-      <li><s><b>Copy backups off the droplet.</b></s> <b>Done 7 Oct:</b> Spaces in fra1, encrypted. Older backups stay on the <code>backups</code> volume, and nothing deletes them any more. Step 6's restore rehearsal now also proves that the age key decrypts.</li>
-      <li><s><b>Turn on the uptime check and droplet alerts.</b></s> <b>Done 7 Oct:</b> they are in DigitalOcean Insights, and <code>do-agent</code> runs on the droplet.</li>
-      <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>
+    <div class="phase"><div class="ph-head"><h4>This week</h4><span class="size">small, worth doing now</span></div><ol class="steps">
+      <li><b>Watch the first required timestamp:</b> after 01:00 UTC on 9 Oct, Seals should say "Timestamped through 8 Oct 2026". If the Overview warns that seals are not being timestamped, fix it within 7 days (<code>docs/monitoring.md</code>).</li>
+      <li><b>Do the first access review:</b> Security → Access review → <b>Mark as reviewed</b>. The Overview shows it as due until then.</li>
+      <li><b>Confirm retention</b> with the accountant: 10 years for the Audit log, 180 days for sign-ins. Changing either is a config value.</li>
+      <li><b>Put the monthly restore drill in a calendar</b>, the first in early November: <code>make prod-drill IDENTITY=-</code> run over ssh with the key from your computer. Once, use the copy of the key in your password manager.</li>
     </ol></div>
     <div class="phase"><div class="ph-head"><h4>Soon</h4><span class="size soon">next few weeks</span></div><ol class="steps" start="5">
-      <li><s><b>Help guide for Administration.</b></s> <b>Done 7 Oct:</b> new Help sections for the Overview, Audit log, Security, System and Usage in three languages and on three devices, with Backups as System's tab and the records' Changes. The screenshots and <code>docs/guide</code> are regenerated.</li>
-      <li><s><b>Rehearse a restore.</b></s> <b>Done 7 Oct</b>, on the droplet, apart from production. The newest Spaces backup was restored into a throwaway Postgres 18, decrypted with the age key, which was streamed from the owner's computer and never stored on the server. <code>migrate.sh</code> gave <code>ppe_app</code> its grants back, and the API answered <code>/ready</code> as <code>ppe_app</code>. Verify passed all 162 seals, and every table's row count matched production. Repeat it monthly with <code>make prod-drill</code>, which runs these steps itself (<code>docs/backups.md</code>).</li>
-      <li><b>Set a routine:</b> look at the Overview and new error kinds weekly, and do the first access review now (the Overview flags 90 days without one).</li>
-      <li><b>Read Usage after real use.</b> "Opened" counts only openings from 7 Oct on, so it understates older links for 90 days. The quality trend starts 7 Oct. "Database grew fast" needs 30 days of samples.</li>
+      <li><b>Reboot the droplet</b> in a quiet hour (about a minute of downtime). Docker and a few services still run replaced libraries. Alternatively, let <code>unattended-upgrades</code> reboot at night.</li>
+      <li><b>Clear the old backups on the droplet</b> once Spaces holds 14 days of backups (from 21 Oct). Nothing prunes them any more.</li>
+      <li><b>A weekly look</b> at the Overview and new error kinds.</li>
+      <li><b>Read Usage after a few weeks.</b> "Opened" counts from 7 Oct, the quality trend starts on 7 Oct, and database growth needs 30 days.</li>
+      <li><b>Migrate the development database</b> (<code>make migrate</code>). It lacks the newer migrations.</li>
     </ol></div>
-    <div class="phase"><div class="ph-head"><h4>Later</h4><span class="size later">on a need or decision</span></div><ol class="steps" start="9">
+    <div class="phase"><div class="ph-head"><h4>Later</h4><span class="size later">on a need or decision</span></div><ol class="steps" start="10">
       <li><b>Email or Telegram alerts</b>, once ADR 0001's outbox and worker exist and question 3 is answered.</li>
-      <li><s><b>Anchor the seals off-site.</b></s> <b>Done 7 Oct</b>, with trusted timestamps (RFC 3161) rather than the bucket. Each seal's hash is timestamped by a public service (DigiCert by default), the token is kept in <code>audit_seal_stamps</code>, and Verify checks it. A rewritten chain cannot get timestamps with the original times, even by someone with root on the server. Spaces has no write-once lock, and its keys are on the server, so the bucket was set aside.</li>
+      <li><b>A second timestamp service</b> (for example FreeTSA) as a fallback. While DigiCert does not answer, seals wait, and after 7 days they show as a mismatch.</li>
       <li><b>Import the data sync through the API</b> (3.2 A). Synced changes are not on the Audit log yet.</li>
       <li><b>An auditor role, or the Audit log for managers:</b> a role holding <code>audit.read</code>, with no code needed (question 4).</li>
       <li><b>For a second API instance:</b> move the per-address limit to Postgres, and add Grafana Cloud (EU) with Alloy on <code>/metrics</code>.</li>

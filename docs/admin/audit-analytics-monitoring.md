@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0–5 built and in production (`609a0da`)**; what is left and what to do next: [section 8](#8-status-and-next-steps)
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–5 and their follow-ups in production (`484a7cb`)**; what is left and what to do next: [section 8](#8-status-and-next-steps)
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -657,96 +657,90 @@ All six phases are built, pass CI and run in production at https://workwear.gavo
 | 1 Audit log | `1f4cc7d` | Audit log screen, the missing events, request context, Changes on employees, items and orders |
 | 2 Security | `c2594f9` | `auth_events`, the Security screen, the access review, the per-email limit in Postgres |
 | 3 System and Overview | `7809d8b` | request IDs and references, `/metrics` (internal), the error list, System, the Overview |
-| 4 Integrity and retention | `cbe45f5` | 162 daily seals, all verified; the purge jobs, export, TRUNCATE guards, the `ppe_app` role and its grants |
+| 4 Integrity and retention | `cbe45f5` | daily seals, the purge jobs, export, TRUNCATE guards, the `ppe_app` role and its grants |
 | 5 Usage | `609a0da` | the Usage screen, link openings, the daily data-quality sample, charts shared with the Dashboards |
 
-Administration now has eight screens: Overview, Users, Roles & permissions, Audit log,
-Security, System (with Backups), Usage and Settings. There are five new permissions
-(`audit.read`, `audit.export`, `security.read`, `system.read`, `usage.read`), all held by the
+Administration has eight screens: Overview, Users, Roles & permissions, Audit log, Security,
+System (with Backups), Usage and Settings. The five new permissions (`audit.read`,
+`audit.export`, `security.read`, `system.read`, `usage.read`) are all held by the
 Administrator.
 
-**Since then (7 Oct):** the API connects as `ppe_app`. Its password was generated into
-`.env.prod` on the droplet and never shown, and the startup upkeep (seals, purges, samples)
-ran under it without an error. Backups go to the Spaces bucket `ppe-next2-backups` in fra1,
-encrypted with age; the first one succeeded at 15:16 UTC. The private key is kept off the
-server. The Uptime check of `/ready` and the CPU, memory and disk alerts are set up in
-DigitalOcean Insights (formerly Monitoring), and `do-agent` 3.18.14 runs on the droplet.
-A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6). Each audit seal is
-now anchored by a trusted timestamp (8.2 step 10).
+The follow-ups, done the same day:
 
-**Not done yet.** Each item is either a setting outside the code or left out on purpose:
+| Follow-up | Where | Result |
+| --- | --- | --- |
+| The API connects as `ppe_app` | `.env.prod` | password generated on the droplet, never shown; the upkeep runs under it without an error |
+| Backups off the droplet | `.env.prod`, DigitalOcean | encrypted (age) to the Spaces bucket `ppe-next2-backups` in fra1; the private key is kept off the server |
+| Uptime check and droplet alerts | DigitalOcean Insights | Uptime check of `/ready`; CPU, memory and disk alerts; `do-agent` 3.18.14 on the droplet |
+| Restore drill | `f15dbf1` | `make prod-drill`: the encrypted backup restores into a throwaway database, the grants come back, Verify passes and every table's count matches; passed on 7 Oct |
+| Help guide for Administration | `1838e78`, `484a7cb` | Overview, Audit log, Security, System and Usage in EN/LT/RU on every device, with new screenshots and `docs/guide`; adds `api -upkeep` |
+| Seals anchored off-site | `e78349d` | each seal gets a trusted timestamp (RFC 3161) from DigiCert; all 162 seals stamped, one checked with `openssl ts -verify` |
 
+How to undo or repeat each one is in [monitoring.md](../monitoring.md),
+[backups.md](../backups.md) and [audit-service.md](../specs/audit-service.md).
+
+### 8.2 Still open
+
+- **Decisions:** the retention periods (question 1), the alert channel (question 3), and an
+  audit view for managers (question 4).
 - **Left for later on purpose:**
   - alerts by email or Telegram (5.4);
   - the data sync writing through the API (3.2 A);
   - the per-address sign-in limit in Postgres;
+  - a second timestamp service as a fallback;
   - a monitoring stack (5.3).
 
-### 8.2 What to do next
+### 8.3 What to do next
 
-**Now: small changes, most of the remaining risk**
+**This week**
 
-1. ~~**Switch the API to `ppe_app`.**~~ **Done 7 Oct.** To undo it, remove the two
-   `API_DB_*` lines from `.env.prod` and run `make prod-up`.
-2. ~~**Copy backups off the droplet.**~~ **Done 7 Oct:** Spaces in fra1, encrypted. Backups
-   made earlier stay on the `backups` volume, and nothing deletes them any more. Step 6's
-   restore rehearsal now also proves that the age key decrypts.
-3. ~~**Turn on the uptime check and droplet alerts.**~~ **Done 7 Oct:** the Uptime check of
-   `/ready` and the three alert rules are in DigitalOcean Insights, and `do-agent` runs on the
-   droplet ([monitoring.md](../monitoring.md)).
-4. **Confirm the retention periods.** Ask the accountant whether 10 years for the Audit log
-   and 180 days for sign-in records are right (question 1). A change is a config value, not
-   code.
+1. **Watch the first required timestamp.**
+   - On 9 Oct after 01:00 UTC, the seal of 8 Oct is the first that must be stamped in time
+     (`StampsFrom`).
+   - Audit log → Seals should say "Timestamped through 8 Oct 2026".
+   - If the Overview says seals are not being timestamped, fix it within 7 days:
+     [monitoring.md](../monitoring.md) says how.
+2. **Do the first access review.** Use Security → Access review, then **Mark as reviewed**.
+   The Overview shows it as due until then.
+3. **Confirm the retention periods** with the accountant: 10 years for the Audit log and
+   180 days for sign-in records (question 1). A change is a config value.
+4. **Put the monthly restore drill in a calendar,** the first in early November, run from
+   your computer:
 
-**Soon: within a few weeks**
+   ```bash
+   ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes root@167.71.68.195 'cd /opt/ppe-next2 && make prod-drill IDENTITY=-' < ~/ppe-backup.key
+   ```
 
-5. ~~**Update the Help guide for Administration.**~~ **Done 7 Oct:**
-   - The Help screen has new sections for the Overview, Audit log, Security, System and
-     Usage, in EN/LT/RU, each for a phone, a tablet and a desktop.
-   - Backups is described as System's tab.
-   - The Changes on employees, items and orders are covered.
-   - `pnpm guide` took the new screenshots and wrote `docs/guide`. The guide's demo data now
-     has a month of use, and `api -upkeep` seals it.
-6. ~~**Rehearse a restore.**~~ **Done 7 Oct**, on the droplet, apart from production:
-   - The newest Spaces backup was restored into a throwaway Postgres 18 on its own Docker
-     network. It decrypted with the age key, which was streamed from the owner's computer and
-     never written to the server.
-   - `migrate.sh` gave `ppe_app` its grants back. The API, connected as `ppe_app`, answered
-     `/ready`.
-   - Verify passed all 162 seals (28 Apr – 6 Oct, 88 sealed events and 6 not yet sealed).
-   - Every table's row count matched production.
-   - The drill was then removed.
+   Once, run it with the key's copy in the password manager, so you know that copy works too.
 
-   Repeat it monthly with `make prod-drill`, which runs these steps itself
-   ([backups.md](../backups.md)).
-7. **Set a review routine.**
-   - Open the Overview weekly, and look through the error list's new kinds.
-   - Do the first access review now. The Overview flags it after 90 days without one.
-8. **Read the Usage screen after real use, with three caveats:**
-   - "Opened" in the funnel counts only openings since 7 Oct, so for 90 days it understates
-     links sent earlier.
-   - The data-quality trend starts on 7 Oct.
+**Soon**
+
+5. **Reboot the droplet in a quiet hour.** Docker and a few system services still run
+   libraries that the automatic updates replaced; the restarts were deferred.
+   - A reboot takes about a minute of downtime. Afterwards, check that `/ready` answers.
+   - Or let `unattended-upgrades` reboot by itself at a set night-time hour.
+6. **Clear the old backups on the droplet** once Spaces holds 14 days of backups (from
+   21 Oct). Nothing deletes the backups saved on the `backups` volume before the switch any
+   more.
+7. **Set a weekly look** at the Overview and at the error list's new kinds.
+8. **Read the Usage screen after a few weeks of use.**
+   - "Opened" in the funnel counts openings only from 7 Oct on.
+   - The quality trend starts on 7 Oct.
    - "Database grew fast" needs 30 days of size samples.
+9. **Migrate the development database** (`make migrate`). It lacks the newer migrations (it
+   has no `audit_seals`), so a local `make run` cannot show the new screens.
 
 **Later: when a need or decision arrives**
 
-9. **Alerts by email or Telegram.** This needs the outbox and worker from ADR 0001, and an
-   answer to question 3. Until then, the Overview and the uptime check are the alerts.
-10. ~~**Anchor the seals off-site**~~ (3.5 C). **Done 7 Oct**, with trusted timestamps
-    rather than the bucket:
-    - Each seal's hash gets an RFC 3161 timestamp from a public timestamp service (DigiCert
-      by default, `API_AUDIT_TSA_URL`). Only the hash is sent.
-    - The tokens are kept in `audit_seal_stamps` (migration 0028), and Verify checks them.
-    - A rewritten chain cannot get timestamps with the original times, even by someone with
-      root on the server.
-    - The bucket was set aside: Spaces has no write-once lock, and its keys are on the server.
-    - Anyone can check a stamp with `openssl ts -verify`
-      ([audit-service.md](../specs/audit-service.md)).
-11. **Import the data sync through the API** (3.2 A, ADR 0001). Synced changes are still not
-    on the Audit log.
-12. **A "Workwear auditor" role, or the Audit log for managers** (question 4). This is a role
+10. **Alerts by email or Telegram.** They need the outbox and worker from ADR 0001, and an
+    answer to question 3. Until then, the Overview and the uptime check are the alerts.
+11. **A second timestamp service** (for example FreeTSA) as a fallback. While DigiCert does
+    not answer, seals wait. After 7 days they show as a mismatch.
+12. **Import the data sync through the API** (3.2 A, ADR 0001). Synced changes are not on the
+    Audit log yet.
+13. **A "Workwear auditor" role, or the Audit log for managers** (question 4). This is a role
     on Roles & permissions holding `audit.read`, with no code needed.
-13. **When a second API instance arrives:**
+14. **When a second API instance arrives:**
     - move the per-address sign-in limit to Postgres;
     - add Grafana Cloud (EU) with Alloy reading the internal `/metrics` (5.3).
 
