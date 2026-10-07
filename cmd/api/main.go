@@ -34,6 +34,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
+	"github.com/remisb/ppe-next2/internal/usage"
 )
 
 func main() {
@@ -89,6 +90,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
+		usage.NewPostgresStore(pool),
 		pool,
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
@@ -167,13 +169,14 @@ type services struct {
 	pool    *pgxpool.Pool
 	started time.Time
 	jobs    *jobRuns
+	usage   *usage.Service
 	// ready answers GET /ready; run sets it, tests stub it.
 	ready readiness
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -192,6 +195,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		pool:      pool,
 		started:   time.Now().UTC(),
 		jobs:      &jobRuns{},
+		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -224,6 +228,14 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
 	registerSystemRoutes(rt, svc, cfg, tok)
+	rt.restricted("GET /api/v1/usage", func(w http.ResponseWriter, r *http.Request) {
+		report, err := svc.usage.Report(r.Context())
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, report)
+	}, role.UsageRead)
 	return rt
 }
 

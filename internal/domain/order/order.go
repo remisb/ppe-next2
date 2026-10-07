@@ -136,6 +136,9 @@ type Confirmation struct {
 	DocumentHash    *string
 	CreatedAt       time.Time
 	CreatedByUserID uuid.UUID
+	// FirstOpenedAt is when the employee first opened the link (migration
+	// 0027); nil until then, and for paper.
+	FirstOpenedAt *time.Time
 }
 
 // Usable reports whether an electronic link can still be used at now.

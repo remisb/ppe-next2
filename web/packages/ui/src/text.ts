@@ -28,6 +28,8 @@ const en = {
   refresh: 'Refresh',
   keyFigures: 'Key figures',
   needsAttention: 'Needs attention',
+  // Charts (components/charts.tsx).
+  scale: (value: string) => `Scale ${value}`,
 }
 
 export type UiText = typeof en
@@ -57,6 +59,7 @@ const lt: UiText = {
   refresh: 'Atnaujinti',
   keyFigures: 'Pagrindiniai rodikliai',
   needsAttention: 'Reikia dėmesio',
+  scale: (value: string) => `Skalė ${value}`,
 }
 
 const ru: UiText = {
@@ -84,6 +87,7 @@ const ru: UiText = {
   refresh: 'Обновить',
   keyFigures: 'Основные показатели',
   needsAttention: 'Требует внимания',
+  scale: (value: string) => `Шкала ${value}`,
 }
 
 export const dictionaries = { en, lt, ru }

@@ -56,6 +56,16 @@ func (f *fakeRepo) LinkByHash(_ context.Context, h string) (Confirmation, error)
 	return Confirmation{}, ErrLinkExpired
 }
 
+func (f *fakeRepo) LinkOpened(_ context.Context, linkID uuid.UUID, at time.Time, ev audit.Event) error {
+	for i := range f.links {
+		if l := &f.links[i]; l.ID == linkID && l.FirstOpenedAt == nil {
+			l.FirstOpenedAt = &at
+			f.events = append(f.events, ev)
+		}
+	}
+	return nil
+}
+
 func (f *fakeRepo) Confirm(_ context.Context, orderID uuid.UUID, linkID *uuid.UUID, giver uuid.UUID, fn ConfirmFunc) (Order, error) {
 	o, ok := f.orders[orderID]
 	if !ok {

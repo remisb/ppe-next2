@@ -33,7 +33,6 @@ export const dashboard: DashboardText = {
       other: '# сотрудника без размера, нужного для заказа',
     }),
 
-  scale: (value: string) => `Шкала ${value}`,
   month: 'Месяц',
   needsYou: 'Требует внимания',
   needsYouCount: (n: number) => `Требует внимания · ${n}`,

@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0–4 built; phase 5 proposed**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–5 built**
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -80,6 +80,17 @@ in phases.
 >   test. Test setup sets `ppe.allow_truncate` to empty the database.
 > - An export is recorded before the file is sent, and defuses spreadsheet formulas in
 >   names.
+>
+> **Phase 5 (Usage) is built**, as described in [specs/usage-service.md](../specs/usage-service.md),
+> with these differences from 4.1 and 4.3:
+> - Active people are counted from a small `user_activity` table (user, app, day), written
+>   once a day per person by the request middleware. A sign-in lasts weeks, so sign-in and
+>   refresh events alone would undercount. Rows are kept 400 days.
+> - Devices are grouped from the User-Agent when shown, not parsed on write.
+> - The first opening of a confirmation link is both a column (`first_opened_at`) and an
+>   audit event on the order, so the order's Changes show it too.
+> - The charts are `BarChart` (the Dashboards' month chart, moved into `@ppe/ui`),
+>   `Sparkline` and `HeatStrip`. `StackedBar` was not needed.
 
 ---
 
@@ -625,7 +636,7 @@ records the decisions in 3.4–3.6 before Phase 2.
 - `audit_seals`, the seal job and Verify.
 - Retention settings, purge jobs; `audit.export` with CSV/JSONL.
 
-### Phase 5: Usage · M
+### Phase 5: Usage · M · built
 - Charts in `@ppe/ui/charts`; the Usage screen; `order.confirmation_link_opened` and the
   funnel; daily data-quality snapshot.
 

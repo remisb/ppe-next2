@@ -6,6 +6,8 @@ import (
 )
 
 type Repository interface {
+	// ReadSetup returns the setup figures alone (the Usage screen samples them daily).
+	ReadSetup(ctx context.Context) (Setup, error)
 	// Read returns the stored figures for w, all from one consistent snapshot.
 	// Months has one entry per month of w (zeros included), oldest first; the
 	// derived fields are left empty.

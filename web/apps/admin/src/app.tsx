@@ -4,7 +4,7 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { Activity, ArrowLeft, Ellipsis, Gauge, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
+import { Activity, ArrowLeft, BarChart3, Ellipsis, Gauge, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -16,6 +16,7 @@ import { RolesPage } from './routes/roles'
 import { SecurityPage } from './routes/security'
 import { SettingsPage } from './routes/settings'
 import { SystemPage } from './routes/system'
+import { UsagePage } from './routes/usage'
 import { UsersPage } from './routes/users'
 
 interface Section {
@@ -35,6 +36,7 @@ const sections = (): Record<Screen, Section> => ({
   audit: { name: 'audit', label: t.shell.audit, short: t.shell.shortAudit, icon: ScrollText },
   security: { name: 'security', label: t.shell.security, short: t.shell.shortSecurity, icon: ShieldCheck },
   system: { name: 'system', label: t.shell.system, short: t.shell.shortSystem, icon: Activity, inMore: true },
+  usage: { name: 'usage', label: t.shell.usage, short: t.shell.shortUsage, icon: BarChart3, inMore: true },
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon, inMore: true },
 })
 
@@ -45,7 +47,7 @@ const phoneColumns = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'
  * Administration's frame, the staff app's in look (@ppe/ui main-nav): a
  * bottom bar on a phone, a rail on a tablet, a sidebar on a desktop. Its
  * sections are the screens the user's permissions open; on a phone, Roles,
- * System and Settings are in More, so the bar holds at most four and More. More and the
+ * System, Usage and Settings are in More, so the bar holds at most four and More. More and the
  * rail and sidebar's foot hold the way back to the staff app, Account (the
  * staff app's) and Sign out. Both apps share one sign-in, so signing in
  * or out here does so there too.
@@ -178,6 +180,7 @@ export function App() {
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
         {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
+        {route.name === 'usage' ? <UsagePage /> : null}
       </main>
       <ConfirmPassword prompt={passwordPrompt} />
     </div>

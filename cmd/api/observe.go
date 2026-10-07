@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/system"
@@ -130,6 +132,7 @@ func observe(svc services, logger *slog.Logger) func(http.Handler) http.Handler 
 			if !probes[route] {
 				svc.window.Observe(route, status, d, start)
 			}
+			noteActivity(r, svc, logger)
 			if status < 500 || status == statusClientClosed {
 				return
 			}
@@ -149,6 +152,21 @@ func observe(svc services, logger *slog.Logger) func(http.Handler) http.Handler 
 				logger.ErrorContext(ctx, "error list: record failed", slog.Any("error", err))
 			}
 		})
+	}
+}
+
+// noteActivity notes, for the Usage screen, that the signed-in user used their app
+// today; the usage service writes it once a day per user and app.
+func noteActivity(r *http.Request, svc services, logger *slog.Logger) {
+	req := audit.RequestFrom(r.Context())
+	app := string(req.Source)
+	if req.UserID == uuid.Nil || (req.Source != audit.SourceWorkwear && req.Source != audit.SourceAdmin && req.Source != audit.SourceAPI) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 3*time.Second)
+	defer cancel()
+	if err := svc.usage.Seen(ctx, req.UserID, app); err != nil {
+		logger.ErrorContext(ctx, "usage: activity not recorded", slog.Any("error", err))
 	}
 }
 

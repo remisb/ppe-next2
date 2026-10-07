@@ -29,7 +29,6 @@ export const dashboard: DashboardText = {
       other: '# darbuotojų be dydžio, kurio reikia užsakymui',
     }),
 
-  scale: (value: string) => `Skalė ${value}`,
   month: 'Mėnuo',
   needsYou: 'Reikia jūsų dėmesio',
   needsYouCount: (n: number) => `Reikia jūsų dėmesio · ${n}`,

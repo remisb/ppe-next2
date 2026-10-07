@@ -1021,3 +1021,49 @@ export interface AuditIntegrity {
   retention_days: number
   purges: { id: string; before_day: string; rows: number; purged_at: string }[]
 }
+
+/** A role as Usage names it; key is set on the built-in ones. */
+export interface UsageRole {
+  id: string
+  key: RoleKey | null
+  name: string
+}
+
+/** Administration's Usage screen (GET /api/v1/usage, usage.read). Daily series follow `days`, weekly ones `weeks`. */
+export interface UsageReport {
+  /** The last 30 days, oldest first (YYYY-MM-DD, organisation's timezone). */
+  days: string[]
+  /** The Mondays of the last 12 weeks, oldest first. */
+  weeks: string[]
+  active: {
+    total: number[]
+    by_app: Record<string, number[]>
+    by_role: { role: UsageRole; values: number[] }[]
+    last_7: number
+    last_30: number
+    /** Active accounts. */
+    users: number
+  }
+  sign_ins: number[]
+  failed_sign_ins: number[]
+  /** Browsers used in the last 30 days, by the people using them. */
+  devices: { user_agent: string; people: number }[]
+  user_languages: Record<string, number>
+  /** "" counts employees with no language recorded. */
+  employee_languages: Record<string, number>
+  /** Changes per Audit log area, per week. */
+  changes: { area: string; counts: number[] }[]
+  top_people: { id: string; name: string; changes: number }[]
+  /** Confirmation links created in the last 90 days. */
+  funnel: { created: number; opened: number; confirmed: number; waiting: number; expired: number; replaced: number }
+  /** The Dashboard's setup figures, one sample a day, the last 90 days. */
+  quality: {
+    day: string
+    employees: number
+    employees_missing_sizes: number
+    catalogue_active: number
+    catalogue_unpriced: number
+    item_sets_active: number
+  }[]
+  timezone: string
+}

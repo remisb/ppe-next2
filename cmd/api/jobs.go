@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/remisb/ppe-next2/internal/usage"
 )
 
 // jobEvery is how often the API runs its upkeep.
@@ -40,7 +42,8 @@ func (j *jobRuns) get() JobRun {
 //   - deletes security events older than API_AUTH_EVENTS_RETENTION (the
 //     store holds an advisory lock, so with several instances one does it);
 //   - deletes error list rows not seen for 30 days;
-//   - records today's database size, for its growth;
+//   - records today's database size, for its growth, and today's setup
+//     figures and deletes old activity, for the Usage screen;
 //   - seals the audit days that have ended, purges audit events older than
 //     API_AUDIT_RETENTION (sealed days only), and verifies every seal, which
 //     the Overview reports on.
@@ -61,6 +64,23 @@ func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 		if err := svc.system.SampleSize(ctx); err != nil && ctx.Err() == nil {
 			run.Failed = true
 			logger.Error("database size sample failed", slog.Any("error", err))
+		}
+		if _, err := svc.usage.PurgeActivity(ctx); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("usage activity purge failed", slog.Any("error", err))
+		}
+		if setup, err := svc.dashboard.Setup(ctx); err == nil {
+			err = svc.usage.SampleQuality(ctx, usage.Quality{
+				Employees: setup.Employees, EmployeesMissingSizes: setup.EmployeesMissingSizes,
+				CatalogueActive: setup.CatalogueActive, CatalogueUnpriced: setup.CatalogueUnpriced, ItemSetsActive: setup.ItemSetsActive,
+			})
+			if err != nil && ctx.Err() == nil {
+				run.Failed = true
+				logger.Error("data quality sample failed", slog.Any("error", err))
+			}
+		} else if ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("data quality sample failed", slog.Any("error", err))
 		}
 		if run.DaysSealed, err = svc.audit.SealDays(ctx); err != nil && ctx.Err() == nil {
 			run.Failed = true

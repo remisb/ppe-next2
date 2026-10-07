@@ -193,6 +193,14 @@ func (r *PostgresRepository) ReadReplacements(ctx context.Context, now, dueBy ti
 	return out, err
 }
 
+func (r *PostgresRepository) ReadSetup(ctx context.Context) (Setup, error) {
+	var o Overview
+	err := pgx.BeginTxFunc(ctx, r.pool, pgx.TxOptions{AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		return readSetup(ctx, tx, Window{}, &o)
+	})
+	return o.Setup, err
+}
+
 func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
 	s := &o.Setup
 	return tx.QueryRow(ctx, `SELECT

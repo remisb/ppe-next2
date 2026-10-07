@@ -34,6 +34,7 @@ export const AUDIT_EVENTS = [
   'item_set.deleted',
   'order.ordered',
   'order.confirmation_link_created',
+  'order.confirmation_link_opened',
   'order.given',
   'order.deleted',
   'settings.supplier_chat_changed',

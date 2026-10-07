@@ -46,7 +46,7 @@ Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/ro
 Administrator, Manager and Employee reproduce the old three roles; administrators add and
 change others on Roles & permissions. The token's `perms` claim carries what the user's
 roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Overview, Users, Roles & permissions, Audit log, Security, System, Settings) on the staff app's origin, sharing its sign-in and
+Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
@@ -67,7 +67,12 @@ the **Overview**, Administration's first screen, lists what needs attention
 lines (`request_id`) and a 500's `reference`, which the apps show. The **Audit log** is sealed
 daily (`audit_seals`, migration 0026: each UTC day's events hashed and chained), verified
 hourly and on demand, purged after `API_AUDIT_RETENTION` (10 years) and exported by
-`audit.export` (spec `docs/specs/audit-service.md`).
+`audit.export` (spec `docs/specs/audit-service.md`). **Usage** (`usage.read`, migration 0027,
+spec `docs/specs/usage-service.md`, `internal/usage`) shows active people per day (from
+`user_activity`, written once a day per user and app by the request middleware), sign-ins,
+changes per week, devices, languages, the confirmation-link funnel
+(`order_confirmations.first_opened_at`, `order.confirmation_link_opened`) and a daily
+data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashboards use too.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -195,7 +200,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
   uptime check and droplet alerts, and what to look at when one fires.
 - `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
-  audit log, security, usage analytics and monitoring, in phases (phases 0–4 are built).
+  audit log, security, usage analytics and monitoring, in phases (all five are built).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.

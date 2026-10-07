@@ -55,24 +55,8 @@ export function changeText(current: number, previous: number, previousMonth: str
   return t.dashboard.changeVs(`${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`, vs)
 }
 
-/**
- * A round top for a chart's scale at or above max: 1, 2, 2.5 or 5 times a
- * power of ten, so gridlines fall on readable amounts. At least 1.
- */
-export function niceCeiling(max: number): number {
-  if (!(max > 0)) return 1
-  const power = 10 ** Math.floor(Math.log10(max))
-  for (const step of [1, 2, 2.5, 5, 10]) {
-    if (step * power >= max) return step * power
-  }
-  return 10 * power
-}
-
-/** A bar's length as a percentage of the scale; a non-zero value always shows at least a sliver. */
-export function barPercent(value: number, scale: number): number {
-  if (value <= 0 || scale <= 0) return 0
-  return Math.max(2, Math.min(100, (value / scale) * 100))
-}
+// The chart scales are @ppe/ui's, shared with Administration's Usage screen.
+export { barPercent, niceCeiling } from '@ppe/ui/lib/charts'
 
 /** Days for people: "today", "1 day", "5 days", "1.5 days". */
 export function formatDays(days: number | null): string {

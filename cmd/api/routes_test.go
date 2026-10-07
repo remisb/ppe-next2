@@ -31,6 +31,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
+	"github.com/remisb/ppe-next2/internal/usage"
 )
 
 // memRepo is a minimal in-memory user.Repository for exercising the HTTP layer.
@@ -351,6 +352,14 @@ func (m *memSystem) Database(context.Context, time.Time) (system.Database, error
 	return system.Database{Connections: map[string]int{}, Tables: []system.Table{}}, nil
 }
 
+// memUsage records nothing and reports an empty Usage screen.
+type memUsage struct{}
+
+func (memUsage) RecordActivity(context.Context, time.Time, uuid.UUID, string) error { return nil }
+func (memUsage) PurgeActivity(context.Context, time.Time) (int64, error)            { return 0, nil }
+func (memUsage) SampleQuality(context.Context, usage.Quality) error                 { return nil }
+func (memUsage) Read(context.Context, usage.Window) (usage.Report, error)           { return usage.Report{}, nil }
+
 // memSecurity is an in-memory security.Store holding the events written, so
 // the per-email sign-in limit works in the HTTP tests. Its reads for the
 // Security screen find nothing: the Postgres tests cover them.
@@ -505,6 +514,7 @@ func (stubOrders) CreateLink(context.Context, uuid.UUID, order.LinkFunc) error {
 func (stubOrders) LinkByHash(context.Context, string) (order.Confirmation, error) {
 	return order.Confirmation{}, order.ErrLinkExpired
 }
+func (stubOrders) LinkOpened(context.Context, uuid.UUID, time.Time, audit.Event) error { return nil }
 func (stubOrders) Confirm(context.Context, uuid.UUID, *uuid.UUID, uuid.UUID, order.ConfirmFunc) (order.Order, error) {
 	return order.Order{}, order.ErrNotFound
 }
@@ -517,6 +527,9 @@ func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, 
 
 type stubDashboard struct{}
 
+func (stubDashboard) ReadSetup(context.Context) (dashboard.Setup, error) {
+	return dashboard.Setup{}, nil
+}
 func (stubDashboard) Read(context.Context, dashboard.Window) (dashboard.Overview, error) {
 	return dashboard.Overview{}, nil
 }
@@ -579,7 +592,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -752,6 +765,7 @@ var policy = map[string]rule{
 	"GET /api/v1/system/errors/{id}":                {role.SystemRead, "admins"},
 	"POST /api/v1/client-errors":                    {"", "any"},
 	"GET /api/v1/overview":                          {"", "any"},
+	"GET /api/v1/usage":                             {role.UsageRead, "admins"},
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed roles.

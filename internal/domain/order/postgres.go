@@ -273,17 +273,17 @@ func (r *PostgresRepository) withLines(ctx context.Context, orders []Order) ([]O
 }
 
 const confirmationColumns = `id, order_id, method, token_hash, expires_at, revoked_at, confirmed_at,
-	confirmed_name, document_hash, created_at, created_by_user_id`
+	confirmed_name, document_hash, created_at, created_by_user_id, first_opened_at`
 
 func scanConfirmation(row pgx.Row) (Confirmation, error) {
 	var c Confirmation
 	err := row.Scan(&c.ID, &c.OrderID, &c.Method, &c.TokenHash, &c.ExpiresAt, &c.RevokedAt, &c.ConfirmedAt,
-		&c.ConfirmedName, &c.DocumentHash, &c.CreatedAt, &c.CreatedByUserID)
+		&c.ConfirmedName, &c.DocumentHash, &c.CreatedAt, &c.CreatedByUserID, &c.FirstOpenedAt)
 	if err != nil {
 		return Confirmation{}, err
 	}
 	c.CreatedAt = c.CreatedAt.UTC()
-	for _, t := range []**time.Time{&c.ExpiresAt, &c.RevokedAt, &c.ConfirmedAt} {
+	for _, t := range []**time.Time{&c.ExpiresAt, &c.RevokedAt, &c.ConfirmedAt, &c.FirstOpenedAt} {
 		if *t != nil {
 			u := (*t).UTC()
 			*t = &u
@@ -384,6 +384,18 @@ func (r *PostgresRepository) LinkByHash(ctx context.Context, tokenHash string) (
 		return Confirmation{}, ErrLinkExpired
 	}
 	return c, err
+}
+
+func (r *PostgresRepository) LinkOpened(ctx context.Context, linkID uuid.UUID, at time.Time, ev audit.Event) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE order_confirmations SET first_opened_at = $2
+			WHERE id = $1 AND first_opened_at IS NULL`, linkID, at)
+		if err != nil || tag.RowsAffected() == 0 {
+			// Another request recorded the first opening already.
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
 }
 
 func (r *PostgresRepository) Confirm(ctx context.Context, orderID uuid.UUID, linkID *uuid.UUID, giver uuid.UUID, fn ConfirmFunc) (Order, error) {

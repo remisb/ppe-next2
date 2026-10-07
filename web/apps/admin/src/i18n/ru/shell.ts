@@ -17,6 +17,8 @@ export const shell: ShellText = {
   shortSecurity: 'Безопасн.',
   system: 'Система',
   shortSystem: 'Система',
+  usage: 'Использование',
+  shortUsage: 'Использ.',
   settings: 'Настройки',
   shortSettings: 'Настройки',
   backups: 'Резервные копии',

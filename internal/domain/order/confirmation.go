@@ -12,7 +12,9 @@ import (
 
 const (
 	EventLinkCreated = "order.confirmation_link_created"
-	EventGiven       = "order.given"
+	// EventLinkOpened: the employee first opened the confirmation link.
+	EventLinkOpened = "order.confirmation_link_opened"
+	EventGiven      = "order.given"
 	// DefaultConfirmTTL is how long a confirmation link stays usable.
 	DefaultConfirmTTL = 7 * 24 * time.Hour
 )
@@ -101,8 +103,20 @@ func (s *Service) RecordByToken(ctx context.Context, token string) (Record, erro
 	if err != nil {
 		return Record{}, err
 	}
-	if r.Order.Status != StatusGiven && !link.Usable(s.now()) {
+	now := s.now()
+	if r.Order.Status != StatusGiven && !link.Usable(now) {
 		return Record{}, ErrLinkExpired
+	}
+	// The first opening of a link still waiting is recorded, for the order's
+	// Changes and the Usage screen's funnel; later ones are not.
+	if r.Order.Status == StatusOrdered && link.FirstOpenedAt == nil {
+		ev, err := audit.New(s.newID(), nil, EventLinkOpened, auditEntity, link.OrderID, now, nil, nil)
+		if err != nil {
+			return Record{}, err
+		}
+		if err := s.repo.LinkOpened(ctx, link.ID, now, ev); err != nil {
+			return Record{}, err
+		}
 	}
 	return r, nil
 }

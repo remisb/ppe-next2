@@ -17,6 +17,8 @@ export const shell: ShellText = {
   shortSecurity: 'Sauga',
   system: 'Sistema',
   shortSystem: 'Sistema',
+  usage: 'Naudojimas',
+  shortUsage: 'Naudojimas',
   settings: 'Nustatymai',
   shortSettings: 'Nustatymai',
   backups: 'Atsarginės kopijos',

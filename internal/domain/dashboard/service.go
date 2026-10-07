@@ -72,6 +72,12 @@ func (s *Service) previous(w Window) (month string, throughDay int) {
 }
 
 // Overview reads the figures and derives the labels, ages and rounding.
+// Setup is the data's setup figures now (employees without sizes, unpriced
+// items …), the same as the Dashboard's.
+func (s *Service) Setup(ctx context.Context) (Setup, error) {
+	return s.repo.ReadSetup(ctx)
+}
+
 func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	now := s.now()
 	w := s.window(now)

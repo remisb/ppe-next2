@@ -32,6 +32,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
+	"github.com/remisb/ppe-next2/internal/usage"
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
@@ -79,6 +80,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
+		usage.NewPostgresStore(pool),
 		pool,
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
@@ -592,6 +594,22 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 	rec = api.do(t, "POST", "/api/v1/orders/"+id3+"/confirm-in-person", staff, map[string]any{"confirmed": true})
 	if r := decode[record](t, rec.Body.Bytes()); rec.Code != http.StatusOK || r.Status != "GIVEN" || r.Confirmation["method"] != "IN_PERSON" {
 		t.Errorf("in person = %d %s", rec.Code, rec.Body)
+	}
+
+	// The first opening of the link is on the order's Changes and in Usage's funnel;
+	// the staff app's requests count the staff member as active today.
+	rec = api.do(t, "GET", "/api/v1/audit-events/orders/"+id, staff, nil)
+	if !strings.Contains(rec.Body.String(), `"event":"order.confirmation_link_opened"`) || strings.Count(rec.Body.String(), "order.confirmation_link_opened") != 1 {
+		t.Errorf("order changes = %s", rec.Body)
+	}
+	_, admin := api.userWith(t, role.KeyAdmin)
+	if rec := api.do(t, "GET", "/api/v1/usage", mgr, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager reads Usage: %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/usage", admin, nil)
+	u := decode[usage.Report](t, rec.Body.Bytes())
+	if rec.Code != 200 || u.Funnel.Created < 1 || u.Funnel.Opened != 1 || u.Funnel.Confirmed != 1 || len(u.Days) != usage.Days {
+		t.Errorf("usage = %d funnel %+v", rec.Code, u.Funnel)
 	}
 
 	// The token never reaches a URL the API logs.

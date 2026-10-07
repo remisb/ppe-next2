@@ -190,6 +190,20 @@ Not a manual rule: the Audit log's seals, retention, export and the API's databa
 | The grants hold after a restore: `make migrate` / `migrate.sh` apply `grants.sql` every run | `make migrate` (CI migrates down and up again); restore steps in `docs/backups.md` |
 | System shows the role the API connects as; the Overview warns when it has the owner's rights, and raises a seal mismatch for `audit.read` | `system.TestPostgresDatabase`, `TestPostgresSystemHTTP`, `overview.TestAttention`; e2e *Overview and System: …* (no warning as `ppe_app`) |
 
+## Usage
+
+Not a manual rule: who uses the system and how ([specs/usage-service.md](specs/usage-service.md)).
+
+| Rule | Covered by |
+| --- | --- |
+| A signed-in user's request from an app records them active that day (organisation timezone), once a day per user and app; activity is kept 400 days | `usage.TestSeenWritesOncePerDay`, `usage.TestPostgresReport` |
+| The report: active people per day in total, by app and by role, 7 and 30 days, sign-ins and failures per day, browsers by people, languages, changes per area per week, the most active people, the link funnel, the quality samples | `usage.TestPostgresReport`, `TestPostgresConfirmationHTTP` (the funnel) |
+| The employee's first opening of a waiting link sets `first_opened_at` and records `order.confirmation_link_opened` once, with no actor | `order.TestElectronicConfirmation`, `TestPostgresConfirmationHTTP`, `TestEveryDomainEventIsKnown` |
+| The Dashboard's setup figures are sampled daily for the trend | `usage.TestPostgresReport`; e2e *Usage: …* |
+| `GET /api/v1/usage` needs `usage.read` (the built-in Administrator, migration 0027) | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `TestPostgresConfirmationHTTP` |
+| Shared charts: the scale, heat levels, sparkline points; the Dashboards' month charts unchanged | ui `charts.test.ts`, workwear `dashboard` tests; e2e *Dashboard: …* |
+| The Usage screen on a phone and tablet scrolls nothing sideways; under More on a phone | e2e *Usage: …*, *phone and tablet: …* |
+
 ## Security
 
 Not a manual rule: the security log of sign-ins, everyone's signed-in devices and the access

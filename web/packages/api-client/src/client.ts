@@ -45,6 +45,7 @@ import type {
   Sizes,
   SupplierChatInput,
   SystemStatus,
+  UsageReport,
   User,
   UserCreateInput,
   UserUpdateInput,
@@ -228,6 +229,8 @@ export function createClient(options: ClientOptions) {
       errors: (query: ErrorQuery = {}) => request<ErrorPage>('GET', `/api/v1/system/errors${historyQueryString(query)}`),
       error: (id: string) => request<ErrorEvent>('GET', `/api/v1/system/errors/${seg(id)}`),
     },
+    /** Administration's Usage screen: who uses the system and how (usage.read). */
+    usage: () => request<UsageReport>('GET', '/api/v1/usage'),
     /** Administration's Overview: what needs attention, of the areas the user may see (any signed-in user). */
     overview: () => request<Overview>('GET', '/api/v1/overview'),
     /** Reports an error the app caught in the browser to System's error list (any signed-in user). */

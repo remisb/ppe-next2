@@ -53,7 +53,7 @@ var events = []string{
 	"catalogue.created", "catalogue.updated", "catalogue.price_changed",
 	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted",
 	"item_set.created", "item_set.updated", "item_set.deleted",
-	"order.ordered", "order.confirmation_link_created", "order.given", "order.deleted",
+	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"settings.supplier_chat_changed",
 	"access_review.completed",
 	EventExported, EventPurged,

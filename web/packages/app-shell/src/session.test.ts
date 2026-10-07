@@ -41,7 +41,7 @@ describe('sessionFromToken', () => {
 describe('canAdminister', () => {
   const reader = (...perms: string[]) => ({ can: (p: string) => perms.includes(p) })
   it('is any of the permissions that open a screen in Administration', () => {
-    for (const p of ['users.manage', 'roles.manage', 'settings.manage', 'backups.read', 'audit.read', 'security.read', 'system.read']) expect(canAdminister(reader(p))).toBe(true)
+    for (const p of ['users.manage', 'roles.manage', 'settings.manage', 'backups.read', 'audit.read', 'security.read', 'system.read', 'usage.read']) expect(canAdminister(reader(p))).toBe(true)
     expect(canAdminister(reader('users.read', 'catalogue.manage', 'dashboard.overview'))).toBe(false)
   })
 })

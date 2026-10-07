@@ -25,6 +25,7 @@ const (
 	AuditExport       Permission = "audit.export"
 	SecurityRead      Permission = "security.read"
 	SystemRead        Permission = "system.read"
+	UsageRead         Permission = "usage.read"
 	DashboardOverview Permission = "dashboard.overview"
 	DashboardManager  Permission = "dashboard.manager"
 	DashboardEmployee Permission = "dashboard.employee"
@@ -58,6 +59,7 @@ var catalogue = []Info{
 	{AuditExport, GroupAdministration, []Permission{AuditRead}},
 	{SecurityRead, GroupAdministration, nil},
 	{SystemRead, GroupAdministration, nil},
+	{UsageRead, GroupAdministration, nil},
 	{EmployeesDelete, GroupWorkwear, nil},
 	{CatalogueManage, GroupWorkwear, nil},
 	{ItemSetsManage, GroupWorkwear, nil},

@@ -135,8 +135,8 @@ The workwear app is the reference.
   open a screen in Administration also has its link, under More on a phone and at the foot
   of the rail and sidebar. Administration's navigation (`@ppe/ui/components/main-nav`
   styles, the same three shapes) holds the screens the user's permissions open; on a phone
-  Roles & permissions, System and Settings (`inMore` in `app.tsx`) are under More, so its
-  bar holds at most four (Overview, Users, Audit, Security) and More. Under More or at its foot is the way back to the staff app, Account
+  Roles & permissions, System, Usage and Settings (`inMore` in `app.tsx`) are under More, so
+  its bar holds at most four (Overview, Users, Audit, Security) and More. Under More or at its foot is the way back to the staff app, Account
   and Sign out. Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
   label), never `aria-label`, which would also match label lookups such as a field named
@@ -241,6 +241,9 @@ both apps share it (Layout above):
 - Calls go through `client`; a 401 refreshes once and repeats the call, and a 403
   `recent sign-in required` opens Confirm your password (`@ppe/app-shell`'s `ConfirmPassword`)
   and repeats it. Screens need no handling of their own; `errorText` words the cancelled case.
+- Charts are `@ppe/ui/components/charts` (`BarChart`, `Sparkline`, `HeatStrip`): plain
+  elements and SVG, drawn `aria-hidden`, with the figures in a visually hidden table or an
+  `aria-label`. No chart library.
 - Show errors through `errorText` (or `ErrorState`, which uses it): a 5xx becomes the user's
   language's "The server could not do this…" with its reference, never the API's raw words.
 - Uncaught errors and unhandled rejections are reported to System's error list by

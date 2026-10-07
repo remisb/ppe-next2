@@ -16,6 +16,8 @@ export const shell = {
   shortSecurity: 'Security',
   system: 'System',
   shortSystem: 'System',
+  usage: 'Usage',
+  shortUsage: 'Usage',
   settings: 'Settings',
   shortSettings: 'Settings',
   backups: 'Backups',

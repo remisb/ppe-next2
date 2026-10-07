@@ -27,7 +27,6 @@ export const dashboard = {
     plural(n, { one: '# employee without a size Create Order needs', other: '# employees without a size Create Order needs' }),
 
   // Shared parts (components/dashboard.tsx).
-  scale: (value: string) => `Scale ${value}`,
   month: 'Month',
   needsYou: 'Needs you',
   needsYouCount: (n: number) => `Needs you · ${n}`,

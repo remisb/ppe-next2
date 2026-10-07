@@ -46,7 +46,7 @@ constants. `TestWebClientListsTheEvents` keeps it equal to `AUDIT_EVENTS` in
 | `employees` | `employee` | `employee.created`, `employee.updated`, `employee.sizes_changed`, `employee.deleted` | updated: the changed first and last name, code and preferred language, and `notes_changed: true` (never the notes text); sizes as before |
 | `catalogue` | `catalogue_item` | `catalogue.created`, `catalogue.updated`, `catalogue.price_changed`, `catalogue.activated`, `catalogue.deactivated`, `catalogue.deleted` | updated: the changed name, details, size group, picture, display rank; price events as before |
 | `item_sets` | `item_set` | `item_set.created`, `item_set.updated`, `item_set.deleted` | name, description, active, lines (`catalogue_item_id`, `default_quantity`), the changed ones on update |
-| `orders` | `order` | `order.ordered`, `order.confirmation_link_created`, `order.given`, `order.deleted` | as before |
+| `orders` | `order` | `order.ordered`, `order.confirmation_link_created`, `order.confirmation_link_opened` (the employee's first opening, no actor, migration 0027), `order.given`, `order.deleted` | as before; opened has none |
 | `settings` | `settings` | `settings.supplier_chat_changed` | as before |
 | `audit` | `audit_log` | `audit.exported` (by its actor), `audit.purged` (by the system) | exported: the format, from, to and the filters given; purged: `older_than` (the first day kept) and `rows` |
 | `security` | `access_review` | `access_review.completed` | after: how many `users`, `active_users`, `administrators`, `dormant` and `no_sign_in` accounts there were; a fresh entity id per review (`docs/specs/security-service.md`) |

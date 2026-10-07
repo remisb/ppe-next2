@@ -125,6 +125,14 @@ Rules for using it:
   permissions open. Not the staff app's Dashboard, which is about workwear.
 - **Code:** `GET /api/v1/overview`, `internal/overview`. **Spec:** `docs/specs/system-service.md`.
 
+### Usage
+- **Brief:** Administration's screen of who uses the apps and from what, sign-ins and
+  changes over time, how far confirmation links get, and the data's quality. Needs
+  `usage.read`.
+- **Detail:** an **active person** used an app that day, whether they signed in that day or
+  not. No page is tracked.
+- **Code:** `internal/usage`, `/admin/usage`. **Spec:** `docs/specs/usage-service.md`.
+
 ### System
 - **Brief:** Administration's screen of the API and its requests, the database, the error
   list, and the backups (a tab of its own, formerly the Backups screen). Needs `system.read`
@@ -821,6 +829,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Security | Sauga | Безопасность |
 | Overview / Needs attention | Apžvalga / Reikia dėmesio | Обзор / Требует внимания |
 | Seals / Verify / Export | Antspaudai / Patikrinti / Eksportuoti | Печати / Проверить / Выгрузить |
+| Usage / Active people | Naudojimas / Aktyvūs asmenys | Использование / Активные люди |
 | System / Errors / Status | Sistema / Klaidos / Būsena | Система / Ошибки / Состояние |
 | Sign-ins / Sign-in failed / Unknown account | Prisijungimai / Prisijungti nepavyko / Nežinoma paskyra | Входы / Неудачный вход / Неизвестная учётная запись |
 | Access review / Mark as reviewed | Prieigos peržiūra / Pažymėti kaip peržiūrėtą | Проверка доступа / Отметить как проверенный |

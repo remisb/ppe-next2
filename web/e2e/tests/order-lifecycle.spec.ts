@@ -35,7 +35,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Settings']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -839,6 +839,24 @@ test('Overview and System: what needs attention, an error the app reports, and t
   await expect(page).toHaveURL(/\/admin\/system\/errors$/)
 })
 
+test('Usage: who is active, the link the employee opened and confirmed, and the data quality sampled', async () => {
+  await openTab('Usage')
+  await expect(page.getByRole('heading', { name: 'Usage', exact: true })).toBeVisible()
+  const figures = page.getByRole('list', { name: 'Key figures' })
+  await expect(figures.getByRole('listitem').filter({ hasText: 'Active today' })).not.toContainText(/^Active today0/)
+  // The employee opened the confirmation link and confirmed: the funnel follows it.
+  const funnel = page.getByRole('region', { name: 'Confirmation links, last 90 days' })
+  await expect(funnel).toContainText(/Sent\s*\d/)
+  await expect(funnel.getByRole('listitem').filter({ hasText: 'Opened' })).toContainText(/\d+% of sent/)
+  await expect(funnel.getByRole('listitem').filter({ hasText: 'Confirmed' })).not.toContainText(/^Confirmed0/)
+  // The browsers in use, and the data's quality sampled when the API started.
+  await expect(page.getByRole('region', { name: 'Devices, last 30 days' })).toContainText('Computer')
+  await expect(page.getByRole('region', { name: 'Data quality, last 90 days' })).toContainText('Employees without sizes')
+  // Opening the link is on the order's Changes too.
+  await page.goto('/admin/audit?event=order.confirmation_link_opened')
+  await expect(page.getByRole('row', { name: /Confirmation link opened/ }).first()).toContainText('Confirmation link')
+})
+
 test('Dashboard: the figures follow the orders', async () => {
   await openTab('Dashboard')
   await page.getByRole('button', { name: 'Refresh' }).click()
@@ -1164,6 +1182,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Overview', 'Needs attention'],
     ['Security', admin.name],
     ['System', 'Largest tables'],
+    ['Usage', 'Active people per day'],
     ['Settings', 'Invite link'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
@@ -1266,6 +1285,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Overview', 'Needs attention'],
       ['Security', admin.name],
       ['System', 'Largest tables'],
+      ['Usage', 'Active people per day'],
       ['Settings', 'Invite link'],
     ] as const) {
       await openTab(tab)

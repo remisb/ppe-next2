@@ -24,6 +24,8 @@ type fakeRepo struct {
 	outRepl Replacements
 }
 
+func (f *fakeRepo) ReadSetup(context.Context) (Setup, error) { return f.out.Setup, nil }
+
 func (f *fakeRepo) Read(_ context.Context, w Window) (Overview, error) {
 	f.got = w
 	return f.out, nil

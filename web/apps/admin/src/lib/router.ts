@@ -59,6 +59,8 @@ export type Route =
   | { name: 'audit'; filter: AuditFilter; event?: string }
   /** Sign-ins, every user's signed-in devices and the access review; filter applies to sign-ins. */
   | { name: 'security'; tab: SecurityTab; filter: SecurityFilter }
+  /** Who uses the system and how: activity, sign-ins, changes, devices, links, data quality. */
+  | { name: 'usage' }
   /** The organisation's settings (the supplier's WhatsApp group). */
   | { name: 'settings' }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
@@ -70,6 +72,7 @@ const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'ho
   overview: '/',
   users: '/users',
   roles: '/roles',
+  usage: '/usage',
   settings: '/settings',
 }
 
@@ -81,6 +84,7 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'audit', permissions: ['audit.read'] },
   { name: 'security', permissions: ['security.read'] },
   { name: 'system', permissions: ['system.read', 'backups.read'] },
+  { name: 'usage', permissions: ['usage.read'] },
   { name: 'settings', permissions: ['settings.manage'] },
 ]
 

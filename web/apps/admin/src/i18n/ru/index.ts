@@ -8,6 +8,7 @@ import { security } from './security'
 import { settings } from './settings'
 import { shell } from './shell'
 import { system } from './system'
+import { usage } from './usage'
 import { users } from './users'
 
-export const ru = { common, shell, overview, users, roles, audit, security, system, account, settings, backups }
+export const ru = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, backups }

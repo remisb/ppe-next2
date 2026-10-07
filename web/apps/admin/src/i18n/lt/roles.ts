@@ -58,6 +58,10 @@ export const roles: RolesText = {
       label: 'Matyti sistemą',
       grants: 'API būsena ir užklausos, duomenų bazė ir klaidų sąrašas su kiekvienos klaidos nuoroda.',
     },
+    'usage.read': {
+      label: 'Matyti naudojimą',
+      grants: 'Kas ir iš ko naudojasi programomis, prisijungimai ir pakeitimai laike, patvirtinimo nuorodų eiga ir duomenų kokybė.',
+    },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',

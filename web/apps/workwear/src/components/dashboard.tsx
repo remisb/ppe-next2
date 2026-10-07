@@ -1,13 +1,13 @@
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
+import { BarChart, type Series } from '@ppe/ui/components/charts'
 import { Panel } from '@ppe/ui/components/panel'
 import { formatDateTime } from '@ppe/ui/lib/dates'
-import { cn } from '@ppe/ui/lib/utils'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { t } from '@/i18n'
-import { type Need, barPercent, monthLabel, niceCeiling, sortNeeds } from '@/lib/dashboard'
+import { type Need, barPercent, monthLabel, sortNeeds } from '@/lib/dashboard'
 import type { Route } from '@/lib/router'
 
 /*
@@ -35,16 +35,11 @@ export function jumpTo(selector: string): void {
   setTimeout(() => delete el.dataset['flash'], 1600)
 }
 
-export interface Series {
-  label: string
-  /** The bar's colour class; neutral foreground tints follow the theme. */
-  className: string
-  values: number[]
-}
+export type { Series } from '@ppe/ui/components/charts'
 
 /**
- * Bars per month, one per series side by side. The same figures go into a
- * visually hidden table whose cells are cell(series, month index).
+ * Bars per month, one per series side by side (@ppe/ui's BarChart). The same
+ * figures go into a visually hidden table whose cells are cell(series, month index).
  */
 export function MonthChart({
   months,
@@ -59,76 +54,15 @@ export function MonthChart({
   caption: string
   cell: (s: Series, i: number) => string
 }) {
-  const scale = niceCeiling(Math.max(0, ...series.flatMap((s) => s.values)))
   return (
-    <>
-      <div aria-hidden className="flex items-center gap-4 pb-3 text-xs text-muted-foreground">
-        {series.length > 1
-          ? series.map((s) => (
-              <span key={s.label} className="flex items-center gap-1.5">
-                <span className={cn('size-2.5 rounded-sm', s.className)} /> {s.label}
-              </span>
-            ))
-          : null}
-        <span className="ml-auto tabular-nums">{t.dashboard.scale(format(scale))}</span>
-      </div>
-      <div aria-hidden className="relative h-44 border-b border-border md:h-52">
-        {[25, 50, 75, 100].map((p) => (
-          <div key={p} className="absolute inset-x-0 border-t border-dashed border-border/70" style={{ bottom: `${p}%` }} />
-        ))}
-        <div className="relative flex h-full items-end gap-0.5 sm:gap-1.5">
-          {months.map((m, i) => (
-            <div
-              key={m}
-              title={`${monthLabel(m, true)}: ${series.map((s) => `${s.label.toLowerCase()} ${format(s.values[i] ?? 0)}`).join(', ')}`}
-              className="flex h-full min-w-0 flex-1 items-end justify-center gap-px sm:gap-0.5"
-            >
-              {series.map((s) => (
-                <div
-                  key={s.label}
-                  className={cn('w-full rounded-t-sm', series.length > 1 ? 'max-w-4' : 'max-w-8', s.className)}
-                  style={{ height: `${barPercent(s.values[i] ?? 0, scale)}%` }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div aria-hidden className="flex gap-0.5 pt-1.5 text-center text-[0.625rem] text-muted-foreground sm:gap-1.5 sm:text-xs">
-        {months.map((m, i) => (
-          // Every month on wider screens; every other one on a phone, where twelve labels collide.
-          <span key={m} className={cn('min-w-0 flex-1 truncate', i % 2 === 1 && months.length > 8 && 'max-sm:invisible')}>
-            {monthLabel(m)}
-          </span>
-        ))}
-      </div>
-      {/* In a div: a table will not shrink to sr-only's 1px, and would widen a phone's page. */}
-      <div className="sr-only">
-        <table>
-          <caption>{caption}</caption>
-          <thead>
-            <tr>
-              <th scope="col">{t.dashboard.month}</th>
-              {series.map((s) => (
-                <th key={s.label} scope="col">
-                  {s.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {months.map((m, i) => (
-              <tr key={m}>
-                <th scope="row">{monthLabel(m, true)}</th>
-                {series.map((s) => (
-                  <td key={s.label}>{cell(s, i)}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+    <BarChart
+      columns={months.map((m) => ({ key: m, short: monthLabel(m), long: monthLabel(m, true) }))}
+      series={series}
+      format={format}
+      caption={caption}
+      cell={cell}
+      columnHead={t.dashboard.month}
+    />
   )
 }
 

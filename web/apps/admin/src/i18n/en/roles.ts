@@ -60,6 +60,10 @@ export const roles = {
       label: 'See System',
       grants: 'The API’s state and requests, the database, and the error list with each error’s reference.',
     },
+    'usage.read': {
+      label: 'See Usage',
+      grants: 'Who uses the apps and from what, sign-ins and changes over time, the confirmation-link funnel and data quality.',
+    },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',

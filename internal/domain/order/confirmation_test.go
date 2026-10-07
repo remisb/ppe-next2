@@ -95,6 +95,15 @@ func TestElectronicConfirmation(t *testing.T) {
 	if err != nil || view.Order.Status != StatusOrdered || view.Confirmation != nil {
 		t.Fatalf("view = %+v, %v", view, err)
 	}
+	// The first opening is recorded once, with no actor: the employee has no account.
+	opened := f.repo.events[len(f.repo.events)-1]
+	if opened.Event != EventLinkOpened || opened.ActorUserID != nil || opened.EntityID != o.ID || f.repo.links[0].FirstOpenedAt == nil {
+		t.Errorf("first opening recorded as %+v", opened)
+	}
+	before := len(f.repo.events)
+	if _, err := f.svc.RecordByToken(ctx, token); err != nil || len(f.repo.events) != before {
+		t.Errorf("a second opening wrote %d events, %v", len(f.repo.events)-before, err)
+	}
 	if _, err := f.svc.ConfirmByToken(ctx, token, false); !errors.Is(err, ErrInvalid) {
 		t.Errorf("unchecked box err = %v", err)
 	}

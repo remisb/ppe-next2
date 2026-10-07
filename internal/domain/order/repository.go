@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -52,6 +53,9 @@ type Repository interface {
 	// ErrLinkExpired when there is none or its order is deleted (an unknown
 	// link reads as expired).
 	LinkByHash(ctx context.Context, tokenHash string) (Confirmation, error)
+	// LinkOpened records link linkID's first opening at at, with ev, unless
+	// it was opened before (then it writes nothing).
+	LinkOpened(ctx context.Context, linkID uuid.UUID, at time.Time, ev audit.Event) error
 	// Confirm locks the order (and linkID's link, when given), reads the
 	// giver's name, calls fn, and unless it is a no-op writes the GIVEN order,
 	// the confirmation evidence, the revocation of other unused links, and the
