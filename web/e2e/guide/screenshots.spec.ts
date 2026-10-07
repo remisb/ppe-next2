@@ -60,7 +60,13 @@ test('sign in and the dashboard', async () => {
   await page.getByLabel(S.email).fill(admin.email)
   await page.getByLabel(new RegExp(`^${S.password}`)).fill(admin.password)
   // Sign-in is the phone's on every device: wider, the form is a small card in an empty page.
-  if (device === 'phone') await shot('sign-in', { phone: true })
+  if (device === 'phone') {
+    await shot('sign-in', { phone: true })
+    // The same screen with the Dark theme: the device's choice, as Theme is System until signed in.
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await shot('sign-in-dark', { phone: true })
+    await page.emulateMedia({ colorScheme: 'light' })
+  }
   await page.getByRole('button', { name: S.signIn }).click()
   await expect(page.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await shot('dashboard')

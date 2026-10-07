@@ -19,6 +19,7 @@ With **Keep me signed in** ticked, you stay signed in on this device after closi
 **Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.
 
 ![The sign-in screen with email, password and Keep me signed in](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
+![The same screen with the Dark theme](../../web/apps/workwear/public/help-img/en/phone/sign-in-dark.png)
 
 ## 2. Dashboard
 

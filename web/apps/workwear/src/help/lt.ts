@@ -35,7 +35,12 @@ export const lt: Guide = {
         { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
         { p: 'Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.' },
         { p: '**Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.' },
-        { shots: [{ name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“', phone: true }] },
+        {
+          shots: [
+            { name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“', phone: true },
+            { name: 'sign-in-dark', alt: 'Tas pats ekranas su tamsia tema', phone: true },
+          ],
+        },
       ],
     },
     {

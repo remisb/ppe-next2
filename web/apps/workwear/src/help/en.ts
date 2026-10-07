@@ -35,7 +35,12 @@ export const en: Guide = {
         { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
         { p: 'With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.' },
         { p: '**Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.' },
-        { shots: [{ name: 'sign-in', alt: 'The sign-in screen with email, password and Keep me signed in', phone: true }] },
+        {
+          shots: [
+            { name: 'sign-in', alt: 'The sign-in screen with email, password and Keep me signed in', phone: true },
+            { name: 'sign-in-dark', alt: 'The same screen with the Dark theme', phone: true },
+          ],
+        },
       ],
     },
     {

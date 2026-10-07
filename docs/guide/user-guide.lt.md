@@ -19,6 +19,7 @@ Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir už
 **Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.
 
 ![Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“](../../web/apps/workwear/public/help-img/lt/phone/sign-in.png)
+![Tas pats ekranas su tamsia tema](../../web/apps/workwear/public/help-img/lt/phone/sign-in-dark.png)
 
 ## 2. Suvestinė
 

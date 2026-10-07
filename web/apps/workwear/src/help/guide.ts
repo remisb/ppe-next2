@@ -91,6 +91,7 @@ export type Item = string | { text: string; items?: Item[]; roles?: readonly Rol
 /** The screenshots `pnpm guide` takes, in each language. */
 export type ShotName =
   | 'sign-in'
+  | 'sign-in-dark'
   | 'dashboard'
   | 'create-order'
   | 'review'
