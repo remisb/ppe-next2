@@ -669,14 +669,11 @@ Administrator.
 `.env.prod` on the droplet and never shown, and the startup upkeep (seals, purges, samples)
 ran under it without an error. Backups go to the Spaces bucket `ppe-next2-backups` in fra1,
 encrypted with age; the first one succeeded at 15:16 UTC. The private key is kept off the
-server.
+server. The Uptime check of `/ready` and the CPU, memory and disk alerts are set up in
+DigitalOcean Insights (formerly Monitoring), and `do-agent` 3.18.14 runs on the droplet.
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
-- **The droplet's metrics agent.** The uptime check and the CPU, memory and disk alerts were
-  set up in DigitalOcean on 7 Oct; its Monitoring is now **Insights**. But `do-agent` is not
-  on the droplet yet, so the memory and disk alerts cannot fire
-  ([monitoring.md](../monitoring.md)).
 - **The Help guide for Administration.** The Help text, its screenshots and `docs/guide` say
   nothing yet about the Overview, Audit log, Security, System or Usage.
 - **Left for later on purpose:**
@@ -696,10 +693,9 @@ server.
    made earlier stay on the `backups` volume, and nothing deletes them any more. The bucket
    can later hold the seal anchors (step 10). Step 6's restore rehearsal now also proves that
    the age key decrypts.
-3. **Turn on the uptime check and droplet alerts.** *Mostly done 7 Oct:* the Uptime check of
-   `/ready` and the three alert rules are in DigitalOcean Insights. **Left:** install
-   `do-agent` on the droplet (one command in [monitoring.md](../monitoring.md)). Without it,
-   memory and disk report nothing.
+3. ~~**Turn on the uptime check and droplet alerts.**~~ **Done 7 Oct:** the Uptime check of
+   `/ready` and the three alert rules are in DigitalOcean Insights, and `do-agent` runs on the
+   droplet ([monitoring.md](../monitoring.md)).
 4. **Confirm the retention periods.** Ask the accountant whether 10 years for the Audit log
    and 180 days for sign-in records are right (question 1). A change is a config value, not
    code.
