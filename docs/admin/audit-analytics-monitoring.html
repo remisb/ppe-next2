@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Audit &amp; Monitoring Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a report column with a sticky contents rail on wide screens; product mockups sit on grey "stages", in the app's light theme in both report themes. Same family as docs/ux/workwear-ux-review.html. */
+:root{
+  --bg:#EEF0EE; --surface:#FFFFFF; --surface-2:#F6F7F5; --ink:#15181B; --muted:#596068; --line:#D6DAD5;
+  --accent:#D2511A; --accent-ink:#FFFFFF; --accent-soft:#FBE7DC;
+  --good:#1E7A4C; --good-soft:#DDF0E5; --bad:#B8322A; --bad-soft:#F8E1DE; --warn:#9A6A12; --warn-soft:#F6ECD6;
+  --reflect:#C9CDD1;
+  --m-bg:#FAFAFA; --m-card:#FFFFFF; --m-ink:#0A0A0A; --m-muted:#737373; --m-line:#E5E5E5; --m-accent:#F2F2F2;
+  --m-primary:#171717; --m-red:#DC2626; --m-red-soft:#FEE2E2; --m-amber:#B45309; --m-amber-soft:#FEF3C7; --m-green:#15803D; --m-green-soft:#DCFCE7; --m-blue:#1D4ED8; --m-blue-soft:#DBEAFE;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --app:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111315; --surface:#191C1F; --surface-2:#1F2326; --ink:#E6E8EA; --muted:#9BA2A9; --line:#2E3338;
+    --accent:#FF7A3D; --accent-ink:#1A0D05; --accent-soft:#3A2116;
+    --good:#5CC48D; --good-soft:#15291F; --bad:#F07A70; --bad-soft:#35191A; --warn:#E0B052; --warn-soft:#33280F; --reflect:#5A6066;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111315; --surface:#191C1F; --surface-2:#1F2326; --ink:#E6E8EA; --muted:#9BA2A9; --line:#2E3338;
+  --accent:#FF7A3D; --accent-ink:#1A0D05; --accent-soft:#3A2116;
+  --good:#5CC48D; --good-soft:#15291F; --bad:#F07A70; --bad-soft:#35191A; --warn:#E0B052; --warn-soft:#33280F; --reflect:#5A6066;
+}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:0 64px}
+a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;font-stretch:78%;letter-spacing:-.01em}
+h2{font-size:clamp(1.7rem,3.2vw,2.3rem);font-weight:750;font-stretch:80%}
+h3{font-size:1.3rem;font-weight:700;font-stretch:88%}
+h4{font-size:1.05rem;font-weight:700;font-stretch:92%}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.86em;overflow-wrap:anywhere}
+.prose>*,.prose li,.phase li,.refs li,.open li,.verdict li,.finding p,.opt p,.rec-box p{min-width:0}
+pre{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.5}
+
+.wrap{max-width:1240px;margin:0 auto}
+.masthead{padding-block:48px 28px;display:grid;gap:18px}
+.tape{display:flex;gap:3px;width:min(240px,60%)}
+.tape i{display:block;height:8px;flex:1;background:var(--accent);border-radius:1px}
+.tape i:nth-child(even){background:var(--reflect)}
+.lede{font-size:1.15rem;max-width:62ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+
+.layout{display:grid;gap:40px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1100px){.layout{grid-template-columns:200px minmax(0,1fr)}}
+.toc{display:none}
+@media (min-width:1100px){
+  .toc{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:.88rem}
+  .toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .toc a{display:flex;gap:8px;padding:6px 8px;border-radius:6px;text-decoration:none;color:var(--muted)}
+  .toc a:hover{background:var(--surface);color:var(--ink)}
+  .toc a span{font-family:var(--mono);font-size:.75rem;padding-top:2px}
+  .inline-toc{display:none}
+}
+.inline-toc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.inline-toc ol{margin:8px 0 0;padding-left:1.3em;columns:2 14rem;font-size:.95rem}
+
+main{min-width:0}
+section.part{padding-top:56px;display:grid;gap:22px;min-width:0}
+section.part>header{display:grid;gap:10px;border-top:2px solid var(--ink);padding-top:14px}
+.prose{max-width:70ch;display:grid;gap:12px}
+.prose ul,.prose ol{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.sub{display:grid;gap:14px;min-width:0}
+.sub>*,section.part>*{min-width:0}
+.sub>h3{padding-top:10px}
+
+.verdict{background:var(--ink);color:var(--bg);border-radius:12px;padding:18px 20px;display:grid;gap:8px;max-width:880px}
+.verdict .eyebrow{color:inherit;opacity:.7}
+.verdict ul{margin:0;padding-left:1.1em;display:grid;gap:6px}
+
+.findings{display:grid;gap:10px;max-width:880px}
+.finding{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.finding p{font-size:.95rem}
+.finding b{font-weight:600}
+.sev{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;height:fit-content;margin-top:3px;white-space:nowrap}
+.sev.hi{background:var(--bad-soft);color:var(--bad)}
+.sev.md{background:var(--warn-soft);color:var(--warn)}
+.sev.ok{background:var(--good-soft);color:var(--good)}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;max-width:880px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:2px}
+.metric strong{font-family:var(--display);font-size:1.9rem;font-weight:750;font-stretch:80%;font-variant-numeric:tabular-nums;line-height:1.1}
+.metric span{font-size:.85rem;color:var(--muted);line-height:1.4}
+
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;max-width:100%}
+table.t{border-collapse:collapse;width:100%;min-width:640px;font-size:.9rem}
+table.t th,table.t td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th{font-family:var(--mono);font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--surface-2)}
+table.t tr:last-child td{border-bottom:0}
+table.t td code{white-space:nowrap}
+table.t.cmp td:first-child{font-weight:600;width:16%}
+table.t th.rec{color:var(--accent)}
+
+.options{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start}
+.opt.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.opt-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.rec{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.opt p{font-size:.93rem}
+.pc{display:grid;gap:8px;font-size:.88rem;line-height:1.5}
+.pc ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.pc li{display:grid;grid-template-columns:16px 1fr;gap:4px}
+.pc li::before{font-family:var(--mono);font-weight:500}
+.pc .pros li::before{content:"+";color:var(--good)}
+.pc .cons li::before{content:"−";color:var(--bad)}
+
+.rec-box{border-left:3px solid var(--accent);padding:4px 0 4px 14px;max-width:75ch;display:grid;gap:6px}
+.rec-box .eyebrow{color:var(--accent)}
+
+.phases{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px;align-content:start}
+.phase ul{margin:0;padding-left:1.1em;display:grid;gap:5px;font-size:.92rem}
+.phase .ph-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.size{font-family:var(--mono);font-size:.72rem;padding:1px 8px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+.size.built{background:var(--good-soft);color:var(--good)}
+.status{background:var(--good-soft);border:1px solid var(--line);border-radius:12px;padding:14px 18px;display:grid;gap:6px;max-width:880px}
+.status .eyebrow{color:var(--good)}
+.open{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:8px;max-width:880px}
+.open ol{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.95rem}
+.refs{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.93rem;max-width:80ch}
+
+/* ============ Mockups: Administration, light theme ============ */
+.stage{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:22px 16px;overflow-x:auto;display:flex;gap:22px;align-items:flex-start}
+@media (min-width:1300px){.stage.center{justify-content:center}}
+.cap{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:8px}
+.shot{flex:none}
+.i{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.win{width:880px;border:1px solid #d4d4d4;border-radius:10px;background:var(--m-bg);overflow:hidden;font-family:var(--app);color:var(--m-ink);font-size:12px;line-height:1.4;box-shadow:0 14px 30px -18px #0007}
+.win *{box-sizing:border-box}
+.win .bar{height:26px;background:#ececec;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #dcdcdc}
+.win .bar i{width:9px;height:9px;border-radius:50%;background:#cfcfcf;display:block}
+.win .bar span{margin-left:10px;font-size:10px;color:#777;background:#fff;border-radius:5px;padding:1px 10px}
+.app{display:grid;grid-template-columns:176px 1fr;min-height:470px}
+.side{background:var(--m-card);border-right:1px solid var(--m-line);padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.side .brand{display:flex;align-items:center;gap:7px;font-weight:600;font-size:12.5px;padding:2px 6px 12px}
+.side .logo{width:22px;height:22px;border-radius:6px;background:var(--m-primary);color:#fff;display:grid;place-items:center}
+.side a{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;color:#525252;text-decoration:none;font-weight:500}
+.side a.on{background:var(--m-accent);color:var(--m-ink)}
+.side a.new::after{content:"new";margin-left:auto;font-size:8.5px;font-weight:600;color:var(--accent);border:1px solid currentColor;border-radius:99px;padding:0 5px}
+.side .foot{margin-top:auto;border-top:1px solid var(--m-line);padding-top:8px;color:var(--m-muted);font-size:11px;padding-inline:8px}
+.content{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.ph-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ph-row .h{font-size:17px;font-weight:650}
+.ph-row .d{color:var(--m-muted);font-size:11px}
+.mbtn{height:28px;border-radius:7px;border:1px solid var(--m-line);background:var(--m-card);display:inline-flex;align-items:center;gap:5px;padding:0 10px;font-weight:500;font-size:11.5px;white-space:nowrap;color:var(--m-ink)}
+.mbtn.p{background:var(--m-primary);color:#fff;border-color:var(--m-primary)}
+.mbtns{display:flex;gap:6px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.minput{height:28px;border:1px solid var(--m-line);border-radius:7px;background:var(--m-card);display:flex;align-items:center;gap:6px;padding:0 9px;color:var(--m-muted);font-size:11.5px;min-width:180px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--m-line);background:var(--m-card);font-size:10.5px;font-weight:500;white-space:nowrap;color:var(--m-ink)}
+.chip.on{background:var(--m-primary);color:#fff;border-color:var(--m-primary)}
+.chip .x{opacity:.6}
+.pill{font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--m-accent);color:#525252;white-space:nowrap}
+.pill.red{background:var(--m-red-soft);color:var(--m-red)}
+.pill.amber{background:var(--m-amber-soft);color:var(--m-amber)}
+.pill.green{background:var(--m-green-soft);color:var(--m-green)}
+.pill.blue{background:var(--m-blue-soft);color:var(--m-blue)}
+.mtable{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;overflow:hidden}
+.mtable table{border-collapse:collapse;width:100%}
+.mtable th{font-size:10px;font-weight:500;color:var(--m-muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--m-line);background:#fcfcfc}
+.mtable td{padding:7px 10px;border-bottom:1px solid var(--m-line);vertical-align:top}
+.mtable tr:last-child td{border-bottom:0}
+.mtable tr.sel td{background:#f5f5f5}
+.mtable .t2{color:var(--m-muted);font-size:10.5px}
+.mtable .num{font-variant-numeric:tabular-nums;text-align:right}
+.av{width:20px;height:20px;border-radius:50%;background:var(--m-accent);display:inline-grid;place-items:center;font-size:8.5px;font-weight:650;color:#404040;vertical-align:middle;margin-right:5px}
+.who{white-space:nowrap}
+.strike{text-decoration:line-through;color:var(--m-muted)}
+.newv{background:var(--m-green-soft);color:var(--m-green);border-radius:3px;padding:0 3px;font-weight:600}
+.split{display:grid;grid-template-columns:1fr 290px;gap:12px;align-items:start}
+.sheet{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 24px -16px #0006}
+.sheet .h{font-weight:650;font-size:13px}
+.kv{display:grid;grid-template-columns:86px 1fr;gap:4px 8px;font-size:11px}
+.kv dt{color:var(--m-muted)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.diff{border:1px solid var(--m-line);border-radius:7px;overflow:hidden;font-size:11px}
+.diff div{display:grid;grid-template-columns:90px 1fr;gap:6px;padding:5px 8px;border-bottom:1px solid var(--m-line)}
+.diff div:last-child{border-bottom:0}
+.diff b{font-weight:500;color:var(--m-muted)}
+.mono-s{font-family:var(--mono);font-size:10px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;padding:9px 10px;display:flex;flex-direction:column;gap:2px}
+.tile .l{font-size:10px;color:var(--m-muted)}
+.tile .v{font-size:19px;font-weight:650;font-variant-numeric:tabular-nums}
+.tile .s{font-size:10px;color:var(--m-muted)}
+.tile svg{width:100%;height:26px;margin-top:2px}
+.att{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;overflow:hidden}
+.att .r{display:grid;grid-template-columns:4px 1fr auto;gap:10px;align-items:center;padding:8px 10px 8px 0;border-bottom:1px solid var(--m-line)}
+.att .r:last-child{border-bottom:0}
+.att .r .bar-s{align-self:stretch;border-radius:0 3px 3px 0}
+.att .r .bar-s.c{background:var(--m-red)}
+.att .r .bar-s.w{background:#F59E0B}
+.att .r .bar-s.i{background:#A3A3A3}
+.att .t1{font-weight:600}
+.att .t2{color:var(--m-muted);font-size:10.5px}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.panel .h{font-weight:600;font-size:12px;display:flex;justify-content:space-between}
+.panel svg{width:100%;height:auto}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--m-line)}
+.tabs span{padding:6px 10px;color:var(--m-muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--m-ink);border-color:var(--m-primary)}
+.ph{width:272px;height:560px;border:9px solid #101214;border-radius:38px;background:var(--m-bg);position:relative;overflow:hidden;font-family:var(--app);color:var(--m-ink);font-size:12px;line-height:1.35;box-shadow:0 12px 28px -14px #0006}
+.ph *{box-sizing:border-box}
+.ph .sb{height:22px;display:flex;justify-content:space-between;align-items:center;padding:4px 22px 0;font-size:10px;font-weight:600;background:var(--m-card)}
+.ph .tb{height:40px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--m-line);background:var(--m-card);font-weight:600;font-size:14px}
+.ph .bd{position:absolute;top:62px;left:0;right:0;bottom:52px;overflow:hidden;padding:10px;display:flex;flex-direction:column;gap:8px}
+.ph .nav{position:absolute;left:0;right:0;bottom:0;height:52px;border-top:1px solid var(--m-line);background:var(--m-card);display:grid;grid-template-columns:repeat(6,1fr);padding:6px 2px 8px}
+.ph .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;color:var(--m-muted);font-weight:500;text-decoration:none}
+.ph .nav a.on{color:var(--m-ink)}
+.ph .nav a .pl{height:20px;width:40px;border-radius:10px;display:grid;place-items:center}
+.ph .nav a.on .pl{background:var(--m-accent)}
+.ph .rows{background:var(--m-card);border:1px solid var(--m-line);border-radius:9px;overflow:hidden}
+.ph .row{padding:7px 9px;border-bottom:1px solid var(--m-line);display:flex;flex-direction:column;gap:2px}
+.ph .row:last-child{border-bottom:0}
+.ph .row .a{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--m-muted)}
+.ph .row .b{font-size:11.5px}
+.ph .chips{display:flex;gap:5px;overflow:hidden}
+.sample{font-family:var(--mono);font-size:.7rem;color:var(--muted);letter-spacing:.04em}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-4"/><path d="M12 16V8"/><path d="M17 16v-7"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+</svg>
+
+<div class="wrap">
+<header class="masthead">
+  <div class="tape" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <p class="eyebrow">Workwear &amp; Equipment · Administration · research and proposal</p>
+  <h1>Audit, Analytics and Monitoring</h1>
+  <p class="lede">What the system records and watches today, and what Administration should add: an audit log to review and manage, usage analytics, and monitoring. Each area has options, their trade-offs and a recommendation, ending in a roadmap of five phases.</p>
+  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phase 0 built; phases 1–5 proposed</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <ol>
+    <li><a href="#summary"><span>01</span>Summary</a></li>
+    <li><a href="#today"><span>02</span>What exists today</a></li>
+    <li><a href="#audit"><span>03</span>Audit log</a></li>
+    <li><a href="#analytics"><span>04</span>Analytics</a></li>
+    <li><a href="#monitoring"><span>05</span>Monitoring</a></li>
+    <li><a href="#ia"><span>06</span>Administration after</a></li>
+    <li><a href="#roadmap"><span>07</span>Roadmap</a></li>
+    <li><a href="#questions"><span>08</span>Open questions</a></li>
+    <li><a href="#refs"><span>09</span>References</a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="inline-toc">
+  <p class="eyebrow">Contents</p>
+  <ol>
+    <li><a href="#summary">Summary</a></li><li><a href="#today">What exists today</a></li><li><a href="#audit">Audit log</a></li>
+    <li><a href="#analytics">Analytics</a></li><li><a href="#monitoring">Monitoring</a></li><li><a href="#ia">Administration after</a></li>
+    <li><a href="#roadmap">Roadmap</a></li><li><a href="#questions">Open questions</a></li><li><a href="#refs">References</a></li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<section class="part" id="summary">
+  <header><p class="eyebrow">01</p><h2>Summary</h2></header>
+  <div class="status">
+    <p class="eyebrow">Status · 7 Oct 2026</p>
+    <p><b>Phase 0's code is done:</b> <code>GET /ready</code>, the image healthcheck (<code>/api -healthcheck</code>), the commit in <code>/ready</code>, log rotation on every prod service, and <code>make prod-up</code> waiting for <code>/ready</code>. The uptime check and DigitalOcean alerts are account settings, described in <code>docs/monitoring.md</code>. One correction to 5.1: Docker does not restart an unhealthy container; the healthcheck only reports.</p>
+  </div>
+  <div class="verdict">
+    <p class="eyebrow">Verdict</p>
+    <ul>
+      <li><b>The audit trail is sound, but narrow and nobody can read it.</b> Each row is written in the same transaction as its change, and the database rejects updates and deletes. Only 15 event types are recorded, and the only readers are an item's price history and the Manager Dashboard.</li>
+      <li><b>There is no security trail.</b> Failed sign-ins are counted in memory and forgotten on restart; session rows are deleted 30 days after they end.</li>
+      <li><b>Monitoring is a log stream and a <code>/health</code> that never fails.</b> No metrics, request IDs, error list, uptime check or alerts. Backups are the one thing watched properly.</li>
+      <li><b>Recommendation:</b> grow Administration from 4 screens to 7 in five phases. Everything stays first-party, in this API, database and origin, which fits the 2 GB droplet, the CSP and GDPR. Log rotation and an external uptime check come first.</li>
+    </ul>
+  </div>
+  <div class="metrics">
+    <div class="metric"><strong>15</strong><span>audit event types recorded today</span></div>
+    <div class="metric"><strong>2</strong><span>places that read them</span></div>
+    <div class="metric"><strong>0</strong><span>sign-in events kept</span></div>
+    <div class="metric"><strong>4 → 7</strong><span>Administration screens</span></div>
+    <div class="metric"><strong>+5</strong><span>new permissions</span></div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="t">
+      <thead><tr><th>Phase</th><th>What</th><th>Size</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>Monitoring quick wins: log rotation, API healthcheck, <code>/ready</code>, external uptime check, droplet alerts</td><td>S</td></tr>
+        <tr><td>1</td><td>Audit log screen, indexes, History panels on records, missing events, request context</td><td>M</td></tr>
+        <tr><td>2</td><td>Security events, Security screen, access review, sign-in limiter in Postgres</td><td>M</td></tr>
+        <tr><td>3</td><td>Request IDs, metrics, error list, System screen, Overview with attention items</td><td>M</td></tr>
+        <tr><td>4</td><td>Integrity and retention: least-privilege DB role, TRUNCATE guard, daily seals, export, purge jobs</td><td>M–L</td></tr>
+        <tr><td>5</td><td>Usage analytics, shared charts, confirmation-link funnel</td><td>M</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="part" id="today">
+  <header><p class="eyebrow">02</p><h2>What exists today</h2></header>
+
+  <div class="sub">
+    <h3>The audit trail</h3>
+    <div class="prose"><p><code>internal/audit/audit.go</code> and migration <code>0002_audit_events</code>. Services build the event inside the repository's <code>Mutation</code> callback, and the repository inserts it with the same transaction, so an event exists exactly when its change committed.</p></div>
+    <pre>audit_events(id, actor_user_id → users, event, entity_type, entity_id,
+             occurred_at, before JSONB, after JSONB)
+index:   (entity_type, entity_id, occurred_at)
+trigger: BEFORE UPDATE OR DELETE … FOR EACH ROW → raise 'append-only'</pre>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Area</th><th>Events recorded</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td>Employee</td><td><code>employee.created</code>, <code>.sizes_changed</code>, <code>.deleted</code></td><td>sizes before / after</td></tr>
+          <tr><td>Catalogue</td><td><code>catalogue.created</code>, <code>.price_changed</code>, <code>.activated</code>, <code>.deactivated</code>, <code>.deleted</code></td><td>prices, service period</td></tr>
+          <tr><td>Role</td><td><code>role.created</code>, <code>.updated</code>, <code>.deleted</code></td><td>name, description, permissions</td></tr>
+          <tr><td>User</td><td><code>user.roles_changed</code></td><td>role ids before / after</td></tr>
+          <tr><td>Order</td><td><code>order.ordered</code>, <code>.deleted</code>, <code>.confirmation_link_created</code>, <code>.given</code></td><td>record number, lines, total; method, document hash, confirmed name</td></tr>
+          <tr><td>Settings</td><td><code>settings.supplier_chat_changed</code></td><td>group name and link</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>Gaps</h3>
+    <div class="findings">
+      <div class="finding"><span class="sev hi">high</span><p><b>User accounts are not audited</b>: create, name/email edits, activation, password change and reset, delete. Only role changes leave a trace.</p></div>
+      <div class="finding"><span class="sev hi">high</span><p><b>No security history.</b> Sign-ins, failed sign-ins, sign-outs and stolen-cookie detection (<code>end_reason = reused</code>) are not kept; the limiter counts in memory.</p></div>
+      <div class="finding"><span class="sev hi">high</span><p><b>The append-only rule has holes.</b> <code>TRUNCATE</code> is not blocked (row triggers do not fire), <code>TRUNCATE users CASCADE</code> empties the table, and the API connects as the owner, so it could drop the trigger.</p></div>
+      <div class="finding"><span class="sev md">medium</span><p><b>Item sets, employee name/code/notes and catalogue name/details</b> are not audited, so "who renamed this?" has no answer.</p></div>
+      <div class="finding"><span class="sev md">medium</span><p><b>The data sync writes tables directly</b> as the sync user (migration 0011) and bypasses every service, so no events are written.</p></div>
+      <div class="finding"><span class="sev md">medium</span><p><b>No request context</b> (request ID, session, source) and <b>only an entity index</b>: searching by time, person or event type scans the table.</p></div>
+      <div class="finding"><span class="sev md">medium</span><p><b>No seal, no retention.</b> Tampering could not be detected; payloads hold personal data (<code>confirmed_name</code>, sizes) kept forever.</p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>Monitoring and operations</h3>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Area</th><th>Today</th></tr></thead>
+        <tbody>
+          <tr><td>Logs</td><td><code>slog</code> JSON to stdout, one <code>request</code> line per request; unmapped errors as <code>request failed</code></td></tr>
+          <tr><td>Health</td><td><code>/health</code> says ok without touching the database; no <code>/ready</code></td></tr>
+          <tr><td>Containers</td><td>only <code>db</code> has a healthcheck; <b>no log rotation</b>, so Docker's logs grow until the disk is full</td></tr>
+          <tr><td>Metrics, request IDs</td><td>none</td></tr>
+          <tr><td>Caddy</td><td>no access log; strict CSP with <code>connect-src 'self'</code></td></tr>
+          <tr><td>Backups</td><td>watched well: Stale, Agent offline, Last run failed, on Backups and a Dashboard card</td></tr>
+          <tr><td>Version</td><td>the API reports no version or commit</td></tr>
+          <tr><td>Alerts</td><td>none; the app sends no email</td></tr>
+          <tr><td>Host</td><td>one DigitalOcean droplet, 2 GB RAM</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>Administration and sign-in</h3>
+    <div class="prose">
+      <ul>
+        <li>Four screens: Users, Roles &amp; permissions, Settings and Backups. Each is opened by one permission (<code>router.ts</code> <code>screens</code>). The phone bar has up to six columns and a More sheet.</li>
+        <li>No chart library. The staff Dashboard's <code>MonthChart</code> is hand-built and lives in the workwear app, not <code>@ppe/ui</code>.</li>
+        <li><code>user_sessions</code> keeps IP, user agent, last used and end reason; ended rows are pruned after 30 days. Users have no last-sign-in column.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="part" id="audit">
+  <header><p class="eyebrow">03</p><h2>Audit log: review and management</h2></header>
+
+  <div class="sub">
+    <h3>3.1 The Audit log screen</h3>
+    <div class="prose">
+      <p>A new screen at <code>/admin/audit</code>, opened by <b><code>audit.read</code></b>. Newest first, one row per event, written as a sentence in the user's language. Filters (period, person, area, event, record) live in the address, so a filtered view can be shared. The detail sheet shows before and after as labelled fields, with the raw JSON behind a toggle, and the request context.</p>
+    </div>
+    <div>
+      <div class="stage center">
+        <div class="shot">
+          <div class="win" role="img" aria-label="Sample Audit log screen in Administration with filters, a list of changes and a detail sheet for a price change">
+            <div class="bar"><i></i><i></i><i></i><span>workwear.gavort.nl/admin/audit?area=catalogue&amp;period=30d</span></div>
+            <div class="app">
+              <div class="side">
+                <div class="brand"><span class="logo"><svg class="i" style="width:12px;height:12px"><use href="#i-shield"/></svg></span>Administration</div>
+                <a class="new"><svg class="i"><use href="#i-gauge"/></svg>Overview</a>
+                <a><svg class="i"><use href="#i-users"/></svg>Users</a>
+                <a><svg class="i"><use href="#i-key"/></svg>Roles &amp; permissions</a>
+                <a class="on new"><svg class="i"><use href="#i-scroll"/></svg>Audit log</a>
+                <a class="new"><svg class="i"><use href="#i-shield"/></svg>Security</a>
+                <a class="new"><svg class="i"><use href="#i-server"/></svg>System</a>
+                <a class="new"><svg class="i"><use href="#i-chart"/></svg>Usage</a>
+                <a><svg class="i"><use href="#i-cog"/></svg>Settings</a>
+                <div class="foot">Rasa Petrauskienė</div>
+              </div>
+              <div class="content">
+                <div class="ph-row"><div><div class="h">Audit log</div><div class="d">Every change, who made it and when. Times in Europe/Vilnius.</div></div><div class="mbtns"><span class="mbtn"><svg class="i"><use href="#i-check"/></svg>Verify</span><span class="mbtn"><svg class="i"><use href="#i-down"/></svg>Export</span></div></div>
+                <div class="filters">
+                  <span class="minput"><svg class="i"><use href="#i-search"/></svg>Search a record…</span>
+                  <span class="chip on">Last 30 days <span class="x">×</span></span>
+                  <span class="chip on">Catalogue <span class="x">×</span></span>
+                  <span class="chip">Person</span><span class="chip">Event</span>
+                </div>
+                <div class="split">
+                  <div class="mtable">
+                    <table>
+                      <thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead>
+                      <tbody>
+                        <tr class="sel"><td class="who">Today 09:42</td><td class="who"><span class="av">TK</span>Tomas K.</td><td>Changed the price of <b>Safety boots S3</b><div class="t2">€42.00 → €45.50</div></td></tr>
+                        <tr><td class="who">Yesterday</td><td class="who"><span class="av">TK</span>Tomas K.</td><td>Deactivated <b>Rain jacket, yellow</b></td></tr>
+                        <tr><td class="who">2 Oct</td><td class="who"><span class="av">RP</span>Rasa P.</td><td>Renamed <b>Hi-vis vest</b> to <b>Hi-vis vest, class 2</b> <span class="pill blue">new event</span></td></tr>
+                        <tr><td class="who">29 Sep</td><td class="who"><span class="av">TK</span>Tomas K.</td><td>Added <b>Cut-resistant gloves</b><div class="t2">€6.80 · 6 months</div></td></tr>
+                        <tr><td class="who">22 Sep</td><td class="who"><span class="av">RP</span>Rasa P.</td><td>Changed the service period of <b>Work trousers</b><div class="t2">12 → 9 months</div></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="sheet">
+                    <div class="h">Price changed</div>
+                    <div class="diff">
+                      <div><b>Price</b><span><span class="strike">€42.00</span> <span class="newv">€45.50</span></span></div>
+                      <div><b>Purchase price</b><span><span class="strike">€35.10</span> <span class="newv">€38.00</span></span></div>
+                      <div><b>Service period</b><span>12 months</span></div>
+                    </div>
+                    <dl class="kv">
+                      <dt>When</dt><dd>7 Oct 2026, 09:42:18</dd>
+                      <dt>Who</dt><dd>Tomas Kazlauskas</dd>
+                      <dt>Source</dt><dd>Staff app</dd>
+                      <dt>Session</dt><dd>Chrome on Windows</dd>
+                      <dt>Reference</dt><dd class="mono-s">9f2c41d7e0b3</dd>
+                      <dt>Event</dt><dd class="mono-s">catalogue.price_changed</dd>
+                    </dl>
+                    <span class="mbtn">Open Safety boots S3 →</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="cap">Sample data · desktop · Audit log filtered to Catalogue, last 30 days, with the detail sheet open</p>
+        </div>
+        <div class="shot">
+          <div class="ph" role="img" aria-label="Sample Audit log on a phone">
+            <div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="tb">Audit log</div>
+            <div class="bd">
+              <div class="chips"><span class="chip on">30 days</span><span class="chip">Area</span><span class="chip">Person</span></div>
+              <div class="rows">
+                <div class="row"><div class="a"><span>Tomas K.</span><span>09:42</span></div><div class="b">Changed the price of <b>Safety boots S3</b></div><div class="a"><span>€42.00 → €45.50</span></div></div>
+                <div class="row"><div class="a"><span>Ona J.</span><span>08:15</span></div><div class="b">Gave order <b>2026-0412</b> on paper</div></div>
+                <div class="row"><div class="a"><span>Rasa P.</span><span>Yesterday</span></div><div class="b">Deactivated user <b>Jonas M.</b></div></div>
+                <div class="row"><div class="a"><span>Confirmation link</span><span>Yesterday</span></div><div class="b">Order <b>2026-0409</b> confirmed by the employee</div></div>
+                <div class="row"><div class="a"><span>Rasa P.</span><span>5 Oct</span></div><div class="b">Gave role <b>Manager</b> to <b>Ona J.</b></div></div>
+                <div class="row"><div class="a"><span>Data sync</span><span>5 Oct</span></div><div class="b">Updated 12 employees</div></div>
+              </div>
+            </div>
+            <div class="nav">
+              <a><span class="pl"><svg class="i"><use href="#i-gauge"/></svg></span>Overview</a>
+              <a><span class="pl"><svg class="i"><use href="#i-users"/></svg></span>Users</a>
+              <a class="on"><span class="pl"><svg class="i"><use href="#i-scroll"/></svg></span>Audit</a>
+              <a><span class="pl"><svg class="i"><use href="#i-shield"/></svg></span>Security</a>
+              <a><span class="pl"><svg class="i"><use href="#i-server"/></svg></span>System</a>
+              <a><span class="pl"><svg class="i"><use href="#i-more"/></svg></span>More</a>
+            </div>
+          </div>
+          <p class="cap">Phone · Roles, Usage, Settings in More</p>
+        </div>
+      </div>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><b>History panels on records.</b> Employee, Catalogue item, Order and User pages get a History panel with the same rows, filtered to that record. The price history becomes one view of it. Managers see History on records they can already open, without <code>audit.read</code>.</li>
+        <li><b>API.</b> <code>GET /api/v1/audit-events?area=&amp;event=&amp;actor=&amp;entity_type=&amp;entity_id=&amp;from=&amp;to=&amp;after=</code> with keyset pagination on <code>(occurred_at, id)</code>; <code>GET /api/v1/audit-events/{id}</code>; <code>GET /api/v1/{employees|catalogue|orders|users}/{id}/history</code> under the record's own read permission.</li>
+        <li><b>Event registry.</b> A typed map from event name to area, icon, sentence and field labels in EN/LT/RU. A test fails when Go emits an event it does not know, as <code>permissions.ts</code> is checked today.</li>
+      </ul>
+    </div>
+    <pre>CREATE INDEX audit_events_time_idx  ON audit_events (occurred_at DESC, id DESC);
+CREATE INDEX audit_events_actor_idx ON audit_events (actor_user_id, occurred_at DESC);
+CREATE INDEX audit_events_event_idx ON audit_events (event, occurred_at DESC);</pre>
+  </div>
+
+  <div class="sub">
+    <h3>3.2 Complete the coverage</h3>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Area</th><th>New events</th><th>Payload rule</th></tr></thead>
+        <tbody>
+          <tr><td>Users</td><td><code>user.created</code>, <code>.updated</code>, <code>.activated</code>, <code>.deactivated</code>, <code>.deleted</code>, <code>.password_changed</code>, <code>.password_reset</code></td><td>password events carry no values</td></tr>
+          <tr><td>Item sets</td><td><code>item_set.created</code>, <code>.updated</code>, <code>.deleted</code></td><td>name, items, quantities</td></tr>
+          <tr><td>Employees</td><td><code>employee.updated</code> (name, code, notes, language)</td><td>field names; notes text not stored</td></tr>
+          <tr><td>Catalogue</td><td><code>catalogue.updated</code> (name, details, icon)</td><td>field names and values</td></tr>
+          <tr><td>Orders</td><td><code>order.confirmation_link_opened</code> (first open)</td><td>none; feeds the funnel</td></tr>
+          <tr><td>Audit itself</td><td><code>audit.exported</code>, <code>access_review.completed</code></td><td>filters used, row count</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rec-box"><p class="eyebrow">Data sync</p><p>Move data-sync-ui to importing through the API, as ADR 0001 already requires, so synced changes get real events. A database trigger on the sync user's writes is smaller but builds events outside the service rules.</p></div>
+  </div>
+
+  <div class="sub">
+    <h3>3.3 Request context on events</h3>
+    <div class="options">
+      <div class="opt rec">
+        <div class="opt-head"><h4>A. Typed columns</h4><span class="tag rec">Recommended</span></div>
+        <p><code>request_id</code>, <code>session_id</code>, <code>source</code> with a CHECK on <code>staff | admin | public_link | sync | system</code>.</p>
+        <div class="pc"><ul class="pros"><li>Typed, indexable, enforced</li></ul><ul class="cons"><li>One migration per new field</li></ul></div>
+      </div>
+      <div class="opt">
+        <div class="opt-head"><h4>B. One <code>context</code> JSONB</h4></div>
+        <p>Request ID, session, source, IP and user agent together.</p>
+        <div class="pc"><ul class="pros"><li>Flexible</li></ul><ul class="cons"><li>Unchecked</li><li>Invites personal data onto rows kept for years</li></ul></div>
+      </div>
+    </div>
+    <div class="prose"><p>IP and user agent stay on the session and the security event, which are kept for a short time. An administrator reaches them through <code>session_id</code> while those rows exist.</p></div>
+  </div>
+
+  <div class="sub">
+    <h3>3.4 Security events in their own table</h3>
+    <div class="tbl-wrap">
+      <table class="t cmp">
+        <thead><tr><th></th><th>A. Same <code>audit_events</code></th><th class="rec">B. Separate <code>auth_events</code> · recommended</th></tr></thead>
+        <tbody>
+          <tr><td>Volume</td><td>every sign-in and failure drowns business changes</td><td>kept apart</td></tr>
+          <tr><td>Personal data</td><td>IPs on rows kept for years</td><td>IPs only as long as security needs</td></tr>
+          <tr><td>Retention</td><td>append-only trigger forbids purging</td><td>own retention (180 days) and purge job</td></tr>
+          <tr><td>Unknown accounts</td><td>a failed sign-in for an unknown email has no entity</td><td><code>user_id</code> nullable; the email kept as a keyed hash</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre>auth_events(id, occurred_at, kind, user_id NULL, email_hash NULL,
+            session_id NULL, ip INET, user_agent TEXT, reason TEXT NULL)
+kind   ∈ sign_in, sign_in_failed, signed_out, refresh_reused, reauth,
+         reauth_failed, rate_limited, session_ended
+reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
+    <div class="prose"><p>A Postgres failure count replaces the in-memory email limiter, which ADR 0001 requires before a second API instance. <code>users.last_sign_in_at</code> feeds the access review.</p></div>
+  </div>
+
+  <div class="sub">
+    <h3>3.5 Integrity: making the trail tamper-evident</h3>
+    <div class="rec-box"><p class="eyebrow">Step 1 · least privilege, needed by every option</p><p>Migrations run as the owner. The API connects as a new role <code>ppe_app</code> with only <code>INSERT, SELECT</code> on <code>audit_events</code>, <code>audit_seals</code> and <code>auth_events</code>; no UPDATE, DELETE, TRUNCATE or ALTER. This is the first piece of ADR 0001's per-schema roles. Tests keep truncating as the owner. A <code>BEFORE TRUNCATE</code> trigger adds defence in depth.</p></div>
+    <div class="options">
+      <div class="opt">
+        <div class="opt-head"><h4>A. Hash chain per row</h4></div>
+        <p>Each row stores <code>sha256(prev_hash ‖ row)</code>, under an advisory lock.</p>
+        <div class="pc"><ul class="pros"><li>Detects any change at once</li></ul><ul class="cons"><li>Serialises every audited transaction</li><li>Commit order ≠ insert order</li></ul></div>
+      </div>
+      <div class="opt rec">
+        <div class="opt-head"><h4>B. Daily seals</h4><span class="tag rec">Recommended</span></div>
+        <p>After each day (+1 h grace) a job hashes the day's rows into <code>audit_seals(day, rows, hash, prev_hash)</code>; seals chain. <b>Verify</b> recomputes them.</p>
+        <div class="pc"><ul class="pros"><li>No lock on the write path</li><li>One row a day; old backups are witnesses</li></ul><ul class="cons"><li>Today's rows open until sealed</li></ul></div>
+      </div>
+      <div class="opt">
+        <div class="opt-head"><h4>C. Seals anchored outside</h4><span class="tag">Later</span></div>
+        <p>B, plus each seal written to the backup bucket with object lock, or emailed.</p>
+        <div class="pc"><ul class="pros"><li>Survives a full database compromise</li></ul><ul class="cons"><li>Needs the outbox or bucket credentials in the API</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>3.6 Retention, export and GDPR</h3>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Data</th><th>Retention</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Business audit events</td><td><b>10 years</b>, purged by year</td><td>Orders and receipts are accounting records; Lithuanian accounting documents are commonly kept 10 years. <b>Confirm with the accountant.</b></td></tr>
+          <tr><td>Security events</td><td><b>180 days</b></td><td>Long enough for an incident; IPs are personal data</td></tr>
+          <tr><td>Ended sessions</td><td>30 days (unchanged)</td><td></td></tr>
+          <tr><td>Error events</td><td>30 days</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><b>Retention is configuration, not a screen</b> (<code>API_AUDIT_RETENTION</code>, <code>API_AUTH_EVENTS_RETENTION</code>, read in <code>loadConfig</code>, checked in <code>validate</code>). A retention control in the UI would let one compromised admin account erase history. System <i>shows</i> the values.</li>
+        <li><b>Purge and seal jobs</b> run in the API on a ticker under an advisory lock until ADR 0001's worker exists. The purge is the only deleter, through a <code>SECURITY DEFINER</code> function that refuses rows inside the retention, and it records <code>audit.purged</code>.</li>
+        <li><b>Personal data:</b> new events carry IDs and field names, and values only where the value is the business fact (a price, a size, a status). Never passwords, notes text or ID numbers.</li>
+        <li><b>Export</b> (<code>audit.export</code>): CSV or JSONL of the current filter, streamed, at most a year at a time, and recorded as <code>audit.exported</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="part" id="analytics">
+  <header><p class="eyebrow">04</p><h2>Analytics</h2></header>
+  <div class="prose"><p>Business analytics (orders, spend, replacements, confirmation methods) stay on the staff app's three Dashboards. Administration's analytics are about <b>the system and its people</b>: is it used, by whom, and is access right?</p></div>
+
+  <div class="sub">
+    <h3>4.1 Usage screen</h3>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Figure</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Active people per day / week / month, by role</td><td><code>auth_events</code>, <code>user_sessions.last_used_at</code></td></tr>
+          <tr><td>Sign-ins and failed sign-ins per day</td><td><code>auth_events</code></td></tr>
+          <tr><td>Devices and browsers</td><td>user agent, parsed into a family on write</td></tr>
+          <tr><td>Language mix of users and employees</td><td><code>users.language</code>, <code>employees.language</code></td></tr>
+          <tr><td>Changes per area per week; most active people</td><td><code>audit_events</code></td></tr>
+          <tr><td>Confirmation-link funnel: created → opened → given, expired</td><td>order events, the new <code>_opened</code>, method <code>ELECTRONIC</code></td></tr>
+          <tr><td>Data quality trend: employees without sizes, unpriced items</td><td>Dashboard <code>Setup</code> figures, snapshotted daily</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="options">
+      <div class="opt rec">
+        <div class="opt-head"><h4>A. First-party, from server events</h4><span class="tag rec">Recommended</span></div>
+        <div class="pc"><ul class="pros"><li>Fits the CSP as it is</li><li>No new personal-data store, no consent banner</li><li>No extra RAM</li></ul><ul class="cons"><li>No page-view paths</li></ul></div>
+      </div>
+      <div class="opt">
+        <div class="opt-head"><h4>B. Self-hosted Umami / Plausible</h4></div>
+        <div class="pc"><ul class="pros"><li>Page views and paths</li></ul><ul class="cons"><li>+150–300 MB RAM and another database</li><li>Proxy path on the same origin</li></ul></div>
+      </div>
+      <div class="opt">
+        <div class="opt-head"><h4>C. Hosted analytics</h4></div>
+        <div class="pc"><ul class="pros"><li>Nothing to run</li></ul><ul class="cons"><li>Data leaves the organisation</li><li>CSP changes</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>4.2 Access review, on Security</h3>
+    <div class="prose"><p>One row per user with roles, effective permissions, last sign-in and active sessions. Flags: <b>dormant</b> (90 days), <b>never signed in</b>, <b>holds Administrator</b>, <b>role with no users</b>. <b>Mark as reviewed</b> records <code>access_review.completed</code>; the Overview reminds after 90 days. ISO 27001 (A 5.18) and most client audits expect this check.</p></div>
+    <div class="stage center">
+      <div class="shot">
+        <div class="win" role="img" aria-label="Sample Security screen with sign-in activity tiles and the access review table">
+          <div class="bar"><i></i><i></i><i></i><span>workwear.gavort.nl/admin/security/access-review</span></div>
+          <div class="app">
+            <div class="side">
+              <div class="brand"><span class="logo"><svg class="i" style="width:12px;height:12px"><use href="#i-shield"/></svg></span>Administration</div>
+              <a><svg class="i"><use href="#i-gauge"/></svg>Overview</a>
+              <a><svg class="i"><use href="#i-users"/></svg>Users</a>
+              <a><svg class="i"><use href="#i-key"/></svg>Roles &amp; permissions</a>
+              <a><svg class="i"><use href="#i-scroll"/></svg>Audit log</a>
+              <a class="on"><svg class="i"><use href="#i-shield"/></svg>Security</a>
+              <a><svg class="i"><use href="#i-server"/></svg>System</a>
+              <a><svg class="i"><use href="#i-chart"/></svg>Usage</a>
+              <a><svg class="i"><use href="#i-cog"/></svg>Settings</a>
+              <div class="foot">Rasa Petrauskienė</div>
+            </div>
+            <div class="content">
+              <div class="ph-row"><div><div class="h">Security</div><div class="d">Last reviewed 4 Jul 2026 by Rasa P. · 95 days ago</div></div><span class="mbtn p"><svg class="i"><use href="#i-check"/></svg>Mark as reviewed</span></div>
+              <div class="tabs"><span>Sign-ins</span><span>Signed-in devices</span><span class="on">Access review</span></div>
+              <div class="tiles">
+                <div class="tile"><span class="l">Sign-ins, 7 days</span><span class="v">142</span><span class="s">31 people</span></div>
+                <div class="tile"><span class="l">Failed sign-ins, 7 days</span><span class="v">9</span><span class="s">6 wrong password · 3 unknown</span></div>
+                <div class="tile"><span class="l">Stolen-cookie alerts</span><span class="v">0</span><span class="s">refresh reuse, 30 days</span></div>
+                <div class="tile"><span class="l">Dormant accounts</span><span class="v" style="color:var(--m-amber)">3</span><span class="s">no sign-in for 90 days</span></div>
+              </div>
+              <div class="mtable">
+                <table>
+                  <thead><tr><th>Person</th><th>Roles</th><th>Last sign-in</th><th>Devices</th><th>Flags</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="av">RP</span>Rasa Petrauskienė</td><td>Administrator</td><td>Today</td><td class="num">2</td><td><span class="pill blue">Administrator</span></td></tr>
+                    <tr><td><span class="av">TK</span>Tomas Kazlauskas</td><td>Manager</td><td>Today</td><td class="num">1</td><td></td></tr>
+                    <tr><td><span class="av">AV</span>Andrius Vaitkus</td><td>Administrator, Manager</td><td>3 Jun</td><td class="num">0</td><td><span class="pill blue">Administrator</span> <span class="pill amber">Dormant</span></td></tr>
+                    <tr><td><span class="av">LB</span>Laura Butkė</td><td>Storekeeper</td><td>Never</td><td class="num">0</td><td><span class="pill red">Never signed in</span></td></tr>
+                    <tr><td><span class="av">JM</span>Jonas Mockus</td><td>Manager</td><td>12 May</td><td class="num">0</td><td><span class="pill amber">Dormant</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Sample data · Security, access review tab</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>4.3 Charts</h3>
+    <div class="prose"><p><b>Recommended: hand-built SVG in <code>@ppe/ui/charts</code>.</b> Move <code>MonthChart</code> out of the workwear app first so both apps share it, then add <code>Sparkline</code>, <code>StackedBar</code> and <code>HeatStrip</code>. Each keeps <code>MonthChart</code>'s visually hidden table for screen readers. uPlot (~50 KB) is the fallback if zoomable time series are ever needed; Recharts (100 KB+) is more than these shapes need.</p></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="part" id="monitoring">
+  <header><p class="eyebrow">05</p><h2>Monitoring</h2></header>
+
+  <div class="sub">
+    <h3>5.1 Tier 0: quick wins, do first</h3>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Action</th><th>Where</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Log rotation (<code>json-file</code>, 10 MB × 5) on every service</td><td><code>docker-compose.prod.yml</code></td><td>Logs grow until the disk is full</td></tr>
+          <tr><td><code>/ready</code>: pings the database, checks the latest migration</td><td><code>cmd/api</code></td><td><code>/health</code> says ok while the database is down</td></tr>
+          <tr><td>API healthcheck: <code>/api -healthcheck</code> probes <code>/ready</code> (scratch has no curl)</td><td>image <code>HEALTHCHECK</code></td><td><code>make prod-ps</code> shows it and <code>make prod-up</code> waits for <code>/ready</code>; Docker does not restart an unhealthy container</td></tr>
+          <tr><td>External uptime + TLS check every 1–5 min, email alerts</td><td>Better Stack or UptimeRobot free tier, EU</td><td>A monitor on the droplet cannot report the droplet's failure</td></tr>
+          <tr><td>DigitalOcean agent: CPU, memory, disk alerts</td><td>droplet</td><td>Free; covers the host</td></tr>
+          <tr><td>Commit (<code>git describe</code>) via <code>-ldflags</code>, in <code>/ready</code></td><td><code>Dockerfile</code>, <code>Makefile</code></td><td>Know what is deployed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>5.2 Tier 1: in the app</h3>
+    <div class="prose">
+      <ul>
+        <li><b>Request IDs.</b> Middleware reads or creates <code>X-Request-ID</code>, adds it to every log line and response. Errors gain <code>"reference"</code>, shown as "Reference 9f2c…" so a person can quote it. Audit events store it.</li>
+        <li><b>Error list.</b> <code>error_events</code> holds 5xx responses, recovered panics and client errors (<code>POST /api/v1/client-errors</code>, same origin, rate-limited), folded by fingerprint per hour, kept 30 days. This is Sentry's useful core, with no third party.</li>
+        <li><b>Metrics.</b> Prometheus <code>/metrics</code> on an internal listener (<code>API_METRICS_ADDR</code>) that Caddy never proxies. It covers routes, latency, status, <code>pgxpool</code>, runtime, sign-in failures, rate-limit hits, refresh reuse and audit writes.</li>
+        <li><b>Live figures.</b> A rolling 24-hour window in memory (5-minute buckets) feeds the System screen; it resets on restart.</li>
+      </ul>
+    </div>
+    <div class="stage center">
+      <div class="shot">
+        <div class="win" role="img" aria-label="Sample Overview with attention items and System figures">
+          <div class="bar"><i></i><i></i><i></i><span>workwear.gavort.nl/admin/</span></div>
+          <div class="app">
+            <div class="side">
+              <div class="brand"><span class="logo"><svg class="i" style="width:12px;height:12px"><use href="#i-shield"/></svg></span>Administration</div>
+              <a class="on"><svg class="i"><use href="#i-gauge"/></svg>Overview</a>
+              <a><svg class="i"><use href="#i-users"/></svg>Users</a>
+              <a><svg class="i"><use href="#i-key"/></svg>Roles &amp; permissions</a>
+              <a><svg class="i"><use href="#i-scroll"/></svg>Audit log</a>
+              <a><svg class="i"><use href="#i-shield"/></svg>Security</a>
+              <a><svg class="i"><use href="#i-server"/></svg>System</a>
+              <a><svg class="i"><use href="#i-chart"/></svg>Usage</a>
+              <a><svg class="i"><use href="#i-cog"/></svg>Settings</a>
+              <div class="foot">v1.14.0 · 6747260</div>
+            </div>
+            <div class="content">
+              <div class="ph-row"><div><div class="h">Overview</div><div class="d">What needs attention, then how the system is doing.</div></div></div>
+              <div class="att">
+                <div class="r"><span class="bar-s c"></span><div><div class="t1">A refresh token was reused</div><div class="t2">Tomas K.'s session on Safari was ended at 06:12. Possible stolen cookie.</div></div><span class="mbtn">Open Security</span></div>
+                <div class="r"><span class="bar-s w"></span><div><div class="t1">Access review is overdue</div><div class="t2">Last reviewed 95 days ago. 3 dormant accounts.</div></div><span class="mbtn">Review</span></div>
+                <div class="r"><span class="bar-s w"></span><div><div class="t1">New error: POST /api/v1/orders</div><div class="t2">4 times since 08:40 · reference 9f2c41d7e0b3</div></div><span class="mbtn">Open System</span></div>
+                <div class="r"><span class="bar-s i"></span><div><div class="t1">Backups are running</div><div class="t2">Last success today 03:00 · 14 kept · Spaces, encrypted</div></div><span class="pill green">OK</span></div>
+              </div>
+              <div class="tiles">
+                <div class="tile"><span class="l">Requests, 24 h</span><span class="v">18,402</span>
+                  <svg viewBox="0 0 120 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 22 L10 21 L20 22 L30 20 L40 14 L50 8 L60 6 L70 7 L80 9 L90 12 L100 17 L110 20 L120 21 L120 26 L0 26Z" fill="#E5E5E5"/><path d="M0 22 L10 21 L20 22 L30 20 L40 14 L50 8 L60 6 L70 7 L80 9 L90 12 L100 17 L110 20 L120 21" fill="none" stroke="#171717" stroke-width="1.5"/><circle cx="120" cy="21" r="2" fill="#171717"/></svg></div>
+                <div class="tile"><span class="l">Error rate</span><span class="v">0.04%</span>
+                  <svg viewBox="0 0 120 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24 L40 24 L50 24 L60 18 L70 24 L120 24" fill="none" stroke="#DC2626" stroke-width="1.5"/><circle cx="120" cy="24" r="2" fill="#DC2626"/></svg></div>
+                <div class="tile"><span class="l">p95 latency</span><span class="v">84 ms</span>
+                  <svg viewBox="0 0 120 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 16 L15 15 L30 17 L45 14 L60 12 L75 15 L90 13 L105 16 L120 14" fill="none" stroke="#171717" stroke-width="1.5"/><circle cx="120" cy="14" r="2" fill="#171717"/></svg></div>
+                <div class="tile"><span class="l">Database</span><span class="v">212 MB</span><span class="s">+3% in 30 days · 6 / 20 connections</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Sample data · the Administration Overview: attention items first, figures second</p>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Severity</th><th>Attention item</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sev hi">critical</span></td><td>Backups are not running</td><td>backup Stale or Agent offline (exists)</td></tr>
+          <tr><td><span class="sev hi">critical</span></td><td>A refresh token was reused</td><td>any <code>refresh_reused</code> in 7 days</td></tr>
+          <tr><td><span class="sev md">warning</span></td><td>Failed sign-ins spiked</td><td>&gt; 20 an hour, or &gt; 5 for one account</td></tr>
+          <tr><td><span class="sev md">warning</span></td><td>Errors</td><td>≥ 1 % of requests in the last hour, or a new error type</td></tr>
+          <tr><td><span class="sev md">warning</span></td><td>Access review is overdue</td><td>&gt; 90 days since the last one</td></tr>
+          <tr><td><span class="sev md">warning</span></td><td>Audit seal mismatch</td><td>Verify found a difference</td></tr>
+          <tr><td><span class="sev ok">info</span></td><td>Database grew fast</td><td>&gt; 20 % in 30 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose"><p><b>System screen</b> (<code>system.read</code>), with these panels:</p>
+      <ul>
+        <li><b>Service:</b> version, commit, uptime, <code>/ready</code></li>
+        <li><b>Requests (24 h):</b> rate, error rate, p50/p95, slowest routes</li>
+        <li><b>Errors:</b> grouped, with reference</li>
+        <li><b>Database:</b> size and growth, largest tables, connections and pool, migration, oldest open transaction</li>
+        <li><b>Backups:</b> today's screen, as a tab</li>
+        <li><b>Retention:</b> configured values, last purge, last seal</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>5.3 Tier 2: a monitoring stack, later</h3>
+    <div class="options">
+      <div class="opt">
+        <div class="opt-head"><h4>Self-hosted Prometheus + Grafana + Loki</h4></div>
+        <div class="pc"><ul class="pros"><li>Full history, nothing leaves the server</li></ul><ul class="cons"><li>0.6–1 GB RAM: too much for the 2 GB droplet</li></ul></div>
+      </div>
+      <div class="opt rec">
+        <div class="opt-head"><h4>Grafana Cloud free tier, EU, with Alloy</h4><span class="tag rec">When needed</span></div>
+        <div class="pc"><ul class="pros"><li>~100 MB agent; alerting built in</li><li>13 months of metrics</li></ul><ul class="cons"><li>Metrics leave the server</li></ul></div>
+      </div>
+      <div class="opt rec">
+        <div class="opt-head"><h4>Tier 0 + Tier 1 only</h4><span class="tag rec">Now</span></div>
+        <div class="pc"><ul class="pros"><li>Nothing extra to run</li></ul><ul class="cons"><li>24 hours of history in memory</li></ul></div>
+      </div>
+    </div>
+    <div class="rec-box"><p class="eyebrow">Recommendation</p><p>Stay on Tiers 0 and 1. Move to Grafana Cloud when a second API instance runs, more contexts arrive, or someone needs longer history; <code>/metrics</code> and JSON logs make that a configuration change. Alerts go to the Overview and the uptime monitor's email now; once ADR 0001's outbox and worker exist, they go by email or to a Telegram chat. The app has no email sender today.</p></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="part" id="ia">
+  <header><p class="eyebrow">06</p><h2>Administration after the change</h2></header>
+  <div class="tbl-wrap">
+    <table class="t">
+      <thead><tr><th>Screen</th><th>Permission</th><th>Phone</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Overview</td><td>any Administration permission</td><td>bar</td><td><span class="tag rec">new</span></td></tr>
+        <tr><td>Users</td><td><code>users.manage</code></td><td>bar</td><td></td></tr>
+        <tr><td>Roles &amp; permissions</td><td><code>roles.manage</code></td><td>More</td><td></td></tr>
+        <tr><td>Audit log</td><td><code>audit.read</code>; Export <code>audit.export</code></td><td>bar</td><td><span class="tag rec">new</span></td></tr>
+        <tr><td>Security</td><td><code>security.read</code></td><td>bar</td><td><span class="tag rec">new</span></td></tr>
+        <tr><td>System (Backups as a tab)</td><td><code>system.read</code>; tab <code>backups.read</code></td><td>bar</td><td><span class="tag rec">new</span></td></tr>
+        <tr><td>Usage</td><td><code>usage.read</code></td><td>More</td><td><span class="tag rec">new</span></td></tr>
+        <tr><td>Settings</td><td><code>settings.manage</code></td><td>More</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <ul>
+      <li>The built-in Administrator gets the five new permissions by a migration; <code>TestBuiltinsGrantKnownPermissionsWithTheirRequirements</code> already expects Administrator to hold everything except the dashboard and order ones.</li>
+      <li>Each permission also needs its key in <code>permissions.ts</code>, words in <code>roles.ts</code> (EN/LT/RU), an entry in <code>ADMINISTRATION_PERMISSIONS</code> and rows in <code>routes_test.go</code>'s policy.</li>
+      <li>New terms go into <code>docs/ubiquitous-language.md</code> before use: <i>Audit log, History, Security event, Access review, Seal, Error reference, Attention item</i>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="part" id="roadmap">
+  <header><p class="eyebrow">07</p><h2>Roadmap</h2></header>
+  <div class="prose"><p>Each phase is a slice in the usual shape: spec, migration, service, routes with policy entries, client, screen in three languages, Postgres tests, an e2e step and <code>docs/testing.md</code>. <b>ADR 0003, audit integrity and retention</b> records 3.4–3.6 before Phase 2.</p></div>
+  <div class="phases">
+    <div class="phase"><div class="ph-head"><h4>0 · Monitoring quick wins</h4><span class="size built">built</span></div><ul><li>Log rotation on every service: done</li><li><code>/ready</code>, API healthcheck, commit: done</li><li>External uptime and TLS; droplet alerts: account settings, in <code>docs/monitoring.md</code></li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>1 · Audit log</h4><span class="size">M</span></div><ul><li><code>docs/specs/audit-service.md</code>; read side and event registry</li><li>Indexes; request context columns</li><li>Missing events: users, item sets, details</li><li>Audit log screen; History panels</li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>2 · Security</h4><span class="size">M</span></div><ul><li>ADR 0003; <code>auth_events</code>; last sign-in</li><li>Sign-in limiter in Postgres</li><li>Security screen: sign-ins, devices, access review</li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>3 · System and Overview</h4><span class="size">M</span></div><ul><li>Request IDs and error references</li><li><code>error_events</code>, client error reporter</li><li><code>/metrics</code>; System; Overview</li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>4 · Integrity and retention</h4><span class="size">M–L</span></div><ul><li><code>ppe_app</code> role and TRUNCATE guard</li><li>Daily seals and Verify</li><li>Retention, purge jobs; export</li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>5 · Usage</h4><span class="size">M</span></div><ul><li>Charts in <code>@ppe/ui/charts</code></li><li>Usage screen; link funnel</li><li>Daily data-quality snapshot</li></ul></div>
+  </div>
+  <div class="prose"><p>The Help text, its screenshots and <code>docs/guide</code> will need an Administration update after Phases 1–3. That is a separate request.</p></div>
+</section>
+
+<!-- 8 -->
+<section class="part" id="questions">
+  <header><p class="eyebrow">08</p><h2>Open questions</h2></header>
+  <div class="open">
+    <ol>
+      <li><b>Retention:</b> is 10 years right for business audit events, and 180 days for sign-in records? The accountant or legal adviser should answer.</li>
+      <li><b>External services:</b> is an external uptime monitor acceptable (it sees only the public URL)? Grafana Cloud later?</li>
+      <li><b>Alerts:</b> who should be alerted, and how: email, Telegram or WhatsApp?</li>
+      <li><b>Managers:</b> should they see History on their records, and should a "Workwear auditor" role with only <code>audit.read</code> exist?</li>
+      <li><b>Data sync:</b> can data-sync-ui import through the API?</li>
+    </ol>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="part" id="refs">
+  <header><p class="eyebrow">09</p><h2>References</h2></header>
+  <ul class="refs">
+    <li>Code: <code>internal/audit/audit.go</code>; migrations <code>0002_audit_events</code>, <code>0011_sync_user</code>, <code>0020_user_sessions</code>, <code>0022_roles_permissions</code>; <code>internal/domain/role/permission.go</code>; <code>cmd/api/login-limit.go</code>; <code>deploy/Caddyfile</code>; <code>docker-compose.prod.yml</code>; <code>web/apps/admin/src/lib/router.ts</code>.</li>
+    <li>Decisions: ADR 0001 (per-schema roles, outbox and worker, Postgres limiter, HR audit rules) and ADR 0002 (permissions and the Administration app).</li>
+    <li>OWASP Logging Cheat Sheet: which events to log, and what never to log.</li>
+    <li>NIST SP 800-92: log management, retention and integrity.</li>
+    <li>ISO/IEC 27001:2022 Annex A 8.15 logging, 8.16 monitoring activities, 5.18 access rights.</li>
+    <li>GDPR Art. 5(1)(c, e) minimisation and storage limitation; Art. 32 security of processing.</li>
+  </ul>
+</section>
+</main>
+</div>
+</div>
+</html>
