@@ -9,10 +9,10 @@ import (
 )
 
 // Mutation computes the new state of a row from its current, locked state and
-// the audit event to record with it (nil for none). The repository calls it
+// the audit events to record with it (none for none). The repository calls it
 // inside the write transaction, so the "before" an event records is exactly
 // what the write replaced. A returned error aborts the write.
-type Mutation func(cur Employee) (Employee, *audit.Event, error)
+type Mutation func(cur Employee) (Employee, []audit.Event, error)
 
 // Repository is the persistence the employee service needs. Implementations
 // translate storage errors to this package's sentinels and never validate.

@@ -100,7 +100,7 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Employee
 	if !ok || cur.Deleted() {
 		return Employee{}, ErrNotFound
 	}
-	next, ev, err := m(cur)
+	next, evs, err := m(cur)
 	if err != nil {
 		return Employee{}, err
 	}
@@ -108,7 +108,7 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Employee
 		return Employee{}, ErrCodeTaken
 	}
 	f.rows[id] = next
-	f.record(ev)
+	f.events = append(f.events, evs...)
 	return next, nil
 }
 
@@ -164,13 +164,14 @@ func TestSizeChangesAudited(t *testing.T) {
 	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, testActor)
 	repo.events = nil
 
-	// Renaming without touching sizes records nothing.
+	// Renaming without touching sizes records no size change.
 	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "A2", LastName: "B"}, testActor); err != nil {
 		t.Fatal(err)
 	}
-	if len(repo.events) != 0 {
-		t.Fatalf("rename recorded %d events", len(repo.events))
+	if len(repo.events) != 1 || repo.events[0].Event != EventUpdated {
+		t.Fatalf("rename recorded %+v, want only employee.updated", repo.events)
 	}
+	repo.events = nil
 
 	got, err := svc.UpdateSizes(ctx, e.ID, SizesParams{ClothingSize: ip(54), ShoeSize: sp2("44")}, testActor)
 	if err != nil {
@@ -238,5 +239,40 @@ func TestDeleteIsSoft(t *testing.T) {
 	}
 	if _, err := svc.Create(ctx, Params{FirstName: "C", LastName: "D", Code: sp2("x")}, testActor); err != nil {
 		t.Errorf("code reuse after delete: %v", err)
+	}
+}
+
+func TestDetailChangesAudited(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	e, _ := svc.Create(ctx, Params{FirstName: "Ona", LastName: "B", Notes: "left-handed"}, testActor)
+	repo.events = nil
+
+	// Name, notes and a size in one save: two events, the notes text in neither.
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Ona", LastName: "Jonaitė", Code: sp2("E-7"),
+		Notes: "allergic to latex", ShoeSize: sp2("40")}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.events) != 2 || repo.events[0].Event != EventUpdated || repo.events[1].Event != EventSizesChanged {
+		t.Fatalf("events = %+v", repo.events)
+	}
+	before, after := string(repo.events[0].Before), string(repo.events[0].After)
+	if before != `{"code":null,"last_name":"B"}` || after != `{"code":"E-7","last_name":"Jonaitė","notes_changed":true}` {
+		t.Errorf("updated before %s after %s", before, after)
+	}
+	for _, ev := range repo.events {
+		if strings.Contains(string(ev.Before)+string(ev.After), "latex") || strings.Contains(string(ev.Before)+string(ev.After), "left-handed") {
+			t.Errorf("%s records the notes text", ev.Event)
+		}
+	}
+
+	// Saving the same values records nothing.
+	repo.events = nil
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Ona", LastName: "Jonaitė", Code: sp2("E-7"),
+		Notes: "allergic to latex", ShoeSize: sp2("40")}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.events) != 0 {
+		t.Errorf("an unchanged save recorded %+v", repo.events)
 	}
 }

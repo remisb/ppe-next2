@@ -1,5 +1,9 @@
 import { ApiError, NetworkError } from './errors.ts'
 import type {
+  AuditEntry,
+  AuditPage,
+  AuditQuery,
+  AuditRecordKind,
   BackupStatus,
   CatalogueItem,
   CatalogueItemInput,
@@ -34,9 +38,14 @@ import type {
   UserUpdateInput,
 } from './types.ts'
 
+/** The apps the API tells apart in the Audit log (X-PPE-App). */
+export type AppName = 'workwear' | 'admin'
+
 export interface ClientOptions {
   /** Prefix for every path; '' when the app is served from the API's origin or proxied. */
   baseUrl?: string
+  /** The app sending the requests; the Audit log records it with each change. */
+  app?: AppName
   /** The current bearer token, or null when signed out. */
   getToken: () => string | null
   /**
@@ -79,6 +88,7 @@ export function createClient(options: ClientOptions) {
 
   async function send(method: Method, path: string, body: unknown): Promise<{ res: Response; text: string }> {
     const headers: Record<string, string> = { Accept: 'application/json' }
+    if (options.app) headers['X-PPE-App'] = options.app
     const token = options.getToken()
     if (token) headers['Authorization'] = `Bearer ${token}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -144,6 +154,15 @@ export function createClient(options: ClientOptions) {
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
     /** The database backups the backup agent recorded; admins only. */
     backups: () => request<BackupStatus>('GET', '/api/v1/backups'),
+    /**
+     * The Audit log: every recorded change, newest first, a page at a time
+     * (audit.read). History is one record's changes, for whoever may open it.
+     */
+    audit: {
+      list: (query: AuditQuery = {}) => request<AuditPage>('GET', `/api/v1/audit-events${historyQueryString(query)}`),
+      get: (id: string) => request<AuditEntry>('GET', `/api/v1/audit-events/${seg(id)}`),
+      history: (record: AuditRecordKind, id: string) => request<AuditEntry[]>('GET', `/api/v1/audit-events/${record}/${seg(id)}`),
+    },
     /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */
     replacements: () => request<Dashboard['replacements']>('GET', '/api/v1/replacements'),
     /** The manager's dashboard; managers only. */
@@ -241,8 +260,8 @@ export function createClient(options: ClientOptions) {
 
 export type Client = ReturnType<typeof createClient>
 
-/** The query string for History, with empty filters left out. */
-export function historyQueryString(query: HistoryQuery): string {
+/** The query string for a list's filters (Orders, the Audit log), with empty filters left out. */
+export function historyQueryString(query: HistoryQuery | AuditQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))

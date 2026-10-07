@@ -93,6 +93,25 @@ deletion fields are set together and are either both nil or both populated.
 update and records the *last* editor, not a history. A full change history is a separate
 audit table, not more columns on the entity.
 
+## Audit events
+
+Every change a person makes is recorded in `audit_events` ([audit service](specs/audit-service.md)).
+The service decides what to record and builds the events (`audit.New`); the repository
+writes them with `audit.Insert`/`InsertAll` in the same transaction as the change. An
+update goes through a `Mutation func(cur T) (T, []audit.Event, error)`: the repository locks
+the row `FOR UPDATE`, calls it, and writes the row and its events together, so an event's
+"before" is exactly what the write replaced. One event per kind of change (details, sizes,
+prices, activation); none when nothing changed. Record values only where the value is the
+business fact; a free-text field such as notes is recorded as `<field>_changed`, and
+passwords never.
+
+Each event also records the request it was made in: its ID, the sign-in and the app. The
+HTTP layer puts these on the request's context and `audit.Insert` reads them; the domain
+passes its context through and never reads them. This is request metadata, like a
+deadline: the **actor** still comes in as an explicit argument, never from the context.
+A new event name is added to `audit.Events()` and `AUDIT_EVENTS` in `@ppe/api-client`,
+whose words the apps must then supply.
+
 The actor columns carry a **foreign key to `users`**, added by migration 0006 — see
 [user service](specs/user-service.md). A row attributed to an actor that does not exist is
 rejected by the database, and the repository translates that violation into

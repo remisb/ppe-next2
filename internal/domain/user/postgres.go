@@ -56,7 +56,7 @@ func scanUser(row pgx.Row) (User, error) {
 	return u, nil
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, u User) error {
+func (r *PostgresRepository) Create(ctx context.Context, u User, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO users (id, email, name, password_hash, is_active, language,
@@ -66,7 +66,10 @@ func (r *PostgresRepository) Create(ctx context.Context, u User) error {
 			u.CreatedAt, u.UpdatedAt, u.CreatedByUserID, u.UpdatedByUserID); err != nil {
 			return err
 		}
-		return writeRoles(ctx, tx, u.ID, u.RoleIDs)
+		if err := writeRoles(ctx, tx, u.ID, u.RoleIDs); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
 	}))
 }
 
@@ -142,7 +145,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]User, error) {
 	return out, rows.Err()
 }
 
-func (r *PostgresRepository) Update(ctx context.Context, u User, guard uuid.UUID, ev *audit.Event) error {
+func (r *PostgresRepository) Update(ctx context.Context, u User, guard uuid.UUID, evs []audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := lockGuard(ctx, tx, guard); err != nil {
 			return err
@@ -157,30 +160,37 @@ func (r *PostgresRepository) Update(ctx context.Context, u User, guard uuid.UUID
 		if err := writeRoles(ctx, tx, u.ID, u.RoleIDs); err != nil {
 			return err
 		}
-		if ev != nil {
-			if err := audit.Insert(ctx, tx, *ev); err != nil {
-				return err
-			}
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
+			return err
 		}
 		return keepGuard(ctx, tx, guard)
 	}))
 }
 
-func (r *PostgresRepository) SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error {
-	tag, err := r.pool.Exec(ctx, `
+func (r *PostgresRepository) SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, ev audit.Event) error {
+	return r.writeOne(ctx, ev, `
 		UPDATE users SET password_hash = $2, updated_at = $3, updated_by_user_id = $4
 		WHERE id = $1 AND deleted_at IS NULL`, id, hash, at, by)
-	return affectedOne(tag, err)
 }
 
-func (r *PostgresRepository) SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
-	tag, err := r.pool.Exec(ctx, `
+func (r *PostgresRepository) SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, ev audit.Event) error {
+	return r.writeOne(ctx, ev, `
 		UPDATE users SET language = $2, updated_at = $3, updated_by_user_id = $4
 		WHERE id = $1 AND deleted_at IS NULL`, id, lang, at, by)
-	return affectedOne(tag, err)
 }
 
-func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID) error {
+// writeOne runs an UPDATE of one live user and records ev with it.
+func (r *PostgresRepository) writeOne(ctx context.Context, ev audit.Event, sql string, args ...any) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, sql, args...)
+		if err := affectedOne(tag, err); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
+}
+
+func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := lockGuard(ctx, tx, guard); err != nil {
 			return err
@@ -189,6 +199,9 @@ func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, at time.T
 			UPDATE users SET deleted_at = $2, deleted_by_user_id = $3, updated_at = $2, updated_by_user_id = $3
 			WHERE id = $1 AND deleted_at IS NULL`, id, at, by)
 		if err := affectedOne(tag, err); err != nil {
+			return err
+		}
+		if err := audit.Insert(ctx, tx, ev); err != nil {
 			return err
 		}
 		return keepGuard(ctx, tx, guard)

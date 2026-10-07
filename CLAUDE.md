@@ -46,9 +46,12 @@ Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/ro
 Administrator, Manager and Employee reproduce the old three roles; administrators add and
 change others on Roles & permissions. The token's `perms` claim carries what the user's
 roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Roles & permissions, Settings, Backups) on the staff app's origin, sharing its sign-in and
-the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n` and `@ppe/backups`; the
-administrator's Dashboard stays in the staff app.
+Roles & permissions, Audit log, Settings, Backups) on the staff app's origin, sharing its sign-in and
+the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
+administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
+0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
+sign-in and app it was made in; employees, catalogue items and orders show their own
+**Changes** in the staff app (the glossary's "History" is Orders, so not that word).
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
@@ -190,9 +193,13 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   (`TestRoutePolicy` fails for unlisted routes and checks 401/403 per permission and per
   built-in role; `TestSeededRolesKeepPolicy` keeps the built-ins' access), and any new
   domain sentinel errors in `errorStatuses` (`cmd/api/http.go`).
-- **Audited updates**: repositories take a `Mutation func(cur T) (T, *audit.Event, error)`;
-  they lock the row `FOR UPDATE`, call it, then write the row and the event in one
-  transaction. Services own the mutation and decide which event (if any) to record.
+- **Audited updates**: repositories take a `Mutation func(cur T) (T, []audit.Event, error)`;
+  they lock the row `FOR UPDATE`, call it, then write the row and its events in one
+  transaction. Services own the mutation and decide which events (one per kind of change,
+  none when nothing changed) to record. `audit.Insert` also records the request's ID, sign-in
+  and app (`source`) from the context `requestContext` (`cmd/api/request.go`) set; domains never
+  read it. A new event name goes into `audit.Events()` and `AUDIT_EVENTS` (`@ppe/api-client`),
+  which tests keep in step with the domains' constants (spec `docs/specs/audit-service.md`).
 - **Layout per domain** `internal/domain/<name>/`: `<name>.go` (entity + `CreateParams`/
   `UpdateParams` with `Normalize()`/`Validate()`), `errors.go`, `repository.go`
   (interface), `service.go`, `postgres.go` (pgx). `internal/domain/user` is the reference.
@@ -269,7 +276,10 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   `styles.css` tokens and variants, panels, relative dates), `@ppe/app-shell` (sign-in,
   session with `can(permission)`, Sign in, Confirm your password, theme, density, password
   rules, the router), `@ppe/i18n` (language machinery; packages keep small dictionaries of
-  their own), `@ppe/backups`. A screen shows controls by `session.can(...)`, never by role.
+  their own), `@ppe/backups`, `@ppe/audit` (how recorded changes read: actions, changed
+  fields, the Changes section). A screen shows controls by `session.can(...)`, never by role.
+  A package with components of its own is named with `@source` in each app's `index.css`:
+  Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
   Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.

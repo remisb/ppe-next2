@@ -538,12 +538,31 @@ Rules for using it:
 
 ## 10. Records and data rules
 
-### Audit event
-- **Brief:** an append-only record of a business change: who, when, what.
-- **Detail:** for example `order.ordered`, `order.given`, `order.confirmation_link_created`,
-  `catalogue.price_changed`, `employee.sizes_changed`, `settings.supplier_chat_changed`. It is
-  written in the same transaction as the change; the database rejects updates and deletes.
-- **Code:** `internal/audit`, table `audit_events`.
+### Audit event (change)
+- **Brief:** an append-only record of a change: who, when, what, and where it was made.
+- **Detail:** for example `order.ordered`, `order.given`, `catalogue.price_changed`,
+  `employee.updated`, `user.roles_changed`, `item_set.updated`. It is written in the same
+  transaction as the change; the database rejects updates and deletes. It records the changed
+  fields before and after (never a password or notes text), the request's **reference**, the
+  sign-in, and where it was **made in** (Workwear & Equipment, Administration, a confirmation
+  link, the API or the system). Every event name is in `audit.Events()`.
+- **Code:** `internal/audit`, table `audit_events`. **UI:** a **change**, named by its action
+  ("Price changed") beside the record's name.
+
+### Audit log
+- **Brief:** Administration's screen of every recorded change, newest first.
+- **Detail:** filtered by area, change, person, days and one record, the filters in its
+  address; a change opens beside it with every field it changed. Needs `audit.read`.
+- **Code:** `GET /api/v1/audit-events`, `web/apps/admin/src/routes/audit.tsx`.
+  **Spec:** `docs/specs/audit-service.md`.
+
+### Changes (of a record)
+- **Brief:** the section of an employee's, a catalogue item's or an order's page listing
+  that record's changes, newest first; a user's are under ⋯ → Changes on Users.
+- **Detail:** for whoever may open the record. Not called History, which is the old name of
+  Orders.
+- **Code:** `GET /api/v1/audit-events/{employees|catalogue|orders|users}/{id}`,
+  `RecordChanges` in `@ppe/audit`.
 
 ### Soft delete
 - **Brief:** marking a row deleted (`deleted_at`) instead of removing it.
@@ -692,6 +711,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Role / Permission | Rolė / Teisė | Роль / Право |
 | Settings | Nustatymai | Настройки |
 | Backups | Atsarginės kopijos | Резервные копии |
+| Audit log | Audito žurnalas | Журнал аудита |
+| Changes (of a record) / Change | Pakeitimai / Pakeitimas | Изменения / Изменение |
+| Made in / Reference | Kur atlikta / Nuoroda į užklausą | Где сделано / Номер запроса |
 | Replacements due | Reikia pakeisti | Требуется замена |
 | Assigned to | Kam skirta | Для кого |
 | Add Item | Pridėti prekę | Добавить предмет |
@@ -744,7 +766,8 @@ table follows them.
 | draft order, pending, partial, outstanding (as statuses) | **working order**; **Ordered** | Only ORDERED and GIVEN exist; a working order is not stored. |
 | delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. |
 | receipt (in the UI) | **Items Given Record** / **record** | `Receipt` is the code name. The UI says "Receipt WE-…" only on an employee's page. |
-| History (in the UI) | **Orders** | `history` is the route and namespace name; the screen is Orders. |
+| History (in the UI) | **Orders**; a record's **Changes** | `history` is the route and namespace name; the screen is Orders. A record's list of changes is Changes. |
+| activity log, change log, event log | **Audit log** | One screen, one name. |
 | product, article, SKU | **item** / **catalogue item** | |
 | cost, cost price, savikaina, supplier price, buy price | **purchase price** | "Cost" says nothing about to whom; *savikaina* is production cost. |
 | sell price, sale price, net / gross price | **accounting price** | Nothing is sold to employees, and net / gross suggest VAT. |

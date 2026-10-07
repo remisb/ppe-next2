@@ -96,7 +96,7 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 		if err != nil {
 			return err
 		}
-		next, ev, err := m(cur)
+		next, evs, err := m(cur)
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 			next.PurchasePriceCents); err != nil {
 			return err
 		}
-		if err := insertEvent(ctx, tx, ev); err != nil {
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
 			return err
 		}
 		out = next

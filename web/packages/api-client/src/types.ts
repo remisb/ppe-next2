@@ -696,3 +696,61 @@ export interface BackupRun {
   /** Retention has deleted the file. */
   pruned: boolean
 }
+
+/** The record types the API records changes to (entity_type). */
+export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings'
+
+/** Where a change was made. */
+export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'
+
+/** The records with a History of their own (GET /api/v1/audit-events/{record}/{id}). */
+export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'users'
+
+/**
+ * One recorded change (GET /api/v1/audit-events). `event` is one of
+ * AUDIT_EVENTS, typed as a string since a newer API may record one this
+ * client does not know yet.
+ */
+export interface AuditEntry {
+  id: string
+  occurred_at: string
+  event: string
+  area: string
+  entity_type: AuditEntityType
+  entity_id: string
+  /** The record's name now (an employee's name, an order's record number); null when unknown. */
+  entity_label: string | null
+  /** The record was deleted since. */
+  entity_deleted: boolean
+  /** Null for a change made through a public confirmation link or by the system. */
+  actor_id: string | null
+  actor_name: string | null
+  /** Null on changes recorded before the source was. */
+  source: AuditSource | null
+  request_id: string | null
+  session_id: string | null
+  /** The browser of that sign-in, while it is kept (30 days after it ends). */
+  session_user_agent: string | null
+  /** The changed fields before and after; their shape depends on the event. */
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+}
+
+/** One page of the Audit log; `next` continues it (null on the last page). */
+export interface AuditPage {
+  events: AuditEntry[]
+  next: string | null
+}
+
+/** The Audit log's filters, all optional; from and to are days in the organisation's timezone. */
+export interface AuditQuery {
+  area?: string
+  event?: string
+  actor?: string
+  entity_type?: AuditEntityType
+  entity_id?: string
+  from?: string
+  to?: string
+  after?: string
+  page_size?: number
+}

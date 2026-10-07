@@ -88,7 +88,7 @@ func (f *fakeRepo) emailTaken(email string, except uuid.UUID) bool {
 	return false
 }
 
-func (f *fakeRepo) Create(_ context.Context, u User) error {
+func (f *fakeRepo) Create(_ context.Context, u User, ev audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.emailTaken(u.Email, u.ID) {
@@ -98,6 +98,7 @@ func (f *fakeRepo) Create(_ context.Context, u User) error {
 		return ErrActorNotFound
 	}
 	f.users[u.ID] = u
+	f.events = append(f.events, ev)
 	return nil
 }
 
@@ -134,7 +135,7 @@ func (f *fakeRepo) List(_ context.Context) ([]User, error) {
 	return out, nil
 }
 
-func (f *fakeRepo) Update(_ context.Context, u User, guard uuid.UUID, ev *audit.Event) error {
+func (f *fakeRepo) Update(_ context.Context, u User, guard uuid.UUID, evs []audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	cur, ok := f.users[u.ID]
@@ -152,13 +153,11 @@ func (f *fakeRepo) Update(_ context.Context, u User, guard uuid.UUID, ev *audit.
 		f.users[u.ID] = cur
 		return ErrLastAdministrator
 	}
-	if ev != nil {
-		f.events = append(f.events, *ev)
-	}
+	f.events = append(f.events, evs...)
 	return nil
 }
 
-func (f *fakeRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error {
+func (f *fakeRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, ev audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	u, ok := f.users[id]
@@ -167,10 +166,11 @@ func (f *fakeRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string,
 	}
 	u.PasswordHash, u.UpdatedAt, u.UpdatedByUserID = hash, at, by
 	f.users[id] = u
+	f.events = append(f.events, ev)
 	return nil
 }
 
-func (f *fakeRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
+func (f *fakeRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, ev audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	u, ok := f.users[id]
@@ -179,10 +179,11 @@ func (f *fakeRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at 
 	}
 	u.Language, u.UpdatedAt, u.UpdatedByUserID = lang, at, by
 	f.users[id] = u
+	f.events = append(f.events, ev)
 	return nil
 }
 
-func (f *fakeRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID) error {
+func (f *fakeRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID, ev audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	u, ok := f.users[id]
@@ -196,6 +197,7 @@ func (f *fakeRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid
 		f.users[id] = cur
 		return ErrLastAdministrator
 	}
+	f.events = append(f.events, ev)
 	return nil
 }
 
@@ -545,6 +547,7 @@ func TestLastAdministrator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	repo.events = nil
 	if _, err := svc.Update(ctx, admin.ID, UpdateParams{Email: admin.Email, Name: admin.Name, RoleIDs: employeeRoles, IsActive: true}, other.ID); err != nil {
 		t.Fatalf("demote one of two administrators: %v", err)
 	}
@@ -579,5 +582,73 @@ func TestLastAdministrator(t *testing.T) {
 	}
 	if _, err := svc.Get(ctx, other.ID); err != nil {
 		t.Errorf("the refused delete was kept: %v", err)
+	}
+}
+
+// Every change to an account is recorded, password events without a value.
+func TestAccountChangesAudited(t *testing.T) {
+	svc, repo, admin := newTestService(t)
+	ctx := context.Background()
+	u, err := svc.Create(ctx, CreateParams{Email: "ona@example.com", Name: "Ona", Password: "password123", RoleIDs: employeeRoles}, admin.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := func() audit.Event { return repo.events[len(repo.events)-1] }
+	if ev := last(); ev.Event != EventCreated || ev.EntityID != u.ID || *ev.ActorUserID != admin.ID ||
+		!strings.Contains(string(ev.After), `"email":"ona@example.com"`) || strings.Contains(string(ev.After), "password") {
+		t.Fatalf("created = %s %s", ev.Event, ev.After)
+	}
+
+	// Name, roles and activation in one save: one event each, in that order.
+	repo.events = nil
+	if _, err := svc.Update(ctx, u.ID, UpdateParams{Email: u.Email, Name: "Ona J.", RoleIDs: managerRoles, IsActive: false}, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, ev := range repo.events {
+		names = append(names, ev.Event)
+	}
+	if strings.Join(names, ",") != "user.updated,user.roles_changed,user.deactivated" {
+		t.Fatalf("update events = %v", names)
+	}
+	if string(repo.events[0].Before) != `{"name":"Ona"}` || string(repo.events[0].After) != `{"name":"Ona J."}` {
+		t.Errorf("user.updated %s → %s", repo.events[0].Before, repo.events[0].After)
+	}
+	if _, err := svc.Update(ctx, u.ID, UpdateParams{Email: u.Email, Name: "Ona J.", RoleIDs: managerRoles, IsActive: true}, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if last().Event != EventActivated {
+		t.Errorf("reactivation recorded %s", last().Event)
+	}
+
+	if err := svc.SetPassword(ctx, u.ID, "new-password-1", admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if ev := last(); ev.Event != EventPasswordReset || ev.Before != nil || ev.After != nil || *ev.ActorUserID != admin.ID {
+		t.Errorf("reset = %+v", ev)
+	}
+	if err := svc.ChangePassword(ctx, u.ID, uuid.Nil, "new-password-1", "new-password-2"); err != nil {
+		t.Fatal(err)
+	}
+	if ev := last(); ev.Event != EventPasswordChanged || ev.After != nil || *ev.ActorUserID != u.ID {
+		t.Errorf("change = %+v", ev)
+	}
+
+	n := len(repo.events)
+	if _, err := svc.SetLanguage(ctx, u.ID, LangEnglish); err != nil || len(repo.events) != n {
+		t.Errorf("same language: %v, recorded %d events", err, len(repo.events)-n)
+	}
+	if _, err := svc.SetLanguage(ctx, u.ID, "lt"); err != nil {
+		t.Fatal(err)
+	}
+	if ev := last(); ev.Event != EventUpdated || string(ev.After) != `{"language":"lt"}` {
+		t.Errorf("language = %s %s", ev.Event, ev.After)
+	}
+
+	if err := svc.Delete(ctx, u.ID, admin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if last().Event != EventDeleted {
+		t.Errorf("delete recorded %s", last().Event)
 	}
 }

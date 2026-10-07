@@ -21,6 +21,7 @@ const (
 	OrdersDelete      Permission = "orders.delete"
 	SettingsManage    Permission = "settings.manage"
 	BackupsRead       Permission = "backups.read"
+	AuditRead         Permission = "audit.read"
 	DashboardOverview Permission = "dashboard.overview"
 	DashboardManager  Permission = "dashboard.manager"
 	DashboardEmployee Permission = "dashboard.employee"
@@ -50,6 +51,7 @@ var catalogue = []Info{
 	{RolesManage, GroupAdministration, []Permission{UsersRead}},
 	{SettingsManage, GroupAdministration, nil},
 	{BackupsRead, GroupAdministration, nil},
+	{AuditRead, GroupAdministration, nil},
 	{EmployeesDelete, GroupWorkwear, nil},
 	{CatalogueManage, GroupWorkwear, nil},
 	{ItemSetsManage, GroupWorkwear, nil},

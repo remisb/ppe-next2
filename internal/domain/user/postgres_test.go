@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
@@ -113,10 +114,12 @@ func TestPostgresUniqueEmailAmongLiveRows(t *testing.T) {
 func TestPostgresUnknownActor(t *testing.T) {
 	repo := NewPostgresRepository(newTestPool(t))
 	now := time.Now().UTC()
+	id, ghost := uuid.New(), uuid.New()
+	ev, _ := audit.New(uuid.New(), &ghost, EventCreated, "user", id, now, nil, nil)
 	err := repo.Create(context.Background(), User{
-		ID: uuid.New(), Email: "x@example.com", Name: "X", PasswordHash: "h", RoleIDs: employeeRoles, IsActive: true,
-		Language: LangEnglish, CreatedAt: now, UpdatedAt: now, CreatedByUserID: uuid.New(), UpdatedByUserID: uuid.New(),
-	})
+		ID: id, Email: "x@example.com", Name: "X", PasswordHash: "h", RoleIDs: employeeRoles, IsActive: true,
+		Language: LangEnglish, CreatedAt: now, UpdatedAt: now, CreatedByUserID: ghost, UpdatedByUserID: ghost,
+	}, ev)
 	if !errors.Is(err, ErrActorNotFound) {
 		t.Fatalf("err = %v, want ErrActorNotFound", err)
 	}

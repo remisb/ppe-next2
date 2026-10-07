@@ -18,19 +18,21 @@ import (
 // Update or Delete (the Administrator); the write is rolled back with
 // ErrLastAdministrator otherwise. uuid.Nil checks nothing.
 type Repository interface {
-	// Create writes the user and the roles they hold.
-	Create(ctx context.Context, u User) error
+	// Every write records its audit events in the same transaction.
+
+	// Create writes the user, the roles they hold, and ev.
+	Create(ctx context.Context, u User, ev audit.Event) error
 	Get(ctx context.Context, id uuid.UUID) (User, error)
 	// ByEmail matches case-insensitively among live users.
 	ByEmail(ctx context.Context, email string) (User, error)
 	List(ctx context.Context) ([]User, error)
 	// Update writes email, name, roles, is_active, updated_at and updated_by,
-	// and ev (nil for none).
-	Update(ctx context.Context, u User, guard uuid.UUID, ev *audit.Event) error
-	SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error
+	// and evs (none for none).
+	Update(ctx context.Context, u User, guard uuid.UUID, evs []audit.Event) error
+	SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, ev audit.Event) error
 	// SetLanguage sets a live user's interface language, or ErrNotFound.
-	SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error
-	Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID) error
+	SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, ev audit.Event) error
+	Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID, ev audit.Event) error
 }
 
 // Roles is what the user service asks about roles (the role service).

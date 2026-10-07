@@ -55,13 +55,36 @@ type Execer interface {
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
-// Insert writes ev. Call it with the transaction that makes the audited change.
+// Insert writes ev. Call it with the transaction that makes the audited
+// change, and the context of the request that made it: Insert records that
+// request's ID, sign-in and source (RequestFrom).
 func Insert(ctx context.Context, db Execer, ev Event) error {
+	req := RequestFrom(ctx)
+	var requestID *string
+	if req.ID != "" {
+		requestID = &req.ID
+	}
+	var sessionID *uuid.UUID
+	if req.SessionID != uuid.Nil {
+		sessionID = &req.SessionID
+	}
 	_, err := db.Exec(ctx, `
-		INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		ev.ID, ev.ActorUserID, ev.Event, ev.EntityType, ev.EntityID, ev.OccurredAt, nullJSON(ev.Before), nullJSON(ev.After))
+		INSERT INTO audit_events (id, actor_user_id, event, entity_type, entity_id, occurred_at, before, after,
+			request_id, session_id, source)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		ev.ID, ev.ActorUserID, ev.Event, ev.EntityType, ev.EntityID, ev.OccurredAt, nullJSON(ev.Before), nullJSON(ev.After),
+		requestID, sessionID, string(req.Source))
 	return err
+}
+
+// InsertAll writes evs in order (see Insert).
+func InsertAll(ctx context.Context, db Execer, evs []Event) error {
+	for _, ev := range evs {
+		if err := Insert(ctx, db, ev); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // nullJSON keeps an absent side as SQL NULL rather than the JSON literal null.

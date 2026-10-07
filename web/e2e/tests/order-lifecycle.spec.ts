@@ -35,7 +35,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Users', 'Roles & permissions', 'Settings', 'Backups']
+const administrationTabs = ['Users', 'Roles & permissions', 'Audit log', 'Settings', 'Backups']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -294,7 +294,8 @@ test('Item Catalogue: a row opens the item at its own address', async () => {
   await expect(page).toHaveURL(/\/catalogue\/[^/]+$/)
   await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Item Catalogue' })).toHaveAttribute('aria-current', 'page')
-  const details = page.getByRole('definition')
+  // The item's facts, not its Changes below, which hold the same values.
+  const details = page.getByLabel('Item details').getByRole('definition')
   await expect(details.filter({ hasText: '€2.50' })).toBeVisible()
   await expect(details.filter({ hasText: 'No size' })).toBeVisible()
   await expect(page.getByRole('listitem').filter({ hasText: 'Starter kit' })).toContainText('× 10')
@@ -670,6 +671,48 @@ test('Item page: price history and the orders that hold the item', async () => {
   await expect(page).toHaveURL(new RegExp(`/orders/[^/]+/record$`))
 })
 
+test('Audit log: who changed a price, when and where; the item\'s Changes say the same', async () => {
+  // The item's own page lists its changes, newest first.
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Safety shoes' }).click()
+  const changes = page.getByRole('region', { name: 'Changes' }).getByRole('listitem')
+  await expect(changes.first()).toContainText('Price changed')
+  await expect(changes.first()).toContainText('€49.99 → €59.99')
+  await expect(changes.first()).toContainText(admin.name)
+  await expect(changes.last()).toContainText('Item added')
+
+  // Administration's Audit log, filtered to price changes in the Item Catalogue.
+  await openTab('Audit log')
+  await expect(page.getByRole('heading', { name: 'Audit log', exact: true })).toBeVisible()
+  await page.getByRole('combobox', { name: 'Area' }).selectOption({ label: 'Item Catalogue' })
+  await page.getByRole('combobox', { name: 'Change' }).selectOption({ label: 'Price changed' })
+  await expect(page).toHaveURL(/\/admin\/audit\?area=catalogue&event=catalogue\.price_changed$/)
+  const row = page.getByRole('row', { name: /Price changed.*Safety shoes/ })
+  await expect(row).toContainText(admin.name)
+  await expect(row).toContainText('Workwear & Equipment')
+
+  // It opens at its own address, with its request's reference and the fields it changed.
+  await row.getByRole('link', { name: 'Price changed' }).click()
+  await expect(page).toHaveURL(/\/admin\/audit\/[0-9a-f-]{36}\?area=catalogue/)
+  const change = page.getByRole('article', { name: 'Change' })
+  await expect(change.getByRole('heading', { name: 'Price changed' })).toBeVisible()
+  await expect(change).toContainText('Workwear & Equipment')
+  await expect(change).toContainText('Reference')
+  await expect(change).toContainText('€49.99 → €59.99')
+  await expect(change).toContainText('Purchase price')
+  // A reload keeps the filters and the open change.
+  await page.reload()
+  await expect(page.getByRole('article', { name: 'Change' }).getByRole('heading', { name: 'Price changed' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Area' })).toHaveValue('catalogue')
+
+  // All of that item's changes: the list narrows to the record.
+  await page.getByRole('article', { name: 'Change' }).getByRole('button', { name: 'All changes to this record' }).click()
+  await expect(page.getByText('Record: Safety shoes')).toBeVisible()
+  await expect(page.getByRole('row', { name: /Item added/ })).toBeVisible()
+  await page.getByRole('button', { name: 'All records' }).click()
+  await expect(page.getByText('Record: Safety shoes')).toHaveCount(0)
+})
+
 test('Dashboard: the figures follow the orders', async () => {
   await openTab('Dashboard')
   await page.getByRole('button', { name: 'Refresh' }).click()
@@ -813,7 +856,8 @@ test('Employees: a row opens the employee at its own address, with the items giv
   const employeeURL = page.url()
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page')
-  await expect(page.locator('dl').filter({ hasText: 'Preferred language' })).toContainText('Русский')
+  // Her facts at the top; her Changes further down name the field too.
+  await expect(page.locator('dl').filter({ hasText: 'Preferred language' }).first()).toContainText('Русский')
   // The page holds her actions: Delete, as in the table, is under ⋯.
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
@@ -990,14 +1034,19 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Item Sets', 'Starter kit'],
     ['Users', admin.email],
     ['Roles & permissions', 'Built-in'],
+    ['Audit log', admin.name],
     ['Settings', 'Invite link'],
     ['Backups', 'Recent backups'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
     await expect(page.getByRole('heading', { name: tab, exact: true })).toBeVisible()
-    await expect(page.getByText(content).first()).toBeVisible()
+    // In the screen itself: the navigation's foot names the signed-in user too.
+    await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
+    // The bar is one row of tabs, however many sections the app shows.
+    const bar = await page.getByRole('navigation', { name: 'Main' }).boundingBox()
+    expect(bar!.height, `${tab}: the tab bar is more than one row`).toBeLessThan(100)
   }
   // The dashboard on a phone: compact figure tiles, one fact beside each figure, then Needs you.
   await openTab('Dashboard')
@@ -1085,11 +1134,12 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Item Catalogue', 'Protective gloves'],
       ['Users', admin.email],
       ['Roles & permissions', 'Built-in'],
+      ['Audit log', admin.name],
       ['Settings', 'Invite link'],
       ['Backups', 'Recent backups'],
     ] as const) {
       await openTab(tab)
-      await expect(page.getByText(content).first()).toBeVisible()
+      await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()
       expect(await fits(), `${tab} scrolls sideways at ${width}px`).toBe(true)
     }
     await openTab('Employees')
@@ -1479,6 +1529,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
     '/help',
     '/admin/users',
     '/admin/roles',
+    '/admin/audit',
     '/admin/settings',
     '/admin/backups',
     '/account',

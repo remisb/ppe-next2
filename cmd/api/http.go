@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -88,6 +89,7 @@ var errorStatuses = []struct {
 	{order.ErrNotFound, http.StatusNotFound},
 	{order.ErrEmployeeNotFound, http.StatusNotFound},
 	{order.ErrItemSetNotFound, http.StatusNotFound},
+	{audit.ErrNotFound, http.StatusNotFound},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -112,6 +114,7 @@ var errorStatuses = []struct {
 	{order.ErrInvalid, http.StatusBadRequest},
 	{dashboard.ErrInvalid, http.StatusBadRequest},
 	{settings.ErrInvalid, http.StatusBadRequest},
+	{audit.ErrInvalid, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated

@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phase 0 built; phases 1–5 proposed**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0 and 1 built; phases 2–5 proposed**
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -14,6 +14,18 @@ in phases.
 > uptime check and the DigitalOcean alerts are account settings, described there, for a
 > person to make. One correction to 5.1 below: Docker does not restart an unhealthy
 > container; the healthcheck only reports.
+>
+> **Phase 1 (Audit log) is built**, as described in
+> [specs/audit-service.md](../specs/audit-service.md), with these differences from section 3:
+> - A record's list of changes is called **Changes**, because the glossary keeps "History"
+>   for Orders.
+> - Its routes are `GET /api/v1/audit-events/{employees|catalogue|orders|users}/{id}`;
+>   `/employees/{id}/history` would clash with `/employees/by-name/{q}`.
+> - The request ID is made by the API for every request (`X-Request-ID`); it is not yet in
+>   error responses (phase 3).
+> - A user's Changes open the Audit log filtered to them (⋯ → Changes on Users), since
+>   Administration has no user page.
+> - Export, Verify and retention remain phase 4.
 
 ---
 
@@ -536,7 +548,7 @@ records the decisions in 3.4–3.6 before Phase 2.
 - External uptime + TLS check; DigitalOcean alerts. **To set up in those accounts**
   ([monitoring.md](../monitoring.md)).
 
-### Phase 1: Audit log · M
+### Phase 1: Audit log · M · built
 - Spec `docs/specs/audit-service.md`; package `internal/audit` gains a read side
   (`List`, `Get`, `ForEntity`) and an event registry.
 - Indexes; `request_id`, `session_id` and `source` columns.

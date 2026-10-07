@@ -13,8 +13,23 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
-// EventRolesChanged is recorded when a user's roles change (entity type "user").
-const EventRolesChanged = "user.roles_changed"
+// Audit event names written by this service, all of entity type "user".
+// Password events record that it happened, never a value.
+const (
+	EventCreated         = "user.created"
+	EventUpdated         = "user.updated"
+	EventRolesChanged    = "user.roles_changed"
+	EventActivated       = "user.activated"
+	EventDeactivated     = "user.deactivated"
+	EventPasswordChanged = "user.password_changed"
+	EventPasswordReset   = "user.password_reset"
+	EventDeleted         = "user.deleted"
+	auditEntity          = "user"
+)
+
+func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (audit.Event, error) {
+	return audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
+}
 
 // Sessions ends a user's sign-ins (the session service, through an adapter in
 // cmd/api/checkers.go). reason is one of the End* values.
@@ -192,7 +207,12 @@ func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self
 		CreatedByUserID: actor,
 		UpdatedByUserID: actor,
 	}
-	if err := s.repo.Create(ctx, u); err != nil {
+	ev, err := s.event(actor, EventCreated, id, now, nil, map[string]any{
+		"name": u.Name, "email": u.Email, "role_ids": u.RoleIDs, "is_active": u.IsActive})
+	if err != nil {
+		return User{}, err
+	}
+	if err := s.repo.Create(ctx, u, ev); err != nil {
 		return User{}, err
 	}
 	return u, nil
@@ -215,7 +235,8 @@ func (s *Service) List(ctx context.Context) ([]User, error) {
 // actor's own, and give or take away only such roles. An actor cannot deactivate themselves or take
 // managing users or roles away from themselves, which would lock them out
 // mid-session. Deactivating a user ends their sign-ins; a role change reaches
-// them at their next refresh, and is recorded (user.roles_changed).
+// them at their next refresh. Each kind of change is recorded:
+// user.updated (name, email), user.roles_changed, user.activated/deactivated.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, actor uuid.UUID) (User, error) {
 	if actor == uuid.Nil {
 		return User{}, fieldError("actor", "is required")
@@ -242,14 +263,39 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 		}
 	}
 	now := s.now()
-	var ev *audit.Event
-	if !slices.Equal(u.RoleIDs, p.RoleIDs) {
-		e, err := audit.New(s.newID(), &actor, EventRolesChanged, "user", id, now,
-			map[string]any{"role_ids": u.RoleIDs}, map[string]any{"role_ids": p.RoleIDs})
-		if err != nil {
+	var evs []audit.Event
+	add := func(name string, before, after any) error {
+		ev, err := s.event(actor, name, id, now, before, after)
+		if err == nil {
+			evs = append(evs, ev)
+		}
+		return err
+	}
+	before, after := map[string]any{}, map[string]any{}
+	if u.Name != p.Name {
+		before["name"], after["name"] = u.Name, p.Name
+	}
+	if u.Email != p.Email {
+		before["email"], after["email"] = u.Email, p.Email
+	}
+	if len(after) > 0 {
+		if err := add(EventUpdated, before, after); err != nil {
 			return User{}, err
 		}
-		ev = &e
+	}
+	if !slices.Equal(u.RoleIDs, p.RoleIDs) {
+		if err := add(EventRolesChanged, map[string]any{"role_ids": u.RoleIDs}, map[string]any{"role_ids": p.RoleIDs}); err != nil {
+			return User{}, err
+		}
+	}
+	if u.IsActive != p.IsActive {
+		name := EventDeactivated
+		if p.IsActive {
+			name = EventActivated
+		}
+		if err := add(name, nil, nil); err != nil {
+			return User{}, err
+		}
 	}
 	deactivated := u.IsActive && !p.IsActive
 	u.Email = p.Email
@@ -258,7 +304,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p UpdateParams, acto
 	u.IsActive = p.IsActive
 	u.UpdatedAt = now
 	u.UpdatedByUserID = actor
-	if err := s.repo.Update(ctx, u, s.guard, ev); err != nil {
+	if err := s.repo.Update(ctx, u, s.guard, evs); err != nil {
 		return User{}, err
 	}
 	if deactivated {
@@ -323,13 +369,15 @@ func (s *Service) SetPassword(ctx context.Context, id uuid.UUID, password string
 			return err
 		}
 	}
-	if err := s.setPassword(ctx, id, password, actor); err != nil {
+	if err := s.setPassword(ctx, id, password, actor, EventPasswordReset); err != nil {
 		return err
 	}
 	return s.sessions.EndAll(ctx, id, uuid.Nil, EndPasswordReset)
 }
 
-func (s *Service) setPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID) error {
+// setPassword stores password's hash and records event (password_reset or
+// _changed), which holds no value.
+func (s *Service) setPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID, event string) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
 	}
@@ -340,7 +388,12 @@ func (s *Service) setPassword(ctx context.Context, id uuid.UUID, password string
 	if err != nil {
 		return err
 	}
-	return s.repo.SetPasswordHash(ctx, id, hash, s.now(), actor)
+	now := s.now()
+	ev, err := s.event(actor, event, id, now, nil, nil)
+	if err != nil {
+		return err
+	}
+	return s.repo.SetPasswordHash(ctx, id, hash, now, actor, ev)
 }
 
 // ChangePassword lets a user replace their own password after proving the
@@ -351,7 +404,7 @@ func (s *Service) ChangePassword(ctx context.Context, self, keep uuid.UUID, curr
 	} else if err != nil {
 		return err
 	}
-	if err := s.setPassword(ctx, self, next, self); err != nil {
+	if err := s.setPassword(ctx, self, next, self, EventPasswordChanged); err != nil {
 		return err
 	}
 	return s.sessions.EndAll(ctx, self, keep, EndPasswordChanged)
@@ -379,7 +432,19 @@ func (s *Service) SetLanguage(ctx context.Context, self uuid.UUID, lang string) 
 	if err := validateLanguage(lang); err != nil {
 		return User{}, err
 	}
-	if err := s.repo.SetLanguage(ctx, self, lang, s.now(), self); err != nil {
+	cur, err := s.repo.Get(ctx, self)
+	if err != nil {
+		return User{}, err
+	}
+	if cur.Language == lang {
+		return cur, nil
+	}
+	now := s.now()
+	ev, err := s.event(self, EventUpdated, self, now, map[string]any{"language": cur.Language}, map[string]any{"language": lang})
+	if err != nil {
+		return User{}, err
+	}
+	if err := s.repo.SetLanguage(ctx, self, lang, now, self, ev); err != nil {
 		return User{}, err
 	}
 	return s.repo.Get(ctx, self)
@@ -397,7 +462,12 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	if err := s.mayManage(ctx, id, actor); err != nil {
 		return err
 	}
-	if err := s.repo.Delete(ctx, id, s.now(), actor, s.guard); err != nil {
+	now := s.now()
+	ev, err := s.event(actor, EventDeleted, id, now, nil, nil)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.Delete(ctx, id, now, actor, s.guard, ev); err != nil {
 		return err
 	}
 	return s.sessions.EndAll(ctx, id, uuid.Nil, EndDeleted)

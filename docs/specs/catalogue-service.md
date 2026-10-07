@@ -40,8 +40,10 @@ An item missing an accounting price or service period is valid in the catalogue 
 `catalogue.created` (after = price snapshot), `catalogue.price_changed` (before/after
 `purchase_price_cents`, `accounting_price_cents`, `currency`, `service_period_months`; a
 change to any of them records it), `catalogue.activated`, `catalogue.deactivated`,
-`catalogue.deleted`. When one update changes both a price and the active flag, the price
-event is recorded.
+`catalogue.updated` (the changed name, details, size group, picture or display rank,
+before/after), `catalogue.deleted`. One update records an event for each kind of change it
+makes, in that order: prices, activation, details. They read on the Audit log and the item's
+Changes ([audit-service.md](audit-service.md)).
 
 Audit events are append-only, so events written before migration `0021` keep their old
 shape: the accounting price under `unit_price_cents` and no purchase price. The price

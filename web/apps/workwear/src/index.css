@@ -1,4 +1,6 @@
 @import '@ppe/ui/styles.css';
+/* Tailwind scans this app's own files; shared packages with components of their own are named here. */
+@source '../../../packages/audit/src';
 
 /*
  * Create Order's composer (container `order`): from 60rem of content (a laptop

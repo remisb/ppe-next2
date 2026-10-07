@@ -47,6 +47,7 @@ export const roles = {
     'roles.manage': { label: 'Manage roles', grants: 'Add, change and delete roles, and give any permission.' },
     'settings.manage': { label: 'Change Settings', grants: 'The supplier’s WhatsApp group.' },
     'backups.read': { label: 'See Backups', grants: 'Whether the database is backed up, and the recent backups.' },
+    'audit.read': { label: 'See the Audit log', grants: 'Every recorded change, who made it and when, across all records.' },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',

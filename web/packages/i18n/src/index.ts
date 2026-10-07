@@ -11,6 +11,7 @@ import { type Lang, currentLang, intlLocales, setCurrentLang } from './current.t
 
 export { type Lang, currentLang, intlLocale, intlLocales } from './current.ts'
 export { type PluralForms, plural } from './plural.ts'
+export { formatEuro } from './money.ts'
 
 /** The languages a user can choose, each named in itself. */
 export const languages: { value: Lang; label: string }[] = [

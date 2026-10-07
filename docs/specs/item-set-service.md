@@ -86,3 +86,10 @@ with two buttons, **Save** and **Skip size update**:
 Picking the employee's saved size, or clearing the size, shows no pop-up. The pop-up is shown
 once per change, so it asks again when the size is changed again. Either way the line keeps the
 size picked, and Mark as Ordered snapshots it.
+
+## Audit
+
+`item_set.created` (name, description, active, lines), `item_set.updated` (the changed fields,
+the whole line list when it changed; nothing when a save changes nothing) and
+`item_set.deleted`, each written in the transaction of its change; updates and deletes lock
+the set and read its lines under `FOR UPDATE` first ([audit-service.md](audit-service.md)).

@@ -17,6 +17,7 @@ export const users: UsersText = {
   you: 'Jūs',
   editUserLabel: (name: string) => `Redaguoti: ${name}`,
   resetPassword: 'Nustatyti naują slaptažodį…',
+  changes: 'Pakeitimai',
 
   admin: 'Administratorius',
   adminGrants: 'Tvarko naudotojus ir gali viską, ką gali vadovas.',

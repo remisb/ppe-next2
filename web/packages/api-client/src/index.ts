@@ -1,4 +1,5 @@
-export { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString, type Client, type ClientOptions } from './client.ts'
+export { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString, type AppName, type Client, type ClientOptions } from './client.ts'
+export { AUDIT_AREAS, AUDIT_EVENTS, isAuditEvent, type AuditArea, type AuditEvent } from './audit.ts'
 export { ApiError, NetworkError } from './errors.ts'
 export { decodeToken, isTokenExpired, type TokenClaims } from './auth.ts'
 export { PERMISSIONS, isPermission, type Permission } from './permissions.ts'

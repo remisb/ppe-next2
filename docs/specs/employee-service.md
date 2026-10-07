@@ -43,6 +43,10 @@ written before 0012 likewise keep `clothing_size` as a letter string.
 
 ## Audit
 
-`employee.created` (after = sizes), `employee.sizes_changed` (before/after sizes, only when a
-size default actually changes, from either PUT), `employee.deleted`. Each event is written
-in the same transaction as the change, from the row read under `FOR UPDATE`.
+`employee.created` (after = sizes), `employee.updated` (the changed first and last name, code
+and preferred language before/after, and `notes_changed: true` when the notes changed, never
+their text), `employee.sizes_changed` (before/after sizes, only when a size default actually
+changes, from either PUT), `employee.deleted`. One PUT that changes both details and sizes
+records both events. Each is written in the same transaction as the change, from the row read
+under `FOR UPDATE`. They read on the Audit log and the employee's Changes
+([audit-service.md](audit-service.md)).

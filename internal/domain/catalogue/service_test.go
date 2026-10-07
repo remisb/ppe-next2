@@ -112,7 +112,7 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Item, er
 	if !ok || cur.Deleted() {
 		return Item{}, ErrNotFound
 	}
-	next, ev, err := m(cur)
+	next, evs, err := m(cur)
 	if err != nil {
 		return Item{}, err
 	}
@@ -120,9 +120,7 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Item, er
 		return Item{}, ErrNameTaken
 	}
 	f.rows[id] = next
-	if ev != nil {
-		f.events = append(f.events, *ev)
-	}
+	f.events = append(f.events, evs...)
 	return next, nil
 }
 
@@ -181,9 +179,11 @@ func TestPriceChangeAudited(t *testing.T) {
 	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
 		t.Fatal(err)
 	}
-	if len(repo.events) != 0 {
-		t.Fatalf("details change recorded %+v", repo.events)
+	if len(repo.events) != 1 || repo.events[0].Event != EventUpdated ||
+		string(repo.events[0].Before) != `{"details":""}` || string(repo.events[0].After) != `{"details":"Model X"}` {
+		t.Fatalf("details change recorded %+v, want only catalogue.updated", repo.events)
 	}
+	repo.events = nil
 
 	p.AccountingPriceCents = i64(3500)
 	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
@@ -289,5 +289,28 @@ func TestPriceHistory(t *testing.T) {
 	}
 	if _, err := svc.PriceHistory(ctx, uuid.New()); !errors.Is(err, ErrNotFound) {
 		t.Errorf("unknown item: %v, want ErrNotFound", err)
+	}
+}
+
+func TestOneSaveRecordsEachKindOfChange(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	p := Params{Name: "Work jacket", SizeGroup: size.GroupClothing, AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
+	i, _ := svc.Create(ctx, p, testActor)
+	repo.events = nil
+
+	p.Name, p.AccountingPriceCents, p.Active = "Winter jacket", i64(4200), false
+	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, ev := range repo.events {
+		got = append(got, ev.Event)
+	}
+	if strings.Join(got, ",") != "catalogue.price_changed,catalogue.deactivated,catalogue.updated" {
+		t.Fatalf("events = %v", got)
+	}
+	if string(repo.events[2].After) != `{"name":"Winter jacket"}` {
+		t.Errorf("updated after = %s", repo.events[2].After)
 	}
 }

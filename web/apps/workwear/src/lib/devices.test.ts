@@ -1,7 +1,7 @@
 import type { SignedInDevice } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { deviceLabel, deviceName, sortDevices } from './devices'
+import { deviceLabel, sortDevices } from './devices'
 
 const agents = {
   chromeWindows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
@@ -13,24 +13,6 @@ const agents = {
   samsungAndroid: 'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36',
   chromeAndroid: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
 }
-
-describe('deviceName', () => {
-  it('names common browsers and systems, the more specific browser first', () => {
-    expect(deviceName(agents.chromeWindows)).toEqual({ browser: 'Chrome', system: 'Windows' })
-    expect(deviceName(agents.edgeWindows)).toEqual({ browser: 'Edge', system: 'Windows' })
-    expect(deviceName(agents.safariIphone)).toEqual({ browser: 'Safari', system: 'iPhone' })
-    expect(deviceName(agents.chromeIphone)).toEqual({ browser: 'Chrome', system: 'iPhone' })
-    expect(deviceName(agents.safariMac)).toEqual({ browser: 'Safari', system: 'Mac' })
-    expect(deviceName(agents.firefoxLinux)).toEqual({ browser: 'Firefox', system: 'Linux' })
-    expect(deviceName(agents.samsungAndroid)).toEqual({ browser: 'Samsung Internet', system: 'Android' })
-    expect(deviceName(agents.chromeAndroid)).toEqual({ browser: 'Chrome', system: 'Android' })
-  })
-
-  it('knows nothing of an unknown or empty string', () => {
-    expect(deviceName('')).toEqual({ browser: null, system: null })
-    expect(deviceName('curl/8.7.1')).toEqual({ browser: null, system: null })
-  })
-})
 
 describe('deviceLabel', () => {
   it('says the browser on the system, or what is known', () => {

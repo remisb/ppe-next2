@@ -42,7 +42,10 @@ proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`).
 is TypeScript source like `api-client` (explicit `.ts` imports, no build step). Import a
 component from `@ppe/ui/components/<name>`, never copy one into an app. An app's
 `index.css` starts with `@import '@ppe/ui/styles.css'`, which also tells Tailwind to scan
-the package. Run shadcn's CLI in `packages/ui` (its `components.json`).
+the package. Tailwind scans nothing else outside the app: a package with components of its
+own (`@ppe/audit`) is named with `@source '../../../packages/<name>/src'` in the `index.css`
+of every app that uses it, or its classes are silently missing. Run shadcn's CLI in
+`packages/ui` (its `components.json`).
 
 **Permissions, not roles, decide what a screen shows.** `session.can('orders.delete')`,
 from the token's `perms` (the user's roles may change; their names say nothing). The

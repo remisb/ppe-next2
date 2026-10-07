@@ -9,8 +9,8 @@ import (
 )
 
 // Mutation computes an item's new state from its current, locked state plus
-// the audit event to record (nil for none). See employee.Mutation.
-type Mutation func(cur Item) (Item, *audit.Event, error)
+// the audit events to record (none for none). See employee.Mutation.
+type Mutation func(cur Item) (Item, []audit.Event, error)
 
 type Repository interface {
 	Create(ctx context.Context, i Item, ev *audit.Event) error

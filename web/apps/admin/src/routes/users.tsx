@@ -17,6 +17,7 @@ import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
+import type { Route } from '@/lib/router'
 import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleGrants, roleName, roleRank, rolesOf, validateNewPassword, validateUser } from '@/lib/users'
 
 type UserSort = 'name' | 'email' | 'roles' | 'status'
@@ -33,7 +34,7 @@ const columns = (): SortColumn<UserSort>[] => [
  * For whoever manages users; the navigation shows it to them alone, and the
  * API refuses everyone else.
  */
-export function UsersPage() {
+export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
   const allowed = session.can('users.manage')
@@ -149,6 +150,11 @@ export function UsersPage() {
                   </Button>{' '}
                   <MoreActions label={t.common.moreActions(u.name)}>
                     <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
+                    {session.can('audit.read') ? (
+                      <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'user', entity_id: u.id } })}>
+                        {t.users.changes}
+                      </DropdownMenuItem>
+                    ) : null}
                   </MoreActions>
                 </TableCell>
               </TableRow>

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -64,6 +67,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
+		audit.NewPostgresStore(pool),
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
@@ -150,8 +154,8 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 
 	var events int
 	pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE entity_id = $1`, id).Scan(&events)
-	if events != 2 { // created + sizes_changed
-		t.Errorf("audit events = %d, want 2", events)
+	if events != 3 { // created, updated (language), sizes_changed
+		t.Errorf("audit events = %d, want 3", events)
 	}
 
 	if rec := api.do(t, "DELETE", "/api/v1/employees/"+id, mgr, nil); rec.Code != http.StatusNoContent {
@@ -825,5 +829,134 @@ func TestPostgresReady(t *testing.T) {
 	ahead := dbReadiness{pool: pool, want: append(db.Migrations(), "9999_not_yet.up.sql")}
 	if err := ahead.Ready(ctx); !errors.Is(err, errMigrationsPending) || !strings.Contains(err.Error(), "9999_not_yet") {
 		t.Fatalf("a build ahead of the database: %v, want migrations pending naming the file", err)
+	}
+}
+
+// TestPostgresAuditLogHTTP: changes made through the API are on the Audit log
+// with who, where and in which request and sign-in; History shows one
+// record's changes to whoever may open it, and the log only to audit.read.
+func TestPostgresAuditLogHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `TRUNCATE audit_events`); err != nil {
+		t.Fatal(err)
+	}
+	staffUser, staff := api.userWith(t, role.KeyEmployee)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, admin := api.userWith(t, role.KeyAdmin)
+
+	// The staff app creates an employee and renames them; the request's ID is
+	// returned and recorded.
+	fromApp := func(method, path, token, app string, body any) *httptest.ResponseRecorder {
+		b, _ := json.Marshal(body)
+		req := httptest.NewRequest(method, path, bytes.NewReader(b))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set(appHeader, app)
+		rec := httptest.NewRecorder()
+		api.handler.ServeHTTP(rec, req)
+		return rec
+	}
+	rec := fromApp("POST", "/api/v1/employees", staff, "workwear", map[string]any{"first_name": "Ona", "last_name": "Jonaitė"})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = fromApp("PUT", "/api/v1/employees/"+id, staff, "workwear", map[string]any{"first_name": "Ona", "last_name": "Petraitė", "notes": "left-handed"})
+	renameRequest := rec.Header().Get("X-Request-ID")
+	if rec.Code != http.StatusOK || renameRequest == "" {
+		t.Fatalf("rename = %d, request id %q", rec.Code, renameRequest)
+	}
+
+	// Only audit.read opens the log.
+	for who, tok := range map[string]string{"employee": staff, "manager": mgr} {
+		if rec := api.do(t, "GET", "/api/v1/audit-events", tok, nil); rec.Code != http.StatusForbidden {
+			t.Errorf("%s reads the log: %d", who, rec.Code)
+		}
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?area=employees", admin, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("log = %d %s", rec.Code, rec.Body)
+	}
+	page := decode[struct {
+		Events []map[string]any `json:"events"`
+		Next   *string          `json:"next"`
+	}](t, rec.Body.Bytes())
+	if len(page.Events) != 2 || page.Next != nil {
+		t.Fatalf("employee events = %v", page.Events)
+	}
+	renamed := page.Events[0]
+	want := map[string]any{
+		"event": "employee.updated", "area": "employees", "entity_type": "employee", "entity_id": id,
+		"entity_label": "Ona Petraitė", "entity_deleted": false, "actor_id": staffUser.ID.String(), "actor_name": "U",
+		"source": "workwear", "request_id": renameRequest,
+	}
+	for k, v := range want {
+		if renamed[k] != v {
+			t.Errorf("%s = %v, want %v", k, renamed[k], v)
+		}
+	}
+	if renamed["session_id"] == nil {
+		t.Error("the sign-in the change was made in is not recorded")
+	}
+	if after := renamed["after"].(map[string]any); after["last_name"] != "Petraitė" || after["notes_changed"] != true || after["notes"] != nil {
+		t.Errorf("after = %v", after)
+	}
+
+	// One event at its own address.
+	rec = api.do(t, "GET", "/api/v1/audit-events/"+renamed["id"].(string), admin, nil)
+	if got := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || got["request_id"] != renameRequest {
+		t.Errorf("one event = %d %v", rec.Code, got)
+	}
+	if rec := api.do(t, "GET", "/api/v1/audit-events/"+uuid.NewString(), admin, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("no such event = %d", rec.Code)
+	}
+
+	// Filters combine; paging continues where the last page ended.
+	rec = api.do(t, "GET", "/api/v1/audit-events?event=employee.created&actor="+staffUser.ID.String(), admin, nil)
+	if got := decode[struct{ Events []map[string]any }](t, rec.Body.Bytes()).Events; len(got) != 1 || got[0]["event"] != "employee.created" {
+		t.Errorf("created by staff = %v", got)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?page_size=1", admin, nil)
+	first := decode[struct {
+		Events []map[string]any
+		Next   *string
+	}](t, rec.Body.Bytes())
+	if len(first.Events) != 1 || first.Next == nil {
+		t.Fatalf("first page = %+v", first)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?page_size=1&after="+*first.Next, admin, nil)
+	second := decode[struct{ Events []map[string]any }](t, rec.Body.Bytes()).Events
+	if len(second) != 1 || second[0]["id"] == first.Events[0]["id"] {
+		t.Errorf("second page = %v", second)
+	}
+
+	// History: anyone who may open the employee; 404 for no such employee.
+	rec = api.do(t, "GET", "/api/v1/audit-events/employees/"+id, staff, nil)
+	if got := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(got) != 2 {
+		t.Errorf("history = %d %v", rec.Code, got)
+	}
+	if rec := api.do(t, "GET", "/api/v1/audit-events/employees/"+uuid.NewString(), staff, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("history of no one = %d", rec.Code)
+	}
+	if rec := api.do(t, "GET", "/api/v1/audit-events/users/"+staffUser.ID.String(), staff, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("an employee reads a user's history: %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events/users/"+staffUser.ID.String(), mgr, nil)
+	if got := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(got) != 1 || got[0]["event"] != "user.created" {
+		t.Errorf("user history = %d %v", rec.Code, got)
+	}
+
+	// A deleted employee keeps their changes on the log, named and marked deleted.
+	if rec := api.do(t, "DELETE", "/api/v1/employees/"+id, mgr, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?entity_type=employee&entity_id="+id, admin, nil)
+	got := decode[struct{ Events []map[string]any }](t, rec.Body.Bytes()).Events
+	if len(got) != 3 || got[0]["event"] != "employee.deleted" || got[0]["entity_deleted"] != true || got[0]["entity_label"] != "Ona Petraitė" {
+		t.Errorf("after delete = %v", got)
+	}
+	// Without the app's header the change is from the API.
+	if got[0]["source"] != "api" {
+		t.Errorf("source = %v, want api", got[0]["source"])
 	}
 }

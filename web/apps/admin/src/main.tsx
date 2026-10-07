@@ -15,7 +15,7 @@ if (!container) throw new Error('#root is missing from index.html')
 
 createRoot(container).render(
   <StrictMode>
-    <ApiProvider setLanguage={setLanguage}>
+    <ApiProvider app="admin" setLanguage={setLanguage}>
       <App />
     </ApiProvider>
   </StrictMode>,

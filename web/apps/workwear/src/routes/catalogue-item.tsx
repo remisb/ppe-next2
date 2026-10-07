@@ -1,5 +1,6 @@
 import type { ListedOrder, PriceEntry } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
+import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
@@ -28,9 +29,10 @@ const ORDERS_SHOWN = 100
 
 /**
  * One catalogue item (/catalogue/<id>): its current values, which new orders
- * take, its price history, the orders that hold it and the item sets that
- * hold it. Managers edit and (de)activate it here as in the list. Orders keep
- * the values they were placed with, so their prices come from the snapshots.
+ * take, its price history, the orders that hold it, the item sets that hold
+ * it, and its Changes (who changed what, and when). Managers edit and
+ * (de)activate it here as in the list. Orders keep the values they were
+ * placed with, so their prices come from the snapshots.
  */
 export function CatalogueItemPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
@@ -194,6 +196,8 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
               {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
             </a>
           </section>
+
+          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} />
 
           <ItemForm
             item={editing ? i : null}

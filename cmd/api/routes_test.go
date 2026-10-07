@@ -38,7 +38,7 @@ type memRepo struct {
 	users map[uuid.UUID]user.User
 }
 
-func (m *memRepo) Create(_ context.Context, u user.User) error {
+func (m *memRepo) Create(_ context.Context, u user.User, _ audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, x := range m.users {
@@ -83,7 +83,7 @@ func (m *memRepo) List(_ context.Context) ([]user.User, error) {
 	return out, nil
 }
 
-func (m *memRepo) Update(_ context.Context, u user.User, _ uuid.UUID, _ *audit.Event) error {
+func (m *memRepo) Update(_ context.Context, u user.User, _ uuid.UUID, _ []audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if x, ok := m.users[u.ID]; !ok || x.DeletedAt != nil {
@@ -113,7 +113,7 @@ func (m *memRepo) roleIDs(id uuid.UUID) []uuid.UUID {
 	return m.users[id].RoleIDs
 }
 
-func (m *memRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID) error {
+func (m *memRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, _ audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	u, ok := m.users[id]
@@ -125,7 +125,7 @@ func (m *memRepo) SetPasswordHash(_ context.Context, id uuid.UUID, hash string, 
 	return nil
 }
 
-func (m *memRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID) error {
+func (m *memRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, _ audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	u, ok := m.users[id]
@@ -137,7 +137,7 @@ func (m *memRepo) SetLanguage(_ context.Context, id uuid.UUID, lang string, at t
 	return nil
 }
 
-func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID, _ uuid.UUID) error {
+func (m *memRepo) Delete(_ context.Context, id uuid.UUID, at time.Time, by uuid.UUID, _ uuid.UUID, _ audit.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	u, ok := m.users[id]
@@ -335,9 +335,14 @@ func (stubCatalogue) Update(context.Context, uuid.UUID, catalogue.Mutation) (cat
 	return catalogue.Item{}, catalogue.ErrNotFound
 }
 
+// stubAudit is an empty trail.
+type stubAudit struct{}
+
+func (stubAudit) List(context.Context, audit.Query) ([]audit.Entry, error) { return nil, nil }
+
 type stubItemSets struct{}
 
-func (stubItemSets) Create(context.Context, itemset.ItemSet) error { return nil }
+func (stubItemSets) Create(context.Context, itemset.ItemSet, audit.Event) error { return nil }
 func (stubItemSets) Get(context.Context, uuid.UUID) (itemset.ItemSet, error) {
 	return itemset.ItemSet{}, itemset.ErrNotFound
 }
@@ -345,8 +350,9 @@ func (stubItemSets) List(context.Context) ([]itemset.ItemSet, error) { return []
 func (stubItemSets) ListActive(context.Context) ([]itemset.ItemSet, error) {
 	return []itemset.ItemSet{}, nil
 }
-func (stubItemSets) Update(context.Context, itemset.ItemSet) error { return itemset.ErrNotFound }
-func (stubItemSets) Delete(context.Context, itemset.ItemSet) error { return itemset.ErrNotFound }
+func (stubItemSets) Update(context.Context, uuid.UUID, itemset.Mutation) (itemset.ItemSet, error) {
+	return itemset.ItemSet{}, itemset.ErrNotFound
+}
 
 type stubOrders struct{}
 
@@ -435,7 +441,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, sessions, roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
+	svc := newServices(time.UTC, time.Hour, sessions, roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{})
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
@@ -589,6 +595,12 @@ var policy = map[string]rule{
 	"GET /api/v1/dashboard/employee":                {role.DashboardEmployee, "employee"},
 	"GET /api/v1/replacements":                      {"", "any"},
 	"GET /api/v1/backups":                           {role.BackupsRead, "admins"},
+	"GET /api/v1/audit-events":                      {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/{id}":                 {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/employees/{id}":       {"", "any"},
+	"GET /api/v1/audit-events/catalogue/{id}":       {"", "any"},
+	"GET /api/v1/audit-events/orders/{id}":          {"", "any"},
+	"GET /api/v1/audit-events/users/{id}":           {role.UsersRead, "managers"},
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed roles.

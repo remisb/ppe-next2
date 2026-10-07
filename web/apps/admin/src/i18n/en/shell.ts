@@ -8,6 +8,8 @@ export const shell = {
   shortUsers: 'Users',
   roles: 'Roles & permissions',
   shortRoles: 'Roles',
+  audit: 'Audit log',
+  shortAudit: 'Audit',
   settings: 'Settings',
   shortSettings: 'Settings',
   backups: 'Backups',
@@ -19,7 +21,7 @@ export const shell = {
   shortAccount: 'Account',
   signOut: 'Sign out',
   notForYouTitle: 'Administration is for administrators',
-  notForYou: 'Your roles do not let you manage users, roles, settings or backups. Ask an administrator if you need to.',
+  notForYou: 'Your roles do not let you manage users, roles, settings or backups, or read the Audit log. Ask an administrator if you need to.',
   backToWorkwear: 'Back to Workwear & Equipment',
 }
 

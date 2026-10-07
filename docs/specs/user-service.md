@@ -58,7 +58,7 @@ Everything else a signed-in user does needs no permission.
 | `GET /api/v1/users/{id}` | `users.read` | single object, 404 on miss |
 | `GET /api/v1/users/by-email/{email}` | `users.read` | single-object lookup, 404 on miss |
 | `POST /api/v1/users` | `users.manage`, sensitive | body `{email, name, password, role_ids}`; an unknown role 400 |
-| `PUT /api/v1/users/{id}` | `users.manage`, sensitive | body `{email, name, role_ids, is_active}`, all required (full replace); deactivating signs the user out everywhere; a role change is audited (`user.roles_changed`, `{role_ids}` before and after) |
+| `PUT /api/v1/users/{id}` | `users.manage`, sensitive | body `{email, name, role_ids, is_active}`, all required (full replace); deactivating signs the user out everywhere; audited as `user.updated` (changed name/email), `user.roles_changed` (`{role_ids}` before and after) and `user.activated`/`user.deactivated` |
 | `PUT /api/v1/users/{id}/password` | `users.manage`, sensitive | body `{password}`, admin reset; signs the user out everywhere |
 | `DELETE /api/v1/users/{id}` | `users.manage`, sensitive | soft delete; signs the user out everywhere |
 
@@ -137,3 +137,12 @@ in: it is inactive and its password hash (`!`) matches no password. It limits no
 itself; a sync that connects to the database directly has that connection's privileges.
 Its down migration fails while any row still names it as an actor. Postgres tests and the
 e2e suite truncate `users`, so it is absent from the test database after they run.
+
+## Audit
+
+Every change to an account is recorded ([audit-service.md](audit-service.md)): `user.created`
+(name, email, role ids, active; never the password), `user.updated` (the changed name or email
+from an edit, or the language its user set), `user.roles_changed`, `user.activated`,
+`user.deactivated`, `user.password_changed` (by its user) and `user.password_reset` (by an
+administrator), both with no values, and `user.deleted`. Each is written in the transaction
+of its change.

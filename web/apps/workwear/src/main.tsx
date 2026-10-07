@@ -17,7 +17,7 @@ if (!container) throw new Error('#root is missing from index.html')
 createRoot(container).render(
   <StrictMode>
     {/* Sign out drops the user's Create Order draft from this device. */}
-    <ApiProvider setLanguage={setLanguage} onSignOut={clearDraft}>
+    <ApiProvider app="workwear" setLanguage={setLanguage} onSignOut={clearDraft}>
       <App />
     </ApiProvider>
   </StrictMode>,

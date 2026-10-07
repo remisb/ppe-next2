@@ -1,5 +1,6 @@
 import type { Order } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
+import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
@@ -90,6 +91,8 @@ export function OrderDetail({
             onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
           />
           {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
+          {/* Loaded again whenever the order is (after a confirmation), so its new step shows. */}
+          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} />
           {handingOver ? (
             <HandOver
               orderId={o.id}

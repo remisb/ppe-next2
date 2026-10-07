@@ -17,6 +17,7 @@ export const users: UsersText = {
   you: 'Вы',
   editUserLabel: (name: string) => `Изменить: ${name}`,
   resetPassword: 'Сбросить пароль…',
+  changes: 'Изменения',
 
   admin: 'Администратор',
   adminGrants: 'Управляет пользователями и может всё, что может менеджер.',

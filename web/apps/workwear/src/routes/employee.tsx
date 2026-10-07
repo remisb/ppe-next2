@@ -1,5 +1,6 @@
 import type { Employee } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
+import { RecordChanges } from '@ppe/audit'
 import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
@@ -33,7 +34,8 @@ import { EditSizes, MissingBadge } from './employees'
  * to them with a link to each receipt and when each is due for replacement,
  * and items ordered but not yet given. Items come from order snapshots, so
  * they show what was actually issued. New order and Reorder start Create
- * Order for them; Edit details and Delete are under ⋯.
+ * Order for them; Edit details and Delete are under ⋯. Changes lists who
+ * changed their details and sizes, and when.
  */
 export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
@@ -175,6 +177,8 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
             </section>
           ) : null}
+
+          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} />
 
           <EmployeeForm
             open={editing}

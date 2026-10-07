@@ -1,1 +1,3 @@
 @import '@ppe/ui/styles.css';
+/* Tailwind scans this app's own files; shared packages with components of their own are named here. */
+@source '../../../packages/audit/src';

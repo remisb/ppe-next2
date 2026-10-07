@@ -1,4 +1,4 @@
-import { ApiError, type Client, type LoginResponse, NetworkError, createClient } from '@ppe/api-client'
+import { ApiError, type AppName, type Client, type LoginResponse, NetworkError, createClient } from '@ppe/api-client'
 import { type Lang, deviceLanguage, isLang, rememberDeviceLanguage } from '@ppe/i18n'
 import { Fragment, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -42,13 +42,15 @@ const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastCh
 
 export interface ApiProviderProps {
   children: ReactNode
+  /** Which app this is, sent with every request so the Audit log can say where a change was made. */
+  app: AppName
   /** The app's language switch, which swaps its own words (its `t`) as well as the shared ones. */
   setLanguage: (lang: Lang) => void
   /** Run when the user signs out here, before the session is dropped: the app clears what it keeps per user on this device. */
   onSignOut?: (userId: string) => void
 }
 
-export function ApiProvider({ children, setLanguage, onSignOut }: ApiProviderProps) {
+export function ApiProvider({ children, app, setLanguage, onSignOut }: ApiProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [status, setStatus] = useState<ApiContext['status']>('starting')
   // The client reads the token through a ref so it never needs rebuilding.
@@ -100,6 +102,7 @@ export function ApiProvider({ children, setLanguage, onSignOut }: ApiProviderPro
 
   const client = useMemo(() => {
     const c = createClient({
+      app,
       getToken: () => sessionRef.current?.token ?? null,
       renew: () => refresh().then((r) => r === 'signedIn'),
       onUnauthenticated: drop,
@@ -113,7 +116,7 @@ export function ApiProvider({ children, setLanguage, onSignOut }: ApiProviderPro
     })
     clientRef.current = c
     return c
-  }, [refresh, drop])
+  }, [app, refresh, drop])
 
   const start = useCallback(() => {
     setStatus('starting')

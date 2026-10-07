@@ -4,12 +4,13 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, DatabaseBackup, Ellipsis, KeyRound, LogOut, Settings as SettingsIcon, UserCog, UserRound } from 'lucide-react'
+import { ArrowLeft, DatabaseBackup, Ellipsis, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, UserCog, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { type Route, type Screen, linkTo, screens, startRoute, useRouter } from '@/lib/router'
+import { type Route, type Screen, linkTo, screenRoute, screens, startRoute, useRouter } from '@/lib/router'
 
+import { AuditPage } from './routes/audit'
 import { BackupsPage } from './routes/backups'
 import { RolesPage } from './routes/roles'
 import { SettingsPage } from './routes/settings'
@@ -26,11 +27,12 @@ interface Section {
 const sections = (): Record<Screen, Section> => ({
   users: { name: 'users', label: t.shell.users, short: t.shell.shortUsers, icon: UserCog },
   roles: { name: 'roles', label: t.shell.roles, short: t.shell.shortRoles, icon: KeyRound },
+  audit: { name: 'audit', label: t.shell.audit, short: t.shell.shortAudit, icon: ScrollText },
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon },
   backups: { name: 'backups', label: t.shell.backups, short: t.shell.shortBackups, icon: DatabaseBackup },
 })
 
-/** The phone bar's columns: the sections the user may open, and More. */
+/** The phone bar's columns, by how many sections the user may open (one to five): those, and More. */
 const phoneColumns = ['grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-5', 'grid-cols-6']
 
 /*
@@ -95,12 +97,12 @@ export function App() {
           aria-label={t.shell.mainNav}
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
-            phoneColumns[shown.length],
+            phoneColumns[shown.length - 1],
             'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
           {shown.map((s) => (
-            <a key={s.name} {...link({ name: s.name })} aria-current={route.name === s.name ? 'page' : undefined} className={navItem}>
+            <a key={s.name} {...link(screenRoute(s.name))} aria-current={route.name === s.name ? 'page' : undefined} className={navItem}>
               <span className={navIcon}>
                 <s.icon aria-hidden className="size-5 xl:size-4" />
               </span>
@@ -147,8 +149,9 @@ export function App() {
         tabIndex={-1}
         className="mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none md:px-6 md:py-8 xl:px-10"
       >
-        {route.name === 'users' ? <UsersPage /> : null}
+        {route.name === 'users' ? <UsersPage navigate={navigate} /> : null}
         {route.name === 'roles' ? <RolesPage /> : null}
+        {route.name === 'audit' ? <AuditPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
         {route.name === 'backups' ? <BackupsPage /> : null}
       </main>

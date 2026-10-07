@@ -15,6 +15,7 @@
   "dependencies": {
     "@ppe/api-client": "workspace:*",
     "@ppe/app-shell": "workspace:*",
+    "@ppe/audit": "workspace:*",
     "@ppe/backups": "workspace:*",
     "@ppe/i18n": "workspace:*",
     "@ppe/routing": "workspace:*",

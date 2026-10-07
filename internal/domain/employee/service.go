@@ -13,6 +13,7 @@ import (
 // Audit event names and entity type written by this service.
 const (
 	EventCreated      = "employee.created"
+	EventUpdated      = "employee.updated"
 	EventSizesChanged = "employee.sizes_changed"
 	EventDeleted      = "employee.deleted"
 	auditEntity       = "employee"
@@ -63,6 +64,26 @@ func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time
 		return nil, err
 	}
 	return &ev, nil
+}
+
+// detailsChange is what employee.updated records: the changed name, code and
+// language, before and after. Notes may hold personal details, so a change to
+// them is recorded as notes_changed, never their text.
+func detailsChange(cur, next Employee) (before, after map[string]any) {
+	before, after = map[string]any{}, map[string]any{}
+	set := func(key string, changed bool, b, a any) {
+		if changed {
+			before[key], after[key] = b, a
+		}
+	}
+	set("first_name", cur.FirstName != next.FirstName, cur.FirstName, next.FirstName)
+	set("last_name", cur.LastName != next.LastName, cur.LastName, next.LastName)
+	set("code", !eqPtr(cur.Code, next.Code), cur.Code, next.Code)
+	set("preferred_language", !eqPtr(cur.PreferredLanguage, next.PreferredLanguage), cur.PreferredLanguage, next.PreferredLanguage)
+	if cur.Notes != next.Notes {
+		after["notes_changed"] = true
+	}
+	return before, after
 }
 
 // Create adds an employee. Only first and last name are required.
@@ -116,7 +137,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	if err := p.Validate(); err != nil {
 		return Employee{}, err
 	}
-	return s.repo.Update(ctx, id, func(cur Employee) (Employee, *audit.Event, error) {
+	return s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
 		next := cur
 		next.FirstName, next.LastName, next.Code, next.Notes = p.FirstName, p.LastName, p.Code, p.Notes
 		next.PreferredLanguage = p.PreferredLanguage
@@ -134,23 +155,35 @@ func (s *Service) UpdateSizes(ctx context.Context, id uuid.UUID, p SizesParams, 
 	if err := p.Validate(); err != nil {
 		return Employee{}, err
 	}
-	return s.repo.Update(ctx, id, func(cur Employee) (Employee, *audit.Event, error) {
+	return s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
 		next := cur
 		next.HeightCm, next.ClothingSize, next.ShoeSize = p.HeightCm, p.ClothingSize, p.ShoeSize
 		return s.touch(cur, next, actor)
 	})
 }
 
-// touch stamps next and builds the sizes_changed event when sizes differ.
-func (s *Service) touch(cur, next Employee, actor uuid.UUID) (Employee, *audit.Event, error) {
+// touch stamps next and builds the events describing the change:
+// employee.updated for the name, code, notes or language, and
+// employee.sizes_changed for the size defaults.
+func (s *Service) touch(cur, next Employee, actor uuid.UUID) (Employee, []audit.Event, error) {
 	now := s.now()
 	next.UpdatedAt, next.UpdatedByUserID = now, actor
-	before, after := snapshotOf(cur), snapshotOf(next)
-	if before.equal(after) {
-		return next, nil, nil
+	var evs []audit.Event
+	if before, after := detailsChange(cur, next); len(after) > 0 {
+		ev, err := s.event(actor, EventUpdated, cur.ID, now, before, after)
+		if err != nil {
+			return next, nil, err
+		}
+		evs = append(evs, *ev)
 	}
-	ev, err := s.event(actor, EventSizesChanged, cur.ID, now, before, after)
-	return next, ev, err
+	if before, after := snapshotOf(cur), snapshotOf(next); !before.equal(after) {
+		ev, err := s.event(actor, EventSizesChanged, cur.ID, now, before, after)
+		if err != nil {
+			return next, nil, err
+		}
+		evs = append(evs, *ev)
+	}
+	return next, evs, nil
 }
 
 // Delete soft-deletes an employee. Their orders keep their snapshots.
@@ -158,13 +191,16 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
 	}
-	_, err := s.repo.Update(ctx, id, func(cur Employee) (Employee, *audit.Event, error) {
+	_, err := s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
 		now := s.now()
 		next := cur
 		next.DeletedAt, next.DeletedByUserID = &now, &actor
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
 		ev, err := s.event(actor, EventDeleted, cur.ID, now, nil, nil)
-		return next, ev, err
+		if err != nil {
+			return next, nil, err
+		}
+		return next, []audit.Event{*ev}, nil
 	})
 	return err
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -82,6 +83,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
+		audit.NewPostgresStore(pool),
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
 
@@ -133,13 +135,14 @@ type services struct {
 	dashboard *dashboard.Service
 	settings  *settings.Service
 	backups   *backup.Service
+	audit     *audit.Service
 	// ready answers GET /ready; run sets it, tests stub it.
 	ready readiness
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store) services {
 	s := services{
 		sessions:  sessions,
 		roles:     roles,
@@ -149,6 +152,7 @@ func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
+		audit:     audit.NewService(trail, audit.WithLocation(loc)),
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -178,6 +182,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerBackupRoutes(rt, svc.backups)
+	registerAuditRoutes(rt, svc)
 	return rt
 }
 
@@ -189,11 +194,13 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 		middleware.Recoverer(logger),
 		// Before Logger and the rate limiters, which read the client it resolves.
 		middleware.ClientIP(middleware.ClientIPConfig{TrustedProxies: cfg.TrustedProxies}),
+		requestContext(tok),
 		middleware.Logger(logger),
 	}
 	if len(cfg.AllowedOrigins) > 0 {
 		cors := middleware.DefaultCORSConfig()
 		cors.AllowedOrigins = cfg.AllowedOrigins
+		cors.AllowedHeaders = append(cors.AllowedHeaders, appHeader)
 		global = append(global, middleware.CORS(cors))
 	}
 	global = append(global, middleware.Timeout(cfg.RequestTimeout))

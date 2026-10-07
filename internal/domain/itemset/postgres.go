@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/remisb/ppe-next2/internal/audit"
 )
 
 // PostgresRepository stores sets in item_sets and item_set_lines (migration 0005).
@@ -109,46 +111,68 @@ func (r *PostgresRepository) ListActive(ctx context.Context) ([]ItemSet, error) 
 	return r.query(ctx, `SELECT `+columns+` FROM item_sets WHERE deleted_at IS NULL AND active ORDER BY lower(name), id`)
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, s ItemSet) error {
+func (r *PostgresRepository) Create(ctx context.Context, s ItemSet, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO item_sets (id, name, description, active, created_at, updated_at,
 			created_by_user_id, updated_by_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 			s.ID, s.Name, s.Description, s.Active, s.CreatedAt, s.UpdatedAt, s.CreatedByUserID, s.UpdatedByUserID); err != nil {
 			return err
 		}
-		return insertLines(ctx, tx, s)
+		if err := insertLines(ctx, tx, s); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
 	}))
 }
 
-func (r *PostgresRepository) Update(ctx context.Context, s ItemSet) error {
-	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `UPDATE item_sets SET name = $2, description = $3, active = $4,
-			updated_at = $5, updated_by_user_id = $6 WHERE id = $1 AND deleted_at IS NULL`,
-			s.ID, s.Name, s.Description, s.Active, s.UpdatedAt, s.UpdatedByUserID)
+func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (ItemSet, error) {
+	var out ItemSet
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		cur, err := scan(tx.QueryRow(ctx, `SELECT `+columns+` FROM item_sets WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, id))
 		if err != nil {
 			return err
 		}
-		if tag.RowsAffected() == 0 {
-			return ErrNotFound
-		}
-		if _, err := tx.Exec(ctx, `DELETE FROM item_set_lines WHERE item_set_id = $1`, s.ID); err != nil {
+		if cur.Lines, err = readLines(ctx, tx, id); err != nil {
 			return err
 		}
-		return insertLines(ctx, tx, s)
-	}))
+		next, evs, err := m(cur)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE item_sets SET name = $2, description = $3, active = $4,
+			updated_at = $5, updated_by_user_id = $6, deleted_at = $7, deleted_by_user_id = $8 WHERE id = $1`,
+			id, next.Name, next.Description, next.Active, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID); err != nil {
+			return err
+		}
+		if !next.Deleted() {
+			if _, err := tx.Exec(ctx, `DELETE FROM item_set_lines WHERE item_set_id = $1`, id); err != nil {
+				return err
+			}
+			if err := insertLines(ctx, tx, next); err != nil {
+				return err
+			}
+		}
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
+			return err
+		}
+		out = next
+		return nil
+	})
+	return out, translate(err)
 }
 
-func (r *PostgresRepository) Delete(ctx context.Context, s ItemSet) error {
-	tag, err := r.pool.Exec(ctx, `UPDATE item_sets SET deleted_at = $2, deleted_by_user_id = $3,
-		updated_at = $2, updated_by_user_id = $3 WHERE id = $1 AND deleted_at IS NULL`,
-		s.ID, s.DeletedAt, s.DeletedByUserID)
+// readLines reads set id's lines in display order inside tx.
+func readLines(ctx context.Context, tx pgx.Tx, id uuid.UUID) ([]Line, error) {
+	rows, err := tx.Query(ctx, `SELECT catalogue_item_id, default_quantity, display_order
+		FROM item_set_lines WHERE item_set_id = $1 ORDER BY display_order`, id)
 	if err != nil {
-		return translate(err)
+		return nil, err
 	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Line, error) {
+		var l Line
+		err := row.Scan(&l.CatalogueItemID, &l.DefaultQuantity, &l.DisplayOrder)
+		return l, err
+	})
 }
 
 func insertLines(ctx context.Context, tx pgx.Tx, s ItemSet) error {

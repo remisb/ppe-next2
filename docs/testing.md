@@ -140,3 +140,18 @@ Not a manual rule: how the deployment tells whether the API can serve
 | `GET /health` answers while the process runs; `GET /ready` is 200 only when the database answers and holds every migration this build embeds (a newer database is fine), else 503 with `problem` `database` or `migrations`; both public, `/ready` never cached and naming the build's commit but never the detail, which goes to the log | `TestHealthIsOpen`, `TestReady`, `TestRoutePolicy`, `TestPostgresReady`, `db.TestMigrationsListEveryUpFileButBookkeeping` |
 | `-healthcheck` asks the API at `-addr` (no host or an unspecified one is 127.0.0.1) for `/ready`, prints the answer and fails unless it is 200; it needs no other setting | `TestProbeReady`, `TestConfigValidate` |
 | The build's commit comes from `-ldflags -X main.commit`, else Go's VCS stamp, else `unknown` | `TestBuildCommitIsNeverEmpty` |
+
+## Audit log
+
+Not a manual rule: the record of who changed what ([specs/audit-service.md](specs/audit-service.md)).
+
+| Rule | Covered by |
+| --- | --- |
+| Every change to users, roles, employees, catalogue items, item sets, orders and settings is recorded in its own transaction, one event per kind of change and none when nothing changed; passwords and notes text never | `user.TestAccountChangesAudited`, `employee.TestDetailChangesAudited`, `employee.TestSizeChangesAudited`, `catalogue.TestOneSaveRecordsEachKindOfChange`, `catalogue.TestPriceChangeAudited`, `itemset.TestChangesAudited`, `TestPostgresFailedWriteRecordsNoEvent` |
+| The event catalogue matches what the domains write and what the apps describe | `TestEveryDomainEventIsKnown`, `audit.TestWebClientListsTheEvents`, `@ppe/audit` `describe.test.ts` (every event has words), `text.test.ts` |
+| Each change records the request's ID (returned as `X-Request-ID`), the sign-in and the app it was made in | `TestPostgresAuditLogHTTP`, `audit.TestRequestFromDefaultsToSystem` |
+| `GET /api/v1/audit-events` needs `audit.read` (the built-in Administrator, migration 0023); filters combine, unknown or repeated parameters and unknown values are 400; days in the organisation timezone; keyset pages; one event at `/{id}` | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `TestAuditListRejectsUnknownParameters`, `audit.TestFilterResolve`, `audit.TestListPages`, `audit.TestCursorRoundTrip`, `TestPostgresAuditLogHTTP` |
+| A record's Changes for whoever may open it (a user's with `users.read`); 404 for no such record; a deleted record keeps its name on the log, marked deleted | `TestRoutePolicy`, `TestPostgresAuditLogHTTP` |
+| Values read in the user's language: euros, months, sizes, languages, roles and permissions by name; the pre-0021 price key | `@ppe/audit` `describe.test.ts` |
+| Audit log screen: filters and the open change in the address, kept through a reload; a change's fields and where it was made; a record's changes; the item page's Changes; no sideways scroll on a phone or tablet; the phone bar one row with five sections | admin web `router` tests; e2e *Audit log: who changed a price…*, *phone and tablet: …*, *Language: …* (Russian) |
+
