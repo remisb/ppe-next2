@@ -1,5 +1,10 @@
 @import '@ppe/ui/styles.css';
-/* Tailwind scans this app's own files; shared packages with components of their own are named here. */
+/*
+ * Tailwind scans this app's own files and @ppe/ui; every other package with
+ * components of its own is named here, or its classes are silently missing
+ * (app-shell: Sign in, Confirm your password, the checking and offline gates).
+ */
+@source '../../../packages/app-shell/src';
 @source '../../../packages/audit/src';
 
 /*

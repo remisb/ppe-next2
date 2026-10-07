@@ -215,7 +215,7 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   color-scheme: dark;
-  /* Dark: the panel turns navy and the button takes the app's light primary. */
+  /* Dark: the button takes the app's light primary with navy text; the name is light and the logo gold. */
   --brand: oklch(0.922 0 0);
   --brand-foreground: oklch(0.2 0.074 279.7);
   --brand-mark: oklch(0.985 0 0);
@@ -345,7 +345,7 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   color-scheme: dark;
-  /* Dark: the panel turns navy and the button takes the app's light primary. */
+  /* Dark: the button takes the app's light primary with navy text; the name is light and the logo gold. */
   --brand: oklch(0.922 0 0);
   --brand-foreground: oklch(0.2 0.074 279.7);
   --brand-mark: oklch(0.985 0 0);
