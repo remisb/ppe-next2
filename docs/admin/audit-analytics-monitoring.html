@@ -895,10 +895,13 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
       </tbody>
     </table>
   </div>
+  <div class="status">
+    <p class="eyebrow">Since then · 7 Oct</p>
+    <p><b>The API connects as <code>ppe_app</code>.</b> Its password was generated into <code>.env.prod</code> on the droplet and never shown, and the startup upkeep (seals, purges, samples) ran under it without an error.</p>
+  </div>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
     <ul>
-      <li><b>The API still connects as the database owner.</b> <code>.env.prod</code> has no <code>API_DB_USER</code>/<code>API_DB_PASSWORD</code>, so <code>ppe_app</code> exists but cannot sign in. The Overview warns about it.</li>
       <li><b>Backups stay on the droplet.</b> The target is the default <code>backups</code> volume. Last night's run succeeded, but the droplet holds the only copy.</li>
       <li><b>External uptime check and droplet alerts</b> are account settings, not visible from the repository, so they are unconfirmed.</li>
       <li><b>The Help guide</b> does not cover the Overview, Audit log, Security, System or Usage yet.</li>
@@ -907,7 +910,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   </div>
   <div class="phases">
     <div class="phase"><div class="ph-head"><h4>Now</h4><span class="size">small, most of the risk</span></div><ol class="steps">
-      <li><b>Switch the API to <code>ppe_app</code></b> (about 10 min). Until then, phase 4 protects the trails only from the app's own code: an API connected as the owner could disable triggers or rewrite seals. Generate the password into <code>.env.prod</code> on the droplet without printing it, set <code>API_DB_USER=ppe_app</code>, then run <code>make prod-up</code>.</li>
+      <li><s><b>Switch the API to <code>ppe_app</code></b></s> <b>Done 7 Oct.</b> To undo it, remove the two <code>API_DB_*</code> lines from <code>.env.prod</code> and run <code>make prod-up</code>.</li>
       <li><b>Copy backups off the droplet.</b> A lost droplet loses the database and its backups together. Use a Spaces bucket (EU) with encryption, as <code>docs/backups.md</code> describes; it will also hold the seal anchors (step 10).</li>
       <li><b>Turn on the uptime check and droplet alerts.</b> Today nobody hears of an outage unless they open the site. Watch <code>/ready</code> from an EU service, and add CPU, memory and disk alerts (<code>docs/monitoring.md</code>).</li>
       <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>

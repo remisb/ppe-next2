@@ -665,11 +665,12 @@ Security, System (with Backups), Usage and Settings. There are five new permissi
 (`audit.read`, `audit.export`, `security.read`, `system.read`, `usage.read`), all held by the
 Administrator.
 
+**Since then (7 Oct):** the API connects as `ppe_app`. Its password was generated into
+`.env.prod` on the droplet and never shown, and the startup upkeep (seals, purges, samples)
+ran under it without an error.
+
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
-- **The API still connects as the database owner.** `.env.prod` has no
-  `API_DB_USER`/`API_DB_PASSWORD`, so `ppe_app` exists but cannot sign in. The Overview warns
-  about it.
 - **Backups stay on the droplet.** `DBBACKUP_TARGET` is the default `backups` volume. They
   run (the last one succeeded on 7 Oct at 00:00 UTC), but the droplet holds the only copy.
 - **External uptime check and DigitalOcean alerts.** These are account settings
@@ -687,12 +688,8 @@ Administrator.
 
 **Now: small changes, most of the remaining risk**
 
-1. **Switch the API to `ppe_app`.** This takes about ten minutes.
-   - *Why:* Until then, phase 4 protects the trails only from the application's own code. An
-     API connected as the owner could disable the triggers or rewrite the seals.
-   - *How:* generate `API_DB_PASSWORD` into `.env.prod` on the droplet (never printed), set
-     `API_DB_USER=ppe_app`, then run `make prod-up`. The migrate step sets the password, and the
-     Overview's warning goes away. To undo, remove the two lines.
+1. ~~**Switch the API to `ppe_app`.**~~ **Done 7 Oct.** To undo it, remove the two
+   `API_DB_*` lines from `.env.prod` and run `make prod-up`.
 2. **Copy backups off the droplet.**
    - *Why:* A lost droplet loses the database and its backups together.
    - *How:* create a Spaces bucket (EU), set `DBBACKUP_TARGET` and encryption as
