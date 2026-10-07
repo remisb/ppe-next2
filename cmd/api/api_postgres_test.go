@@ -1125,6 +1125,8 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`DELETE FROM auth_events`,
 		`UPDATE order_lines SET quantity = quantity`,
 		`DELETE FROM audit_seals`,
+		`DELETE FROM audit_seal_stamps`,
+		`UPDATE audit_seal_stamps SET tsa = tsa`,
 		`TRUNCATE users CASCADE`,
 		`TRUNCATE app_settings`,
 		`INSERT INTO schema_migrations (filename) VALUES ('9999_x.up.sql')`,

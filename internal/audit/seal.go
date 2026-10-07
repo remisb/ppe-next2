@@ -103,6 +103,10 @@ type SealStore interface {
 	Seals(ctx context.Context) ([]Seal, error)
 	// AddSeal writes s; ErrSealed when that day is sealed already.
 	AddSeal(ctx context.Context, s Seal) error
+	// Stamps are every seal's timestamp, oldest day first.
+	Stamps(ctx context.Context) ([]Stamp, error)
+	// AddStamp writes st; ErrStamped when that day has one already.
+	AddStamp(ctx context.Context, st Stamp) error
 	// Purges are every purge, oldest first.
 	Purges(ctx context.Context) ([]Purge, error)
 	// Purge deletes the events before p.BeforeDay through
@@ -118,7 +122,10 @@ var ErrSealed = fmt.Errorf("day already sealed")
 type Mismatch struct {
 	Day time.Time `json:"day"`
 	// Problem: rows (the count differs), hash (the events differ), chain (a
-	// seal does not follow the one before), or gap (a day has no seal).
+	// seal does not follow the one before), gap (a day has no seal), stamp
+	// (its timestamp is not a trusted one of this seal), late (it was
+	// timestamped after StampGrace) or unstamped (it has no timestamp after
+	// StampGrace).
 	Problem    string `json:"problem"`
 	SealedRows int    `json:"sealed_rows"`
 	FoundRows  int    `json:"found_rows"`
@@ -137,8 +144,15 @@ type Verification struct {
 	FirstDay   *time.Time `json:"first_day"`
 	LastDay    *time.Time `json:"last_day"`
 	// Unsealed counts the events after the last sealed day, not yet sealed.
-	Unsealed int       `json:"unsealed"`
-	Mismatch *Mismatch `json:"mismatch"`
+	Unsealed int `json:"unsealed"`
+	// With timestamps on: Stamped are the seals whose timestamp checked out,
+	// LastStamped the newest of them; StampsWaiting the seals still waiting
+	// for theirs, StampsOverdue those waiting longer than StampOverdue.
+	Stamped       int        `json:"stamped"`
+	LastStamped   *time.Time `json:"last_stamped"`
+	StampsWaiting int        `json:"stamps_waiting"`
+	StampsOverdue int        `json:"stamps_overdue"`
+	Mismatch      *Mismatch  `json:"mismatch"`
 }
 
 // sealUntil is the first day that cannot be sealed yet at now: today, or
@@ -208,6 +222,17 @@ func (s *Service) Verify(ctx context.Context) (Verification, error) {
 			purgedBefore = p.BeforeDay
 		}
 	}
+	var stamps map[time.Time]*Stamp
+	if s.stamps != nil {
+		list, err := s.seals.Stamps(ctx)
+		if err != nil {
+			return v, err
+		}
+		stamps = make(map[time.Time]*Stamp, len(list))
+		for i := range list {
+			stamps[list[i].Day] = &list[i]
+		}
+	}
 	var prev []byte
 	for i, seal := range seals {
 		if i == 0 {
@@ -243,6 +268,12 @@ func (s *Service) Verify(ctx context.Context) (Verification, error) {
 				fail("hash", d.rows)
 			}
 			if !v.OK {
+				break
+			}
+		}
+		if s.stamps != nil {
+			if problem := s.checkStamp(seal, stamps[seal.Day], &v); problem != "" {
+				fail(problem, seal.Rows)
 				break
 			}
 		}

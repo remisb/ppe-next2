@@ -3,6 +3,8 @@ module github.com/remisb/ppe-next2
 go 1.27.1
 
 require (
+	github.com/digitorus/pkcs7 v0.0.0-20260914070511-d678ea5ea03f
+	github.com/digitorus/timestamp v0.0.0-20260914073129-b4b58b92aa51
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
@@ -11,6 +13,7 @@ require (
 	github.com/remisb/dbbackup/postgres v0.1.0
 	github.com/remisb/muxstack v0.0.0-20260925104553-e61b35f6e625
 	golang.org/x/crypto v0.57.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20261005185213-c3db4df58582
 )
 
 require (

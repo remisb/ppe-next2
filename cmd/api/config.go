@@ -49,6 +49,9 @@ type config struct {
 	// purged, whole sealed days at a time (ADR 0003: 10 years, pending the
 	// accountant's word).
 	AuditRetention time.Duration
+	// AuditTSAURL is the timestamp service (RFC 3161) that anchors each
+	// day's audit seal outside the database; empty stamps nothing.
+	AuditTSAURL    string
 	AllowedOrigins []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
@@ -103,6 +106,7 @@ func loadConfig(args []string) (config, error) {
 		OrgTimezone:      env("API_ORG_TIMEZONE", "Europe/Vilnius"),
 		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
 		MetricsAddr:      env("API_METRICS_ADDR", ""),
+		AuditTSAURL:      env("API_AUDIT_TSA_URL", ""),
 	}
 	var err error
 	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
@@ -221,6 +225,11 @@ func (c config) validate() error {
 	}
 	if u, err := url.Parse(c.PublicBaseURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		errs = append(errs, errors.New("API_PUBLIC_BASE_URL must be an absolute http(s) URL"))
+	}
+	if c.AuditTSAURL != "" {
+		if u, err := url.Parse(c.AuditTSAURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			errs = append(errs, errors.New("API_AUDIT_TSA_URL must be empty or an absolute http(s) URL"))
+		}
 	}
 	if c.ConfirmTTL < time.Minute || c.ConfirmTTL > 90*24*time.Hour {
 		errs = append(errs, errors.New("API_CONFIRM_TTL must be between 1m and 2160h"))

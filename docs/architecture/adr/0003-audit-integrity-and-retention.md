@@ -90,6 +90,10 @@ them, and ADR 0001 needs it shared before a second API instance runs.
   the owner, and the Overview says so.
 - A seal cannot catch a change made within the hour's grace before its day is sealed, or a
   rewrite of the whole chain by someone holding the owner's password. Seals anchored outside
-  the database (proposal 3.5 C) would.
+  the database (proposal 3.5 C) would. **Since 7 Oct 2026 they are:** each seal gets a
+  trusted timestamp (RFC 3161) from a public timestamp service, migration 0028 and
+  [audit-service.md](../../specs/audit-service.md). A rewritten chain cannot get timestamps
+  with the original times. The Spaces bucket was not used: it has no write-once lock, and
+  its keys sit on the same server.
 - Removing the in-memory limiter means each sign-in costs one more indexed query
   (`auth_events_email_idx`).

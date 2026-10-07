@@ -477,6 +477,16 @@ function Seals({ timeZone }: { timeZone: string | undefined }) {
               )}
             </p>
           )}
+          {!bad ? (
+            <p className="text-muted-foreground">
+              {i.tsa
+                ? i.last_stamped
+                  ? t.audit.timestampedThrough(dayText(i.last_stamped), hostOf(i.tsa))
+                  : t.audit.noStampYet(hostOf(i.tsa))
+                : t.audit.timestampsOff}{' '}
+              {i.tsa && v && v.stamps_waiting > 0 ? t.audit.stampsWaiting(v.stamps_waiting) : null}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             {v ? (
               <>
@@ -484,6 +494,7 @@ function Seals({ timeZone }: { timeZone: string | undefined }) {
               </>
             ) : null}
             {i.retention_days > 0 ? t.audit.keptFor(Math.round(i.retention_days / 365)) : null} <span className="max-md:hidden">{t.audit.sealsHint}</span>
+            {i.tsa ? <span className="max-md:hidden"> {t.audit.stampsHint}</span> : null}
           </p>
           {error ? (
             <p role="alert" className="text-xs text-destructive">
@@ -500,6 +511,15 @@ function Seals({ timeZone }: { timeZone: string | undefined }) {
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** A timestamp service's host, as people know it (timestamp.digicert.com). */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
+}
 
 /** Today, in the organisation's calendar as the browser has it, as YYYY-MM-DD. */
 function isoDay(d: Date): string {

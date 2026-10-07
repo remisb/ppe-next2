@@ -13,6 +13,7 @@ export const ATTENTION_KEYS = [
   'new_errors',
   'review_overdue',
   'database_owner_rights',
+  'audit_not_timestamped',
   'database_growth',
 ] as const
 

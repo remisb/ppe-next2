@@ -26,11 +26,13 @@ type jobRuns struct {
 type JobRun struct {
 	At *time.Time `json:"at"`
 	// AuthEventsDeleted, ErrorEventsDeleted and AuditEventsDeleted are what
-	// the purges deleted; DaysSealed the audit days it sealed.
+	// the purges deleted; DaysSealed the audit days it sealed, DaysStamped
+	// the seals it got a trusted timestamp for.
 	AuthEventsDeleted  int64 `json:"auth_events_deleted"`
 	ErrorEventsDeleted int64 `json:"error_events_deleted"`
 	AuditEventsDeleted int64 `json:"audit_events_deleted"`
 	DaysSealed         int   `json:"days_sealed"`
+	DaysStamped        int   `json:"days_stamped"`
 	// Failed is true when a part of it failed; the log says why.
 	Failed bool `json:"failed"`
 }
@@ -104,6 +106,10 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 	if run.DaysSealed, err = svc.audit.SealDays(ctx); err != nil && ctx.Err() == nil {
 		run.Failed = true
 		logger.Error("audit sealing failed", slog.Any("error", err))
+	}
+	if run.DaysStamped, err = svc.audit.StampDays(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("audit timestamping failed", slog.Any("error", err))
 	}
 	if run.AuditEventsDeleted, err = svc.audit.PurgeExpired(ctx); err != nil && ctx.Err() == nil {
 		run.Failed = true

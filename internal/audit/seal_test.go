@@ -20,12 +20,13 @@ type memTrail struct {
 	mu       *sync.Mutex
 	events   *[]Row
 	seals    *[]Seal
+	stamps   *[]Stamp
 	purges   *[]Purge
 	inserted *[]Event
 }
 
 func newMemTrail() memTrail {
-	return memTrail{mu: &sync.Mutex{}, events: &[]Row{}, seals: &[]Seal{}, purges: &[]Purge{}, inserted: &[]Event{}}
+	return memTrail{mu: &sync.Mutex{}, events: &[]Row{}, seals: &[]Seal{}, stamps: &[]Stamp{}, purges: &[]Purge{}, inserted: &[]Event{}}
 }
 
 func (m memTrail) lock() func() {
@@ -122,6 +123,27 @@ func (m memTrail) AddSeal(_ context.Context, s Seal) error {
 		}
 	}
 	*m.seals = append(*m.seals, s)
+	return nil
+}
+
+func (m memTrail) Stamps(context.Context) ([]Stamp, error) {
+	if m.stamps == nil {
+		return nil, nil
+	}
+	defer m.lock()()
+	out := slices.Clone(*m.stamps)
+	slices.SortFunc(out, func(a, b Stamp) int { return a.Day.Compare(b.Day) })
+	return out, nil
+}
+
+func (m memTrail) AddStamp(_ context.Context, st Stamp) error {
+	defer m.lock()()
+	for _, x := range *m.stamps {
+		if x.Day.Equal(st.Day) {
+			return ErrStamped
+		}
+	}
+	*m.stamps = append(*m.stamps, st)
 	return nil
 }
 

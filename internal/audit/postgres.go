@@ -182,6 +182,30 @@ func (s *PostgresStore) AddSeal(ctx context.Context, x Seal) error {
 	return err
 }
 
+func (s *PostgresStore) Stamps(ctx context.Context) ([]Stamp, error) {
+	rows, err := s.pool.Query(ctx, `SELECT day, tsa, token, stamped_at, recorded_at FROM audit_seal_stamps ORDER BY day`)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Stamp, error) {
+		var x Stamp
+		err := row.Scan(&x.Day, &x.TSA, &x.Token, &x.StampedAt, &x.RecordedAt)
+		x.Day, x.StampedAt, x.RecordedAt = utcDay(x.Day), x.StampedAt.UTC(), x.RecordedAt.UTC()
+		return x, err
+	})
+}
+
+func (s *PostgresStore) AddStamp(ctx context.Context, x Stamp) error {
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO audit_seal_stamps (day, tsa, token, stamped_at, recorded_at) VALUES ($1::date, $2, $3, $4, $5)`,
+		x.Day.Format("2006-01-02"), x.TSA, x.Token, x.StampedAt, x.RecordedAt)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return ErrStamped
+	}
+	return err
+}
+
 func (s *PostgresStore) Purges(ctx context.Context) ([]Purge, error) {
 	rows, err := s.pool.Query(ctx, `SELECT id, before_day, rows, purged_at FROM audit_purges ORDER BY purged_at, id`)
 	if err != nil {

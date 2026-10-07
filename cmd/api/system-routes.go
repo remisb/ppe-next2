@@ -301,8 +301,11 @@ func buildOverview(r *http.Request, svc services, tok *tokens) (Overview, error)
 	}
 	if can(role.AuditRead) {
 		in.Audit = &overview.Audit{}
-		if v := svc.audit.LastVerification(); v != nil && v.Mismatch != nil {
-			in.Audit.MismatchDay = v.Mismatch.Day
+		if v := svc.audit.LastVerification(); v != nil {
+			if v.Mismatch != nil {
+				in.Audit.MismatchDay = v.Mismatch.Day
+			}
+			in.Audit.StampsOverdue = v.StampsOverdue
 		}
 	}
 	out.Attention = overview.Attention(in, now)

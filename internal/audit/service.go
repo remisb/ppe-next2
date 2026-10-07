@@ -30,6 +30,9 @@ type Service struct {
 	now       func() time.Time
 	newID     func() uuid.UUID
 	retention time.Duration
+	// stamps anchors the seals (stamp.go); nil for none.
+	stamps     Timestamps
+	stampsFrom time.Time
 
 	mu               sync.Mutex
 	lastVerification *Verification
@@ -52,7 +55,7 @@ func NewService(store Store, opts ...Option) *Service {
 	s := &Service{
 		store: store, seals: store, loc: time.UTC,
 		now:   func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
-		newID: uuid.New,
+		newID: uuid.New, stampsFrom: StampsFrom,
 	}
 	for _, o := range opts {
 		o(s)

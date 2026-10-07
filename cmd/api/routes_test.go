@@ -478,6 +478,8 @@ func (stubAudit) EachRow(context.Context, time.Time, time.Time, func(audit.Row) 
 func (stubAudit) FirstEventAt(context.Context) (*time.Time, error) { return nil, nil }
 func (stubAudit) Seals(context.Context) ([]audit.Seal, error)      { return nil, nil }
 func (stubAudit) AddSeal(context.Context, audit.Seal) error        { return nil }
+func (stubAudit) Stamps(context.Context) ([]audit.Stamp, error)    { return nil, nil }
+func (stubAudit) AddStamp(context.Context, audit.Stamp) error      { return nil }
 func (stubAudit) Purges(context.Context) ([]audit.Purge, error)    { return nil, nil }
 func (stubAudit) Purge(_ context.Context, p audit.Purge, _ func(int64) (audit.Event, error)) (audit.Purge, error) {
 	return p, nil

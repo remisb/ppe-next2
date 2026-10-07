@@ -37,6 +37,7 @@ func TestConfigValidate(t *testing.T) {
 		"audit kept under a year":      func(c *config) { c.AuditRetention = 300 * 24 * time.Hour },
 		"bad timezone":                 func(c *config) { c.OrgTimezone = "Mars/Olympus" },
 		"relative url":                 func(c *config) { c.PublicBaseURL = "/confirm" },
+		"tsa not a url":                func(c *config) { c.AuditTSAURL = "timestamp.digicert.com" },
 		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
 	} {
 		c := ok
@@ -98,7 +99,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" ||
 		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour || c.LoginEmailFailures != 10 || c.LoginEmailInterval != 15*time.Minute ||
 		c.SessionKeepMaxAge != 30*24*time.Hour || c.SessionKeepIdle != 14*24*time.Hour || c.RecentSignIn != 12*time.Hour ||
-		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour {
+		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour || c.AuditTSAURL != "" {
 		t.Errorf("defaults = %+v", c)
 	}
 	if len(c.TrustedProxies) != 0 {

@@ -1006,8 +1006,21 @@ export interface AuditVerification {
   last_day: string | null
   /** Events since the last sealed day, not sealed yet. */
   unsealed: number
-  /** The first day that did not match: its count, its events, its place in the chain, or a missing seal. */
-  mismatch: { day: string; problem: 'rows' | 'hash' | 'chain' | 'gap'; sealed_rows: number; found_rows: number } | null
+  /** With timestamps on: seals whose trusted timestamp checked out, the newest one's day, and those still waiting (overdue: over a day). */
+  stamped: number
+  last_stamped: string | null
+  stamps_waiting: number
+  stamps_overdue: number
+  /**
+   * The first day that did not match: its count, its events, its place in the chain, a missing seal, or its
+   * timestamp (not a trusted one of the seal, made too late, or missing past the grace).
+   */
+  mismatch: {
+    day: string
+    problem: 'rows' | 'hash' | 'chain' | 'gap' | 'stamp' | 'late' | 'unstamped'
+    sealed_rows: number
+    found_rows: number
+  } | null
 }
 
 /** The Audit log's seals, latest check and retention (GET /api/v1/audit-events/integrity). */
@@ -1020,6 +1033,11 @@ export interface AuditIntegrity {
   last_sealed_at: string | null
   retention_days: number
   purges: { id: string; before_day: string; rows: number; purged_at: string }[]
+  /** The timestamp service anchoring the seals (empty when off), the seals it stamped, and the newest stamp's day and time. */
+  tsa: string
+  stamped_days: number
+  last_stamped: string | null
+  last_stamped_at: string | null
 }
 
 /** A role as Usage names it; key is set on the built-in ones. */

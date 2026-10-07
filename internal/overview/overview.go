@@ -43,13 +43,16 @@ const (
 	// OwnerRights: the API connects as a role that could switch the trails'
 	// triggers off, not the least-privilege ppe_app.
 	OwnerRights = "database_owner_rights"
+	// NotTimestamped: seals have waited for their trusted timestamp longer
+	// than audit.StampOverdue (the timestamp service does not answer).
+	NotTimestamped = "audit_not_timestamped"
 )
 
 // keys is every item, in the order Attention can list them; @ppe/api-client's
 // ATTENTION_KEYS mirrors it (TestWebClientListsTheKeys).
 var allKeys = []string{
 	SealMismatch, BackupsNotRunning, LastBackupFailed, CopiedSignIn, FailedSignIns,
-	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, DatabaseGrowth,
+	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, NotTimestamped, DatabaseGrowth,
 }
 
 // Keys returns every item's key.
@@ -116,6 +119,8 @@ type Database struct {
 type Audit struct {
 	// Mismatch is the first day that did not match; zero when all did.
 	MismatchDay time.Time
+	// StampsOverdue are the seals waiting for their timestamp too long.
+	StampsOverdue int
 }
 
 // Inputs are the figures the reader may see; nil leaves an area out.
@@ -170,6 +175,9 @@ func Attention(in Inputs, now time.Time) []Item {
 	}
 	if d := in.Database; d != nil && d.OwnerRights {
 		out = append(out, Item{Key: OwnerRights, Severity: Warning})
+	}
+	if a := in.Audit; a != nil && a.StampsOverdue > 0 {
+		out = append(out, Item{Key: NotTimestamped, Severity: Warning, Count: a.StampsOverdue})
 	}
 	if d := in.Database; d != nil && !d.EarlierDay.IsZero() && d.EarlierBytes > 0 && now.Sub(d.EarlierDay) >= 7*24*time.Hour {
 		if grew := float64(d.Bytes-d.EarlierBytes) / float64(d.EarlierBytes); grew > GrowthShare {

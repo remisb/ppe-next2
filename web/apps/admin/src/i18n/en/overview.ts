@@ -66,6 +66,15 @@ export const overview = {
       detail: () => 'It could switch off what keeps the Audit log append-only. Give it the ppe_app role: set API_DB_USER and API_DB_PASSWORD on the server.',
       action: 'Open System',
     },
+    audit_not_timestamped: {
+      title: 'Seals are not being timestamped',
+      detail: ({ count }) =>
+        plural(count, {
+          one: 'A seal has waited over a day for its timestamp. Check that the server can reach the timestamp service.',
+          other: '# seals have waited over a day for their timestamp. Check that the server can reach the timestamp service.',
+        }),
+      action: 'Open the Audit log',
+    },
     database_growth: {
       title: 'The database is growing fast',
       detail: ({ percent, days }) => `It grew ${percent}% in ${days} days. Check that the disk has room.`,

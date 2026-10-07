@@ -118,3 +118,38 @@ func TestPostgresPurge(t *testing.T) {
 		t.Errorf("verify after the purge = %+v, %v", v, err)
 	}
 }
+
+// Stamps are stored as the API role writes them, once per day, and are
+// append-only, as the seals they anchor are.
+func TestPostgresStamps(t *testing.T) {
+	owner, app := sealPools(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	day := now.Truncate(Day).Add(-2 * Day)
+	insertAt(t, app, day.Add(9*time.Hour), "employee.created", map[string]any{"code": "E-1"})
+	c := now
+	tsa := &fakeTSA{now: func() time.Time { return c.Truncate(time.Second) }}
+	svc := NewService(NewPostgresStore(app), WithClock(func() time.Time { return now }), WithTimestamps(tsa), WithStampsFrom(day))
+
+	if _, err := svc.SealDays(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := svc.StampDays(ctx); err != nil || n != 2 {
+		t.Fatalf("stamped %d, %v", n, err)
+	}
+	stamps, err := svc.Stamps(ctx)
+	if err != nil || len(stamps) != 2 || !stamps[0].Day.Equal(day) || stamps[0].TSA != "http://tsa.test" || len(stamps[0].Token) == 0 {
+		t.Fatalf("stamps = %+v, %v", stamps, err)
+	}
+	if err := NewPostgresStore(app).AddStamp(ctx, stamps[0]); err != ErrStamped {
+		t.Errorf("a second stamp of a day: %v, want ErrStamped", err)
+	}
+	if v, err := svc.Verify(ctx); err != nil || !v.OK || v.Stamped != 2 {
+		t.Fatalf("verify = %+v, %v", v, err)
+	}
+	for _, sql := range []string{`UPDATE audit_seal_stamps SET tsa = 'x'`, `DELETE FROM audit_seal_stamps`, `TRUNCATE audit_seal_stamps`} {
+		if _, err := owner.Exec(ctx, sql); err == nil || !strings.Contains(err.Error(), "append-only") && !strings.Contains(err.Error(), "may not be truncated") {
+			t.Errorf("%s as the owner: %v, want refused", sql, err)
+		}
+	}
+}

@@ -65,7 +65,9 @@ in memory, Prometheus `/metrics` on `API_METRICS_ADDR`), the database, the error
 the **Overview**, Administration's first screen, lists what needs attention
 (`internal/overview`) for whatever areas the reader may open. Every request's ID is on its log
 lines (`request_id`) and a 500's `reference`, which the apps show. The **Audit log** is sealed
-daily (`audit_seals`, migration 0026: each UTC day's events hashed and chained), verified
+daily (`audit_seals`, migration 0026: each UTC day's events hashed and chained), each seal
+anchored by a trusted timestamp (RFC 3161, `internal/tsa`, `audit_seal_stamps`, migration
+0028, `API_AUDIT_TSA_URL`: DigiCert in production, off elsewhere), verified
 hourly and on demand, purged after `API_AUDIT_RETENTION` (10 years) and exported by
 `audit.export` (spec `docs/specs/audit-service.md`). **Usage** (`usage.read`, migration 0027,
 spec `docs/specs/usage-service.md`, `internal/usage`) shows active people per day (from
@@ -75,9 +77,9 @@ changes per week, devices, languages, the confirmation-link funnel
 data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashboards use too.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
-`audit_seals` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
+`audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
 go through the owner's `SECURITY DEFINER` functions `purge_audit_events` (rows over 365
-days) and `purge_auth_events` (over 30 days)), and the five refuse TRUNCATE unless the
+days) and `purge_auth_events` (over 30 days)), and the six refuse TRUNCATE unless the
 transaction sets `SET LOCAL ppe.allow_truncate = on`, as test setup does; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
 `given_*` columns to the status; a catalogue item's accounting price and service period are
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.

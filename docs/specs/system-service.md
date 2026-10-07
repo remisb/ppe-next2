@@ -98,7 +98,8 @@ At start and hourly, until ADR 0001's worker exists, the upkeep:
 - records today's database size;
 - samples the Dashboard's setup figures and deletes activity older than 400 days, for Usage
   ([usage-service.md](usage-service.md));
-- seals the audit days that have ended;
+- seals the audit days that have ended, and gets a trusted timestamp for each new seal
+  (`API_AUDIT_TSA_URL`);
 - purges audit events older than `API_AUDIT_RETENTION`, sealed days only;
 - verifies every seal ([audit-service.md](audit-service.md)).
 

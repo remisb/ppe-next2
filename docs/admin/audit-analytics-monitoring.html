@@ -901,11 +901,12 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
     <p><b>Backups go off the server:</b> they go to the Spaces bucket <code>ppe-next2-backups</code> (fra1), encrypted with age. The first one succeeded at 15:16 UTC. The private key is kept off the server.</p>
     <p><b>Outages and the droplet are watched:</b> the Uptime check of <code>/ready</code> and the CPU, memory and disk alerts are in DigitalOcean Insights (formerly Monitoring), and <code>do-agent</code> 3.18.14 runs on the droplet.</p>
     <p><b>A restore works:</b> the rehearsal of the encrypted Spaces backup passed. It decrypted, the grants came back, the seals verified and the row counts matched.</p>
+    <p><b>The seals are anchored off-site:</b> each one gets a trusted timestamp (RFC 3161) from a public timestamp service, which Verify checks.</p>
   </div>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
     <ul>
-      <li><b>Left for later on purpose:</b> off-site seal anchors, email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
+      <li><b>Left for later on purpose:</b> email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
     </ul>
   </div>
   <div class="phases">
@@ -923,7 +924,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
     </ol></div>
     <div class="phase"><div class="ph-head"><h4>Later</h4><span class="size later">on a need or decision</span></div><ol class="steps" start="9">
       <li><b>Email or Telegram alerts</b>, once ADR 0001's outbox and worker exist and question 3 is answered.</li>
-      <li><b>Anchor the seals off-site:</b> write each day's seal hash to the bucket, so that even the database owner cannot rewrite history unnoticed. Needs step 2.</li>
+      <li><s><b>Anchor the seals off-site.</b></s> <b>Done 7 Oct</b>, with trusted timestamps (RFC 3161) rather than the bucket. Each seal's hash is timestamped by a public service (DigiCert by default), the token is kept in <code>audit_seal_stamps</code>, and Verify checks it. A rewritten chain cannot get timestamps with the original times, even by someone with root on the server. Spaces has no write-once lock, and its keys are on the server, so the bucket was set aside.</li>
       <li><b>Import the data sync through the API</b> (3.2 A). Synced changes are not on the Audit log yet.</li>
       <li><b>An auditor role, or the Audit log for managers:</b> a role holding <code>audit.read</code>, with no code needed (question 4).</li>
       <li><b>For a second API instance:</b> move the per-address limit to Postgres, and add Grafana Cloud (EU) with Alloy on <code>/metrics</code>.</li>

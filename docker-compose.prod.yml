@@ -99,6 +99,10 @@ services:
       API_METRICS_ADDR: ":9090"
       # Audit events are purged after this (ADR 0003: 10 years, to confirm).
       API_AUDIT_RETENTION: ${API_AUDIT_RETENTION:-87672h}
+      # A public timestamp service (RFC 3161) anchors each day's audit seal
+      # outside the database; only the seal's hash is sent. Set it empty in
+      # .env.prod to stop timestamping (docs/specs/audit-service.md).
+      API_AUDIT_TSA_URL: ${API_AUDIT_TSA_URL-http://timestamp.digicert.com}
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

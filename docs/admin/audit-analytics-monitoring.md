@@ -671,12 +671,12 @@ ran under it without an error. Backups go to the Spaces bucket `ppe-next2-backup
 encrypted with age; the first one succeeded at 15:16 UTC. The private key is kept off the
 server. The Uptime check of `/ready` and the CPU, memory and disk alerts are set up in
 DigitalOcean Insights (formerly Monitoring), and `do-agent` 3.18.14 runs on the droplet.
-A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
+A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6). Each audit seal is
+now anchored by a trusted timestamp (8.2 step 10).
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
 - **Left for later on purpose:**
-  - seals anchored outside the database (3.5 C);
   - alerts by email or Telegram (5.4);
   - the data sync writing through the API (3.2 A);
   - the per-address sign-in limit in Postgres;
@@ -689,9 +689,8 @@ A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
 1. ~~**Switch the API to `ppe_app`.**~~ **Done 7 Oct.** To undo it, remove the two
    `API_DB_*` lines from `.env.prod` and run `make prod-up`.
 2. ~~**Copy backups off the droplet.**~~ **Done 7 Oct:** Spaces in fra1, encrypted. Backups
-   made earlier stay on the `backups` volume, and nothing deletes them any more. The bucket
-   can later hold the seal anchors (step 10). Step 6's restore rehearsal now also proves that
-   the age key decrypts.
+   made earlier stay on the `backups` volume, and nothing deletes them any more. Step 6's
+   restore rehearsal now also proves that the age key decrypts.
 3. ~~**Turn on the uptime check and droplet alerts.**~~ **Done 7 Oct:** the Uptime check of
    `/ready` and the three alert rules are in DigitalOcean Insights, and `do-agent` runs on the
    droplet ([monitoring.md](../monitoring.md)).
@@ -733,8 +732,16 @@ A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
 
 9. **Alerts by email or Telegram.** This needs the outbox and worker from ADR 0001, and an
    answer to question 3. Until then, the Overview and the uptime check are the alerts.
-10. **Anchor the seals off-site** (3.5 C). Write each day's seal hash to the backup bucket,
-    so that even the database owner cannot rewrite history unnoticed. It depends on step 2.
+10. ~~**Anchor the seals off-site**~~ (3.5 C). **Done 7 Oct**, with trusted timestamps
+    rather than the bucket:
+    - Each seal's hash gets an RFC 3161 timestamp from a public timestamp service (DigiCert
+      by default, `API_AUDIT_TSA_URL`). Only the hash is sent.
+    - The tokens are kept in `audit_seal_stamps` (migration 0028), and Verify checks them.
+    - A rewritten chain cannot get timestamps with the original times, even by someone with
+      root on the server.
+    - The bucket was set aside: Spaces has no write-once lock, and its keys are on the server.
+    - Anyone can check a stamp with `openssl ts -verify`
+      ([audit-service.md](../specs/audit-service.md)).
 11. **Import the data sync through the API** (3.2 A, ADR 0001). Synced changes are still not
     on the Audit log.
 12. **A "Workwear auditor" role, or the Audit log for managers** (question 4). This is a role

@@ -159,6 +159,7 @@ Without the agent, those alerts never fire.
 | The Overview says the Audit log does not match its seals (`audit seals do not match` in the log) | someone changed the trail behind the app. Audit log → Seals names the day and the problem. Keep the backups from before that day (they hold the seals and events as they were), and find who had the database owner's password |
 | The Overview says the API connects as the database owner | production has not switched to `ppe_app` yet: see below |
 | `audit sealing failed` or `audit purge failed` in the log | the upkeep's sealing or purge; it tries again within the hour |
+| The Overview says seals are not being timestamped (`audit timestamping failed` in the log) | the timestamp service (`API_AUDIT_TSA_URL`) does not answer. From the droplet, `curl -sI http://timestamp.digicert.com` should answer. The upkeep retries hourly. Put it right within 7 days: a seal stamped later than that shows as a mismatch on the Audit log |
 
 ## The API's least-privilege database role
 

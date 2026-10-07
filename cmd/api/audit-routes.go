@@ -217,6 +217,13 @@ type Integrity struct {
 	// RetentionDays is API_AUDIT_RETENTION in days.
 	RetentionDays int           `json:"retention_days"`
 	Purges        []audit.Purge `json:"purges"`
+	// TSA is the timestamp service anchoring the seals (API_AUDIT_TSA_URL);
+	// empty when they are not timestamped. StampedDays are the seals with a
+	// timestamp, LastStamped the newest one's day and LastStampedAt its time.
+	TSA           string     `json:"tsa"`
+	StampedDays   int        `json:"stamped_days"`
+	LastStamped   *time.Time `json:"last_stamped"`
+	LastStampedAt *time.Time `json:"last_stamped_at"`
 }
 
 func auditIntegrity(r *http.Request, svc services) (Integrity, error) {
@@ -238,6 +245,17 @@ func auditIntegrity(r *http.Request, svc services) (Integrity, error) {
 	if n := len(seals); n > 0 {
 		first, last, at := seals[0].Day, seals[n-1].Day, seals[n-1].SealedAt
 		in.FirstSealed, in.LastSealed, in.LastSealedAt = &first, &last, &at
+	}
+	if on, url := svc.audit.Timestamped(); on {
+		stamps, err := svc.audit.Stamps(r.Context())
+		if err != nil {
+			return Integrity{}, err
+		}
+		in.TSA, in.StampedDays = url, len(stamps)
+		if n := len(stamps); n > 0 {
+			day, at := stamps[n-1].Day, stamps[n-1].StampedAt
+			in.LastStamped, in.LastStampedAt = &day, &at
+		}
 	}
 	return in, nil
 }

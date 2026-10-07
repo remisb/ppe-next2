@@ -136,8 +136,48 @@ them off. Seals make such a change visible.
 - It also counts the events since the last sealed day, not yet sealed. The latest result is
   kept in memory, so it starts again at a restart, when the upkeep verifies first. The
   Overview raises `audit_seal_mismatch` (critical) from it for `audit.read`.
-- **Not yet:** anchoring seals outside the database (proposal 3.5 C). An old backup holds
-  the seals it was taken with, so it is a second witness.
+- An old backup holds the seals it was taken with, so it is a second witness.
+
+## Timestamps (migration 0028)
+
+Seals alone cannot catch someone with the owner's password who rewrites the whole chain.
+Each seal is therefore anchored outside the database by a **trusted timestamp** (RFC 3161,
+proposal 3.5 C, ADR 0003). A public timestamp service signs "this hash existed at this
+time" with a certificate that chains to a public root, so a token cannot be made later with
+an earlier time.
+
+- **Where:** `API_AUDIT_TSA_URL`. Production defaults to DigiCert
+  (`http://timestamp.digicert.com`, in `docker-compose.prod.yml`); empty turns timestamps
+  off, which is the default in development, tests and e2e.
+- **What leaves the server:** only the seal's 32-byte hash. The request is plain HTTP, as
+  DigiCert's service is; the token is signed, so the transport does not matter.
+- **Stamping.** After sealing, the hourly upkeep asks for a token for every seal without
+  one, oldest first (`Service.StampDays`, `internal/tsa`). It stops at the first failure
+  (`audit timestamping failed`) and carries on next hour.
+  - The token is checked before it is stored: it must be a timestamp of that hash, signed
+    for timestamping by a certificate chaining to Mozilla's roots (built into the binary,
+    `x509roots/fallback/bundle`), valid at the time it states.
+  - Tokens go to `audit_seal_stamps(day, tsa, token, stamped_at, recorded_at)`, which is
+    append-only and refuses TRUNCATE like the seals.
+- **Verify** checks each seal's token as well:
+  - `stamp`: the token is not a trusted timestamp of the seal's hash, as after a rewrite;
+  - `late`: it was made more than `StampGrace` (7 days) after the day could be sealed;
+  - `unstamped`: the seal has no token after `StampGrace`.
+  - The last two apply from `StampsFrom` (8 Oct 2026, when stamping began). The seals before
+    it were stamped on its first run. The first seal stamped in time covers them all, through
+    the chain.
+  - Each problem is a mismatch: critical on the Audit log and the Overview.
+- **Waiting.** A seal still waiting is counted (`stamps_waiting`). After a day
+  (`StampOverdue`), the Overview warns `audit_not_timestamped`, so an unreachable service is
+  put right before the grace ends.
+- **Checking a stamp yourself**, independently of the app, with OpenSSL and any CA bundle:
+
+  ```bash
+  psql -Atc "SELECT encode(a.hash, 'hex'), encode(s.token, 'hex') FROM audit_seal_stamps s JOIN audit_seals a USING (day) WHERE day = '2026-10-08'" |
+    { IFS='|' read -r hash token; echo "$token" | xxd -r -p > stamp.der
+      openssl ts -verify -token_in -in stamp.der -digest "$hash" -CAfile /etc/ssl/certs/ca-certificates.crt; }
+  openssl ts -reply -token_in -in stamp.der -text | grep 'Time stamp'
+  ```
 
 ## Retention
 
@@ -202,7 +242,8 @@ Administration for whoever holds it.
 
 **Administration → Audit log** (`/admin/audit`, `web/apps/admin/src/routes/audit.tsx`):
 - **Seals**: through which day the log is sealed, whether the latest check found every
-  sealed day whole (or an alert naming the day that is not), how many years changes are
+  sealed day whole (or an alert naming the day that is not), through which day the seals
+  are timestamped and by which service (or that they are not), how many years changes are
   kept, and **Verify** to check now.
 - **Export** (with `audit.export`): a sheet with from and to (the filter's days, else the
   last 30) and CSV or JSON lines; the file downloads, and the export is on the log.
@@ -234,4 +275,4 @@ The glossary's "History" means Orders, so a record's section is called Changes.
 
 ## Not here yet
 
-- Seals anchored outside the database (the backup bucket or an email), proposal 3.5 C.
+- A second timestamp service, as a fallback when the first does not answer.

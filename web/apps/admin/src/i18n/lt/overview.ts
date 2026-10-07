@@ -67,6 +67,16 @@ export const overview: OverviewText = {
       detail: () => 'Ji galėtų išjungti tai, kas saugo audito žurnalą nuo pakeitimų. Suteikite jai ppe_app rolę: serveryje nustatykite API_DB_USER ir API_DB_PASSWORD.',
       action: 'Atidaryti sistemą',
     },
+    audit_not_timestamped: {
+      title: 'Antspaudams nesuteikiamos laiko žymos',
+      detail: ({ count }) =>
+        plural(count, {
+          one: 'Antspaudas daugiau nei parą laukia laiko žymos. Patikrinkite, ar serveris pasiekia laiko žymų tarnybą.',
+          few: '# antspaudai daugiau nei parą laukia laiko žymos. Patikrinkite, ar serveris pasiekia laiko žymų tarnybą.',
+          other: '# antspaudų daugiau nei parą laukia laiko žymos. Patikrinkite, ar serveris pasiekia laiko žymų tarnybą.',
+        }),
+      action: 'Atidaryti audito žurnalą',
+    },
     database_growth: {
       title: 'Duomenų bazė sparčiai auga',
       detail: ({ percent, days }) => `Per ${days} d. ji padidėjo ${percent} %. Patikrinkite, ar diske užtenka vietos.`,

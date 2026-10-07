@@ -624,6 +624,15 @@ Rules for using it:
 - **Code:** `internal/audit` (`seal.go`), table `audit_seals`. **UI:** Seals, Sealed through,
   Verify.
 
+### Timestamp (of a seal)
+- **Brief:** a public timestamp service's signature that a seal's hash existed at a time,
+  which no one can make later with an earlier time. EN "timestamp", LT "laiko žyma", RU
+  "метка времени".
+- **Detail:** each seal gets one within the hour; Verify checks them. A seal stamped late,
+  or never, shows as a mismatch after 7 days.
+- **Code:** `internal/tsa`, `internal/audit` (`stamp.go`), table `audit_seal_stamps`,
+  `API_AUDIT_TSA_URL`. **UI:** Seals ("Timestamped through …").
+
 ### Export (of the Audit log)
 - **Brief:** a file of the changes the Audit log's filters select between two days, at most
   a year apart: CSV for a spreadsheet or JSON lines for an archive.

@@ -34,6 +34,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
+	"github.com/remisb/ppe-next2/internal/tsa"
 	"github.com/remisb/ppe-next2/internal/usage"
 )
 
@@ -94,6 +95,11 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		pool,
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
+	if cfg.AuditTSAURL != "" {
+		// Anchor the seals outside the database (ADR 0003): an option applied
+		// to the Audit log's service once it is built.
+		audit.WithTimestamps(tsa.New(cfg.AuditTSAURL))(svc.audit)
+	}
 
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, pool, svc.users, cfg, logger)
@@ -109,7 +115,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		if run.Failed {
 			return errors.New("the upkeep failed in part; the lines above say why")
 		}
-		logger.Info("upkeep done", slog.Int("days_sealed", run.DaysSealed), slog.Int64("security_events_deleted", run.AuthEventsDeleted),
+		logger.Info("upkeep done", slog.Int("days_sealed", run.DaysSealed), slog.Int("days_stamped", run.DaysStamped), slog.Int64("security_events_deleted", run.AuthEventsDeleted),
 			slog.Int64("error_events_deleted", run.ErrorEventsDeleted), slog.Int64("audit_events_deleted", run.AuditEventsDeleted))
 		return nil
 	}

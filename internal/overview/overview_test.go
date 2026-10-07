@@ -35,7 +35,7 @@ func TestAttention(t *testing.T) {
 	}
 
 	busy := Inputs{
-		Audit:    &Audit{MismatchDay: now.Add(-5 * 24 * time.Hour).Truncate(24 * time.Hour)},
+		Audit:    &Audit{MismatchDay: now.Add(-5 * 24 * time.Hour).Truncate(24 * time.Hour), StampsOverdue: 2},
 		Backups:  &Backups{LastRunFailed: true},
 		Security: &Security{CopiedSignIns: 1, FailedLastHour: 3, MostAtOneAccount: 6, LastReview: &old},
 		Errors:   &Errors{LastHourRequests: 200, LastHourErrors: 3, NewKinds: 2},
@@ -44,12 +44,13 @@ func TestAttention(t *testing.T) {
 	got := Attention(busy, now)
 	want := []string{
 		"critical:audit_seal_mismatch", "critical:copied_sign_in", "warning:last_backup_failed", "warning:failed_sign_ins",
-		"warning:review_overdue", "warning:error_rate", "warning:new_errors", "warning:database_owner_rights", "info:database_growth",
+		"warning:review_overdue", "warning:error_rate", "warning:new_errors", "warning:database_owner_rights", "warning:audit_not_timestamped",
+		"info:database_growth",
 	}
 	if !slices.Equal(keys(got), want) {
 		t.Fatalf("items = %v\nwant %v", keys(got), want)
 	}
-	if got[4].Days != 100 || got[5].Percent != 1.5 || got[5].Count != 3 || got[8].Percent != 30 || got[8].Days != 30 || got[0].Since == nil {
+	if got[4].Days != 100 || got[5].Percent != 1.5 || got[5].Count != 3 || got[8].Count != 2 || got[9].Percent != 30 || got[9].Days != 30 || got[0].Since == nil {
 		t.Errorf("figures = %+v", got)
 	}
 

@@ -15,6 +15,7 @@ import { type Route, linkTo } from '@/lib/router'
 /** Where each attention item is put right. */
 const resolveAt: Record<AttentionKey, Route> = {
   audit_seal_mismatch: { name: 'audit', filter: {} },
+  audit_not_timestamped: { name: 'audit', filter: {} },
   database_owner_rights: { name: 'system', tab: 'status' },
   backups_not_running: { name: 'system', tab: 'backups' },
   last_backup_failed: { name: 'system', tab: 'backups' },
