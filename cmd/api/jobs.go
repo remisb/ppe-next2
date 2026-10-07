@@ -55,57 +55,7 @@ func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
 	for {
-		run := JobRun{}
-		var err error
-		if run.AuthEventsDeleted, err = svc.security.Purge(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("security events purge failed", slog.Any("error", err))
-		}
-		if run.ErrorEventsDeleted, err = svc.system.Purge(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("error list purge failed", slog.Any("error", err))
-		}
-		if err := svc.system.SampleSize(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("database size sample failed", slog.Any("error", err))
-		}
-		if _, err := svc.usage.PurgeActivity(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("usage activity purge failed", slog.Any("error", err))
-		}
-		if setup, err := svc.dashboard.Setup(ctx); err == nil {
-			err = svc.usage.SampleQuality(ctx, usage.Quality{
-				Employees: setup.Employees, EmployeesMissingSizes: setup.EmployeesMissingSizes,
-				CatalogueActive: setup.CatalogueActive, CatalogueUnpriced: setup.CatalogueUnpriced, ItemSetsActive: setup.ItemSetsActive,
-			})
-			if err != nil && ctx.Err() == nil {
-				run.Failed = true
-				logger.Error("data quality sample failed", slog.Any("error", err))
-			}
-		} else if ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("data quality sample failed", slog.Any("error", err))
-		}
-		if run.DaysSealed, err = svc.audit.SealDays(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("audit sealing failed", slog.Any("error", err))
-		}
-		if run.AuditEventsDeleted, err = svc.audit.PurgeExpired(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("audit purge failed", slog.Any("error", err))
-		}
-		if v, err := svc.audit.Verify(ctx); err != nil && ctx.Err() == nil {
-			run.Failed = true
-			logger.Error("audit verification failed to run", slog.Any("error", err))
-		} else if err == nil && !v.OK {
-			logger.Error("audit seals do not match", slog.Time("day", v.Mismatch.Day), slog.String("problem", v.Mismatch.Problem))
-		}
-		if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {
-			logger.Info("purged", slog.Int64("security_events", run.AuthEventsDeleted), slog.Int64("error_events", run.ErrorEventsDeleted),
-				slog.Int64("audit_events", run.AuditEventsDeleted))
-		}
-		at := time.Now().UTC()
-		run.At = &at
+		run := upkeep(ctx, svc, logger)
 		svc.jobs.mu.Lock()
 		svc.jobs.last = run
 		svc.jobs.mu.Unlock()
@@ -115,6 +65,63 @@ func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 		case <-tick.C:
 		}
 	}
+}
+
+// upkeep runs the upkeep once (runJobs, and the -upkeep mode) and says what it
+// did; a part that fails is logged and the rest still run.
+func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
+	run := JobRun{}
+	var err error
+	if run.AuthEventsDeleted, err = svc.security.Purge(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("security events purge failed", slog.Any("error", err))
+	}
+	if run.ErrorEventsDeleted, err = svc.system.Purge(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("error list purge failed", slog.Any("error", err))
+	}
+	if err := svc.system.SampleSize(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("database size sample failed", slog.Any("error", err))
+	}
+	if _, err := svc.usage.PurgeActivity(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("usage activity purge failed", slog.Any("error", err))
+	}
+	if setup, err := svc.dashboard.Setup(ctx); err == nil {
+		err = svc.usage.SampleQuality(ctx, usage.Quality{
+			Employees: setup.Employees, EmployeesMissingSizes: setup.EmployeesMissingSizes,
+			CatalogueActive: setup.CatalogueActive, CatalogueUnpriced: setup.CatalogueUnpriced, ItemSetsActive: setup.ItemSetsActive,
+		})
+		if err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("data quality sample failed", slog.Any("error", err))
+		}
+	} else if ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("data quality sample failed", slog.Any("error", err))
+	}
+	if run.DaysSealed, err = svc.audit.SealDays(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("audit sealing failed", slog.Any("error", err))
+	}
+	if run.AuditEventsDeleted, err = svc.audit.PurgeExpired(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("audit purge failed", slog.Any("error", err))
+	}
+	if v, err := svc.audit.Verify(ctx); err != nil && ctx.Err() == nil {
+		run.Failed = true
+		logger.Error("audit verification failed to run", slog.Any("error", err))
+	} else if err == nil && !v.OK {
+		logger.Error("audit seals do not match", slog.Time("day", v.Mismatch.Day), slog.String("problem", v.Mismatch.Problem))
+	}
+	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {
+		logger.Info("purged", slog.Int64("security_events", run.AuthEventsDeleted), slog.Int64("error_events", run.ErrorEventsDeleted),
+			slog.Int64("audit_events", run.AuditEventsDeleted))
+	}
+	at := time.Now().UTC()
+	run.At = &at
+	return run
 }
 
 // verifyAudit is the -verify-audit mode, for the restore drill

@@ -675,8 +675,6 @@ A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
-- **The Help guide for Administration.** The Help text, its screenshots and `docs/guide` say
-  nothing yet about the Overview, Audit log, Security, System or Usage.
 - **Left for later on purpose:**
   - seals anchored outside the database (3.5 C);
   - alerts by email or Telegram (5.4);
@@ -703,9 +701,13 @@ A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
 
 **Soon: within a few weeks**
 
-5. **Update the Help guide for Administration.** Cover the Overview, Audit log (with Export
-   and Verify), Security, System and Usage, then run `pnpm guide` for the screenshots and
-   `docs/guide`. This is a separate request.
+5. ~~**Update the Help guide for Administration.**~~ **Done 7 Oct:**
+   - The Help screen has new sections for the Overview, Audit log, Security, System and
+     Usage, in EN/LT/RU, each for a phone, a tablet and a desktop.
+   - Backups is described as System's tab.
+   - The Changes on employees, items and orders are covered.
+   - `pnpm guide` took the new screenshots and wrote `docs/guide`. The guide's demo data now
+     has a month of use, and `api -upkeep` seals it.
 6. ~~**Rehearse a restore.**~~ **Done 7 Oct**, on the droplet, apart from production:
    - The newest Spaces backup was restored into a throwaway Postgres 18 on its own Docker
      network. It decrypted with the age key, which was streamed from the owner's computer and

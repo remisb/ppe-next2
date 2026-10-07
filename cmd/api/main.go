@@ -104,6 +104,15 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.VerifyAudit {
 		return verifyAudit(ctx, svc.audit, os.Stdout)
 	}
+	if cfg.Upkeep {
+		run := upkeep(ctx, svc, logger)
+		if run.Failed {
+			return errors.New("the upkeep failed in part; the lines above say why")
+		}
+		logger.Info("upkeep done", slog.Int("days_sealed", run.DaysSealed), slog.Int64("security_events_deleted", run.AuthEventsDeleted),
+			slog.Int64("error_events_deleted", run.ErrorEventsDeleted), slog.Int64("audit_events_deleted", run.AuditEventsDeleted))
+		return nil
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,

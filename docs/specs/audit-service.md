@@ -126,8 +126,9 @@ them off. Seals make such a change visible.
   - With several instances, a second seal of a day is refused by its primary key
     (`ErrSealed`), and that instance stops.
 - **`audit_seals` and `audit_purges`** are append-only like the trail.
-- **Verify** (`Service.Verify`, the hourly upkeep, or `POST /api/v1/audit-events/verify`)
-  recomputes every seal, oldest first. It reports the first day that differs:
+- **Verify** (`Service.Verify`, the hourly upkeep, `POST /api/v1/audit-events/verify`, or
+  `api -verify-audit`, which prints the result as JSON for the restore drill) recomputes
+  every seal, oldest first. It reports the first day that differs:
   - `rows`: an event added or removed;
   - `hash`: an event altered;
   - `chain`: a seal does not follow the one before;

@@ -108,6 +108,11 @@ not match logs `audit seals do not match` with the day.
 What it deleted and when are shown on System, and a part that failed is logged: `security
 events purge failed`, `error list purge failed`, `database size sample failed`.
 
+`api -upkeep` runs it once and exits, non-zero when a part failed. It runs as a separate
+process, so a running API's System and Seals panel show it only after their own next run,
+or after **Verify**. The Help guide's setup (`web/e2e/guide/setup.ts`) uses it to seal the
+demo's past days.
+
 ## Metrics
 
 Prometheus's text format at `/metrics` on a second listener, `API_METRICS_ADDR` (empty:

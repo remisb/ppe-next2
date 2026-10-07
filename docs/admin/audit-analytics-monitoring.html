@@ -905,7 +905,6 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
     <ul>
-      <li><b>The Help guide</b> does not cover the Overview, Audit log, Security, System or Usage yet.</li>
       <li><b>Left for later on purpose:</b> off-site seal anchors, email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
     </ul>
   </div>
@@ -917,7 +916,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
       <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>
     </ol></div>
     <div class="phase"><div class="ph-head"><h4>Soon</h4><span class="size soon">next few weeks</span></div><ol class="steps" start="5">
-      <li><b>Help guide for Administration:</b> the Overview, Audit log (with Export and Verify), Security, System and Usage, then <code>pnpm guide</code>. This is a separate request.</li>
+      <li><s><b>Help guide for Administration.</b></s> <b>Done 7 Oct:</b> new Help sections for the Overview, Audit log, Security, System and Usage in three languages and on three devices, with Backups as System's tab and the records' Changes. The screenshots and <code>docs/guide</code> are regenerated.</li>
       <li><s><b>Rehearse a restore.</b></s> <b>Done 7 Oct</b>, on the droplet, apart from production. The newest Spaces backup was restored into a throwaway Postgres 18, decrypted with the age key, which was streamed from the owner's computer and never stored on the server. <code>migrate.sh</code> gave <code>ppe_app</code> its grants back, and the API answered <code>/ready</code> as <code>ppe_app</code>. Verify passed all 162 seals, and every table's row count matched production. Repeat it monthly with <code>make prod-drill</code>, which runs these steps itself (<code>docs/backups.md</code>).</li>
       <li><b>Set a routine:</b> look at the Overview and new error kinds weekly, and do the first access review now (the Overview flags 90 days without one).</li>
       <li><b>Read Usage after real use.</b> "Opened" counts only openings from 7 Oct on, so it understates older links for 90 days. The quality trend starts 7 Oct. "Database grew fast" needs 30 days of samples.</li>

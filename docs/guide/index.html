@@ -85,12 +85,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#employees"><b>8</b>Employees</a></li>
     <li><a href="#catalogue"><b>9</b>Item Catalogue and Item Sets</a></li>
     <li><a href="#administration"><b>10</b>Administration</a></li>
-    <li><a href="#users"><b>11</b>Users</a></li>
-    <li><a href="#roles"><b>12</b>Roles &amp; permissions</a></li>
-    <li><a href="#settings"><b>13</b>Settings</a></li>
-    <li><a href="#backups"><b>14</b>Backups</a></li>
-    <li><a href="#account"><b>15</b>Your account</a></li>
-    <li><a href="#shortcuts"><b>16</b>Search and shortcuts</a></li>
+    <li><a href="#overview"><b>11</b>Overview</a></li>
+    <li><a href="#users"><b>12</b>Users</a></li>
+    <li><a href="#roles"><b>13</b>Roles &amp; permissions</a></li>
+    <li><a href="#audit"><b>14</b>Audit log</a></li>
+    <li><a href="#security"><b>15</b>Security</a></li>
+    <li><a href="#system"><b>16</b>System</a></li>
+    <li><a href="#backups"><b>17</b>Backups</a></li>
+    <li><a href="#usage"><b>18</b>Usage</a></li>
+    <li><a href="#settings"><b>19</b>Settings</a></li>
+    <li><a href="#account"><b>20</b>Your account</a></li>
+    <li><a href="#shortcuts"><b>21</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -200,6 +205,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </ul>
     <p class="who">Managers only</p>
     <p><b>⋯ → Delete order…</b> removes an order, such as a test order, after asking.</p>
+    <p>An order's <b>Changes</b> list what happened to it and who did it: ordered, a link made or opened, given.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/history.png" alt="Orders with an ordered order open" loading="lazy"></figure>
     </div>
@@ -224,7 +230,8 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <ul>
       <li>their sizes and preferred language;</li>
       <li>every item given, with its usage time and replacement date;</li>
-      <li>orders not yet given.</li>
+      <li>orders not yet given;</li>
+      <li><b>Changes</b>: who changed their details or sizes, and when.</li>
     </ul>
     <p>From that page, <b>New order</b> starts an order for them, and <b>Edit Sizes</b> changes their sizes.</p>
     <div class="pair">
@@ -236,7 +243,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="catalogue">
   <h2><span class="n">9</span>Item Catalogue and Item Sets</h2>
     <p>Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.</p>
-    <p>An item can also have a <b>Purchase price</b>: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed.</p>
+    <p>An item can also have a <b>Purchase price</b>: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its <b>Changes</b> list who changed the item, and when.</p>
     <p>An item set is a kit of items with default quantities. You apply it on Create Order in one tap.</p>
     <p class="who">Administrators and managers only</p>
     <p>You add and change items in <b>Item Catalogue</b>, and kits in <b>Item Sets</b>.</p>
@@ -249,13 +256,30 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="administration">
   <h2><span class="n">10</span>Administration</h2>
   <p class="who">Administrators only</p>
-    <p><b>Administration</b> is where you manage who may use the app and what they may do, and the organisation's settings. It has four screens: <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Settings</b> and <b>Backups</b>.</p>
+    <p><b>Administration</b> is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on <b>Overview</b>. Its other screens are <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Audit log</b>, <b>Security</b>, <b>System</b>, <b>Usage</b> and <b>Settings</b>.</p>
     <p>Open it with <b>Administration</b> at the foot of the sidebar. It has a sidebar of its own; <b>Workwear &amp; Equipment</b>, at its foot, takes you back.</p>
-    <p>You are signed in to both at once, and <b>Sign out</b> in either signs you out of both. Anyone whose roles let them manage users, roles, settings or backups sees <b>Administration</b>, with only the screens their roles open.</p>
+    <p>You are signed in to both at once, and <b>Sign out</b> in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees <b>Administration</b>, with only the screens their roles open.</p>
+</section>
+
+<section id="overview">
+  <h2><span class="n">11</span>Overview</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Overview</b> answers the question: is anything wrong? <b>Needs attention</b> lists what to look at, the most urgent first, each with a link to where it is put right. When all is well, it says <b>Nothing needs your attention.</b></p>
+    <ul>
+      <li>A backup failed, or backups have stopped.</li>
+      <li>A copied sign-in was used, or many sign-ins failed.</li>
+      <li>Requests are failing, or a new kind of error appeared.</li>
+      <li>The access review is due. Review access every 90 days.</li>
+      <li>The Audit log does not match its seals: someone changed it behind the app.</li>
+    </ul>
+    <p><b>Figures</b>, below, show active users, who is signed in now, sign-ins today, the last 24 hours of requests, the database and the last backup.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/overview.png" alt="Overview: what needs attention, then the figures" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="users">
-  <h2><span class="n">11</span>Users</h2>
+  <h2><span class="n">12</span>Users</h2>
   <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
@@ -270,7 +294,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">12</span>Roles &amp; permissions</h2>
+  <h2><span class="n">13</span>Roles &amp; permissions</h2>
   <p class="who">Administrators only</p>
     <p><b>Roles &amp; permissions</b> lists each role, what it allows and how many users hold it. A role is a set of permissions, such as <b>Manage Item Catalogue</b> or <b>Delete employees</b>. You give roles to users on <b>Users</b>.</p>
     <ul>
@@ -286,20 +310,58 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
-<section id="settings">
-  <h2><span class="n">13</span>Settings</h2>
+<section id="audit">
+  <h2><span class="n">14</span>Audit log</h2>
   <p class="who">Administrators only</p>
-    <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
-    <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
+    <p><b>Audit log</b> lists every recorded change: what changed, who made it, when, and where. A change is made in <b>Workwear &amp; Equipment</b>, in <b>Administration</b>, through an employee's <b>Confirmation link</b>, or by the <b>System</b> itself.</p>
+    <p>Filter by <b>Area</b>, <b>Change</b>, <b>Person</b> and dates. Click a change to open it beside the list. It shows each field before and after, and <b>Open in Workwear &amp; Equipment</b> opens the record. <b>All changes to this record</b> narrows the list to it.</p>
+    <ul>
+      <li><b>Seals</b>, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. <b>Verify</b> checks every seal again; the app also checks them every hour.</li>
+      <li>If a sealed day does not match, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.</li>
+      <li><b>Export</b> downloads the changes the filters select, between two days at most a year apart, as <b>CSV, for a spreadsheet</b> or <b>JSON lines, for an archive</b>. The export is itself recorded on the Audit log.</li>
+      <li>Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.</li>
+    </ul>
     <div class="shots">
-      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/settings.png" alt="Settings: the supplier's WhatsApp group" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/audit-log.png" alt="Audit log: a price change open, with the fields before and after" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="security">
+  <h2><span class="n">15</span>Security</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Security</b> has three tabs:</p>
+    <ul>
+      <li><b>Sign-ins</b>: every sign-in, failed attempt, confirmed password and sign-out, with the account, the address it came from and the device. Filter by event, person and dates. A failed attempt says why, such as <b>Wrong password</b>. Sign-in records are kept 180 days.</li>
+      <li><b>Signed-in devices</b>: every browser someone is signed in on now. <b>Sign out</b> a device that is lost or not recognised: that person must sign in again there, with their password.</li>
+      <li><b>Access review</b>: every user with their roles, what those allow, and their last sign-in. Administrators, and accounts not used for 90 days, are marked. Check that each still needs their access, change it on <b>Users</b>, then choose <b>Mark as reviewed</b>. Do it every 90 days: the Overview reminds you.</li>
+    </ul>
+    <p><b>Copied sign-in stopped</b> means someone used an old copy of a sign-in, so it was ended on every device that held it. Ask the user whether it was them. If not, have them change their password.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/security.png" alt="Security: sign-ins with their address and device" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/access-review.png" alt="The access review: users, their roles and last sign-in" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="system">
+  <h2><span class="n">16</span>System</h2>
+  <p class="who">Administrators only</p>
+    <p><b>System</b> shows how the app is running. It has three tabs: <b>Status</b>, <b>Errors</b> and <b>Backups</b>.</p>
+    <ul>
+      <li><b>Status</b>: whether the app is <b>Ready</b>, its version and when it started; the last 24 hours of requests, how many failed and how long they took; the database's size and latest migration; and how long sign-ins, errors and changes are kept.</li>
+      <li><b>Errors</b>: what went wrong, on the server or in someone's browser, with how many times and when last. Open one to see who met it, where and on what device. Errors are kept 30 days.</li>
+      <li><b>Backups</b>: below.</li>
+    </ul>
+    <p>When something goes wrong, the app shows a <b>Reference</b>, such as <kbd>9f2c1a7e</kbd>. The error on <b>Errors</b> shows the same reference. Pass it on to whoever runs the server: it finds the error in the server's log.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/system.png" alt="System: the app, its requests and the database" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/errors.png" alt="Errors: an error open, with its reference" loading="lazy"></figure>
     </div>
 </section>
 
 <section id="backups">
-  <h2><span class="n">14</span>Backups</h2>
+  <h2><span class="n">17</span>Backups</h2>
   <p class="who">Administrators only</p>
-    <p><b>Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
+    <p><b>System → Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
     <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
     <p>A second warning shows while the backups are kept only on the server itself, because they would be lost with it.</p>
     <ul>
@@ -314,8 +376,35 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="usage">
+  <h2><span class="n">18</span>Usage</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Usage</b> shows how the apps are used. No page is tracked: everything comes from what the app records anyway.</p>
+    <ul>
+      <li>At the top: the people active today, in the last 7 and in the last 30 days, out of the active accounts, and today's sign-ins.</li>
+      <li><b>Active people per day</b>, by app, with a line for each role. <b>Sign-ins per day</b>, with the failed ones.</li>
+      <li><b>Confirmation links, last 90 days</b>: how many links employees were sent, opened and confirmed, and how many are still waiting, expired or were replaced.</li>
+      <li><b>Changes per week</b>, by area, darker for more, and the people who made the most.</li>
+      <li><b>Devices, last 30 days</b> and <b>Languages</b>: phones, tablets and computers with their systems and browsers, and the languages of users and employees.</li>
+      <li><b>Data quality, last 90 days</b>: employees without sizes, and items without a price or service period. Fewer is better.</li>
+    </ul>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/usage.png" alt="Usage: active people, sign-ins and more" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="settings">
+  <h2><span class="n">19</span>Settings</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
+    <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/settings.png" alt="Settings: the supplier's WhatsApp group" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">15</span>Your account</h2>
+  <h2><span class="n">20</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -330,7 +419,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">16</span>Search and shortcuts</h2>
+  <h2><span class="n">21</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>

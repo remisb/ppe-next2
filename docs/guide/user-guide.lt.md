@@ -99,6 +99,8 @@ Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 
 **⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.
 
+Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota.
+
 ![Užsakymai su atidarytu užsakymu](../../web/apps/workwear/public/help-img/lt/desktop/history.png)
 
 ## 7. Išdavimo įrašas
@@ -118,7 +120,8 @@ Darbuotojo puslapyje rodoma:
 
 - jo dydžiai ir pageidaujama kalba;
 - visos išduotos prekės su naudojimo trukme ir pakeitimo data;
-- dar neišduoti užsakymai.
+- dar neišduoti užsakymai;
+- **Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.
 
 Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.
 
@@ -129,7 +132,7 @@ Darbuotojo puslapyje rodoma:
 
 Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.
 
-Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi.
+Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai** rodo, kas ir kada keitė prekę.
 
 Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.
 
@@ -144,13 +147,29 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 *Tik administratoriams.*
 
-**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, bei organizacijos nustatymus. Jame keturi ekranai: **Naudotojai**, **Rolės ir teisės**, **Nustatymai** ir **Atsarginės kopijos**.
+**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas** ir **Nustatymai**.
 
 Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.
 
-Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
+Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
 
-## 11. Naudotojai
+## 11. Apžvalga
+
+*Tik administratoriams.*
+
+**Apžvalga** atsako į klausimą: ar kas nors negerai? **Reikia dėmesio** išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma **Niekam nereikia jūsų dėmesio.**
+
+- Atsarginė kopija nepavyko arba kopijos nebedaromos.
+- Buvo panaudotas nukopijuotas prisijungimas arba daug prisijungimų nepavyko.
+- Užklausos nepavyksta arba atsirado nauja klaidos rūšis.
+- Laikas peržiūrėti prieigą. Peržiūrėkite ją kas 90 dienų.
+- Audito žurnalas nesutampa su savo antspaudais: kažkas jį pakeitė apeidamas programėlę.
+
+Žemiau esantys **Rodikliai** rodo aktyvius naudotojus, kas prisijungę dabar, šiandienos prisijungimus, paskutinių 24 valandų užklausas, duomenų bazę ir paskutinę atsarginę kopiją.
+
+![Apžvalga: kam reikia dėmesio, toliau rodikliai](../../web/apps/workwear/public/help-img/lt/desktop/overview.png)
+
+## 12. Naudotojai
 
 *Tik administratoriams.*
 
@@ -162,7 +181,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 12. Rolės ir teisės
+## 13. Rolės ir teisės
 
 *Tik administratoriams.*
 
@@ -177,21 +196,56 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 ![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
 ![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
 
-## 13. Nustatymai
+## 14. Audito žurnalas
 
 *Tik administratoriams.*
 
-**Tiekėjo WhatsApp grupė**: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada **Pakviesti per nuorodą** ir **Kopijuoti nuorodą**.
+**Audito žurnalas** rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje **Darbo drabužiai ir įranga**, **Administravime**, per darbuotojo **Patvirtinimo nuorodą** arba pačios **Sistemos**.
 
-**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.
+Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o **Atidaryti programoje „Darbo drabužiai ir įranga“** atidaro įrašą. **Visi šio įrašo pakeitimai** susiaurina sąrašą iki jo.
 
-![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
+- **Antspaudai**, viršuje: kiekvienos dienos pakeitimai užantspauduojami praėjus valandai po dienos pabaigos maiša, kuri apima ir ankstesnę dieną, todėl vėliau pakeistas, pridėtas ar pašalintas pakeitimas išryškėja. **Patikrinti** iš naujo patikrina visus antspaudus; programėlė juos tikrina ir kas valandą.
+- Jei užantspauduota diena nesutampa, tai parodo Apžvalga. Praneškite serverį prižiūrinčiam asmeniui ir išsaugokite atsargines kopijas iš laiko prieš tą dieną.
+- **Eksportuoti** atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip **CSV, skaičiuoklei** arba **JSON eilutės, archyvui**. Pats eksportas taip pat užfiksuojamas audito žurnale.
+- Pakeitimai laikomi metų metus (10 metų, jei serveryje nenustatyta kitaip), paskui ištrinami po dieną.
 
-## 14. Atsarginės kopijos
+![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
+
+## 15. Sauga
 
 *Tik administratoriams.*
 
-**Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.
+**Sauga** turi tris skirtukus:
+
+- **Prisijungimai**: kiekvienas prisijungimas, nepavykęs bandymas, patvirtintas slaptažodis ir atsijungimas su paskyra, adresu, iš kurio jungtasi, ir įrenginiu. Filtruokite pagal įvykį, naudotoją ir datas. Prie nepavykusio bandymo nurodyta priežastis, pvz., **Neteisingas slaptažodis**. Prisijungimų įrašai laikomi 180 dienų.
+- **Prisijungę įrenginiai**: kiekviena naršyklė, kurioje kas nors šiuo metu prisijungęs. Mygtuku **Atjungti** atjunkite pamestą ar neatpažintą įrenginį: tas asmuo ten turės vėl prisijungti savo slaptažodžiu.
+- **Prieigos peržiūra**: kiekvienas naudotojas su rolėmis, tuo, ką jos leidžia, ir paskutiniu prisijungimu. Administratoriai ir paskyros, nenaudotos 90 dienų, pažymėti. Patikrinkite, ar kiekvienam vis dar reikia jo prieigos, pakeiskite ją ekrane **Naudotojai**, tada pasirinkite **Pažymėti kaip peržiūrėtą**. Darykite tai kas 90 dienų: Apžvalga primins.
+
+**Nukopijuotas prisijungimas sustabdytas** reiškia, kad kažkas panaudojo seną prisijungimo kopiją, todėl jis buvo nutrauktas visuose jį turėjusiuose įrenginiuose. Paklauskite naudotojo, ar tai buvo jis. Jei ne, tegul pasikeičia slaptažodį.
+
+![Sauga: prisijungimai su adresu ir įrenginiu](../../web/apps/workwear/public/help-img/lt/desktop/security.png)
+![Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas](../../web/apps/workwear/public/help-img/lt/desktop/access-review.png)
+
+## 16. Sistema
+
+*Tik administratoriams.*
+
+**Sistema** rodo, kaip veikia programėlė. Ji turi tris skirtukus: **Būsena**, **Klaidos** ir **Atsarginės kopijos**.
+
+- **Būsena**: ar programėlė **Veikia**, jos versija ir kada ji paleista; paskutinių 24 valandų užklausos, kiek jų nepavyko ir kiek jos truko; duomenų bazės dydis ir paskutinė migracija; kiek laikomi prisijungimai, klaidos ir pakeitimai.
+- **Klaidos**: kas nepavyko serveryje ar kieno nors naršyklėje, kiek kartų ir kada paskutinį kartą. Atidarykite klaidą, kad matytumėte, kas su ja susidūrė, kur ir kokiu įrenginiu. Klaidos laikomos 30 dienų.
+- **Atsarginės kopijos**: žr. toliau.
+
+Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9f2c1a7e`. Klaida ekrane **Klaidos** rodo tą pačią nuorodą. Perduokite ją serverį prižiūrinčiam asmeniui: pagal ją jis randa klaidą serverio žurnale.
+
+![Sistema: programėlė, jos užklausos ir duomenų bazė](../../web/apps/workwear/public/help-img/lt/desktop/system.png)
+![Klaidos: atidaryta klaida su nuoroda į užklausą](../../web/apps/workwear/public/help-img/lt/desktop/errors.png)
+
+## 17. Atsarginės kopijos
+
+*Tik administratoriams.*
+
+**Sistema → Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.
 
 Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.
 
@@ -206,7 +260,32 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 15. Jūsų paskyra
+## 18. Naudojimas
+
+*Tik administratoriams.*
+
+**Naudojimas** rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.
+
+- Viršuje: šiandien, per paskutines 7 ir per 30 dienų aktyvūs asmenys iš visų aktyvių paskyrų ir šiandienos prisijungimai.
+- **Aktyvūs asmenys per dieną** pagal programėlę, su linija kiekvienai rolei. **Prisijungimai per dieną**, su nepavykusiais.
+- **Patvirtinimo nuorodos per 90 dienų**: kiek nuorodų darbuotojams išsiųsta, atidaryta ir patvirtinta, kiek dar laukia, nebegalioja ar buvo pakeistos.
+- **Pakeitimai per savaitę** pagal sritį (kuo tamsiau, tuo daugiau) ir daugiausia pakeitimų atlikę asmenys.
+- **Įrenginiai per 30 dienų** ir **Kalbos**: telefonai, planšetės ir kompiuteriai su jų sistemomis ir naršyklėmis, naudotojų ir darbuotojų kalbos.
+- **Duomenų kokybė per 90 dienų**: darbuotojai be dydžių ir prekės be kainos ar naudojimo laikotarpio. Kuo mažiau, tuo geriau.
+
+![Naudojimas: aktyvūs asmenys, prisijungimai ir kita](../../web/apps/workwear/public/help-img/lt/desktop/usage.png)
+
+## 19. Nustatymai
+
+*Tik administratoriams.*
+
+**Tiekėjo WhatsApp grupė**: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada **Pakviesti per nuorodą** ir **Kopijuoti nuorodą**.
+
+**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.
+
+![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
+
+## 20. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -217,7 +296,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 16. Paieška ir spartieji klavišai
+## 21. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |

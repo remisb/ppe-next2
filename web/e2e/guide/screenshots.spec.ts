@@ -203,6 +203,45 @@ test('account and the search', async ({ browser }) => {
   await shot('palette')
 })
 
+test('overview, the audit log, security, system and usage', async () => {
+  // The demo's month of use (guide/setup.ts) leaves something on each: an access review never done, two errors.
+  await page.goto('/admin/')
+  await expect(page.getByRole('heading', { name: A.overview.title })).toBeVisible()
+  await expect(page.getByText(A.overview.items.review_overdue.title)).toBeVisible()
+  await shot('overview')
+
+  // Verified now: the API checked the seals when it started, before setup's upkeep sealed the demo's days.
+  await page.goto('/admin/audit')
+  const verified = page.waitForResponse((r) => r.url().endsWith('/audit-events/verify') && r.ok())
+  await page.getByRole('button', { name: A.audit.verify }).click()
+  await verified
+  // The latest change open (the supplier's group, set above): beside the list on a desktop, the whole screen below lg.
+  await page.getByRole('main').getByRole('table').getByRole('link').filter({ visible: true }).first().click()
+  await expect(page.getByRole('article', { name: A.audit.change })).toBeVisible()
+  await shot('audit-log')
+
+  await page.goto('/admin/security')
+  await expect(page.getByRole('heading', { name: A.security.title })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('table')).toBeVisible()
+  await shot('security')
+  await page.goto('/admin/security/review')
+  await expect(page.getByRole('button', { name: A.security.markReviewed })).toBeVisible()
+  await shot('access-review')
+
+  await page.goto('/admin/system')
+  await expect(page.getByRole('heading', { name: A.system.database, exact: true })).toBeVisible()
+  await shot('system')
+  // The server error open, with the reference a person quotes.
+  await page.goto('/admin/system/errors')
+  await page.getByRole('main').getByRole('table').getByRole('link').filter({ visible: true }).first().click()
+  await expect(page.getByRole('article', { name: A.system.error })).toBeVisible()
+  await shot('errors')
+
+  await page.goto('/admin/usage')
+  await expect(page.getByRole('heading', { name: A.usage.activePeople })).toBeVisible()
+  await shot('usage')
+})
+
 test('docs/guide: the page and Markdown copy in this language, from the Help screen text', () => {
   test.skip(device !== 'desktop', 'docs/guide is the desktop guide')
   writeDocs(lang)

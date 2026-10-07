@@ -137,6 +137,7 @@ export const en: Guide = {
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
+        { p: "An order's **Changes** list what happened to it and who did it: ordered, a link made or opened, given." },
         { shots: [{ name: 'history', alt: 'Orders with an ordered order open' }] },
       ],
     },
@@ -156,7 +157,7 @@ export const en: Guide = {
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
-        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given.'] },
+        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', '**Changes**: who changed their details or sizes, and when.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
         {
           shots: [
@@ -173,7 +174,7 @@ export const en: Guide = {
         {
           p: "Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.",
         },
-        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed." },
+        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes** list who changed the item, and when." },
         { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
         { p: 'You add and change items in **Item Catalogue**, and kits in **Item Sets**.', roles: ['admin', 'manager'] },
         {
@@ -189,11 +190,39 @@ export const en: Guide = {
       title: 'Administration',
       roles: ['admin'],
       blocks: [
-        { p: '**Administration** is where you manage who may use the app and what they may do, and the organisation\'s settings. It has four screens: **Users**, **Roles & permissions**, **Settings** and **Backups**.' },
-        { p: 'Open it from **More**. It has a bar of its own at the bottom; its **More** holds **Workwear & Equipment**, which takes you back, your account and **Sign out**.', devices: ['phone'] },
+        {
+          p: "**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage** and **Settings**.",
+        },
+        {
+          p: 'Open it from **More**. It has a bar of its own at the bottom, with **Overview**, **Users**, **Audit** and **Security**. Its **More** holds **Roles & permissions**, **System**, **Usage** and **Settings**, then **Workwear & Equipment**, which takes you back, your account and **Sign out**.',
+          devices: ['phone'],
+        },
         { p: 'Open it with **Admin** at the foot of the rail. It has a rail of its own; **Workwear**, at its foot, takes you back.', devices: ['tablet'] },
         { p: 'Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.', devices: ['desktop'] },
-        { p: 'You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or backups sees **Administration**, with only the screens their roles open.' },
+        {
+          p: 'You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.',
+        },
+      ],
+    },
+    {
+      id: 'overview',
+      title: 'Overview',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: "**Overview** answers the question: is anything wrong? **Needs attention** lists what to look at, the most urgent first, each with a link to where it is put right. When all is well, it says **Nothing needs your attention.**",
+        },
+        {
+          ul: [
+            'A backup failed, or backups have stopped.',
+            'A copied sign-in was used, or many sign-ins failed.',
+            'Requests are failing, or a new kind of error appeared.',
+            'The access review is due. Review access every 90 days.',
+            'The Audit log does not match its seals: someone changed it behind the app.',
+          ],
+        },
+        { p: '**Figures**, below, show active users, who is signed in now, sign-ins today, the last 24 hours of requests, the database and the last backup.' },
+        { shots: [{ name: 'overview', alt: 'Overview: what needs attention, then the figures' }] },
       ],
     },
     {
@@ -239,17 +268,82 @@ export const en: Guide = {
       ],
     },
     {
-      id: 'settings',
-      title: 'Settings',
+      id: 'audit',
+      title: 'Audit log',
       roles: ['admin'],
       blocks: [
         {
-          p: "**Supplier's WhatsApp group**: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then **Invite via link** and **Copy link**.",
+          p: '**Audit log** lists every recorded change: what changed, who made it, when, and where. A change is made in **Workwear & Equipment**, in **Administration**, through an employee\'s **Confirmation link**, or by the **System** itself.',
         },
         {
-          p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
+          p: 'Filter by **Area**, **Change**, **Person** and dates. Click a change to open it beside the list. It shows each field before and after, and **Open in Workwear & Equipment** opens the record. **All changes to this record** narrows the list to it.',
+          devices: ['desktop'],
         },
-        { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
+        {
+          p: 'Filter by **Area**, **Change**, **Person** and dates. Tap a change to open it. It shows each field before and after, and **Open in Workwear & Equipment** opens the record. **All changes to this record** narrows the list to it.',
+          devices: ['tablet'],
+        },
+        {
+          p: '**Filters** holds the area, change, person and date filters. Tap a change to open it. It shows each field before and after, and **Open in Workwear & Equipment** opens the record. **All changes to this record** narrows the list to it.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            "**Seals**, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. **Verify** checks every seal again; the app also checks them every hour.",
+            'If a sealed day does not match, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.',
+            '**Export** downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.',
+            'Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.',
+          ],
+        },
+        { shots: [{ name: 'audit-log', alt: 'Audit log: a price change open, with the fields before and after' }] },
+      ],
+    },
+    {
+      id: 'security',
+      title: 'Security',
+      roles: ['admin'],
+      blocks: [
+        { p: '**Security** has three tabs:' },
+        {
+          ul: [
+            '**Sign-ins**: every sign-in, failed attempt, confirmed password and sign-out, with the account, the address it came from and the device. Filter by event, person and dates. A failed attempt says why, such as **Wrong password**. Sign-in records are kept 180 days.',
+            "**Signed-in devices**: every browser someone is signed in on now. **Sign out** a device that is lost or not recognised: that person must sign in again there, with their password.",
+            '**Access review**: every user with their roles, what those allow, and their last sign-in. Administrators, and accounts not used for 90 days, are marked. Check that each still needs their access, change it on **Users**, then choose **Mark as reviewed**. Do it every 90 days: the Overview reminds you.',
+          ],
+        },
+        {
+          p: '**Copied sign-in stopped** means someone used an old copy of a sign-in, so it was ended on every device that held it. Ask the user whether it was them. If not, have them change their password.',
+        },
+        {
+          shots: [
+            { name: 'security', alt: 'Security: sign-ins with their address and device' },
+            { name: 'access-review', alt: 'The access review: users, their roles and last sign-in' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'system',
+      title: 'System',
+      roles: ['admin'],
+      blocks: [
+        { p: '**System** shows how the app is running. It has three tabs: **Status**, **Errors** and **Backups**.' },
+        {
+          ul: [
+            "**Status**: whether the app is **Ready**, its version and when it started; the last 24 hours of requests, how many failed and how long they took; the database's size and latest migration; and how long sign-ins, errors and changes are kept.",
+            "**Errors**: what went wrong, on the server or in someone's browser, with how many times and when last. Open one to see who met it, where and on what device. Errors are kept 30 days.",
+            '**Backups**: below.',
+          ],
+        },
+        {
+          p: 'When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. The error on **Errors** shows the same reference. Pass it on to whoever runs the server: it finds the error in the server\'s log.',
+        },
+        {
+          shots: [
+            { name: 'system', alt: 'System: the app, its requests and the database' },
+            { name: 'errors', alt: 'Errors: an error open, with its reference' },
+          ],
+        },
       ],
     },
     {
@@ -258,7 +352,7 @@ export const en: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: '**Backups** shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.',
+          p: "**System → Backups** shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.",
         },
         {
           p: 'The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.',
@@ -274,6 +368,39 @@ export const en: Guide = {
         },
         { p: 'The settings are made on the server, and a backup is restored there too: the app only shows them.' },
         { shots: [{ name: 'backups', alt: 'Backups: the last backup, the recent ones and the settings' }] },
+      ],
+    },
+    {
+      id: 'usage',
+      title: 'Usage',
+      roles: ['admin'],
+      blocks: [
+        { p: '**Usage** shows how the apps are used. No page is tracked: everything comes from what the app records anyway.' },
+        {
+          ul: [
+            "At the top: the people active today, in the last 7 and in the last 30 days, out of the active accounts, and today's sign-ins.",
+            '**Active people per day**, by app, with a line for each role. **Sign-ins per day**, with the failed ones.',
+            '**Confirmation links, last 90 days**: how many links employees were sent, opened and confirmed, and how many are still waiting, expired or were replaced.',
+            '**Changes per week**, by area, darker for more, and the people who made the most.',
+            '**Devices, last 30 days** and **Languages**: phones, tablets and computers with their systems and browsers, and the languages of users and employees.',
+            '**Data quality, last 90 days**: employees without sizes, and items without a price or service period. Fewer is better.',
+          ],
+        },
+        { shots: [{ name: 'usage', alt: 'Usage: active people, sign-ins and more' }] },
+      ],
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: "**Supplier's WhatsApp group**: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then **Invite via link** and **Copy link**.",
+        },
+        {
+          p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
+        },
+        { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
       ],
     },
     {

@@ -85,12 +85,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
     <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
     <li><a href="#administration"><b>10</b>Administravimas</a></li>
-    <li><a href="#users"><b>11</b>Naudotojai</a></li>
-    <li><a href="#roles"><b>12</b>Rolės ir teisės</a></li>
-    <li><a href="#settings"><b>13</b>Nustatymai</a></li>
-    <li><a href="#backups"><b>14</b>Atsarginės kopijos</a></li>
-    <li><a href="#account"><b>15</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>16</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#overview"><b>11</b>Apžvalga</a></li>
+    <li><a href="#users"><b>12</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>13</b>Rolės ir teisės</a></li>
+    <li><a href="#audit"><b>14</b>Audito žurnalas</a></li>
+    <li><a href="#security"><b>15</b>Sauga</a></li>
+    <li><a href="#system"><b>16</b>Sistema</a></li>
+    <li><a href="#backups"><b>17</b>Atsarginės kopijos</a></li>
+    <li><a href="#usage"><b>18</b>Naudojimas</a></li>
+    <li><a href="#settings"><b>19</b>Nustatymai</a></li>
+    <li><a href="#account"><b>20</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>21</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -200,6 +205,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </ul>
     <p class="who">Tik vadovams</p>
     <p><b>⋯ → Ištrinti užsakymą…</b> pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.</p>
+    <p>Užsakymo <b>Pakeitimai</b> rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/history.png" alt="Užsakymai su atidarytu užsakymu" loading="lazy"></figure>
     </div>
@@ -224,7 +230,8 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <ul>
       <li>jo dydžiai ir pageidaujama kalba;</li>
       <li>visos išduotos prekės su naudojimo trukme ir pakeitimo data;</li>
-      <li>dar neišduoti užsakymai.</li>
+      <li>dar neišduoti užsakymai;</li>
+      <li><b>Pakeitimai</b>: kas ir kada keitė jo duomenis ar dydžius.</li>
     </ul>
     <p>Šiame puslapyje <b>Naujas užsakymas</b> pradeda užsakymą šiam darbuotojui, o <b>Keisti dydžius</b> pakeičia jo dydžius.</p>
     <div class="pair">
@@ -236,7 +243,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="catalogue">
   <h2><span class="n">9</span>Prekių katalogas ir prekių rinkiniai</h2>
     <p>Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.</p>
-    <p>Prekė gali turėti ir <b>Pirkimo kainą</b> – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi.</p>
+    <p>Prekė gali turėti ir <b>Pirkimo kainą</b> – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos <b>Pakeitimai</b> rodo, kas ir kada keitė prekę.</p>
     <p>Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.</p>
     <p class="who">Tik administratoriams ir vadovams</p>
     <p>Prekes kuriate ir keičiate ekrane <b>Prekių katalogas</b>, o komplektus – ekrane <b>Prekių rinkiniai</b>.</p>
@@ -249,13 +256,30 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="administration">
   <h2><span class="n">10</span>Administravimas</h2>
   <p class="who">Tik administratoriams</p>
-    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, bei organizacijos nustatymus. Jame keturi ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Nustatymai</b> ir <b>Atsarginės kopijos</b>.</p>
+    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b> ir <b>Nustatymai</b>.</p>
     <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
-    <p>Prisijungiate prie abiejų iš karto, o <b>Atsijungti</b> bet kuriame atjungia nuo abiejų. <b>Administravimą</b> mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.</p>
+    <p>Prisijungiate prie abiejų iš karto, o <b>Atsijungti</b> bet kuriame atjungia nuo abiejų. <b>Administravimą</b> mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.</p>
+</section>
+
+<section id="overview">
+  <h2><span class="n">11</span>Apžvalga</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Apžvalga</b> atsako į klausimą: ar kas nors negerai? <b>Reikia dėmesio</b> išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma <b>Niekam nereikia jūsų dėmesio.</b></p>
+    <ul>
+      <li>Atsarginė kopija nepavyko arba kopijos nebedaromos.</li>
+      <li>Buvo panaudotas nukopijuotas prisijungimas arba daug prisijungimų nepavyko.</li>
+      <li>Užklausos nepavyksta arba atsirado nauja klaidos rūšis.</li>
+      <li>Laikas peržiūrėti prieigą. Peržiūrėkite ją kas 90 dienų.</li>
+      <li>Audito žurnalas nesutampa su savo antspaudais: kažkas jį pakeitė apeidamas programėlę.</li>
+    </ul>
+    <p>Žemiau esantys <b>Rodikliai</b> rodo aktyvius naudotojus, kas prisijungę dabar, šiandienos prisijungimus, paskutinių 24 valandų užklausas, duomenų bazę ir paskutinę atsarginę kopiją.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/overview.png" alt="Apžvalga: kam reikia dėmesio, toliau rodikliai" loading="lazy"></figure>
+    </div>
 </section>
 
 <section id="users">
-  <h2><span class="n">11</span>Naudotojai</h2>
+  <h2><span class="n">12</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
       <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
@@ -270,7 +294,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">12</span>Rolės ir teisės</h2>
+  <h2><span class="n">13</span>Rolės ir teisės</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
     <ul>
@@ -286,20 +310,58 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
-<section id="settings">
-  <h2><span class="n">13</span>Nustatymai</h2>
+<section id="audit">
+  <h2><span class="n">14</span>Audito žurnalas</h2>
   <p class="who">Tik administratoriams</p>
-    <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
-    <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
+    <p><b>Audito žurnalas</b> rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje <b>Darbo drabužiai ir įranga</b>, <b>Administravime</b>, per darbuotojo <b>Patvirtinimo nuorodą</b> arba pačios <b>Sistemos</b>.</p>
+    <p>Filtruokite pagal <b>Sritis</b>, <b>Pakeitimas</b>, <b>Naudotojas</b> ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o <b>Atidaryti programoje „Darbo drabužiai ir įranga“</b> atidaro įrašą. <b>Visi šio įrašo pakeitimai</b> susiaurina sąrašą iki jo.</p>
+    <ul>
+      <li><b>Antspaudai</b>, viršuje: kiekvienos dienos pakeitimai užantspauduojami praėjus valandai po dienos pabaigos maiša, kuri apima ir ankstesnę dieną, todėl vėliau pakeistas, pridėtas ar pašalintas pakeitimas išryškėja. <b>Patikrinti</b> iš naujo patikrina visus antspaudus; programėlė juos tikrina ir kas valandą.</li>
+      <li>Jei užantspauduota diena nesutampa, tai parodo Apžvalga. Praneškite serverį prižiūrinčiam asmeniui ir išsaugokite atsargines kopijas iš laiko prieš tą dieną.</li>
+      <li><b>Eksportuoti</b> atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip <b>CSV, skaičiuoklei</b> arba <b>JSON eilutės, archyvui</b>. Pats eksportas taip pat užfiksuojamas audito žurnale.</li>
+      <li>Pakeitimai laikomi metų metus (10 metų, jei serveryje nenustatyta kitaip), paskui ištrinami po dieną.</li>
+    </ul>
     <div class="shots">
-      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/settings.png" alt="Nustatymai: tiekėjo WhatsApp grupė" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png" alt="Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="security">
+  <h2><span class="n">15</span>Sauga</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Sauga</b> turi tris skirtukus:</p>
+    <ul>
+      <li><b>Prisijungimai</b>: kiekvienas prisijungimas, nepavykęs bandymas, patvirtintas slaptažodis ir atsijungimas su paskyra, adresu, iš kurio jungtasi, ir įrenginiu. Filtruokite pagal įvykį, naudotoją ir datas. Prie nepavykusio bandymo nurodyta priežastis, pvz., <b>Neteisingas slaptažodis</b>. Prisijungimų įrašai laikomi 180 dienų.</li>
+      <li><b>Prisijungę įrenginiai</b>: kiekviena naršyklė, kurioje kas nors šiuo metu prisijungęs. Mygtuku <b>Atjungti</b> atjunkite pamestą ar neatpažintą įrenginį: tas asmuo ten turės vėl prisijungti savo slaptažodžiu.</li>
+      <li><b>Prieigos peržiūra</b>: kiekvienas naudotojas su rolėmis, tuo, ką jos leidžia, ir paskutiniu prisijungimu. Administratoriai ir paskyros, nenaudotos 90 dienų, pažymėti. Patikrinkite, ar kiekvienam vis dar reikia jo prieigos, pakeiskite ją ekrane <b>Naudotojai</b>, tada pasirinkite <b>Pažymėti kaip peržiūrėtą</b>. Darykite tai kas 90 dienų: Apžvalga primins.</li>
+    </ul>
+    <p><b>Nukopijuotas prisijungimas sustabdytas</b> reiškia, kad kažkas panaudojo seną prisijungimo kopiją, todėl jis buvo nutrauktas visuose jį turėjusiuose įrenginiuose. Paklauskite naudotojo, ar tai buvo jis. Jei ne, tegul pasikeičia slaptažodį.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/security.png" alt="Sauga: prisijungimai su adresu ir įrenginiu" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/access-review.png" alt="Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="system">
+  <h2><span class="n">16</span>Sistema</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Sistema</b> rodo, kaip veikia programėlė. Ji turi tris skirtukus: <b>Būsena</b>, <b>Klaidos</b> ir <b>Atsarginės kopijos</b>.</p>
+    <ul>
+      <li><b>Būsena</b>: ar programėlė <b>Veikia</b>, jos versija ir kada ji paleista; paskutinių 24 valandų užklausos, kiek jų nepavyko ir kiek jos truko; duomenų bazės dydis ir paskutinė migracija; kiek laikomi prisijungimai, klaidos ir pakeitimai.</li>
+      <li><b>Klaidos</b>: kas nepavyko serveryje ar kieno nors naršyklėje, kiek kartų ir kada paskutinį kartą. Atidarykite klaidą, kad matytumėte, kas su ja susidūrė, kur ir kokiu įrenginiu. Klaidos laikomos 30 dienų.</li>
+      <li><b>Atsarginės kopijos</b>: žr. toliau.</li>
+    </ul>
+    <p>Kai kas nors nepavyksta, programėlė parodo <b>Nuoroda į užklausą</b>, pvz., <kbd>9f2c1a7e</kbd>. Klaida ekrane <b>Klaidos</b> rodo tą pačią nuorodą. Perduokite ją serverį prižiūrinčiam asmeniui: pagal ją jis randa klaidą serverio žurnale.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/system.png" alt="Sistema: programėlė, jos užklausos ir duomenų bazė" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/errors.png" alt="Klaidos: atidaryta klaida su nuoroda į užklausą" loading="lazy"></figure>
     </div>
 </section>
 
 <section id="backups">
-  <h2><span class="n">14</span>Atsarginės kopijos</h2>
+  <h2><span class="n">17</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
-    <p><b>Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
+    <p><b>Sistema → Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
     <p>Antras įspėjimas rodomas, kol kopijos laikomos tik pačiame serveryje, nes jos dingtų kartu su juo.</p>
     <ul>
@@ -314,8 +376,35 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="usage">
+  <h2><span class="n">18</span>Naudojimas</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Naudojimas</b> rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.</p>
+    <ul>
+      <li>Viršuje: šiandien, per paskutines 7 ir per 30 dienų aktyvūs asmenys iš visų aktyvių paskyrų ir šiandienos prisijungimai.</li>
+      <li><b>Aktyvūs asmenys per dieną</b> pagal programėlę, su linija kiekvienai rolei. <b>Prisijungimai per dieną</b>, su nepavykusiais.</li>
+      <li><b>Patvirtinimo nuorodos per 90 dienų</b>: kiek nuorodų darbuotojams išsiųsta, atidaryta ir patvirtinta, kiek dar laukia, nebegalioja ar buvo pakeistos.</li>
+      <li><b>Pakeitimai per savaitę</b> pagal sritį (kuo tamsiau, tuo daugiau) ir daugiausia pakeitimų atlikę asmenys.</li>
+      <li><b>Įrenginiai per 30 dienų</b> ir <b>Kalbos</b>: telefonai, planšetės ir kompiuteriai su jų sistemomis ir naršyklėmis, naudotojų ir darbuotojų kalbos.</li>
+      <li><b>Duomenų kokybė per 90 dienų</b>: darbuotojai be dydžių ir prekės be kainos ar naudojimo laikotarpio. Kuo mažiau, tuo geriau.</li>
+    </ul>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/usage.png" alt="Naudojimas: aktyvūs asmenys, prisijungimai ir kita" loading="lazy"></figure>
+    </div>
+</section>
+
+<section id="settings">
+  <h2><span class="n">19</span>Nustatymai</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
+    <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/settings.png" alt="Nustatymai: tiekėjo WhatsApp grupė" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">15</span>Jūsų paskyra</h2>
+  <h2><span class="n">20</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -330,7 +419,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">16</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">21</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>

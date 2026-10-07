@@ -65,6 +65,9 @@ func TestConfigValidate(t *testing.T) {
 	if err := verify.validate(); err != nil {
 		t.Errorf("-verify-audit needs only the database: %v", err)
 	}
+	if err := (config{DBDSN: "postgres://x", DBMaxConns: 1, Upkeep: true}).validate(); err != nil {
+		t.Errorf("-upkeep needs only the database: %v", err)
+	}
 	if (config{DBMaxConns: 1, VerifyAudit: true}).validate() == nil {
 		t.Error("-verify-audit without API_DB_DSN should fail")
 	}

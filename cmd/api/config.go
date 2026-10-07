@@ -82,6 +82,10 @@ type config struct {
 	// VerifyAudit checks the Audit log against its seals, prints what it
 	// found and exits; non-zero on a mismatch. For the restore drill.
 	VerifyAudit bool
+
+	// Upkeep runs the hourly upkeep once (purges, samples, audit seals and
+	// their check) and exits; non-zero when a part failed.
+	Upkeep bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -142,6 +146,7 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.SeedDemo, "seed-demo", false, "fill an empty database with demo data as the API_SEED_USER_EMAIL admin and exit")
 	fs.BoolVar(&c.Healthcheck, "healthcheck", false, "check that the API at -addr is ready (GET /ready) and exit")
 	fs.BoolVar(&c.VerifyAudit, "verify-audit", false, "verify the Audit log against its seals, print the result as JSON and exit")
+	fs.BoolVar(&c.Upkeep, "upkeep", false, "run the hourly upkeep once (purges, samples, audit seals) and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -166,7 +171,7 @@ func (c config) validate() error {
 		}
 		return errors.Join(errs...)
 	}
-	if c.VerifyAudit {
+	if c.VerifyAudit || c.Upkeep {
 		return errors.Join(errs...)
 	}
 	if c.SeedDemo {

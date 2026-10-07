@@ -60,13 +60,15 @@ describe('forReader', () => {
   const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
   it('keeps Administration, its screens and the Dashboard tour for administrators only', () => {
-    const administration = ['administration', 'users', 'roles', 'settings', 'backups']
+    const administration = ['administration', 'overview', 'users', 'roles', 'audit', 'security', 'system', 'backups', 'usage', 'settings']
     expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(administration))
     for (const id of administration) {
       expect(ids(forRoles(guides.en, ['manager']))).not.toContain(id)
       expect(ids(forRoles(guides.en, ['employee']))).not.toContain(id)
     }
     expect(words(forRoles(guides.en, ['manager']))).not.toContain('Backups')
+    expect(words(forRoles(guides.en, ['manager']))).not.toContain('Audit log')
+    expect(words(forRoles(guides.en, ['employee']))).toContain('**Changes**')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Needs you')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
   })
