@@ -86,11 +86,10 @@ button, `text-brand-mark` for the logo and the app's name, white in dark mode), 
 by the sign-in page, which sets them on the page's own background, never a panel colour
 of its own. A new colour gets a token in all three places, never a literal.
 The logo is `@ppe/ui/components/gavort-logo`, traced from the brand book: it takes the text
-colour (navy) and in dark mode the book's gold foil, a gradient kept
-in that file with the shapes because it is part of the artwork, not a screen colour.
+colour: navy, and white in dark mode (the book's variation 3, without its navy background).
 Keep the book's clear space around it, an eighth of its width. `GavortEmblem` is its emblem alone, the
 app's mark in the app bar and on the confirmation page. The favicon (`public/favicon.svg`,
-navy on a light tab, gold on a dark one) and the home-screen icons (gold on navy, in
+navy on a light tab, white on a dark one) and the home-screen icons (gold on navy, in
 `manifest.json` and `apple-touch-icon.png`) are the same emblem; `icons/build.sh` redraws
 the PNGs with `rsvg-convert`.
 The theme is the device's choice on Account (and ⌘K): Light or Dark pin `<html

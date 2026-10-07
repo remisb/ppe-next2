@@ -13,7 +13,7 @@ import { shellText } from './text.ts'
  * Sign in, in Gavort's quiet colours: the company's logo, the app's name and a
  * faint contour pattern on the page's own background, and the form beside them
  * (from lg, past a rule; above it on a phone and a tablet, as a short band, where
- * the logo drops its tagline). The logo is navy, and gold in dark mode. The page
+ * the logo drops its tagline). The logo is navy, and white in dark mode. The page
  * is in the device's language (deviceLanguage).
  */
 export function SignIn({ appName, tagline }: { appName: string; tagline: string }) {
