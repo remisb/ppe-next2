@@ -43,8 +43,9 @@ is TypeScript source like `api-client` (explicit `.ts` imports, no build step). 
 component from `@ppe/ui/components/<name>`, never copy one into an app. An app's
 `index.css` starts with `@import '@ppe/ui/styles.css'`, which also tells Tailwind to scan
 the package. Tailwind scans nothing else outside the app: a package with components of its
-own (`@ppe/audit`) is named with `@source '../../../packages/<name>/src'` in the `index.css`
-of every app that uses it, or its classes are silently missing. Run shadcn's CLI in
+own (`@ppe/app-shell`, `@ppe/audit`) is named with `@source '../../../packages/<name>/src'` in the `index.css`
+of every app that uses it, or its classes are silently missing (each app's
+`src/tailwind-sources.test.ts` fails then). Run shadcn's CLI in
 `packages/ui` (its `components.json`).
 
 **Permissions, not roles, decide what a screen shows.** `session.can('orders.delete')`,
