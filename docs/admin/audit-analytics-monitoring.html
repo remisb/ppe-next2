@@ -898,11 +898,11 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   <div class="status">
     <p class="eyebrow">Since then · 7 Oct</p>
     <p><b>The API connects as <code>ppe_app</code>.</b> Its password was generated into <code>.env.prod</code> on the droplet and never shown, and the startup upkeep (seals, purges, samples) ran under it without an error.</p>
+    <p><b>Backups go off the server:</b> they go to the Spaces bucket <code>ppe-next2-backups</code> (fra1), encrypted with age. The first one succeeded at 15:16 UTC. The private key is kept off the server.</p>
   </div>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
     <ul>
-      <li><b>Backups stay on the droplet.</b> The target is the default <code>backups</code> volume. Last night's run succeeded, but the droplet holds the only copy.</li>
       <li><b>External uptime check and droplet alerts</b> are account settings, not visible from the repository, so they are unconfirmed.</li>
       <li><b>The Help guide</b> does not cover the Overview, Audit log, Security, System or Usage yet.</li>
       <li><b>Left for later on purpose:</b> off-site seal anchors, email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
@@ -911,7 +911,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   <div class="phases">
     <div class="phase"><div class="ph-head"><h4>Now</h4><span class="size">small, most of the risk</span></div><ol class="steps">
       <li><s><b>Switch the API to <code>ppe_app</code></b></s> <b>Done 7 Oct.</b> To undo it, remove the two <code>API_DB_*</code> lines from <code>.env.prod</code> and run <code>make prod-up</code>.</li>
-      <li><b>Copy backups off the droplet.</b> A lost droplet loses the database and its backups together. Use a Spaces bucket (EU) with encryption, as <code>docs/backups.md</code> describes; it will also hold the seal anchors (step 10).</li>
+      <li><s><b>Copy backups off the droplet.</b></s> <b>Done 7 Oct:</b> Spaces in fra1, encrypted. Older backups stay on the <code>backups</code> volume, and nothing deletes them any more. Step 6's restore rehearsal now also proves that the age key decrypts.</li>
       <li><b>Turn on the uptime check and droplet alerts.</b> Today nobody hears of an outage unless they open the site. Watch <code>/ready</code> from an EU service, and add CPU, memory and disk alerts (<code>docs/monitoring.md</code>).</li>
       <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>
     </ol></div>

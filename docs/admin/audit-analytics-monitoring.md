@@ -667,12 +667,12 @@ Administrator.
 
 **Since then (7 Oct):** the API connects as `ppe_app`. Its password was generated into
 `.env.prod` on the droplet and never shown, and the startup upkeep (seals, purges, samples)
-ran under it without an error.
+ran under it without an error. Backups go to the Spaces bucket `ppe-next2-backups` in fra1,
+encrypted with age; the first one succeeded at 15:16 UTC. The private key is kept off the
+server.
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
-- **Backups stay on the droplet.** `DBBACKUP_TARGET` is the default `backups` volume. They
-  run (the last one succeeded on 7 Oct at 00:00 UTC), but the droplet holds the only copy.
 - **External uptime check and DigitalOcean alerts.** These are account settings
   ([monitoring.md](../monitoring.md)), not visible from here, so they are unconfirmed.
 - **The Help guide for Administration.** The Help text, its screenshots and `docs/guide` say
@@ -690,11 +690,10 @@ ran under it without an error.
 
 1. ~~**Switch the API to `ppe_app`.**~~ **Done 7 Oct.** To undo it, remove the two
    `API_DB_*` lines from `.env.prod` and run `make prod-up`.
-2. **Copy backups off the droplet.**
-   - *Why:* A lost droplet loses the database and its backups together.
-   - *How:* create a Spaces bucket (EU), set `DBBACKUP_TARGET` and encryption as
-     [backups.md](../backups.md) describes, and check that the Backups tab shows the next run.
-     The same bucket can later hold the seal anchors (step 10).
+2. ~~**Copy backups off the droplet.**~~ **Done 7 Oct:** Spaces in fra1, encrypted. Backups
+   made earlier stay on the `backups` volume, and nothing deletes them any more. The bucket
+   can later hold the seal anchors (step 10). Step 6's restore rehearsal now also proves that
+   the age key decrypts.
 3. **Turn on the external uptime check and droplet alerts.**
    - *Why:* Today nobody hears that the site is down unless they open it. The Overview helps
      only someone who looks at it.
