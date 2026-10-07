@@ -129,3 +129,14 @@ reports them ([specs/backup-service.md](specs/backup-service.md)).
 | `GET /api/v1/backups` needs `backups.read` (administrators); an empty database gives `runs: []`, `agent: null`, overdue | `TestRoutePolicy`, `TestPostgresBackupsHTTP` |
 | The screen names the worst first (no agent, offline, failed, none yet, overdue, up to date), in the organisation timezone; sizes, durations and simple schedules in words, in the user's language | `@ppe/backups` `index.test.ts` |
 | Backups screen (Administration) and the Dashboard card (opens it there), administrators only; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |
+
+## Monitoring
+
+Not a manual rule: how the deployment tells whether the API can serve
+([monitoring.md](monitoring.md)).
+
+| Rule | Covered by |
+| --- | --- |
+| `GET /health` answers while the process runs; `GET /ready` is 200 only when the database answers and holds every migration this build embeds (a newer database is fine), else 503 with `problem` `database` or `migrations`; both public, `/ready` never cached and naming the build's commit but never the detail, which goes to the log | `TestHealthIsOpen`, `TestReady`, `TestRoutePolicy`, `TestPostgresReady`, `db.TestMigrationsListEveryUpFileButBookkeeping` |
+| `-healthcheck` asks the API at `-addr` (no host or an unspecified one is 127.0.0.1) for `/ready`, prints the answer and fails unless it is 200; it needs no other setting | `TestProbeReady`, `TestConfigValidate` |
+| The build's commit comes from `-ldflags -X main.commit`, else Go's VCS stamp, else `unknown` | `TestBuildCommitIsNeverEmpty` |

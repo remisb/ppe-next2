@@ -25,7 +25,10 @@ import sites/*.caddy
 	handle /api/* {
 		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
-	handle /health {
+	# /health: the API process answers. /ready: it also reaches a migrated
+	# database; the external uptime check watches it (docs/monitoring.md).
+	@probe path /health /ready
+	handle @probe {
 		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
 	# Administration: the same origin as the staff app, so the two share the

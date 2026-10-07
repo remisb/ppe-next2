@@ -57,6 +57,13 @@ func TestConfigValidate(t *testing.T) {
 	if err := demo.validate(); err != nil {
 		t.Errorf("seed-demo needs no JWT secret or password: %v", err)
 	}
+	// The container healthcheck runs with the API's environment, but needs none of it.
+	if err := (config{Healthcheck: true}).validate(); err != nil {
+		t.Errorf("-healthcheck needs no database or secret: %v", err)
+	}
+	if c, err := loadConfig([]string{"-healthcheck", "-addr", ":9000"}); err != nil || !c.Healthcheck || c.Addr != ":9000" {
+		t.Errorf("-healthcheck flag = %+v, %v", c.Healthcheck, err)
+	}
 }
 
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the

@@ -15,7 +15,7 @@ TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
 .PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo \
-	prod-build prod-up prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo \
+	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo \
 	prod-backup prod-backups prod-restore backup-once
 
 help: ## List targets
@@ -86,17 +86,32 @@ seed-demo: ## Fill an empty database with demo data as the seed admin (run seed-
 # compose reads ${VAR} from the environment before --env-file, and this Makefile
 # exports every development value from .env.
 PROD_ENV_FILE ?= .env.prod
-PROD := env -i PATH="$$PATH" HOME="$$HOME" DOCKER_HOST="$$DOCKER_HOST" docker compose -f docker-compose.prod.yml --env-file $(PROD_ENV_FILE)
+PROD_ENV := env -i PATH="$$PATH" HOME="$$HOME" DOCKER_HOST="$$DOCKER_HOST"
+PROD_COMPOSE := docker compose -f docker-compose.prod.yml --env-file $(PROD_ENV_FILE)
+PROD := $(PROD_ENV) $(PROD_COMPOSE)
+# The commit the API image is built from, shown by GET /ready; -dirty when
+# tracked files differ from it.
+PROD_COMMIT = $(shell git describe --always --dirty --abbrev=12 2>/dev/null)
 
 prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
-	$(PROD) build
+	$(PROD_ENV) API_COMMIT="$(PROD_COMMIT)" $(PROD_COMPOSE) build
 
 # Compose has kept api or caddy on the previous image after a rebuild, so both
 # are always recreated (about a second of downtime). db is recreated only when
-# its config changes; the first `up` runs migrate before the API starts.
+# its config changes; the first `up` runs migrate before the API starts. It
+# ends when GET /ready answers (the database is reachable and migrated), or
+# fails with the API's last log lines.
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
 	$(PROD) up -d
 	$(PROD) up -d --force-recreate --no-deps api caddy backup
+	@for i in $$(seq 1 60); do \
+		if out=$$($(PROD) exec -T api /api -healthcheck 2>/dev/null); then echo "api ready: $$out"; exit 0; fi; \
+		sleep 1; \
+	done; \
+	echo "the API is not ready after 60s" >&2; $(PROD) logs --tail=30 api >&2; exit 1
+
+prod-ready: ## Ask the running API whether it is ready (GET /ready) and which commit it runs
+	$(PROD) exec -T api /api -healthcheck
 
 prod-down: ## Stop the deployment stack (volumes are kept)
 	$(PROD) down

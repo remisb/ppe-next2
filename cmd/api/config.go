@@ -63,6 +63,10 @@ type config struct {
 	SeedUserEmail    string
 	SeedUserPassword string
 	SeedUserName     string
+
+	// Healthcheck asks the API at Addr whether it is ready (GET /ready) and
+	// exits: the container healthcheck, as the image has no curl.
+	Healthcheck bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -118,6 +122,7 @@ func loadConfig(args []string) (config, error) {
 	fs.StringVar(&c.Addr, "addr", c.Addr, "listen address")
 	fs.BoolVar(&c.SeedAdmin, "seed-admin", false, "create the first admin from API_SEED_USER_* and exit")
 	fs.BoolVar(&c.SeedDemo, "seed-demo", false, "fill an empty database with demo data as the API_SEED_USER_EMAIL admin and exit")
+	fs.BoolVar(&c.Healthcheck, "healthcheck", false, "check that the API at -addr is ready (GET /ready) and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -125,6 +130,10 @@ func loadConfig(args []string) (config, error) {
 }
 
 func (c config) validate() error {
+	// The probe needs only Addr, which loadConfig has already parsed.
+	if c.Healthcheck {
+		return nil
+	}
 	var errs []error
 	if c.DBDSN == "" {
 		errs = append(errs, errors.New("API_DB_DSN is required"))

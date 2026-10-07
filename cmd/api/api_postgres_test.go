@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"slices"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -811,5 +813,17 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	var events int
 	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE entity_type = 'role' AND entity_id = $1`, store.ID).Scan(&events); err != nil || events != 1 {
 		t.Errorf("role events = %d, %v", events, err)
+	}
+}
+
+func TestPostgresReady(t *testing.T) {
+	_, pool := newPostgresAPI(t)
+	ctx := context.Background()
+	if err := (dbReadiness{pool: pool, want: db.Migrations()}).Ready(ctx); err != nil {
+		t.Fatalf("migrated test database: %v", err)
+	}
+	ahead := dbReadiness{pool: pool, want: append(db.Migrations(), "9999_not_yet.up.sql")}
+	if err := ahead.Ready(ctx); !errors.Is(err, errMigrationsPending) || !strings.Contains(err.Error(), "9999_not_yet") {
+		t.Fatalf("a build ahead of the database: %v, want migrations pending naming the file", err)
 	}
 }

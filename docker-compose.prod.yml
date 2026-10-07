@@ -8,6 +8,15 @@
 # Only Caddy publishes ports; the API and the database stay on the compose network.
 name: ppe-next2-prod
 
+# Docker keeps each container's output in a json-file that otherwise grows
+# until the disk is full. Every service keeps at most 5 files of 10 MB;
+# `make prod-logs` reads what is kept. docs/monitoring.md.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
 services:
   db:
     # POSTGRES_IMAGE is shared with migrate and backup, so their client tools
@@ -15,6 +24,7 @@ services:
     # volume: docs/backups.md.
     image: ${POSTGRES_IMAGE:-postgres:18-alpine}
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env.prod}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
@@ -45,13 +55,20 @@ services:
       - ./deploy/migrate.sh:/migrate.sh:ro
     entrypoint: ["/bin/sh", "/migrate.sh"]
     restart: "no"
+    logging: *logging
 
   api:
     build:
       context: .
       secrets: [github_token]
+      args:
+        # Set by `make prod-build` (git describe); shown by GET /ready.
+        API_COMMIT: ${API_COMMIT:-}
     image: ppe-next2-api:${IMAGE_TAG:-latest}
+    # The image's HEALTHCHECK runs `/api -healthcheck` (GET /ready: the database
+    # answers and has this build's migrations); `make prod-ps` shows the result.
     restart: unless-stopped
+    logging: *logging
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -97,6 +114,7 @@ services:
         DBBACKUP_VERSION: ${DBBACKUP_VERSION:-v0.1.0}
     image: ppe-next2-backup:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    logging: *logging
     # Lets a backup in progress finish when the agent is stopped.
     stop_grace_period: 2m
     depends_on:
@@ -126,6 +144,7 @@ services:
     build: web
     image: ppe-next2-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - api
     ports:

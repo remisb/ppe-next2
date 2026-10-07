@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -47,6 +48,10 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	}
 	if err := cfg.validate(); err != nil {
 		return err
+	}
+
+	if cfg.Healthcheck {
+		return probeReady(ctx, cfg.Addr, os.Stdout)
 	}
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
@@ -78,6 +83,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 	)
+	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
 
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, pool, svc.users, cfg, logger)
@@ -100,7 +106,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("listening", slog.String("addr", ln.Addr().String()))
+	logger.Info("listening", slog.String("addr", ln.Addr().String()), slog.String("commit", buildCommit()))
 	errc := make(chan error, 1)
 	go func() { errc <- srv.Serve(ln) }()
 
@@ -127,6 +133,8 @@ type services struct {
 	dashboard *dashboard.Service
 	settings  *settings.Service
 	backups   *backup.Service
+	// ready answers GET /ready; run sets it, tests stub it.
+	ready readiness
 }
 
 // newServices builds every service from its repository and wires the
@@ -157,6 +165,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	rt.public("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
+	rt.public("GET /ready", readyHandler(svc.ready))
 	registerAuthRoutes(rt, svc.users, svc.roles, svc.sessions, tok, cfg)
 	sensitive := requireSensitive(tok, cfg.RecentSignIn, svc.roles)
 	registerUserRoutes(rt, svc.users, tok, sensitive)

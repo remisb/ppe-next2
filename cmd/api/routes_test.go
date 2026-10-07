@@ -436,6 +436,7 @@ func newTestAPI(t *testing.T) *testAPI {
 		t.Fatal(err)
 	}
 	svc := newServices(time.UTC, time.Hour, sessions, roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{})
+	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
 }
@@ -517,6 +518,7 @@ type rule struct {
 // a route, must change this table: TestRoutePolicy fails otherwise.
 var policy = map[string]rule{
 	"GET /health":                       {"", "public"},
+	"GET /ready":                        {"", "public"},
 	"POST /api/v1/auth/login":           {"", "public"},
 	"POST /api/v1/auth/refresh":         {"", "public"},
 	"POST /api/v1/auth/logout":          {"", "public"},

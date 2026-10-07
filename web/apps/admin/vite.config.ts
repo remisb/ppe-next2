@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
     base: '/admin/',
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { port: 5182, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target } },
+    server: { port: 5182, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target, '/ready': target } },
     test: { environment: 'jsdom', globals: true },
   }
 })

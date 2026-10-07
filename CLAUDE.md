@@ -136,7 +136,14 @@ cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 `prod-up` runs migrations before the API starts and then always recreates `api`, `caddy` and `backup`
 (about a second of downtime; certificates live in the `caddy-data` volume), because compose
 has left either running the previous image after a rebuild. `db` is recreated only when its
-config changes.
+config changes. It ends when the API's `GET /ready` answers (database reachable, every
+migration the build embeds applied; `internal/db.Migrations`), else it fails with the API's
+log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
+binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
+`make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),
+shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).
+The external uptime check of `https://<site>/ready` and DigitalOcean's CPU/memory/disk alerts
+are account settings, described in `docs/monitoring.md`.
 
 Accounts need a password, so the first admin is created by a person: set
 `API_SEED_USER_EMAIL`/`_PASSWORD` in `.env.prod`, run `make prod-seed-admin`, then blank
@@ -151,6 +158,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
   `session-service.md` cover sign-in).
 - `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
+- `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
+  uptime check and droplet alerts, and what to look at when one fires.
+- `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
+  audit log, security, usage analytics and monitoring, in phases (phase 0 is built).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.
