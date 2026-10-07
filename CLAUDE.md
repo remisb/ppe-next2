@@ -46,15 +46,23 @@ Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/ro
 Administrator, Manager and Employee reproduce the old three roles; administrators add and
 change others on Roles & permissions. The token's `perms` claim carries what the user's
 roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Roles & permissions, Audit log, Settings, Backups) on the staff app's origin, sharing its sign-in and
+Roles & permissions, Audit log, Security, Settings, Backups) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
 sign-in and app it was made in; employees, catalogue items and orders show their own
 **Changes** in the staff app (the glossary's "History" is Orders, so not that word).
+**Security** (`security.read`, migration 0024, spec `docs/specs/security-service.md`, ADR
+0003) reads the security log `auth_events` (`internal/security`): every sign-in, failed
+attempt and ended session with its address, written by the session repository in the
+session's own transaction, kept `API_AUTH_EVENTS_RETENTION` (180 days) and purged hourly by
+the API (`cmd/api/jobs.go`); the per-email sign-in limit counts it. It also lists every
+user's signed-in devices (signing one out takes `users.manage`) and the access review, whose
+Mark as reviewed is an audit event.
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
-UPDATE/DELETE via triggers; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
+UPDATE/DELETE via triggers (`auth_events` too, except the purge's DELETE of rows older than
+30 days); `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
 `given_*` columns to the status; a catalogue item's accounting price and service period are
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
@@ -155,7 +163,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 ## Source-of-truth docs
 
 - `docs/architecture/` — the context map (bounded contexts and their dependencies) and the
-  ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary.
+  ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary;
+  ADR 0003 keeps security events apart from the audit trail and sets their retention.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
@@ -164,7 +173,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
   uptime check and droplet alerts, and what to look at when one fires.
 - `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
-  audit log, security, usage analytics and monitoring, in phases (phase 0 is built).
+  audit log, security, usage analytics and monitoring, in phases (phases 0–2 are built).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.

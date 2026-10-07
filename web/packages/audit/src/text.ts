@@ -37,6 +37,7 @@ const en = {
     'order.given': 'Given',
     'order.deleted': 'Order deleted',
     'settings.supplier_chat_changed': 'Supplier’s WhatsApp group changed',
+    'access_review.completed': 'Access reviewed',
   } satisfies Record<AuditEvent, string>,
   areas: {
     users: 'Users and roles',
@@ -45,6 +46,7 @@ const en = {
     item_sets: 'Item Sets',
     orders: 'Orders',
     settings: 'Settings',
+    security: 'Security',
   } satisfies Record<AuditArea, string>,
   sources: {
     workwear: 'Workwear & Equipment',
@@ -86,6 +88,11 @@ const en = {
     document_hash: 'Document hash',
     expires_at: 'Link valid until',
     link: 'Link',
+    users: 'Users',
+    active_users: 'Active users',
+    administrators: 'Administrators',
+    dormant: 'Unused for 90 days',
+    no_sign_in: 'No sign-in recorded',
   },
   sizeGroups: { CLOTHING: 'Clothing', SHOES: 'Shoes', NONE: 'No size' } as Record<string, string>,
   icons: {
@@ -167,6 +174,7 @@ const lt: AuditText = {
     'order.given': 'Išduota',
     'order.deleted': 'Užsakymas ištrintas',
     'settings.supplier_chat_changed': 'Pakeista tiekėjo WhatsApp grupė',
+    'access_review.completed': 'Prieiga peržiūrėta',
   },
   areas: {
     users: 'Naudotojai ir rolės',
@@ -175,6 +183,7 @@ const lt: AuditText = {
     item_sets: 'Prekių rinkiniai',
     orders: 'Užsakymai',
     settings: 'Nustatymai',
+    security: 'Sauga',
   },
   sources: {
     workwear: 'Darbo drabužiai ir įranga',
@@ -216,6 +225,11 @@ const lt: AuditText = {
     document_hash: 'Dokumento maiša',
     expires_at: 'Nuoroda galioja iki',
     link: 'Nuoroda',
+    users: 'Naudotojai',
+    active_users: 'Aktyvūs naudotojai',
+    administrators: 'Administratoriai',
+    dormant: 'Nesinaudota 90 dienų',
+    no_sign_in: 'Prisijungimas neužfiksuotas',
   },
   sizeGroups: { CLOTHING: 'Drabužiai', SHOES: 'Avalynė', NONE: 'Be dydžio' },
   icons: {
@@ -294,6 +308,7 @@ const ru: AuditText = {
     'order.given': 'Выдано',
     'order.deleted': 'Заказ удалён',
     'settings.supplier_chat_changed': 'Изменена группа поставщика в WhatsApp',
+    'access_review.completed': 'Доступ проверен',
   },
   areas: {
     users: 'Пользователи и роли',
@@ -302,6 +317,7 @@ const ru: AuditText = {
     item_sets: 'Наборы предметов',
     orders: 'Заказы',
     settings: 'Настройки',
+    security: 'Безопасность',
   },
   sources: {
     workwear: 'Спецодежда и снаряжение',
@@ -343,6 +359,11 @@ const ru: AuditText = {
     document_hash: 'Хеш документа',
     expires_at: 'Ссылка действует до',
     link: 'Ссылка',
+    users: 'Пользователи',
+    active_users: 'Активные пользователи',
+    administrators: 'Администраторы',
+    dormant: 'Не входили 90 дней',
+    no_sign_in: 'Вход не зафиксирован',
   },
   sizeGroups: { CLOTHING: 'Одежда', SHOES: 'Обувь', NONE: 'Без размера' },
   icons: {

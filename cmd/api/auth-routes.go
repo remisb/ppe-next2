@@ -14,6 +14,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 // errRecentSignInRequired refuses managing users when the password was last
@@ -21,12 +22,16 @@ import (
 // message, asks for the password (POST /api/v1/auth/reauth) and tries again.
 var errRecentSignInRequired = errors.New("recent sign-in required")
 
+// errTooManyAttempts refuses a sign-in for an account that has had too many
+// failed ones recently (429).
+var errTooManyAttempts = errors.New("too many failed sign-ins for this account; try again later")
+
 type authHandler struct {
 	users    *user.Service
 	roles    *role.Service
 	sessions *session.Service
+	security *security.Service
 	tokens   *tokens
-	emails   *emailLimiter
 	cookies  cookiePolicy
 }
 
@@ -41,13 +46,14 @@ type authHandler struct {
 // confirmed again (reauth). Every attempt counts against the client address
 // (middleware.ClientAddr, resolved by the global ClientIP middleware), which
 // stops one address spreading guesses across many accounts. Failed attempts
-// also count against the email (emailLimiter), which stops many addresses
-// guessing at one account. A config without the per-email limit
-// (LoginEmailFailures 0, as in tests that build one by hand) leaves it off.
-func registerAuthRoutes(rt *router, users *user.Service, roles *role.Service, sessions *session.Service, tokens *tokens, cfg config) {
-	h := &authHandler{users: users, roles: roles, sessions: sessions, tokens: tokens, cookies: newCookiePolicy(cfg)}
-	if cfg.LoginEmailFailures > 0 {
-		h.emails = newEmailLimiter(cfg.LoginEmailFailures, cfg.LoginEmailInterval)
+// also count against the email, in the security log (security.Service.Blocked),
+// which stops many addresses guessing at one account, across restarts and
+// instances. Every sign-in, failure and ended session is recorded there
+// (docs/specs/security-service.md).
+func registerAuthRoutes(rt *router, svc services, tokens *tokens, cfg config) {
+	h := &authHandler{
+		users: svc.users, roles: svc.roles, sessions: svc.sessions, security: svc.security,
+		tokens: tokens, cookies: newCookiePolicy(cfg),
 	}
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
 		RequestsPerInterval: cfg.LoginRateLimit,
@@ -94,23 +100,25 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	if blocked, wait := h.emails.blocked(req.Email); blocked {
-		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
-		writeError(w, r, errTooManyAttempts)
+	email := h.security.EmailHash(req.Email)
+	if h.limited(w, r, security.KindSignInFailed, email, uuid.Nil) {
 		return
 	}
 	u, err := h.users.Authenticate(r.Context(), req.Email, req.Password)
-	if errors.Is(err, user.ErrInvalidCredentials) {
-		h.emails.failed(req.Email)
+	var refused *user.SignInRefused
+	if errors.As(err, &refused) {
+		if err := h.security.Refused(r.Context(), security.KindSignInFailed, email, refused.UserID, refused.Reason); err != nil {
+			writeError(w, r, err)
+			return
+		}
 	}
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	h.emails.succeeded(req.Email)
 	by := seen(r)
 	s, refresh, err := h.sessions.Start(r.Context(), session.StartParams{
-		UserID: u.ID, KeepSignedIn: req.KeepSignedIn, UserAgent: by.UserAgent, IP: by.IP,
+		UserID: u.ID, KeepSignedIn: req.KeepSignedIn, UserAgent: by.UserAgent, IP: by.IP, EmailHash: email,
 	})
 	if err != nil {
 		writeError(w, r, err)
@@ -212,20 +220,21 @@ func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	if blocked, wait := h.emails.blocked(u.Email); blocked {
-		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
-		writeError(w, r, errTooManyAttempts)
+	email := h.security.EmailHash(u.Email)
+	if h.limited(w, r, security.KindReauthFailed, email, u.ID) {
 		return
 	}
 	if err := h.users.CheckPassword(r.Context(), actor, req.Password); err != nil {
 		if errors.Is(err, user.ErrInvalid) {
-			h.emails.failed(u.Email)
+			if err := h.security.Refused(r.Context(), security.KindReauthFailed, email, u.ID, security.ReasonBadPassword); err != nil {
+				writeError(w, r, err)
+				return
+			}
 		}
 		writeError(w, r, err)
 		return
 	}
-	h.emails.succeeded(u.Email)
-	s, err := h.sessions.Reauthenticated(r.Context(), actor, claims.sessionID())
+	s, err := h.sessions.Reauthenticated(r.Context(), actor, claims.sessionID(), email)
 	if errors.Is(err, session.ErrNotFound) {
 		err = errUnauthenticated
 	}
@@ -234,6 +243,25 @@ func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeToken(w, r, u, s)
+}
+
+// limited refuses an attempt at email while the per-email limit holds it (429
+// with Retry-After), recording the refusal as kind for userID (uuid.Nil when
+// not known), and reports whether it did.
+func (h *authHandler) limited(w http.ResponseWriter, r *http.Request, kind security.Kind, email []byte, userID uuid.UUID) bool {
+	wait, err := h.security.Blocked(r.Context(), email)
+	if err == nil && wait > 0 {
+		err = h.security.Refused(r.Context(), kind, email, userID, security.ReasonTooManyAttempts)
+		if err == nil {
+			w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))
+			err = errTooManyAttempts
+		}
+	}
+	if err != nil {
+		writeError(w, r, err)
+		return true
+	}
+	return false
 }
 
 // writeToken issues u an access token for session s, granting what u's roles

@@ -85,6 +85,8 @@ services:
       # Failed sign-ins per email before that email waits out the interval.
       API_LOGIN_EMAIL_FAILURES: ${API_LOGIN_EMAIL_FAILURES:-10}
       API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}
+      # Security events (sign-ins with their addresses) are deleted after this.
+      API_AUTH_EVENTS_RETENTION: ${API_AUTH_EVENTS_RETENTION:-4320h}
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

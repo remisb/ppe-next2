@@ -262,7 +262,7 @@ table.t th.rec{color:var(--accent)}
   <p class="eyebrow">Workwear &amp; Equipment · Administration · research and proposal</p>
   <h1>Audit, Analytics and Monitoring</h1>
   <p class="lede">What the system records and watches today, and what Administration should add: an audit log to review and manage, usage analytics, and monitoring. Each area has options, their trade-offs and a recommendation, ending in a roadmap of five phases.</p>
-  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0 and 1 built; phases 2–5 proposed</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
+  <div class="meta"><span>7 Oct 2026</span><span>build 6747260</span><span>status: phases 0–2 built; phases 3–5 proposed</span><span>source: docs/admin/audit-analytics-monitoring.md</span></div>
 </header>
 
 <div class="layout">
@@ -297,6 +297,7 @@ table.t th.rec{color:var(--accent)}
     <p class="eyebrow">Status · 7 Oct 2026</p>
     <p><b>Phase 0's code is done:</b> <code>GET /ready</code>, the image healthcheck (<code>/api -healthcheck</code>), the commit in <code>/ready</code>, log rotation on every prod service, and <code>make prod-up</code> waiting for <code>/ready</code>. The uptime check and DigitalOcean alerts are account settings, described in <code>docs/monitoring.md</code>. One correction to 5.1: Docker does not restart an unhealthy container; the healthcheck only reports.</p>
     <p><b>Phase 1 is built</b> (<code>docs/specs/audit-service.md</code>): the Audit log in Administration with filters in its address and a change beside the list; the missing events for users, item sets, employee and item details; request ID, sign-in and app on every change; and the Changes of employees, items and orders in the staff app. A record's list is called <b>Changes</b>, because the glossary keeps "History" for Orders. Its routes are <code>/api/v1/audit-events/{employees|catalogue|orders|users}/{id}</code>. Export, Verify and retention stay in phase 4.</p>
+    <p><b>Phase 2 is built</b> (<code>docs/specs/security-service.md</code>, ADR 0003). <code>auth_events</code> records every sign-in, failed attempt (with why), confirmed password, sign-out and ended session, with the address and browser. The session's own transaction writes it. The email of a failed attempt is kept only as a keyed hash. The per-email sign-in limit now counts these rows, so it survives restarts and a second instance. The 180-day purge (<code>API_AUTH_EVENTS_RETENTION</code>) is built now rather than in phase 4, because the rows hold addresses. Administration's <b>Security</b> has three tabs: Sign-ins, every user's Signed-in devices (signing one out takes <code>users.manage</code>), and the Access review. Mark as reviewed is on the Audit log. On a phone, Roles &amp; permissions and Settings moved under More.</p>
   </div>
   <div class="verdict">
     <p class="eyebrow">Verdict</p>
@@ -856,7 +857,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   <div class="phases">
     <div class="phase"><div class="ph-head"><h4>0 · Monitoring quick wins</h4><span class="size built">built</span></div><ul><li>Log rotation on every service: done</li><li><code>/ready</code>, API healthcheck, commit: done</li><li>External uptime and TLS; droplet alerts: account settings, in <code>docs/monitoring.md</code></li></ul></div>
     <div class="phase"><div class="ph-head"><h4>1 · Audit log</h4><span class="size built">built</span></div><ul><li><code>docs/specs/audit-service.md</code>; read side and event registry</li><li>Indexes; request context columns</li><li>Missing events: users, item sets, details</li><li>Audit log screen; History panels</li></ul></div>
-    <div class="phase"><div class="ph-head"><h4>2 · Security</h4><span class="size">M</span></div><ul><li>ADR 0003; <code>auth_events</code>; last sign-in</li><li>Sign-in limiter in Postgres</li><li>Security screen: sign-ins, devices, access review</li></ul></div>
+    <div class="phase"><div class="ph-head"><h4>2 · Security</h4><span class="size built">built</span></div><ul><li>ADR 0003; <code>auth_events</code>; last sign-in; 180-day purge</li><li>Per-email sign-in limit in Postgres</li><li>Security screen: sign-ins, devices, access review</li></ul></div>
     <div class="phase"><div class="ph-head"><h4>3 · System and Overview</h4><span class="size">M</span></div><ul><li>Request IDs and error references</li><li><code>error_events</code>, client error reporter</li><li><code>/metrics</code>; System; Overview</li></ul></div>
     <div class="phase"><div class="ph-head"><h4>4 · Integrity and retention</h4><span class="size">M–L</span></div><ul><li><code>ppe_app</code> role and TRUNCATE guard</li><li>Daily seals and Verify</li><li>Retention, purge jobs; export</li></ul></div>
     <div class="phase"><div class="ph-head"><h4>5 · Usage</h4><span class="size">M</span></div><ul><li>Charts in <code>@ppe/ui/charts</code></li><li>Usage screen; link funnel</li><li>Daily data-quality snapshot</li></ul></div>

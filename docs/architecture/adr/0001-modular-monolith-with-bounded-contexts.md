@@ -185,7 +185,8 @@ Changes to existing code this decision requires:
 - `users.roles` (a `CHECK` on three role names) becomes roles mapped to permissions.
 - HS256 access tokens become EdDSA.
 - The login rate limiter (`cmd/api/login-limit.go`, in memory) moves to Postgres before a
-  second API instance runs.
+  second API instance runs. *Done for the per-email limit by ADR 0003: it counts
+  `auth_events`. The per-address limit stays per instance.*
 - The data sync stops writing tables as the sync user and imports through an API, or at
   least through a role limited to the People schema.
 - The single serial e2e spec (`web/e2e/tests/order-lifecycle.spec.ts`) gets sibling specs

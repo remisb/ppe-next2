@@ -46,6 +46,10 @@ export const roles: RolesText = {
     'settings.manage': { label: 'Keisti nustatymus', grants: 'Tiekėjo WhatsApp grupė.' },
     'backups.read': { label: 'Matyti atsargines kopijas', grants: 'Ar duomenų bazė kopijuojama, ir naujausios kopijos.' },
     'audit.read': { label: 'Matyti audito žurnalą', grants: 'Kiekvienas užfiksuotas pakeitimas visuose įrašuose: kas ir kada jį atliko.' },
+    'security.read': {
+      label: 'Matyti saugą',
+      grants: 'Prisijungimai ir nesėkmingi bandymai su adresais, visų prisijungę įrenginiai ir prieigos peržiūra.',
+    },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',

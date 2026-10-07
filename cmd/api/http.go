@@ -20,6 +20,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 const maxBodyBytes = 1 << 20
@@ -90,6 +91,7 @@ var errorStatuses = []struct {
 	{order.ErrEmployeeNotFound, http.StatusNotFound},
 	{order.ErrItemSetNotFound, http.StatusNotFound},
 	{audit.ErrNotFound, http.StatusNotFound},
+	{security.ErrNotFound, http.StatusNotFound},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -115,6 +117,7 @@ var errorStatuses = []struct {
 	{dashboard.ErrInvalid, http.StatusBadRequest},
 	{settings.ErrInvalid, http.StatusBadRequest},
 	{audit.ErrInvalid, http.StatusBadRequest},
+	{security.ErrInvalid, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated

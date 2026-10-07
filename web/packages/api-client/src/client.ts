@@ -1,5 +1,6 @@
 import { ApiError, NetworkError } from './errors.ts'
 import type {
+  AccessReview,
   AuditEntry,
   AuditPage,
   AuditQuery,
@@ -17,6 +18,7 @@ import type {
   ItemSet,
   ItemSetInput,
   Language,
+  LiveSession,
   LoginResponse,
   ManagerDashboard,
   MarkAsOrderedInput,
@@ -29,6 +31,8 @@ import type {
   ResolveInput,
   Role,
   RoleInput,
+  SecurityPage,
+  SecurityQuery,
   Settings,
   SignedInDevice,
   Sizes,
@@ -163,6 +167,19 @@ export function createClient(options: ClientOptions) {
       get: (id: string) => request<AuditEntry>('GET', `/api/v1/audit-events/${seg(id)}`),
       history: (record: AuditRecordKind, id: string) => request<AuditEntry[]>('GET', `/api/v1/audit-events/${record}/${seg(id)}`),
     },
+    /**
+     * Administration's Security screen (security.read): sign-ins and failed
+     * attempts, every user's live sessions and the access review. Ending
+     * someone's session takes users.manage and a recent sign-in.
+     */
+    security: {
+      events: (query: SecurityQuery = {}) => request<SecurityPage>('GET', `/api/v1/security/events${historyQueryString(query)}`),
+      sessions: () => request<LiveSession[]>('GET', '/api/v1/security/sessions'),
+      endSession: (id: string) => request<void>('DELETE', `/api/v1/security/sessions/${seg(id)}`),
+      review: () => request<AccessReview>('GET', '/api/v1/security/access-review'),
+      /** Records that the signed-in user reviewed access now; returns the review. */
+      markReviewed: () => request<AccessReview>('POST', '/api/v1/security/access-review'),
+    },
     /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */
     replacements: () => request<Dashboard['replacements']>('GET', '/api/v1/replacements'),
     /** The manager's dashboard; managers only. */
@@ -260,8 +277,8 @@ export function createClient(options: ClientOptions) {
 
 export type Client = ReturnType<typeof createClient>
 
-/** The query string for a list's filters (Orders, the Audit log), with empty filters left out. */
-export function historyQueryString(query: HistoryQuery | AuditQuery): string {
+/** The query string for a list's filters (Orders, the Audit log, Security), with empty filters left out. */
+export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))

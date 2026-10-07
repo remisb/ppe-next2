@@ -10,21 +10,50 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
-// fakeRepo mirrors the Postgres repository in memory.
+// fakeRepo mirrors the Postgres repository in memory, keeping the security
+// events it would write.
 type fakeRepo struct {
-	mu   sync.Mutex
-	rows map[uuid.UUID]Session
+	mu     sync.Mutex
+	rows   map[uuid.UUID]Session
+	events []security.Event
 }
 
 func newFakeRepo() *fakeRepo { return &fakeRepo{rows: map[uuid.UUID]Session{}} }
 
-func (f *fakeRepo) Create(_ context.Context, s Session) error {
+func (f *fakeRepo) Create(_ context.Context, s Session, ev security.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.rows[s.ID] = s
+	f.events = append(f.events, ev)
 	return nil
+}
+
+func (f *fakeRepo) Get(_ context.Context, id uuid.UUID) (Session, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	s, ok := f.rows[id]
+	if !ok {
+		return Session{}, ErrNotFound
+	}
+	return s, nil
+}
+
+// kinds are the kinds of the events written so far, with their reasons.
+func (f *fakeRepo) kinds() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]string, len(f.events))
+	for i, ev := range f.events {
+		out[i] = string(ev.Kind)
+		if ev.Reason != "" {
+			out[i] += ":" + ev.Reason
+		}
+	}
+	return out
 }
 
 func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Session, error) {
@@ -34,11 +63,14 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Session,
 	if !ok {
 		return Session{}, ErrNotFound
 	}
-	next, err := m(cur)
+	next, ev, err := m(cur)
 	if err != nil {
 		return Session{}, err
 	}
 	f.rows[id] = next
+	if ev != nil {
+		f.events = append(f.events, *ev)
+	}
 	return next, nil
 }
 
@@ -55,13 +87,14 @@ func (f *fakeRepo) ListLive(_ context.Context, userID uuid.UUID, now time.Time) 
 	return out, nil
 }
 
-func (f *fakeRepo) EndAll(_ context.Context, userID, keep uuid.UUID, at time.Time, reason string) error {
+func (f *fakeRepo) EndAll(_ context.Context, userID, keep uuid.UUID, at time.Time, reason string, record func(Session) security.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for id, s := range f.rows {
 		if s.UserID == userID && id != keep && s.EndedAt == nil {
 			s.EndedAt, s.EndReason = &at, reason
 			f.rows[id] = s
+			f.events = append(f.events, record(s))
 		}
 	}
 	return nil
@@ -312,11 +345,11 @@ func TestReauthenticated(t *testing.T) {
 	user := uuid.New()
 	s, _, _ := svc.Start(ctx, StartParams{UserID: user, KeepSignedIn: true})
 	c.advance(13 * time.Hour)
-	got, err := svc.Reauthenticated(ctx, user, s.ID)
+	got, err := svc.Reauthenticated(ctx, user, s.ID, nil)
 	if err != nil || !got.AuthenticatedAt.Equal(c.t) || !got.CreatedAt.Equal(s.CreatedAt) {
 		t.Fatalf("reauthenticated: %v, at %v", err, got.AuthenticatedAt)
 	}
-	if _, err := svc.Reauthenticated(ctx, uuid.New(), s.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.Reauthenticated(ctx, uuid.New(), s.ID, nil); !errors.Is(err, ErrNotFound) {
 		t.Errorf("another user: %v, want ErrNotFound", err)
 	}
 	if g, err := svc.Get(ctx, user, s.ID); err != nil || g.ID != s.ID {
@@ -336,5 +369,86 @@ func TestStartPrunesOldSessions(t *testing.T) {
 	}
 	if _, ok := repo.rows[old.ID]; ok {
 		t.Error("a session that expired over 30 days ago was kept")
+	}
+}
+
+// Every way a session starts or ends records one security event, written with
+// the session; a refresh that only rotates records none.
+func TestSecurityEvents(t *testing.T) {
+	c := newClock()
+	svc, repo := newTestService(c)
+	ctx := context.Background()
+	user := uuid.New()
+	hash := []byte(strings.Repeat("h", 32))
+
+	a, ta, _ := svc.Start(ctx, StartParams{UserID: user, KeepSignedIn: true, EmailHash: hash})
+	if ev := repo.events[0]; ev.Kind != security.KindSignIn || string(ev.EmailHash) != string(hash) ||
+		*ev.UserID != user || *ev.SessionID != a.ID || !ev.OccurredAt.Equal(c.t) {
+		t.Errorf("sign-in event = %+v", ev)
+	}
+	c.advance(time.Minute)
+	_, ta2, _ := svc.Refresh(ctx, ta, Seen{})
+	if _, err := svc.Reauthenticated(ctx, user, a.ID, hash); err != nil {
+		t.Fatal(err)
+	}
+	if string(repo.events[1].EmailHash) != string(hash) {
+		t.Error("the reauth event has no email hash")
+	}
+	if err := svc.SignOut(ctx, ta2); err != nil {
+		t.Fatal(err)
+	}
+
+	_, tb, _ := svc.Start(ctx, StartParams{UserID: user})
+	c.advance(time.Minute)
+	_, tb2, _ := svc.Refresh(ctx, tb, Seen{})
+	c.advance(RotationGrace + time.Second)
+	_, _, _ = svc.Refresh(ctx, tb2, Seen{})
+	if _, _, err := svc.Refresh(ctx, tb, Seen{}); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("reused token: %v", err)
+	}
+
+	d, _, _ := svc.Start(ctx, StartParams{UserID: user})
+	if err := svc.EndByAdministrator(ctx, user, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	e, _, _ := svc.Start(ctx, StartParams{UserID: user})
+	if err := svc.End(ctx, user, e.ID); err != nil {
+		t.Fatal(err)
+	}
+	f, _, _ := svc.Start(ctx, StartParams{UserID: user})
+	g, _, _ := svc.Start(ctx, StartParams{UserID: user})
+	if err := svc.EndAll(ctx, user, g.ID, ReasonPasswordChanged); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"sign_in", "reauth", "signed_out",
+		"sign_in", "refresh_reused",
+		"sign_in", "session_ended:ended_by_administrator",
+		"sign_in", "session_ended:ended_elsewhere",
+		"sign_in", "sign_in", "session_ended:password_changed",
+	}
+	if got := repo.kinds(); !slices.Equal(got, want) {
+		t.Errorf("events = %v\nwant %v", got, want)
+	}
+	last := repo.events[len(repo.events)-1]
+	if *last.SessionID != f.ID || last.ID == uuid.Nil {
+		t.Errorf("EndAll recorded %+v, want session %s", last, f.ID)
+	}
+}
+
+func TestLive(t *testing.T) {
+	c := newClock()
+	svc, _ := newTestService(c)
+	ctx := context.Background()
+	s, _, _ := svc.Start(ctx, StartParams{UserID: uuid.New()})
+	if got, err := svc.Live(ctx, s.ID); err != nil || got.ID != s.ID {
+		t.Errorf("live: %v", err)
+	}
+	c.advance(13 * time.Hour)
+	if _, err := svc.Live(ctx, s.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("expired: %v, want ErrNotFound", err)
+	}
+	if _, err := svc.Live(ctx, uuid.New()); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown: %v, want ErrNotFound", err)
 	}
 }

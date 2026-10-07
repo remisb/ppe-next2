@@ -124,3 +124,58 @@ func TestPostgresSessions(t *testing.T) {
 		t.Errorf("rows after prune = %d, %v", n, err)
 	}
 }
+
+// A sign-in writes its security event and the user's last sign-in with the
+// session; ending sessions writes one event each, in the same transaction.
+func TestPostgresSessionEvents(t *testing.T) {
+	pool := newTestPool(t)
+	ctx := context.Background()
+	c := newClock()
+	svc := NewService(NewPostgresRepository(pool), []byte(strings.Repeat("k", 32)), testLimits, WithClock(c.now))
+	user := insertUser(t, pool, "ona@example.com")
+	hash := []byte(strings.Repeat("h", 32))
+
+	s, _, err := svc.Start(ctx, StartParams{UserID: user, EmailHash: hash})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := svc.Start(ctx, StartParams{UserID: user}); err != nil {
+		t.Fatal(err)
+	}
+	var last time.Time
+	if err := pool.QueryRow(ctx, `SELECT last_sign_in_at FROM users WHERE id = $1`, user).Scan(&last); err != nil || !last.Equal(c.t) {
+		t.Errorf("last_sign_in_at = %v, %v", last, err)
+	}
+	if err := svc.EndAll(ctx, user, uuid.Nil, ReasonPasswordReset); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := svc.Live(ctx, s.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("live after EndAll: %+v, %v", got, err)
+	}
+
+	rows, err := pool.Query(ctx, `SELECT kind, coalesce(reason, ''), session_id, email_hash FROM auth_events WHERE user_id = $1 ORDER BY kind, session_id`, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var kind, reason string
+		var sid uuid.UUID
+		var h []byte
+		if err := rows.Scan(&kind, &reason, &sid, &h); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, kind+":"+reason)
+		if kind == "sign_in" && sid == s.ID && string(h) != string(hash) {
+			t.Error("the sign-in's email hash was not kept")
+		}
+	}
+	want := []string{"session_ended:password_reset", "session_ended:password_reset", "sign_in:", "sign_in:"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("events = %v, want %v", got, want)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE auth_events SET reason = NULL WHERE user_id = $1`, user); err == nil {
+		t.Error("auth_events allowed an UPDATE")
+	}
+}

@@ -107,7 +107,8 @@ Rules for using it:
 - **Detail:** each with its browser and system ("Chrome on Windows"), when it was last used
   and from which address, and whether it is kept signed in. **This device** is first and
   signs out with the usual Sign out; each other has its own **Sign out**, and **Sign out all
-  other devices** ends the rest.
+  other devices** ends the rest. On Administration's **Security** the same name lists
+  every user's, and whoever manages users signs one out.
 
 ### Confirm your password (recent sign-in)
 - **Brief:** the dialog asking for the password again before managing users, when it was last
@@ -115,6 +116,29 @@ Rules for using it:
 - **Detail:** **Continue** confirms it and the change goes ahead; **Cancel** leaves it undone.
   A phone left signed in for weeks cannot add an administrator or reset a password without
   it.
+
+### Security
+- **Brief:** Administration's screen of **Sign-ins**, every user's **Signed-in devices** and
+  the **Access review**. Needs `security.read`.
+- **Code:** `/admin/security`, `web/apps/admin/src/routes/security.tsx`. **Spec:**
+  `docs/specs/security-service.md`.
+
+### Security event (sign-in record)
+- **Brief:** a record of a sign-in, a failed attempt, a confirmed password, a sign-out or a
+  sign-in ending, with the address and browser it came from.
+- **Detail:** kept 180 days (`API_AUTH_EVENTS_RETENTION`), apart from the audit trail,
+  because addresses are personal data (ADR 0003). The email of a failed attempt is kept only
+  as a hash; an attempt at an email nobody has shows as **Unknown account**. A **copied
+  sign-in** is a replaced refresh token used again: the sign-in is ended everywhere it was.
+- **Code:** `internal/security`, table `auth_events`. **UI:** the Sign-ins tab; events
+  "Signed in", "Sign-in failed", "Sign-in ended" and so on.
+
+### Access review
+- **Brief:** the periodic check that every user still needs the access their roles give.
+- **Detail:** lists each user's roles, what they allow and the last sign-in, and marks
+  Administrators and accounts not used for 90 days; **Mark as reviewed** records who
+  reviewed and when, on the Audit log ("Access reviewed").
+- **Code:** `GET/POST /api/v1/security/access-review`, audit event `access_review.completed`.
 
 ---
 
@@ -752,6 +776,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Signed-in devices / This device | Prisijungę įrenginiai / Šis įrenginys | Устройства со входом / Это устройство |
 | Sign out all other devices | Atjungti visus kitus įrenginius | Выйти на всех других устройствах |
 | Confirm your password | Patvirtinkite slaptažodį | Подтвердите пароль |
+| Security | Sauga | Безопасность |
+| Sign-ins / Sign-in failed / Unknown account | Prisijungimai / Prisijungti nepavyko / Nežinoma paskyra | Входы / Неудачный вход / Неизвестная учётная запись |
+| Access review / Mark as reviewed | Prieigos peržiūra / Pažymėti kaip peržiūrėtą | Проверка доступа / Отметить как проверенный |
 
 The dictionaries in `web/apps/workwear/src/i18n/{en,lt,ru}` are the source; this
 table follows them.
@@ -782,3 +809,5 @@ table follows them.
 | Settings (for Account or Backups' panel) | **Account**; Backups **Settings** panel | Settings is the organisation's screen. |
 | remember me, stay logged in, session (in the UI) | **Keep me signed in**; **sign-in** | One phrase on every screen; "session" is the code name. |
 | log in, log out | **sign in**, **sign out** | |
+| login history, auth log, security log (in the UI) | **Sign-ins** on **Security** | "Security log" is the code's name for `auth_events`. |
+| revoke, kill (a session) | **sign out** (a device) | The same words as Account. |

@@ -51,7 +51,7 @@ func BuiltinID(key string) uuid.UUID {
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
 	KeyAdmin: {
-		UsersRead, UsersManage, RolesManage, SettingsManage, BackupsRead, AuditRead,
+		UsersRead, UsersManage, RolesManage, SettingsManage, BackupsRead, AuditRead, SecurityRead,
 		EmployeesDelete, CatalogueManage, ItemSetsManage,
 		DashboardOverview,
 	},

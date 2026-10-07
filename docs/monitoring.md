@@ -80,6 +80,8 @@ The droplet's CPU, memory and disk are outside what the API can see.
 | No answer at all | is the droplet up (DigitalOcean console)? `make prod-ps`: is `caddy` or `api` restarting? |
 | Disk above 80 % | `df -h`, `docker system df`; old images (`docker image prune`), the `backups` volume ([backups.md](backups.md)) |
 | Memory above 85 % | `docker stats --no-stream`; which container grew |
+| `security events purge failed` in the API's log | the hourly purge of sign-in records older than `API_AUTH_EVENTS_RETENTION` ([security-service.md](specs/security-service.md)) could not run; the error says why. It tries again within the hour. |
+| Someone reports being signed out, or many failed sign-ins | Administration → Security: Sign-ins shows each attempt with its address, and a copied sign-in with what to do |
 
 ## Later phases
 

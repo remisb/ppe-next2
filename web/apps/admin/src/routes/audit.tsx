@@ -27,6 +27,7 @@ const areaEvents: Record<string, string[]> = {
   item_sets: ['item_set.'],
   orders: ['order.'],
   settings: ['settings.'],
+  security: ['access_review.'],
 }
 
 const eventsOf = (area: string | undefined) =>
@@ -295,7 +296,9 @@ function clean(f: AuditFilter): AuditFilter {
 
 /** The record a change was made to, as the list names it. */
 function recordName(e: AuditEntry): string {
-  const name = e.entity_label ?? (e.entity_type === 'settings' ? areaLabel('settings') : t.audit.unnamed)
+  const name =
+    e.entity_label ??
+    (e.entity_type === 'settings' ? areaLabel('settings') : e.entity_type === 'access_review' ? t.security.review : t.audit.unnamed)
   return e.entity_deleted ? `${name} (${t.audit.deleted})` : name
 }
 
@@ -314,6 +317,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return { href: staffHref('/item-sets') }
     case 'role':
       return linkTo({ name: 'roles' }, navigate)
+    case 'access_review':
+      return linkTo({ name: 'security', tab: 'review', filter: {} }, navigate)
     default:
       return null
   }
@@ -343,7 +348,7 @@ function ChangePane({
   let record: ReactNode = null
   if (e) {
     const href = recordHref(e, navigate)
-    const staff = e.entity_type !== 'role' && href !== null
+    const staff = e.entity_type !== 'role' && e.entity_type !== 'access_review' && href !== null
     record = (
       <span className="flex flex-col items-start gap-1">
         {href ? (

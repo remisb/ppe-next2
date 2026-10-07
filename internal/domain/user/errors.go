@@ -3,6 +3,8 @@ package user
 import (
 	"errors"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -20,6 +22,25 @@ var (
 	// the Administrator role, and so no one able to manage users and roles.
 	ErrLastAdministrator = errors.New("at least one active user must keep the Administrator role")
 )
+
+// Why Authenticate refused a sign-in, for the security log; the response
+// never says (every refusal is ErrInvalidCredentials).
+const (
+	RefusedUnknownEmail = "unknown_email"
+	RefusedBadPassword  = "bad_password"
+	RefusedInactive     = "inactive"
+)
+
+// SignInRefused is the ErrInvalidCredentials Authenticate returns, with what
+// the security log records about it.
+type SignInRefused struct {
+	Reason string
+	// UserID is the account the email names; uuid.Nil for none.
+	UserID uuid.UUID
+}
+
+func (e *SignInRefused) Error() string { return ErrInvalidCredentials.Error() }
+func (e *SignInRefused) Unwrap() error { return ErrInvalidCredentials }
 
 // fieldError builds a validation error that wraps ErrInvalid and names the input.
 func fieldError(field, problem string) error {

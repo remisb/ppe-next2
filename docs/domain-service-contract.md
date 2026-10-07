@@ -112,6 +112,12 @@ deadline: the **actor** still comes in as an explicit argument, never from the c
 A new event name is added to `audit.Events()` and `AUDIT_EVENTS` in `@ppe/api-client`,
 whose words the apps must then supply.
 
+Sign-ins are not audit events. The session domain records them in the security log
+(`internal/security`, [security service](specs/security-service.md)) the same way: its
+`Mutation` returns the session with a `security.Event`, and the repository writes both
+with `security.Insert` in one transaction. `security.Insert` also reads the request's
+address and browser from the context, which `audit.Insert` deliberately leaves out.
+
 The actor columns carry a **foreign key to `users`**, added by migration 0006 — see
 [user service](specs/user-service.md). A row attributed to an actor that does not exist is
 rejected by the database, and the repository translates that violation into

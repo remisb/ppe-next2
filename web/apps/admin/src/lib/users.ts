@@ -10,7 +10,7 @@ import { t } from '@/i18n'
  */
 
 /** A role as people read it: a built-in one in the language in use, one an administrator added by its own name. */
-export function roleName(r: Role): string {
+export function roleName(r: Pick<Role, 'key' | 'name'>): string {
   switch (r.key) {
     case 'admin':
       return t.users.admin

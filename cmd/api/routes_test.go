@@ -29,6 +29,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 // memRepo is a minimal in-memory user.Repository for exercising the HTTP layer.
@@ -245,17 +246,29 @@ func (m *memRoles) Missing(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, e
 }
 
 // memSessions is an in-memory session.Repository, so the HTTP tests run the
-// real session service.
+// real session service. It writes its security events to log, as the
+// Postgres repository writes them to auth_events.
 type memSessions struct {
 	mu   sync.Mutex
 	rows map[uuid.UUID]session.Session
+	log  *memSecurity
 }
 
-func (m *memSessions) Create(_ context.Context, s session.Session) error {
+func (m *memSessions) Create(ctx context.Context, s session.Session, ev security.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.rows[s.ID] = s
-	return nil
+	return m.log.Insert(ctx, ev)
+}
+
+func (m *memSessions) Get(_ context.Context, id uuid.UUID) (session.Session, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.rows[id]
+	if !ok {
+		return session.Session{}, session.ErrNotFound
+	}
+	return s, nil
 }
 
 func (m *memSessions) Update(_ context.Context, id uuid.UUID, mut session.Mutation) (session.Session, error) {
@@ -265,11 +278,14 @@ func (m *memSessions) Update(_ context.Context, id uuid.UUID, mut session.Mutati
 	if !ok {
 		return session.Session{}, session.ErrNotFound
 	}
-	next, err := mut(cur)
+	next, ev, err := mut(cur)
 	if err != nil {
 		return session.Session{}, err
 	}
 	m.rows[id] = next
+	if ev != nil {
+		return next, m.log.Insert(context.Background(), *ev)
+	}
 	return next, nil
 }
 
@@ -286,19 +302,85 @@ func (m *memSessions) ListLive(_ context.Context, userID uuid.UUID, now time.Tim
 	return out, nil
 }
 
-func (m *memSessions) EndAll(_ context.Context, userID, keep uuid.UUID, at time.Time, reason string) error {
+func (m *memSessions) EndAll(ctx context.Context, userID, keep uuid.UUID, at time.Time, reason string, record func(session.Session) security.Event) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for id, s := range m.rows {
 		if s.UserID == userID && id != keep && s.EndedAt == nil {
 			s.EndedAt, s.EndReason = &at, reason
 			m.rows[id] = s
+			if err := m.log.Insert(ctx, record(s)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
 func (m *memSessions) Prune(context.Context, uuid.UUID, time.Time) error { return nil }
+
+// memSecurity is an in-memory security.Store holding the events written, so
+// the per-email sign-in limit works in the HTTP tests. Its reads for the
+// Security screen find nothing: the Postgres tests cover them.
+type memSecurity struct {
+	mu     sync.Mutex
+	events []security.Event
+}
+
+func (m *memSecurity) Insert(_ context.Context, ev security.Event) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.events = append(m.events, ev)
+	return nil
+}
+
+// kinds are the kinds of the events written so far, with their reasons.
+func (m *memSecurity) kinds() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]string, len(m.events))
+	for i, ev := range m.events {
+		out[i] = string(ev.Kind)
+		if ev.Reason != "" {
+			out[i] += ":" + ev.Reason
+		}
+	}
+	return out
+}
+
+func (m *memSecurity) List(context.Context, security.Query) ([]security.Entry, error) {
+	return nil, nil
+}
+
+func (m *memSecurity) Failures(_ context.Context, hash []byte, since time.Time, limit int) ([]time.Time, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []time.Time
+	for i := len(m.events) - 1; i >= 0 && len(out) < limit; i-- {
+		ev := m.events[i]
+		if !bytes.Equal(ev.EmailHash, hash) || !ev.OccurredAt.After(since) {
+			continue
+		}
+		if ev.Kind == security.KindSignIn || ev.Kind == security.KindReauth {
+			break
+		}
+		if ev.Reason != security.ReasonTooManyAttempts {
+			out = append(out, ev.OccurredAt)
+		}
+	}
+	return out, nil
+}
+
+func (m *memSecurity) LiveSessions(context.Context, time.Time) ([]security.LiveSession, error) {
+	return nil, nil
+}
+func (m *memSecurity) Review(context.Context, time.Time) (security.ReviewData, error) {
+	return security.ReviewData{}, nil
+}
+func (m *memSecurity) Reviewed(context.Context, audit.Event) error { return nil }
+func (m *memSecurity) Purge(context.Context, time.Time) (int64, error) {
+	return 0, nil
+}
 
 // stubEmployees and stubCatalogue satisfy their repositories for tests that
 // only exercise routing and authorization: reads find nothing, writes succeed.
@@ -427,11 +509,13 @@ type testAPI struct {
 	svc     services
 	tokens  *tokens
 	admin   user.User
+	log     *memSecurity
 }
 
 func newTestAPI(t *testing.T) *testAPI {
 	t.Helper()
-	sessions := session.NewService(&memSessions{rows: map[uuid.UUID]session.Session{}}, sessionKey(testSecret), sessionLimits(testConfig()))
+	log := &memSecurity{}
+	sessions := session.NewService(&memSessions{rows: map[uuid.UUID]session.Session{}, log: log}, sessionKey(testSecret), sessionLimits(testConfig()))
 	userRepo := &memRepo{users: map[uuid.UUID]user.User{}}
 	roles := role.NewService(newMemRoles(userRepo))
 	users := user.NewService(userRepo,
@@ -441,10 +525,10 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, sessions, roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{})
+	svc := newServices(time.UTC, time.Hour, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{})
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
-	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}
+	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log}
 }
 
 // userWith adds a user holding the built-in roles named by keys and signs them in.
@@ -601,6 +685,11 @@ var policy = map[string]rule{
 	"GET /api/v1/audit-events/catalogue/{id}":       {"", "any"},
 	"GET /api/v1/audit-events/orders/{id}":          {"", "any"},
 	"GET /api/v1/audit-events/users/{id}":           {role.UsersRead, "managers"},
+	"GET /api/v1/security/events":                   {role.SecurityRead, "admins"},
+	"GET /api/v1/security/sessions":                 {role.SecurityRead, "admins"},
+	"DELETE /api/v1/security/sessions/{id}":         {role.UsersManage, "admins"},
+	"GET /api/v1/security/access-review":            {role.SecurityRead, "admins"},
+	"POST /api/v1/security/access-review":           {role.SecurityRead, "admins"},
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed roles.
@@ -757,6 +846,7 @@ func TestLoginLimitedPerEmail(t *testing.T) {
 	trusted, _ := middleware.ParseTrustedProxies([]string{"127.0.0.1"})
 	cfg := testConfig()
 	cfg.TrustedProxies, cfg.LoginEmailFailures, cfg.LoginEmailInterval = trusted, 2, time.Minute
+	api.svc.security = security.NewService(api.log, securityConfig(cfg))
 	api.handler = routes(cfg, api.svc, api.tokens, testLogger)
 	login := func(client, email, password string) *httptest.ResponseRecorder {
 		body, _ := json.Marshal(map[string]string{"email": email, "password": password})

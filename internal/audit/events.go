@@ -12,6 +12,7 @@ const (
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
 	AreaSettings  Area = "settings"
+	AreaSecurity  Area = "security" // the access review
 )
 
 // areas lists every Area, in the Audit log filter's order, with the entity
@@ -26,6 +27,7 @@ var areas = []struct {
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaSettings, []string{"settings"}},
+	{AreaSecurity, []string{"access_review"}},
 }
 
 // events is every event name the domains write, in the Audit log filter's
@@ -42,6 +44,7 @@ var events = []string{
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.given", "order.deleted",
 	"settings.supplier_chat_changed",
+	"access_review.completed",
 }
 
 // Events returns every known event name.

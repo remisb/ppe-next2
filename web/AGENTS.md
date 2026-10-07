@@ -134,8 +134,10 @@ The workwear app is the reference.
   Dashboard first); the rail and sidebar show one fewer, without Create Order. Whoever may
   open a screen in Administration also has its link, under More on a phone and at the foot
   of the rail and sidebar. Administration's navigation (`@ppe/ui/components/main-nav`
-  styles, the same three shapes) holds the screens the user's permissions open, and under
-  More or at its foot the way back to the staff app, Account and Sign out. Orders shows the number of orders waiting for
+  styles, the same three shapes) holds the screens the user's permissions open; on a phone
+  Roles & permissions and Settings (`inMore` in `app.tsx`) are under More, so its bar holds
+  at most four and More. Under More or at its foot is the way back to the staff app, Account
+  and Sign out. Orders shows the number of orders waiting for
   confirmation. Links take their accessible name from their text (a visually hidden full
   label), never `aria-label`, which would also match label lookups such as a field named
   "Item Set".

@@ -26,6 +26,12 @@ type Request struct {
 	ID        string    // the X-Request-ID; "" when there is none
 	SessionID uuid.UUID // the sign-in; uuid.Nil when the request has none
 	Source    Source
+	// UserID is the signed-in user (the access token's subject); uuid.Nil
+	// when the request has none. IP and UserAgent are the client's. Insert
+	// records none of the three: the security log does (internal/security).
+	UserID    uuid.UUID
+	IP        string
+	UserAgent string
 }
 
 type requestKey struct{}

@@ -308,17 +308,27 @@ func TestAuthenticate(t *testing.T) {
 	tests := []struct {
 		name, email, pw string
 		want            error
+		reason          string
+		user            uuid.UUID
 	}{
-		{"ok, email case-insensitive", "ADMIN@example.com", "password123", nil},
-		{"wrong password", "admin@example.com", "nope-nope", ErrInvalidCredentials},
-		{"unknown email", "ghost@example.com", "password123", ErrInvalidCredentials},
-		{"inactive", "off@example.com", "password123", ErrInvalidCredentials},
+		{"ok, email case-insensitive", "ADMIN@example.com", "password123", nil, "", uuid.Nil},
+		{"wrong password", "admin@example.com", "nope-nope", ErrInvalidCredentials, RefusedBadPassword, admin.ID},
+		{"unknown email", "ghost@example.com", "password123", ErrInvalidCredentials, RefusedUnknownEmail, uuid.Nil},
+		{"inactive", "off@example.com", "password123", ErrInvalidCredentials, RefusedInactive, inactive.ID},
+		{"inactive, wrong password", "off@example.com", "nope-nope", ErrInvalidCredentials, RefusedBadPassword, inactive.ID},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := svc.Authenticate(ctx, tt.email, tt.pw)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+			var refused *SignInRefused
+			if tt.want != nil && (!errors.As(err, &refused) || refused.Reason != tt.reason || refused.UserID != tt.user) {
+				t.Errorf("refused = %+v, want %s for %s", refused, tt.reason, tt.user)
+			}
+			if tt.want != nil && err.Error() != ErrInvalidCredentials.Error() {
+				t.Errorf("message %q says more than %q", err, ErrInvalidCredentials)
 			}
 		})
 	}

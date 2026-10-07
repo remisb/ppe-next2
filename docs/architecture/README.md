@@ -10,3 +10,5 @@ How the system is divided and why.
 | ADR | Decision | Status |
 | --- | --- | --- |
 | [0001](adr/0001-modular-monolith-with-bounded-contexts.md) | Bounded contexts in a modular monolith, one staff app of modules | proposed |
+| [0002](adr/0002-permissions-and-administration-app.md) | Editable roles of permissions; Administration as its own app | accepted |
+| [0003](adr/0003-audit-integrity-and-retention.md) | Security events apart from the audit trail; retention | accepted |

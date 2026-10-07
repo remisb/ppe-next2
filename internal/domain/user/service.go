@@ -353,6 +353,13 @@ func changedRoles(a, b []uuid.UUID) []uuid.UUID {
 // mayManage refuses managing user id (resetting their password, deleting
 // them) when the actor may not grant what their roles hold: a user who
 // manages users but not roles cannot take over an administrator's account.
+// MayManage is nil when actor may manage user id (ending their sessions on
+// Security, as well as the changes here): ErrNotPermitted when id holds
+// permissions actor does not, ErrNotFound when there is no such user.
+func (s *Service) MayManage(ctx context.Context, id, actor uuid.UUID) error {
+	return s.mayManage(ctx, id, actor)
+}
+
 func (s *Service) mayManage(ctx context.Context, id, actor uuid.UUID) error {
 	u, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -476,17 +483,21 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 // Authenticate returns the active user matching email and password. Every
 // failure — unknown email, wrong password, inactive account — is
 // ErrInvalidCredentials, so the response does not reveal which accounts exist.
+// It is a *SignInRefused saying which, for the security log.
 func (s *Service) Authenticate(ctx context.Context, email, password string) (User, error) {
 	u, err := s.repo.ByEmail(ctx, normalizeEmail(email))
 	if errors.Is(err, ErrNotFound) {
 		s.verify(s.dummyHash, password)
-		return User{}, ErrInvalidCredentials
+		return User{}, &SignInRefused{Reason: RefusedUnknownEmail}
 	}
 	if err != nil {
 		return User{}, err
 	}
-	if !s.verify(u.PasswordHash, password) || !u.IsActive {
-		return User{}, ErrInvalidCredentials
+	if !s.verify(u.PasswordHash, password) {
+		return User{}, &SignInRefused{Reason: RefusedBadPassword, UserID: u.ID}
+	}
+	if !u.IsActive {
+		return User{}, &SignInRefused{Reason: RefusedInactive, UserID: u.ID}
 	}
 	return u, nil
 }

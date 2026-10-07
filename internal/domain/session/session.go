@@ -46,8 +46,10 @@ const (
 	// ReasonSignedOut: Sign out on that browser.
 	ReasonSignedOut = "signed_out"
 	// ReasonEndedElsewhere: signed out from another device's list.
-	ReasonEndedElsewhere  = "ended_elsewhere"
-	ReasonPasswordChanged = "password_changed"
+	ReasonEndedElsewhere = "ended_elsewhere"
+	// ReasonEndedByAdministrator: ended on Administration's Security screen.
+	ReasonEndedByAdministrator = "ended_by_administrator"
+	ReasonPasswordChanged      = "password_changed"
 	// ReasonPasswordReset: an administrator set a new password.
 	ReasonPasswordReset = "password_reset"
 	ReasonDeactivated   = "deactivated"
@@ -58,7 +60,7 @@ const (
 )
 
 var reasons = []string{
-	ReasonSignedOut, ReasonEndedElsewhere, ReasonPasswordChanged, ReasonPasswordReset,
+	ReasonSignedOut, ReasonEndedElsewhere, ReasonEndedByAdministrator, ReasonPasswordChanged, ReasonPasswordReset,
 	ReasonDeactivated, ReasonDeleted, ReasonReused,
 }
 
@@ -78,6 +80,10 @@ type StartParams struct {
 	KeepSignedIn bool
 	UserAgent    string
 	IP           string
+	// EmailHash is the email the sign-in named (security.Service.EmailHash),
+	// recorded with its sign_in event: a success clears that email's failures
+	// for the per-email limit.
+	EmailHash []byte
 }
 
 // Seen is the browser and address a session is used from.

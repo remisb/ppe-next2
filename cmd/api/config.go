@@ -42,7 +42,10 @@ type config struct {
 	// address the attempts come from (emailLimiter).
 	LoginEmailFailures int
 	LoginEmailInterval time.Duration
-	AllowedOrigins     []string
+	// AuthEventsRetention is how long security events (sign-ins, failed
+	// attempts, ended sessions) are kept; older ones are purged hourly.
+	AuthEventsRetention time.Duration
+	AllowedOrigins      []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
 	TrustedProxies []netip.Prefix
@@ -111,6 +114,7 @@ func loadConfig(args []string) (config, error) {
 		{&c.RecentSignIn, "API_RECENT_SIGN_IN", 12 * time.Hour},
 		{&c.LoginRateInterval, "API_LOGIN_RATE_INTERVAL", time.Minute},
 		{&c.LoginEmailInterval, "API_LOGIN_EMAIL_INTERVAL", 15 * time.Minute},
+		{&c.AuthEventsRetention, "API_AUTH_EVENTS_RETENTION", 180 * 24 * time.Hour},
 		{&c.ConfirmTTL, "API_CONFIRM_TTL", 7 * 24 * time.Hour},
 	} {
 		if *d.dst, err = envDuration(d.key, d.def); err != nil {
@@ -177,6 +181,10 @@ func (c config) validate() error {
 	}
 	if c.LoginEmailFailures < 1 || c.LoginEmailInterval <= 0 || c.LoginEmailInterval > 24*time.Hour {
 		errs = append(errs, errors.New("API_LOGIN_EMAIL_FAILURES must be positive and API_LOGIN_EMAIL_INTERVAL positive and at most 24h"))
+	}
+	// The table's trigger refuses to delete rows younger than 30 days.
+	if c.AuthEventsRetention < 30*24*time.Hour || c.AuthEventsRetention > 3*365*24*time.Hour {
+		errs = append(errs, errors.New("API_AUTH_EVENTS_RETENTION must be between 720h and 26280h"))
 	}
 	if c.RequestTimeout <= 0 {
 		errs = append(errs, errors.New("API_REQUEST_TIMEOUT must be positive"))

@@ -3,8 +3,9 @@ import { audit } from './audit'
 import { backups } from './backups'
 import { common } from './common'
 import { roles } from './roles'
+import { security } from './security'
 import { settings } from './settings'
 import { shell } from './shell'
 import { users } from './users'
 
-export const en = { common, shell, users, roles, audit, account, settings, backups }
+export const en = { common, shell, users, roles, audit, security, account, settings, backups }

@@ -62,6 +62,11 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['document_hash', 'text'],
   ['expires_at', 'date'],
   ['link', 'text'],
+  ['users', 'text'],
+  ['active_users', 'text'],
+  ['administrators', 'text'],
+  ['dormant', 'text'],
+  ['no_sign_in', 'text'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */

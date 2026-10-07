@@ -6,6 +6,8 @@ export interface TokenClaims {
   perms: Permission[]
   /** Seconds since the epoch. */
   exp: number
+  /** The sign-in (session) the token belongs to; absent on tokens from before sessions. */
+  sid?: string
 }
 
 /**
@@ -28,7 +30,10 @@ export function decodeToken(token: string): TokenClaims | null {
     }
     const raw: unknown = (claims as { perms?: unknown }).perms
     const perms = Array.isArray(raw) ? raw.filter(isPermission) : []
-    return { sub: (claims as TokenClaims).sub, exp: (claims as TokenClaims).exp, perms }
+    const sid: unknown = (claims as { sid?: unknown }).sid
+    const out: TokenClaims = { sub: (claims as TokenClaims).sub, exp: (claims as TokenClaims).exp, perms }
+    if (typeof sid === 'string' && sid !== '') out.sid = sid
+    return out
   } catch {
     return null
   }

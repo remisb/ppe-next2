@@ -18,6 +18,21 @@ export interface AuditFilter {
 
 const auditFilterKeys = ['area', 'event', 'actor', 'entity_type', 'entity_id', 'from', 'to'] as const
 
+/** The Security screen's sign-in filters, in its address as the Audit log's are. */
+export interface SecurityFilter {
+  kind?: string
+  user?: string
+  from?: string
+  to?: string
+}
+
+const securityFilterKeys = ['kind', 'user', 'from', 'to'] as const
+
+/** The Security screen's tabs: sign-ins (/security), signed-in devices and the access review. */
+export const securityTabs = ['sign-ins', 'devices', 'review'] as const
+
+export type SecurityTab = (typeof securityTabs)[number]
+
 /** Administration's screens, at their addresses under /admin. */
 export type Route =
   /** The root: the first screen the user may open (see startRoute). */
@@ -28,6 +43,8 @@ export type Route =
   | { name: 'roles' }
   /** The Audit log, filtered; event is the change open beside it (/audit/<id>). */
   | { name: 'audit'; filter: AuditFilter; event?: string }
+  /** Sign-ins, every user's signed-in devices and the access review; filter applies to sign-ins. */
+  | { name: 'security'; tab: SecurityTab; filter: SecurityFilter }
   /** The organisation's settings (the supplier's WhatsApp group). */
   | { name: 'settings' }
   /** The database backups the backup service takes. */
@@ -35,7 +52,7 @@ export type Route =
 
 export type Screen = Exclude<Route['name'], 'home'>
 
-const paths: Record<Exclude<Route['name'], 'audit'>, string> = {
+const paths: Record<Exclude<Route['name'], 'audit' | 'security'>, string> = {
   home: '/',
   users: '/users',
   roles: '/roles',
@@ -48,6 +65,7 @@ export const screens: readonly { name: Screen; permission: Permission }[] = [
   { name: 'users', permission: 'users.manage' },
   { name: 'roles', permission: 'roles.manage' },
   { name: 'audit', permission: 'audit.read' },
+  { name: 'security', permission: 'security.read' },
   { name: 'settings', permission: 'settings.manage' },
   { name: 'backups', permission: 'backups.read' },
 ]
@@ -65,6 +83,18 @@ export function parsePath(pathname: string, search = ''): Route {
     }
     return audit[1] ? { name: 'audit', filter, event: decodeURIComponent(audit[1]) } : { name: 'audit', filter }
   }
+  const security = /^\/security(?:\/(devices|review))?$/.exec(path)
+  if (security) {
+    const query = new URLSearchParams(search)
+    const filter: SecurityFilter = {}
+    if (!security[1]) {
+      for (const key of securityFilterKeys) {
+        const v = query.get(key)
+        if (v) filter[key] = v
+      }
+    }
+    return { name: 'security', tab: (security[1] as SecurityTab | undefined) ?? 'sign-ins', filter }
+  }
   for (const [name, p] of Object.entries(paths)) {
     if (p === path) return { name } as Route
   }
@@ -72,6 +102,16 @@ export function parsePath(pathname: string, search = ''): Route {
 }
 
 export function pathOf(route: Route): string {
+  if (route.name === 'security') {
+    if (route.tab !== 'sign-ins') return `/security/${route.tab}`
+    const query = new URLSearchParams()
+    for (const key of securityFilterKeys) {
+      const v = route.filter[key]
+      if (v) query.set(key, v)
+    }
+    const q = query.toString()
+    return q ? `/security?${q}` : '/security'
+  }
   if (route.name !== 'audit') return paths[route.name]
   const query = new URLSearchParams()
   for (const key of auditFilterKeys) {
@@ -83,9 +123,11 @@ export function pathOf(route: Route): string {
   return q ? `${path}?${q}` : path
 }
 
-/** The route of a screen opened from the navigation: the Audit log unfiltered. */
+/** The route of a screen opened from the navigation: the Audit log unfiltered, Security on its first tab. */
 export function screenRoute(name: Screen): Route {
-  return name === 'audit' ? { name, filter: {} } : ({ name } as Route)
+  if (name === 'audit') return { name, filter: {} }
+  if (name === 'security') return { name, tab: 'sign-ins', filter: {} }
+  return { name } as Route
 }
 
 /**

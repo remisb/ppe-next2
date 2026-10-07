@@ -31,6 +31,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 func main() {
@@ -73,6 +74,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc := newServices(
 		loc, cfg.ConfirmTTL,
 		sessions,
+		security.NewService(security.NewPostgresStore(pool), securityConfig(cfg), security.WithLocation(loc)),
 		roles,
 		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions}),
 			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
@@ -111,6 +113,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	logger.Info("listening", slog.String("addr", ln.Addr().String()), slog.String("commit", buildCommit()))
 	errc := make(chan error, 1)
 	go func() { errc <- srv.Serve(ln) }()
+	go purgeSecurityEvents(ctx, svc.security, logger)
 
 	select {
 	case err := <-errc:
@@ -126,6 +129,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 // services are the domain services the API exposes.
 type services struct {
 	sessions  *session.Service
+	security  *security.Service
 	roles     *role.Service
 	users     *user.Service
 	employees *employee.Service
@@ -142,9 +146,10 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store) services {
 	s := services{
 		sessions:  sessions,
+		security:  sec,
 		roles:     roles,
 		users:     users,
 		employees: employee.NewService(employees),
@@ -170,8 +175,9 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}))
 	rt.public("GET /ready", readyHandler(svc.ready))
-	registerAuthRoutes(rt, svc.users, svc.roles, svc.sessions, tok, cfg)
+	registerAuthRoutes(rt, svc, tok, cfg)
 	sensitive := requireSensitive(tok, cfg.RecentSignIn, svc.roles)
+	registerSecurityRoutes(rt, svc, sensitive)
 	registerUserRoutes(rt, svc.users, tok, sensitive)
 	registerRoleRoutes(rt, svc.roles, sensitive)
 	registerEmployeeRoutes(rt, svc.employees)
@@ -214,6 +220,18 @@ func sessionKey(secret string) []byte {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte("ppe-next2 refresh tokens v1"))
 	return h.Sum(nil)
+}
+
+// securityConfig is the security log's policy: the per-email sign-in limit,
+// the retention, and the key of the email hash, derived from the JWT secret as
+// sessionKey is, under a label of its own.
+func securityConfig(cfg config) security.Config {
+	h := hmac.New(sha256.New, []byte(cfg.JWTSecret))
+	h.Write([]byte("ppe-next2 sign-in emails v1"))
+	return security.Config{
+		Key: h.Sum(nil), Failures: cfg.LoginEmailFailures, Interval: cfg.LoginEmailInterval,
+		Retention: cfg.AuthEventsRetention,
+	}
 }
 
 func sessionLimits(cfg config) session.Limits {

@@ -35,7 +35,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Users', 'Roles & permissions', 'Audit log', 'Settings', 'Backups']
+const administrationTabs = ['Users', 'Roles & permissions', 'Audit log', 'Security', 'Settings', 'Backups']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -713,6 +713,68 @@ test('Audit log: who changed a price, when and where; the item\'s Changes say th
   await expect(page.getByText('Record: Safety shoes')).toHaveCount(0)
 })
 
+test('Security: a failed attempt and a sign-in elsewhere are recorded; an administrator signs that device out and reviews access', async ({ browser }) => {
+  // The administrator signs in on a phone too, getting the password wrong first.
+  const phone = await (
+    await browser.newContext({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    })
+  ).newPage()
+  await phone.goto(webURL + '/')
+  await phone.getByLabel('Email').fill(admin.email)
+  await phone.getByLabel(/^Password/).fill('not-the-password')
+  await phone.getByRole('button', { name: 'Sign in' }).click()
+  await expect(phone.getByRole('alert')).toBeVisible()
+  await phone.getByLabel(/^Password/).fill(admin.password)
+  await phone.getByRole('button', { name: 'Sign in' }).click()
+  await expect(phone.getByRole('navigation', { name: 'Main' })).toBeVisible()
+
+  // Sign-ins, newest first, with the device and why an attempt failed.
+  await openTab('Security')
+  await expect(page.getByRole('heading', { name: 'Security', exact: true })).toBeVisible()
+  const failed = page.getByRole('row', { name: /Sign-in failed/ }).first()
+  await expect(failed).toContainText('Wrong password')
+  await expect(failed).toContainText(admin.name)
+  await expect(failed).toContainText('Safari on iPhone')
+  await page.getByRole('combobox', { name: 'Event' }).selectOption({ label: 'Sign-in failed' })
+  await expect(page).toHaveURL(/\/admin\/security\?kind=sign_in_failed$/)
+  await expect(page.getByRole('row', { name: /Signed in/ })).toHaveCount(0)
+
+  // Every signed-in device; this one is marked and has no Sign out of its own here.
+  await page.getByRole('navigation', { name: 'Security sections' }).getByRole('link', { name: 'Signed-in devices' }).click()
+  await expect(page).toHaveURL(/\/admin\/security\/devices$/)
+  await expect(page.getByRole('row', { name: /This device/ }).getByRole('button')).toHaveCount(0)
+  await page.getByRole('button', { name: `Sign out ${admin.name} on Safari on iPhone` }).click()
+  await expect(page.getByText(`${admin.name} was signed out on that device.`)).toBeVisible()
+  await expect(page.getByRole('button', { name: `Sign out ${admin.name} on Safari on iPhone` })).toHaveCount(0)
+  // The phone is signed out at its next request.
+  await phone.reload()
+  await expect(phone.getByRole('button', { name: 'Sign in' })).toBeVisible()
+  await phone.context().close()
+
+  // The sign-in list says how it ended and where from; no "by", as the administrator ended their own.
+  await page.getByRole('navigation', { name: 'Security sections' }).getByRole('link', { name: 'Sign-ins' }).click()
+  const ended = page.getByRole('row', { name: /Sign-in ended/ }).first()
+  await expect(ended).toContainText('Signed out on Security')
+  await expect(ended).toContainText('Administration')
+  await expect(ended).not.toContainText(`by ${admin.name}`)
+
+  // The access review: every user, their roles and last sign-in; marked as reviewed, which the Audit log records.
+  await page.getByRole('navigation', { name: 'Security sections' }).getByRole('link', { name: 'Access review' }).click()
+  await expect(page.getByText('Access has not been reviewed yet.')).toBeVisible()
+  const me = page.getByRole('row', { name: new RegExp(admin.email) })
+  await expect(me).toContainText('Administrator')
+  await expect(me).toContainText('Today')
+  await page.getByRole('button', { name: 'Mark as reviewed' }).click()
+  await expect(page.getByText('Marked as reviewed. It is on the Audit log.')).toBeVisible()
+  await expect(page.getByText(`by ${admin.name}`)).toBeVisible()
+  await page.getByRole('link', { name: /^today/i }).click()
+  await expect(page).toHaveURL(/\/admin\/audit\/[0-9a-f-]{36}\?area=security$/)
+  const change = page.getByRole('article', { name: 'Change' })
+  await expect(change.getByRole('heading', { name: 'Access reviewed' })).toBeVisible()
+  await expect(change).toContainText('Administrators')
+})
+
 test('Dashboard: the figures follow the orders', async () => {
   await openTab('Dashboard')
   await page.getByRole('button', { name: 'Refresh' }).click()
@@ -1035,6 +1097,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Users', admin.email],
     ['Roles & permissions', 'Built-in'],
     ['Audit log', admin.name],
+    ['Security', admin.name],
     ['Settings', 'Invite link'],
     ['Backups', 'Recent backups'],
   ] as const) {
@@ -1135,6 +1198,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Users', admin.email],
       ['Roles & permissions', 'Built-in'],
       ['Audit log', admin.name],
+      ['Security', admin.name],
       ['Settings', 'Invite link'],
       ['Backups', 'Recent backups'],
     ] as const) {

@@ -41,7 +41,7 @@ export function sessionFromToken(token: string, name: string, language: Lang = '
 }
 
 /** The permissions that open a screen in Administration (the admin app). */
-export const ADMINISTRATION_PERMISSIONS: readonly Permission[] = ['users.manage', 'roles.manage', 'settings.manage', 'backups.read', 'audit.read']
+export const ADMINISTRATION_PERMISSIONS: readonly Permission[] = ['users.manage', 'roles.manage', 'settings.manage', 'backups.read', 'audit.read', 'security.read']
 
 /** Whether the user may open any of Administration's screens, so the staff app links there. */
 export function canAdminister(s: Pick<Session, 'can'>): boolean {

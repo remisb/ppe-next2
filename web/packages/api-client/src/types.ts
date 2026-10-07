@@ -698,7 +698,7 @@ export interface BackupRun {
 }
 
 /** The record types the API records changes to (entity_type). */
-export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings'
+export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings' | 'access_review'
 
 /** Where a change was made. */
 export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'
@@ -753,4 +753,97 @@ export interface AuditQuery {
   to?: string
   after?: string
   page_size?: number
+}
+
+/**
+ * One security event (GET /api/v1/security/events): a sign-in, a failed
+ * attempt, a confirmed password or a session ending. `kind` is one of
+ * SECURITY_KINDS and `reason` one of SECURITY_REASONS, typed as strings since
+ * a newer API may record one this client does not know yet.
+ */
+export interface SecurityEntry {
+  id: string
+  occurred_at: string
+  kind: string
+  /** Why it failed, or why the session ended; null otherwise. */
+  reason: string | null
+  /** The account; null for an attempt at an email nobody has. */
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
+  /** The start of the hash of the email an attempt named, so attempts at one unknown email can be told apart. */
+  email_ref: string | null
+  /** The signed-in user who made it happen, when not the account itself (an administrator ending a session). */
+  actor_id: string | null
+  actor_name: string | null
+  session_id: string | null
+  ip: string | null
+  user_agent: string | null
+  request_id: string | null
+  source: AuditSource | null
+}
+
+/** One page of security events; `next` continues it (null on the last page). */
+export interface SecurityPage {
+  events: SecurityEntry[]
+  next: string | null
+}
+
+/** The security events' filters, all optional; from and to are days in the organisation's timezone. */
+export interface SecurityQuery {
+  kind?: string
+  user?: string
+  from?: string
+  to?: string
+  after?: string
+  page_size?: number
+}
+
+/** A user's live session, as Security lists everyone's (GET /api/v1/security/sessions). */
+export interface LiveSession {
+  id: string
+  user_id: string
+  user_name: string
+  user_email: string
+  keep_signed_in: boolean
+  created_at: string
+  last_used_at: string
+  /** When it ends if not used before. */
+  expires_at: string
+  user_agent: string
+  ip: string
+}
+
+/** A role as the access review names it; key is set on the built-in ones. */
+export interface ReviewRole {
+  id: string
+  key: RoleKey | null
+  name: string
+}
+
+/** One account in the access review. */
+export interface ReviewUser {
+  id: string
+  name: string
+  email: string
+  is_active: boolean
+  created_at: string
+  /** Null when no sign-in is recorded. */
+  last_sign_in_at: string | null
+  live_sessions: number
+  roles: ReviewRole[]
+  /** What the roles allow together; keys this client does not know are left in. */
+  permissions: string[]
+  /** One of ACCESS_FLAGS each. */
+  flags: string[]
+}
+
+/** The access review (GET /api/v1/security/access-review). */
+export interface AccessReview {
+  users: ReviewUser[]
+  /** Roles no live user holds. */
+  unused_roles: ReviewRole[]
+  /** The latest Mark as reviewed; null before the first. */
+  last_review: { at: string; by_id: string | null; by_name: string | null; event_id: string } | null
+  dormant_after_days: number
 }

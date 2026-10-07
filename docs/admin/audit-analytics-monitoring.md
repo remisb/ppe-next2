@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0 and 1 built; phases 2–5 proposed**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–2 built; phases 3–5 proposed**
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -26,6 +26,24 @@ in phases.
 > - A user's Changes open the Audit log filtered to them (⋯ → Changes on Users), since
 >   Administration has no user page.
 > - Export, Verify and retention remain phase 4.
+>
+> **Phase 2 (Security) is built**, as described in
+> [specs/security-service.md](../specs/security-service.md) and
+> [ADR 0003](../architecture/adr/0003-audit-integrity-and-retention.md), with these
+> differences from sections 3.4 and 4.2:
+> - The kinds are `sign_in`, `sign_in_failed`, `reauth`, `reauth_failed`, `signed_out`,
+>   `session_ended` and `refresh_reused`. A refusal by the per-email limit is a failure with
+>   reason `too_many_attempts`, not a kind of its own. The per-address limit stays in memory.
+> - The 180-day purge of `auth_events` is built now, not in phase 4, because the rows hold
+>   addresses. The purge is the API's hourly job under an advisory lock. A trigger lets only
+>   that transaction delete, and never rows younger than 30 days. There is no
+>   `SECURITY DEFINER` function: the least-privilege role is still phase 4.
+> - Signing out someone's device takes `users.manage`, as managing that user, not
+>   `security.read`. Mark as reviewed takes only `security.read`, since it changes no access.
+> - "No sign-in recorded" replaces "never signed in": migration 0024 fills
+>   `last_sign_in_at` from the sessions still kept, and older sign-ins are unknown.
+> - On a phone, Roles & permissions and Settings moved under More. Overview, System and
+>   Usage do not exist yet.
 
 ---
 
@@ -556,7 +574,7 @@ records the decisions in 3.4–3.6 before Phase 2.
 - `audit.read`; the Audit log screen; History panels on Employee, Catalogue item, Order and
   User.
 
-### Phase 2: Security · M
+### Phase 2: Security · M · built
 - ADR 0003; `auth_events`; `users.last_sign_in_at`; the sign-in limiter in Postgres.
 - `security.read`; the Security screen: sign-in activity, active sessions across users (end
   one), and the access review.

@@ -10,6 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 // PostgresRepository stores sessions in user_sessions (migration 0020).
@@ -58,13 +60,26 @@ func nullable(s string) *string {
 	return &s
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, s Session) error {
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO user_sessions (`+columns+`)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-		s.ID, s.UserID, s.Seed, s.Generation, s.RotatedAt, s.KeepSignedIn, s.CreatedAt,
-		s.AuthenticatedAt, s.LastUsedAt, s.IdleExpiresAt, s.ExpiresAt, s.EndedAt, nullable(s.EndReason), s.UserAgent, s.IP)
+func (r *PostgresRepository) Create(ctx context.Context, s Session, ev security.Event) error {
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO user_sessions (`+columns+`)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+			s.ID, s.UserID, s.Seed, s.Generation, s.RotatedAt, s.KeepSignedIn, s.CreatedAt,
+			s.AuthenticatedAt, s.LastUsedAt, s.IdleExpiresAt, s.ExpiresAt, s.EndedAt, nullable(s.EndReason), s.UserAgent, s.IP); err != nil {
+			return err
+		}
+		if err := security.Insert(ctx, tx, ev); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `UPDATE users SET last_sign_in_at = $2 WHERE id = $1`, s.UserID, s.CreatedAt)
+		return err
+	})
 	return translate(err)
+}
+
+func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Session, error) {
+	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM user_sessions WHERE id = $1`, id))
 }
 
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Session, error) {
@@ -74,7 +89,7 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 		if err != nil {
 			return err
 		}
-		next, err := m(cur)
+		next, ev, err := m(cur)
 		if err != nil {
 			return err
 		}
@@ -85,6 +100,11 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 			id, next.Generation, next.RotatedAt, next.AuthenticatedAt, next.LastUsedAt, next.IdleExpiresAt,
 			next.EndedAt, nullable(next.EndReason), next.UserAgent, next.IP); err != nil {
 			return err
+		}
+		if ev != nil {
+			if err := security.Insert(ctx, tx, *ev); err != nil {
+				return err
+			}
 		}
 		out = next
 		return nil
@@ -112,10 +132,26 @@ func (r *PostgresRepository) ListLive(ctx context.Context, userID uuid.UUID, now
 	return out, rows.Err()
 }
 
-func (r *PostgresRepository) EndAll(ctx context.Context, userID, keep uuid.UUID, at time.Time, reason string) error {
-	_, err := r.pool.Exec(ctx, `
-		UPDATE user_sessions SET ended_at = $3, end_reason = $4
-		WHERE user_id = $1 AND id <> $2 AND ended_at IS NULL`, userID, keep, at, reason)
+func (r *PostgresRepository) EndAll(ctx context.Context, userID, keep uuid.UUID, at time.Time, reason string, record func(Session) security.Event) error {
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `
+			UPDATE user_sessions SET ended_at = $3, end_reason = $4
+			WHERE user_id = $1 AND id <> $2 AND ended_at IS NULL
+			RETURNING `+columns, userID, keep, at, reason)
+		if err != nil {
+			return err
+		}
+		ended, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Session, error) { return scan(row) })
+		if err != nil {
+			return err
+		}
+		for _, s := range ended {
+			if err := security.Insert(ctx, tx, record(s)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	return translate(err)
 }
 

@@ -16,6 +16,7 @@ The Users screen is in Administration (`/admin/users`).
 | `role_ids` | Non-empty set of live roles (`user_roles`); de-duplicated, in id order. A user may do what any of them allows (see Permissions) |
 | `is_active` | Inactive users cannot log in |
 | `language` | Interface language: `en` (default for every new account), `lt` or `ru` (migration 0016). Each user sets their own; the staff app follows it on every device |
+| `last_sign_in_at` | The last successful sign-in (migration 0024), set with the session; not in the user's JSON. Read by the access review |
 | actor + timestamp columns | Per the domain contract; FK to `users` |
 
 Passwords are 8–72 bytes (bcrypt ignores anything past 72).
@@ -35,6 +36,8 @@ roles did:
 | `roles.manage` | manage roles, and give any permission (needs `users.read`) | ✓ | | |
 | `settings.manage` | change Settings | ✓ | | |
 | `backups.read` | read Backups | ✓ | | |
+| `audit.read` | read the Audit log | ✓ | | |
+| `security.read` | read Security: sign-ins, everyone's signed-in devices, the access review | ✓ | | |
 | `employees.delete` | delete employees | ✓ | ✓ | |
 | `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
 | `item_sets.manage` | add, edit, delete item sets | ✓ | ✓ | |
@@ -112,14 +115,23 @@ screen says to wait a few minutes.
 - **Per client address:** every attempt counts, `API_LOGIN_RATE_LIMIT` (5) per
   `API_LOGIN_RATE_INTERVAL` (1m). It stops one address trying many accounts.
 - **Per email:** only failed attempts count. After `API_LOGIN_EMAIL_FAILURES` (10) within
-  `API_LOGIN_EMAIL_INTERVAL` (15m, counted from the first failure), that email is refused
-  until the interval ends, whatever address tries, even with the right password. A
-  successful sign-in clears the count. It stops many addresses guessing at one account.
-  An email with no account counts the same way, so the answer reveals nothing. Someone who
-  knows an email can keep that account locked for the interval by failing on purpose,
-  which is why the interval is short.
+  `API_LOGIN_EMAIL_INTERVAL` (15m) since the email's last success, that email is refused
+  until the oldest of them leaves the interval, whatever address tries, even with the right
+  password. A successful sign-in (or confirmed password) clears the count. It stops many
+  addresses guessing at one account. An email with no account counts the same way, so the
+  answer reveals nothing. Someone who knows an email can keep that account locked for the
+  interval by failing on purpose, which is why the interval is short. Failed reauths count
+  against the user's email too.
 
-Both counts live in the API process's memory and start again when it restarts.
+The per-address count lives in the API process's memory and starts again when it restarts.
+The per-email count is read from the security log (`auth_events`, ADR 0003,
+`docs/specs/security-service.md`), so it holds across restarts and instances.
+
+Every attempt is recorded there. `Authenticate` returns a `*SignInRefused` (still
+`ErrInvalidCredentials`, and still a plain 401) that says why for the log: `unknown_email`,
+`bad_password` (checked first, so an inactive account with a wrong password is that) or
+`inactive`, with the account when the email named one. A successful sign-in sets
+`users.last_sign_in_at` (migration 0024), in the session's transaction.
 
 ## Bootstrap
 

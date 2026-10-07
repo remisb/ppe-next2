@@ -12,6 +12,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 // TestEveryDomainEventIsKnown keeps audit's event catalogue, which the Audit
@@ -28,6 +29,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		itemset.EventCreated, itemset.EventUpdated, itemset.EventDeleted,
 		order.EventOrdered, order.EventLinkCreated, order.EventGiven, order.EventDeleted,
 		settings.EventSupplierChatChanged,
+		security.EventAccessReviewCompleted,
 	}
 	if !slices.Equal(written, audit.Events()) {
 		t.Errorf("the domains write %v, the catalogue lists %v", written, audit.Events())

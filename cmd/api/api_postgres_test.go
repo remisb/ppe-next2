@@ -28,6 +28,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/security"
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
@@ -57,6 +58,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	svc := newServices(
 		time.UTC, time.Hour,
 		sessions,
+		security.NewService(security.NewPostgresStore(pool), securityConfig(testConfig())),
 		roles,
 		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(userSessions{sessions}),
 			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
@@ -958,5 +960,73 @@ func TestPostgresAuditLogHTTP(t *testing.T) {
 	// Without the app's header the change is from the API.
 	if got[0]["source"] != "api" {
 		t.Errorf("source = %v, want api", got[0]["source"])
+	}
+}
+
+// TestPostgresSecurityHTTP: sign-ins through the API are on the Security
+// screen with the address they came from; the access review shows each user's
+// last sign-in, and Mark as reviewed is on the Audit log. Only security.read
+// opens any of it.
+func TestPostgresSecurityHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	emp, staff := api.userWith(t, role.KeyEmployee)
+	_, admin := api.userWith(t, role.KeyAdmin)
+
+	login := func(email, password string) int {
+		b, _ := json.Marshal(map[string]string{"email": email, "password": password})
+		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(b))
+		req.Header.Set("Origin", appOrigin)
+		req.Header.Set("User-Agent", "Firefox")
+		req.Header.Set(appHeader, "workwear")
+		rec := httptest.NewRecorder()
+		api.handler.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if code := login(emp.Email, "wrong-password"); code != http.StatusUnauthorized {
+		t.Fatalf("wrong password = %d", code)
+	}
+	if code := login(emp.Email, "password123"); code != http.StatusOK {
+		t.Fatalf("sign-in = %d", code)
+	}
+
+	for _, path := range []string{"/api/v1/security/events", "/api/v1/security/sessions", "/api/v1/security/access-review"} {
+		if rec := api.do(t, "GET", path, staff, nil); rec.Code != http.StatusForbidden {
+			t.Errorf("an employee reads %s: %d", path, rec.Code)
+		}
+	}
+	rec := api.do(t, "GET", "/api/v1/security/events?user="+emp.ID.String(), admin, nil)
+	page := decode[struct {
+		Events []map[string]any `json:"events"`
+	}](t, rec.Body.Bytes())
+	// Newest first; the third is the test's own sign-in, made without a request.
+	if rec.Code != http.StatusOK || len(page.Events) != 3 || page.Events[2]["source"] != "system" {
+		t.Fatalf("events = %d %s", rec.Code, rec.Body)
+	}
+	signIn, failed := page.Events[0], page.Events[1]
+	if signIn["kind"] != "sign_in" || signIn["user_agent"] != "Firefox" || signIn["source"] != "workwear" || signIn["ip"] == nil || signIn["session_id"] == nil {
+		t.Errorf("sign-in = %v", signIn)
+	}
+	if failed["kind"] != "sign_in_failed" || failed["reason"] != "bad_password" || failed["user_email"] != emp.Email {
+		t.Errorf("failure = %v", failed)
+	}
+
+	rec = api.do(t, "GET", "/api/v1/security/sessions", admin, nil)
+	if sessions := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(sessions) < 3 {
+		t.Errorf("sessions = %d %s", rec.Code, rec.Body)
+	}
+
+	rec = api.do(t, "POST", "/api/v1/security/access-review", admin, nil)
+	review := decode[security.Review](t, rec.Body.Bytes())
+	if rec.Code != http.StatusOK || review.LastReview == nil {
+		t.Fatalf("mark reviewed = %d %s", rec.Code, rec.Body)
+	}
+	for _, u := range review.Users {
+		if u.ID == emp.ID && u.LastSignInAt == nil {
+			t.Error("the employee's sign-in is not on the review")
+		}
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?area=security", admin, nil)
+	if !strings.Contains(rec.Body.String(), `"event":"access_review.completed"`) {
+		t.Errorf("audit log = %s", rec.Body)
 	}
 }

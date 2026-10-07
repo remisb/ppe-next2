@@ -48,6 +48,7 @@ constants. `TestWebClientListsTheEvents` keeps it equal to `AUDIT_EVENTS` in
 | `item_sets` | `item_set` | `item_set.created`, `item_set.updated`, `item_set.deleted` | name, description, active, lines (`catalogue_item_id`, `default_quantity`), the changed ones on update |
 | `orders` | `order` | `order.ordered`, `order.confirmation_link_created`, `order.given`, `order.deleted` | as before |
 | `settings` | `settings` | `settings.supplier_chat_changed` | as before |
+| `security` | `access_review` | `access_review.completed` | after: how many `users`, `active_users`, `administrators`, `dormant` and `no_sign_in` accounts there were; a fresh entity id per review (`docs/specs/security-service.md`) |
 
 **One save can record several events.** An employee edit can record `employee.updated`
 and `employee.sizes_changed`. An item edit can record `catalogue.price_changed`, an
@@ -57,8 +58,10 @@ mutations return `[]audit.Event`.
 
 A save that changes nothing records nothing.
 
+Sign-ins and sessions are not audit events: they are the security log (`auth_events`,
+ADR 0003), shown on Security.
+
 **Not recorded yet:**
-- sign-ins and sessions (phase 2, `auth_events`);
 - writes the data sync makes directly in the database as the sync user (migration `0011`).
   It should import through the API instead.
 
@@ -123,8 +126,8 @@ Administration for whoever holds it.
   Show older changes.
 - **One change** opens at `/audit/<id>`: beside the list from `lg`, in its place below. It
   shows:
-  - the record, linked to its page in the staff app (Roles here; none for users, settings
-    and deleted records);
+  - the record, linked to its page in the staff app (Roles and the access review here; none
+    for users, settings and deleted records);
   - when (absolute, in the organisation's timezone), who, made in, device, reference, event;
   - every field it changed.
 
@@ -142,6 +145,5 @@ The glossary's "History" means Orders, so a record's section is called Changes.
 
 ## Not here yet
 
-- Sign-in events, the Security screen and access review (phase 2).
 - The request ID in error responses and logs (phase 3).
 - Seals, the least-privilege database role, retention and export (phase 4).

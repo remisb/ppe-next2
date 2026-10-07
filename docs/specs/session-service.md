@@ -28,7 +28,7 @@ options weighed (option B with C).
 | `authenticated_at` | When the password was last entered: sign-in, or `POST /auth/reauth`; the access token's `auth_time` |
 | `last_used_at`, `user_agent`, `ip` | From the last refresh, for the device list (the User-Agent is cut to 400 bytes) |
 | `idle_expires_at`, `expires_at` | The idle and absolute limits |
-| `ended_at`, `end_reason` | Set together; `signed_out`, `ended_elsewhere`, `password_changed`, `password_reset`, `deactivated`, `deleted` or `reused` |
+| `ended_at`, `end_reason` | Set together; `signed_out`, `ended_elsewhere`, `ended_by_administrator` (migration 0024), `password_changed`, `password_reset`, `deactivated`, `deleted` or `reused` |
 
 Sessions are not soft-deleted like the domain's records: they end. Ended and expired rows
 stay 30 days for tracing and are deleted at the same user's next sign-in.
@@ -87,10 +87,17 @@ proxy keeps the browser's `Host` (`changeOrigin: false`) so this holds on any po
 | --- | --- |
 | Sign out | this browser's session |
 | Sign out on Account's device list | that session; Sign out all other devices: all but this one |
+| Sign out on Administration's Security (`DELETE /api/v1/security/sessions/{id}`, `users.manage`) | that session (`ended_by_administrator`) |
 | Own password changed (`PUT /users/me/password`) | all but the one it was changed in |
 | Password reset by an administrator | all |
 | Account deactivated or deleted | all |
 | A replaced refresh token used after the grace | that session |
+
+Every start and end is recorded in the security log in the same transaction: the
+repository's `Mutation` returns the session and its `security.Event`, `Create` also writes
+the `sign_in` event and `users.last_sign_in_at`, and `EndAll` writes one `session_ended`
+per session it ends (`docs/specs/security-service.md`). A refresh that only rotates writes
+nothing; a reused token writes `refresh_reused`.
 
 The user service calls `user.Sessions.EndAll` (answered by `userSessions` in
 `cmd/api/checkers.go`) after the change is written. An access token already issued stays
