@@ -14,12 +14,42 @@ export const webURL = `http://localhost:${webPort}`
 // A test-only account created by global setup; not a real credential.
 export const admin = { email: 'e2e-admin@example.com', password: 'e2e-password-123', name: 'E2E Admin' }
 
+/**
+ * The API connects as the least-privilege role ppe_app (migration 0026), as
+ * production does, so every step exercises its grants; setup (prepareDatabase)
+ * gives it this test-only password. Setup itself connects as the owner.
+ */
+const appPassword = 'e2e-app-password'
+
+export function appDSN(): string {
+  const u = new URL(dbDSN)
+  u.username = 'ppe_app'
+  u.password = appPassword
+  return u.toString()
+}
+
+/**
+ * Empties the test database (the trails' TRUNCATE guard asks for the flag)
+ * and lets ppe_app sign in with the test password.
+ */
+export async function prepareDatabase(query: (sql: string) => Promise<unknown>, ...more: string[]): Promise<void> {
+  await query(
+    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges CASCADE; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
+  )
+  await allowAppRole(query)
+}
+
+/** Lets ppe_app sign in with the test password. */
+export async function allowAppRole(query: (sql: string) => Promise<unknown>): Promise<void> {
+  await query(`ALTER ROLE ppe_app WITH LOGIN PASSWORD '${appPassword}'`)
+}
+
 /** Environment for the API process under test. */
 export function apiEnv(): Record<string, string> {
   return {
     ...(process.env as Record<string, string>),
     API_ADDR: `:${apiPort}`,
-    API_DB_DSN: dbDSN,
+    API_DB_DSN: appDSN(),
     API_JWT_SECRET: 'e2e-secret-e2e-secret-e2e-secret-e2e',
     API_JWT_TTL: '1h',
     API_PUBLIC_BASE_URL: webURL,

@@ -452,10 +452,27 @@ func (stubCatalogue) Update(context.Context, uuid.UUID, catalogue.Mutation) (cat
 	return catalogue.Item{}, catalogue.ErrNotFound
 }
 
-// stubAudit is an empty trail.
-type stubAudit struct{}
+// stubAudit is an empty trail with no seals; it keeps the events written to
+// it (an export's record).
+type stubAudit struct{ written *[]audit.Event }
 
 func (stubAudit) List(context.Context, audit.Query) ([]audit.Entry, error) { return nil, nil }
+func (s stubAudit) Insert(_ context.Context, ev audit.Event) error {
+	if s.written != nil {
+		*s.written = append(*s.written, ev)
+	}
+	return nil
+}
+func (stubAudit) EachRow(context.Context, time.Time, time.Time, func(audit.Row) error) error {
+	return nil
+}
+func (stubAudit) FirstEventAt(context.Context) (*time.Time, error) { return nil, nil }
+func (stubAudit) Seals(context.Context) ([]audit.Seal, error)      { return nil, nil }
+func (stubAudit) AddSeal(context.Context, audit.Seal) error        { return nil }
+func (stubAudit) Purges(context.Context) ([]audit.Purge, error)    { return nil, nil }
+func (stubAudit) Purge(_ context.Context, p audit.Purge, _ func(int64) (audit.Event, error)) (audit.Purge, error) {
+	return p, nil
+}
 
 type stubItemSets struct{}
 
@@ -562,7 +579,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -718,6 +735,9 @@ var policy = map[string]rule{
 	"GET /api/v1/backups":                           {role.BackupsRead, "admins"},
 	"GET /api/v1/audit-events":                      {role.AuditRead, "admins"},
 	"GET /api/v1/audit-events/{id}":                 {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/integrity":            {role.AuditRead, "admins"},
+	"POST /api/v1/audit-events/verify":              {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/export":               {role.AuditExport, "admins"},
 	"GET /api/v1/audit-events/employees/{id}":       {"", "any"},
 	"GET /api/v1/audit-events/catalogue/{id}":       {"", "any"},
 	"GET /api/v1/audit-events/orders/{id}":          {"", "any"},

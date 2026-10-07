@@ -88,7 +88,7 @@ func newTestPool(t *testing.T) *pgxpool.Pool {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE; TRUNCATE error_events, db_size_samples`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE; TRUNCATE error_events, db_size_samples`); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 	return pool
@@ -191,6 +191,10 @@ func TestPostgresDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The test connects as the owner.
+	if !d.OwnerRights || d.User == "" {
+		t.Errorf("as the owner: user %q, owner rights %v", d.User, d.OwnerRights)
+	}
 	if d.Version == "" || d.Bytes <= 0 || len(d.Tables) == 0 || d.Connections["active"] < 1 || d.MaxConnections < 1 ||
 		d.LatestMigration == nil || d.Earlier != nil {
 		t.Fatalf("database = %+v", d)
@@ -209,7 +213,7 @@ func TestPostgresDatabase(t *testing.T) {
 		t.Errorf("earlier = %+v, want the newest sample over 30 days old", d.Earlier)
 	}
 	// Leave no made-up history behind for whatever reads this database next.
-	if _, err := pool.Exec(ctx, `TRUNCATE db_size_samples`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE db_size_samples`); err != nil {
 		t.Fatal(err)
 	}
 }

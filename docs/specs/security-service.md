@@ -59,9 +59,12 @@ is middleware and stays in memory. Index: `auth_events_email_idx (email_hash, oc
 ## Retention
 
 - `API_AUTH_EVENTS_RETENTION`: default `4320h` (180 days), from `720h` to `26280h`.
-- `purgeSecurityEvents` (`cmd/api/jobs.go`) deletes older rows when the API starts and then
-  hourly. It holds `pg_try_advisory_xact_lock(hashtext('ppe.purge_auth_events'))`, so with
-  several instances one purges, and logs `security events purged` with the count.
+- The upkeep (`cmd/api/jobs.go`) deletes older rows when the API starts and then hourly.
+  - It holds `pg_try_advisory_xact_lock(hashtext('ppe.purge_auth_events'))`, so with
+    several instances one purges.
+  - It deletes through `purge_auth_events(boundary)` (migration 0026), a `SECURITY DEFINER`
+    function owned by the owner, because the API's role `ppe_app` has no DELETE here. The
+    function refuses a boundary under 30 days old.
 - `users.last_sign_in_at` outlives the events. Migration `0024` fills it from the sessions
   still kept.
 

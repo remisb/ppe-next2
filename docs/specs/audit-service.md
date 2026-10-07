@@ -48,6 +48,7 @@ constants. `TestWebClientListsTheEvents` keeps it equal to `AUDIT_EVENTS` in
 | `item_sets` | `item_set` | `item_set.created`, `item_set.updated`, `item_set.deleted` | name, description, active, lines (`catalogue_item_id`, `default_quantity`), the changed ones on update |
 | `orders` | `order` | `order.ordered`, `order.confirmation_link_created`, `order.given`, `order.deleted` | as before |
 | `settings` | `settings` | `settings.supplier_chat_changed` | as before |
+| `audit` | `audit_log` | `audit.exported` (by its actor), `audit.purged` (by the system) | exported: the format, from, to and the filters given; purged: `older_than` (the first day kept) and `rows` |
 | `security` | `access_review` | `access_review.completed` | after: how many `users`, `active_users`, `administrators`, `dormant` and `no_sign_in` accounts there were; a fresh entity id per review (`docs/specs/security-service.md`) |
 
 **One save can record several events.** An employee edit can record `employee.updated`
@@ -108,15 +109,102 @@ Indexes (migration `0023`): `(occurred_at DESC, id DESC)`, `(actor_user_id, occu
 DESC, id DESC)` and `(event, occurred_at DESC, id DESC)`, beside `0002`'s
 `(entity_type, entity_id, occurred_at)`.
 
+## Seals and Verify (migration 0026)
+
+The append-only triggers stop honest mistakes. They do not stop someone who can switch
+them off. Seals make such a change visible.
+
+- **Sealing.** After each UTC day ends, plus an hour's grace (`SealGrace`), the hourly
+  upkeep (`cmd/api/jobs.go`) hashes that day's events in `(occurred_at, id)` order into
+  `audit_seals(day, rows, hash, prev_hash, sealed_at)`:
+  - Each row's canonical form is a JSON array of every column, with `before` and `after` as
+    Postgres prints `jsonb` and the time in UTC to the microsecond.
+  - `hash` is SHA-256 over the previous seal's hash, the day, the count and the rows'
+    digest.
+  - A day without events is sealed too, so the chain has no holes. The first seal is the
+    day of the oldest event.
+  - With several instances, a second seal of a day is refused by its primary key
+    (`ErrSealed`), and that instance stops.
+- **`audit_seals` and `audit_purges`** are append-only like the trail.
+- **Verify** (`Service.Verify`, the hourly upkeep, or `POST /api/v1/audit-events/verify`)
+  recomputes every seal, oldest first. It reports the first day that differs:
+  - `rows`: an event added or removed;
+  - `hash`: an event altered;
+  - `chain`: a seal does not follow the one before;
+  - `gap`: a seal is missing.
+- It also counts the events since the last sealed day, not yet sealed. The latest result is
+  kept in memory, so it starts again at a restart, when the upkeep verifies first. The
+  Overview raises `audit_seal_mismatch` (critical) from it for `audit.read`.
+- **Not yet:** anchoring seals outside the database (proposal 3.5 C). An old backup holds
+  the seals it was taken with, so it is a second witness.
+
+## Retention
+
+- **`API_AUDIT_RETENTION`:**
+  - default `87672h` (10 years, pending the accountant's word, ADR 0003);
+  - from `8784h` to `175680h` (1–20 years);
+  - set in configuration, never on a screen.
+- **The hourly upkeep purges** the events before the first kept UTC day, and only days
+  already sealed (`Service.PurgeExpired`).
+  - It deletes through `purge_audit_events(boundary)`, a `SECURITY DEFINER` function owned
+    by the owner, because the API's role has no DELETE. The function refuses a boundary
+    under 365 days old.
+  - It runs under an advisory lock, and in one transaction it:
+    - deletes the events;
+    - records `audit_purges(before_day, rows)`;
+    - writes `audit.purged`.
+  - Verify then checks the purged days by their seals' chain only.
+
+## Export
+
+`GET /api/v1/audit-events/export?format=csv|jsonl&from=&to=&<the list's filters>`
+(`audit.export`, which needs `audit.read`):
+- `from` and `to` are required, at most 366 days apart.
+- **CSV:** columns `occurred_at` (organisation timezone), `event`, `area`, `entity_type`,
+  `entity_id`, `entity_label`, `entity_deleted`, `actor_id`, `actor_name`, `source`,
+  `request_id`, `session_id`, `before`, `after`, `id`. Names starting with `= + - @` get a
+  leading apostrophe, against formula injection.
+- **JSONL:** one `Entry` a line.
+- Newest first, read a thousand at a time. `Content-Disposition` names it
+  `audit-log-<from>-<to>.<format>`.
+- **The export is recorded first** (`audit.exported` with its filters), so an export cut
+  short is on the trail too. A refused one (400) records nothing.
+
+## The API's database role
+
+- The API connects as **`ppe_app`** (`internal/db/grants.sql`, ADR 0003 item 5) once
+  `API_DB_USER=ppe_app` and `API_DB_PASSWORD` are set in production. `deploy/migrate.sh`
+  gives the role that password.
+- What `ppe_app` may do:
+  - it may: SELECT, INSERT, UPDATE and DELETE the business tables; INSERT and SELECT only
+    on `audit_events`, `auth_events`, `audit_seals`, `audit_purges` and `order_lines`;
+  - it may not: truncate, alter, or create anything.
+- The owner runs the migrations, the backups and the purge functions.
+- `grants.sql` is applied after the migrations on **every** run. That keeps it right for
+  every table, and puts the grants back after a restore, since dbbackup restores with
+  `--no-acl`.
+- System shows the role the API connects as. The Overview raises
+  `database_owner_rights` (warning) when it is the owner or a superuser.
+
+**TRUNCATE guard.** A statement trigger refuses TRUNCATE on the five trails, which a
+cascade from `users` would reach, unless the transaction says
+`SET LOCAL ppe.allow_truncate = on`. Test setup does.
+
 ## Permission
 
-`audit.read` (group administration) opens the Audit log. Migration `0023` grants it to the
+`audit.read` (group administration) opens the Audit log; `audit.export` (migration 0026,
+needs `audit.read`) adds Export. Migration `0023` grants it to the
 built-in Administrator, and `ADMINISTRATION_PERMISSIONS` lists it, so the staff app links to
 Administration for whoever holds it.
 
 ## Screens
 
 **Administration → Audit log** (`/admin/audit`, `web/apps/admin/src/routes/audit.tsx`):
+- **Seals**: through which day the log is sealed, whether the latest check found every
+  sealed day whole (or an alert naming the day that is not), how many years changes are
+  kept, and **Verify** to check now.
+- **Export** (with `audit.export`): a sheet with from and to (the filter's days, else the
+  last 30) and CSV or JSON lines; the file downloads, and the export is on the log.
 - **Filters**: area, change (narrowed to the area), person (with `users.read`), from and to.
   They live in the address, so a filtered view can be bookmarked or sent.
 - **Record filter**: `entity_type` and `entity_id` narrow the list to one record. It is shown
@@ -145,5 +233,4 @@ The glossary's "History" means Orders, so a record's section is called Changes.
 
 ## Not here yet
 
-- The request ID in error responses and logs (phase 3).
-- Seals, the least-privilege database role, retention and export (phase 4).
+- Seals anchored outside the database (the backup bucket or an email), proposal 3.5 C.

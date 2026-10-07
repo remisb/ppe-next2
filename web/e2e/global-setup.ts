@@ -1,27 +1,11 @@
 import { execFileSync } from 'node:child_process'
 
-import pg from 'pg'
-
-import { apiEnv, dbDSN, repoRoot } from './env.ts'
+import { apiEnv, repoRoot } from './env.ts'
 
 /**
- * Empty the e2e database and seed the test admin. Runs before the web
- * servers start. The database must already be migrated (`make db-test-create`
- * locally; the CI workflow migrates it).
+ * Seed the test admin. The database was emptied before the API started
+ * (prepare-db.ts, the first part of the API's command).
  */
 export default async function globalSetup() {
-  if (!new URL(dbDSN).pathname.endsWith('_test')) {
-    throw new Error(`Refusing to empty ${dbDSN}: the e2e database name must end in _test`)
-  }
-  const client = new pg.Client({ connectionString: dbDSN })
-  await client.connect()
-  try {
-    await client.query('TRUNCATE users CASCADE')
-    // The backup agent's tables reference no user; the guide's setup fills them.
-    await client.query('TRUNCATE dbbackup_runs, dbbackup_agents')
-    await client.query('TRUNCATE db_size_samples')
-  } finally {
-    await client.end()
-  }
   execFileSync('go', ['run', './cmd/api', '-seed-admin'], { cwd: repoRoot, env: apiEnv(), stdio: 'inherit' })
 }

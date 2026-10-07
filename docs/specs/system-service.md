@@ -81,6 +81,7 @@ before the sign-in is known are not reported.
 - the 8 largest tables, with indexes and Postgres's row estimate;
 - connections by state against `max_connections`;
 - the oldest open transaction other than its own;
+- the role the API connects as, and whether it has the owner's rights;
 - the latest applied migration.
 
 The API's pool (in use, idle, the limit, waits) comes from `pgxpool`.
@@ -94,7 +95,13 @@ oldest kept.
 At start and hourly, until ADR 0001's worker exists, the upkeep:
 - purges security events older than `API_AUTH_EVENTS_RETENTION`, under an advisory lock;
 - deletes error-list rows not seen for 30 days;
-- records today's database size.
+- records today's database size;
+- seals the audit days that have ended;
+- purges audit events older than `API_AUDIT_RETENTION`, sealed days only;
+- verifies every seal ([audit-service.md](audit-service.md)).
+
+A failed seal or purge logs `audit sealing failed` or `audit purge failed`; a seal that does
+not match logs `audit seals do not match` with the day.
 
 What it deleted and when are shown on System, and a part that failed is logged: `security
 events purge failed`, `error list purge failed`, `database size sample failed`.
@@ -135,6 +142,8 @@ areas the token's permissions open, so the employee role gets an empty Overview.
 | `error_rate` | warning | at least 1 % of the last hour's requests failed, with at least 50 requests | `system.read` |
 | `new_errors` | warning | an error fingerprint first seen in the last day | `system.read` |
 | `database_growth` | info | over 20 % growth since the comparison sample, at least 7 days old | `system.read` |
+| `audit_seal_mismatch` | critical | the latest Verify found a sealed day that does not match (audit-service.md) | `audit.read` |
+| `database_owner_rights` | warning | the API connects as the owner or a superuser, not `ppe_app` | `system.read` |
 
 The figures cover the same areas:
 - active and inactive users (`users.read`);

@@ -61,8 +61,12 @@ func TestFilterResolve(t *testing.T) {
 	}
 }
 
-// pagedStore returns rows newest first, honouring Limit and After as Postgres does.
-type pagedStore struct{ rows []Entry }
+// pagedStore returns rows newest first, honouring Limit and After as Postgres
+// does; it keeps no seals (memTrail, seal_test.go, does).
+type pagedStore struct {
+	memTrail
+	rows []Entry
+}
 
 func (s pagedStore) List(_ context.Context, q Query) ([]Entry, error) {
 	var out []Entry
@@ -83,7 +87,7 @@ func TestListPages(t *testing.T) {
 	for i := range 5 {
 		rows = append(rows, Entry{ID: uuid.New(), OccurredAt: base.Add(-time.Duration(i) * time.Minute)})
 	}
-	svc := NewService(pagedStore{rows})
+	svc := NewService(pagedStore{rows: rows})
 	var seen []uuid.UUID
 	f := Filter{PageSize: 2}
 	for range 4 {

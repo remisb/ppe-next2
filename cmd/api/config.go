@@ -45,7 +45,11 @@ type config struct {
 	// AuthEventsRetention is how long security events (sign-ins, failed
 	// attempts, ended sessions) are kept; older ones are purged hourly.
 	AuthEventsRetention time.Duration
-	AllowedOrigins      []string
+	// AuditRetention is how long audit events are kept; older ones are
+	// purged, whole sealed days at a time (ADR 0003: 10 years, pending the
+	// accountant's word).
+	AuditRetention time.Duration
+	AllowedOrigins []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
 	TrustedProxies []netip.Prefix
@@ -120,6 +124,7 @@ func loadConfig(args []string) (config, error) {
 		{&c.LoginRateInterval, "API_LOGIN_RATE_INTERVAL", time.Minute},
 		{&c.LoginEmailInterval, "API_LOGIN_EMAIL_INTERVAL", 15 * time.Minute},
 		{&c.AuthEventsRetention, "API_AUTH_EVENTS_RETENTION", 180 * 24 * time.Hour},
+		{&c.AuditRetention, "API_AUDIT_RETENTION", 3653 * 24 * time.Hour},
 		{&c.ConfirmTTL, "API_CONFIRM_TTL", 7 * 24 * time.Hour},
 	} {
 		if *d.dst, err = envDuration(d.key, d.def); err != nil {
@@ -190,6 +195,10 @@ func (c config) validate() error {
 	// The table's trigger refuses to delete rows younger than 30 days.
 	if c.AuthEventsRetention < 30*24*time.Hour || c.AuthEventsRetention > 3*365*24*time.Hour {
 		errs = append(errs, errors.New("API_AUTH_EVENTS_RETENTION must be between 720h and 26280h"))
+	}
+	// purge_audit_events refuses anything younger than 365 days.
+	if c.AuditRetention < 366*24*time.Hour || c.AuditRetention > 20*366*24*time.Hour {
+		errs = append(errs, errors.New("API_AUDIT_RETENTION must be between 8784h (366 days) and 175680h (20 years)"))
 	}
 	if c.MetricsAddr != "" && c.MetricsAddr == c.Addr {
 		errs = append(errs, errors.New("API_METRICS_ADDR must differ from API_ADDR"))

@@ -1,6 +1,6 @@
 # ADR 0003: Security events apart from the audit trail, and how long each is kept
 
-- **Status:** accepted (items 1–3 built in phase 2; items 4–5 are phase 4's)
+- **Status:** accepted (items 1–3 built in phase 2, items 4–5 in phase 4)
 - **Date:** 2026-10-07
 - **Scope:** backend (Go API, Postgres), deployment
 - **Builds on:** [ADR 0001](0001-modular-monolith-with-bounded-contexts.md) (the sign-in
@@ -52,14 +52,26 @@ them, and ADR 0001 needs it shared before a second API instance runs.
      `ppe.purge_auth_events`, and refuses any row younger than 30 days even then.
    - `users.last_sign_in_at` keeps the last sign-in beyond the retention for the access
      review.
-4. **Business audit events are kept 10 years**, pending the accountant's confirmation. That
-   is how long Lithuanian accounting documents are commonly kept, and orders and receipts
-   are such documents. Nothing purges them before phase 4, which adds the purge, export and
-   daily seals.
-5. **Least privilege comes in phase 4.** The API will connect as a role that may only INSERT
-   and SELECT `audit_events`, `auth_events` and the seals. Migrations keep the owner role,
-   and a TRUNCATE guard is added. Until then, the triggers stop honest mistakes, not a
-   stolen database password.
+4. **Business audit events are kept 10 years** (`API_AUDIT_RETENTION`, 1–20 years), pending
+   the accountant's confirmation. That is how long Lithuanian accounting documents are
+   commonly kept, and orders and receipts are such documents.
+   - **Daily seals** (`audit_seals`): each UTC day's events are hashed and chained to the
+     day before, an hour after the day ends.
+   - **Verify** recomputes them, hourly and on demand.
+   - **The purge** deletes whole sealed days only, and records itself (`audit_purges`, an
+     `audit.purged` event).
+   - **Export** is a permission of its own (`audit.export`), and each export is an audit
+     event.
+5. **Least privilege.** The API connects as `ppe_app`.
+   - It may only INSERT and SELECT the trails (`audit_events`, `auth_events`,
+     `audit_seals`, `audit_purges`, `order_lines`), and may truncate or alter nothing.
+   - The purges run through `SECURITY DEFINER` functions owned by the owner, which refuse
+     recent rows (365 and 30 days).
+   - Migrations, backups and restores keep the owner role.
+   - A statement trigger refuses TRUNCATE on the trails unless the transaction sets
+     `ppe.allow_truncate`.
+   - The grants live in `internal/db/grants.sql`, applied on every migrate. A restore
+     (`pg_restore --no-acl`) drops them, and the next migrate restores them.
 
 ## Consequences
 
@@ -71,6 +83,13 @@ them, and ADR 0001 needs it shared before a second API instance runs.
   the value is the business fact (a price, a size, a status). Never record passwords, notes
   text or ID numbers.
 - Tests that `TRUNCATE users CASCADE` empty `auth_events` too, through its foreign key to
-  `users`. A Postgres test of the purge sets the transaction flag the purge sets.
+  `users`. They set `ppe.allow_truncate` first, and empty `audit_seals` and `audit_purges`
+  by name, which no cascade reaches. The API's Postgres tests and the e2e suite connect as
+  `ppe_app`, so its grants are exercised; setup keeps the owner.
+- Until production sets `API_DB_USER=ppe_app` and `API_DB_PASSWORD`, the API connects as
+  the owner, and the Overview says so.
+- A seal cannot catch a change made within the hour's grace before its day is sealed, or a
+  rewrite of the whole chain by someone holding the owner's password. Seals anchored outside
+  the database (proposal 3.5 C) would.
 - Removing the in-memory limiter means each sign-in costs one more indexed query
   (`auth_events_email_idx`).

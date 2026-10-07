@@ -2,24 +2,37 @@ package audit
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// Store reads the trail. Implementations translate storage errors and never
+// Store reads the trail, writes the Audit log's own events, and keeps the
+// seals and purges. Implementations translate storage errors and never
 // validate: Service resolves every Query first.
 type Store interface {
 	// List returns up to q.Limit events matching q, newest first, after
 	// q.After when it is set.
 	List(ctx context.Context, q Query) ([]Entry, error)
+	// Insert writes ev on its own (an export's record).
+	Insert(ctx context.Context, ev Event) error
+	SealStore
 }
 
-// Service is the Audit log's read side. Writing stays with the domains,
-// through Insert inside their own transactions.
+// Service is the Audit log's read side, its export, the daily seals and the
+// retention purge. Writing stays with the domains, through Insert inside
+// their own transactions.
 type Service struct {
-	store Store
-	loc   *time.Location
+	store     Store
+	seals     SealStore
+	loc       *time.Location
+	now       func() time.Time
+	newID     func() uuid.UUID
+	retention time.Duration
+
+	mu               sync.Mutex
+	lastVerification *Verification
 }
 
 type Option func(*Service)
@@ -28,13 +41,33 @@ type Option func(*Service)
 // calendar days. The default is UTC.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
+// WithRetention sets how long events are kept (API_AUDIT_RETENTION); 0, the
+// default, purges nothing.
+func WithRetention(d time.Duration) Option { return func(s *Service) { s.retention = d } }
+
+func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
+
 func NewService(store Store, opts ...Option) *Service {
-	s := &Service{store: store, loc: time.UTC}
+	s := &Service{
+		store: store, seals: store, loc: time.UTC,
+		now:   func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) },
+		newID: uuid.New,
+	}
 	for _, o := range opts {
 		o(s)
 	}
 	return s
 }
+
+// Retention is how long events are kept; 0 for always.
+func (s *Service) Retention() time.Duration { return s.retention }
+
+// Seals are every seal, oldest day first.
+func (s *Service) Seals(ctx context.Context) ([]Seal, error) { return s.seals.Seals(ctx) }
+
+// Purges are every purge, oldest first.
+func (s *Service) Purges(ctx context.Context) ([]Purge, error) { return s.seals.Purges(ctx) }
 
 // List is one page of the Audit log, newest first.
 func (s *Service) List(ctx context.Context, f Filter) (Page, error) {

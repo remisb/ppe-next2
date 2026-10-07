@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 
 import pg from 'pg'
 
-import { apiEnv, dbDSN, repoRoot } from '../env.ts'
+import { apiEnv, dbDSN, prepareDatabase, repoRoot } from '../env.ts'
 import { lang } from './lang.ts'
 
 /**
@@ -18,8 +18,7 @@ export default async function guideSetup() {
   const client = new pg.Client({ connectionString: dbDSN })
   await client.connect()
   try {
-    await client.query('TRUNCATE users CASCADE')
-    await client.query('ALTER SEQUENCE order_record_seq RESTART')
+    await prepareDatabase((sql) => client.query(sql), 'ALTER SEQUENCE order_record_seq RESTART')
   } finally {
     await client.end()
   }

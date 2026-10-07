@@ -43,6 +43,21 @@ describe('createClient', () => {
     expect(g.mock.calls[0]![0]).toBe('/api/v1/system/errors?kind=client')
   })
 
+  it('downloads an export with the name the API gives it', async () => {
+    const f = vi.fn(
+      async (_url: string, _init?: RequestInit) =>
+        new Response('occurred_at,event\n', { status: 200, headers: { 'Content-Disposition': 'attachment; filename="audit-log-2026-10-01-2026-10-07.csv"' } }),
+    )
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    const file = await client.audit.export('csv', { from: '2026-10-01', to: '2026-10-07', area: 'orders' })
+    expect(f.mock.calls[0]![0]).toBe('/api/v1/audit-events/export?from=2026-10-01&to=2026-10-07&area=orders&format=csv')
+    expect((f.mock.calls[0]![1]?.headers as Record<string, string>)['Authorization']).toBe('Bearer t')
+    expect(file.filename).toBe('audit-log-2026-10-01-2026-10-07.csv')
+    expect(await file.blob.text()).toBe('occurred_at,event\n')
+    const refused = createClient({ getToken: () => 't', fetch: fakeFetch(400, '{"error":"invalid audit filter: from and to are required"}') as unknown as typeof fetch })
+    await expect(refused.audit.export('csv', {})).rejects.toThrow('from and to are required')
+  })
+
   it('posts Mark as Ordered to /orders', async () => {
     const f = fakeFetch(201, '{"id":"o1","record_number":"WE-000001"}')
     const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })

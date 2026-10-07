@@ -74,7 +74,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(cfg.JWTSecret), sessionLimits(cfg))
 	roles := role.NewService(role.NewPostgresRepository(pool))
 	svc := newServices(
-		loc, cfg.ConfirmTTL,
+		loc, cfg.ConfirmTTL, cfg.AuditRetention,
 		sessions,
 		security.NewService(security.NewPostgresStore(pool), securityConfig(cfg), security.WithLocation(loc)),
 		roles,
@@ -173,7 +173,7 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -185,7 +185,7 @@ func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
-		audit:     audit.NewService(trail, audit.WithLocation(loc)),
+		audit:     audit.NewService(trail, audit.WithLocation(loc), audit.WithRetention(auditRetention)),
 		system:    system.NewService(sys, system.WithRecorded(func(k system.Kind) { metrics.ErrorRecorded(string(k)) })),
 		window:    newWindow(),
 		metrics:   metrics,

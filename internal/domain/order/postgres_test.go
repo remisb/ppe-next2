@@ -40,7 +40,7 @@ func newPGFixture(t *testing.T) pgFixture {
 			t.Fatalf("%s: %v", sql, err)
 		}
 	}
-	exec(`TRUNCATE users CASCADE`)
+	exec(`SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE`)
 	f := pgFixture{pool: pool, actor: uuid.New(), emp: uuid.New(), shoes: uuid.New(), gloves: uuid.New(), draft: uuid.New()}
 	exec(`INSERT INTO users (id, email, name, password_hash, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'a@example.com', 'Admin', 'x', now(), now(), $1, $1)`, f.actor)

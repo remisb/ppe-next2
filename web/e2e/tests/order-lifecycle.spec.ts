@@ -715,6 +715,27 @@ test('Audit log: who changed a price, when and where; the item\'s Changes say th
   await expect(page.getByRole('row', { name: /Item added/ })).toBeVisible()
   await page.getByRole('button', { name: 'All records' }).click()
   await expect(page.getByText('Record: Safety shoes')).toHaveCount(0)
+
+  // The seals: no day has ended since the test database was emptied, so none is sealed; Verify checks anyway.
+  const seals = page.getByRole('region', { name: 'Seals' })
+  await expect(seals).toContainText('No day is sealed yet.')
+  await seals.getByRole('button', { name: 'Verify' }).click()
+  await expect(seals).toContainText(/Checked \d{4}-\d{2}-\d{2}/)
+
+  // Export: the filtered changes as a CSV file, and the export is itself on the log.
+  await page.getByRole('combobox', { name: 'Area' }).selectOption({ label: 'Item Catalogue' })
+  await page.getByRole('button', { name: 'Export' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Export the Audit log' })
+  const downloading = page.waitForEvent('download')
+  await sheet.getByRole('button', { name: 'Download' }).click()
+  const file = await downloading
+  expect(file.suggestedFilename()).toMatch(/^audit-log-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/)
+  const csv = await new Response(await file.createReadStream() as unknown as ReadableStream).text()
+  expect(csv.split('\n')[0]).toBe('occurred_at,event,area,entity_type,entity_id,entity_label,entity_deleted,actor_id,actor_name,source,request_id,session_id,before,after,id')
+  expect(csv).toContain('catalogue.price_changed')
+  expect(csv).not.toContain('employee.created')
+  await page.getByRole('combobox', { name: 'Area' }).selectOption({ label: 'Audit log' })
+  await expect(page.getByRole('row', { name: /Audit log exported/ })).toContainText(admin.name)
 })
 
 test('Security: a failed attempt and a sign-in elsewhere are recorded; an administrator signs that device out and reviews access', async ({ browser }) => {
@@ -786,6 +807,8 @@ test('Overview and System: what needs attention, an error the app reports, and t
   const attention = page.getByRole('region', { name: 'Needs attention' })
   await expect(attention.getByRole('listitem').first()).toContainText('Backups are not running')
   await expect(page.getByRole('list', { name: 'Key figures' })).toContainText('Active users')
+  // The API connects as the least-privilege role, as in production: no warning about owner rights.
+  await expect(page.getByText('The API connects as the database owner')).toHaveCount(0)
 
   // An error in the page is reported to System's error list, with the page's path.
   await page.evaluate(() => {

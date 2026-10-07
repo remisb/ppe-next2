@@ -91,6 +91,27 @@ The droplet's CPU, memory and disk are outside what the API can see.
 | The Overview says requests are failing, or there are new errors | System → Errors: the latest message, route, count and stack of each; the reference finds its log lines |
 | Requests feel slow | System → Status: the slowest routes, the pool's waits and the oldest open transaction; `/metrics` for the full histogram |
 | `error list purge failed` or `database size sample failed` in the log | the hourly upkeep; the error says why, and it tries again within the hour |
+| The Overview says the Audit log does not match its seals (`audit seals do not match` in the log) | someone changed the trail behind the app. Audit log → Seals names the day and the problem. Keep the backups from before that day (they hold the seals and events as they were), and find who had the database owner's password |
+| The Overview says the API connects as the database owner | production has not switched to `ppe_app` yet: see below |
+| `audit sealing failed` or `audit purge failed` in the log | the upkeep's sealing or purge; it tries again within the hour |
+
+## The API's least-privilege database role
+
+Production connects as `ppe_app` (ADR 0003): a role that cannot change, delete or truncate
+the audit trail. To switch it on:
+
+1. Add both lines to `.env.prod` on the droplet, generating the password without showing it:
+
+   ```bash
+   printf 'API_DB_USER=ppe_app\nAPI_DB_PASSWORD=%s\n' "$(openssl rand -hex 32)" >> /opt/ppe-next2/.env.prod
+   ```
+
+2. Run `make prod-up`. `migrate` gives `ppe_app` the password and its grants, and the API
+   connects as it.
+3. Check System → Status, under Database: "The API connects as `ppe_app`". The Overview's
+   warning goes away.
+
+To go back, remove the two lines and run `make prod-up`.
 
 ## Later phases
 

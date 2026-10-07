@@ -1,19 +1,21 @@
-import { AUDIT_EVENTS, type AuditEntry, type AuditPage as AuditPageData, isPermission } from '@ppe/api-client'
+import { AUDIT_EVENTS, type AuditEntry, type AuditPage as AuditPageData, type AuditVerification, isPermission } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { type DescribeOptions, ChangeDetail, areaLabel, auditText, auditTitle, changedBy, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
 import { Button } from '@ppe/ui/components/button'
-import { Input, Select } from '@ppe/ui/components/field'
+import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
-import { useLoad } from '@ppe/ui/lib/use-load'
+import { formatDateTime } from '@ppe/ui/lib/dates'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, ExternalLink, SlidersHorizontal, X } from 'lucide-react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { ArrowLeft, Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
+import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
-import { t } from '@/i18n'
+import { intlLocale, t } from '@/i18n'
 import { type AuditFilter, type Route, linkTo } from '@/lib/router'
 import { roleName } from '@/lib/users'
 
@@ -28,6 +30,7 @@ const areaEvents: Record<string, string[]> = {
   orders: ['order.'],
   settings: ['settings.'],
   security: ['access_review.'],
+  audit: ['audit.'],
 }
 
 const eventsOf = (area: string | undefined) =>
@@ -50,6 +53,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
   const people = useLoad(() => (seesUsers ? client.users.list() : Promise.resolve([])), [seesUsers])
   const roles = useLoad(() => (seesUsers ? client.roles.list() : Promise.resolve([])), [seesUsers])
   const [showFilters, setShowFilters] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const tz = settings.data?.timezone
 
   const dateError = filter.from && filter.to && filter.from > filter.to ? t.audit.fromAfterTo : undefined
@@ -114,6 +118,11 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
           description={t.audit.description}
           actions={
             <>
+              {session.can('audit.export') ? (
+                <Button variant="outline" onClick={() => setExporting(true)}>
+                  <Download aria-hidden /> {t.audit.exportAction}
+                </Button>
+              ) : null}
               <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="audit-filters" onClick={() => setShowFilters((v) => !v)}>
                 <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.audit.filtersCount(activeFilters) : t.audit.filters}
               </Button>
@@ -121,6 +130,9 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
             </>
           }
         />
+
+        <Seals timeZone={tz} />
+        {session.can('audit.export') ? <ExportSheet open={exporting} onClose={() => setExporting(false)} filter={filter} /> : null}
 
         <section
           id="audit-filters"
@@ -298,7 +310,13 @@ function clean(f: AuditFilter): AuditFilter {
 function recordName(e: AuditEntry): string {
   const name =
     e.entity_label ??
-    (e.entity_type === 'settings' ? areaLabel('settings') : e.entity_type === 'access_review' ? t.security.review : t.audit.unnamed)
+    (e.entity_type === 'settings'
+      ? areaLabel('settings')
+      : e.entity_type === 'access_review'
+        ? t.security.review
+        : e.entity_type === 'audit_log'
+          ? t.audit.title
+          : t.audit.unnamed)
   return e.entity_deleted ? `${name} (${t.audit.deleted})` : name
 }
 
@@ -389,5 +407,186 @@ function ChangePane({
         </>
       )}
     </article>
+  )
+}
+
+/** A day as the seals name it: a calendar date, not a moment, so no timezone shifts it. */
+function dayText(iso: string): string {
+  return new Date(iso).toLocaleDateString(intlLocale(), { dateStyle: 'medium', timeZone: 'UTC' })
+}
+
+/**
+ * The seals: through which day the log is sealed, whether the latest check
+ * found every sealed day whole, and Verify to check again now. A mismatch is
+ * an alert: someone changed the record behind the app.
+ */
+function Seals({ timeZone }: { timeZone: string | undefined }) {
+  const { client } = useApi()
+  const integrity = useLoad(() => client.audit.integrity())
+  const [checked, setChecked] = useState<AuditVerification | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+  const i = integrity.data
+  if (!i) return integrity.error ? <ErrorState error={integrity.error} onRetry={integrity.reload} /> : null
+  const v = checked ?? i.verification
+  const verify = async () => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      setChecked(await client.audit.verify())
+    } catch (err) {
+      setError(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const bad = v?.mismatch ?? null
+  return (
+    <section
+      aria-label={t.audit.seals}
+      className={cn(
+        'mb-4 flex flex-col gap-2 rounded-xl border p-4 text-sm sm:flex-row sm:items-start',
+        bad ? 'border-destructive/40 bg-destructive/10' : 'border-border bg-card',
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        {bad ? (
+          <ShieldAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />
+        ) : (
+          <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+        )}
+        <div className="min-w-0">
+          {bad ? (
+            <>
+              <p role="alert" className="font-medium text-destructive">
+                {t.audit.mismatch}: {dayText(bad.day)}, {t.audit.problems[bad.problem]}.
+              </p>
+              <p className="text-muted-foreground">{t.audit.mismatchHint}</p>
+            </>
+          ) : (
+            <p>
+              {i.last_sealed ? (
+                <>
+                  <span className="font-medium">
+                    {t.audit.sealedThrough} {dayText(i.last_sealed)}.
+                  </span>{' '}
+                  {v ? t.audit.allMatch(v.days) : t.audit.notChecked} {v && v.unsealed > 0 ? t.audit.unsealed(v.unsealed) : null}
+                </>
+              ) : (
+                t.audit.notSealedYet
+              )}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {v ? (
+              <>
+                {capitalize(t.audit.lastChecked)} {formatDateTime(v.checked_at, timeZone)}.{' '}
+              </>
+            ) : null}
+            {i.retention_days > 0 ? t.audit.keptFor(Math.round(i.retention_days / 365)) : null} <span className="max-md:hidden">{t.audit.sealsHint}</span>
+          </p>
+          {error ? (
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <Button size="sm" variant="outline" className="shrink-0 self-start" disabled={busy} onClick={() => void verify()}>
+        {busy ? t.audit.verifying : t.audit.verify}
+      </Button>
+    </section>
+  )
+}
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** Today, in the organisation's calendar as the browser has it, as YYYY-MM-DD. */
+function isoDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * Export: the changes the Audit log's filters select, between two days at
+ * most a year apart (the filter's own days, else the last 30), as CSV or JSON
+ * lines. The download is recorded on the log.
+ */
+function ExportSheet({ open, onClose, filter }: { open: boolean; onClose: () => void; filter: AuditFilter }) {
+  const { client } = useApi()
+  const today = new Date()
+  const [format, setFormat] = useState<'csv' | 'jsonl'>('csv')
+  const [from, setFrom] = useState(filter.from ?? isoDay(new Date(today.getTime() - 29 * 86_400_000)))
+  const [to, setTo] = useState(filter.to ?? isoDay(today))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+  const problem = !from || !to ? t.audit.exportNeedsDays : from > to ? t.audit.fromAfterTo : Date.parse(to) - Date.parse(from) > 365 * 86_400_000 ? t.audit.exportTooLong : undefined
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (problem) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      // The filter's own days give way to the ones chosen here.
+      const file = await client.audit.export(format, { ...filter, from, to })
+      const url = URL.createObjectURL(file.blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.filename
+      document.body.append(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      onClose()
+    } catch (err) {
+      setError(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <FormSheet
+      open={open}
+      onClose={onClose}
+      title={t.audit.exportTitle}
+      description={t.audit.exportHint}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            {t.common.cancel}
+          </Button>
+          <Button type="submit" form="audit-export" disabled={busy || problem !== undefined}>
+            <Download aria-hidden /> {busy ? t.audit.exporting : t.audit.download}
+          </Button>
+        </>
+      }
+    >
+      <form id="audit-export" onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm font-medium">
+            {t.audit.from}
+            <Input type="date" className="mt-1.5" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+          </label>
+          <label className="text-sm font-medium">
+            {t.audit.to}
+            <Input type="date" className="mt-1.5" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+          </label>
+        </div>
+        <Field label={t.audit.format}>
+          {(props) => (
+            <Select {...controlProps(props)} value={format} onChange={(e) => setFormat(e.target.value as 'csv' | 'jsonl')}>
+              <option value="csv">{t.audit.csv}</option>
+              <option value="jsonl">{t.audit.jsonl}</option>
+            </Select>
+          )}
+        </Field>
+        {problem || error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {problem ?? error}
+          </p>
+        ) : null}
+      </form>
+    </FormSheet>
   )
 }

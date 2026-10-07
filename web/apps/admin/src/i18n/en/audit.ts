@@ -1,3 +1,5 @@
+import { plural } from '@ppe/i18n'
+
 /** The Audit log: every recorded change, filtered, with one open beside the list. */
 export const audit = {
   title: 'Audit log',
@@ -30,6 +32,37 @@ export const audit = {
   recordChanges: 'All changes to this record',
   deleted: 'deleted',
   unnamed: 'Unnamed record',
+  // Seals and Verify
+  seals: 'Seals',
+  sealedThrough: 'Sealed through',
+  notSealedYet: 'No day is sealed yet. Each day is sealed an hour after it ends.',
+  lastChecked: 'checked',
+  notChecked: 'Not checked since the API last started.',
+  allMatch: (days: number) => plural(days, { one: 'The sealed day matches.', other: 'All # sealed days match.' }),
+  unsealed: (n: number) => plural(n, { one: '# change since is not sealed yet.', other: '# changes since are not sealed yet.' }),
+  mismatch: 'A sealed day does not match',
+  problems: {
+    rows: 'a change was added or removed',
+    hash: 'a change was altered',
+    chain: 'its seal does not follow the day before',
+    gap: 'a day’s seal is missing',
+  },
+  mismatchHint: 'Someone changed the record behind the app. Keep the backups from before that day, and tell whoever runs the server.',
+  verify: 'Verify',
+  verifying: 'Checking…',
+  keptFor: (years: number) => `Changes are kept ${years} years, then deleted a day at a time.`,
+  sealsHint: 'Each day’s changes are sealed with a hash that also covers the day before, so a change altered, added or removed afterwards shows. Verify recomputes every seal.',
+  // Export
+  exportAction: 'Export',
+  exportTitle: 'Export the Audit log',
+  exportHint: 'The changes the filters select, between two days at most a year apart. The export is itself recorded on the Audit log.',
+  format: 'Format',
+  csv: 'CSV, for a spreadsheet',
+  jsonl: 'JSON lines, for an archive',
+  download: 'Download',
+  exporting: 'Exporting…',
+  exportNeedsDays: 'Choose both days.',
+  exportTooLong: 'Choose at most a year.',
 }
 
 export type AuditText = typeof audit

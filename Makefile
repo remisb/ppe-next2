@@ -63,6 +63,8 @@ migrate: ## Apply pending *.up.sql migrations, each in its own transaction
 		echo "apply $$name"; \
 		{ echo "BEGIN;"; cat $$f; echo; echo "INSERT INTO schema_migrations (filename) VALUES ('$$name');"; echo "COMMIT;"; } | $(PSQL) -f - || exit 1; \
 	done
+	@# The API role's grants, every run: idempotent, and lost by a restore.
+	@$(PSQL) -f - < internal/db/grants.sql
 
 migrate-down: ## Revert every applied migration, newest first
 	@for f in $$(ls $(MIGRATIONS)/*.down.sql | sort -r); do \

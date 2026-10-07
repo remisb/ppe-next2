@@ -38,13 +38,18 @@ const (
 	ReviewOverdue = "review_overdue"
 	// DatabaseGrowth: the database grew over GrowthShare in GrowthSpan days.
 	DatabaseGrowth = "database_growth"
+	// SealMismatch: Verify found an audit day that does not match its seal.
+	SealMismatch = "audit_seal_mismatch"
+	// OwnerRights: the API connects as a role that could switch the trails'
+	// triggers off, not the least-privilege ppe_app.
+	OwnerRights = "database_owner_rights"
 )
 
 // keys is every item, in the order Attention can list them; @ppe/api-client's
 // ATTENTION_KEYS mirrors it (TestWebClientListsTheKeys).
 var allKeys = []string{
-	BackupsNotRunning, LastBackupFailed, CopiedSignIn, FailedSignIns,
-	ErrorRate, NewErrors, ReviewOverdue, DatabaseGrowth,
+	SealMismatch, BackupsNotRunning, LastBackupFailed, CopiedSignIn, FailedSignIns,
+	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, DatabaseGrowth,
 }
 
 // Keys returns every item's key.
@@ -98,11 +103,19 @@ type Errors struct {
 	NewKinds                         int
 }
 
-// Database is the database's size now and earlier (system.Database).
+// Database is the database's size now and earlier (system.Database), and
+// whether the API connects with the owner's rights.
 type Database struct {
 	Bytes        int64
 	EarlierBytes int64
 	EarlierDay   time.Time // zero when there is no earlier sample
+	OwnerRights  bool
+}
+
+// Audit is the latest verification of the Audit log's seals.
+type Audit struct {
+	// Mismatch is the first day that did not match; zero when all did.
+	MismatchDay time.Time
 }
 
 // Inputs are the figures the reader may see; nil leaves an area out.
@@ -111,11 +124,16 @@ type Inputs struct {
 	Security *Security
 	Errors   *Errors
 	Database *Database
+	Audit    *Audit
 }
 
 // Attention is what needs attention at now, critical first.
 func Attention(in Inputs, now time.Time) []Item {
 	out := make([]Item, 0)
+	if a := in.Audit; a != nil && !a.MismatchDay.IsZero() {
+		day := a.MismatchDay
+		out = append(out, Item{Key: SealMismatch, Severity: Critical, Since: &day})
+	}
 	if b := in.Backups; b != nil {
 		switch {
 		case b.Stale || b.AgentOffline:
@@ -149,6 +167,9 @@ func Attention(in Inputs, now time.Time) []Item {
 		if e.NewKinds > 0 {
 			out = append(out, Item{Key: NewErrors, Severity: Warning, Count: e.NewKinds})
 		}
+	}
+	if d := in.Database; d != nil && d.OwnerRights {
+		out = append(out, Item{Key: OwnerRights, Severity: Warning})
 	}
 	if d := in.Database; d != nil && !d.EarlierDay.IsZero() && d.EarlierBytes > 0 && now.Sub(d.EarlierDay) >= 7*24*time.Hour {
 		if grew := float64(d.Bytes-d.EarlierBytes) / float64(d.EarlierBytes); grew > GrowthShare {

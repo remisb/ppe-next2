@@ -5,7 +5,7 @@
  * The apps' words are typed against these lists, so a new event cannot be
  * shown without a description.
  */
-export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'settings', 'security'] as const
+export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'settings', 'security', 'audit'] as const
 
 export const AUDIT_EVENTS = [
   'user.created',
@@ -38,6 +38,8 @@ export const AUDIT_EVENTS = [
   'order.deleted',
   'settings.supplier_chat_changed',
   'access_review.completed',
+  'audit.exported',
+  'audit.purged',
 ] as const
 
 /** A group of record types on the Audit log's filter. */

@@ -698,7 +698,7 @@ export interface BackupRun {
 }
 
 /** The record types the API records changes to (entity_type). */
-export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings' | 'access_review'
+export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings' | 'access_review' | 'audit_log'
 
 /** Where a change was made. */
 export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'
@@ -914,6 +914,9 @@ export interface RequestWindow {
 
 export interface DatabaseStatus {
   version: string
+  /** The role the API connects as; owner_rights when it could switch the trails' triggers off (not ppe_app). */
+  user: string
+  owner_rights: boolean
   bytes: number
   /** The size at least 30 days ago, or the earliest kept; null before the first. */
   earlier: { day: string; bytes: number } | null
@@ -931,10 +934,18 @@ export interface SystemStatus {
   database: DatabaseStatus
   pool: { acquired: number; idle: number; max: number; waits: number } | null
   retention: {
+    audit_events_days: number
     auth_events_days: number
     error_events_days: number
     ended_session_days: number
-    last_run: { at: string | null; auth_events_deleted: number; error_events_deleted: number; failed: boolean }
+    last_run: {
+      at: string | null
+      auth_events_deleted: number
+      error_events_deleted: number
+      audit_events_deleted: number
+      days_sealed: number
+      failed: boolean
+    }
   }
   timezone: string
 }
@@ -980,4 +991,33 @@ export interface ClientErrorReport {
   stack?: string
   /** The page's path; the API replaces its ids. */
   path: string
+}
+
+/** What checking the Audit log's seals found (POST /api/v1/audit-events/verify). */
+export interface AuditVerification {
+  checked_at: string
+  ok: boolean
+  /** Seals checked, and the events counted in them. */
+  days: number
+  rows: number
+  /** Sealed days whose events retention deleted: their seals' chain only is checked. */
+  purged_days: number
+  first_day: string | null
+  last_day: string | null
+  /** Events since the last sealed day, not sealed yet. */
+  unsealed: number
+  /** The first day that did not match: its count, its events, its place in the chain, or a missing seal. */
+  mismatch: { day: string; problem: 'rows' | 'hash' | 'chain' | 'gap'; sealed_rows: number; found_rows: number } | null
+}
+
+/** The Audit log's seals, latest check and retention (GET /api/v1/audit-events/integrity). */
+export interface AuditIntegrity {
+  /** The latest check, by the hourly upkeep or Verify; null until the first since the API started. */
+  verification: AuditVerification | null
+  sealed_days: number
+  first_sealed: string | null
+  last_sealed: string | null
+  last_sealed_at: string | null
+  retention_days: number
+  purges: { id: string; before_day: string; rows: number; purged_at: string }[]
 }

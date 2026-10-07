@@ -608,6 +608,20 @@ Rules for using it:
   errors change nothing.
 - **Code:** `internal/system`, table `error_events`. **UI:** System → Errors.
 
+### Seal (of the Audit log)
+- **Brief:** a day's fingerprint of its changes, chained to the day before, so a change
+  altered, added or removed afterwards shows.
+- **Detail:** each UTC day is sealed an hour after it ends. **Verify** recomputes every
+  seal; a day that does not match is an alert on the Audit log and the Overview.
+- **Code:** `internal/audit` (`seal.go`), table `audit_seals`. **UI:** Seals, Sealed through,
+  Verify.
+
+### Export (of the Audit log)
+- **Brief:** a file of the changes the Audit log's filters select between two days, at most
+  a year apart: CSV for a spreadsheet or JSON lines for an archive.
+- **Detail:** needs `audit.export`; each export is itself on the Audit log ("Audit log
+  exported").
+
 ### Changes (of a record)
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.
@@ -806,6 +820,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Confirm your password | Patvirtinkite slaptažodį | Подтвердите пароль |
 | Security | Sauga | Безопасность |
 | Overview / Needs attention | Apžvalga / Reikia dėmesio | Обзор / Требует внимания |
+| Seals / Verify / Export | Antspaudai / Patikrinti / Eksportuoti | Печати / Проверить / Выгрузить |
 | System / Errors / Status | Sistema / Klaidos / Būsena | Система / Ошибки / Состояние |
 | Sign-ins / Sign-in failed / Unknown account | Prisijungimai / Prisijungti nepavyko / Nežinoma paskyra | Входы / Неудачный вход / Неизвестная учётная запись |
 | Access review / Mark as reviewed | Prieigos peržiūra / Pažymėti kaip peržiūrėtą | Проверка доступа / Отметить как проверенный |

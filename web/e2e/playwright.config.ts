@@ -49,7 +49,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: 'go run ./cmd/api',
+      // Empty the database and give ppe_app its password first: the API connects as it (env.ts).
+      command: `node --experimental-strip-types --no-warnings ${join(repoRoot, 'web/e2e/prepare-db.ts')} && go run ./cmd/api`,
       cwd: repoRoot,
       env: apiEnv(),
       url: `http://localhost:${apiPort}/health`,

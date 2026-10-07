@@ -30,6 +30,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		order.EventOrdered, order.EventLinkCreated, order.EventGiven, order.EventDeleted,
 		settings.EventSupplierChatChanged,
 		security.EventAccessReviewCompleted,
+		audit.EventExported, audit.EventPurged,
 	}
 	if !slices.Equal(written, audit.Events()) {
 		t.Errorf("the domains write %v, the catalogue lists %v", written, audit.Events())

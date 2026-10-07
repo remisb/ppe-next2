@@ -65,4 +65,16 @@ for f in "$MIGRATIONS"/*.up.sql; do
 	} | $PSQL -q
 done
 
+# The API's least-privilege role and its grants (internal/db/grants.sql), on
+# every run: they are idempotent, and a restore (pg_restore --no-acl) drops the
+# grants, so the `make prod-up` after it puts them back.
+$PSQL -q -f /grants.sql
+
+# The API's least-privilege role (migration 0026) signs in once .env.prod gives
+# it a password. The password goes to psql on stdin, never on a command line.
+if [ "${API_DB_USER:-}" = ppe_app ] && [ -n "${API_DB_PASSWORD:-}" ]; then
+	printf '\\set pw %s\nALTER ROLE ppe_app WITH LOGIN PASSWORD :'"'"'pw'"'"';\n' "$API_DB_PASSWORD" | $PSQL -q
+	echo "migrate: ppe_app can sign in"
+fi
+
 echo "migrate: up to date"

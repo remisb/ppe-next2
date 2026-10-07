@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -33,7 +35,9 @@ import (
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
-// when it is unset. Tables are emptied first.
+// when it is unset. Tables are emptied first. The services connect as the
+// API's role ppe_app, as in production, so every flow here exercises its
+// grants; the pool returned is the owner's, for setup.
 func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	t.Helper()
 	dsn := os.Getenv("API_TEST_DB_DSN")
@@ -46,18 +50,21 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE`); err != nil {
+	// audit_seals and audit_purges reference nothing, so the cascade misses them.
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	// The truncation reaches roles through their actor keys.
 	if err := role.EnsureBuiltins(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
+	owner := pool
+	pool = dbtest.AppPool(t, owner, dsn)
 	fastHash := user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p })
 	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(testSecret), sessionLimits(testConfig()))
 	roles := role.NewService(role.NewPostgresRepository(pool))
 	svc := newServices(
-		time.UTC, time.Hour,
+		time.UTC, time.Hour, 0,
 		sessions,
 		security.NewService(security.NewPostgresStore(pool), securityConfig(testConfig())),
 		roles,
@@ -80,7 +87,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	}
 	tok := testTokens(time.Now())
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
-	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}, pool
+	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}, owner
 }
 
 func decode[T any](t *testing.T, body []byte) T {
@@ -599,7 +606,7 @@ func TestPostgresConfirmationHTTP(t *testing.T) {
 // no agent, no runs (an empty list, never null), overdue.
 func TestPostgresBackupsHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
-	if _, err := pool.Exec(context.Background(), `TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
+	if _, err := pool.Exec(context.Background(), `SET LOCAL ppe.allow_truncate = on; TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
 		t.Fatal(err)
 	}
 	_, adminTok := api.userWith(t, role.KeyAdmin)
@@ -844,7 +851,7 @@ func TestPostgresReady(t *testing.T) {
 func TestPostgresAuditLogHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
 	ctx := context.Background()
-	if _, err := pool.Exec(ctx, `TRUNCATE audit_events`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE audit_events`); err != nil {
 		t.Fatal(err)
 	}
 	staffUser, staff := api.userWith(t, role.KeyEmployee)
@@ -1040,7 +1047,7 @@ func TestPostgresSecurityHTTP(t *testing.T) {
 func TestPostgresSystemHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
 	ctx := context.Background()
-	if _, err := pool.Exec(ctx, `TRUNCATE error_events`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE error_events`); err != nil {
 		t.Fatal(err)
 	}
 	_, admin := api.userWith(t, role.KeyAdmin)
@@ -1050,7 +1057,7 @@ func TestPostgresSystemHTTP(t *testing.T) {
 	}
 	rec := api.do(t, "GET", "/api/v1/system/status", admin, nil)
 	var st SystemStatus
-	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil || rec.Code != 200 || st.Database.Version == "" ||
+	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil || rec.Code != 200 || st.Database.User != "ppe_app" || st.Database.OwnerRights || st.Database.Version == "" ||
 		st.Database.Bytes <= 0 || st.Database.LatestMigration == nil || len(st.Database.Tables) == 0 || st.Pool == nil {
 		t.Fatalf("status = %d %s", rec.Code, rec.Body)
 	}
@@ -1070,5 +1077,104 @@ func TestPostgresSystemHTTP(t *testing.T) {
 	var o Overview
 	if err := json.Unmarshal(rec.Body.Bytes(), &o); err != nil || o.Requests == nil || o.Requests.NewErrorKinds != 1 || o.Requests.DatabaseBytes <= 0 {
 		t.Errorf("overview = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// TestPostgresAPIRoleIsLeastPrivileged: the role the API connects as
+// (migration 0026) writes the business tables, but cannot change or delete
+// the trails, truncate, alter the schema or write the migrations' record; it
+// purges only through the owner's functions. The owner cannot truncate a
+// trail by mistake either.
+func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
+	_, owner := newPostgresAPI(t)
+	app := dbtest.AppPool(t, owner, os.Getenv("API_TEST_DB_DSN"))
+	ctx := context.Background()
+	var who string
+	if err := app.QueryRow(ctx, `SELECT current_user`).Scan(&who); err != nil || who != "ppe_app" {
+		t.Fatalf("connected as %q, %v", who, err)
+	}
+	denied := func(sql string) {
+		t.Helper()
+		_, err := app.Exec(ctx, sql)
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "42501" {
+			t.Errorf("%s: %v, want permission denied", sql, err)
+		}
+	}
+	for _, sql := range []string{
+		`UPDATE audit_events SET event = event`,
+		`DELETE FROM audit_events`,
+		`DELETE FROM auth_events`,
+		`UPDATE order_lines SET quantity = quantity`,
+		`DELETE FROM audit_seals`,
+		`TRUNCATE users CASCADE`,
+		`TRUNCATE app_settings`,
+		`INSERT INTO schema_migrations (filename) VALUES ('9999_x.up.sql')`,
+		`DELETE FROM dbbackup_runs`,
+		`DROP TRIGGER audit_events_no_update_delete ON audit_events`,
+		`ALTER TABLE users ADD COLUMN x int`,
+		`CREATE TABLE x (id int)`,
+	} {
+		denied(sql)
+	}
+	// What it does need.
+	for _, sql := range []string{
+		`UPDATE app_settings SET supplier_chat_link = supplier_chat_link`,
+		`SELECT purge_auth_events(now() - interval '31 days')`,
+		`SELECT purge_audit_events(now() - interval '366 days')`,
+		`SELECT count(*) FROM pg_stat_activity WHERE state IS NOT NULL`,
+	} {
+		if _, err := app.Exec(ctx, sql); err != nil {
+			t.Errorf("%s: %v", sql, err)
+		}
+	}
+	if _, err := app.Exec(ctx, `SELECT purge_audit_events(now() - interval '30 days')`); err == nil {
+		t.Error("the purge deleted events younger than a year")
+	}
+	if _, err := owner.Exec(ctx, `TRUNCATE audit_events`); err == nil || !strings.Contains(err.Error(), "may not be truncated") {
+		t.Errorf("the owner truncated the trail: %v", err)
+	}
+}
+
+// TestPostgresAuditExportHTTP: an export is a file of the chosen days, needs
+// audit.export, and is itself on the Audit log; Verify checks the seals.
+func TestPostgresAuditExportHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, admin := api.userWith(t, role.KeyAdmin)
+	_, mgr := api.userWith(t, role.KeyManager)
+	if rec := api.do(t, "POST", "/api/v1/employees", admin, map[string]any{"first_name": "=cmd|calc", "last_name": "Ona"}); rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	today := time.Now().Format("2006-01-02")
+
+	if rec := api.do(t, "GET", "/api/v1/audit-events/export?format=csv&from="+today+"&to="+today, mgr, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager exports: %d", rec.Code)
+	}
+	for _, q := range []string{"format=csv", "format=xlsx&from=" + today + "&to=" + today, "format=csv&from=2024-01-01&to=" + today, "format=csv&colour=red"} {
+		if rec := api.do(t, "GET", "/api/v1/audit-events/export?"+q, admin, nil); rec.Code != http.StatusBadRequest || rec.Header().Get("Content-Disposition") != "" {
+			t.Errorf("%s = %d %s", q, rec.Code, rec.Header())
+		}
+	}
+	rec := api.do(t, "GET", "/api/v1/audit-events/export?format=csv&area=employees&from="+today+"&to="+today, admin, nil)
+	body := rec.Body.String()
+	if rec.Code != 200 || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/csv") ||
+		rec.Header().Get("Content-Disposition") != `attachment; filename="audit-log-`+today+`-`+today+`.csv"` ||
+		!strings.HasPrefix(body, "occurred_at,event,") || !strings.Contains(body, "employee.created") || !strings.Contains(body, "'=cmd|calc Ona") {
+		t.Fatalf("export = %d %v\n%s", rec.Code, rec.Header(), body)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?event=audit.exported", admin, nil)
+	if !strings.Contains(rec.Body.String(), `"format":"csv"`) || !strings.Contains(rec.Body.String(), `"area":"employees"`) {
+		t.Errorf("the export is not on the log: %s", rec.Body)
+	}
+
+	rec = api.do(t, "POST", "/api/v1/audit-events/verify", admin, nil)
+	v := decode[audit.Verification](t, rec.Body.Bytes())
+	if rec.Code != 200 || !v.OK || v.Unsealed < 2 {
+		t.Errorf("verify = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events/integrity", admin, nil)
+	in := decode[Integrity](t, rec.Body.Bytes())
+	if rec.Code != 200 || in.Verification == nil || !in.Verification.OK || in.Purges == nil {
+		t.Errorf("integrity = %d %s", rec.Code, rec.Body)
 	}
 }

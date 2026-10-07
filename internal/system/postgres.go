@@ -112,13 +112,17 @@ func (s *PostgresStore) PurgeErrors(ctx context.Context, before time.Time) (int6
 func (s *PostgresStore) Database(ctx context.Context, now time.Time) (Database, error) {
 	d := Database{Connections: map[string]int{}, Tables: []Table{}}
 	if err := s.pool.QueryRow(ctx, `
-		SELECT current_setting('server_version'), pg_database_size(current_database()),
+		SELECT current_user,
+			coalesce((SELECT rolsuper FROM pg_roles WHERE rolname = current_user), false)
+				OR coalesce(pg_has_role(current_user, (SELECT tableowner FROM pg_tables
+					WHERE schemaname = 'public' AND tablename = 'audit_events'), 'MEMBER'), false),
+			current_setting('server_version'), pg_database_size(current_database()),
 			current_setting('max_connections')::int,
 			coalesce(extract(epoch FROM now() - (
 				SELECT min(xact_start) FROM pg_stat_activity
 				WHERE datname = current_database() AND xact_start IS NOT NULL AND pid <> pg_backend_pid()
 					AND state <> 'idle')), 0)::float8`).
-		Scan(&d.Version, &d.Bytes, &d.MaxConnections, &d.OldestTransactionSeconds); err != nil {
+		Scan(&d.User, &d.OwnerRights, &d.Version, &d.Bytes, &d.MaxConnections, &d.OldestTransactionSeconds); err != nil {
 		return d, err
 	}
 

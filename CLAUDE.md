@@ -64,11 +64,16 @@ in memory, Prometheus `/metrics` on `API_METRICS_ADDR`), the database, the error
 (`internal/system`, `error_events`: 5xx answers, panics, the apps' browser errors) and Backups as a tab;
 the **Overview**, Administration's first screen, lists what needs attention
 (`internal/overview`) for whatever areas the reader may open. Every request's ID is on its log
-lines (`request_id`) and a 500's `reference`, which the apps show.
+lines (`request_id`) and a 500's `reference`, which the apps show. The **Audit log** is sealed
+daily (`audit_seals`, migration 0026: each UTC day's events hashed and chained), verified
+hourly and on demand, purged after `API_AUDIT_RETENTION` (10 years) and exported by
+`audit.export` (spec `docs/specs/audit-service.md`).
 
-Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
-UPDATE/DELETE via triggers (`auth_events` too, except the purge's DELETE of rows older than
-30 days); `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
+Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
+`audit_seals` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
+go through the owner's `SECURITY DEFINER` functions `purge_audit_events` (rows over 365
+days) and `purge_auth_events` (over 30 days)), and the five refuse TRUNCATE unless the
+transaction sets `SET LOCAL ppe.allow_truncate = on`, as test setup does; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
 `given_*` columns to the status; a catalogue item's accounting price and service period are
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
@@ -83,7 +88,14 @@ A manager may
 soft-delete an order (`DELETE /api/v1/orders/{id}`, manager role only, migration 0015), so
 every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
 dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests
-must `TRUNCATE ... CASCADE` because of the actor foreign keys.
+must `TRUNCATE ... CASCADE` because of the actor foreign keys, after
+`SET LOCAL ppe.allow_truncate = on` in the same `Exec`, and must name `audit_seals,
+audit_purges` when they empty `audit_events`.
+The API connects as the least-privilege role **`ppe_app`** in production (once
+`API_DB_USER`/`API_DB_PASSWORD` are set) and in the API's Postgres tests and e2e; its
+grants are `internal/db/grants.sql`, applied after the migrations on every `make migrate`
+and `deploy/migrate.sh` run. A new append-only table goes into its REVOKE line, and a
+migration that needs ppe_app to do anything beyond DML on new tables changes grants.sql.
 
 ## Commands
 
@@ -161,6 +173,10 @@ binary probes its own `/ready`, as scratch has no curl); Docker shows but never 
 shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).
 The external uptime check of `https://<site>/ready` and DigitalOcean's CPU/memory/disk alerts
 are account settings, described in `docs/monitoring.md`.
+The API connects as `ppe_app` once `.env.prod` has `API_DB_USER=ppe_app` and a generated
+`API_DB_PASSWORD` (`docs/monitoring.md` has the steps); until then as the owner, and the
+Overview warns. After `make prod-restore`, start again with `make prod-up`: the restore drops
+grants and `migrate` puts them back.
 
 Accounts need a password, so the first admin is created by a person: set
 `API_SEED_USER_EMAIL`/`_PASSWORD` in `.env.prod`, run `make prod-seed-admin`, then blank
@@ -179,7 +195,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
   uptime check and droplet alerts, and what to look at when one fires.
 - `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
-  audit log, security, usage analytics and monitoring, in phases (phases 0–3 are built).
+  audit log, security, usage analytics and monitoring, in phases (phases 0–4 are built).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.
@@ -251,7 +267,9 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   `WithHasher` to skip bcrypt.
 - `postgres_test.go`: real Postgres via `API_TEST_DB_DSN`, `t.Skip` when unset, truncates first.
 - `cmd/api/routes_test.go` pins the access policy of every route (stub repos; no DB).
-  `cmd/api/api_postgres_test.go` runs HTTP flows against the real repositories.
+  `cmd/api/api_postgres_test.go` runs HTTP flows against the real repositories, connected
+  as `ppe_app` (`internal/db/dbtest.AppPool`, which sets its test password through the
+  owner); `TestPostgresAPIRoleIsLeastPrivileged` pins what that role may not do.
 - Postgres tests in different packages share one database and truncate it, so always run
   them with `-p 1` (as `make test`/`make test-db` do).
 - The Makefile exports `.env`, so tests that need a var unset must `t.Setenv(key, "")`.
@@ -261,7 +279,9 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 ### End-to-end (`web/e2e`)
 
 One serial spec drives the whole lifecycle through the real UI, API and a `*_test`
-database (global setup truncates it and seeds a test admin via `api -seed-admin`). Run
+database. Playwright starts its web servers before global setup, so the API's command
+first runs `web/e2e/prepare-db.ts` (empties the database, gives `ppe_app` its test password:
+the API connects as it); global setup then seeds a test admin via `api -seed-admin`. Run
 `pnpm exec playwright install chromium` once. Do not run it while `make test-db` runs.
 The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode

@@ -10,6 +10,11 @@ export const overview: OverviewText = {
   allClearHint: 'Atsarginės kopijos, prisijungimai, klaidos ir prieigos peržiūra tikrinami kaskart įkeliant šį puslapį.',
   severity: { critical: 'Kritinė', warning: 'Įspėjimas', info: 'Pastaba' },
   items: {
+    audit_seal_mismatch: {
+      title: 'Audito žurnalas nesutampa su antspaudais',
+      detail: () => 'Užantspauduotos dienos pakeitimai pakeisti, pridėti ar pašalinti aplenkiant programą. Išsaugokite ankstesnes atsargines kopijas.',
+      action: 'Atidaryti audito žurnalą',
+    },
     backups_not_running: {
       title: 'Atsarginės kopijos nedaromos',
       detail: () => 'Naujos kopijos nėra arba atsarginių kopijų tarnyba nebepraneša.',
@@ -56,6 +61,11 @@ export const overview: OverviewText = {
       detail: ({ days }) =>
         days > 0 ? `Prieiga paskutinį kartą peržiūrėta prieš ${days} d. Peržiūrėkite ją kas 90 dienų.` : 'Prieiga dar nebuvo peržiūrėta. Peržiūrėkite ją kas 90 dienų.',
       action: 'Atidaryti prieigos peržiūrą',
+    },
+    database_owner_rights: {
+      title: 'API jungiasi kaip duomenų bazės savininkas',
+      detail: () => 'Ji galėtų išjungti tai, kas saugo audito žurnalą nuo pakeitimų. Suteikite jai ppe_app rolę: serveryje nustatykite API_DB_USER ir API_DB_PASSWORD.',
+      action: 'Atidaryti sistemą',
     },
     database_growth: {
       title: 'Duomenų bazė sparčiai auga',

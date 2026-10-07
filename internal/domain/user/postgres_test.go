@@ -34,7 +34,7 @@ func newTestPool(t *testing.T) *pgxpool.Pool {
 	if err := pool.Ping(ctx); err != nil {
 		t.Fatalf("ping test db: %v", err)
 	}
-	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE`); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 	// The truncation reaches roles through their actor keys.

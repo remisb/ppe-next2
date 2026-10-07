@@ -10,6 +10,7 @@ export const PERMISSIONS = [
   'settings.manage',
   'backups.read',
   'audit.read',
+  'audit.export',
   'security.read',
   'system.read',
   'employees.delete',

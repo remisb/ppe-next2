@@ -175,6 +175,21 @@ Not a manual rule: the record of who changed what ([specs/audit-service.md](spec
 | Values read in the user's language: euros, months, sizes, languages, roles and permissions by name; the pre-0021 price key | `@ppe/audit` `describe.test.ts` |
 | Audit log screen: filters and the open change in the address, kept through a reload; a change's fields and where it was made; a record's changes; the item page's Changes; no sideways scroll on a phone or tablet; the phone bar one row with five sections | admin web `router` tests; e2e *Audit log: who changed a price…*, *phone and tablet: …*, *Language: …* (Russian) |
 
+## Integrity and retention
+
+Not a manual rule: the Audit log's seals, retention, export and the API's database role
+([specs/audit-service.md](specs/audit-service.md), ADR 0003).
+
+| Rule | Covered by |
+| --- | --- |
+| Every ended UTC day (an hour's grace) is sealed once, empty days too, each seal chained to the one before; another instance's seal of the same day stops the run | `audit.TestSealAndVerify`, `audit.TestPostgresSealsAndVerify` |
+| Verify recomputes every seal from what Postgres stores and names the first day whose events were altered, added or removed, whose seal does not follow the one before, or whose seal is missing; it counts the events not yet sealed | `audit.TestSealAndVerify`, `audit.TestPostgresSealsAndVerify` (a change made with the triggers off), `TestPostgresAuditExportHTTP` |
+| Events older than `API_AUDIT_RETENTION` (1–20 years, default 10) are purged a whole sealed day at a time, never unsealed ones, through the owner's function; the purge is recorded (`audit_purges`, `audit.purged`) and Verify then checks purged days by their chain | `audit.TestPurgeExpired`, `audit.TestPostgresPurge`, `TestConfigValidate`, `TestLoadConfigDefaults` |
+| An export needs `audit.export`, both days at most a year apart, CSV or JSON lines; it is recorded before a byte is sent; spreadsheet formulas are defused; a refused export is a 400 without a file | `audit.TestExport`, `TestPostgresAuditExportHTTP`, `TestRoutePolicy`, `TestSeededRolesKeepPolicy`; api-client *downloads an export…*; e2e *Audit log: …* |
+| The API's role `ppe_app` writes the business tables but cannot change, delete or truncate the trails, write the migrations' record or the backup agent's tables, or alter the schema; it purges through the functions, which refuse recent rows; the owner cannot truncate a trail without the flag | `TestPostgresAPIRoleIsLeastPrivileged`, every `TestPostgres…HTTP` and the e2e suite (which run as `ppe_app`) |
+| The grants hold after a restore: `make migrate` / `migrate.sh` apply `grants.sql` every run | `make migrate` (CI migrates down and up again); restore steps in `docs/backups.md` |
+| System shows the role the API connects as; the Overview warns when it has the owner's rights, and raises a seal mismatch for `audit.read` | `system.TestPostgresDatabase`, `TestPostgresSystemHTTP`, `overview.TestAttention`; e2e *Overview and System: …* (no warning as `ppe_app`) |
+
 ## Security
 
 Not a manual rule: the security log of sign-ins, everyone's signed-in devices and the access

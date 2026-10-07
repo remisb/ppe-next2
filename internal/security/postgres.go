@@ -262,13 +262,9 @@ func (s *PostgresStore) Purge(ctx context.Context, before time.Time) (int64, err
 		if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock(hashtext($1))`, purgeLock).Scan(&got); err != nil || !got {
 			return err
 		}
-		// The trigger allows a DELETE only in a transaction that says it is the purge.
-		if _, err := tx.Exec(ctx, `SET LOCAL ppe.purge_auth_events = 'on'`); err != nil {
-			return err
-		}
-		tag, err := tx.Exec(ctx, `DELETE FROM auth_events WHERE occurred_at < $1`, before)
-		n = tag.RowsAffected()
-		return err
+		// The API's role cannot DELETE here: purge_auth_events (migration 0026)
+		// runs as the owner and refuses rows younger than 30 days.
+		return tx.QueryRow(ctx, `SELECT purge_auth_events($1)`, before).Scan(&n)
 	})
 	return n, err
 }

@@ -50,8 +50,13 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
+      # With both set (API_DB_USER=ppe_app), migrate.sh lets ppe_app sign in
+      # with this password and the API connects as it (migration 0026).
+      API_DB_USER: ${API_DB_USER:-}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:-}
     volumes:
       - ./internal/db/migrations:/migrations:ro
+      - ./internal/db/grants.sql:/grants.sql:ro
       - ./deploy/migrate.sh:/migrate.sh:ro
     entrypoint: ["/bin/sh", "/migrate.sh"]
     restart: "no"
@@ -75,7 +80,9 @@ services:
     environment:
       API_ADDR: :8090
       # sslmode=disable only because this connection never leaves the host.
-      API_DB_DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      # The least-privilege role ppe_app once API_DB_USER and API_DB_PASSWORD
+      # are set in .env.prod (docs/monitoring.md); the owner until then.
+      API_DB_DSN: postgres://${API_DB_USER:-${POSTGRES_USER}}:${API_DB_PASSWORD:-${POSTGRES_PASSWORD}}@db:5432/${POSTGRES_DB}?sslmode=disable
       API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
       API_JWT_TTL: ${API_JWT_TTL:-15m}
       API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
@@ -90,6 +97,8 @@ services:
       # Prometheus /metrics on the compose network only (no port is published):
       # docker compose exec caddy wget -qO- http://api:9090/metrics
       API_METRICS_ADDR: ":9090"
+      # Audit events are purged after this (ADR 0003: 10 years, to confirm).
+      API_AUDIT_RETENTION: ${API_AUDIT_RETENTION:-87672h}
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

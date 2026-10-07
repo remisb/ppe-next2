@@ -1,3 +1,5 @@
+import { plural } from '@ppe/i18n'
+
 import type { AuditText } from '../en/audit'
 
 export const audit: AuditText = {
@@ -31,4 +33,35 @@ export const audit: AuditText = {
   recordChanges: 'Visi šio įrašo pakeitimai',
   deleted: 'ištrintas',
   unnamed: 'Įrašas be pavadinimo',
+  seals: 'Antspaudai',
+  sealedThrough: 'Užantspauduota iki',
+  notSealedYet: 'Dar neužantspauduota nė viena diena. Kiekviena diena užantspauduojama praėjus valandai po jos pabaigos.',
+  lastChecked: 'patikrinta',
+  notChecked: 'Netikrinta nuo paskutinio API paleidimo.',
+  allMatch: (days: number) =>
+    plural(days, { one: 'Užantspauduota diena sutampa.', few: 'Visos # užantspauduotos dienos sutampa.', other: 'Visos # užantspauduotų dienų sutampa.' }),
+  unsealed: (n: number) =>
+    plural(n, { one: '# vėlesnis pakeitimas dar neužantspauduotas.', few: '# vėlesni pakeitimai dar neužantspauduoti.', other: '# vėlesnių pakeitimų dar neužantspauduota.' }),
+  mismatch: 'Užantspauduota diena nesutampa',
+  problems: {
+    rows: 'pakeitimas pridėtas arba pašalintas',
+    hash: 'pakeitimas pakeistas',
+    chain: 'jos antspaudas neseka ankstesnės dienos',
+    gap: 'trūksta dienos antspaudo',
+  },
+  mismatchHint: 'Kažkas pakeitė įrašus aplenkdamas programą. Išsaugokite atsargines kopijas iki tos dienos ir praneškite serverį prižiūrinčiam asmeniui.',
+  verify: 'Patikrinti',
+  verifying: 'Tikrinama…',
+  keptFor: (years: number) => `Pakeitimai laikomi ${years} m., paskui trinami po dieną.`,
+  sealsHint: 'Kiekvienos dienos pakeitimai užantspauduojami maiša, kuri apima ir ankstesnę dieną, todėl vėliau pakeistas, pridėtas ar pašalintas pakeitimas išryškėja. Patikrinimas perskaičiuoja visus antspaudus.',
+  exportAction: 'Eksportuoti',
+  exportTitle: 'Eksportuoti audito žurnalą',
+  exportHint: 'Pakeitimai pagal filtrus tarp dviejų dienų, ne daugiau kaip metai. Pats eksportas užfiksuojamas audito žurnale.',
+  format: 'Formatas',
+  csv: 'CSV, skaičiuoklei',
+  jsonl: 'JSON eilutės, archyvui',
+  download: 'Atsisiųsti',
+  exporting: 'Eksportuojama…',
+  exportNeedsDays: 'Pasirinkite abi dienas.',
+  exportTooLong: 'Pasirinkite ne daugiau kaip metus.',
 }

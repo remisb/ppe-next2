@@ -234,6 +234,12 @@ function Database({ s, className }: { s: SystemStatus; className?: string }) {
           {growth ? <span className="block text-xs text-muted-foreground">{growth}</span> : null}
         </Fact>
         <Fact label={t.system.postgres}>{d.version}</Fact>
+        <Fact label={t.system.connectedAs}>
+          <code className="text-xs">{d.user}</code>
+          <span className={cn('block text-xs', d.owner_rights ? 'text-destructive' : 'text-muted-foreground')}>
+            {d.owner_rights ? t.system.ownerWarning : t.system.leastPrivilege}
+          </span>
+        </Fact>
         <Fact label={t.system.connections}>
           {t.system.connectionsDetail(d.connections['active'] ?? 0, d.connections['idle'] ?? 0, d.max_connections)}
         </Fact>
@@ -276,6 +282,7 @@ function Retention({ s, timeZone }: { s: SystemStatus; timeZone: string | undefi
   return (
     <Panel title={t.system.retention} description={t.system.retentionHint}>
       <dl className="divide-y divide-border">
+        <Fact label={t.system.auditRecords}>{t.system.days(r.audit_events_days)}</Fact>
         <Fact label={t.system.signInRecords}>{t.system.days(r.auth_events_days)}</Fact>
         <Fact label={t.system.errorRecords}>{t.system.days(r.error_events_days)}</Fact>
         <Fact label={t.system.endedSignIns}>{t.system.days(r.ended_session_days)}</Fact>
@@ -285,6 +292,7 @@ function Retention({ s, timeZone }: { s: SystemStatus; timeZone: string | undefi
               <RelativeDate iso={r.last_run.at} timeZone={timeZone} time sentence />
               <span className="block text-xs text-muted-foreground">
                 {r.last_run.failed ? t.system.upkeepFailed : t.system.upkeepDeleted(r.last_run.auth_events_deleted, r.last_run.error_events_deleted)}
+                {!r.last_run.failed && r.last_run.days_sealed > 0 ? `; ${t.system.upkeepSealed(r.last_run.days_sealed)}` : null}
               </span>
             </>
           ) : (

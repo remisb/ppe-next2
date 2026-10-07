@@ -24,7 +24,7 @@ func TestPostgresRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, `TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE dbbackup_runs, dbbackup_agents`); err != nil {
 		t.Fatal(err)
 	}
 	repo := NewPostgresRepository(pool)

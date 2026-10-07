@@ -11,7 +11,7 @@ func TestConfigValidate(t *testing.T) {
 		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute, SessionMaxAge: 12 * time.Hour,
 		SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, LoginEmailFailures: 10, LoginEmailInterval: 15 * time.Minute,
-		AuthEventsRetention: 180 * 24 * time.Hour, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
+		AuthEventsRetention: 180 * 24 * time.Hour, AuditRetention: 3653 * 24 * time.Hour, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
 		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour,
 	}
 	if err := ok.validate(); err != nil {
@@ -34,6 +34,7 @@ func TestConfigValidate(t *testing.T) {
 		"auth events kept too short":   func(c *config) { c.AuthEventsRetention = 7 * 24 * time.Hour },
 		"auth events kept too long":    func(c *config) { c.AuthEventsRetention = 4 * 365 * 24 * time.Hour },
 		"metrics on the API's address": func(c *config) { c.Addr, c.MetricsAddr = ":8090", ":8090" },
+		"audit kept under a year":      func(c *config) { c.AuditRetention = 300 * 24 * time.Hour },
 		"bad timezone":                 func(c *config) { c.OrgTimezone = "Mars/Olympus" },
 		"relative url":                 func(c *config) { c.PublicBaseURL = "/confirm" },
 		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
@@ -72,7 +73,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR", "API_AUDIT_RETENTION"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -87,7 +88,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" ||
 		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour || c.LoginEmailFailures != 10 || c.LoginEmailInterval != 15*time.Minute ||
 		c.SessionKeepMaxAge != 30*24*time.Hour || c.SessionKeepIdle != 14*24*time.Hour || c.RecentSignIn != 12*time.Hour ||
-		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" {
+		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour {
 		t.Errorf("defaults = %+v", c)
 	}
 	if len(c.TrustedProxies) != 0 {

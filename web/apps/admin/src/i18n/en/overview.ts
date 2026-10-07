@@ -17,6 +17,11 @@ export const overview = {
   allClearHint: 'Backups, sign-ins, errors and the access review are checked each time this page loads.',
   severity: { critical: 'Critical', warning: 'Warning', info: 'Note' },
   items: {
+    audit_seal_mismatch: {
+      title: 'The Audit log does not match its seals',
+      detail: () => 'A sealed day’s changes were altered, added or removed behind the app. Keep the backups from before it.',
+      action: 'Open the Audit log',
+    },
     backups_not_running: {
       title: 'Backups are not running',
       detail: () => 'There is no recent backup, or the backup service has stopped reporting.',
@@ -55,6 +60,11 @@ export const overview = {
       title: 'Access review is due',
       detail: ({ days }) => (days > 0 ? `Access was last reviewed ${days} days ago. Review it every 90 days.` : 'Access has not been reviewed yet. Review it every 90 days.'),
       action: 'Open Access review',
+    },
+    database_owner_rights: {
+      title: 'The API connects as the database owner',
+      detail: () => 'It could switch off what keeps the Audit log append-only. Give it the ppe_app role: set API_DB_USER and API_DB_PASSWORD on the server.',
+      action: 'Open System',
     },
     database_growth: {
       title: 'The database is growing fast',

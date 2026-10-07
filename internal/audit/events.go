@@ -13,6 +13,16 @@ const (
 	AreaOrders    Area = "orders"
 	AreaSettings  Area = "settings"
 	AreaSecurity  Area = "security" // the access review
+	AreaAudit     Area = "audit"    // the Audit log's own exports and purges
+)
+
+// The Audit log's own events: an export (audit.export) and a purge of events
+// older than API_AUDIT_RETENTION.
+const (
+	EventExported = "audit.exported"
+	EventPurged   = "audit.purged"
+	// EntityLog is their entity type; each has an id of its own.
+	EntityLog = "audit_log"
 )
 
 // areas lists every Area, in the Audit log filter's order, with the entity
@@ -28,6 +38,7 @@ var areas = []struct {
 	{AreaOrders, []string{"order"}},
 	{AreaSettings, []string{"settings"}},
 	{AreaSecurity, []string{"access_review"}},
+	{AreaAudit, []string{EntityLog}},
 }
 
 // events is every event name the domains write, in the Audit log filter's
@@ -45,6 +56,7 @@ var events = []string{
 	"order.ordered", "order.confirmation_link_created", "order.given", "order.deleted",
 	"settings.supplier_chat_changed",
 	"access_review.completed",
+	EventExported, EventPurged,
 }
 
 // Events returns every known event name.

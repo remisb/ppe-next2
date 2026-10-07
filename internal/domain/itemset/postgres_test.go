@@ -25,7 +25,7 @@ func newTestPool(t *testing.T, n int) (*pgxpool.Pool, uuid.UUID, []uuid.UUID) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	if _, err := pool.Exec(ctx, `TRUNCATE users CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	actor := uuid.New()

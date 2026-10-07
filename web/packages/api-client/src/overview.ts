@@ -4,6 +4,7 @@
  * typed against this list.
  */
 export const ATTENTION_KEYS = [
+  'audit_seal_mismatch',
   'backups_not_running',
   'last_backup_failed',
   'copied_sign_in',
@@ -11,6 +12,7 @@ export const ATTENTION_KEYS = [
   'error_rate',
   'new_errors',
   'review_overdue',
+  'database_owner_rights',
   'database_growth',
 ] as const
 

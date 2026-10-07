@@ -2,9 +2,11 @@ import { ApiError, NetworkError } from './errors.ts'
 import type {
   AccessReview,
   AuditEntry,
+  AuditIntegrity,
   AuditPage,
   AuditQuery,
   AuditRecordKind,
+  AuditVerification,
   BackupStatus,
   CatalogueItem,
   CatalogueItemInput,
@@ -96,6 +98,30 @@ export function createClient(options: ClientOptions) {
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis)
   const base = options.baseUrl ?? ''
 
+  /** A file the API sends as an attachment, and the name it gives it. */
+  async function download(path: string): Promise<{ blob: Blob; filename: string }> {
+    const get = async () => {
+      const headers: Record<string, string> = {}
+      if (options.app) headers['X-PPE-App'] = options.app
+      const token = options.getToken()
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      try {
+        return await doFetch(base + path, { method: 'GET', headers })
+      } catch (err) {
+        throw new NetworkError(err)
+      }
+    }
+    let res = await get()
+    if (res.status === 401 && options.renew && (await options.renew())) res = await get()
+    if (!res.ok) {
+      const text = await res.text()
+      if (res.status === 401) options.onUnauthenticated?.()
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text))
+    }
+    const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'download'
+    return { blob: await res.blob(), filename: name }
+  }
+
   async function send(method: Method, path: string, body: unknown): Promise<{ res: Response; text: string }> {
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (options.app) headers['X-PPE-App'] = options.app
@@ -172,6 +198,13 @@ export function createClient(options: ClientOptions) {
       list: (query: AuditQuery = {}) => request<AuditPage>('GET', `/api/v1/audit-events${historyQueryString(query)}`),
       get: (id: string) => request<AuditEntry>('GET', `/api/v1/audit-events/${seg(id)}`),
       history: (record: AuditRecordKind, id: string) => request<AuditEntry[]>('GET', `/api/v1/audit-events/${record}/${seg(id)}`),
+      /** The seals, the latest check and the retention (audit.read). */
+      integrity: () => request<AuditIntegrity>('GET', '/api/v1/audit-events/integrity'),
+      /** Recomputes every seal from the events now (audit.read). */
+      verify: () => request<AuditVerification>('POST', '/api/v1/audit-events/verify'),
+      /** The events the filter selects as a CSV or JSON-lines file (audit.export); from and to are required. */
+      export: (format: 'csv' | 'jsonl', query: AuditQuery) =>
+        download(`/api/v1/audit-events/export${historyQueryString({ ...query, format } as AuditQuery)}`),
     },
     /**
      * Administration's Security screen (security.read): sign-ins and failed

@@ -162,6 +162,7 @@ type PoolStatus struct {
 
 // Retention is how long each record is kept, as configured.
 type Retention struct {
+	AuditEventsDays  int    `json:"audit_events_days"`
 	AuthEventsDays   int    `json:"auth_events_days"`
 	ErrorEventsDays  int    `json:"error_events_days"`
 	EndedSessionDays int    `json:"ended_session_days"`
@@ -173,6 +174,7 @@ func systemStatus(r *http.Request, svc services, cfg config) (SystemStatus, erro
 		Service:  ServiceStatus{Commit: buildCommit(), GoVersion: runtime.Version(), StartedAt: svc.started, Ready: true},
 		Requests: svc.window.Snapshot(time.Now()),
 		Retention: Retention{
+			AuditEventsDays:  int(svc.audit.Retention() / (24 * time.Hour)),
 			AuthEventsDays:   int(cfg.AuthEventsRetention / (24 * time.Hour)),
 			ErrorEventsDays:  int(system.Retention / (24 * time.Hour)),
 			EndedSessionDays: 30,
@@ -292,9 +294,15 @@ func buildOverview(r *http.Request, svc services, tok *tokens) (Overview, error)
 			NewErrorKinds: kinds, DatabaseBytes: db.Bytes,
 		}
 		in.Errors = &overview.Errors{LastHourRequests: win.LastHour.Requests, LastHourErrors: win.LastHour.Errors, NewKinds: kinds}
-		in.Database = &overview.Database{Bytes: db.Bytes}
+		in.Database = &overview.Database{Bytes: db.Bytes, OwnerRights: db.OwnerRights}
 		if db.Earlier != nil {
 			in.Database.EarlierBytes, in.Database.EarlierDay = db.Earlier.Bytes, db.Earlier.Day
+		}
+	}
+	if can(role.AuditRead) {
+		in.Audit = &overview.Audit{}
+		if v := svc.audit.LastVerification(); v != nil && v.Mismatch != nil {
+			in.Audit.MismatchDay = v.Mismatch.Day
 		}
 	}
 	out.Attention = overview.Attention(in, now)

@@ -26,7 +26,12 @@ type Sample struct {
 // Database is the database as the System screen shows it.
 type Database struct {
 	Version string `json:"version"`
-	Bytes   int64  `json:"bytes"`
+	// User is the role the API connects as. OwnerRights is true when it is a
+	// superuser or owns the tables, so it could switch the trails' triggers
+	// off: production connects as ppe_app (migration 0026) instead.
+	User        string `json:"user"`
+	OwnerRights bool   `json:"owner_rights"`
+	Bytes       int64  `json:"bytes"`
 	// Earlier is the size at least GrowthSpan ago, or the earliest sample
 	// when there is none that old; nil before the first sample.
 	Earlier *Sample `json:"earlier"`

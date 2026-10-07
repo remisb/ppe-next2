@@ -48,6 +48,10 @@ export const roles = {
     'settings.manage': { label: 'Change Settings', grants: 'The supplier’s WhatsApp group.' },
     'backups.read': { label: 'See Backups', grants: 'Whether the database is backed up, and the recent backups.' },
     'audit.read': { label: 'See the Audit log', grants: 'Every recorded change, who made it and when, across all records.' },
+    'audit.export': {
+      label: 'Export the Audit log',
+      grants: 'Download the changes the filters select, a year at most, as CSV or JSON lines. Each export is recorded.',
+    },
     'security.read': {
       label: 'See Security',
       grants: 'Sign-ins and failed attempts with their addresses, everyone’s signed-in devices, and the access review.',

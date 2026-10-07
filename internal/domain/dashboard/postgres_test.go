@@ -42,7 +42,7 @@ func seedPG(t *testing.T) pgData {
 			t.Fatalf("%s: %v", sql, err)
 		}
 	}
-	exec(`TRUNCATE users CASCADE`)
+	exec(`SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE`)
 
 	now := utc("2026-09-15T10:00:00Z")
 	admin, manager := uuid.New(), uuid.New()

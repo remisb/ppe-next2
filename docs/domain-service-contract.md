@@ -117,6 +117,12 @@ An error the domain does not name (a database failure, a bug) becomes an opaque 
 ([system service](specs/system-service.md)); a sentinel never does. So a domain returns its
 sentinels for every expected refusal, and lets the rest through wrapped, never swallowed.
 
+The API connects as the role `ppe_app` (`internal/db/grants.sql`), which may not UPDATE,
+DELETE or TRUNCATE the append-only tables. A repository that needs to remove trail rows
+calls an owner's `SECURITY DEFINER` function, as the purges do; a new append-only table is
+added to grants.sql's REVOKE line and gets the `append_only()` and `refuse_truncate()`
+triggers (migration 0026).
+
 Sign-ins are not audit events. The session domain records them in the security log
 (`internal/security`, [security service](specs/security-service.md)) the same way: its
 `Mutation` returns the session with a `security.Event`, and the repository writes both

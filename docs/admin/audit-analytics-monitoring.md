@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0–3 built; phases 4–5 proposed**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–4 built; phase 5 proposed**
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -60,6 +60,26 @@ in phases.
 >   Settings are under More, so the bar stays at five columns.
 > - The metrics leave out "audit events written" and refresh reuse; the security log and the
 >   Overview already have the latter. Retention shows no seal yet.
+>
+> **Phase 4 (integrity and retention) is built**, as described in
+> [specs/audit-service.md](../specs/audit-service.md) and ADR 0003, with these differences
+> from 3.5 and 3.6:
+> - **Found while building it:** dbbackup restores with `pg_restore --no-acl`, which drops
+>   every grant. The role's grants are therefore not in a migration. They are in
+>   `internal/db/grants.sql`, which `make migrate` and `deploy/migrate.sh` apply on every
+>   run, so the `make prod-up` after a restore puts them back.
+> - Seals cover UTC days with an hour's grace. Seals anchored outside the database (3.5 C)
+>   are left for later.
+> - The audit purge refuses anything under a year old, so the shortest retention is 366
+>   days. It deletes whole sealed days only, and records itself in `audit_purges` and an
+>   `audit.purged` event.
+> - Production switches to `ppe_app` when `.env.prod` gets `API_DB_USER` and
+>   `API_DB_PASSWORD`. Until then the Overview warns ("The API connects as the database
+>   owner").
+> - The API's Postgres tests and the e2e suite run as `ppe_app`, so a missing grant fails a
+>   test. Test setup sets `ppe.allow_truncate` to empty the database.
+> - An export is recorded before the file is sent, and defuses spreadsheet formulas in
+>   names.
 
 ---
 
@@ -600,7 +620,7 @@ records the decisions in 3.4–3.6 before Phase 2.
 - `/metrics` on an internal port; the rolling 24-hour window.
 - `system.read`; the System screen with Backups as a tab; the Overview with attention items.
 
-### Phase 4: integrity and retention · M–L
+### Phase 4: integrity and retention · M–L · built
 - The `ppe_app` database role and grants; the TRUNCATE guard.
 - `audit_seals`, the seal job and Verify.
 - Retention settings, purge jobs; `audit.export` with CSV/JSONL.

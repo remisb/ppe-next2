@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -51,6 +53,52 @@ func registerAuditRoutes(rt *router, svc services) {
 		}
 		writeJSON(w, http.StatusOK, e)
 	}, role.AuditRead)
+
+	rt.restricted("GET /api/v1/audit-events/integrity", func(w http.ResponseWriter, r *http.Request) {
+		in, err := auditIntegrity(r, svc)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, in)
+	}, role.AuditRead)
+
+	rt.restricted("POST /api/v1/audit-events/verify", func(w http.ResponseWriter, r *http.Request) {
+		v, err := svc.audit.Verify(r.Context())
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, v)
+	}, role.AuditRead)
+
+	rt.restricted("GET /api/v1/audit-events/export", func(w http.ResponseWriter, r *http.Request) {
+		actor, err := actorID(r)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		format := r.URL.Query().Get("format")
+		q := r.URL.Query()
+		q.Del("format")
+		r2 := r.Clone(r.Context())
+		r2.URL.RawQuery = q.Encode()
+		f, err := auditFilter(r2)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		// The headers go out with the first byte, so a refused export is
+		// still answered as an error.
+		out := &attachment{w: w, format: format, name: "audit-log-" + f.FromDate + "-" + f.ToDate + "." + format}
+		if err := svc.audit.Export(r.Context(), f, format, actor, out); err != nil {
+			if out.started {
+				slog.ErrorContext(r.Context(), "audit export cut short", slog.Any("error", err))
+				return
+			}
+			writeError(w, r, err)
+		}
+	}, role.AuditExport)
 
 	history := func(entityType string, exists func(ctx context.Context, id uuid.UUID) error) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -132,4 +180,64 @@ func auditFilter(r *http.Request) (audit.Filter, error) {
 		f.PageSize = n
 	}
 	return f, nil
+}
+
+// attachment writes an export's headers before its first byte.
+type attachment struct {
+	w       http.ResponseWriter
+	format  string
+	name    string
+	started bool
+}
+
+func (a *attachment) Write(b []byte) (int, error) {
+	if !a.started {
+		a.started = true
+		ct := "text/csv; charset=utf-8"
+		if a.format == audit.FormatJSONL {
+			ct = "application/x-ndjson"
+		}
+		h := a.w.Header()
+		h.Set("Content-Type", ct)
+		h.Set("Content-Disposition", `attachment; filename="`+a.name+`"`)
+		h.Set("Cache-Control", "no-store")
+	}
+	return a.w.Write(b)
+}
+
+// Integrity is the Audit log's seals and retention, as the screen shows them.
+type Integrity struct {
+	// Verification is the latest check, by the hourly upkeep or Verify; nil
+	// until the first since the API started.
+	Verification *audit.Verification `json:"verification"`
+	SealedDays   int                 `json:"sealed_days"`
+	FirstSealed  *time.Time          `json:"first_sealed"`
+	LastSealed   *time.Time          `json:"last_sealed"`
+	LastSealedAt *time.Time          `json:"last_sealed_at"`
+	// RetentionDays is API_AUDIT_RETENTION in days.
+	RetentionDays int           `json:"retention_days"`
+	Purges        []audit.Purge `json:"purges"`
+}
+
+func auditIntegrity(r *http.Request, svc services) (Integrity, error) {
+	seals, err := svc.audit.Seals(r.Context())
+	if err != nil {
+		return Integrity{}, err
+	}
+	purges, err := svc.audit.Purges(r.Context())
+	if err != nil {
+		return Integrity{}, err
+	}
+	if purges == nil {
+		purges = make([]audit.Purge, 0)
+	}
+	in := Integrity{
+		Verification: svc.audit.LastVerification(), SealedDays: len(seals),
+		RetentionDays: int(svc.audit.Retention() / (24 * time.Hour)), Purges: purges,
+	}
+	if n := len(seals); n > 0 {
+		first, last, at := seals[0].Day, seals[n-1].Day, seals[n-1].SealedAt
+		in.FirstSealed, in.LastSealed, in.LastSealedAt = &first, &last, &at
+	}
+	return in, nil
 }

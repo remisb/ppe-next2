@@ -77,7 +77,13 @@ make prod-logs                      # the agent logs each run
 
 A restore replaces the database's contents in one transaction (a failed restore changes
 nothing). Stop the API first (`docker compose ... stop api`, or accept that requests
-during the restore may fail), and start it again afterwards. The backup history is in the
+during the restore may fail). Start it again with **`make prod-up`**, not a bare restart.
+The restore leaves out grants (`--no-acl`), and `migrate` puts back what the API's role
+`ppe_app` may do (`internal/db/grants.sql`).
+
+The restored Audit log keeps its seals (`audit_seals`). The upkeep verifies them within the
+hour, and Audit log → Verify does so at once. Events after the backup are gone, and so are
+their seals, so the chain still holds. The backup history is in the
 database too, so after a restore it ends at the restored backup.
 
 ## Restore drill (monthly)
