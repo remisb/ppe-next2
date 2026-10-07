@@ -123,7 +123,7 @@ make test-db          # all tests incl. Postgres ones (refuses if test DSN == ma
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
 go test ./internal/domain/user -run TestAuthenticate   # single test
 cd web/e2e && pnpm exec playwright test -g "paper confirmation"   # one e2e step (suite is serial)
-cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB)
+cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB; stamps its seals with DigiCert, so needs the internet; GUIDE_TSA_URL='' skips that)
 ```
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,

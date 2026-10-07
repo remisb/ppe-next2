@@ -219,6 +219,7 @@ export const en: Guide = {
             'Requests are failing, or a new kind of error appeared.',
             'The access review is due. Review access every 90 days.',
             'The Audit log does not match its seals: someone changed it behind the app.',
+            'Seals are not being timestamped: the timestamp service has not answered for a day.',
           ],
         },
         { p: '**Figures**, below, show active users, who is signed in now, sign-ins today, the last 24 hours of requests, the database and the last backup.' },
@@ -290,7 +291,8 @@ export const en: Guide = {
         {
           ul: [
             "**Seals**, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. **Verify** checks every seal again; the app also checks them every hour.",
-            'If a sealed day does not match, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.',
+            'Each seal also gets a timestamp: a public timestamp service signs the seal with the time. A seal made again later cannot get the original time, so not even someone with access to the server can rewrite the log unnoticed. The panel says through which day the seals are timestamped.',
+            'If a sealed day does not match, or its timestamp is wrong, late or missing, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.',
             '**Export** downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.',
             'Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.',
           ],

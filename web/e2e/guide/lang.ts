@@ -26,6 +26,13 @@ export const locale = { en: 'en-GB', lt: 'lt-LT', ru: 'ru-RU' }[lang]
 export const device = (process.env['GUIDE_DEVICE'] ?? 'desktop') as Device
 if (!deviceOrder.includes(device)) throw new Error(`GUIDE_DEVICE must be phone, tablet or desktop, not ${device}`)
 
+/**
+ * The timestamp service the guide's API anchors the demo's seals with, as
+ * production does (DigiCert's, which needs the internet); GUIDE_TSA_URL=''
+ * leaves them without, and the Audit log then says so.
+ */
+export const tsaURL = process.env['GUIDE_TSA_URL'] ?? 'http://timestamp.digicert.com'
+
 /** What each device's browser calls itself, so Signed-in devices names it as people would see it. */
 export const agents = {
   iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1',

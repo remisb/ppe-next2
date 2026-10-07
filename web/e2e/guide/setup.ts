@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import pg from 'pg'
 
 import { apiEnv, dbDSN, prepareDatabase, repoRoot } from '../env.ts'
-import { agents, lang } from './lang.ts'
+import { agents, lang, tsaURL } from './lang.ts'
 
 /**
  * Like the e2e setup (it empties the same _test database), then the demo data,
@@ -12,8 +12,9 @@ import { agents, lang } from './lang.ts'
  * writes that, not the API, so it is inserted here. Administration's Usage,
  * Security and System read what weeks of use leave behind, so a month of it is
  * inserted too (demoUse), and the API's upkeep then runs once (-upkeep): it
- * seals the demo's past days for the Audit log and samples the data's quality,
- * from which demoQuality draws the trend before today.
+ * seals the demo's past days for the Audit log and timestamps them (tsaURL),
+ * and samples the data's quality, from which demoQuality draws the trend
+ * before today.
  */
 export default async function guideSetup() {
   if (!new URL(dbDSN).pathname.endsWith('_test')) {
@@ -26,7 +27,7 @@ export default async function guideSetup() {
   } finally {
     await client.end()
   }
-  const env = { ...apiEnv(), API_SEED_USER_NAME: 'Office Admin' }
+  const env = { ...apiEnv(), API_SEED_USER_NAME: 'Office Admin', API_AUDIT_TSA_URL: tsaURL }
   for (const flag of ['-seed-admin', '-seed-demo']) {
     execFileSync('go', ['run', './cmd/api', flag], { cwd: repoRoot, env, stdio: 'inherit' })
   }

@@ -271,6 +271,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Requests are failing, or a new kind of error appeared.</li>
       <li>The access review is due. Review access every 90 days.</li>
       <li>The Audit log does not match its seals: someone changed it behind the app.</li>
+      <li>Seals are not being timestamped: the timestamp service has not answered for a day.</li>
     </ul>
     <p><b>Figures</b>, below, show active users, who is signed in now, sign-ins today, the last 24 hours of requests, the database and the last backup.</p>
     <div class="shots">
@@ -317,7 +318,8 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>Filter by <b>Area</b>, <b>Change</b>, <b>Person</b> and dates. Click a change to open it beside the list. It shows each field before and after, and <b>Open in Workwear &amp; Equipment</b> opens the record. <b>All changes to this record</b> narrows the list to it.</p>
     <ul>
       <li><b>Seals</b>, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. <b>Verify</b> checks every seal again; the app also checks them every hour.</li>
-      <li>If a sealed day does not match, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.</li>
+      <li>Each seal also gets a timestamp: a public timestamp service signs the seal with the time. A seal made again later cannot get the original time, so not even someone with access to the server can rewrite the log unnoticed. The panel says through which day the seals are timestamped.</li>
+      <li>If a sealed day does not match, or its timestamp is wrong, late or missing, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.</li>
       <li><b>Export</b> downloads the changes the filters select, between two days at most a year apart, as <b>CSV, for a spreadsheet</b> or <b>JSON lines, for an archive</b>. The export is itself recorded on the Audit log.</li>
       <li>Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.</li>
     </ul>
