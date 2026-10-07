@@ -314,7 +314,7 @@ function BackupCard({ navigate }: { navigate: Navigate }) {
   return (
     <Panel title={t.backups.title}>
       <a
-        {...linkTo({ name: 'administration', path: '/backups' }, navigate)}
+        {...linkTo({ name: 'administration', path: '/system/backups' }, navigate)}
         className="-mx-2 flex min-h-11 items-center gap-3 rounded-md px-2 py-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
       >
         {ok ? (

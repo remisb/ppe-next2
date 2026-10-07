@@ -55,7 +55,7 @@ than the droplet (the droplet is in ams3, so use fra1, for example):
    DBBACKUP_S3_ACCESS_KEY=...
    DBBACKUP_S3_SECRET_KEY=...
    ```
-4. `make prod-build && make prod-up && make prod-backup`, then check the Backups screen.
+4. `make prod-build && make prod-up && make prod-backup`, then check Administration → System → Backups.
 
 ### Encryption (optional)
 
@@ -109,11 +109,11 @@ cannot open the old data directory, so it is a backup and restore into a new vol
    `env -i PATH="$PATH" docker compose -f docker-compose.prod.yml --env-file .env.prod up -d db`,
    then `make prod-restore CONFIRM=yes`.
 6. `make prod-up`. `migrate` finds its bookkeeping restored and applies nothing new.
-7. Check the app and the Backups screen. Rolling back means restoring the two old values
+7. Check the app and System's Backups tab. Rolling back means restoring the two old values
    in `.env.prod` and `make prod-up`.
 
 If step 4 is forgotten, the agent refuses to run an older `pg_dump` against the newer
-server. The failed run, with that reason, shows on the Backups screen.
+server. The failed run, with that reason, shows on System's Backups tab.
 
 ## Costs (DigitalOcean, October 2026, before VAT)
 

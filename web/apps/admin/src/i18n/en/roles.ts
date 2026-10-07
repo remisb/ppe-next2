@@ -52,6 +52,10 @@ export const roles = {
       label: 'See Security',
       grants: 'Sign-ins and failed attempts with their addresses, everyone’s signed-in devices, and the access review.',
     },
+    'system.read': {
+      label: 'See System',
+      grants: 'The API’s state and requests, the database, and the error list with each error’s reference.',
+    },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',

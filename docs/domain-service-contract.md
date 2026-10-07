@@ -112,6 +112,11 @@ deadline: the **actor** still comes in as an explicit argument, never from the c
 A new event name is added to `audit.Events()` and `AUDIT_EVENTS` in `@ppe/api-client`,
 whose words the apps must then supply.
 
+An error the domain does not name (a database failure, a bug) becomes an opaque 500 in
+`writeError`, answered with the request's `reference` and put on System's error list
+([system service](specs/system-service.md)); a sentinel never does. So a domain returns its
+sentinels for every expected refusal, and lets the rest through wrapped, never swallowed.
+
 Sign-ins are not audit events. The session domain records them in the security log
 (`internal/security`, [security service](specs/security-service.md)) the same way: its
 `Mutation` returns the session with a `security.Event`, and the repository writes both

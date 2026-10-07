@@ -8,12 +8,16 @@ import type {
   BackupStatus,
   CatalogueItem,
   CatalogueItemInput,
+  ClientErrorReport,
   ConfirmationLink,
   Dashboard,
   Employee,
   EmployeeDashboard,
   EmployeeInput,
   EmployeeSizesInput,
+  ErrorEvent,
+  ErrorPage,
+  ErrorQuery,
   HistoryQuery,
   ItemSet,
   ItemSetInput,
@@ -25,6 +29,7 @@ import type {
   Order,
   OrderPage,
   OrderRecord,
+  Overview,
   PermissionInfo,
   PriceEntry,
   Resolution,
@@ -37,6 +42,7 @@ import type {
   SignedInDevice,
   Sizes,
   SupplierChatInput,
+  SystemStatus,
   User,
   UserCreateInput,
   UserUpdateInput,
@@ -119,7 +125,7 @@ export function createClient(options: ClientOptions) {
     if (res.status === 204) return undefined as T
     if (!res.ok) {
       if (res.status === 401 && handling.signOut) options.onUnauthenticated?.()
-      throw new ApiError(res.status, errorMessage(text, res.status))
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text))
     }
     return (text ? JSON.parse(text) : undefined) as T
   }
@@ -180,6 +186,19 @@ export function createClient(options: ClientOptions) {
       /** Records that the signed-in user reviewed access now; returns the review. */
       markReviewed: () => request<AccessReview>('POST', '/api/v1/security/access-review'),
     },
+    /**
+     * Administration's System screen (system.read): the API's status and
+     * request figures, the database, and the error list.
+     */
+    system: {
+      status: () => request<SystemStatus>('GET', '/api/v1/system/status'),
+      errors: (query: ErrorQuery = {}) => request<ErrorPage>('GET', `/api/v1/system/errors${historyQueryString(query)}`),
+      error: (id: string) => request<ErrorEvent>('GET', `/api/v1/system/errors/${seg(id)}`),
+    },
+    /** Administration's Overview: what needs attention, of the areas the user may see (any signed-in user). */
+    overview: () => request<Overview>('GET', '/api/v1/overview'),
+    /** Reports an error the app caught in the browser to System's error list (any signed-in user). */
+    reportError: (report: ClientErrorReport) => request<void>('POST', '/api/v1/client-errors', report),
     /** Replacements due: the whole list the dashboards show the start of (any signed-in user). */
     replacements: () => request<Dashboard['replacements']>('GET', '/api/v1/replacements'),
     /** The manager's dashboard; managers only. */
@@ -278,13 +297,23 @@ export function createClient(options: ClientOptions) {
 export type Client = ReturnType<typeof createClient>
 
 /** The query string for a list's filters (Orders, the Audit log, Security), with empty filters left out. */
-export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery): string {
+export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))
   }
   const s = params.toString()
   return s ? `?${s}` : ''
+}
+
+function errorReference(text: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text)
+    const ref = typeof parsed === 'object' && parsed !== null ? (parsed as { reference?: unknown }).reference : undefined
+    return typeof ref === 'string' && ref !== '' ? ref : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function errorMessage(text: string, status: number): string {

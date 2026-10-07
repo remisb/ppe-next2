@@ -41,5 +41,10 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
 export function errorText(err: unknown): string {
   // An action that needed the password again, when the user cancelled the prompt.
   if (err instanceof ApiError && err.status === 403 && err.message === RECENT_SIGN_IN_REQUIRED) return uiText().passwordNotConfirmed
+  // The server's own failure: its words are not for people, its reference is.
+  if (err instanceof ApiError && err.status >= 500) {
+    const ref = err.shortReference
+    return ref ? `${uiText().serverError} ${uiText().reference(ref)}` : uiText().serverError
+  }
   return err instanceof Error ? err.message : uiText().somethingWentWrong
 }

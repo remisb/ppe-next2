@@ -87,6 +87,9 @@ services:
       API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}
       # Security events (sign-ins with their addresses) are deleted after this.
       API_AUTH_EVENTS_RETENTION: ${API_AUTH_EVENTS_RETENTION:-4320h}
+      # Prometheus /metrics on the compose network only (no port is published):
+      # docker compose exec caddy wget -qO- http://api:9090/metrics
+      API_METRICS_ADDR: ":9090"
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

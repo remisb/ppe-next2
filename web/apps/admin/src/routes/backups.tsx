@@ -1,7 +1,7 @@
 import type { BackupStatus } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -14,22 +14,22 @@ import { backupHealth, describeSchedule, formatBytes, formatDuration, healthText
 import { capitalize, formatDateTime, formatRelative } from '@ppe/ui/lib/dates'
 
 /**
- * Backups (/backups, administrators only): whether the database is being
- * backed up, the backup service's settings and its recent runs. It only reads
- * GET /api/v1/backups; the service itself runs on the server (docs/backups.md).
+ * Backups (System's Backups tab, /system/backups; backups.read): whether the
+ * database is being backed up, the backup service's settings and its recent
+ * runs. It only reads GET /api/v1/backups; the service itself runs on the
+ * server (docs/backups.md).
  */
-export function BackupsPage() {
+export function BackupsTab() {
   const { client } = useApi()
   const loaded = useLoad(() => client.backups())
   const s = loaded.data
 
   return (
     <>
-      <PageHeader
-        title={t.backups.title}
-        description={t.backups.description}
-        actions={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />}
-      />
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-prose text-sm text-muted-foreground">{t.backups.description}</p>
+        <RefreshButton loading={loaded.loading} onClick={loaded.reload} />
+      </div>
       {loaded.error ? (
         <ErrorState error={loaded.error} onRetry={loaded.reload} />
       ) : !s ? (

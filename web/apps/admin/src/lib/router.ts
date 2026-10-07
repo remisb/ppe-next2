@@ -1,5 +1,5 @@
 import type { AuditEntityType, Permission } from '@ppe/api-client'
-import { type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
+import { ADMINISTRATION_PERMISSIONS, type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
 
 /**
  * The Audit log's filters, as its address carries them (/audit?area=…), so a
@@ -33,10 +33,24 @@ export const securityTabs = ['sign-ins', 'devices', 'review'] as const
 
 export type SecurityTab = (typeof securityTabs)[number]
 
+/** System's tabs: the API and database (/system), the error list, and the backups. */
+export const systemTabs = ['status', 'errors', 'backups'] as const
+
+export type SystemTab = (typeof systemTabs)[number]
+
+/** The permission each System tab needs. */
+export const systemTabPermission: Record<SystemTab, Permission> = {
+  status: 'system.read',
+  errors: 'system.read',
+  backups: 'backups.read',
+}
+
 /** Administration's screens, at their addresses under /admin. */
 export type Route =
-  /** The root: the first screen the user may open (see startRoute). */
+  /** An unknown address: the first screen the user may open (see startRoute). */
   | { name: 'home' }
+  /** The Overview at the root: what needs attention, then figures. */
+  | { name: 'overview' }
   /** User accounts and the roles each holds. */
   | { name: 'users' }
   /** Roles & permissions: what each role allows. */
@@ -47,27 +61,27 @@ export type Route =
   | { name: 'security'; tab: SecurityTab; filter: SecurityFilter }
   /** The organisation's settings (the supplier's WhatsApp group). */
   | { name: 'settings' }
-  /** The database backups the backup service takes. */
-  | { name: 'backups' }
+  /** The API, the database, the error list (error: the one open beside it) and the backups. */
+  | { name: 'system'; tab: SystemTab; error?: string }
 
 export type Screen = Exclude<Route['name'], 'home'>
 
-const paths: Record<Exclude<Route['name'], 'audit' | 'security'>, string> = {
-  home: '/',
+const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'home'>, string> = {
+  overview: '/',
   users: '/users',
   roles: '/roles',
   settings: '/settings',
-  backups: '/backups',
 }
 
-/** The permission that opens each screen, in the Main navigation's order. */
-export const screens: readonly { name: Screen; permission: Permission }[] = [
-  { name: 'users', permission: 'users.manage' },
-  { name: 'roles', permission: 'roles.manage' },
-  { name: 'audit', permission: 'audit.read' },
-  { name: 'security', permission: 'security.read' },
-  { name: 'settings', permission: 'settings.manage' },
-  { name: 'backups', permission: 'backups.read' },
+/** The permissions that open each screen (any one of them), in the Main navigation's order. */
+export const screens: readonly { name: Screen; permissions: readonly Permission[] }[] = [
+  { name: 'overview', permissions: ADMINISTRATION_PERMISSIONS },
+  { name: 'users', permissions: ['users.manage'] },
+  { name: 'roles', permissions: ['roles.manage'] },
+  { name: 'audit', permissions: ['audit.read'] },
+  { name: 'security', permissions: ['security.read'] },
+  { name: 'system', permissions: ['system.read', 'backups.read'] },
+  { name: 'settings', permissions: ['settings.manage'] },
 ]
 
 /** Unknown paths land on the start screen, as the root does. */
@@ -95,6 +109,14 @@ export function parsePath(pathname: string, search = ''): Route {
     }
     return { name: 'security', tab: (security[1] as SecurityTab | undefined) ?? 'sign-ins', filter }
   }
+  // Backups was a screen of its own before System.
+  if (path === '/backups') return { name: 'system', tab: 'backups' }
+  const system = /^\/system(?:\/(errors|backups))?(?:\/([^/]+))?$/.exec(path)
+  if (system) {
+    const tab = (system[1] as SystemTab | undefined) ?? 'status'
+    if (system[2] && tab !== 'errors') return { name: 'home' }
+    return system[2] ? { name: 'system', tab, error: decodeURIComponent(system[2]) } : { name: 'system', tab }
+  }
   for (const [name, p] of Object.entries(paths)) {
     if (p === path) return { name } as Route
   }
@@ -112,6 +134,11 @@ export function pathOf(route: Route): string {
     const q = query.toString()
     return q ? `/security?${q}` : '/security'
   }
+  if (route.name === 'system') {
+    if (route.tab === 'status') return '/system'
+    return route.error ? `/system/errors/${encodeURIComponent(route.error)}` : `/system/${route.tab}`
+  }
+  if (route.name === 'home') return '/'
   if (route.name !== 'audit') return paths[route.name]
   const query = new URLSearchParams()
   for (const key of auditFilterKeys) {
@@ -123,21 +150,28 @@ export function pathOf(route: Route): string {
   return q ? `${path}?${q}` : path
 }
 
-/** The route of a screen opened from the navigation: the Audit log unfiltered, Security on its first tab. */
-export function screenRoute(name: Screen): Route {
+/**
+ * The route of a screen opened from the navigation: the Audit log unfiltered,
+ * Security and System on their first tab the user may open.
+ */
+export function screenRoute(name: Screen, can: (p: Permission) => boolean = () => true): Route {
   if (name === 'audit') return { name, filter: {} }
   if (name === 'security') return { name, tab: 'sign-ins', filter: {} }
+  if (name === 'system') return { name, tab: systemTabs.find((tab) => can(systemTabPermission[tab])) ?? 'status' }
   return { name } as Route
 }
 
 /**
- * The screen to show for route: the root, or a screen the user may not open,
- * is the first screen they may open; none at all is null (not for them).
+ * The screen to show for route: an unknown address, a screen the user may
+ * not open, or a System tab they may not, is the first screen they may open
+ * (the Overview); none at all is null (not for them).
  */
 export function startRoute(route: Route, can: (p: Permission) => boolean): Route | null {
-  const allowed = screens.filter((s) => can(s.permission))
-  if (route.name !== 'home' && allowed.some((s) => s.name === route.name)) return route
-  return allowed[0] ? screenRoute(allowed[0].name) : null
+  const allowed = screens.filter((s) => s.permissions.some(can))
+  if (route.name !== 'home' && allowed.some((s) => s.name === route.name)) {
+    return route.name === 'system' && !can(systemTabPermission[route.tab]) ? screenRoute('system', can) : route
+  }
+  return allowed[0] ? screenRoute(allowed[0].name, can) : null
 }
 
 const addresses = { parse: (pathname: string, search: string) => parsePath(pathname, search), pathOf }

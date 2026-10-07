@@ -35,20 +35,29 @@ func newRouter(verify middleware.TokenVerifier) *router {
 	}
 }
 
+// named notes the route's pattern for observe before anything else runs, so
+// a request that times out or panics is counted under its route.
+func named(pattern string, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		stateFrom(r.Context()).set(func(st *requestState) { st.route = pattern })
+		h.ServeHTTP(w, r)
+	})
+}
+
 // public registers a route with no authentication.
 func (rt *router) public(pattern string, h http.Handler) {
-	rt.mux.Handle(pattern, h)
+	rt.mux.Handle(pattern, named(pattern, h))
 	rt.routes = append(rt.routes, routeInfo{pattern, access{public: true}})
 }
 
 // authenticated registers a route open to any signed-in user.
 func (rt *router) authenticated(pattern string, h http.HandlerFunc) {
-	rt.mux.Handle(pattern, rt.authed.ThenFunc(h))
+	rt.mux.Handle(pattern, named(pattern, rt.authed.ThenFunc(h)))
 	rt.routes = append(rt.routes, routeInfo{pattern, access{}})
 }
 
 // restricted registers a route open to users whose token grants perm.
 func (rt *router) restricted(pattern string, h http.HandlerFunc, perm role.Permission) {
-	rt.mux.Handle(pattern, rt.authed.Append(middleware.Authorizer(string(perm))).ThenFunc(h))
+	rt.mux.Handle(pattern, named(pattern, rt.authed.Append(middleware.Authorizer(string(perm))).ThenFunc(h)))
 	rt.routes = append(rt.routes, routeInfo{pattern, access{perm: perm}})
 }

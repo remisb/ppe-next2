@@ -58,6 +58,9 @@ func (f *fakeStore) Reviewed(_ context.Context, ev audit.Event) error {
 	f.review.LastReview = &LastReview{At: at, ByID: ev.ActorUserID, EventID: ev.ID}
 	return nil
 }
+func (f *fakeStore) Summary(context.Context, time.Time, time.Time) (Summary, error) {
+	return Summary{}, nil
+}
 func (f *fakeStore) Purge(_ context.Context, before time.Time) (int64, error) {
 	f.purged = before
 	return 0, nil

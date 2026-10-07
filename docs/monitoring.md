@@ -1,9 +1,11 @@
 # Monitoring
 
 How the deployment tells whether the app is up, and who finds out when it is not. This is
-phase 0 of [admin/audit-analytics-monitoring.md](admin/audit-analytics-monitoring.md)
-(section 5.1). Backups are watched separately, on the Backups screen
-([backups.md](backups.md)).
+phases 0 and 3 of [admin/audit-analytics-monitoring.md](admin/audit-analytics-monitoring.md)
+(sections 5.1 and 5.2). Inside the app, Administration's **Overview** says what needs
+attention and **System** shows the API, the database, the error list and the backups
+([specs/system-service.md](specs/system-service.md)); backups are described in
+[backups.md](backups.md).
 
 ## What the app provides
 
@@ -16,6 +18,9 @@ phase 0 of [admin/audit-analytics-monitoring.md](admin/audit-analytics-monitorin
 | Commit | `make prod-build` passes `git describe --always --dirty` as `API_COMMIT`, and the Dockerfile stamps it with `-ldflags -X main.commit`. `/ready` and the `listening` log line name it. A local `go build` falls back to Go's VCS stamp. |
 | Log rotation | Every service in `docker-compose.prod.yml` keeps at most 5 × 10 MB of output (`x-logging`). Without this, Docker's `json-file` logs grow until the disk is full. |
 | Caddy | Proxies `/health` and `/ready` to the API, so both are reachable at the site's address. |
+| Request references | Every request has an `X-Request-ID`; every log line written for it carries it as `request_id`, and a 500 answers with it as `reference`, which the apps show as its first 8 characters. |
+| Error list | 5xx answers, recovered panics and errors the apps report from the browser, folded by kind, kept 30 days: Administration → System → Errors. |
+| Metrics | Prometheus `/metrics` on `API_METRICS_ADDR` (`:9090` in production, compose network only): requests and latency by route, sign-in failures, errors, the database pool, Go runtime. |
 
 On the droplet:
 
@@ -82,11 +87,15 @@ The droplet's CPU, memory and disk are outside what the API can see.
 | Memory above 85 % | `docker stats --no-stream`; which container grew |
 | `security events purge failed` in the API's log | the hourly purge of sign-in records older than `API_AUTH_EVENTS_RETENTION` ([security-service.md](specs/security-service.md)) could not run; the error says why. It tries again within the hour. |
 | Someone reports being signed out, or many failed sign-ins | Administration → Security: Sign-ins shows each attempt with its address, and a copied sign-in with what to do |
+| Someone quotes a reference ("Reference: 9f2c1a7e") | `make prod-logs \| grep 9f2c1a7e` gives the request's lines; System → Errors has the error with its stack |
+| The Overview says requests are failing, or there are new errors | System → Errors: the latest message, route, count and stack of each; the reference finds its log lines |
+| Requests feel slow | System → Status: the slowest routes, the pool's waits and the oldest open transaction; `/metrics` for the full histogram |
+| `error list purge failed` or `database size sample failed` in the log | the hourly upkeep; the error says why, and it tries again within the hour |
 
 ## Later phases
 
 These come later and are described in [the proposal](admin/audit-analytics-monitoring.md):
-- request IDs and error references
-- an error list and Prometheus `/metrics` on an internal port
-- the System and Overview screens in Administration
-- alert delivery by email or Telegram once the outbox and worker exist
+- alert delivery by email or Telegram once the outbox and worker exist (until then the
+  Overview and the uptime monitor's email are the alerts)
+- a monitoring stack that scrapes `/metrics` and keeps history, when a second API instance
+  or longer history is needed (section 5.3)

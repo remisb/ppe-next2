@@ -73,6 +73,27 @@ type ReviewData struct {
 	LastReview  *LastReview
 }
 
+// Summary is the security log's figures for Administration's Overview.
+type Summary struct {
+	// CopiedSignIns counts refresh_reused in the last CopiedWithin.
+	CopiedSignIns int `json:"copied_sign_ins"`
+	// FailedLastHour counts failed sign-ins and password confirmations in the
+	// last hour, and MostAtOneAccount the most at one email among them.
+	FailedLastHour   int `json:"failed_last_hour"`
+	MostAtOneAccount int `json:"most_at_one_account"`
+	// SignInsToday and FailedToday count since midnight in the
+	// organisation's timezone.
+	SignInsToday int `json:"sign_ins_today"`
+	FailedToday  int `json:"failed_today"`
+	// SignedIn counts the people with a live session, and Devices the sessions.
+	SignedIn   int        `json:"signed_in"`
+	Devices    int        `json:"devices"`
+	LastReview *time.Time `json:"last_review"`
+}
+
+// CopiedWithin is how far back the Overview looks for copied sign-ins.
+const CopiedWithin = 7 * 24 * time.Hour
+
 // summary is what Mark as reviewed records: how many accounts carried each
 // flag when it was reviewed.
 type summary struct {

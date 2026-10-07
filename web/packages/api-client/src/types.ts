@@ -847,3 +847,137 @@ export interface AccessReview {
   last_review: { at: string; by_id: string | null; by_name: string | null; event_id: string } | null
   dormant_after_days: number
 }
+
+/** Where an error happened: the API answered 5xx, a handler panicked, or an app caught one in the browser. */
+export type ErrorKind = 'server' | 'panic' | 'client'
+
+/** One row of System's error list: one kind of error, its occurrences counted (GET /api/v1/system/errors). */
+export interface ErrorEvent {
+  id: string
+  fingerprint: string
+  kind: ErrorKind
+  /** The route pattern ("GET /api/v1/orders/{id}"), or the page's path for an app's error. */
+  route: string
+  method: string
+  status: number | null
+  message: string
+  stack: string
+  source: AuditSource | null
+  first_seen: string
+  last_seen: string
+  count: number
+  /** The latest occurrence's request: the reference people quote. */
+  last_request_id: string | null
+  last_user_id: string | null
+  last_user_name: string | null
+  last_user_agent: string | null
+}
+
+export interface ErrorPage {
+  errors: ErrorEvent[]
+  next: string | null
+}
+
+export interface ErrorQuery {
+  kind?: ErrorKind
+  after?: string
+  page_size?: number
+}
+
+/** One 5-minute bucket of the API's requests. */
+export interface RequestPoint {
+  at: string
+  requests: number
+  errors: number
+  p95_ms: number
+}
+
+export interface RouteStat {
+  route: string
+  requests: number
+  errors: number
+  p50_ms: number
+  p95_ms: number
+}
+
+/** The API's requests over the last 24 hours, kept in its memory since it started. */
+export interface RequestWindow {
+  since: string
+  requests: number
+  errors: number
+  p50_ms: number
+  p95_ms: number
+  last_hour: { requests: number; errors: number }
+  series: RequestPoint[]
+  slowest: RouteStat[]
+}
+
+export interface DatabaseStatus {
+  version: string
+  bytes: number
+  /** The size at least 30 days ago, or the earliest kept; null before the first. */
+  earlier: { day: string; bytes: number } | null
+  tables: { name: string; bytes: number; rows: number }[]
+  connections: Record<string, number>
+  max_connections: number
+  oldest_transaction_seconds: number
+  latest_migration: { file: string; applied_at: string } | null
+}
+
+/** System's status (GET /api/v1/system/status, system.read). */
+export interface SystemStatus {
+  service: { commit: string; go_version: string; started_at: string; ready: boolean; problem?: 'database' | 'migrations' }
+  requests: RequestWindow
+  database: DatabaseStatus
+  pool: { acquired: number; idle: number; max: number; waits: number } | null
+  retention: {
+    auth_events_days: number
+    error_events_days: number
+    ended_session_days: number
+    last_run: { at: string | null; auth_events_deleted: number; error_events_deleted: number; failed: boolean }
+  }
+  timezone: string
+}
+
+/** A thing that needs an administrator, worst first; `key` is one of ATTENTION_KEYS. */
+export interface AttentionItem {
+  key: string
+  severity: 'critical' | 'warning' | 'info'
+  count?: number
+  percent?: number
+  days?: number
+  since?: string
+}
+
+/** Administration's Overview (GET /api/v1/overview): areas the reader may not see are null. */
+export interface Overview {
+  attention: AttentionItem[]
+  users: { active: number; inactive: number } | null
+  security: {
+    copied_sign_ins: number
+    failed_last_hour: number
+    most_at_one_account: number
+    sign_ins_today: number
+    failed_today: number
+    signed_in: number
+    devices: number
+    last_review: string | null
+  } | null
+  requests: {
+    since: string
+    requests: number
+    errors: number
+    p95_ms: number
+    new_error_kinds: number
+    database_bytes: number
+  } | null
+  backups: { last_success_at: string | null; stale: boolean; agent_offline: boolean; last_run_failed: boolean } | null
+}
+
+/** An error an app caught in the browser (POST /api/v1/client-errors). */
+export interface ClientErrorReport {
+  message: string
+  stack?: string
+  /** The page's path; the API replaces its ids. */
+  path: string
+}

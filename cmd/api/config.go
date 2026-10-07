@@ -67,6 +67,10 @@ type config struct {
 	SeedUserPassword string
 	SeedUserName     string
 
+	// MetricsAddr is the internal listener for Prometheus's /metrics; empty
+	// serves none. Never published by Caddy.
+	MetricsAddr string
+
 	// Healthcheck asks the API at Addr whether it is ready (GET /ready) and
 	// exits: the container healthcheck, as the image has no curl.
 	Healthcheck bool
@@ -86,6 +90,7 @@ func loadConfig(args []string) (config, error) {
 		AllowedOrigins:   splitList(env("API_ALLOWED_ORIGINS", "")),
 		OrgTimezone:      env("API_ORG_TIMEZONE", "Europe/Vilnius"),
 		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
+		MetricsAddr:      env("API_METRICS_ADDR", ""),
 	}
 	var err error
 	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
@@ -185,6 +190,9 @@ func (c config) validate() error {
 	// The table's trigger refuses to delete rows younger than 30 days.
 	if c.AuthEventsRetention < 30*24*time.Hour || c.AuthEventsRetention > 3*365*24*time.Hour {
 		errs = append(errs, errors.New("API_AUTH_EVENTS_RETENTION must be between 720h and 26280h"))
+	}
+	if c.MetricsAddr != "" && c.MetricsAddr == c.Addr {
+		errs = append(errs, errors.New("API_METRICS_ADDR must differ from API_ADDR"))
 	}
 	if c.RequestTimeout <= 0 {
 		errs = append(errs, errors.New("API_REQUEST_TIMEOUT must be positive"))

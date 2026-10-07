@@ -1,11 +1,22 @@
-/** A non-2xx API response. `message` is the API's `{"error": ...}` text when present. */
+/**
+ * A non-2xx API response. `message` is the API's `{"error": ...}` text when
+ * present; `reference`, on a 500, is the request's ID, which finds the error
+ * on Administration's System screen and in the API's log.
+ */
 export class ApiError extends Error {
   readonly status: number
+  readonly reference: string | undefined
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, reference?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.reference = reference
+  }
+
+  /** The reference as people quote it: its first 8 characters, enough to grep the log. */
+  get shortReference(): string | undefined {
+    return this.reference?.slice(0, 8)
   }
 
   get isUnauthenticated(): boolean {

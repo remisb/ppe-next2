@@ -35,7 +35,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Users', 'Roles & permissions', 'Audit log', 'Security', 'Settings', 'Backups']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Settings']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -47,7 +47,7 @@ async function switchApp(linkName: string) {
 
 /**
  * Opens a section from the Main navigation; on a phone the fifth and later are
- * under More. Users, Settings and Backups are in Administration, reached by
+ * under More. Users, Settings and System are in Administration, reached by
  * its link and left by Workwear & Equipment, as people do.
  */
 async function openTab(name: string) {
@@ -177,9 +177,10 @@ test('the sign-in survives a reload and a new tab, kept in a cookie no script ca
 })
 
 test('Backups: an administrator sees whether the database is backed up', async () => {
-  // The test database has no backup service, so the screen and the Dashboard say so.
-  await openTab('Backups')
-  await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible()
+  // The test database has no backup service, so System's Backups tab and the Dashboard say so.
+  await openTab('System')
+  await page.getByRole('navigation', { name: 'System sections' }).getByRole('link', { name: 'Backups' }).click()
+  await expect(page).toHaveURL(/\/admin\/system\/backups$/)
   await expect(page.getByRole('main').getByRole('status')).toContainText('The backup service has not reported')
   await expect(page.getByText('No backups yet.')).toBeVisible()
   await openTab('Dashboard')
@@ -187,8 +188,11 @@ test('Backups: an administrator sees whether the database is backed up', async (
   await expect(card).toContainText('The backup service has not reported')
   // The card opens Backups in Administration.
   await card.getByRole('link').click()
-  await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible()
-  await expect(page).toHaveURL(/\/admin\/backups$/)
+  await expect(page.getByRole('heading', { name: 'System', exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/system\/backups$/)
+  // Backups' old address leads there too.
+  await page.goto('/admin/backups')
+  await expect(page.getByText('No backups yet.')).toBeVisible()
 })
 
 test('Administration shares the sign-in: signed in there at once, and Sign out there signs the staff app out', async ({ browser }) => {
@@ -775,6 +779,43 @@ test('Security: a failed attempt and a sign-in elsewhere are recorded; an admini
   await expect(change).toContainText('Administrators')
 })
 
+test('Overview and System: what needs attention, an error the app reports, and the API and database', async () => {
+  // Administration opens on the Overview: no backups is critical, and links to where it is put right.
+  await page.goto('/admin/')
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
+  const attention = page.getByRole('region', { name: 'Needs attention' })
+  await expect(attention.getByRole('listitem').first()).toContainText('Backups are not running')
+  await expect(page.getByRole('list', { name: 'Key figures' })).toContainText('Active users')
+
+  // An error in the page is reported to System's error list, with the page's path.
+  await page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error('e2e: a deliberate error')
+    })
+  })
+  await openTab('System')
+  await expect(page.getByRole('heading', { name: 'System', exact: true })).toBeVisible()
+  await expect(page.getByText('Ready', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Largest tables' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Slowest routes' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'System sections' }).getByRole('link', { name: 'Errors' }).click()
+  await expect(page).toHaveURL(/\/admin\/system\/errors$/)
+  await page.getByRole('link', { name: 'Error: e2e: a deliberate error' }).click()
+  await expect(page).toHaveURL(/\/admin\/system\/errors\/[0-9a-f-]{36}$/)
+  const pane = page.getByRole('article', { name: 'Error' })
+  await expect(pane).toContainText('In the browser')
+  await expect(pane).toContainText('/admin/')
+  await expect(pane).toContainText(admin.name)
+  await expect(pane).toContainText('Reference')
+
+  // The Overview now has a new kind of error to look at.
+  await openTab('Overview')
+  const newErrors = page.getByRole('listitem').filter({ hasText: 'New errors' })
+  await expect(newErrors).toContainText('A new kind of error in the last day.')
+  await newErrors.getByRole('link', { name: 'Open Errors' }).click()
+  await expect(page).toHaveURL(/\/admin\/system\/errors$/)
+})
+
 test('Dashboard: the figures follow the orders', async () => {
   await openTab('Dashboard')
   await page.getByRole('button', { name: 'Refresh' }).click()
@@ -1097,9 +1138,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Users', admin.email],
     ['Roles & permissions', 'Built-in'],
     ['Audit log', admin.name],
+    ['Overview', 'Needs attention'],
     ['Security', admin.name],
+    ['System', 'Largest tables'],
     ['Settings', 'Invite link'],
-    ['Backups', 'Recent backups'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
@@ -1198,9 +1240,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Users', admin.email],
       ['Roles & permissions', 'Built-in'],
       ['Audit log', admin.name],
+      ['Overview', 'Needs attention'],
       ['Security', admin.name],
+      ['System', 'Largest tables'],
       ['Settings', 'Invite link'],
-      ['Backups', 'Recent backups'],
     ] as const) {
       await openTab(tab)
       await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()

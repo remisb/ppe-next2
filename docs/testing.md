@@ -128,7 +128,7 @@ reports them ([specs/backup-service.md](specs/backup-service.md)).
 | Reads the agent's rows: the latest-reporting agent, newest runs first, last success, kept totals without pruned files, encryption from the transforms | `backup.TestPostgresRead` |
 | `GET /api/v1/backups` needs `backups.read` (administrators); an empty database gives `runs: []`, `agent: null`, overdue | `TestRoutePolicy`, `TestPostgresBackupsHTTP` |
 | The screen names the worst first (no agent, offline, failed, none yet, overdue, up to date), in the organisation timezone; sizes, durations and simple schedules in words, in the user's language | `@ppe/backups` `index.test.ts` |
-| Backups screen (Administration) and the Dashboard card (opens it there), administrators only; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |
+| System's Backups tab (Administration; `/admin/backups` leads there) and the Dashboard card (opens it there), administrators only; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |
 
 ## Monitoring
 
@@ -140,6 +140,26 @@ Not a manual rule: how the deployment tells whether the API can serve
 | `GET /health` answers while the process runs; `GET /ready` is 200 only when the database answers and holds every migration this build embeds (a newer database is fine), else 503 with `problem` `database` or `migrations`; both public, `/ready` never cached and naming the build's commit but never the detail, which goes to the log | `TestHealthIsOpen`, `TestReady`, `TestRoutePolicy`, `TestPostgresReady`, `db.TestMigrationsListEveryUpFileButBookkeeping` |
 | `-healthcheck` asks the API at `-addr` (no host or an unspecified one is 127.0.0.1) for `/ready`, prints the answer and fails unless it is 200; it needs no other setting | `TestProbeReady`, `TestConfigValidate` |
 | The build's commit comes from `-ldflags -X main.commit`, else Go's VCS stamp, else `unknown` | `TestBuildCommitIsNeverEmpty` |
+
+## System and Overview
+
+Not a manual rule: how the API watches itself ([specs/system-service.md](specs/system-service.md)).
+
+| Rule | Covered by |
+| --- | --- |
+| Every log line written for a request names it (`request_id`); a 500 answers with its reference, which the apps show as the first 8 characters in the user's language | `TestLogLinesNameTheRequest`, `TestServerErrorsAreRecorded`; api-client *keeps a server error's reference*, ui `errorText` tests |
+| A 5xx goes on the error list with its route pattern, why it failed, the user, the app and the reference; a 4xx does not | `TestServerErrorsAreRecorded`, `TestPostgresSystemHTTP` |
+| A handler's panic is answered 500 with a reference, recorded with its stack, and the API goes on serving (the panic runs on the Timeout middleware's goroutine) | `TestPanicsAreRecovered` |
+| A request the client abandoned is not an error: counted as 499, nothing recorded | `TestAbandonedRequestsAreNotErrors` |
+| One kind of error (fingerprint: kind, route, method, message without ids, a panic's place) folds within an hour of its last occurrence, keeping the latest request; the list pages last seen first; new kinds in the last day; rows kept 30 days | `system.TestFingerprint`, `system.TestClientRoute`, `system.TestPostgresErrorList`, `system.TestRecordChecks` |
+| The apps report the page's uncaught errors while signed in, each message once, at most 10 a page, not extensions' or "Script error."; the API takes them from signed-in users, 20 a minute per client, the page's ids dropped | app-shell `error-reporter` tests, `TestClientErrors`; e2e *Overview and System: …* |
+| The 24-hour window: 5-minute buckets, the last hour, percentiles, the slowest routes, reuse of a day-old bucket; probes left out | `monitor.TestWindow`, `TestOverviewByPermission` |
+| `/metrics` serves Prometheus's format on its own listener, never the API's address | `monitor.TestMetricsServeTheirFormat`, `TestConfigValidate`, `TestLoadConfigDefaults` |
+| The database's version, size, largest tables, connections, latest migration, and growth against the newest sample 30 days old | `system.TestPostgresDatabase`, `TestPostgresSystemHTTP` |
+| The Overview's attention items, worst first, at their thresholds; an area only for whoever may open it (the employee role sees nothing) | `overview.TestAttention`, `TestOverviewByPermission`, `security.TestPostgresSummary` |
+| `GET /api/v1/system/*` needs `system.read` (the built-in Administrator, migration 0025); the Overview and client errors any signed-in user | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `TestSystemErrorsRejectUnknownParameters` |
+| The web's attention keys are the API's | `overview.TestWebClientListsTheKeys` |
+| Administration opens on the Overview; System's tabs by permission (Backups alone opens it at Backups), the old Backups address leads there; an error opens at its own address; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Overview and System: …*, *Backups: …*, *phone and tablet: …* |
 
 ## Audit log
 

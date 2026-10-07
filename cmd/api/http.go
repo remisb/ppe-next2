@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/security"
+	"github.com/remisb/ppe-next2/internal/system"
 )
 
 const maxBodyBytes = 1 << 20
@@ -118,6 +120,8 @@ var errorStatuses = []struct {
 	{settings.ErrInvalid, http.StatusBadRequest},
 	{audit.ErrInvalid, http.StatusBadRequest},
 	{security.ErrInvalid, http.StatusBadRequest},
+	{system.ErrNotFound, http.StatusNotFound},
+	{system.ErrInvalid, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated
@@ -134,9 +138,23 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 			return
 		}
 	}
+	// The client went away while the request was handled: nothing failed.
+	if errors.Is(err, context.Canceled) && r.Context().Err() != nil {
+		writeErrorMessage(w, statusClientClosed, "request cancelled")
+		return
+	}
 	slog.ErrorContext(r.Context(), "request failed",
 		slog.String("method", r.Method), slog.String("path", r.URL.Path), slog.Any("error", err))
-	writeErrorMessage(w, http.StatusInternalServerError, "internal error")
+	failed(r, err)
+	writeJSON(w, http.StatusInternalServerError, errorBody{Error: "internal error", Reference: audit.RequestFrom(r.Context()).ID})
+}
+
+// errorBody is an error answer. Reference, on a 500, is the request's ID: the
+// app shows it for a person to quote, and it finds the error on System's list
+// and the request's log lines.
+type errorBody struct {
+	Error     string `json:"error"`
+	Reference string `json:"reference,omitempty"`
 }
 
 // parseUUIDPath reads path wildcard key as a UUID; a malformed one is a 400.

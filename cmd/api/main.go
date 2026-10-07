@@ -31,11 +31,13 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/security"
+	"github.com/remisb/ppe-next2/internal/system"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(requestIDHandler{slog.NewJSONHandler(os.Stdout, nil)})
 	slog.SetDefault(logger)
 	if err := run(context.Background(), os.Args[1:], logger); err != nil {
 		logger.Error("api stopped", slog.Any("error", err))
@@ -86,6 +88,8 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
+		system.NewPostgresStore(pool),
+		pool,
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
 
@@ -111,9 +115,20 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		return err
 	}
 	logger.Info("listening", slog.String("addr", ln.Addr().String()), slog.String("commit", buildCommit()))
-	errc := make(chan error, 1)
+	errc := make(chan error, 2)
 	go func() { errc <- srv.Serve(ln) }()
-	go purgeSecurityEvents(ctx, svc.security, logger)
+	var metricsSrv *http.Server
+	if cfg.MetricsAddr != "" {
+		// Its own listener, which Caddy never proxies: the metrics are for the host only.
+		metricsSrv = &http.Server{Addr: cfg.MetricsAddr, Handler: svc.metrics.Handler(), ReadHeaderTimeout: 5 * time.Second}
+		mln, err := net.Listen("tcp", cfg.MetricsAddr)
+		if err != nil {
+			return err
+		}
+		logger.Info("metrics listening", slog.String("addr", mln.Addr().String()))
+		go func() { errc <- metricsSrv.Serve(mln) }()
+	}
+	go runJobs(ctx, svc, logger)
 
 	select {
 	case err := <-errc:
@@ -123,6 +138,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	logger.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
+	if metricsSrv != nil {
+		_ = metricsSrv.Shutdown(shutdownCtx)
+	}
 	return srv.Shutdown(shutdownCtx)
 }
 
@@ -140,13 +158,23 @@ type services struct {
 	settings  *settings.Service
 	backups   *backup.Service
 	audit     *audit.Service
+	// system is the error list and the database's status; window and
+	// metrics are the API's own request figures (internal/monitor).
+	system  *system.Service
+	window  *monitor.Window
+	metrics *monitor.Metrics
+	// pool is the database pool, for System's figures; nil in tests.
+	pool    *pgxpool.Pool
+	started time.Time
+	jobs    *jobRuns
 	// ready answers GET /ready; run sets it, tests stub it.
 	ready readiness
 }
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store) services {
+func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, pool *pgxpool.Pool) services {
+	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
 		security:  sec,
@@ -158,6 +186,12 @@ func newServices(loc *time.Location, confirmTTL time.Duration, sessions *session
 		settings:  settings.NewService(prefs),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
 		audit:     audit.NewService(trail, audit.WithLocation(loc)),
+		system:    system.NewService(sys, system.WithRecorded(func(k system.Kind) { metrics.ErrorRecorded(string(k)) })),
+		window:    newWindow(),
+		metrics:   metrics,
+		pool:      pool,
+		started:   time.Now().UTC(),
+		jobs:      &jobRuns{},
 	}
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
@@ -189,6 +223,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
+	registerSystemRoutes(rt, svc, cfg, tok)
 	return rt
 }
 
@@ -202,6 +237,7 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 		middleware.ClientIP(middleware.ClientIPConfig{TrustedProxies: cfg.TrustedProxies}),
 		requestContext(tok),
 		middleware.Logger(logger),
+		observe(svc, logger),
 	}
 	if len(cfg.AllowedOrigins) > 0 {
 		cors := middleware.DefaultCORSConfig()
@@ -209,7 +245,8 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 		cors.AllowedHeaders = append(cors.AllowedHeaders, appHeader)
 		global = append(global, middleware.CORS(cors))
 	}
-	global = append(global, middleware.Timeout(cfg.RequestTimeout))
+	// capturePanics inside Timeout, whose goroutine runs the handler.
+	global = append(global, middleware.Timeout(cfg.RequestTimeout), capturePanics(logger))
 	return middleware.Chain(mux, global...)
 }
 

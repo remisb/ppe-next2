@@ -29,6 +29,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/security"
+	"github.com/remisb/ppe-next2/internal/system"
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
@@ -70,12 +71,15 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
+		system.NewPostgresStore(pool),
+		pool,
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)
 	}
 	tok := testTokens(time.Now())
+	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}, pool
 }
 
@@ -1028,5 +1032,43 @@ func TestPostgresSecurityHTTP(t *testing.T) {
 	rec = api.do(t, "GET", "/api/v1/audit-events?area=security", admin, nil)
 	if !strings.Contains(rec.Body.String(), `"event":"access_review.completed"`) {
 		t.Errorf("audit log = %s", rec.Body)
+	}
+}
+
+// TestPostgresSystemHTTP: System reads the real database's figures, and the
+// error list holds a failed request with its reference.
+func TestPostgresSystemHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `TRUNCATE error_events`); err != nil {
+		t.Fatal(err)
+	}
+	_, admin := api.userWith(t, role.KeyAdmin)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	if rec := api.do(t, "GET", "/api/v1/system/status", staff, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("the employee role reads System: %d", rec.Code)
+	}
+	rec := api.do(t, "GET", "/api/v1/system/status", admin, nil)
+	var st SystemStatus
+	if err := json.Unmarshal(rec.Body.Bytes(), &st); err != nil || rec.Code != 200 || st.Database.Version == "" ||
+		st.Database.Bytes <= 0 || st.Database.LatestMigration == nil || len(st.Database.Tables) == 0 || st.Pool == nil {
+		t.Fatalf("status = %d %s", rec.Code, rec.Body)
+	}
+
+	if rec := api.do(t, "POST", "/api/v1/client-errors", staff, map[string]string{"message": "TypeError: boom", "path": "/orders"}); rec.Code != 204 {
+		t.Fatalf("report = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/system/errors", admin, nil)
+	page := decode[system.ErrorPage](t, rec.Body.Bytes())
+	if rec.Code != 200 || len(page.Errors) != 1 || page.Errors[0].Kind != system.KindClient || page.Errors[0].LastUserName == nil {
+		t.Fatalf("errors = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/system/errors/"+page.Errors[0].ID.String(), admin, nil); rec.Code != 200 {
+		t.Errorf("one error = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/overview", admin, nil)
+	var o Overview
+	if err := json.Unmarshal(rec.Body.Bytes(), &o); err != nil || o.Requests == nil || o.Requests.NewErrorKinds != 1 || o.Requests.DatabaseBytes <= 0 {
+		t.Errorf("overview = %d %s", rec.Code, rec.Body)
 	}
 }

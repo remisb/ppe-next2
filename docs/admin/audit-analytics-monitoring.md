@@ -6,7 +6,7 @@ add: an **audit log** to review and manage, **usage analytics**, and **monitorin
 Each area has options, pros and cons, and a recommendation. The report ends with a roadmap
 in phases.
 
-7 Oct 2026 · reviewed build `6747260` · status: **phases 0–2 built; phases 3–5 proposed**
+7 Oct 2026 · reviewed build `6747260` · status: **phases 0–3 built; phases 4–5 proposed**
 
 > **Status, 7 Oct 2026.** Phase 0's code is done: `GET /ready`, the image healthcheck
 > (`/api -healthcheck`), the commit in `/ready`, log rotation on every prod service, and
@@ -44,6 +44,22 @@ in phases.
 >   `last_sign_in_at` from the sessions still kept, and older sign-ins are unknown.
 > - On a phone, Roles & permissions and Settings moved under More. Overview, System and
 >   Usage do not exist yet.
+>
+> **Phase 3 (System and Overview) is built**, as described in
+> [specs/system-service.md](../specs/system-service.md), with these differences from 5.2 and 6:
+> - **Found while building it:** muxstack's `Timeout` runs each handler on a goroutine of its
+>   own, so a panic in any handler would have stopped the whole API. `capturePanics` now sits
+>   inside `Timeout`: the panic is answered 500 with a reference and goes on the error list.
+> - A request the client abandoned (a closed tab) is not an error. `Timeout` answers it 503,
+>   which would have filled the list, so it counts as 499 and is not recorded.
+> - Errors fold when they recur within an hour of a row's last occurrence. Client errors come
+>   only from signed-in users (20 a minute per address).
+> - The Overview adds "last backup failed" (warning). "Audit seal mismatch" waits for the
+>   seals in phase 4, and "database grew fast" needs a week of daily size samples first.
+> - The phone bar holds Overview, Users, Audit and Security. Roles & permissions, System and
+>   Settings are under More, so the bar stays at five columns.
+> - The metrics leave out "audit events written" and refresh reuse; the security log and the
+>   Overview already have the latter. Retention shows no seal yet.
 
 ---
 
@@ -579,7 +595,7 @@ records the decisions in 3.4–3.6 before Phase 2.
 - `security.read`; the Security screen: sign-in activity, active sessions across users (end
   one), and the access review.
 
-### Phase 3: System and Overview · M
+### Phase 3: System and Overview · M · built
 - Request IDs and error references; `error_events` and the client error reporter.
 - `/metrics` on an internal port; the rolling 24-hour window.
 - `system.read`; the System screen with Backups as a tab; the Overview with attention items.

@@ -19,6 +19,30 @@ describe('createClient', () => {
     expect(init?.body).toBe('{"employee_id":"e1","lines":[]}')
   })
 
+  it('keeps a server error\'s reference', async () => {
+    const f = fakeFetch(500, '{"error":"internal error","reference":"9f2c1a7e-0000-4000-8000-000000000000"}')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    const err = await client.overview().catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).reference).toBe('9f2c1a7e-0000-4000-8000-000000000000')
+    expect((err as ApiError).shortReference).toBe('9f2c1a7e')
+    const plain = await createClient({ getToken: () => 't', fetch: fakeFetch(400, '{"error":"invalid"}') as unknown as typeof fetch })
+      .overview()
+      .catch((e: unknown) => e)
+    expect((plain as ApiError).reference).toBeUndefined()
+  })
+
+  it('reports an app\'s error and reads System', async () => {
+    const f = fakeFetch(204, '')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    await client.reportError({ message: 'TypeError', path: '/orders' })
+    expect(f.mock.calls[0]![0]).toBe('/api/v1/client-errors')
+    expect(f.mock.calls[0]![1]?.method).toBe('POST')
+    const g = fakeFetch(200, '{"errors":[],"next":null}')
+    await createClient({ getToken: () => 't', fetch: g as unknown as typeof fetch }).system.errors({ kind: 'client' })
+    expect(g.mock.calls[0]![0]).toBe('/api/v1/system/errors?kind=client')
+  })
+
   it('posts Mark as Ordered to /orders', async () => {
     const f = fakeFetch(201, '{"id":"o1","record_number":"WE-000001"}')
     const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })

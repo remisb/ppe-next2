@@ -194,3 +194,47 @@ func TestPostgresSessionsAndReview(t *testing.T) {
 		t.Errorf("recorded %s, %v", after, err)
 	}
 }
+
+func TestPostgresSummary(t *testing.T) {
+	pool := newTestPool(t)
+	vilnius, _ := time.LoadLocation("Europe/Vilnius")
+	now := time.Date(2026, 10, 7, 10, 0, 0, 0, time.UTC) // 13:00 in Vilnius
+	svc := NewService(NewPostgresStore(pool), Config{Key: []byte(strings.Repeat("k", 32))},
+		WithClock(func() time.Time { return now }), WithLocation(vilnius))
+	ona := insertUser(t, pool, "Ona", now.Add(-time.Hour), nil)
+	ctx := context.Background()
+	at := func(d time.Duration, kind Kind, reason, email string) {
+		t.Helper()
+		ev := Event{ID: uuid.New(), OccurredAt: now.Add(d), Kind: kind, Reason: reason}
+		if email != "" {
+			ev.EmailHash = svc.EmailHash(email)
+		}
+		if err := Insert(ctx, pool, ev); err != nil {
+			t.Fatal(err)
+		}
+	}
+	at(-8*24*time.Hour, KindRefreshReused, "", "")
+	at(-2*24*time.Hour, KindRefreshReused, "", "")
+	// Midnight in Vilnius is 21:00 UTC the day before: 13h before now.
+	at(-14*time.Hour, KindSignIn, "", "ona@example.com")
+	at(-12*time.Hour, KindSignIn, "", "ona@example.com")
+	at(-30*time.Minute, KindSignInFailed, ReasonBadPassword, "ona@example.com")
+	at(-20*time.Minute, KindSignInFailed, ReasonBadPassword, "ona@example.com")
+	at(-10*time.Minute, KindReauthFailed, ReasonBadPassword, "bo@example.com")
+	at(-2*time.Hour, KindSignInFailed, ReasonUnknownEmail, "x@example.com")
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO user_sessions (id, user_id, seed, generation, rotated_at, keep_signed_in, created_at, authenticated_at,
+			last_used_at, idle_expires_at, expires_at, user_agent, ip)
+		VALUES (gen_random_uuid(), $1, 'x', 1, $2, true, $2, $2, $2, $3, $3, 'A', '1'),
+			(gen_random_uuid(), $1, 'x', 1, $2, true, $2, $2, $2, $3, $3, 'B', '1')`, ona, now, now.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.Summary(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Summary{CopiedSignIns: 1, FailedLastHour: 3, MostAtOneAccount: 2, SignInsToday: 1, FailedToday: 3, SignedIn: 1, Devices: 2}
+	if got != want {
+		t.Errorf("summary = %+v\nwant      %+v", got, want)
+	}
+}

@@ -30,6 +30,9 @@ type Store interface {
 	Review(ctx context.Context, now time.Time) (ReviewData, error)
 	// Reviewed records ev, the access_review.completed audit event.
 	Reviewed(ctx context.Context, ev audit.Event) error
+	// Summary counts what the Overview shows, at now; dayStart begins today
+	// in the organisation's timezone.
+	Summary(ctx context.Context, now, dayStart time.Time) (Summary, error)
 	// Purge deletes the events that occurred before before, unless another
 	// instance is purging now (then 0). It returns how many it deleted.
 	Purge(ctx context.Context, before time.Time) (int64, error)
@@ -220,6 +223,14 @@ func (s *Service) MarkReviewed(ctx context.Context, actor uuid.UUID) (Review, er
 		return Review{}, err
 	}
 	return s.Review(ctx)
+}
+
+// Summary is the security log's figures for the Overview, at now.
+func (s *Service) Summary(ctx context.Context) (Summary, error) {
+	now := s.now()
+	local := now.In(s.loc)
+	day := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, s.loc)
+	return s.store.Summary(ctx, now, day)
 }
 
 // Purge deletes the events older than the retention, returning how many.

@@ -33,7 +33,7 @@ Database backups: the `backup` compose service is the agent from the separate li
 `github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
 Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
 (migration 0019, dbbackup's schema copied verbatim); administrators read them on the
-Backups screen and a Dashboard card (`internal/domain/backup`, `GET /api/v1/backups`, read-only;
+Backups tab of Administration's System and a Dashboard card (`internal/domain/backup`, `GET /api/v1/backups`, read-only;
 spec `docs/specs/backup-service.md`, operations and Postgres upgrades `docs/backups.md`).
 Sign-ins are sessions (`internal/domain/session`, migration 0020, spec
 `docs/specs/session-service.md`): an HttpOnly refresh cookie rotated on every refresh, with
@@ -46,7 +46,7 @@ Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/ro
 Administrator, Manager and Employee reproduce the old three roles; administrators add and
 change others on Roles & permissions. The token's `perms` claim carries what the user's
 roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Roles & permissions, Audit log, Security, Settings, Backups) on the staff app's origin, sharing its sign-in and
+Overview, Users, Roles & permissions, Audit log, Security, System, Settings) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
@@ -58,7 +58,13 @@ attempt and ended session with its address, written by the session repository in
 session's own transaction, kept `API_AUTH_EVENTS_RETENTION` (180 days) and purged hourly by
 the API (`cmd/api/jobs.go`); the per-email sign-in limit counts it. It also lists every
 user's signed-in devices (signing one out takes `users.manage`) and the access review, whose
-Mark as reviewed is an audit event.
+Mark as reviewed is an audit event. **System** (`system.read`, migration 0025, spec
+`docs/specs/system-service.md`) shows the API (`internal/monitor`: a 24-hour request window
+in memory, Prometheus `/metrics` on `API_METRICS_ADDR`), the database, the error list
+(`internal/system`, `error_events`: 5xx answers, panics, the apps' browser errors) and Backups as a tab;
+the **Overview**, Administration's first screen, lists what needs attention
+(`internal/overview`) for whatever areas the reader may open. Every request's ID is on its log
+lines (`request_id`) and a 500's `reference`, which the apps show.
 
 Database-enforced invariants worth knowing: `audit_events` and `order_lines` reject
 UPDATE/DELETE via triggers (`auth_events` too, except the purge's DELETE of rows older than
@@ -173,7 +179,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
   uptime check and droplet alerts, and what to look at when one fires.
 - `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
-  audit log, security, usage analytics and monitoring, in phases (phases 0–2 are built).
+  audit log, security, usage analytics and monitoring, in phases (phases 0–3 are built).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.
@@ -193,6 +199,11 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   Handlers get the actor with `actorID(r)` (`cmd/api/auth.go`).
 - **Composition**: `buildRouter()` in `cmd/api/main.go` mounts every
   `register<Name>Routes(rt, svc)`; `run()` builds the `services` struct.
+- **Request pipeline** (`routes()`): `Recoverer`, `ClientIP`, `requestContext` (the request
+  ID and `audit.Request`), `Logger`, `observe` (metrics, the 24-hour window, 5xx on the error
+  list), CORS, `Timeout`, then `capturePanics`, which must stay inside `Timeout`: muxstack
+  runs the handler on a goroutine of its own, out of `Recoverer`'s reach. `router` wraps
+  every handler in `named`, which tells `observe` the route pattern.
 - **Client address**: the global muxstack `ClientIP` middleware resolves the client,
   believing `X-Forwarded-For` only from `API_TRUSTED_PROXIES`; rate limits key on
   `middleware.ClientAddr`. Never key on `RemoteAddr` or the raw header directly.
@@ -219,7 +230,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   (`pgx.ErrNoRows`→`ErrNotFound`, `23505`→conflict, `23503` on actor FK→`ErrActorNotFound`).
 - **Errors**: `fieldError(field, problem)` wraps `ErrInvalid`. `writeError` in
   `cmd/api/http.go` is the only place mapping errors to status codes (new domains add cases
-  there); unknown errors → logged, opaque 500. JSON errors are `{"error": "..."}`.
+  there); unknown errors → logged, opaque 500 with the request's `reference`, and put on
+  System's error list. JSON errors are `{"error": "..."}`.
 - **Actor attribution**: user ID comes from the JWT `sub`, passed explicitly
   (`Create(ctx, params, actorID)`); `uuid.Nil` is `ErrInvalid`. Request structs use
   `decodeJSON` (`DisallowUnknownFields`), so `id`, timestamps and actor fields are rejected.

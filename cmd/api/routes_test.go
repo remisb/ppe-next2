@@ -30,6 +30,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/security"
+	"github.com/remisb/ppe-next2/internal/system"
 )
 
 // memRepo is a minimal in-memory user.Repository for exercising the HTTP layer.
@@ -319,6 +320,37 @@ func (m *memSessions) EndAll(ctx context.Context, userID, keep uuid.UUID, at tim
 
 func (m *memSessions) Prune(context.Context, uuid.UUID, time.Time) error { return nil }
 
+// memSystem is an in-memory system.Store keeping the errors recorded, so the
+// HTTP tests see what the middleware puts on the error list. Folding and the
+// database's figures are the Postgres tests'.
+type memSystem struct {
+	mu     sync.Mutex
+	errors []system.ErrorEvent
+}
+
+func (m *memSystem) RecordError(_ context.Context, ev system.ErrorEvent, _ time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.errors = append(m.errors, ev)
+	return nil
+}
+
+func (m *memSystem) recorded() []system.ErrorEvent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.Clone(m.errors)
+}
+
+func (m *memSystem) ListErrors(context.Context, system.ErrorQuery) ([]system.ErrorEvent, error) {
+	return nil, nil
+}
+func (m *memSystem) NewErrorKinds(context.Context, time.Time) (int, error) { return 0, nil }
+func (m *memSystem) PurgeErrors(context.Context, time.Time) (int64, error) { return 0, nil }
+func (m *memSystem) SampleSize(context.Context, time.Time) error           { return nil }
+func (m *memSystem) Database(context.Context, time.Time) (system.Database, error) {
+	return system.Database{Connections: map[string]int{}, Tables: []system.Table{}}, nil
+}
+
 // memSecurity is an in-memory security.Store holding the events written, so
 // the per-email sign-in limit works in the HTTP tests. Its reads for the
 // Security screen find nothing: the Postgres tests cover them.
@@ -378,6 +410,9 @@ func (m *memSecurity) Review(context.Context, time.Time) (security.ReviewData, e
 	return security.ReviewData{}, nil
 }
 func (m *memSecurity) Reviewed(context.Context, audit.Event) error { return nil }
+func (m *memSecurity) Summary(context.Context, time.Time, time.Time) (security.Summary, error) {
+	return security.Summary{}, nil
+}
 func (m *memSecurity) Purge(context.Context, time.Time) (int64, error) {
 	return 0, nil
 }
@@ -510,11 +545,13 @@ type testAPI struct {
 	tokens  *tokens
 	admin   user.User
 	log     *memSecurity
+	errors  *memSystem
 }
 
 func newTestAPI(t *testing.T) *testAPI {
 	t.Helper()
 	log := &memSecurity{}
+	errs := &memSystem{}
 	sessions := session.NewService(&memSessions{rows: map[uuid.UUID]session.Session{}, log: log}, sessionKey(testSecret), sessionLimits(testConfig()))
 	userRepo := &memRepo{users: map[uuid.UUID]user.User{}}
 	roles := role.NewService(newMemRoles(userRepo))
@@ -525,10 +562,10 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{})
+	svc := newServices(time.UTC, time.Hour, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
-	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log}
+	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
 }
 
 // userWith adds a user holding the built-in roles named by keys and signs them in.
@@ -690,6 +727,11 @@ var policy = map[string]rule{
 	"DELETE /api/v1/security/sessions/{id}":         {role.UsersManage, "admins"},
 	"GET /api/v1/security/access-review":            {role.SecurityRead, "admins"},
 	"POST /api/v1/security/access-review":           {role.SecurityRead, "admins"},
+	"GET /api/v1/system/status":                     {role.SystemRead, "admins"},
+	"GET /api/v1/system/errors":                     {role.SystemRead, "admins"},
+	"GET /api/v1/system/errors/{id}":                {role.SystemRead, "admins"},
+	"POST /api/v1/client-errors":                    {"", "any"},
+	"GET /api/v1/overview":                          {"", "any"},
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed roles.

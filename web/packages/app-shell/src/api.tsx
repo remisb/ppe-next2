@@ -2,6 +2,7 @@ import { ApiError, type AppName, type Client, type LoginResponse, NetworkError, 
 import { type Lang, deviceLanguage, isLang, rememberDeviceLanguage } from '@ppe/i18n'
 import { Fragment, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
+import { reportErrors } from './error-reporter.ts'
 import { type Session, clearLegacyToken, refreshDue, rememberKeepSignedIn, sessionFromToken, withRefreshLock } from './session.ts'
 
 /** Asked of the user when an action needs their password again (a recent sign-in). */
@@ -127,6 +128,10 @@ export function ApiProvider({ children, app, setLanguage, onSignOut }: ApiProvid
     clearLegacyToken()
     start()
   }, [start])
+
+  // While someone is signed in, the page's uncaught errors go to System's error list.
+  const signedIn = session !== null
+  useEffect(() => (signedIn ? reportErrors((r) => client.reportError(r)) : undefined), [signedIn, client])
 
   // Offline at start-up: ask again once the device is back online.
   useEffect(() => {

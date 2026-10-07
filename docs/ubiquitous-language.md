@@ -117,6 +117,20 @@ Rules for using it:
   A phone left signed in for weeks cannot add an administrator or reset a password without
   it.
 
+### Overview
+- **Brief:** Administration's first screen: what needs attention, worst first, then figures.
+- **Detail:** each **attention item** (critical, warning or note) links to where it is put
+  right: backups not running, a copied sign-in, many failed sign-ins, failing requests, new
+  errors, an access review due, a fast-growing database. Each reader sees the areas their
+  permissions open. Not the staff app's Dashboard, which is about workwear.
+- **Code:** `GET /api/v1/overview`, `internal/overview`. **Spec:** `docs/specs/system-service.md`.
+
+### System
+- **Brief:** Administration's screen of the API and its requests, the database, the error
+  list, and the backups (a tab of its own, formerly the Backups screen). Needs `system.read`
+  (Backups: `backups.read`).
+- **Code:** `/admin/system`, `web/apps/admin/src/routes/system.tsx`.
+
 ### Security
 - **Brief:** Administration's screen of **Sign-ins**, every user's **Signed-in devices** and
   the **Access review**. Needs `security.read`.
@@ -580,6 +594,20 @@ Rules for using it:
 - **Code:** `GET /api/v1/audit-events`, `web/apps/admin/src/routes/audit.tsx`.
   **Spec:** `docs/specs/audit-service.md`.
 
+### Reference (of a request)
+- **Brief:** the code a server error shows ("Reference: 9f2c1a7e"), for a person to quote.
+- **Detail:** the first 8 characters of the request's ID (`X-Request-ID`). An
+  administrator finds the request's log lines with it, and the error on System's error
+  list. Audit events record the same ID.
+- **UI:** Reference / Nuoroda į užklausą / Номер запроса.
+
+### Error list
+- **Brief:** System's list of the errors the API met (5xx answers, crashes) and the apps
+  reported from the browser, one row per kind of error with how many times it happened.
+- **Detail:** kept 30 days. A crash is a panic the API recovered from. Not the Audit log:
+  errors change nothing.
+- **Code:** `internal/system`, table `error_events`. **UI:** System → Errors.
+
 ### Changes (of a record)
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.
@@ -777,6 +805,8 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Sign out all other devices | Atjungti visus kitus įrenginius | Выйти на всех других устройствах |
 | Confirm your password | Patvirtinkite slaptažodį | Подтвердите пароль |
 | Security | Sauga | Безопасность |
+| Overview / Needs attention | Apžvalga / Reikia dėmesio | Обзор / Требует внимания |
+| System / Errors / Status | Sistema / Klaidos / Būsena | Система / Ошибки / Состояние |
 | Sign-ins / Sign-in failed / Unknown account | Prisijungimai / Prisijungti nepavyko / Nežinoma paskyra | Входы / Неудачный вход / Неизвестная учётная запись |
 | Access review / Mark as reviewed | Prieigos peržiūra / Pažymėti kaip peržiūrėtą | Проверка доступа / Отметить как проверенный |
 
@@ -811,3 +841,6 @@ table follows them.
 | log in, log out | **sign in**, **sign out** | |
 | login history, auth log, security log (in the UI) | **Sign-ins** on **Security** | "Security log" is the code's name for `auth_events`. |
 | revoke, kill (a session) | **sign out** (a device) | The same words as Account. |
+| dashboard (in Administration) | **Overview** | The Dashboard is the staff app's screen of workwear figures. |
+| error ID, trace ID, correlation ID (in the UI) | **reference** | One word on every error message. |
+| logs, incidents (for the error list) | **Errors** on **System** | |

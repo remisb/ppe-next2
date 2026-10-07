@@ -50,6 +50,10 @@ export const roles: RolesText = {
       label: 'Matyti saugą',
       grants: 'Prisijungimai ir nesėkmingi bandymai su adresais, visų prisijungę įrenginiai ir prieigos peržiūra.',
     },
+    'system.read': {
+      label: 'Matyti sistemą',
+      grants: 'API būsena ir užklausos, duomenų bazė ir klaidų sąrašas su kiekvienos klaidos nuoroda.',
+    },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',

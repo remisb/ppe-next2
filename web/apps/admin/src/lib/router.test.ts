@@ -4,10 +4,20 @@ import { parsePath, pathOf, startRoute } from './router'
 
 describe('router', () => {
   it('round-trips every route', () => {
-    for (const name of ['home', 'users', 'roles', 'settings', 'backups'] as const) expect(parsePath(pathOf({ name }))).toEqual({ name })
+    for (const name of ['overview', 'users', 'roles', 'settings'] as const) expect(parsePath(pathOf({ name }))).toEqual({ name })
+    expect(parsePath('/')).toEqual({ name: 'overview' })
     expect(parsePath(pathOf({ name: 'audit', filter: {} }))).toEqual({ name: 'audit', filter: {} })
     expect(parsePath('/users/')).toEqual({ name: 'users' })
     expect(parsePath('/nope')).toEqual({ name: 'home' })
+  })
+
+  it('keeps the System tab and the open error in its address; Backups moved there', () => {
+    expect(parsePath('/system')).toEqual({ name: 'system', tab: 'status' })
+    for (const tab of ['errors', 'backups'] as const) expect(parsePath(pathOf({ name: 'system', tab }))).toEqual({ name: 'system', tab })
+    expect(pathOf({ name: 'system', tab: 'errors', error: 'e1' })).toBe('/system/errors/e1')
+    expect(parsePath('/system/errors/e1')).toEqual({ name: 'system', tab: 'errors', error: 'e1' })
+    expect(parsePath('/backups')).toEqual({ name: 'system', tab: 'backups' })
+    expect(parsePath('/system/backups/x')).toEqual({ name: 'home' })
   })
 
   it('keeps the Audit log\'s filters and open change in its address', () => {
@@ -35,16 +45,20 @@ describe('router', () => {
     const holding = (...perms: string[]) => (p: string) => perms.includes(p)
     const admin = holding('users.read', 'users.manage', 'roles.manage', 'settings.manage', 'backups.read')
     const backupsOnly = holding('backups.read')
-    expect(startRoute({ name: 'home' }, admin)).toEqual({ name: 'users' })
-    expect(startRoute({ name: 'backups' }, admin)).toEqual({ name: 'backups' })
+    // Every Administration permission opens the Overview, the first screen.
+    expect(startRoute({ name: 'home' }, admin)).toEqual({ name: 'overview' })
+    expect(startRoute({ name: 'home' }, backupsOnly)).toEqual({ name: 'overview' })
     expect(startRoute({ name: 'roles' }, admin)).toEqual({ name: 'roles' })
-    expect(startRoute({ name: 'roles' }, holding('users.manage'))).toEqual({ name: 'users' })
-    expect(startRoute({ name: 'home' }, backupsOnly)).toEqual({ name: 'backups' })
-    expect(startRoute({ name: 'users' }, backupsOnly)).toEqual({ name: 'backups' })
-    expect(startRoute({ name: 'home' }, holding('audit.read'))).toEqual({ name: 'audit', filter: {} })
-    expect(startRoute({ name: 'home' }, holding('security.read'))).toEqual({ name: 'security', tab: 'sign-ins', filter: {} })
-    expect(startRoute({ name: 'security', tab: 'review', filter: {} }, admin)).toEqual({ name: 'users' })
-    expect(startRoute({ name: 'audit', filter: {} }, admin)).toEqual({ name: 'users' })
+    expect(startRoute({ name: 'roles' }, holding('users.manage'))).toEqual({ name: 'overview' })
+    expect(startRoute({ name: 'users' }, backupsOnly)).toEqual({ name: 'overview' })
+    expect(startRoute({ name: 'security', tab: 'review', filter: {} }, admin)).toEqual({ name: 'overview' })
+    expect(startRoute({ name: 'audit', filter: {} }, admin)).toEqual({ name: 'overview' })
+    // System opens on the first tab the user may see; Backups alone opens it at Backups.
+    expect(startRoute({ name: 'system', tab: 'status' }, backupsOnly)).toEqual({ name: 'system', tab: 'backups' })
+    expect(startRoute({ name: 'system', tab: 'backups' }, admin)).toEqual({ name: 'system', tab: 'backups' })
+    expect(startRoute({ name: 'system', tab: 'errors' }, holding('system.read'))).toEqual({ name: 'system', tab: 'errors' })
+    expect(startRoute({ name: 'system', tab: 'backups' }, holding('system.read'))).toEqual({ name: 'system', tab: 'status' })
+    expect(startRoute({ name: 'system', tab: 'status' }, holding('audit.read'))).toEqual({ name: 'overview' })
     // users.read alone (a manager) opens nothing here.
     expect(startRoute({ name: 'home' }, holding('users.read', 'catalogue.manage'))).toBeNull()
   })

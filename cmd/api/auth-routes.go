@@ -14,6 +14,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/security"
 )
 
@@ -31,6 +32,7 @@ type authHandler struct {
 	roles    *role.Service
 	sessions *session.Service
 	security *security.Service
+	metrics  *monitor.Metrics
 	tokens   *tokens
 	cookies  cookiePolicy
 }
@@ -52,7 +54,7 @@ type authHandler struct {
 // (docs/specs/security-service.md).
 func registerAuthRoutes(rt *router, svc services, tokens *tokens, cfg config) {
 	h := &authHandler{
-		users: svc.users, roles: svc.roles, sessions: svc.sessions, security: svc.security,
+		users: svc.users, roles: svc.roles, sessions: svc.sessions, security: svc.security, metrics: svc.metrics,
 		tokens: tokens, cookies: newCookiePolicy(cfg),
 	}
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
@@ -107,6 +109,7 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	u, err := h.users.Authenticate(r.Context(), req.Email, req.Password)
 	var refused *user.SignInRefused
 	if errors.As(err, &refused) {
+		h.metrics.SignInFailed(refused.Reason)
 		if err := h.security.Refused(r.Context(), security.KindSignInFailed, email, refused.UserID, refused.Reason); err != nil {
 			writeError(w, r, err)
 			return
@@ -226,6 +229,7 @@ func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.users.CheckPassword(r.Context(), actor, req.Password); err != nil {
 		if errors.Is(err, user.ErrInvalid) {
+			h.metrics.SignInFailed(security.ReasonBadPassword)
 			if err := h.security.Refused(r.Context(), security.KindReauthFailed, email, u.ID, security.ReasonBadPassword); err != nil {
 				writeError(w, r, err)
 				return
@@ -251,6 +255,7 @@ func (h *authHandler) reauth(w http.ResponseWriter, r *http.Request) {
 func (h *authHandler) limited(w http.ResponseWriter, r *http.Request, kind security.Kind, email []byte, userID uuid.UUID) bool {
 	wait, err := h.security.Blocked(r.Context(), email)
 	if err == nil && wait > 0 {
+		h.metrics.SignInFailed(security.ReasonTooManyAttempts)
 		err = h.security.Refused(r.Context(), kind, email, userID, security.ReasonTooManyAttempts)
 		if err == nil {
 			w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(wait.Seconds()))))

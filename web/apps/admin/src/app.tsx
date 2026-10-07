@@ -4,17 +4,18 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, DatabaseBackup, Ellipsis, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
+import { Activity, ArrowLeft, Ellipsis, Gauge, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
 import { type Route, type Screen, linkTo, screenRoute, screens, startRoute, useRouter } from '@/lib/router'
 
 import { AuditPage } from './routes/audit'
-import { BackupsPage } from './routes/backups'
+import { OverviewPage } from './routes/overview'
 import { RolesPage } from './routes/roles'
 import { SecurityPage } from './routes/security'
 import { SettingsPage } from './routes/settings'
+import { SystemPage } from './routes/system'
 import { UsersPage } from './routes/users'
 
 interface Section {
@@ -28,12 +29,13 @@ interface Section {
 
 /** Each screen's place in the Main navigation, in the language in use (built on each render, never at import). */
 const sections = (): Record<Screen, Section> => ({
+  overview: { name: 'overview', label: t.shell.overview, short: t.shell.shortOverview, icon: Gauge },
   users: { name: 'users', label: t.shell.users, short: t.shell.shortUsers, icon: UserCog },
   roles: { name: 'roles', label: t.shell.roles, short: t.shell.shortRoles, icon: KeyRound, inMore: true },
   audit: { name: 'audit', label: t.shell.audit, short: t.shell.shortAudit, icon: ScrollText },
   security: { name: 'security', label: t.shell.security, short: t.shell.shortSecurity, icon: ShieldCheck },
+  system: { name: 'system', label: t.shell.system, short: t.shell.shortSystem, icon: Activity, inMore: true },
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon, inMore: true },
-  backups: { name: 'backups', label: t.shell.backups, short: t.shell.shortBackups, icon: DatabaseBackup },
 })
 
 /** The phone bar's columns, by how many sections are in it (none to four): those, and More. */
@@ -42,8 +44,8 @@ const phoneColumns = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'
 /*
  * Administration's frame, the staff app's in look (@ppe/ui main-nav): a
  * bottom bar on a phone, a rail on a tablet, a sidebar on a desktop. Its
- * sections are the screens the user's permissions open; on a phone, Roles and
- * Settings are in More, so the bar holds at most four and More. More and the
+ * sections are the screens the user's permissions open; on a phone, Roles,
+ * System and Settings are in More, so the bar holds at most four and More. More and the
  * rail and sidebar's foot hold the way back to the staff app, Account (the
  * staff app's) and Sign out. Both apps share one sign-in, so signing in
  * or out here does so there too.
@@ -74,7 +76,7 @@ export function App() {
   const route = startRoute(asked, session.can)
   if (!route) return <NotForYou onSignOut={signOut} />
   const all = sections()
-  const shown = screens.filter((s) => session.can(s.permission)).map((s) => all[s.name])
+  const shown = screens.filter((s) => s.permissions.some(session.can)).map((s) => all[s.name])
   const inBar = shown.filter((s) => !s.inMore)
   const inMore = shown.filter((s) => s.inMore)
   const link = (to: Route) => linkTo(to, navigate)
@@ -111,7 +113,7 @@ export function App() {
           {shown.map((s) => (
             <a
               key={s.name}
-              {...link(screenRoute(s.name))}
+              {...link(screenRoute(s.name, session.can))}
               aria-current={route.name === s.name ? 'page' : undefined}
               className={cn(navItem, s.inMore && 'max-md:hidden')}
             >
@@ -149,7 +151,7 @@ export function App() {
             )}
           >
             {inMore.map((s) => (
-              <a key={s.name} {...link(screenRoute(s.name))} aria-current={route.name === s.name ? 'page' : undefined} className={moreItem}>
+              <a key={s.name} {...link(screenRoute(s.name, session.can))} aria-current={route.name === s.name ? 'page' : undefined} className={moreItem}>
                 <span className={moreIcon}>
                   <s.icon aria-hidden className="size-5" />
                 </span>
@@ -169,12 +171,13 @@ export function App() {
         tabIndex={-1}
         className="mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none md:px-6 md:py-8 xl:px-10"
       >
+        {route.name === 'overview' ? <OverviewPage navigate={navigate} /> : null}
         {route.name === 'users' ? <UsersPage navigate={navigate} /> : null}
         {route.name === 'roles' ? <RolesPage /> : null}
         {route.name === 'audit' ? <AuditPage route={route} navigate={navigate} /> : null}
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
-        {route.name === 'backups' ? <BackupsPage /> : null}
+        {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
       </main>
       <ConfirmPassword prompt={passwordPrompt} />
     </div>

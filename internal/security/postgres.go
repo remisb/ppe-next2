@@ -221,6 +221,32 @@ func (s *PostgresStore) Review(ctx context.Context, now time.Time) (ReviewData, 
 	return out, nil
 }
 
+func (s *PostgresStore) Summary(ctx context.Context, now, dayStart time.Time) (Summary, error) {
+	var out Summary
+	err := s.pool.QueryRow(ctx, `
+		SELECT
+			(SELECT count(*) FROM auth_events WHERE kind = 'refresh_reused' AND occurred_at > $2),
+			(SELECT count(*) FROM auth_events WHERE kind IN ('sign_in_failed', 'reauth_failed') AND occurred_at > $3),
+			coalesce((SELECT max(n) FROM (SELECT count(*) AS n FROM auth_events
+				WHERE kind IN ('sign_in_failed', 'reauth_failed') AND occurred_at > $3 AND email_hash IS NOT NULL
+				GROUP BY email_hash) per), 0),
+			(SELECT count(*) FROM auth_events WHERE kind = 'sign_in' AND occurred_at >= $4),
+			(SELECT count(*) FROM auth_events WHERE kind = 'sign_in_failed' AND occurred_at >= $4),
+			(SELECT count(DISTINCT s.user_id) FROM user_sessions s JOIN users u ON u.id = s.user_id AND u.deleted_at IS NULL
+				WHERE s.ended_at IS NULL AND s.expires_at > $1 AND s.idle_expires_at > $1),
+			(SELECT count(*) FROM user_sessions s JOIN users u ON u.id = s.user_id AND u.deleted_at IS NULL
+				WHERE s.ended_at IS NULL AND s.expires_at > $1 AND s.idle_expires_at > $1),
+			(SELECT max(occurred_at) FROM audit_events WHERE event = $5)`,
+		now, now.Add(-CopiedWithin), now.Add(-time.Hour), dayStart, EventAccessReviewCompleted).
+		Scan(&out.CopiedSignIns, &out.FailedLastHour, &out.MostAtOneAccount, &out.SignInsToday, &out.FailedToday,
+			&out.SignedIn, &out.Devices, &out.LastReview)
+	if out.LastReview != nil {
+		t := out.LastReview.UTC()
+		out.LastReview = &t
+	}
+	return out, err
+}
+
 func (s *PostgresStore) Reviewed(ctx context.Context, ev audit.Event) error {
 	return audit.Insert(ctx, s.pool, ev)
 }

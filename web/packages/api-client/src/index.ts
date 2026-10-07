@@ -1,5 +1,6 @@
 export { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString, type AppName, type Client, type ClientOptions } from './client.ts'
 export { AUDIT_AREAS, AUDIT_EVENTS, isAuditEvent, type AuditArea, type AuditEvent } from './audit.ts'
+export { ATTENTION_KEYS, isAttentionKey, type AttentionKey } from './overview.ts'
 export {
   ACCESS_FLAGS,
   SECURITY_KINDS,
