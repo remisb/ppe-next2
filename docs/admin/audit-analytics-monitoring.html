@@ -903,7 +903,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
     <ul>
-      <li><b>External uptime check and droplet alerts</b> are account settings, not visible from the repository, so they are unconfirmed.</li>
+      <li><b>The droplet's metrics agent.</b> The uptime check and the CPU, memory and disk alerts were set up in DigitalOcean on 7 Oct; its Monitoring is now <b>Insights</b>. But <code>do-agent</code> is not on the droplet yet, so the memory and disk alerts cannot fire.</li>
       <li><b>The Help guide</b> does not cover the Overview, Audit log, Security, System or Usage yet.</li>
       <li><b>Left for later on purpose:</b> off-site seal anchors, email or Telegram alerts, the data sync writing through the API, the per-address limit in Postgres, and a monitoring stack.</li>
     </ul>
@@ -912,7 +912,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
     <div class="phase"><div class="ph-head"><h4>Now</h4><span class="size">small, most of the risk</span></div><ol class="steps">
       <li><s><b>Switch the API to <code>ppe_app</code></b></s> <b>Done 7 Oct.</b> To undo it, remove the two <code>API_DB_*</code> lines from <code>.env.prod</code> and run <code>make prod-up</code>.</li>
       <li><s><b>Copy backups off the droplet.</b></s> <b>Done 7 Oct:</b> Spaces in fra1, encrypted. Older backups stay on the <code>backups</code> volume, and nothing deletes them any more. Step 6's restore rehearsal now also proves that the age key decrypts.</li>
-      <li><b>Turn on the uptime check and droplet alerts.</b> Today nobody hears of an outage unless they open the site. Watch <code>/ready</code> from an EU service, and add CPU, memory and disk alerts (<code>docs/monitoring.md</code>).</li>
+      <li><b>Uptime check and droplet alerts:</b> <b>mostly done 7 Oct.</b> They are in DigitalOcean Insights. <b>Left:</b> install <code>do-agent</code> on the droplet (one command in <code>docs/monitoring.md</code>); without it, memory and disk report nothing.</li>
       <li><b>Confirm retention</b> (10 years for the audit log, 180 days for sign-ins) with the accountant. Changing it is a config value.</li>
     </ol></div>
     <div class="phase"><div class="ph-head"><h4>Soon</h4><span class="size soon">next few weeks</span></div><ol class="steps" start="5">

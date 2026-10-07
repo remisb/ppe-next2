@@ -176,7 +176,7 @@ log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healt
 binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
 `make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),
 shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).
-The external uptime check of `https://<site>/ready` and DigitalOcean's CPU/memory/disk alerts
+The uptime check of `https://<site>/ready` and the droplet's CPU/memory/disk alerts (DigitalOcean Insights, formerly Monitoring; memory and disk need `do-agent` on the droplet)
 are account settings, described in `docs/monitoring.md`.
 The API connects as `ppe_app` once `.env.prod` has `API_DB_USER=ppe_app` and a generated
 `API_DB_PASSWORD` (`docs/monitoring.md` has the steps); until then as the owner, and the

@@ -673,8 +673,10 @@ server.
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
-- **External uptime check and DigitalOcean alerts.** These are account settings
-  ([monitoring.md](../monitoring.md)), not visible from here, so they are unconfirmed.
+- **The droplet's metrics agent.** The uptime check and the CPU, memory and disk alerts were
+  set up in DigitalOcean on 7 Oct; its Monitoring is now **Insights**. But `do-agent` is not
+  on the droplet yet, so the memory and disk alerts cannot fire
+  ([monitoring.md](../monitoring.md)).
 - **The Help guide for Administration.** The Help text, its screenshots and `docs/guide` say
   nothing yet about the Overview, Audit log, Security, System or Usage.
 - **Left for later on purpose:**
@@ -694,12 +696,10 @@ server.
    made earlier stay on the `backups` volume, and nothing deletes them any more. The bucket
    can later hold the seal anchors (step 10). Step 6's restore rehearsal now also proves that
    the age key decrypts.
-3. **Turn on the external uptime check and droplet alerts.**
-   - *Why:* Today nobody hears that the site is down unless they open it. The Overview helps
-     only someone who looks at it.
-   - *How:* use the free tier of an EU uptime service on `https://workwear.gavort.nl/ready`,
-     plus DigitalOcean CPU, memory and disk alerts. Both are in
-     [monitoring.md](../monitoring.md).
+3. **Turn on the uptime check and droplet alerts.** *Mostly done 7 Oct:* the Uptime check of
+   `/ready` and the three alert rules are in DigitalOcean Insights. **Left:** install
+   `do-agent` on the droplet (one command in [monitoring.md](../monitoring.md)). Without it,
+   memory and disk report nothing.
 4. **Confirm the retention periods.** Ask the accountant whether 10 years for the Audit log
    and 180 days for sign-in records are right (question 1). A change is a config value, not
    code.
