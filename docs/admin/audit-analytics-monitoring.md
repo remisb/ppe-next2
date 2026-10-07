@@ -716,7 +716,8 @@ A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
    - Every table's row count matched production.
    - The drill was then removed.
 
-   Repeat it monthly ([backups.md](../backups.md)).
+   Repeat it monthly with `make prod-drill`, which runs these steps itself
+   ([backups.md](../backups.md)).
 7. **Set a review routine.**
    - Open the Overview weekly, and look through the error list's new kinds.
    - Do the first access review now. The Overview flags it after 90 days without one.

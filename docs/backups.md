@@ -72,6 +72,7 @@ make prod-backups                   # list stored backups, newest first
 make prod-restore                   # names the newest backup and stops
 make prod-restore CONFIRM=yes       # restores the newest backup
 make prod-restore KEY=<key> IDENTITY=/root/ppe-backup.key CONFIRM=yes   # a chosen, encrypted one
+make prod-drill IDENTITY=-          # rehearse a restore apart from the deployment (see Restore drill)
 make prod-logs                      # the agent logs each run
 ```
 
@@ -88,18 +89,45 @@ database too, so after a restore it ends at the restored backup.
 
 ## Restore drill (monthly)
 
-A backup that was never restored is not known to work. On a temporary droplet or your
-computer, with Docker:
+A backup that was never restored is not known to work. `make prod-drill`
+(`deploy/restore-drill.sh`) rehearses a restore on the droplet, next to the deployment but
+apart from it. It never touches the deployment's database:
+
+1. It starts a throwaway Postgres (`POSTGRES_IMAGE`) on a Docker network of its own. The
+   deployment's database is not on that network.
+2. It restores the newest backup into it, or `KEY=` one from `make prod-backups`, decrypting
+   with `IDENTITY=`.
+3. It runs `migrate.sh`, as a deploy does. No migration should be pending, and `ppe_app` gets
+   back the grants that a restore drops.
+4. It runs the API's `-verify-audit`, connected as `ppe_app`, which checks the Audit log
+   against its seals.
+5. It starts the API on the restored copy as `ppe_app`, until `GET /ready` answers.
+6. It prints every table's row count beside the deployment's.
+7. It ends with `drill: PASSED` or `drill: FAILED: <why>`, and removes everything it started
+   either way.
+
+The age key stays on your computer. `IDENTITY=-` reads it from standard input, so it travels
+over ssh into the restore and is never stored on the droplet. Run it from your computer:
 
 ```bash
-docker run -d --name drill -e POSTGRES_PASSWORD=drill -p 55432:5432 postgres:18-alpine
-git clone git@github.com:remisb/dbbackup.git && docker build --build-arg POSTGRES_IMAGE=postgres:18-alpine -t dbbackup dbbackup
-docker run --rm --network host -e DBBACKUP_DSN='postgres://postgres:drill@localhost:55432/postgres?sslmode=disable' \
-  -e DBBACKUP_RECORD=false -e DBBACKUP_TARGET='s3://ppe-next2-backups/prod?endpoint=fra1.digitaloceanspaces.com&region=fra1' \
-  -e DBBACKUP_S3_ACCESS_KEY=... -e DBBACKUP_S3_SECRET_KEY=... dbbackup restore --yes --latest
+ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes root@167.71.68.195 'cd /opt/ppe-next2 && make prod-drill IDENTITY=-' < ~/ppe-backup.key
 ```
 
-Then check the row counts (orders, employees) in the drill database.
+Unencrypted backups need no `IDENTITY`.
+
+**Reading the counts.** Changes made since the backup explain a difference, such as new
+orders or sign-ins. `dbbackup_runs` is always one row short, because a backup records its own
+run only after the dump. Investigate any other gap, or fewer rows restored where nothing was
+deleted since the backup.
+
+**If it fails:**
+- `the restore did not complete`: a wrong or missing key, or the bucket's keys in `.env.prod`.
+- `migrate.sh failed`: the backup's schema is newer than this checkout, so `git pull` first.
+- `does not match its seals`: the backup holds an Audit log that was changed after sealing.
+  Treat it as in [monitoring.md](monitoring.md).
+- `not ready`: the API's last log lines follow.
+
+A drill left behind by a killed run is named in the error, with the command to remove it.
 
 ## Upgrading Postgres to a new major version
 

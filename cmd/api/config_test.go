@@ -61,6 +61,13 @@ func TestConfigValidate(t *testing.T) {
 	if err := demo.validate(); err != nil {
 		t.Errorf("seed-demo needs no JWT secret or password: %v", err)
 	}
+	verify := config{DBDSN: "postgres://x", DBMaxConns: 1, VerifyAudit: true}
+	if err := verify.validate(); err != nil {
+		t.Errorf("-verify-audit needs only the database: %v", err)
+	}
+	if (config{DBMaxConns: 1, VerifyAudit: true}).validate() == nil {
+		t.Error("-verify-audit without API_DB_DSN should fail")
+	}
 	// The container healthcheck runs with the API's environment, but needs none of it.
 	if err := (config{Healthcheck: true}).validate(); err != nil {
 		t.Errorf("-healthcheck needs no database or secret: %v", err)

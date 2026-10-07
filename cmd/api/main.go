@@ -101,6 +101,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.SeedDemo {
 		return seedDemo(ctx, pool, svc.users, cfg, loc, logger)
 	}
+	if cfg.VerifyAudit {
+		return verifyAudit(ctx, svc.audit, os.Stdout)
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,

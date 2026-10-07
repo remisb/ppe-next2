@@ -16,7 +16,7 @@ PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db 
 
 .PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo \
 	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo \
-	prod-backup prod-backups prod-restore backup-once
+	prod-backup prod-backups prod-restore prod-drill backup-once
 
 help: ## List targets
 	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -142,6 +142,12 @@ prod-backups: ## List the stored backups, newest first
 prod-restore: ## Restore a backup: KEY=<key> (default newest) IDENTITY=<age key file> CONFIRM=yes
 	$(PROD) run --rm --no-deps $(if $(IDENTITY),-v $(abspath $(IDENTITY)):/run/backup.key:ro -e DBBACKUP_AGE_IDENTITY_FILE=/run/backup.key) \
 		backup restore $(if $(filter yes,$(CONFIRM)),--yes) $(if $(KEY),$(KEY),--latest)
+
+# The monthly restore drill (deploy/restore-drill.sh, docs/backups.md): restores
+# into a throwaway database beside the deployment, never into it. IDENTITY=- reads
+# the age key from standard input, so it can come over ssh and is never stored here.
+prod-drill: ## Rehearse a restore apart from the deployment: KEY=<key> (default newest) IDENTITY=<age key file, or - for stdin>
+	$(PROD_ENV) PROD_ENV_FILE="$(PROD_ENV_FILE)" KEY="$(KEY)" IDENTITY="$(IDENTITY)" deploy/restore-drill.sh
 
 backup-once: ## Back up the development database now (docker-compose.yml backup profile)
 	docker compose --profile backup run --rm backup once

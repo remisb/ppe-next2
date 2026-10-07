@@ -78,6 +78,10 @@ type config struct {
 	// Healthcheck asks the API at Addr whether it is ready (GET /ready) and
 	// exits: the container healthcheck, as the image has no curl.
 	Healthcheck bool
+
+	// VerifyAudit checks the Audit log against its seals, prints what it
+	// found and exits; non-zero on a mismatch. For the restore drill.
+	VerifyAudit bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -137,6 +141,7 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.SeedAdmin, "seed-admin", false, "create the first admin from API_SEED_USER_* and exit")
 	fs.BoolVar(&c.SeedDemo, "seed-demo", false, "fill an empty database with demo data as the API_SEED_USER_EMAIL admin and exit")
 	fs.BoolVar(&c.Healthcheck, "healthcheck", false, "check that the API at -addr is ready (GET /ready) and exit")
+	fs.BoolVar(&c.VerifyAudit, "verify-audit", false, "verify the Audit log against its seals, print the result as JSON and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -159,6 +164,9 @@ func (c config) validate() error {
 		if c.SeedUserEmail == "" || c.SeedUserPassword == "" {
 			errs = append(errs, errors.New("-seed-admin needs API_SEED_USER_EMAIL and API_SEED_USER_PASSWORD"))
 		}
+		return errors.Join(errs...)
+	}
+	if c.VerifyAudit {
 		return errors.Join(errs...)
 	}
 	if c.SeedDemo {

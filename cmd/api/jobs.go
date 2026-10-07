@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/usage"
 )
 
@@ -111,4 +115,26 @@ func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 		case <-tick.C:
 		}
 	}
+}
+
+// verifyAudit is the -verify-audit mode, for the restore drill
+// (deploy/restore-drill.sh): it checks the Audit log against its seals, as
+// the upkeep and Audit log → Verify do, writes what it found to out as JSON,
+// and fails on a mismatch.
+func verifyAudit(ctx context.Context, a interface {
+	Verify(context.Context) (audit.Verification, error)
+}, out io.Writer) error {
+	v, err := a.Verify(ctx)
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(v); err != nil {
+		return err
+	}
+	if !v.OK {
+		return fmt.Errorf("audit seals do not match from %s: %s", v.Mismatch.Day.Format(time.DateOnly), v.Mismatch.Problem)
+	}
+	return nil
 }

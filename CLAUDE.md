@@ -144,7 +144,7 @@ Caddy also sends the security headers, including a Content-Security-Policy that 
 `index.html`'s inline theme script, the same in both apps, by its hash
 (`web/apps/{workwear,admin}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`).
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
-`prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`; they run compose under `env -i` so `.env` values cannot leak in.
+`prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`, `prod-drill` (the monthly restore drill into a throwaway database, `deploy/restore-drill.sh`); they run compose under `env -i` so `.env` values cannot leak in.
 The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
 (`go install` of dbbackup `DBBACKUP_VERSION`) on `POSTGRES_IMAGE`, the image `db` and
 `migrate` also use, so `pg_dump` always matches the server; it backs up to `DBBACKUP_TARGET` (default the `backups`
