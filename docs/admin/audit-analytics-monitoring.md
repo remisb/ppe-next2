@@ -671,6 +671,7 @@ ran under it without an error. Backups go to the Spaces bucket `ppe-next2-backup
 encrypted with age; the first one succeeded at 15:16 UTC. The private key is kept off the
 server. The Uptime check of `/ready` and the CPU, memory and disk alerts are set up in
 DigitalOcean Insights (formerly Monitoring), and `do-agent` 3.18.14 runs on the droplet.
+A restore rehearsal of the encrypted Spaces backup passed (8.2 step 6).
 
 **Not done yet.** Each item is either a setting outside the code or left out on purpose:
 
@@ -705,13 +706,17 @@ DigitalOcean Insights (formerly Monitoring), and `do-agent` 3.18.14 runs on the 
 5. **Update the Help guide for Administration.** Cover the Overview, Audit log (with Export
    and Verify), Security, System and Usage, then run `pnpm guide` for the screenshots and
    `docs/guide`. This is a separate request.
-6. **Rehearse a restore.**
-   - Restore the latest backup with `make prod-restore` (on a copy, or in a quiet hour), then
-     run `make prod-up`.
-   - Check three things: `/ready` answers; Verify on the Audit log passes; `ppe_app`'s grants
-     are back.
-   - This proves backups, seals and grants together. It is the one path not run end to end in
-     production.
+6. ~~**Rehearse a restore.**~~ **Done 7 Oct**, on the droplet, apart from production:
+   - The newest Spaces backup was restored into a throwaway Postgres 18 on its own Docker
+     network. It decrypted with the age key, which was streamed from the owner's computer and
+     never written to the server.
+   - `migrate.sh` gave `ppe_app` its grants back. The API, connected as `ppe_app`, answered
+     `/ready`.
+   - Verify passed all 162 seals (28 Apr – 6 Oct, 88 sealed events and 6 not yet sealed).
+   - Every table's row count matched production.
+   - The drill was then removed.
+
+   Repeat it monthly ([backups.md](../backups.md)).
 7. **Set a review routine.**
    - Open the Overview weekly, and look through the error list's new kinds.
    - Do the first access review now. The Overview flags it after 90 days without one.

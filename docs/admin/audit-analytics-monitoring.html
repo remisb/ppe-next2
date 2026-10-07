@@ -900,6 +900,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
     <p><b>The API connects as <code>ppe_app</code>.</b> Its password was generated into <code>.env.prod</code> on the droplet and never shown, and the startup upkeep (seals, purges, samples) ran under it without an error.</p>
     <p><b>Backups go off the server:</b> they go to the Spaces bucket <code>ppe-next2-backups</code> (fra1), encrypted with age. The first one succeeded at 15:16 UTC. The private key is kept off the server.</p>
     <p><b>Outages and the droplet are watched:</b> the Uptime check of <code>/ready</code> and the CPU, memory and disk alerts are in DigitalOcean Insights (formerly Monitoring), and <code>do-agent</code> 3.18.14 runs on the droplet.</p>
+    <p><b>A restore works:</b> the rehearsal of the encrypted Spaces backup passed. It decrypted, the grants came back, the seals verified and the row counts matched.</p>
   </div>
   <div class="gaps">
     <p class="eyebrow">Not done yet</p>
@@ -917,7 +918,7 @@ reason ∈ bad_password, unknown_email, inactive, rate_limited</pre>
     </ol></div>
     <div class="phase"><div class="ph-head"><h4>Soon</h4><span class="size soon">next few weeks</span></div><ol class="steps" start="5">
       <li><b>Help guide for Administration:</b> the Overview, Audit log (with Export and Verify), Security, System and Usage, then <code>pnpm guide</code>. This is a separate request.</li>
-      <li><b>Rehearse a restore:</b> run <code>prod-restore</code>, then <code>prod-up</code>, then check <code>/ready</code>, Verify and the grants. It proves backups, seals and grants together; this is the one path not yet run end to end in production.</li>
+      <li><s><b>Rehearse a restore.</b></s> <b>Done 7 Oct</b>, on the droplet, apart from production. The newest Spaces backup was restored into a throwaway Postgres 18, decrypted with the age key, which was streamed from the owner's computer and never stored on the server. <code>migrate.sh</code> gave <code>ppe_app</code> its grants back, and the API answered <code>/ready</code> as <code>ppe_app</code>. Verify passed all 162 seals, and every table's row count matched production. Repeat it monthly.</li>
       <li><b>Set a routine:</b> look at the Overview and new error kinds weekly, and do the first access review now (the Overview flags 90 days without one).</li>
       <li><b>Read Usage after real use.</b> "Opened" counts only openings from 7 Oct on, so it understates older links for 90 days. The quality trend starts 7 Oct. "Database grew fast" needs 30 days of samples.</li>
     </ol></div>
