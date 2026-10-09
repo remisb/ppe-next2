@@ -50,8 +50,12 @@ The UI options were compared in the
    server-built preview and sends its hash back with Give. A form changed after printing is
    refused, so the paper and the stored form cannot differ.
 6. **Signed copies are the first use of the Files platform** that ADR 0001 planned (object
-   storage, streamed through the API). Slice 5 builds only what they need. Where files live
-   and how they are backed up are decided before that slice.
+   storage, streamed through the API). Slice 5 builds only what they need, in
+   `internal/files`. Decided on 2026-10-09 (spec, open decision 2): a private Spaces bucket of
+   their own with versioning, outside the database and its backups; PDF, JPEG or PNG up to
+   10 MB, the type read from the bytes and a photo's metadata removed; uploading again keeps
+   the earlier copies. Signed copies are not Personnel files, so they carry no envelope
+   encryption of their own: Spaces encrypts at rest, and they are read through the API only.
 7. **The UI is register-first, with three entry points** (option R of the UX review):
    - The Company Assets register: SIM Cards and Equipment & Furniture tabs, summary tiles
      that filter, and rows that offer the action their state allows. Each action is a Form

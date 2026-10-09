@@ -1,12 +1,11 @@
 # Asset service (Company Assets)
 
 **Status: the API is built (slice 2 of [ADR 0004](../architecture/adr/0004-company-assets.md)):
-migration `0029_company_assets`, `internal/domain/asset`, every route below except the
-signed copy's. The SIM card register (slice 3) and the asset page with Give SIM Card,
+migration `0029_company_assets`, `internal/domain/asset`, every route below. The SIM card register (slice 3) and the asset page with Give SIM Card,
 Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
 screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
-dashboards' Company Assets card (slice 6), and Equipment & Furniture (slice 7); see below.**
-Upload Signed Form is slice 5, waiting for open decision 2. The product contract is the assets
+dashboards' Company Assets card (slice 6), Equipment & Furniture (slice 7) and Upload Signed
+Form (slice 5: migration `0030_asset_signed_copies`, `internal/files`); see below.** The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -68,7 +67,6 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `form` | JSONB snapshot of the assignment form's data, null when the asset's category needs no form; never changes |
 | `form_template_version`, `document_hash` | As the order record's `receipt_text_version` and hash: SHA-256 of the form's canonical JSON |
 | `paper_form_signed` | True when given with a form (giving requires it) |
-| `signed_copy_file_id`, `signed_copy_uploaded_*` | The scan; slice 5 adds these columns. Until then every form is **Signed Copy Missing** |
 | `not_returned_at`, `not_returned_by_user_id`, `not_returned_comment`, `whereabouts` | The Not Returned mark; `whereabouts` is `WITH_EMPLOYEE` or `UNKNOWN` |
 | `returned_date`, `returned_by_user_id`, `returned_at`, `return_comment` | Null while open. `returned_date` is not before `given_date` and not in the future |
 
@@ -192,9 +190,36 @@ route, and nothing is sent or changed. Subject `SIM blocking request - [Phone Nu
 
 ### Upload Signed Form (§9, slice 5)
 
-A scan or photo for one assignment, now or later, through the Files platform (ADR 0004).
-Event `asset.signed_copy_uploaded`. The copy stays with its assignment when the asset later
-goes to someone else.
+A scan or photo of the signed form for one assignment, any time after giving, also after the
+return. Only an assignment with a form takes one (furniture's is 404 `ErrNoForm`). The copy
+stays with its assignment when the asset later goes to someone else.
+
+- **What is accepted** (open decision 2): PDF, JPEG or PNG, read from the file's first bytes,
+  never its name or the browser's type; at most 10 MB (413); anything else 415. A photo's
+  EXIF, XMP, IPTC and comments are removed (`files.Clean`), keeping only its orientation, so
+  it still shows the right way up; a PNG loses its text and EXIF chunks. A PDF is kept as sent.
+- **Uploading again** adds a copy: the newest is the one shown, the earlier ones stay, listed
+  under the assignment. Nothing is replaced or deleted.
+- **Where the file goes**: `internal/files`, a `Store` behind `API_FILES_TARGET`, in
+  production a private Spaces bucket of its own with versioning on (`docs/backups.md`,
+  "Uploaded files"), in development the folder `.files`, in tests a temporary one. The file is
+  stored first under `signed-copies/<assignment>/<copy>.<ext>`, then its row and event in one
+  transaction, so a row never names a missing file (a failed write may leave an unnamed
+  file, which nothing reads). Without a store, uploads are 503 `ErrNoStorage`.
+- **The row**, table `asset_signed_copies`: `id`, `assignment_id`, `object_key`, `file_name`
+  (the device's name, cleaned, with the true extension), `content_type`, `size_bytes`,
+  `sha256` (of the stored bytes), `uploaded_at`, `uploaded_by_user_id`. A trigger refuses
+  UPDATE and DELETE, and `ppe_app` has neither.
+- **Reading** a copy streams it through the API as an attachment
+  (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control:
+  private, no-store`), with the type checked on upload: never shown inside the page, so the
+  CSP is unchanged. Anyone signed in may read it, as they read the form.
+- **Assignments** say `signed_copy_uploaded`; the asset's page also lists `signed_copies`,
+  newest first, with the uploader's name. The register's Documents column and the employee
+  page show **Signed Copy Uploaded** or **Signed Copy Missing** for a holding on a form, and
+  the register filters by `signed_copy=missing`.
+- Event `asset.signed_copy_uploaded`, naming the assignment, the file's name, type, size and
+  SHA-256.
 
 ## Routes
 
@@ -214,6 +239,8 @@ goes to someone else.
 | `POST /api/v1/assets/{id}/return` | `assets.manage` | Register Return, on the open assignment |
 | `POST /api/v1/assets/{id}/not-returned` | `assets.manage` | Mark as Not Returned, on the open assignment |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; 404 when the asset needed none |
+| `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
+| `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
 | `GET /api/v1/audit-events/assets/{id}` | authenticated | the asset's Changes, as for the other records |
 
 The return and the mark act on the asset's only open assignment, so they are the asset's
@@ -228,7 +255,8 @@ ignored, or the name, serial number or holder's name), `location`, `held=true` (
 it, whereabouts known or not: the With Employees tile), `employee_id`, `provider`,
 `status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, `name`, `status`, `holder`,
 `given`), `dir`,
-`page`, `page_size` (default 50, at most 100). Slice 5 adds `signed_copy`. An unknown or
+`signed_copy=missing` (held on a form with no signed copy yet), `page`, `page_size` (default
+50, at most 100, `page` at most 1,000,000). An unknown or
 repeated parameter is 400, and no match is an empty page: `{assets, page, page_size,
 total}`.
 
@@ -236,7 +264,7 @@ total}`.
 
 Entity type `asset`, entity id the asset's, so an asset's Changes show its whole story:
 `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`,
-`asset.marked_not_returned`, and in slice 5 `asset.signed_copy_uploaded`. Assignment
+`asset.marked_not_returned`, `asset.signed_copy_uploaded`. Assignment
 events name the assignment and employee ids, the employee's name and the dates. They are in
 `audit.Events()`, `AUDIT_EVENTS` and the Audit log's area **Company Assets** (`assets`),
 with their words in `@ppe/audit`; the Audit log names an asset by its inventory number.
@@ -363,7 +391,7 @@ The same engine, screens and rules, with what differs by kind:
 | # | Question | Brief | Default until decided |
 | --- | --- | --- | --- |
 | 1 | Employees have no "no longer working" state; the brief assumes one. Add it? May an employee holding assets be deleted? | §2, §13 | No new state; Delete employee is refused (409 `employee.ErrHoldsAssets`) while they hold an open assignment, naming the assets. It checks under the employee's row lock, which Give share-locks |
-| 2 | Where signed copies are stored and backed up, and their size and type limits. The brief says "existing rules", but none exist | §9 | Slice 5 waits for the decision; ADR 0001 points to Spaces |
+| 2 | Where signed copies are stored and backed up, and their size and type limits. The brief says "existing rules", but none exist | §9 | **Decided** (2026-10-09): a private Spaces bucket of their own with versioning; PDF, JPEG or PNG up to 10 MB, photo metadata removed; uploading again keeps the earlier copies |
 | 3 | Company name and details for forms and the blocking email | §8, §14 | A Settings field, set by `settings.manage` |
 | 4 | Providers' contacts and plans | §5, §14, §20 | Provider and plan are free text; a provider's e-mail is a Settings list |
 | 5 | Which built-in roles get `assets.manage`; whether Change Status needs its own permission | §18 | Administrator and Manager; one permission |

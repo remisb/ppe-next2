@@ -1134,6 +1134,24 @@ export interface AssetAssignment {
   return_comment: string | null
   /** Whole days from the given date to the return date, or to today while open. */
   days_held: number
+  /** Whether a signed copy of the form was uploaded. */
+  signed_copy_uploaded: boolean
+  /** The uploads, newest first: only on an asset's page (AssetDetail). */
+  signed_copies?: SignedCopy[]
+}
+
+/** One upload of a signed assignment form, a scan or a photo. The newest is the copy shown; earlier ones stay. */
+export interface SignedCopy {
+  id: string
+  assignment_id: string
+  file_name: string
+  content_type: 'application/pdf' | 'image/jpeg' | 'image/png'
+  size_bytes: number
+  sha256: string
+  uploaded_at: string
+  uploaded_by_user_id: string
+  /** The uploader's name now. */
+  uploaded_by_name: string
 }
 
 /** The data an assignment form shows, copied when the asset is given. */
@@ -1227,6 +1245,8 @@ export interface AssetQuery {
   category?: AssetCategory
   status?: ConnectionStatus
   not_returned?: boolean
+  /** Held on a form with no signed copy yet. */
+  signed_copy?: 'missing'
   sort?: AssetSort
   dir?: 'asc' | 'desc'
   page?: number

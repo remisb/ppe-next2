@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
 import { admin, webURL } from '../env.ts'
@@ -1208,6 +1210,23 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   await expect(assignments.getByRole('link', { name: 'Print form again' })).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give SIM Card' })).toHaveCount(0)
 
+  // Upload Signed Form (§9): Signed Copy Missing until a scan is in. A file that is
+  // not what its name says is refused; the copy downloads as it was sent.
+  await expect(assignments.getByText('Signed Copy Missing')).toBeVisible()
+  const picker = assignments.getByLabel('Upload Signed Form')
+  await picker.setInputFiles({ name: 'form.pdf', mimeType: 'application/pdf', buffer: Buffer.from('<html>not a scan</html>') })
+  await expect(assignments.getByRole('alert')).toHaveText('Choose a PDF, JPEG or PNG file.')
+  const scan = Buffer.from('%PDF-1.4\n1 0 obj << >> endobj\n%%EOF\n')
+  await picker.setInputFiles({ name: 'Ona signed form.pdf', mimeType: 'application/pdf', buffer: scan })
+  await expect(page.getByText('Signed copy of SIM-000001 uploaded.')).toBeVisible()
+  await expect(assignments.getByText('Signed Copy Uploaded')).toBeVisible()
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    assignments.getByRole('button', { name: 'Download Ona signed form.pdf' }).click(),
+  ])
+  expect(download.suggestedFilename()).toBe('Ona signed form.pdf')
+  expect((await readFile(await download.path())).equals(scan)).toBe(true)
+
   // Mark as Not Returned, and the blocking email offered next (§13, §14).
   await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
   await page.getByRole('menuitem', { name: 'Mark as Not Returned' }).click()
@@ -1234,7 +1253,7 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   await expect(assignments.getByText('Not Returned', { exact: true })).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give SIM Card' })).toBeVisible()
   // Its Changes tell the story.
-  for (const change of ['Given to an employee', 'Marked as Not Returned', 'Returned to the office']) {
+  for (const change of ['Given to an employee', 'Signed copy uploaded', 'Marked as Not Returned', 'Returned to the office']) {
     await expect(main.getByText(change, { exact: true }).first()).toBeVisible()
   }
 })
@@ -1343,7 +1362,8 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await give.getByRole('button', { name: 'Give Asset' }).click()
   await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
   await expect(equipment.getByRole('link', { name: 'PC-000001' })).toBeVisible()
-  await expect(equipment).toContainText('Paper form signed')
+  // Given on a form, its signed copy not uploaded yet.
+  await expect(equipment).toContainText('Signed Copy Missing')
   // Kept apart from her SIM cards on the same page (§18).
   await expect(page.getByRole('region', { name: 'Given SIM' }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
 

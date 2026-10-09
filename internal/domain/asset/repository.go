@@ -87,4 +87,9 @@ type Repository interface {
 	// UpdateOpen locks the asset and its open assignment, calls fn and writes
 	// the assignment's return and Not Returned fields and the events.
 	UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error)
+	// AddSignedCopy locks the asset, reads its assignment (ErrAssignmentNotFound),
+	// calls fn and writes the signed copy and its event.
+	AddSignedCopy(ctx context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error
+	// SignedCopy is one signed copy of the asset's assignment, or ErrNotFound.
+	SignedCopy(ctx context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error)
 }

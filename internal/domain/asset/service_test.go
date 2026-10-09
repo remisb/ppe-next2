@@ -1,8 +1,13 @@
 package asset
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image"
+	"image/jpeg"
+	"io"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -12,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/files"
 )
 
 // fakeRepo mirrors the Postgres contract: live-only reads, inventory numbers
@@ -25,6 +31,7 @@ type fakeRepo struct {
 	counters    map[string]int64
 	assignments []Assignment
 	employees   map[uuid.UUID]EmployeeView
+	copies      []SignedCopy
 	events      []audit.Event
 }
 
@@ -96,10 +103,53 @@ func (f *fakeRepo) Assignments(_ context.Context, assetID uuid.UUID) ([]Assignme
 	for i := len(f.assignments) - 1; i >= 0; i-- {
 		if a := f.assignments[i]; a.AssetID == assetID {
 			a.EmployeeName = f.employees[a.EmployeeID].FullName()
+			a.SignedCopies = make([]SignedCopy, 0)
+			for j := len(f.copies) - 1; j >= 0; j-- {
+				if f.copies[j].AssignmentID == a.ID {
+					a.SignedCopies = append(a.SignedCopies, f.copies[j])
+				}
+			}
+			a.SignedCopyUploaded = len(a.SignedCopies) > 0
 			out = append(out, a)
 		}
 	}
 	return out, nil
+}
+
+func (f *fakeRepo) AddSignedCopy(_ context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cur, ok := f.assets[assetID]
+	if !ok || cur.Deleted() {
+		return ErrNotFound
+	}
+	for _, as := range f.assignments {
+		if as.ID == assignmentID && as.AssetID == assetID {
+			c, ev, err := fn(cur, as)
+			if err != nil {
+				return err
+			}
+			f.copies = append(f.copies, c)
+			f.events = append(f.events, ev)
+			return nil
+		}
+	}
+	return ErrAssignmentNotFound
+}
+
+func (f *fakeRepo) SignedCopy(_ context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, c := range f.copies {
+		if c.ID == copyID && c.AssignmentID == assignmentID {
+			for _, as := range f.assignments {
+				if as.ID == assignmentID && as.AssetID == assetID {
+					return c, nil
+				}
+			}
+		}
+	}
+	return SignedCopy{}, ErrNotFound
 }
 
 func (f *fakeRepo) List(_ context.Context, lf ListFilter) ([]Record, int, error) {
@@ -800,6 +850,107 @@ func TestDaysHeldCountsCalendarDays(t *testing.T) {
 	}{{"2026-10-09", "2026-10-09", 0}, {"2026-03-02", "2026-10-09", 221}, {"2025-11-18", "2026-10-09", 325}, {"2026-10-10", "2026-10-09", 0}} {
 		if got := daysBetween(c.from, c.to); got != c.want {
 			t.Errorf("%s → %s = %d, want %d", c.from, c.to, got, c.want)
+		}
+	}
+}
+
+func TestUploadSignedCopy(t *testing.T) {
+	f := newFixture(t)
+	v := f.sim(t, "SIM-000001", StatusActive, true)
+	given, err := f.give(t, v.ID, f.emp, "2026-10-09")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf := Upload{FileName: `C:\Scans\Jonas form (signed).PDF`, Data: []byte("%PDF-1.7\n1 0 obj\n%%EOF")}
+	if _, err := f.svc.UploadSignedCopy(f.ctx, v.ID, given.ID, pdf, testActor); !errors.Is(err, ErrNoStorage) {
+		t.Errorf("without storage: %v", err)
+	}
+	root := t.TempDir()
+	store, err := files.NewDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(f.repo, WithClock(func() time.Time { return testNow }), WithLocation(vilnius), WithFiles(store))
+	for name, c := range map[string]struct {
+		id   uuid.UUID
+		u    Upload
+		want error
+	}{
+		"empty":            {given.ID, Upload{FileName: "a.pdf"}, ErrInvalid},
+		"too large":        {given.ID, Upload{FileName: "a.pdf", Data: append([]byte("%PDF-"), make([]byte, MaxSignedCopyBytes)...)}, ErrFileTooLarge},
+		"a web page":       {given.ID, Upload{FileName: "form.pdf", Data: []byte("<html><script>alert(1)</script>")}, ErrFileType},
+		"a cut photo":      {given.ID, Upload{FileName: "a.jpg", Data: []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00}}, ErrInvalid},
+		"not this asset's": {uuid.New(), pdf, ErrAssignmentNotFound},
+	} {
+		if _, err := svc.UploadSignedCopy(f.ctx, v.ID, c.id, c.u, testActor); !errors.Is(err, c.want) {
+			t.Errorf("%s: %v, want %v", name, err, c.want)
+		}
+	}
+	if stored, _ := filepath.Glob(filepath.Join(root, "signed-copies", "*", "*")); len(stored) != 0 {
+		t.Errorf("refused uploads left files: %v", stored)
+	}
+
+	first, err := svc.UploadSignedCopy(f.ctx, v.ID, given.ID, pdf, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.FileName != "Jonas form signed.pdf" || first.ContentType != files.PDF || first.SizeBytes != int64(len(pdf.Data)) || len(first.SHA256) != 64 {
+		t.Errorf("copy = %+v", first)
+	}
+	if got := f.eventNames(); got[len(got)-1] != EventSignedCopyUploaded {
+		t.Errorf("events = %v", got)
+	}
+	_, r, err := svc.SignedCopy(f.ctx, v.ID, given.ID, first.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := io.ReadAll(r); string(b) != string(pdf.Data) {
+		t.Errorf("read back %q", b)
+	}
+	r.Close()
+	// Uploading again keeps the first; the newest comes first.
+	second, err := svc.UploadSignedCopy(f.ctx, v.ID, given.ID, Upload{FileName: "photo.jpeg", Data: tinyJPEG(t)}, testActor)
+	if err != nil || second.ContentType != files.JPEG || second.FileName != "photo.jpg" {
+		t.Fatalf("second = %+v, %v", second, err)
+	}
+	d, _ := svc.Get(f.ctx, v.ID)
+	if as := d.Assignments[0]; !as.SignedCopyUploaded || len(as.SignedCopies) != 2 || as.SignedCopies[0].ID != second.ID {
+		t.Errorf("assignment = %+v", as.Assignment)
+	}
+	if _, _, err := svc.SignedCopy(f.ctx, v.ID, uuid.New(), first.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("another assignment's copy: %v", err)
+	}
+
+	// Furniture is given without a form, so it has no signed copy.
+	desk, _ := f.svc.Create(f.ctx, CreateParams{Kind: KindEquipment, Params: Params{InventoryNo: "FUR-000001", Name: sp("Desk"), Category: ptr(CategoryFurniture)}}, testActor)
+	deskGiven, err := f.svc.Give(f.ctx, desk.ID, GiveParams{FormParams: FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09"}}, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.UploadSignedCopy(f.ctx, desk.ID, deskGiven.ID, pdf, testActor); !errors.Is(err, ErrNoForm) {
+		t.Errorf("a desk's copy: %v", err)
+	}
+}
+
+func tinyJPEG(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, image.NewGray(image.Rect(0, 0, 2, 2)), nil); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestCopyName(t *testing.T) {
+	for in, want := range map[string]string{
+		"scan.pdf":               "scan.pdf",
+		"/tmp/x/Rūta's form.PNG": "Rūtas form.pdf",
+		`..\..\evil".pdf`:        "evil.pdf",
+		"":                       "signed-form.pdf",
+		"<script>.pdf":           "script.pdf",
+	} {
+		if got := copyName(in, files.PDF); got != want {
+			t.Errorf("copyName(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -31,6 +32,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
@@ -40,6 +42,16 @@ import (
 // when it is unset. Tables are emptied first. The services connect as the
 // API's role ppe_app, as in production, so every flow here exercises its
 // grants; the pool returned is the owner's, for setup.
+// testFiles is a folder for the test's uploads.
+func testFiles(t *testing.T) files.Store {
+	t.Helper()
+	store, err := files.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return store
+}
+
 func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	t.Helper()
 	dsn := os.Getenv("API_TEST_DB_DSN")
@@ -78,6 +90,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
+		testFiles(t),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
@@ -390,6 +403,99 @@ func TestPostgresAssetsEditNotReturnedAndFurniture(t *testing.T) {
 
 	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&page=200000000000000000", mgr, nil); rec.Code != http.StatusBadRequest {
 		t.Errorf("a huge page = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// upload sends one file as multipart/form-data, as the app's Upload Signed Form does.
+func (a *testAPI) upload(t *testing.T, path, token, name string, data []byte) *httptest.ResponseRecorder {
+	t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	fw, err := mw.CreateFormFile("file", name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fw.Write(data)
+	mw.Close()
+	req := httptest.NewRequest("POST", path, &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.handler.ServeHTTP(rec, req)
+	return rec
+}
+
+// Upload Signed Form (§9): what is accepted, how a copy downloads, and its event.
+func TestPostgresAssetsSignedCopyHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Jonas", "last_name": "Petraitis"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	today := time.Now().Format(time.DateOnly)
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011",
+		"phone_no": "+370 612 40118", "provider": "Telia", "plan": "Biz 10 GB", "non_return_value_cents": 2500, "connection_status": "ACTIVE"})
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	form := map[string]any{"employee_id": empID, "given_date": today}
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/preview", mgr, form)
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, map[string]any{"employee_id": empID, "given_date": today,
+		"paper_form_signed": true, "form_hash": decode[map[string]any](t, rec.Body.Bytes())["document_hash"]})
+	assignment := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	path := "/api/v1/assets/" + id + "/assignments/" + assignment + "/signed-copies"
+	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&signed_copy=missing", mgr, nil); !strings.Contains(rec.Body.String(), `"total":1`) {
+		t.Errorf("missing before = %s", rec.Body)
+	}
+
+	pdf := []byte("%PDF-1.7\n1 0 obj\n%%EOF\n")
+	for name, c := range map[string]struct {
+		token, file string
+		data        []byte
+		want        int
+	}{
+		"the employee role": {staff, "scan.pdf", pdf, http.StatusForbidden},
+		"a web page":        {mgr, "scan.pdf", []byte("<html><script>alert(1)</script></html>"), http.StatusUnsupportedMediaType},
+		"over 10 MB":        {mgr, "scan.pdf", append([]byte("%PDF-"), make([]byte, 10<<20)...), http.StatusRequestEntityTooLarge},
+		"empty":             {mgr, "scan.pdf", nil, http.StatusBadRequest},
+	} {
+		if rec := api.upload(t, path, c.token, c.file, c.data); rec.Code != c.want {
+			t.Errorf("%s = %d %s, want %d", name, rec.Code, rec.Body, c.want)
+		}
+	}
+	if rec := api.do(t, "POST", path, mgr, map[string]any{"file": "x"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("JSON instead of a file = %d", rec.Code)
+	}
+	rec = api.upload(t, path, mgr, "Jonas form.pdf", pdf)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+	c := decode[map[string]any](t, rec.Body.Bytes())
+	if c["file_name"] != "Jonas form.pdf" || c["content_type"] != "application/pdf" || c["size_bytes"] != float64(len(pdf)) || c["object_key"] != nil {
+		t.Errorf("copy = %v", c)
+	}
+	// Anyone signed in reads it, as they read the form; as an attachment, never shown in the page.
+	rec = api.do(t, "GET", path+"/"+c["id"].(string), staff, nil)
+	if rec.Code != http.StatusOK || rec.Body.String() != string(pdf) || rec.Header().Get("Content-Type") != "application/pdf" ||
+		rec.Header().Get("Content-Disposition") != `attachment; filename="Jonas form.pdf"` || rec.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Errorf("download = %d %v %q", rec.Code, rec.Header(), rec.Body)
+	}
+	if rec := api.do(t, "GET", path+"/"+uuid.NewString(), mgr, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("an unknown copy = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil)
+	detail := decode[map[string]any](t, rec.Body.Bytes())
+	open := detail["open_assignment"].(map[string]any)
+	copies := detail["assignments"].([]any)[0].(map[string]any)["signed_copies"].([]any)
+	if open["signed_copy_uploaded"] != true || len(copies) != 1 || copies[0].(map[string]any)["uploaded_by_name"] == "" {
+		t.Errorf("asset = %v", detail)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&signed_copy=missing", mgr, nil); !strings.Contains(rec.Body.String(), `"total":0`) {
+		t.Errorf("missing after = %s", rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&signed_copy=yes", mgr, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("signed_copy=yes = %d", rec.Code)
+	}
+	if rec := api.do(t, "GET", "/api/v1/audit-events/assets/"+id, mgr, nil); !strings.Contains(rec.Body.String(), "asset.signed_copy_uploaded") {
+		t.Errorf("changes = %s", rec.Body)
 	}
 }
 
@@ -1346,6 +1452,8 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`DELETE FROM asset_assignments`,
 		`UPDATE asset_numbers SET number = number`,
 		`DELETE FROM asset_numbers`,
+		`UPDATE asset_signed_copies SET file_name = file_name`,
+		`DELETE FROM asset_signed_copies`,
 		`DROP TRIGGER audit_events_no_update_delete ON audit_events`,
 		`ALTER TABLE users ADD COLUMN x int`,
 		`CREATE TABLE x (id int)`,

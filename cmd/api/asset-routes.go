@@ -1,7 +1,11 @@
 package main
 
 import (
+	"errors"
+	"io"
+	"mime"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 
@@ -33,6 +37,8 @@ func registerAssetRoutes(rt *router, assets *asset.Service) {
 	rt.restricted("POST /api/v1/assets/{id}/return", h.giveBack, role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/not-returned", h.markNotReturned, role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form", h.form)
+	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.uploadSignedCopy, role.AssetsManage)
+	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.signedCopy)
 }
 
 // assetParams is an asset's details as Add and Edit send them.
@@ -100,7 +106,7 @@ type notReturnedRequest struct {
 // the domain-service contract's exception to path-segment filters.
 var assetListParams = map[string]bool{
 	"kind": true, "q": true, "location": true, "held": true, "employee_id": true, "provider": true, "category": true, "status": true,
-	"not_returned": true, "sort": true, "dir": true, "page": true, "page_size": true,
+	"not_returned": true, "signed_copy": true, "sort": true, "dir": true, "page": true, "page_size": true,
 }
 
 func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +119,7 @@ func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	p := asset.ListParams{
 		Kind: q.Get("kind"), Q: q.Get("q"), Location: q.Get("location"), Held: q.Get("held"), Provider: q.Get("provider"), Category: q.Get("category"), Status: q.Get("status"),
-		NotReturned: q.Get("not_returned"), Sort: q.Get("sort"), Dir: q.Get("dir"), Page: q.Get("page"), PageSize: q.Get("page_size"),
+		NotReturned: q.Get("not_returned"), SignedCopy: q.Get("signed_copy"), Sort: q.Get("sort"), Dir: q.Get("dir"), Page: q.Get("page"), PageSize: q.Get("page_size"),
 	}
 	if v := q.Get("employee_id"); v != "" {
 		id, err := uuid.Parse(v)
@@ -329,4 +335,80 @@ func (h *assetHandler) form(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, f)
+}
+
+// uploadSignedCopy takes a multipart form with one "file": the scan or photo of
+// an assignment's signed form (§9). The body may be the file's 10 MB and a
+// little for the form around it.
+func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	assignmentID, err := parseUUIDPath(r, "assignmentID")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, asset.MaxSignedCopyBytes+64<<10)
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeError(w, r, asset.ErrFileTooLarge)
+			return
+		}
+		writeErrorMessage(w, http.StatusBadRequest, "send the file as multipart/form-data, in a field named file")
+		return
+	}
+	defer r.MultipartForm.RemoveAll()
+	f, header, err := r.FormFile("file")
+	if err != nil {
+		writeErrorMessage(w, http.StatusBadRequest, "send the file as multipart/form-data, in a field named file")
+		return
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, asset.MaxSignedCopyBytes+1))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	c, err := h.assets.UploadSignedCopy(r.Context(), id, assignmentID, asset.Upload{FileName: header.Filename, Data: data}, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, c)
+}
+
+// signedCopy sends a signed copy as an attachment, never shown in the page:
+// its type is the one checked on upload, and the browser may not guess another.
+func (h *assetHandler) signedCopy(w http.ResponseWriter, r *http.Request) {
+	ids := make([]uuid.UUID, 3)
+	for i, name := range []string{"id", "assignmentID", "copyID"} {
+		var err error
+		if ids[i], err = parseUUIDPath(r, name); err != nil {
+			writeError(w, r, err)
+			return
+		}
+	}
+	c, body, err := h.assets.SignedCopy(r.Context(), ids[0], ids[1], ids[2])
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	defer body.Close()
+	hd := w.Header()
+	hd.Set("Content-Type", c.ContentType)
+	hd.Set("Content-Length", strconv.FormatInt(c.SizeBytes, 10))
+	hd.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": c.FileName}))
+	hd.Set("X-Content-Type-Options", "nosniff")
+	hd.Set("Cache-Control", "private, no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, body)
 }

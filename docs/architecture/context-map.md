@@ -62,12 +62,12 @@ extracted, on its own.
 | --- | --- | --- | --- | --- | --- |
 | Users & sign-in | users, roles and permissions, sessions | `internal/platform/iam` | `iam` | credentials | exists (`user`, `session`) |
 | Audit log | append-only change (and, for Personnel files, read) events | `internal/platform/audit` | `audit` | metadata only | exists (`internal/audit`) |
-| Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` | `files` | inherits the owner's | planned |
+| Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` (the first part, a store and upload checks, is `internal/files`) | `files` | inherits the owner's | started: signed copies (ADR 0004) |
 | Events & jobs | transactional outbox, worker, reminders, purges | `internal/platform/outbox` | `outbox` | none | planned |
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
 | Workwear | catalogue, item sets, orders and snapshot lines, confirmations, receipts, a person's size defaults (wearer profile) | `internal/workwear` | `workwear` | low | exists |
-| Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | specified ([spec](../specs/asset-service.md)) |
+| Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | built ([spec](../specs/asset-service.md)); go-live tools to come |
 | Competence | certificate and qualification types, certificates held, validity and expiry, the evidence file | `internal/competence` | `competence` | personal | planned |
 | Personnel files | identity documents and ID numbers, contracts, other personal documents, retention | `internal/personnel` | `personnel` | **special care** | planned |
 | Projects & crew | clients, sites, projects and their requirements (qualifications, item sets), teams, crew assignments, eligibility | `internal/projects` | `projects` | low | planned |

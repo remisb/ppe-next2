@@ -1,7 +1,9 @@
 import type { Asset } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { assetQuery, blockingEmail, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { t } from '@/i18n'
+
+import { MAX_SIGNED_COPY_BYTES, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -170,5 +172,38 @@ describe('Equipment & Furniture', () => {
     expect(Object.keys(checkEquipmentDraft(emptyEquipmentDraft()).errors).sort()).toEqual(['category', 'inventoryNo', 'name'])
     const { input } = checkEquipmentDraft({ ...emptyEquipmentDraft(), name: ' Laptop ', category: 'COMPUTER', inventoryNo: 'PC-000001', value: '900' })
     expect(input).toEqual({ category: 'COMPUTER', inventory_no: 'PC-000001', name: 'Laptop', serial_no: null, non_return_value_cents: 90000, comment: '' })
+  })
+})
+
+describe('signed copies', () => {
+  it('checks a chosen file before sending it: not empty, at most 10 MB, a PDF, JPEG or PNG', () => {
+    expect(signedCopyProblem({ name: 'scan.pdf', size: 1000, type: 'application/pdf' })).toBeNull()
+    expect(signedCopyProblem({ name: 'IMG_0012.JPG', size: 3_000_000, type: '' })).toBeNull()
+    expect(signedCopyProblem({ name: 'photo.png', size: MAX_SIGNED_COPY_BYTES, type: 'image/png' })).toBeNull()
+    expect(signedCopyProblem({ name: 'scan.pdf', size: 0, type: 'application/pdf' })).toBe(t.assets.fileEmpty)
+    expect(signedCopyProblem({ name: 'scan.pdf', size: MAX_SIGNED_COPY_BYTES + 1, type: 'application/pdf' })).toBe(t.assets.fileTooLarge)
+    expect(signedCopyProblem({ name: 'IMG_0012.HEIC', size: 2000, type: 'image/heic' })).toBe(t.assets.fileType)
+    expect(signedCopyProblem({ name: 'form.docx', size: 2000, type: '' })).toBe(t.assets.fileType)
+  })
+
+  it('says whether a holding on a form has its signed copy, and nothing for one without a form', () => {
+    expect(documentsText({ paper_form_signed: true, signed_copy_uploaded: false })).toBe(t.assets.signedCopyMissing)
+    expect(documentsText({ paper_form_signed: true, signed_copy_uploaded: true })).toBe(t.assets.signedCopyUploaded)
+    expect(documentsText({ paper_form_signed: false, signed_copy_uploaded: false })).toBeNull()
+    expect(documentsText(null)).toBeNull()
+  })
+
+  it('filters the register to the holdings whose signed copy is missing, counted as a filter', () => {
+    const f = { ...noAssetFilters, signedCopyMissing: true }
+    expect(assetQuery('SIM', f, 'inventory', 'asc', 1)).toMatchObject({ signed_copy: 'missing' })
+    expect(assetQuery('SIM', noAssetFilters, 'inventory', 'asc', 1)).not.toHaveProperty('signed_copy')
+    expect(filterCount(f)).toBe(1)
+  })
+
+  it('says why the API refused an upload in the user\'s words', () => {
+    expect(uploadRefusal(415)).toBe(t.assets.fileType)
+    expect(uploadRefusal(413)).toBe(t.assets.fileTooLarge)
+    expect(uploadRefusal(503)).toBe(t.assets.noStorage)
+    expect(uploadRefusal(500)).toBeNull()
   })
 })

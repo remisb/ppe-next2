@@ -43,6 +43,7 @@ export const AUDIT_EVENTS = [
   'asset.given',
   'asset.returned',
   'asset.marked_not_returned',
+  'asset.signed_copy_uploaded',
   'settings.supplier_chat_changed',
   'access_review.completed',
   'audit.exported',

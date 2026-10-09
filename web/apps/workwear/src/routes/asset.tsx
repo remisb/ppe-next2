@@ -14,6 +14,7 @@ import { type ReactNode, useState } from 'react'
 import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
+import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import { categoryLabel, formatDay, primaryAction, statusLabel, todayIn } from '@/lib/assets'
@@ -183,7 +184,19 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
             ) : (
               <ol className="grid gap-3">
                 {a.assignments.map((s) => (
-                  <AssignmentItem key={s.id} assetId={a.id} assignment={s} timeZone={tz} navigate={navigate} />
+                  <AssignmentItem
+                    key={s.id}
+                    assetId={a.id}
+                    inventoryNo={a.inventory_no}
+                    assignment={s}
+                    canManage={canManage}
+                    timeZone={tz}
+                    navigate={navigate}
+                    onUploaded={(m) => {
+                      setMessage(m)
+                      asset.reload()
+                    }}
+                  />
                 ))}
               </ol>
             )}
@@ -258,14 +271,20 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 /** One giving: who, from when to when, its form and what happened to it. */
 function AssignmentItem({
   assetId,
+  inventoryNo,
   assignment: s,
+  canManage,
   timeZone,
   navigate,
+  onUploaded,
 }: {
   assetId: string
+  inventoryNo: string
   assignment: AssetAssignment
+  canManage: boolean
   timeZone: string | undefined
   navigate: (to: Route) => void
+  onUploaded: (message: string) => void
 }) {
   return (
     <li className="rounded-lg border border-border p-3 text-sm">
@@ -283,7 +302,7 @@ function AssignmentItem({
         <p className="mt-2 flex flex-wrap items-center gap-2">
           <Badge variant="destructive">{t.assets.notReturned}</Badge>
           <span>
-            {t.assets.markedNotReturned(formatDateTime(s.not_returned_at, timeZone).slice(0, 10))}
+            {t.assets.markedNotReturned(formatDay(formatDateTime(s.not_returned_at, timeZone).slice(0, 10)))}
             {s.whereabouts ? ` · ${t.assets.whereaboutsLabel[s.whereabouts]}` : ''}
           </span>
           {s.not_returned_comment ? <span className="basis-full whitespace-pre-line text-muted-foreground">{s.not_returned_comment}</span> : null}
@@ -297,6 +316,9 @@ function AssignmentItem({
             <Printer aria-hidden className="size-3.5" /> {t.assets.printFormAgain}
           </a>
         </p>
+      ) : null}
+      {s.paper_form_signed ? (
+        <SignedCopies assetId={assetId} inventoryNo={inventoryNo} assignment={s} canManage={canManage} timeZone={timeZone} onUploaded={onUploaded} />
       ) : null}
     </li>
   )

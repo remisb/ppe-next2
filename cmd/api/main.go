@@ -32,6 +32,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
@@ -76,6 +77,15 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	}
 	sessions := session.NewService(session.NewPostgresRepository(pool), sessionKey(cfg.JWTSecret), sessionLimits(cfg))
 	roles := role.NewService(role.NewPostgresRepository(pool))
+	store, err := files.Open(cfg.FilesTarget, cfg.FilesAccessKey, cfg.FilesSecretKey)
+	if err != nil {
+		return err
+	}
+	if store == nil {
+		logger.Warn("no file storage (API_FILES_TARGET): signed copies cannot be uploaded")
+	} else {
+		logger.Info("file storage", slog.String("target", store.String()))
+	}
 	svc := newServices(
 		loc, cfg.ConfirmTTL, cfg.AuditRetention,
 		sessions,
@@ -88,6 +98,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
+		store,
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
@@ -197,14 +208,14 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
 		security:  sec,
 		roles:     roles,
 		users:     users,
-		assets:    asset.NewService(assets, asset.WithLocation(loc)),
+		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithFiles(store)),
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),

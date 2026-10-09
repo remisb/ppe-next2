@@ -3,6 +3,7 @@ package asset
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
+	"github.com/remisb/ppe-next2/internal/files"
 )
 
 // newTestPool connects to API_TEST_DB_DSN (skipping when unset), empties the
@@ -335,5 +337,81 @@ func TestPostgresAssignmentsCannotBeRewritten(t *testing.T) {
 	if _, err := owner.Exec(ctx, `UPDATE asset_assignments SET returned_date = NULL, returned_at = NULL,
 		returned_by_user_id = NULL, return_comment = NULL WHERE id = $1`, a.ID); err == nil {
 		t.Error("a returned assignment was reopened")
+	}
+}
+
+// Signed copies: stored, listed newest first on their assignment, counted out
+// of the Signed Copy Missing filter, and never changed or deleted.
+func TestPostgresSignedCopies(t *testing.T) {
+	app, owner, actor, emps := newTestPool(t)
+	ctx := context.Background()
+	store, err := files.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithFiles(store))
+	v := addSIM(t, svc, actor, "SIM-000001", "1", StatusActive)
+	other := addSIM(t, svc, actor, "SIM-000002", "2", StatusActive)
+	given, err := giveNow(svc, v.ID, emps[0], actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := giveNow(svc, other.ID, emps[1], actor); err != nil {
+		t.Fatal(err)
+	}
+	missing := func() int {
+		res, err := svc.List(ctx, ListParams{Kind: "SIM", SignedCopy: "missing"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res.Total
+	}
+	if n := missing(); n != 2 {
+		t.Errorf("missing before = %d, want 2", n)
+	}
+	first, err := svc.UploadSignedCopy(ctx, v.ID, given.ID, Upload{FileName: "scan.pdf", Data: []byte("%PDF-1.7 first")}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := svc.UploadSignedCopy(ctx, v.ID, given.ID, Upload{FileName: "again.pdf", Data: []byte("%PDF-1.7 second")}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := missing(); n != 1 {
+		t.Errorf("missing after = %d, want 1", n)
+	}
+	d, err := svc.Get(ctx, v.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	as := d.Assignments[0]
+	if !as.SignedCopyUploaded || len(as.SignedCopies) != 2 || as.SignedCopies[0].ID != second.ID || as.SignedCopies[1].UploadedByName != "Actor" {
+		t.Errorf("assignment = %+v", as)
+	}
+	if d.Open == nil || !d.Open.SignedCopyUploaded {
+		t.Errorf("the open assignment does not say it has a copy: %+v", d.Open)
+	}
+	got, r, err := svc.SignedCopy(ctx, v.ID, given.ID, first.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(r)
+	r.Close()
+	if string(b) != "%PDF-1.7 first" || got.FileName != "scan.pdf" {
+		t.Errorf("read %q as %+v", b, got)
+	}
+	if _, _, err := svc.SignedCopy(ctx, other.ID, given.ID, first.ID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("through another asset: %v", err)
+	}
+	if _, err := svc.UploadSignedCopy(ctx, other.ID, given.ID, Upload{FileName: "x.pdf", Data: []byte("%PDF-x")}, actor); !errors.Is(err, ErrAssignmentNotFound) {
+		t.Errorf("onto another asset's assignment: %v", err)
+	}
+	for _, sql := range []string{
+		`UPDATE asset_signed_copies SET file_name = 'other.pdf' WHERE id = $1`,
+		`DELETE FROM asset_signed_copies WHERE id = $1`,
+	} {
+		if _, err := owner.Exec(ctx, sql, first.ID); err == nil {
+			t.Errorf("%s succeeded", sql)
+		}
 	}
 }

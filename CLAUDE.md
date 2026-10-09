@@ -84,8 +84,11 @@ employee who holds assets. The SIM card register is on screen (`/assets`, `route
 Give SIM Card against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
 Company Assets card on the dashboards, and Equipment & Furniture on the same engine (`?kind=equipment`,
-`components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`). Slice 5
-(signed copies) waits for a storage decision; slice 8 (go-live tools) for the open decisions.
+`components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`), and
+signed copies (slice 5, migration 0030: Upload Signed Form on an assignment, a PDF, JPEG or PNG up to
+10 MB kept in object storage by `internal/files`, `API_FILES_TARGET`: a private Spaces bucket in
+production, the folder `.files` in development; `components/signed-copies.tsx`). Slice 8 (go-live
+tools) waits for the open decisions.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -96,7 +99,10 @@ transaction sets `SET LOCAL ppe.allow_truncate = on`, as test setup does; `order
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
 `asset_assignments` allow one open assignment per asset (a partial unique index) and a
 trigger refuses deleting one, changing its giving, or setting its Not Returned mark or return
-twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not change it).
+twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not change it);
+`asset_signed_copies` is append-only (trigger and grants): uploading again adds a row. The
+files themselves are in the Spaces bucket, not in the database or its backups
+(`docs/backups.md`, "Uploaded files").
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
 but shown on no order or record. The app labels the accounting price "Price"; the record's
 `unit_price_cents` key holds it and never changes, because it is part of the document hash.

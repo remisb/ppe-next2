@@ -111,6 +111,10 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['given_date', 'text'],
   ['returned_date', 'text'],
   ['whereabouts', 'whereabouts'],
+  ['file_name', 'text'],
+  ['content_type', 'text'],
+  ['size_bytes', 'text'],
+  ['sha256', 'text'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */

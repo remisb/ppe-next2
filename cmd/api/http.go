@@ -99,6 +99,10 @@ var errorStatuses = []struct {
 	{asset.ErrNotFound, http.StatusNotFound},
 	{asset.ErrEmployeeNotFound, http.StatusNotFound},
 	{asset.ErrNoForm, http.StatusNotFound},
+	{asset.ErrAssignmentNotFound, http.StatusNotFound},
+	{asset.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
+	{asset.ErrFileType, http.StatusUnsupportedMediaType},
+	{asset.ErrNoStorage, http.StatusServiceUnavailable},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},

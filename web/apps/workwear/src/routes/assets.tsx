@@ -25,6 +25,7 @@ import {
   type Tile,
   chooseTile,
   assetQuery,
+  documentsText,
   categories,
   categoryLabel,
   filterCount,
@@ -259,6 +260,15 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
               ))}
             </Select>
           ) : null}
+          <Select
+            aria-label={t.assets.documents}
+            value={filters.signedCopyMissing ? 'missing' : ''}
+            onChange={(e) => update({ ...filters, signedCopyMissing: e.target.value === 'missing' })}
+            className="md:w-auto"
+          >
+            <option value="">{t.assets.anyDocuments}</option>
+            <option value="missing">{t.assets.signedCopyMissing}</option>
+          </Select>
           {filtered ? (
             <Button variant="ghost" onClick={clear}>
               {t.assets.clearFilters}
@@ -376,7 +386,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                         '—'
                       )}
                     </TableCell>
-                    <TableCell className="stacked:hidden">{open?.paper_form_signed ? t.assets.formSigned : '—'}</TableCell>
+                    <TableCell className="stacked:hidden">{documentsText(open) ?? '—'}</TableCell>
                     <TableCell className="max-w-48 truncate stacked:hidden" title={a.comment || undefined}>
                       {a.comment || '—'}
                     </TableCell>
