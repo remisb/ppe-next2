@@ -3,7 +3,7 @@
  * tiles and filters as one query, where a card is, and Add SIM Card's and
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
-import type { Asset, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
+import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 
 import { intlLocale, t } from '@/i18n'
@@ -25,10 +25,12 @@ export interface AssetFilters {
   provider: string
   /** Equipment only. */
   category: AssetCategory | ''
+  /** Held on a form whose signed copy is not uploaded yet (§9). */
+  signedCopyMissing: boolean
   q: string
 }
 
-export const noAssetFilters: AssetFilters = { place: 'all', notReturned: false, status: '', provider: '', category: '', q: '' }
+export const noAssetFilters: AssetFilters = { place: 'all', notReturned: false, status: '', provider: '', category: '', signedCopyMissing: false, q: '' }
 
 /** A summary tile: the filters it sets; it is pressed while they are the place and Not Returned chosen. */
 export type Tile = 'total' | 'inOffice' | 'withEmployees' | 'notReturned'
@@ -52,7 +54,7 @@ export function tilePressed(f: AssetFilters, tile: Tile): boolean {
 
 /** How many filters besides the tiles and the search are set, for the phone's Filters button. */
 export function filterCount(f: AssetFilters): number {
-  return [f.status, f.provider, f.category].filter(Boolean).length
+  return [f.status, f.provider, f.category, f.signedCopyMissing].filter(Boolean).length
 }
 
 /** The register's query: kind's assets matching f, sorted, one page. Unset filters are left out. */
@@ -68,6 +70,7 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
     ...(f.status ? { status: f.status } : {}),
     ...(f.provider ? { provider: f.provider } : {}),
     ...(f.category ? { category: f.category } : {}),
+    ...(f.signedCopyMissing ? { signed_copy: 'missing' as const } : {}),
     sort,
     dir,
     page,
@@ -369,4 +372,40 @@ export function checkEquipmentDraft(d: EquipmentDraft): { errors: EquipmentError
       comment: d.comment.trim(),
     },
   }
+}
+
+/** The largest signed copy the API takes. */
+export const MAX_SIGNED_COPY_BYTES = 10 * 1024 * 1024
+
+/** What Upload Signed Form's file picker offers: a scan (PDF) or a photo (JPEG, PNG). */
+export const SIGNED_COPY_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'
+
+/**
+ * Why a file chosen for Upload Signed Form is not sent, or null. The API reads
+ * the file's own bytes again; this saves sending 10 MB to be told so.
+ */
+export function signedCopyProblem(file: Pick<File, 'name' | 'size' | 'type'>): string | null {
+  if (file.size === 0) return t.assets.fileEmpty
+  if (file.size > MAX_SIGNED_COPY_BYTES) return t.assets.fileTooLarge
+  const known = ['application/pdf', 'image/jpeg', 'image/png'].includes(file.type) || /\.(pdf|jpe?g|png)$/i.test(file.name)
+  return known ? null : t.assets.fileType
+}
+
+/** An upload the API refused, in the user's language: the file's type or size, or no storage set up; else null. */
+export function uploadRefusal(status: number): string | null {
+  switch (status) {
+    case 413:
+      return t.assets.fileTooLarge
+    case 415:
+      return t.assets.fileType
+    case 503:
+      return t.assets.noStorage
+  }
+  return null
+}
+
+/** The Documents a holding shows: none for an item given without a form, else whether its signed copy is in. */
+export function documentsText(a: Pick<AssetAssignment, 'paper_form_signed' | 'signed_copy_uploaded'> | null | undefined): string | null {
+  if (!a?.paper_form_signed) return null
+  return a.signed_copy_uploaded ? t.assets.signedCopyUploaded : t.assets.signedCopyMissing
 }

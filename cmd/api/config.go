@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/remisb/muxstack/middleware"
+
+	"github.com/remisb/ppe-next2/internal/files"
 )
 
 type config struct {
@@ -51,7 +53,14 @@ type config struct {
 	AuditRetention time.Duration
 	// AuditTSAURL is the timestamp service (RFC 3161) that anchors each
 	// day's audit seal outside the database; empty stamps nothing.
-	AuditTSAURL    string
+	AuditTSAURL string
+	// FilesTarget is where uploaded files (signed copies) are kept:
+	// s3://bucket/prefix?endpoint=host&region=r (Spaces, with FilesAccessKey
+	// and FilesSecretKey) or file:///folder for development; empty keeps none,
+	// and uploads are refused.
+	FilesTarget    string
+	FilesAccessKey string
+	FilesSecretKey string
 	AllowedOrigins []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
@@ -107,6 +116,9 @@ func loadConfig(args []string) (config, error) {
 		PublicBaseURL:    strings.TrimRight(env("API_PUBLIC_BASE_URL", "http://localhost:5180"), "/"),
 		MetricsAddr:      env("API_METRICS_ADDR", ""),
 		AuditTSAURL:      env("API_AUDIT_TSA_URL", ""),
+		FilesTarget:      env("API_FILES_TARGET", ""),
+		FilesAccessKey:   env("API_FILES_S3_ACCESS_KEY", ""),
+		FilesSecretKey:   env("API_FILES_S3_SECRET_KEY", ""),
 	}
 	var err error
 	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
@@ -230,6 +242,9 @@ func (c config) validate() error {
 		if u, err := url.Parse(c.AuditTSAURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			errs = append(errs, errors.New("API_AUDIT_TSA_URL must be empty or an absolute http(s) URL"))
 		}
+	}
+	if err := files.Check(c.FilesTarget, c.FilesAccessKey, c.FilesSecretKey); err != nil {
+		errs = append(errs, fmt.Errorf("API_FILES_TARGET: %w", err))
 	}
 	if c.ConfirmTTL < time.Minute || c.ConfirmTTL > 90*24*time.Hour {
 		errs = append(errs, errors.New("API_CONFIRM_TTL must be between 1m and 2160h"))

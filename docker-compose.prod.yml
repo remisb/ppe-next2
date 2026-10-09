@@ -103,6 +103,11 @@ services:
       # outside the database; only the seal's hash is sent. Set it empty in
       # .env.prod to stop timestamping (docs/specs/audit-service.md).
       API_AUDIT_TSA_URL: ${API_AUDIT_TSA_URL-http://timestamp.digicert.com}
+      # Signed copies (Company Assets) in a private Spaces bucket; unset, uploads
+      # are refused (docs/backups.md, "Uploaded files").
+      API_FILES_TARGET: ${API_FILES_TARGET:-}
+      API_FILES_S3_ACCESS_KEY: ${API_FILES_S3_ACCESS_KEY:-}
+      API_FILES_S3_SECRET_KEY: ${API_FILES_S3_SECRET_KEY:-}
       API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
       API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
       # Confirmation links must point at the host Caddy serves; derived from it.

@@ -43,6 +43,17 @@ describe('createClient', () => {
     await createClient({ getToken: () => 't', fetch: g as unknown as typeof fetch }).assets.list({ kind: 'SIM', held: true, q: '612 40' })
     expect(g.mock.calls[0]![0]).toBe('/api/v1/assets?kind=SIM&held=true&q=612+40')
   })
+  it('uploads a signed copy as multipart form data, the file under "file"', async () => {
+    const f = fakeFetch(201, '{"id":"c1","file_name":"scan.pdf"}')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    const file = new File(['%PDF-1.7'], 'scan.pdf', { type: 'application/pdf' })
+    expect((await client.assets.uploadSignedCopy('a1', 'g1', file)).id).toBe('c1')
+    const [url, init] = f.mock.calls[0]!
+    expect(url).toBe('/api/v1/assets/a1/assignments/g1/signed-copies')
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBeUndefined()
+    expect((init?.body as FormData).get('file')).toBeInstanceOf(File)
+  })
+
   it('reports an app\'s error and reads System', async () => {
     const f = fakeFetch(204, '')
     const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })

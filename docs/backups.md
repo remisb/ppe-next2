@@ -57,6 +57,36 @@ than the droplet (the droplet is in ams3, so use fra1, for example):
    ```
 4. `make prod-build && make prod-up && make prod-backup`, then check Administration → System → Backups.
 
+### Uploaded files: signed copies
+
+Company Assets keeps the signed copies of assignment forms (scans and photos) in a Spaces
+bucket of their own, not in the database, so **the database backups do not contain them**.
+Spaces keeps them durably; versioning keeps every version of every object, so a file
+overwritten or deleted by mistake can be brought back. The same Spaces subscription covers
+this bucket.
+
+1. In the DigitalOcean control panel, create a second private bucket (file listing off) in fra1,
+   e.g. `ppe-next2-files`.
+2. Turn versioning on. Spaces offers it through its S3 API, for example with the AWS CLI and
+   a Spaces key:
+   ```
+   aws s3api put-bucket-versioning --bucket ppe-next2-files \
+     --versioning-configuration Status=Enabled --endpoint-url https://fra1.digitaloceanspaces.com
+   ```
+3. Under API → Spaces Keys, create a key limited to that bucket (read/write). Keep it apart
+   from the backup key: the API holds this one, the backup agent the other.
+4. In `.env.prod`:
+   ```
+   API_FILES_TARGET=s3://ppe-next2-files/prod?endpoint=fra1.digitaloceanspaces.com&region=fra1
+   API_FILES_S3_ACCESS_KEY=...
+   API_FILES_S3_SECRET_KEY=...
+   ```
+5. `make prod-up`; the API's log says `file storage` with the bucket. Until then it logs `no
+   file storage` and Upload Signed Form answers that storage is not set up.
+
+A database restore does not touch the bucket. Signed copies uploaded after the backup being
+restored stay in the bucket, named by no row; nothing reads them, and they can be left there.
+
 ### Encryption (optional)
 
 On your own computer: `age-keygen -o ppe-backup.key` prints `Public key: age1...`. Put
@@ -154,7 +184,7 @@ server. The failed run, with that reason, shows on System's Backups tab.
 | | per month |
 | --- | --- |
 | Droplet, Basic 2 GB (already running) | $12.00 |
-| Spaces bucket (250 GiB, 1 TiB transfer included) | $5.00 |
+| Spaces (250 GiB, 1 TiB transfer included, every bucket: backups and signed copies) | $5.00 |
 | Optional: weekly Droplet Backups (whole disk, also keeps `.env.prod` and certificates) | $2.40 |
 | **Total with Spaces** | **$17.00** ($19.40 with Droplet Backups) |
 

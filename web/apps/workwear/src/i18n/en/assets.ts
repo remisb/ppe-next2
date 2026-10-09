@@ -211,6 +211,22 @@ export const assets = {
   equipmentIntro: 'The equipment and furniture this employee holds, then those held before.',
   noEquipmentGiven: (name: string) => `${name} has not been given any equipment.`,
   notReturnedDescriptionItem: 'The item stays with its holder and out of office stock. If it comes back later, register its return as usual.',
+  // Signed copies (§9, slice 5).
+  signedCopyUploaded: 'Signed Copy Uploaded',
+  signedCopyMissing: 'Signed Copy Missing',
+  uploadSignedForm: 'Upload Signed Form',
+  uploading: 'Uploading…',
+  uploadHint: 'A scan or photo of the signed form: PDF, JPEG or PNG, up to 10 MB. Uploading again keeps the earlier copies.',
+  signedCopyAdded: (number: string) => `Signed copy of ${number} uploaded.`,
+  downloadCopy: (name: string) => `Download ${name}`,
+  copyDetails: (size: string, date: string, by: string) => `${size} · ${date} · ${by}`,
+  earlierCopies: (n: number) => plural(n, { one: '# earlier copy', other: '# earlier copies' }),
+  fileEmpty: 'The file is empty.',
+  fileTooLarge: 'The file is larger than 10 MB. Scan at a lower resolution, or photograph one page at a time.',
+  fileType: 'Choose a PDF, JPEG or PNG file.',
+  documents: 'Documents',
+  anyDocuments: 'Any documents',
+  noStorage: 'Signed copies cannot be kept yet: file storage is not set up on the server. Tell whoever runs it.',
 }
 
 export type AssetsText = typeof assets

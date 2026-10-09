@@ -57,6 +57,7 @@ import type {
   SecurityPage,
   SecurityQuery,
   Settings,
+  SignedCopy,
   SignedInDevice,
   Sizes,
   SupplierChatInput,
@@ -144,12 +145,14 @@ export function createClient(options: ClientOptions) {
     if (options.app) headers['X-PPE-App'] = options.app
     const token = options.getToken()
     if (token) headers['Authorization'] = `Bearer ${token}`
-    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    // A file goes as multipart/form-data, whose boundary the browser writes.
+    const form = typeof FormData !== 'undefined' && body instanceof FormData
+    if (body !== undefined && !form) headers['Content-Type'] = 'application/json'
     try {
       const res = await doFetch(base + path, {
         method,
         headers,
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        ...(body !== undefined ? { body: form ? body : JSON.stringify(body) } : {}),
       })
       return { res, text: res.status === 204 ? '' : await res.text() }
     } catch (err) {
@@ -373,6 +376,15 @@ export function createClient(options: ClientOptions) {
       /** An assignment's stored form, for reprinting. */
       form: (id: string, assignmentId: string) =>
         request<AssignmentFormResult>('GET', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form`),
+      /** Upload Signed Form: a scan or photo of the signed form (PDF, JPEG or PNG, at most 10 MB); 415 or 413 otherwise. */
+      uploadSignedCopy: (id: string, assignmentId: string, file: File) => {
+        const body = new FormData()
+        body.append('file', file)
+        return request<SignedCopy>('POST', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/signed-copies`, body)
+      },
+      /** One signed copy, as the file it is. */
+      signedCopy: (id: string, assignmentId: string, copyId: string) =>
+        download(`/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/signed-copies/${seg(copyId)}`),
     },
 
     /** Public, token-only routes for the employee's confirmation page. */

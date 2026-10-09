@@ -11,22 +11,25 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/files"
 )
 
 // Audit event names and entity type written by this service.
 const (
-	EventRegistered        = "asset.registered"
-	EventUpdated           = "asset.updated"
-	EventStatusChanged     = "asset.status_changed"
-	EventGiven             = "asset.given"
-	EventReturned          = "asset.returned"
-	EventMarkedNotReturned = "asset.marked_not_returned"
-	auditEntity            = "asset"
-	maxSuggestTries        = 1000
+	EventRegistered         = "asset.registered"
+	EventUpdated            = "asset.updated"
+	EventStatusChanged      = "asset.status_changed"
+	EventGiven              = "asset.given"
+	EventReturned           = "asset.returned"
+	EventMarkedNotReturned  = "asset.marked_not_returned"
+	EventSignedCopyUploaded = "asset.signed_copy_uploaded"
+	auditEntity             = "asset"
+	maxSuggestTries         = 1000
 )
 
 type Service struct {
 	repo  Repository
+	files files.Store
 	now   func() time.Time
 	newID func() uuid.UUID
 	loc   *time.Location

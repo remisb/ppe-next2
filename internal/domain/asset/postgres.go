@@ -36,7 +36,8 @@ const assetColumns = `a.id, a.kind, a.category, a.inventory_no, a.name, a.serial
 const assignmentColumns = `o.id, o.asset_id, o.employee_id, o.given_date::text, o.given_by_user_id, o.created_at, o.comment,
 	o.form, o.form_template_version, o.document_hash, o.paper_form_signed, o.not_returned_at, o.not_returned_by_user_id,
 	o.not_returned_comment, o.whereabouts, o.returned_date::text, o.returned_at, o.returned_by_user_id, o.return_comment,
-	coalesce(e.first_name || ' ' || e.last_name, '')`
+	coalesce(e.first_name || ' ' || e.last_name, ''),
+	EXISTS (SELECT 1 FROM asset_signed_copies c WHERE c.assignment_id = o.id)`
 
 // recordFrom is an asset with its open assignment and the holder's name.
 const recordFrom = ` FROM assets a
@@ -59,6 +60,7 @@ type nullAssignment struct {
 	givenDate, comment, name         *string
 	createdAt                        *time.Time
 	signed                           *bool
+	copied                           bool
 	a                                Assignment
 }
 
@@ -66,7 +68,7 @@ func (n *nullAssignment) dest() []any {
 	return []any{&n.id, &n.assetID, &n.employeeID, &n.givenDate, &n.givenBy, &n.createdAt, &n.comment,
 		&n.a.Form, &n.a.FormTemplateVersion, &n.a.DocumentHash, &n.signed, &n.a.NotReturnedAt, &n.a.NotReturnedByUserID,
 		&n.a.NotReturnedComment, &n.a.Whereabouts, &n.a.ReturnedDate, &n.a.ReturnedAt, &n.a.ReturnedByUserID, &n.a.ReturnComment,
-		&n.name}
+		&n.name, &n.copied}
 }
 
 func (n *nullAssignment) get() *Assignment {
@@ -76,6 +78,7 @@ func (n *nullAssignment) get() *Assignment {
 	a := n.a
 	a.ID, a.AssetID, a.EmployeeID, a.GivenByUserID = *n.id, *n.assetID, *n.employeeID, *n.givenBy
 	a.GivenDate, a.Comment, a.EmployeeName, a.CreatedAt, a.PaperFormSigned = *n.givenDate, *n.comment, *n.name, n.createdAt.UTC(), *n.signed
+	a.SignedCopyUploaded = n.copied
 	return &a
 }
 
@@ -185,14 +188,89 @@ func (r *PostgresRepository) Assignments(ctx context.Context, assetID uuid.UUID)
 	}
 	defer rows.Close()
 	out := make([]Assignment, 0)
+	at := map[uuid.UUID]int{}
 	for rows.Next() {
 		a, err := scanAssignment(rows)
 		if err != nil {
 			return nil, err
 		}
+		a.SignedCopies = make([]SignedCopy, 0)
+		at[a.ID] = len(out)
 		out = append(out, a)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	copies, err := r.pool.Query(ctx, `SELECT `+signedCopyColumns+` FROM asset_signed_copies c
+		JOIN asset_assignments o ON o.id = c.assignment_id
+		JOIN users u ON u.id = c.uploaded_by_user_id
+		WHERE o.asset_id = $1 ORDER BY c.uploaded_at DESC, c.id`, assetID)
+	if err != nil {
+		return nil, err
+	}
+	defer copies.Close()
+	for copies.Next() {
+		c, err := scanSignedCopy(copies)
+		if err != nil {
+			return nil, err
+		}
+		if i, ok := at[c.AssignmentID]; ok {
+			out[i].SignedCopies = append(out[i].SignedCopies, c)
+		}
+	}
+	return out, copies.Err()
+}
+
+const signedCopyColumns = `c.id, c.assignment_id, c.object_key, c.file_name, c.content_type, c.size_bytes, c.sha256,
+	c.uploaded_at, c.uploaded_by_user_id, u.name`
+
+func scanSignedCopy(row pgx.Row) (SignedCopy, error) {
+	var c SignedCopy
+	err := row.Scan(&c.ID, &c.AssignmentID, &c.ObjectKey, &c.FileName, &c.ContentType, &c.SizeBytes, &c.SHA256,
+		&c.UploadedAt, &c.UploadedByUserID, &c.UploadedByName)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return SignedCopy{}, ErrNotFound
+	}
+	c.UploadedAt = c.UploadedAt.UTC()
+	return c, err
+}
+
+func (r *PostgresRepository) SignedCopy(ctx context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error) {
+	return scanSignedCopy(r.pool.QueryRow(ctx, `SELECT `+signedCopyColumns+` FROM asset_signed_copies c
+		JOIN asset_assignments o ON o.id = c.assignment_id
+		JOIN users u ON u.id = c.uploaded_by_user_id
+		WHERE c.id = $1 AND c.assignment_id = $2 AND o.asset_id = $3`, copyID, assignmentID, assetID))
+}
+
+func (r *PostgresRepository) AddSignedCopy(ctx context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		cur, err := lock(ctx, tx, assetID)
+		if err != nil {
+			return err
+		}
+		as, err := scanAssignment(tx.QueryRow(ctx, `SELECT `+assignmentColumns+` FROM asset_assignments o
+			JOIN employees e ON e.id = o.employee_id
+			WHERE o.id = $1 AND o.asset_id = $2`, assignmentID, assetID))
+		if errors.Is(err, ErrNotFound) {
+			return ErrAssignmentNotFound
+		}
+		if err != nil {
+			return err
+		}
+		c, ev, err := fn(cur.Asset, as)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO asset_signed_copies (id, assignment_id, object_key, file_name, content_type, size_bytes, sha256,
+				uploaded_at, uploaded_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			c.ID, c.AssignmentID, c.ObjectKey, c.FileName, c.ContentType, c.SizeBytes, c.SHA256, c.UploadedAt, c.UploadedByUserID); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
 }
 
 func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Record, int, error) {
@@ -237,6 +315,9 @@ func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Record, 
 	}
 	if f.NotReturned {
 		where += ` AND o.not_returned_at IS NOT NULL`
+	}
+	if f.SignedCopyMissing {
+		where += ` AND o.form IS NOT NULL AND NOT EXISTS (SELECT 1 FROM asset_signed_copies c WHERE c.assignment_id = o.id)`
 	}
 
 	var total int

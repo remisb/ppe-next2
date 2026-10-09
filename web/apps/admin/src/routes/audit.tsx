@@ -10,6 +10,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { formatDateTime } from '@ppe/ui/lib/dates'
+import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
@@ -551,14 +552,7 @@ function ExportSheet({ open, onClose, filter }: { open: boolean; onClose: () => 
     try {
       // The filter's own days give way to the ones chosen here.
       const file = await client.audit.export(format, { ...filter, from, to })
-      const url = URL.createObjectURL(file.blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = file.filename
-      document.body.append(a)
-      a.click()
-      a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      saveFile(file.blob, file.filename)
       onClose()
     } catch (err) {
       setError(errorText(err))

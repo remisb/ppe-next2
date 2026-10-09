@@ -780,7 +780,7 @@ Rules for using it:
 Specified in [asset-service.md](specs/asset-service.md) and
 [ADR 0004](architecture/adr/0004-company-assets.md). The API and the SIM card register are built;
 the asset page with giving, returning, Not Returned and the blocking email, Given SIM and
-Equipment on the employee page, and Equipment & Furniture, too; signed copies are not yet. The product contract is
+Equipment on the employee page, Equipment & Furniture and signed copies, too. The product contract is
 `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (the **assets brief**,
 v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
@@ -908,9 +908,11 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
 ### Signed copy
 - **Brief:** a scan or photo of the signed assignment form, kept with that assignment.
-- **Detail:** may be added later; its absence never blocks giving once Paper Form Signed is
-  ticked (§9).
-- **UI:** **Upload Signed Form**, **Signed Copy Uploaded**, **Signed Copy Missing**.
+- **Detail:** may be added later, also after the return; its absence never blocks giving once
+  Paper Form Signed is ticked (§9). A PDF, JPEG or PNG of up to 10 MB. Uploading again adds a
+  copy: the newest is shown, the earlier ones stay. Only an assignment with a form has one.
+- **UI:** **Upload Signed Form**, **Signed Copy Uploaded**, **Signed Copy Missing**; the
+  register's **Documents** filter finds the missing ones.
 
 ### Blocking email
 - **Brief:** a text to copy into the user's own e-mail, asking the provider to block a SIM

@@ -22,6 +22,11 @@ var (
 	ErrNotGiven         = errors.New("asset is not given to anyone")
 	ErrAlreadyMarked    = errors.New("asset is already marked as not returned")
 	ErrFormChanged      = errors.New("the form changed after it was printed")
+	// Signed copies (slice 5).
+	ErrAssignmentNotFound = errors.New("assignment not found")
+	ErrNoStorage          = errors.New("file storage is not set up, so signed copies cannot be kept")
+	ErrFileType           = errors.New("a signed copy must be a PDF, JPEG or PNG file")
+	ErrFileTooLarge       = errors.New("a signed copy may be at most 10 MB")
 )
 
 func fieldError(field, problem string) error {

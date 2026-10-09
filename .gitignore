@@ -15,3 +15,5 @@ test-results/
 # The GitHub token that reads the private dbbackup module during image builds
 # (docs/backups.md); never committed.
 /.github-token
+# Signed copies uploaded in development (API_FILES_TARGET=file:.files).
+/.files/

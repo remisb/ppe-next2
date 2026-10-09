@@ -23,7 +23,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ppe_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ppe_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ppe_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO ppe_app;
-REVOKE UPDATE, DELETE ON audit_events, auth_events, audit_seals, audit_seal_stamps, audit_purges, order_lines, asset_numbers FROM ppe_app;
+REVOKE UPDATE, DELETE ON audit_events, auth_events, audit_seals, audit_seal_stamps, audit_purges, order_lines, asset_numbers, asset_signed_copies FROM ppe_app;
 REVOKE DELETE ON asset_assignments FROM ppe_app;
 REVOKE INSERT, UPDATE, DELETE ON schema_migrations, dbbackup_runs, dbbackup_agents FROM ppe_app;
 REVOKE EXECUTE ON FUNCTION purge_audit_events(TIMESTAMPTZ), purge_auth_events(TIMESTAMPTZ) FROM PUBLIC;

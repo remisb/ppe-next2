@@ -1,5 +1,7 @@
 // Settings shared by the Playwright config and global setup. The suite owns
 // its database: it is emptied before every run, so never point it at dev data.
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -60,5 +62,7 @@ export function apiEnv(): Record<string, string> {
     API_SEED_USER_EMAIL: admin.email,
     API_SEED_USER_PASSWORD: admin.password,
     API_SEED_USER_NAME: admin.name,
+    // Signed copies go to a folder of the run's own, as a Spaces bucket would keep them.
+    API_FILES_TARGET: `file://${join(tmpdir(), 'ppe-next2-e2e-files')}`,
   }
 }

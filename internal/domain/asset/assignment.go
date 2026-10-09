@@ -36,6 +36,10 @@ type Assignment struct {
 	ReturnComment       *string         `json:"return_comment"`
 	// EmployeeName is the employee's name now; reads fill it, it is not stored.
 	EmployeeName string `json:"employee_name"`
+	// SignedCopyUploaded is whether a signed copy of the form was uploaded (§9); reads fill it.
+	SignedCopyUploaded bool `json:"signed_copy_uploaded"`
+	// SignedCopies are the uploads, newest first; only an asset's page reads them.
+	SignedCopies []SignedCopy `json:"signed_copies,omitempty"`
 }
 
 // Open reports whether the asset has not been returned from this assignment.

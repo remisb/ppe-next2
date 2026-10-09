@@ -12,7 +12,7 @@ import { StatusBadge } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import type { PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, todayIn } from '@/lib/assets'
+import { categoryLabel, documentsText, formatDay, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 
 const link = 'rounded-sm font-mono font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
@@ -115,7 +115,7 @@ function HeldRow({ held: h, navigate }: { held: HeldAsset; navigate: (to: Route)
       <div className="text-xs text-muted-foreground">
         {t.assets.givenOnDate(formatDay(h.given_date))} ·{' '}
         {h.returned_date ? t.assets.returnedOnDate(formatDay(h.returned_date)) : t.assets.stillHeld} · {t.assets.daysHeld(h.days_held)}
-        {h.paper_form_signed ? ` · ${t.assets.formSigned}` : ''}
+        {documentsText(h) ? ` · ${documentsText(h)}` : ''}
       </div>
     </li>
   )

@@ -37,6 +37,7 @@ type ListParams struct {
 	Category    string // an equipment category
 	Status      string // a connection status
 	NotReturned string // "true" keeps the assets marked Not Returned
+	SignedCopy  string // "missing" keeps the assets held on a form with no signed copy yet (§9)
 	Sort        string
 	Dir         string // asc or desc; "" means asc
 	Page        string
@@ -45,19 +46,20 @@ type ListParams struct {
 
 // ListFilter is a checked register query for the repository.
 type ListFilter struct {
-	Kind        Kind
-	Q           string
-	Location    *Location
-	Held        bool
-	EmployeeID  *uuid.UUID
-	Provider    string
-	Category    *Category
-	Status      *Status
-	NotReturned bool
-	Sort        SortKey
-	Desc        bool
-	Limit       int
-	Offset      int
+	Kind              Kind
+	Q                 string
+	Location          *Location
+	Held              bool
+	EmployeeID        *uuid.UUID
+	Provider          string
+	Category          *Category
+	Status            *Status
+	NotReturned       bool
+	SignedCopyMissing bool
+	Sort              SortKey
+	Desc              bool
+	Limit             int
+	Offset            int
 }
 
 // ListResult is one page of the register.
@@ -118,6 +120,13 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 		f.NotReturned = true
 	default:
 		return ListFilter{}, 0, 0, fieldError("not_returned", "must be true")
+	}
+	switch p.SignedCopy {
+	case "":
+	case "missing":
+		f.SignedCopyMissing = true
+	default:
+		return ListFilter{}, 0, 0, fieldError("signed_copy", "must be missing")
 	}
 	switch SortKey(p.Sort) {
 	case "", SortInventory:
