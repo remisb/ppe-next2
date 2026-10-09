@@ -117,12 +117,15 @@ func (f *fakeRepo) List(_ context.Context, lf ListFilter) ([]Record, int, error)
 func (f *fakeRepo) Summary(_ context.Context, kind Kind) (Summary, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	var s Summary
+	s := Summary{Providers: make([]string, 0)}
 	for _, a := range f.assets {
 		if a.Kind != kind || a.Deleted() {
 			continue
 		}
 		s.Total++
+		if a.Provider != nil && !slices.Contains(s.Providers, *a.Provider) {
+			s.Providers = append(s.Providers, *a.Provider)
+		}
 		o := f.open(a.ID)
 		switch {
 		case o == nil:
@@ -520,7 +523,7 @@ func TestGiveUpdatesEverythingTogether(t *testing.T) {
 	if got.Location != LocationWithEmployee || got.Open == nil || got.Open.EmployeeID != f.emp.ID || len(got.Assignments) != 1 {
 		t.Errorf("after giving: %s, open %+v, %d assignments", got.Location, got.Open, len(got.Assignments))
 	}
-	if s, _ := f.svc.Summary(f.ctx, "SIM"); s != (Summary{Total: 1, WithEmployees: 1}) {
+	if s, _ := f.svc.Summary(f.ctx, "SIM"); s.Total != 1 || s.WithEmployees != 1 || s.InOffice != 0 || !slices.Equal(s.Providers, []string{"Telia"}) {
 		t.Errorf("summary = %+v", s)
 	}
 	held, _ := f.svc.HeldBy(f.ctx, f.emp.ID)
@@ -633,7 +636,7 @@ func TestNotReturned(t *testing.T) {
 	if got.Location != LocationUnknown || got.Open == nil || got.Open.EmployeeName != "Jonas Petraitis" {
 		t.Errorf("unknown: %s, last holder %+v", got.Location, got.Open)
 	}
-	if s, _ := f.svc.Summary(f.ctx, "SIM"); s != (Summary{Total: 1, WithEmployees: 1, NotReturned: 1}) {
+	if s, _ := f.svc.Summary(f.ctx, "SIM"); s.Total != 1 || s.WithEmployees != 1 || s.NotReturned != 1 {
 		t.Errorf("summary = %+v", s)
 	}
 	if _, err := f.svc.MarkNotReturned(f.ctx, v.ID, NotReturnedParams{Whereabouts: "WITH_EMPLOYEE"}, testActor); !errors.Is(err, ErrAlreadyMarked) {
@@ -753,7 +756,7 @@ func TestListParams(t *testing.T) {
 	f := newFixture(t)
 	for _, p := range []ListParams{
 		{}, {Kind: "CAR"}, {Kind: "SIM", Location: "HOME"}, {Kind: "SIM", Status: "LOST"}, {Kind: "SIM", NotReturned: "yes"},
-		{Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
+		{Kind: "SIM", Held: "yes"}, {Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
 	} {
 		if _, err := f.svc.List(f.ctx, p); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%+v: %v, want ErrInvalid", p, err)

@@ -258,7 +258,8 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	for path, want := range map[string]string{
 		"/api/v1/assets?kind=SIM&location=WITH_EMPLOYEE&q=petr":                        `"total":1`,
 		"/api/v1/assets?kind=SIM&location=OFFICE":                                      `"total":0`,
-		"/api/v1/assets/summary/SIM":                                                   `{"total":1,"in_office":0,"with_employees":1,"not_returned":0}`,
+		"/api/v1/assets/summary/SIM":                                                   `{"total":1,"in_office":0,"with_employees":1,"not_returned":0,"providers":["Telia"]}`,
+		"/api/v1/assets?kind=SIM&held=true":                                            `"total":1`,
 		"/api/v1/assets/by-number/612%2040":                                            `"inventory_no":"SIM-000001"`,
 		"/api/v1/assets/by-employee/" + empID:                                          `"inventory_no":"SIM-000001"`,
 		"/api/v1/assets/" + id + "/assignments/" + assignment["id"].(string) + "/form": `"document_hash":"` + give["form_hash"].(string),

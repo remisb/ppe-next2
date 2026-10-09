@@ -2,7 +2,9 @@
 
 **Status: the API is built (slice 2 of [ADR 0004](../architecture/adr/0004-company-assets.md)):
 migration `0029_company_assets`, `internal/domain/asset`, every route below except the
-signed copy's.** The screens are slices 3–7; Upload Signed Form is slice 5. The product contract is the assets
+signed copy's. The SIM card register is on screen (slice 3, below).** The asset page, Give
+and Return on screen are slice 4; Upload Signed Form slice 5; the employee page and ⌘K
+slice 6; Equipment & Furniture slice 7. The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -197,7 +199,7 @@ goes to someone else.
 | Route | Access | Kind |
 | --- | --- | --- |
 | `GET /api/v1/assets` | authenticated | paged search, query parameters (see below) |
-| `GET /api/v1/assets/summary/{kind}` | authenticated | the four tile counts |
+| `GET /api/v1/assets/summary/{kind}` | authenticated | the four tile counts, and `providers`: the kind's providers in use, for the filter |
 | `GET /api/v1/assets/by-number/{q}` | authenticated | **filter** for ⌘K Search: SIM No., Phone No. or Inventory No. containing `q`, spaces ignored, max 20; no match is `200 []` |
 | `GET /api/v1/assets/by-employee/{id}` | authenticated | **filter**: the employee's assignments with their assets, open first; none is `200 []` |
 | `GET /api/v1/assets/next-number/{prefix}` | `assets.manage` | `{"inventory_no": "SIM-000002"}` |
@@ -220,7 +222,8 @@ ServeMux.
 `GET /api/v1/assets` takes query parameters, the
 [contract's exception](../domain-service-contract.md) for paged search lists, beside `GET
 /api/v1/orders`: `kind` (required), `q` (SIM No., Phone No. or Inventory No. with spaces
-ignored, or the name, serial number or holder's name), `location`, `employee_id`, `provider`,
+ignored, or the name, serial number or holder's name), `location`, `held=true` (someone holds
+it, whereabouts known or not: the With Employees tile), `employee_id`, `provider`,
 `status`, `not_returned=true`, `sort` (`inventory`, `status`, `holder`, `given`), `dir`,
 `page`, `page_size` (default 50, at most 100). Slice 5 adds `signed_copy`. An unknown or
 repeated parameter is 400, and no match is an empty page: `{assets, page, page_size,
@@ -249,6 +252,32 @@ and marked as such.
 The web form clears Paper Form Signed and asks for a reprint when the employee, asset, date or
 form data change after Print Form. The server's `form_hash` check makes the same rule hold
 for any client.
+
+## The SIM card register (slice 3)
+
+The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
+`lib/assets.ts`; after Employees in the sidebar and rail, under More on a phone; G then A):
+
+- **Tiles** Total SIM Cards, In Office, With Employees, Not Returned: one is chosen at a time
+  and filters the list, keeping the status, provider and search, so In Office with Blocked is
+  the blocked cards in the office (§3). A note says the figures overlap.
+- **Filters**: the search (numbers with spaces ignored, or a holder's name), the status
+  (All, Not Activated, Active, Blocked), the location (any, Office, with an employee,
+  Unknown) and the provider. On a phone the last three fold under Filters.
+- **Rows**: inventory number; SIM and phone numbers, each with a copy button; provider and
+  plan; status; holder or location, with Not Returned and the last holder when Unknown;
+  given date and Days Held; Paper form signed; comment. Sorted by inventory number, status,
+  holder or given date, on the server; 50 a page.
+- **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
+  statuses with the brief's note, and for a Not Activated card the activation text. The
+  choice is saved at once and announced. Edit is under ⋯.
+- **Add SIM Card** (and Edit) is one sheet: SIM No., provider and inventory number (the
+  next one suggested) and the received date (today) are required; the phone number, plan
+  and value can wait; a new card is Not Activated or Active. A number in use shows *This
+  SIM number is already registered.* with **Open the existing SIM card**, which finds it in
+  the register; a taken inventory number offers another.
+- Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
+  decision 4); rows open the asset's page from slice 4.
 
 ## Open decisions
 

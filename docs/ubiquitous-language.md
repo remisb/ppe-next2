@@ -676,7 +676,8 @@ Rules for using it:
   Employees, **More**). **Rail** on a tablet (icons with short labels, Search at the top).
   **Sidebar** on a desktop (full labels, **Search…**, Help, Keyboard shortcuts, the account
   and Sign out at its foot).
-- **UI:** landmark "Main"; short labels Home, Order, Orders, Catalogue, Sets, Keys, Account.
+- **UI:** landmark "Main"; short labels Home, Order, Orders, Assets, Catalogue, Sets, Keys, Account.
+  Company Assets follows Employees, so on a phone it is under More.
 
 ### More
 - **Brief:** the phone's menu holding the sections that do not fit the bottom bar, plus
@@ -776,8 +777,9 @@ Rules for using it:
 
 ## 12. Company Assets
 
-Planned: specified in [asset-service.md](specs/asset-service.md) and
-[ADR 0004](architecture/adr/0004-company-assets.md), not built yet. The product contract is
+Specified in [asset-service.md](specs/asset-service.md) and
+[ADR 0004](architecture/adr/0004-company-assets.md). The API and the SIM card register are built;
+the asset page, giving and returning on screen, and Equipment & Furniture are not yet. The product contract is
 `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (the **assets brief**,
 v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
@@ -787,8 +789,9 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** a register (list) per kind with summary tiles, an item's page, and the
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
-- **Code:** `internal/domain/asset` (planned). **UI:** Company Assets, tabs **SIM Cards**
-  and **Equipment & Furniture**.
+- **Code:** `internal/domain/asset`, `routes/assets.tsx` (`/assets`, G then A). **UI:**
+  Company Assets (short label Assets), **SIM Cards**; **Equipment & Furniture** comes
+  with slice 7.
 
 ### Asset
 - **Brief:** one physical item the company owns and tracks on its own: a SIM card, a

@@ -1,4 +1,5 @@
 import { Menu as MenuPrimitive } from '@base-ui/react/menu'
+import { Check } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import { cn } from '../lib/utils.ts'
@@ -75,4 +76,43 @@ function DropdownMenuSeparator({ className, ...props }: ComponentProps<typeof Me
   return <MenuPrimitive.Separator data-slot="dropdown-menu-separator" className={cn('-mx-1 my-1 h-px bg-border', className)} {...props} />
 }
 
-export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger }
+/** A set of choices of which one is current, such as a SIM card's status; choosing one closes the menu. */
+function DropdownMenuRadioGroup(props: ComponentProps<typeof MenuPrimitive.RadioGroup>) {
+  return <MenuPrimitive.RadioGroup data-slot="dropdown-menu-radio-group" {...props} />
+}
+
+function DropdownMenuRadioItem({ className, children, ...props }: ComponentProps<typeof MenuPrimitive.RadioItem>) {
+  return (
+    <MenuPrimitive.RadioItem
+      data-slot="dropdown-menu-radio-item"
+      closeOnClick
+      className={cn(
+        'relative flex cursor-default items-center gap-2 rounded-md py-1.5 pr-2 pl-8 text-sm outline-none select-none pointer-coarse:min-h-11',
+        'data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
+        className,
+      )}
+      {...props}
+    >
+      <MenuPrimitive.RadioItemIndicator className="absolute left-2 flex size-4 items-center justify-center">
+        <Check aria-hidden className="size-4" />
+      </MenuPrimitive.RadioItemIndicator>
+      {children}
+    </MenuPrimitive.RadioItem>
+  )
+}
+
+/** Words above a menu's items that are not an action: what the choices mean. */
+function DropdownMenuNote({ className, ...props }: ComponentProps<'p'>) {
+  return <p data-slot="dropdown-menu-note" className={cn('max-w-72 px-2 py-1.5 text-xs text-muted-foreground', className)} {...props} />
+}
+
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuNote,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+}

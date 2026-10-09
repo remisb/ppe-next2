@@ -30,7 +30,7 @@ export function isTyping(target: EventTarget | null): boolean {
 }
 
 /** The key a "G then …" sequence goes on to, from the letter pressed after G. */
-export type GoTarget = 'd' | 'o' | 'h' | 'e' | 'c' | 's' | 'u'
+export type GoTarget = 'd' | 'o' | 'h' | 'e' | 'a' | 'c' | 's' | 'u'
 
 export interface ShortcutHandlers {
   palette: () => void
@@ -57,7 +57,7 @@ export function useShortcuts(h: ShortcutHandlers, enabled: boolean): void {
       // A modal (a sheet, the palette, hand-over) owns the keyboard while open.
       if (document.querySelector('dialog[open]')) return
       const key = e.key.toLowerCase()
-      if (pendingG && Date.now() - pendingG < 1000 && 'dohecsu'.includes(key)) {
+      if (pendingG && Date.now() - pendingG < 1000 && 'doheacsu'.includes(key)) {
         pendingG = 0
         e.preventDefault()
         handlers.current.go(key as GoTarget)

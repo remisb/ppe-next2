@@ -1,4 +1,5 @@
 import { account } from './account'
+import { assets } from './assets'
 import { backups } from './backups'
 import { catalogue } from './catalogue'
 import { common } from './common'
@@ -8,4 +9,4 @@ import { history } from './history'
 import { order } from './order'
 import { shell } from './shell'
 
-export const ru = { common, shell, order, history, dashboard, employees, catalogue, account, backups }
+export const ru = { common, shell, order, history, dashboard, employees, catalogue, account, backups, assets }

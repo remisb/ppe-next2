@@ -1110,6 +1110,48 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
   await expect.poll(height).toBeGreaterThan(33)
 })
 
+test('Company Assets: Add SIM Card, Change Status saved at once, a duplicate names the card', async () => {
+  await openTab('Company Assets')
+  await expect(page.getByRole('heading', { name: 'Company Assets', exact: true })).toBeVisible()
+  await expect(page.getByText(/No SIM cards yet/)).toBeVisible()
+  // One card, in the Office and Not Activated, with the next number suggested (§4).
+  await page.getByRole('button', { name: 'Add SIM Card' }).click()
+  const form = page.getByRole('dialog')
+  await expect(form.getByLabel('Inventory No.')).toHaveValue('SIM-000001')
+  await form.getByLabel('SIM No.').fill('0089370011')
+  await form.getByLabel('Provider').fill('Telia')
+  await form.getByLabel('Plan').fill('Biz 10 GB')
+  await form.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('SIM-000001 added.')).toBeVisible()
+  const card = page.getByRole('row', { name: /SIM-000001/ })
+  await expect(card).toContainText('0089370011')
+  await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
+  await expect(card).toContainText('Office')
+  await expect(page.getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
+  // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
+  await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
+  await expect(page.getByText(/Email your provider to activate this SIM card/)).toBeVisible()
+  await page.getByRole('menuitemradio', { name: 'Active' }).click()
+  await expect(page.getByText('SIM-000001: status changed to Active.')).toBeVisible()
+  await expect(card.getByText('Active', { exact: true })).toBeVisible()
+  await expect(card).toContainText('Office')
+  // The same card again, its number typed with a space: refused, and the form opens the one registered.
+  await page.getByRole('button', { name: 'Add SIM Card' }).click()
+  await form.getByLabel('SIM No.').fill('0089 370011')
+  await form.getByLabel('Provider').fill('Bitė')
+  await form.getByRole('button', { name: 'Save' }).click()
+  await expect(form.getByText('This SIM number is already registered.')).toBeVisible()
+  await form.getByRole('button', { name: 'Open the existing SIM card' }).click()
+  await expect(page.getByLabel('Search SIM cards')).toHaveValue('SIM-000001')
+  await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
+  // A tile keeps the other filters: In Office with Blocked is the blocked cards in the office (§3).
+  await page.getByRole('button', { name: /^In Office/ }).click()
+  await page.getByRole('button', { name: 'Blocked', exact: true }).click()
+  await expect(page.getByText('No SIM cards match these filters.')).toBeVisible()
+  await page.getByRole('button', { name: 'Clear filters' }).first().click()
+  await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')
@@ -1176,6 +1218,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Employees', 'Ona Kazlauskienė'],
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
+    ['Company Assets', 'SIM-000001'],
     ['Users', admin.email],
     ['Roles & permissions', 'Built-in'],
     ['Audit log', admin.name],
@@ -1757,8 +1800,8 @@ test('Theme: light, dark or the device’s own, kept on this device through a re
   await tab.goto(webURL)
   await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await expect(tab.locator('html')).toHaveAttribute('data-theme', 'dark')
-  // In dark mode the logo is the book's gold foil.
-  expect(await tab.getByRole('img', { name: 'GAVORT' }).evaluate((e) => getComputedStyle(e).fill)).toMatch(/^url/)
+  // In dark mode the logo is white, the brand book's variation 3 (the brand-mark token).
+  expect(await tab.getByRole('img', { name: 'GAVORT' }).evaluate((e) => getComputedStyle(e).fill)).toBe('oklch(0.985 0 0)')
   await deviceOnly.close()
   // A browser that never chose follows its own setting.
   const fresh = await browser.newPage({ colorScheme: 'dark' })

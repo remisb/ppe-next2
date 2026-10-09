@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -111,7 +112,7 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	s, err := svc.Summary(ctx, "SIM")
-	if err != nil || s != (Summary{Total: 1, WithEmployees: 1, NotReturned: 1}) {
+	if err != nil || s.Total != 1 || s.InOffice != 0 || s.WithEmployees != 1 || s.NotReturned != 1 || !slices.Equal(s.Providers, []string{"Telia"}) {
 		t.Errorf("summary = %+v, %v", s, err)
 	}
 	for _, c := range []struct {
@@ -119,6 +120,8 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 		want int
 	}{
 		{ListParams{Kind: "SIM", Location: "UNKNOWN"}, 1},
+		{ListParams{Kind: "SIM", Held: "true"}, 1},
+		{ListParams{Kind: "SIM", Location: "WITH_EMPLOYEE"}, 0},
 		{ListParams{Kind: "SIM", Location: "OFFICE"}, 0},
 		{ListParams{Kind: "SIM", Status: "BLOCKED", NotReturned: "true"}, 1},
 		{ListParams{Kind: "SIM", Q: "petraitis"}, 1},

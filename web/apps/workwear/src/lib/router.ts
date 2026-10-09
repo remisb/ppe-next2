@@ -23,6 +23,8 @@ export type Route =
   | { name: 'employees'; missing?: boolean }
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
+  /** Company Assets: the SIM card register. */
+  | { name: 'assets' }
   | { name: 'catalogue' }
   /** One catalogue item: its current values and the item sets that hold it. */
   | { name: 'catalogueItem'; id: string }
@@ -60,6 +62,7 @@ const fixed = {
   createOrder: '/orders/new',
   history: '/orders',
   employees: '/employees',
+  assets: '/assets',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
   replacements: '/replacements',
