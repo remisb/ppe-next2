@@ -221,3 +221,24 @@ review ([specs/security-service.md](specs/security-service.md), ADR 0003).
 | The kinds the web describes are the API's | `security.TestWebClientListsTheKinds`, `TestEveryDomainEventIsKnown` (`access_review.completed`) |
 | Security screen: tabs and the sign-ins' filters in the address; a failed attempt with its device; signing out another device of one's own; the review marked and opened on the Audit log; no sideways scroll on a phone or tablet; on a phone Roles & permissions and Settings under More | admin web `router` tests; e2e *Security: …*, *phone and tablet: …* |
 
+
+## Company Assets (planned)
+
+Not a manual rule: the assets brief's §19 checks
+([specs/asset-service.md](specs/asset-service.md), ADR 0004). Nothing is built yet; each
+row names the slice that adds its tests, and the "Covered by" column is filled in then.
+
+| Brief §19 check | Expected | Slice | Covered by |
+| --- | --- | --- | --- |
+| A new SIM from the provider | Office, Not Activated, no holder | 2, 3 | — |
+| The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset, which the form links to | 2, 3 | — |
+| Give a Not Activated or Blocked SIM | Refused, with the reason at the field | 2, 4 | — |
+| Give an Active SIM | Holder, location, form and history change together, in one transaction | 2, 4 | — |
+| Give twice, or two users at once | Exactly one assignment (the unique index); the other gets 409 and keeps its entries | 2, 4 | — |
+| Block without a return | Blocked; the holder stays; In Office does not grow | 2, 4 | — |
+| Return an Active or a Blocked SIM | In the Office; the status does not change | 2, 4 | — |
+| Give to a new holder | A new assignment and form; the old one stays | 2, 4 | — |
+| The plan changes after giving | The earlier form keeps its content and hash | 2, 4 | — |
+| The employee no longer works | Nothing is returned automatically | 2 | — |
+| Register and give equipment | A unique number; on the employee's list | 7 | — |
+| The form changes after Print Form | Paper Form Signed is cleared; the API refuses a hash that no longer matches | 4 | — |

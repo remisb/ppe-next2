@@ -5,7 +5,8 @@ each other. The decision to build them as modules of one API and one staff app, 
 as separate services, is [ADR 0001](adr/0001-modular-monolith-with-bounded-contexts.md).
 
 Status: **proposed**. Workwear and the platform modules exist today (as flat
-`internal/domain/<name>` packages); People, Competence, Personnel files, Projects & crew,
+`internal/domain/<name>` packages); Company Assets is specified
+([ADR 0004](adr/0004-company-assets.md)); People, Competence, Personnel files, Projects & crew,
 Timesheets and Reporting are planned. Each new context gets its product contract and
 `docs/specs/<name>-service.md` before code, and its terms in
 [ubiquitous-language.md](../ubiquitous-language.md) before they are used.
@@ -23,6 +24,7 @@ flowchart BT
 
     people["People<br/>(shared kernel)"]
     workwear[Workwear]
+    assets[Company Assets]
     competence[Competence]
     personnel["Personnel files<br/>(sensitive)"]
     projects[Projects & crew]
@@ -30,6 +32,8 @@ flowchart BT
     reporting["Reporting<br/>(read-only)"]
 
     workwear --> people
+    assets --> people
+    assets --> files
     competence --> people
     personnel --> people
     projects --> people
@@ -38,6 +42,7 @@ flowchart BT
     time --> projects
     time --> people
     reporting -.-> workwear
+    reporting -.-> assets
     reporting -.-> competence
     reporting -.-> projects
     reporting -.-> time
@@ -62,6 +67,7 @@ extracted, on its own.
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
 | Workwear | catalogue, item sets, orders and snapshot lines, confirmations, receipts, a person's size defaults (wearer profile) | `internal/workwear` | `workwear` | low | exists |
+| Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | specified ([spec](../specs/asset-service.md)) |
 | Competence | certificate and qualification types, certificates held, validity and expiry, the evidence file | `internal/competence` | `competence` | personal | planned |
 | Personnel files | identity documents and ID numbers, contracts, other personal documents, retention | `internal/personnel` | `personnel` | **special care** | planned |
 | Projects & crew | clients, sites, projects and their requirements (qualifications, item sets), teams, crew assignments, eligibility | `internal/projects` | `projects` | low | planned |
@@ -75,6 +81,8 @@ extracted, on its own.
 | every context | People | shared kernel | `employee_id` (UUID, foreign key allowed); name, code and language through `people` reads; events `EmployeeJoined`, `EmployeeLeft`, `EmployeeChanged` |
 | every context | Users & sign-in | conformist | the actor (`Actor{ID, Permissions, Scopes}`) passed into every service call; actor foreign keys to `iam.users` |
 | Workwear | People | customer–supplier | the person an order is for; Workwear snapshots name and code on the order as it does today |
+| Company Assets | People | customer–supplier | the employee an asset is assigned to (`employee_id` foreign key); an employee leaving never ends an assignment |
+| Company Assets | Files | customer–supplier | the signed copy of an assignment form |
 | Competence | Files | customer–supplier | the evidence file of a certificate |
 | Personnel files | Files | customer–supplier | document scans, encrypted with keys Personnel files can destroy |
 | Projects & crew | Competence | customer–supplier | "valid certificates of type T for person P over period D", for eligibility |
@@ -111,6 +119,7 @@ needs:
 | --- | --- | --- |
 | People | Employee | identity, employment status and dates, language, linked user |
 | Workwear | Wearer profile | height, clothing and shoe size defaults |
+| Company Assets | Holder | the assets assigned to them, open and past |
 | Competence | Certificate holder | certificates held and their validity |
 | Personnel files | Personnel file | documents, ID numbers, retention dates |
 | Projects & crew | Crew member | assignments to projects and teams |
