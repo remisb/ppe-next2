@@ -56,11 +56,13 @@ type AssignmentView struct {
 	DaysHeld int `json:"days_held"`
 }
 
-// View is an asset with where it is and its open assignment.
+// View is an asset with where it is, its open assignment, and whether giving
+// it needs a signed form (so the apps follow the rule rather than repeat it).
 type View struct {
 	Asset
-	Location Location        `json:"location"`
-	Open     *AssignmentView `json:"open_assignment"`
+	Location  Location        `json:"location"`
+	Open      *AssignmentView `json:"open_assignment"`
+	NeedsForm bool            `json:"needs_form"`
 }
 
 // Detail is an asset's page: the asset and every assignment, newest first.
@@ -97,7 +99,7 @@ func (s *Service) assignmentView(a Assignment) AssignmentView {
 // view derives the location from the open assignment: none is the Office;
 // marked Not Returned with unknown whereabouts is Unknown, the holder kept.
 func (s *Service) view(r Record) View {
-	v := View{Asset: r.Asset, Location: LocationOffice}
+	v := View{Asset: r.Asset, Location: LocationOffice, NeedsForm: r.Asset.NeedsForm()}
 	if r.Open != nil {
 		av := s.assignmentView(*r.Open)
 		v.Open, v.Location = &av, LocationWithEmployee

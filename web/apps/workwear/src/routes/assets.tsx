@@ -1,4 +1,4 @@
-import type { Asset, AssetSort, ConnectionStatus } from '@ppe/api-client'
+import type { Asset, AssetCategory, AssetKind, AssetSort, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react'
 
 import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
+import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import {
@@ -24,6 +25,8 @@ import {
   type Tile,
   chooseTile,
   assetQuery,
+  categories,
+  categoryLabel,
   filterCount,
   formatDay,
   holderText,
@@ -35,9 +38,10 @@ import {
 } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 
-const columns = (): SortColumn<AssetSort>[] => [
+/** The sortable columns: a SIM card's status, an item's name, in the second place. */
+const columns = (kind: AssetKind): SortColumn<AssetSort>[] => [
   { key: 'inventory', label: t.assets.colInventoryNo },
-  { key: 'status', label: t.assets.colStatus },
+  kind === 'SIM' ? { key: 'status', label: t.assets.colStatus } : { key: 'name', label: t.assets.colItem },
   { key: 'holder', label: t.assets.colHeldBy },
   { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
 ]
@@ -55,7 +59,8 @@ const segment =
  * row is two short lines and its actions are on the card's page. Writes need
  * assets.manage.
  */
-export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: (to: Route) => void }) {
+export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile | undefined; navigate: (to: Route) => void }) {
+  const sim = kind === 'SIM'
   const { client } = useApi()
   const canManage = useSession().can('assets.manage')
   const settings = useLoad(() => client.settings())
@@ -83,9 +88,9 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
     return () => window.clearTimeout(id)
   }, [search])
 
-  const query = assetQuery(filters, sort.key, sort.dir, page)
+  const query = assetQuery(kind, filters, sort.key, sort.dir, page)
   const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
-  const summary = useLoad(() => client.assets.summary('SIM'), [reloads])
+  const summary = useLoad(() => client.assets.summary(kind), [reloads])
   const reload = () => setReloads((n) => n + 1)
 
   const update = (next: AssetFilters) => {
@@ -127,7 +132,7 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
 
   const s = summary.data
   const tiles: { tile: Tile; label: string; value: number | undefined; detail: string }[] = [
-    { tile: 'total', label: t.assets.totalSimCards, value: s?.total, detail: t.assets.totalDetail },
+    { tile: 'total', label: sim ? t.assets.totalSimCards : t.assets.totalItems, value: s?.total, detail: t.assets.totalDetail },
     { tile: 'inOffice', label: t.assets.inOffice, value: s?.in_office, detail: t.assets.inOfficeDetail },
     { tile: 'withEmployees', label: t.assets.withEmployees, value: s?.with_employees, detail: t.assets.withEmployeesDetail },
     { tile: 'notReturned', label: t.assets.notReturned, value: s?.not_returned, detail: t.assets.notReturnedDetail },
@@ -159,13 +164,13 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
     <>
       <PageHeader
         title={t.assets.title}
-        description={t.assets.description}
+        description={sim ? t.assets.description : t.assets.equipmentDescription}
         descriptionClassName="max-md:hidden"
         actions={
           <>
             {canManage ? (
               <Button onClick={() => setEditing('new')}>
-                <Plus aria-hidden /> {t.assets.addSimCard}
+                <Plus aria-hidden /> {sim ? t.assets.addSimCard : t.assets.addAsset}
               </Button>
             ) : null}
             <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="asset-filters" onClick={() => setShowFilters((v) => !v)}>
@@ -174,7 +179,19 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
           </>
         }
       />
-      <h2 className="mb-3 text-lg font-semibold">{t.assets.simCards}</h2>
+      {/* The two registers, each at its own address: SIM cards, and equipment and furniture. */}
+      <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
+        {([['SIM', t.assets.simCards], ['EQUIPMENT', t.assets.equipmentTab]] as const).map(([k, label]) => (
+          <a
+            key={k}
+            {...linkTo({ name: 'assets', ...(k === 'EQUIPMENT' ? { equipment: true } : {}) }, navigate)}
+            aria-current={kind === k ? 'page' : undefined}
+            className={cn(segment, 'aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm')}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
 
       <KeyFigures>
         {tiles.map((k) => (
@@ -194,20 +211,31 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
         <Input
           type="search"
           data-shortcut="search"
-          aria-label={t.assets.searchLabel}
-          placeholder={t.assets.searchPlaceholder}
+          aria-label={sim ? t.assets.searchLabel : t.assets.equipmentSearchLabel}
+          placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="md:max-w-md"
         />
         <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-center', !showFilters && 'max-md:hidden')}>
-          <div role="group" aria-label={t.assets.status} className="grid grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 max-md:overflow-x-auto sm:inline-grid sm:w-auto">
-            {statuses.map((o) => (
-              <button key={o.label} type="button" aria-pressed={filters.status === o.value} onClick={() => update({ ...filters, status: o.value })} className={segment}>
-                {o.label}
-              </button>
-            ))}
-          </div>
+          {sim ? (
+            <div role="group" aria-label={t.assets.status} className="grid grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 max-md:overflow-x-auto sm:inline-grid sm:w-auto">
+              {statuses.map((o) => (
+                <button key={o.label} type="button" aria-pressed={filters.status === o.value} onClick={() => update({ ...filters, status: o.value })} className={segment}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Select aria-label={t.assets.category} value={filters.category} onChange={(e) => update({ ...filters, category: e.target.value as AssetCategory | '' })} className="md:w-auto">
+              <option value="">{t.assets.allCategories}</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {categoryLabel(c)}
+                </option>
+              ))}
+            </Select>
+          )}
           <Select aria-label={t.assets.location} value={filters.place} onChange={(e) => update({ ...filters, place: e.target.value as Place })} className="md:w-auto">
             {places.map((o) => (
               <option key={o.value} value={o.value}>
@@ -215,14 +243,16 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
               </option>
             ))}
           </Select>
-          <Select aria-label={t.assets.provider} value={filters.provider} onChange={(e) => update({ ...filters, provider: e.target.value })} className="md:w-auto">
-            <option value="">{t.assets.allProviders}</option>
-            {(s?.providers ?? []).map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </Select>
+          {sim ? (
+            <Select aria-label={t.assets.provider} value={filters.provider} onChange={(e) => update({ ...filters, provider: e.target.value })} className="md:w-auto">
+              <option value="">{t.assets.allProviders}</option>
+              {(s?.providers ?? []).map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </Select>
+          ) : null}
           {filtered ? (
             <Button variant="ghost" onClick={clear}>
               {t.assets.clearFilters}
@@ -241,7 +271,7 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
         <Loading />
       ) : !list.data || list.data.assets.length === 0 ? (
         <EmptyState>
-          {filtered ? t.assets.noMatches : t.assets.noSimCards}
+          {filtered ? (sim ? t.assets.noMatches : t.assets.noEquipmentMatches) : sim ? t.assets.noSimCards : t.assets.noEquipment}
           {filtered ? (
             <Button variant="outline" className="mt-3" onClick={clear}>
               {t.assets.clearFilters}
@@ -250,15 +280,20 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
         </EmptyState>
       ) : (
         <>
-          <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns()} {...sortProps} />}>
+          <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
             <TableHeader>
               <TableRow>
-                <SortableHead column={columns()[0]!} {...sortProps} />
-                <TableHead>{t.assets.colNumbers}</TableHead>
-                <TableHead>{t.assets.colProvider}</TableHead>
-                <SortableHead column={columns()[1]!} {...sortProps} />
-                <SortableHead column={columns()[2]!} {...sortProps} />
-                <SortableHead column={columns()[3]!} {...sortProps} />
+                <SortableHead column={columns(kind)[0]!} {...sortProps} />
+                {sim ? (
+                  <>
+                    <TableHead>{t.assets.colNumbers}</TableHead>
+                    <TableHead>{t.assets.colProvider}</TableHead>
+                  </>
+                ) : null}
+                <SortableHead column={columns(kind)[1]!} {...sortProps} />
+                {sim ? null : <TableHead>{t.assets.colSerialNo}</TableHead>}
+                <SortableHead column={columns(kind)[2]!} {...sortProps} />
+                <SortableHead column={columns(kind)[3]!} {...sortProps} />
                 <TableHead>{t.assets.colDocuments}</TableHead>
                 <TableHead>{t.assets.colComment}</TableHead>
                 {canManage ? <TableHead className="text-right">{t.assets.actions}</TableHead> : null}
@@ -286,9 +321,10 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
                     </TableCell>
                     {/* The stacked row's second line: phone, provider and where the card is. */}
                     <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                      {[a.phone_no ?? a.sim_no, a.provider, holder.main].filter(Boolean).join(' · ')}
+                      {(sim ? [a.phone_no ?? a.sim_no, a.provider, holder.main] : [a.name, a.category ? categoryLabel(a.category) : null, holder.main]).filter(Boolean).join(' · ')}
                       {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
                     </TableCell>
+                    {sim ? (
                     <TableCell className="stacked:hidden">
                       <span className="flex flex-col items-start">
                         {a.sim_no ? <CopyNumber value={a.sim_no} label={t.assets.copySimNo(a.sim_no)} onCopied={copied(a.sim_no)} /> : null}
@@ -299,11 +335,24 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
                         )}
                       </span>
                     </TableCell>
+                    ) : null}
+                    {sim ? (
                     <TableCell className="stacked:hidden">
                       {a.provider}
                       {a.plan ? <span className="block text-xs text-muted-foreground">{a.plan}</span> : null}
                     </TableCell>
-                    <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                    ) : null}
+                    {sim ? (
+                      <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                    ) : (
+                      <>
+                        <TableCell className="stacked:hidden">
+                          {a.name}
+                          {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '—'}</TableCell>
+                      </>
+                    )}
                     <TableCell className="stacked:hidden">
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
@@ -332,11 +381,11 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
                       <TableCell className="text-right whitespace-nowrap stacked:hidden">
                         {action === 'give' ? (
                           <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
-                            {t.assets.giveSimCard}
+                            {sim ? t.assets.giveSimCard : t.assets.giveAsset}
                           </Button>
                         ) : action === 'return' ? (
                           <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })}>
-                            {t.assets.registerReturn}
+                            {sim ? t.assets.registerReturn : t.assets.registerAssetReturn}
                           </Button>
                         ) : a.connection_status ? (
                           <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
@@ -357,7 +406,7 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
             </TableBody>
           </Table>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-            <span>{t.assets.shown(list.data.total)}</span>
+            <span>{sim ? t.assets.shown(list.data.total) : t.assets.shownItems(list.data.total)}</span>
             {pages > 1 ? (
               <span className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
@@ -382,18 +431,31 @@ export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: 
           reload()
         }}
       />
-      <SimCardForm
-        card={editing}
-        today={today}
-        providers={s?.providers ?? []}
-        onClose={() => setEditing(null)}
-        onSaved={(saved, added) => {
-          setEditing(null)
-          setMessage(added ? t.assets.added(saved.inventory_no) : t.assets.saved(saved.inventory_no))
-          reload()
-        }}
-        onOpenExisting={(id) => void openExisting(id)}
-      />
+      {sim ? (
+        <SimCardForm
+          card={editing}
+          today={today}
+          providers={s?.providers ?? []}
+          onClose={() => setEditing(null)}
+          onSaved={(saved, added) => {
+            setEditing(null)
+            setMessage(added ? t.assets.added(saved.inventory_no) : t.assets.saved(saved.inventory_no))
+            reload()
+          }}
+          onOpenExisting={(id) => void openExisting(id)}
+        />
+      ) : (
+        <EquipmentForm
+          item={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(saved, added) => {
+            setEditing(null)
+            setMessage(added ? t.assets.added(saved.inventory_no) : t.assets.saved(saved.inventory_no))
+            reload()
+          }}
+          onOpenExisting={(id) => navigate({ name: 'asset', id })}
+        />
+      )}
     </>
   )
 }

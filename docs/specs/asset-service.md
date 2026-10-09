@@ -5,8 +5,8 @@ migration `0029_company_assets`, `internal/domain/asset`, every route below exce
 signed copy's. The SIM card register (slice 3) and the asset page with Give SIM Card,
 Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
 screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
-dashboards' Company Assets card (slice 6); see below.** Upload Signed Form is slice 5,
-waiting for open decision 2; Equipment & Furniture is slice 7. The product contract is the assets
+dashboards' Company Assets card (slice 6), and Equipment & Furniture (slice 7); see below.**
+Upload Signed Form is slice 5, waiting for open decision 2. The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -205,7 +205,7 @@ goes to someone else.
 | `GET /api/v1/assets/by-number/{q}` | authenticated | **filter** for ⌘K Search: SIM No., Phone No. or Inventory No. containing `q`, spaces ignored, max 20; no match is `200 []` |
 | `GET /api/v1/assets/by-employee/{id}` | authenticated | **filter**: the employee's assignments with their assets, open first; none is `200 []` |
 | `GET /api/v1/assets/next-number/{prefix}` | `assets.manage` | `{"inventory_no": "SIM-000002"}` |
-| `GET /api/v1/assets/{id}` | authenticated | the asset with `location`, `open_assignment` and every assignment, newest first; 404 |
+| `GET /api/v1/assets/{id}` | authenticated | the asset with `location`, `open_assignment`, `needs_form` and every assignment, newest first; 404 |
 | `POST /api/v1/assets` | `assets.manage` | Add SIM Card, Add Asset (201) |
 | `PUT /api/v1/assets/{id}` | `assets.manage` | Edit, full replace of the details |
 | `PUT /api/v1/assets/{id}/status` | `assets.manage` | Change Status, `{"connection_status"}` |
@@ -226,7 +226,8 @@ ServeMux.
 /api/v1/orders`: `kind` (required), `q` (SIM No., Phone No. or Inventory No. with spaces
 ignored, or the name, serial number or holder's name), `location`, `held=true` (someone holds
 it, whereabouts known or not: the With Employees tile), `employee_id`, `provider`,
-`status`, `not_returned=true`, `sort` (`inventory`, `status`, `holder`, `given`), `dir`,
+`status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, `name`, `status`, `holder`,
+`given`), `dir`,
 `page`, `page_size` (default 50, at most 100). Slice 5 adds `signed_copy`. An unknown or
 repeated parameter is 400, and no match is an empty page: `{assets, page, page_size,
 total}`.
@@ -334,6 +335,28 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   (`components/assets-card.tsx`): the four figures, each opening the register on its tile
   (`/assets?show=in-office|with-employees|not-returned`). The register is under More on a
   phone, so this is the way there from Home.
+
+## Equipment & Furniture (slice 7)
+
+The same engine, screens and rules, with what differs by kind:
+
+- **Register**: the second tab of Company Assets (`/assets?kind=equipment`): Total items, In
+  Office, With Employees, Not Returned; search by inventory or serial number, name or
+  holder; filters by category and location; columns Item / Category and Serial No. instead
+  of the numbers, provider and status. A row's action is Give Asset in the Office and
+  Register Asset Return while held: there is no connection status (§17).
+- **Add Asset** (`components/equipment-form.tsx`): Name, Category, Inventory No. (the
+  category's next number suggested: PC, PH, DRV, FUR, AST), Serial No., Non-return Value,
+  Comment. It starts in the Office.
+- **Give Asset**: a computer, phone or external drive is given against its printed
+  Equipment Assignment Form, as a SIM card; furniture and other items without a form, so
+  the sheet says so and has no Print Form or Paper Form Signed (open decision 6). Which is
+  which is the API's `needs_form`, so the screens never repeat the rule.
+- **The asset page** has no Connection block and shows the category and serial number; Mark
+  as Not Returned offers no blocking email.
+- **The employee page** has **Equipment** beside Given SIM, with Give Asset; the item picker
+  lists the items in the Office.
+- **The dashboards' card** shows both registers' figures.
 
 ## Open decisions
 

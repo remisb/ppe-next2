@@ -15,6 +15,7 @@ const (
 	SortStatus    SortKey = "status"
 	SortHolder    SortKey = "holder"
 	SortGiven     SortKey = "given"
+	SortName      SortKey = "name" // equipment
 )
 
 const (
@@ -32,6 +33,7 @@ type ListParams struct {
 	Held        string // "true" keeps the assets someone holds, whereabouts known or not
 	EmployeeID  *uuid.UUID
 	Provider    string
+	Category    string // an equipment category
 	Status      string // a connection status
 	NotReturned string // "true" keeps the assets marked Not Returned
 	Sort        string
@@ -48,6 +50,7 @@ type ListFilter struct {
 	Held        bool
 	EmployeeID  *uuid.UUID
 	Provider    string
+	Category    *Category
 	Status      *Status
 	NotReturned bool
 	Sort        SortKey
@@ -87,6 +90,13 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 		}
 		f.Location = &l
 	}
+	if p.Category != "" {
+		c := Category(p.Category)
+		if prefixes[c] == "" {
+			return ListFilter{}, 0, 0, fieldError("category", "must be COMPUTER, PHONE, EXTERNAL_DRIVE, FURNITURE or OTHER")
+		}
+		f.Category = &c
+	}
 	if p.Status != "" {
 		s := Status(p.Status)
 		if !s.valid() {
@@ -111,10 +121,10 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 	switch SortKey(p.Sort) {
 	case "", SortInventory:
 		f.Sort = SortInventory
-	case SortStatus, SortHolder, SortGiven:
+	case SortStatus, SortHolder, SortGiven, SortName:
 		f.Sort = SortKey(p.Sort)
 	default:
-		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, status, holder or given")
+		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, name, status, holder or given")
 	}
 	switch p.Dir {
 	case "", "asc":

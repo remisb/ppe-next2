@@ -107,6 +107,9 @@ func (f *fakeRepo) List(_ context.Context, lf ListFilter) ([]Record, int, error)
 	defer f.mu.Unlock()
 	out := make([]Record, 0)
 	for _, a := range f.assets {
+		if lf.Category != nil && (a.Category == nil || *a.Category != *lf.Category) {
+			continue
+		}
 		if a.Kind == lf.Kind && !a.Deleted() {
 			out = append(out, Record{Asset: a, Open: f.open(a.ID)})
 		}
@@ -697,6 +700,12 @@ func TestFurnitureNeedsNoForm(t *testing.T) {
 	if _, err := f.svc.Give(f.ctx, desk.ID, GiveParams{FormParams: fp, PaperFormSigned: true}, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("signed tick on furniture: %v", err)
 	}
+	if got, _ := f.svc.Get(f.ctx, desk.ID); got.NeedsForm {
+		t.Error("a desk needs a form")
+	}
+	if res, _ := f.svc.List(f.ctx, ListParams{Kind: "EQUIPMENT", Category: "FURNITURE"}); res.Total != 1 {
+		t.Errorf("furniture listed = %d, want 1", res.Total)
+	}
 	a, err := f.svc.Give(f.ctx, desk.ID, GiveParams{FormParams: fp}, testActor)
 	if err != nil || a.Form != nil || a.PaperFormSigned {
 		t.Errorf("give desk = %+v, %v", a, err)
@@ -704,8 +713,11 @@ func TestFurnitureNeedsNoForm(t *testing.T) {
 	if _, err := f.svc.Form(f.ctx, desk.ID, a.ID); !errors.Is(err, ErrNoForm) {
 		t.Errorf("form: %v", err)
 	}
-	// A laptop needs its value for the form.
+	// A laptop needs a form, and its value for it.
 	pc, _ := f.svc.Create(f.ctx, CreateParams{Kind: KindEquipment, Params: Params{InventoryNo: "PC-000001", Name: sp("Laptop"), Category: ptr(CategoryComputer)}}, testActor)
+	if !pc.NeedsForm {
+		t.Error("a laptop needs no form")
+	}
 	if _, err := f.svc.Preview(f.ctx, pc.ID, fp); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "non_return_value_cents") {
 		t.Errorf("laptop without value: %v", err)
 	}
@@ -756,7 +768,7 @@ func TestListParams(t *testing.T) {
 	f := newFixture(t)
 	for _, p := range []ListParams{
 		{}, {Kind: "CAR"}, {Kind: "SIM", Location: "HOME"}, {Kind: "SIM", Status: "LOST"}, {Kind: "SIM", NotReturned: "yes"},
-		{Kind: "SIM", Held: "yes"}, {Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
+		{Kind: "EQUIPMENT", Category: "TABLE"}, {Kind: "SIM", Held: "yes"}, {Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
 	} {
 		if _, err := f.svc.List(f.ctx, p); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%+v: %v, want ErrInvalid", p, err)

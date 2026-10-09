@@ -3,7 +3,7 @@
  * tiles and filters as one query, where a card is, and Add SIM Card's and
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
-import type { Asset, AssetInput, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput } from '@ppe/api-client'
+import type { Asset, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 
 import { intlLocale, t } from '@/i18n'
@@ -23,10 +23,12 @@ export interface AssetFilters {
   notReturned: boolean
   status: ConnectionStatus | ''
   provider: string
+  /** Equipment only. */
+  category: AssetCategory | ''
   q: string
 }
 
-export const noAssetFilters: AssetFilters = { place: 'all', notReturned: false, status: '', provider: '', q: '' }
+export const noAssetFilters: AssetFilters = { place: 'all', notReturned: false, status: '', provider: '', category: '', q: '' }
 
 /** A summary tile: the filters it sets; it is pressed while they are the place and Not Returned chosen. */
 export type Tile = 'total' | 'inOffice' | 'withEmployees' | 'notReturned'
@@ -50,14 +52,14 @@ export function tilePressed(f: AssetFilters, tile: Tile): boolean {
 
 /** How many filters besides the tiles and the search are set, for the phone's Filters button. */
 export function filterCount(f: AssetFilters): number {
-  return [f.status, f.provider].filter(Boolean).length
+  return [f.status, f.provider, f.category].filter(Boolean).length
 }
 
-/** The register's query: the SIM cards matching f, sorted, one page. Unset filters are left out. */
-export function assetQuery(f: AssetFilters, sort: AssetSort, dir: 'asc' | 'desc', page: number): AssetQuery {
+/** The register's query: kind's assets matching f, sorted, one page. Unset filters are left out. */
+export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, dir: 'asc' | 'desc', page: number): AssetQuery {
   const q = f.q.trim()
   return {
-    kind: 'SIM',
+    kind,
     ...(q ? { q } : {}),
     ...(f.place === 'office' ? { location: 'OFFICE' as const } : {}),
     ...(f.place === 'unknown' ? { location: 'UNKNOWN' as const } : {}),
@@ -65,6 +67,7 @@ export function assetQuery(f: AssetFilters, sort: AssetSort, dir: 'asc' | 'desc'
     ...(f.notReturned ? { not_returned: true } : {}),
     ...(f.status ? { status: f.status } : {}),
     ...(f.provider ? { provider: f.provider } : {}),
+    ...(f.category ? { category: f.category } : {}),
     sort,
     dir,
     page,
@@ -184,9 +187,10 @@ export function formatDay(date: string): string {
  */
 export type PrimaryAction = 'return' | 'give' | 'status'
 
-export function primaryAction(a: Pick<Asset, 'open_assignment' | 'connection_status'>): PrimaryAction {
+export function primaryAction(a: Pick<Asset, 'kind' | 'open_assignment' | 'connection_status'>): PrimaryAction {
   if (a.open_assignment) return 'return'
-  return a.connection_status === 'ACTIVE' ? 'give' : 'status'
+  // Equipment has no connection status: in the office it can always be given.
+  return a.kind === 'EQUIPMENT' || a.connection_status === 'ACTIVE' ? 'give' : 'status'
 }
 
 /** Mark as Not Returned is for a held card not yet marked; the mark is set once. */
@@ -233,22 +237,27 @@ export function formInput(a: Pick<Asset, 'plan' | 'non_return_value_cents'>, d: 
  * given from this form at all; the rest the form itself fixes.
  */
 export function giveBlock(
-  a: Pick<Asset, 'open_assignment' | 'connection_status' | 'phone_no' | 'plan' | 'non_return_value_cents'> | null,
+  a: Pick<Asset, 'kind' | 'needs_form' | 'open_assignment' | 'connection_status' | 'phone_no' | 'plan' | 'non_return_value_cents'> | null,
   d: GiveDraft,
   today: string,
   printed: { key: string } | null,
   signed: boolean,
+  kind: AssetKind = 'SIM',
 ): string | null {
-  if (!a) return t.assets.chooseCardReason
+  if (!a) return kind === 'SIM' ? t.assets.chooseCardReason : t.assets.chooseItemReason
   if (a.open_assignment) return t.assets.alreadyGivenReason
-  if (a.connection_status !== 'ACTIVE') return a.connection_status === 'BLOCKED' ? t.assets.blockedReason : t.assets.notActivatedReason
-  if (!a.phone_no) return t.assets.phoneMissingReason
+  if (a.kind === 'SIM') {
+    if (a.connection_status !== 'ACTIVE') return a.connection_status === 'BLOCKED' ? t.assets.blockedReason : t.assets.notActivatedReason
+    if (!a.phone_no) return t.assets.phoneMissingReason
+  }
   if (!d.employeeId) return t.assets.chooseEmployeeReason
   if (!d.givenDate) return t.assets.givenDateReason
   if (d.givenDate > today) return t.assets.dateInFuture
   const cents = parseEuro(d.value)
-  if (a.plan === null && !d.plan.trim()) return t.assets.planReason
-  if (a.non_return_value_cents === null && (cents === null || Number.isNaN(cents))) return t.assets.valueReason
+  if (a.kind === 'SIM' && a.plan === null && !d.plan.trim()) return t.assets.planReason
+  if (a.needs_form && a.non_return_value_cents === null && (cents === null || Number.isNaN(cents))) return t.assets.valueReason
+  // Furniture and other items need no signed form (spec, open decision 6).
+  if (!a.needs_form) return null
   if (!printed || printed.key !== formKey(d)) return t.assets.printFirstReason
   if (!signed) return t.assets.tickSignedReason
   return null
@@ -259,7 +268,8 @@ export function giveBlock(
  * employee's page, or null: the picker shows every office card with its
  * status, and greys out these (§6).
  */
-export function cardBlock(a: Pick<Asset, 'connection_status' | 'phone_no'>): string | null {
+export function cardBlock(a: Pick<Asset, 'kind' | 'connection_status' | 'phone_no'>): string | null {
+  if (a.kind === 'EQUIPMENT') return null
   if (a.connection_status === 'NOT_ACTIVATED') return t.assets.statuses.NOT_ACTIVATED
   if (a.connection_status === 'BLOCKED') return t.assets.statuses.BLOCKED
   if (!a.phone_no) return t.assets.noPhoneNo
@@ -300,4 +310,63 @@ export function blockingEmail(a: Pick<Asset, 'phone_no' | 'sim_no'>, company = '
 export function looksLikeAssetNumber(q: string): boolean {
   const s = q.trim()
   return /\d{3,}/.test(s.replace(/[\s()+-]/g, '')) || /^sim[\s-]?\d/i.test(s)
+}
+
+/** The inventory number prefix of an equipment category (§16). */
+export const categoryPrefix: Record<AssetCategory, InventoryPrefix> = { COMPUTER: 'PC', PHONE: 'PH', EXTERNAL_DRIVE: 'DRV', FURNITURE: 'FUR', OTHER: 'AST' }
+
+export const categories: AssetCategory[] = ['COMPUTER', 'PHONE', 'EXTERNAL_DRIVE', 'FURNITURE', 'OTHER']
+
+/** An equipment category in the language in use. */
+export function categoryLabel(c: AssetCategory): string {
+  return t.assets.categories[c]
+}
+
+/** Add Asset's and Edit's fields for equipment and furniture, as typed (§15). */
+export interface EquipmentDraft {
+  name: string
+  category: AssetCategory | ''
+  inventoryNo: string
+  serialNo: string
+  value: string
+  comment: string
+}
+
+export function emptyEquipmentDraft(): EquipmentDraft {
+  return { name: '', category: '', inventoryNo: '', serialNo: '', value: '', comment: '' }
+}
+
+export function equipmentDraftOf(a: Asset): EquipmentDraft {
+  return {
+    name: a.name ?? '',
+    category: a.category ?? '',
+    inventoryNo: a.inventory_no,
+    serialNo: a.serial_no ?? '',
+    value: a.non_return_value_cents != null ? (a.non_return_value_cents / 100).toFixed(2) : '',
+    comment: a.comment,
+  }
+}
+
+export type EquipmentErrors = Partial<Record<keyof EquipmentDraft, string>>
+
+/** The draft's problems as the API would refuse it, and the details to send when there are none. */
+export function checkEquipmentDraft(d: EquipmentDraft): { errors: EquipmentErrors; input?: AssetInput } {
+  const errors: EquipmentErrors = {}
+  if (!d.name.trim()) errors.name = t.assets.required
+  if (!d.category) errors.category = t.assets.required
+  if (!d.inventoryNo.trim()) errors.inventoryNo = t.assets.required
+  const cents = parseEuro(d.value)
+  if (Number.isNaN(cents) || (cents !== null && cents < 0)) errors.value = t.assets.valueInvalid
+  if (Object.keys(errors).length > 0 || !d.category) return { errors }
+  return {
+    errors,
+    input: {
+      category: d.category,
+      inventory_no: d.inventoryNo.trim(),
+      name: d.name.trim(),
+      serial_no: d.serialNo.trim() || null,
+      non_return_value_cents: cents,
+      comment: d.comment.trim(),
+    },
+  }
 }

@@ -779,8 +779,8 @@ Rules for using it:
 
 Specified in [asset-service.md](specs/asset-service.md) and
 [ADR 0004](architecture/adr/0004-company-assets.md). The API and the SIM card register are built;
-the asset page with giving, returning, Not Returned and the blocking email, and Given SIM on
-the employee page, too; signed copies and Equipment & Furniture are not yet. The product contract is
+the asset page with giving, returning, Not Returned and the blocking email, Given SIM and
+Equipment on the employee page, and Equipment & Furniture, too; signed copies are not yet. The product contract is
 `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (the **assets brief**,
 v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
@@ -791,8 +791,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
 - **Code:** `internal/domain/asset`, `routes/assets.tsx` (`/assets`, G then A). **UI:**
-  Company Assets (short label Assets), **SIM Cards**; **Equipment & Furniture** comes
-  with slice 7.
+  Company Assets (short label Assets), tabs **SIM Cards** and **Equipment & Furniture**
+  (`/assets?kind=equipment`).
 
 ### Asset
 - **Brief:** one physical item the company owns and tracks on its own: a SIM card, a

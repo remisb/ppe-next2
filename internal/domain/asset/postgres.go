@@ -223,6 +223,9 @@ func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Record, 
 	if f.Provider != "" {
 		add(`lower(a.provider) = lower($%d)`, f.Provider)
 	}
+	if f.Category != nil {
+		add(`a.category = $%d`, string(*f.Category))
+	}
 	if f.Status != nil {
 		add(`a.connection_status = $%d`, string(*f.Status))
 	}
@@ -257,6 +260,8 @@ func orderBy(f ListFilter) string {
 		return `lower(e.last_name) ` + dir + ` NULLS LAST, lower(e.first_name) ` + dir + `, ` + tie
 	case SortGiven:
 		return `o.given_date ` + dir + ` NULLS LAST, ` + tie
+	case SortName:
+		return `lower(a.name) ` + dir + ` NULLS LAST, ` + tie
 	}
 	return tie
 }
