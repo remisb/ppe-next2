@@ -4,7 +4,7 @@ const who = { admin: 'administratoriams', manager: 'vadovams', employee: 'darbuo
 
 export const lt: Guide = {
   title: 'Naudotojo vadovas',
-  lede: 'Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis.',
+  lede: 'Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM korteles, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.',
   language: 'Vadovo kalba',
   device: 'Įrenginys',
   devices: { phone: 'Telefonas', tablet: 'Planšetė', desktop: 'Kompiuteris' },
@@ -165,8 +165,9 @@ export const lt: Guide = {
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją.', devices: ['phone', 'tablet'] },
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.', devices: ['desktop'] },
         { p: 'Darbuotojo puslapyje rodoma:' },
-        { ul: ['jo dydžiai ir pageidaujama kalba;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
+        { ul: ['jo dydžiai ir pageidaujama kalba;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
         { p: 'Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.' },
+        { p: 'Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.', roles: ['admin', 'manager'] },
         {
           shots: [
             { name: 'employees', alt: 'Darbuotojų sąrašas' },
@@ -191,6 +192,67 @@ export const lt: Guide = {
             { name: 'item-sets', alt: 'Prekių rinkiniai' },
           ],
         },
+      ],
+    },
+    {
+      id: 'assets',
+      title: 'Įmonės turtas',
+      blocks: [
+        {
+          p: 'Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM kortelės, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM kortelės** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.',
+        },
+        { p: 'Jį atidarysite per **Daugiau**.', devices: ['phone'] },
+        { p: 'Jį atidarysite juostoje kairėje.', devices: ['tablet'] },
+        { p: 'Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`.', devices: ['desktop'] },
+        { p: 'Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte sąrašą pagal jį.', roles: ['admin', 'manager'] },
+        {
+          p: 'Plytelės viršuje skaičiuoja, kas yra **Biure**, **Pas darbuotojus** ir **Negrąžinta**. Pasirinkite plytelę, kad matytumėte tik juos; skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal būseną, vietą ir tiekėją, o įrangą – pagal kategoriją.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Plytelės viršuje skaičiuoja, kas yra **Biure**, **Pas darbuotojus** ir **Negrąžinta**. Palieskite plytelę, kad matytumėte tik juos; skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – būsena, vieta ir tiekėjas, o įrangai – kategorija.',
+          devices: ['phone'],
+        },
+        {
+          p: 'SIM kortelės **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.',
+        },
+        { shots: [{ name: 'assets', alt: 'SIM kortelės: plytelės, filtrai ir kiekviena kortelė su jos turėtoju' }] },
+        {
+          p: '**Pridėti SIM kortelę** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
+          roles: ['admin', 'manager'],
+        },
+        { p: '**Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.', roles: ['admin', 'manager'] },
+        { p: 'Kaip išduoti SIM kortelę ar daiktą:', roles: ['admin', 'manager'] },
+        {
+          ol: [
+            'Atidarykite jį ir pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.',
+            'Pasirinkite darbuotoją ir išdavimo datą: šiandien arba anksčiau.',
+            '**Spausdinti aktą** atidaro išdavimo aktą naujame skirtuke. Išspausdinkite jį ir duokite darbuotojui pasirašyti.',
+            'Pažymėkite **Aktas pasirašytas**, tada pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**.',
+          ],
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: 'Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį; kol to nėra, mygtukas nurodo, ko trūksta. Jei po spausdinimo aktas pasikeičia, žymė **Aktas pasirašytas** nuimama: išspausdinkite jį dar kartą. Baldai ir kiti daiktai išduodami be akto.',
+          roles: ['admin', 'manager'],
+        },
+        {
+          shots: [
+            { name: 'asset', alt: 'SIM kortelės puslapis: būsena, turėtojas ir išdavimai' },
+            { name: 'give-asset', alt: 'Išduoti SIM kortelę: pasirinktas darbuotojas, aktas išspausdintas' },
+          ],
+          roles: ['admin', 'manager'],
+        },
+        { shots: [{ name: 'asset', alt: 'SIM kortelės puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
+        {
+          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** išspausdina jo aktą.',
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: 'Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, **Pažymėti kaip negrąžintą** įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada **Paruošti blokavimo laišką** pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane **Keisti būseną** pasirinkite **Užblokuota**.',
+          roles: ['admin', 'manager'],
+        },
+        { p: 'Paieška randa SIM kortelę pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.' },
       ],
     },
     {
@@ -398,13 +460,13 @@ export const lt: Guide = {
       title: 'Paieška ir spartieji klavišai',
       titleOn: { phone: 'Paieška', tablet: 'Paieška' },
       blocks: [
-        { p: 'Atidarykite **Daugiau**, tada **Paieška** – rasite įrašų numerius, darbuotojus, prekes ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['phone'] },
-        { p: '**Paieška** juostos viršuje randa įrašų numerius, darbuotojus, prekes ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['tablet'] },
+        { p: 'Atidarykite **Daugiau**, tada **Paieška** – rasite įrašų numerius, darbuotojus, prekes, įmonės turtą ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['phone'] },
+        { p: '**Paieška** juostos viršuje randa įrašų numerius, darbuotojus, prekes, įmonės turtą ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['tablet'] },
         {
           keys: [
-            ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
+            ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
-            ['`G`, tada `D` `O` `H` `E` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
+            ['`G`, tada `D` `O` `H` `E` `A` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
             ['`J` / `K`, `Esc`', 'Pereina per Užsakymus arba uždaro atidarytą užsakymą.'],
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],

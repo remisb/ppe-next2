@@ -175,6 +175,45 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await shot('backups')
 })
 
+test('company assets: the SIM cards, a card, giving one', async () => {
+  // The demo's cards (cmd/api/seed-demo.go): SIM-000003 is not returned, SIM-000005 is Active in the office.
+  await page.goto('/assets')
+  await expect(page.getByRole('link', { name: 'SIM-000003' }).filter({ visible: true }).first()).toBeVisible()
+  await shot('assets')
+
+  await page.getByRole('link', { name: 'SIM-000003' }).filter({ visible: true }).first().click()
+  await expect(page.getByRole('heading', { name: 'SIM-000003' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: T.assets.assignmentsTitle })).toBeVisible()
+  await shot('asset')
+
+  // Give SIM Card up to the signed paper, and no further: the demo keeps the card in the office.
+  await page.goto('/assets')
+  await page.getByRole('link', { name: 'SIM-000005' }).filter({ visible: true }).first().click()
+  await page.getByRole('main').getByRole('button', { name: T.assets.giveSimCard }).click()
+  const give = page.getByRole('dialog')
+  await give.getByRole('combobox', { name: T.assets.employee }).fill('Kazlausk')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: T.assets.printForm }).click()])
+  await printTab.close()
+  await give.getByLabel(T.assets.paperFormSigned).check()
+  await expect(give.getByRole('button', { name: T.assets.giveSimCard })).toBeEnabled()
+  // Taller than a phone, the sheet shows it all from the employee chosen down to the tick.
+  if (device === 'desktop') await page.setViewportSize({ width: 1280, height: 1000 })
+  if (device !== 'phone') {
+    await give.getByRole('combobox', { name: T.assets.employee }).evaluate((e) => {
+      e.scrollIntoView({ block: 'start' })
+      // And its label above it.
+      let box = e.parentElement
+      while (box && box.scrollHeight <= box.clientHeight) box = box.parentElement
+      box?.scrollBy(0, -40)
+    })
+  }
+  await shot('give-asset')
+  if (device === 'desktop') await page.setViewportSize(deviceWindow.viewport)
+  await give.getByRole('button', { name: T.common.cancel }).click()
+  await expect(give).toBeHidden()
+})
+
 test('account and the search', async ({ browser }) => {
   // Signed in on a second device too: a phone, or a laptop when the guide is a phone's or tablet's.
   const other = await browser.newPage({

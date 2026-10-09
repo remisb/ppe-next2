@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
@@ -34,8 +35,10 @@ func (c *seedClock) daysAgo(start time.Time, loc *time.Location, n int) {
 
 // seedDemo fills an empty development database with demo data: a catalogue
 // (one item without a price, one inactive), item sets, employees (one without
-// a shoe size, one without a clothing size) and orders in every state, each
-// made through the domain services as the seed admin.
+// a shoe size, one without a clothing size), orders in every state, and
+// company assets (SIM cards in each status, equipment and furniture, given,
+// returned and one not returned), each made through the domain services as
+// the seed admin.
 //
 // It refuses a database that already has catalogue items or employees, so it
 // can never mix demo rows into real ones; empty the database to re-seed.
@@ -60,6 +63,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 			Catalogue: orderCatalogue{items},
 			ItemSets:  orderItemSets{sets},
 		}, order.WithLocation(loc), order.WithConfirmTTL(cfg.ConfirmTTL), order.WithClock(clock.now))
+		assets = asset.NewService(asset.NewPostgresRepository(pool), asset.WithLocation(loc), asset.WithClock(clock.now))
 	)
 
 	existingItems, err := items.List(ctx)
@@ -74,7 +78,8 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return fmt.Errorf("refusing to seed: the database already has %d catalogue items and %d employees", len(existingItems), len(existingEmployees))
 	}
 
-	s := seeder{ctx: ctx, actor: admin.ID, items: items, employees: employees, sets: sets, orders: orders}
+	s := seeder{ctx: ctx, actor: admin.ID, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
+		today: func() string { return clock.now().In(loc).Format(time.DateOnly) }}
 
 	// Catalogue, in the manual's default order.
 	// Purchase price, then accounting price, in cents.
@@ -137,8 +142,49 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return s.err
 	}
 
+	// Company Assets: SIM cards in each status and equipment, one record per
+	// item, given on paper forms (furniture without one), one card returned and
+	// then blocked, one not returned.
+	clock.daysAgo(start, loc, 100)
+	sim1 := s.sim("SIM-000001", "8937 0011 2233 4455 667", "+370 612 40118", "Telia", "Biz 10 GB", asset.StatusActive)
+	sim2 := s.sim("SIM-000002", "8937 0011 2233 4455 668", "+370 612 40119", "Telia", "Biz 10 GB", asset.StatusActive)
+	sim3 := s.sim("SIM-000003", "8937 0102 7788 1200 015", "+370 655 21987", "Bitė", "Verslas 20 GB", asset.StatusActive)
+	sim4 := s.sim("SIM-000004", "8937 0102 7788 1200 016", "+370 655 21988", "Bitė", "Verslas 20 GB", asset.StatusActive)
+	s.sim("SIM-000005", "8937 0011 2233 4455 669", "+370 612 40120", "Telia", "Biz 10 GB", asset.StatusActive)
+	laptop := s.equipment("PC-000001", "Laptop Dell Latitude 5440", asset.CategoryComputer, "5CD3421K7Q", 90000)
+	s.equipment("PC-000002", "Laptop Dell Latitude 5440", asset.CategoryComputer, "5CD3421K9T", 90000)
+	phone := s.equipment("PH-000001", "Samsung Galaxy A55", asset.CategoryPhone, "R58X12AB34C", 35000)
+	s.equipment("DRV-000001", "Backup drive 2 TB", asset.CategoryExternalDrive, "WX12A3456789", 9000)
+	chair := s.equipment("FUR-000001", "Office chair", asset.CategoryFurniture, "", 0)
+	s.equipment("FUR-000002", "Standing desk", asset.CategoryFurniture, "", 0)
+
+	clock.daysAgo(start, loc, 95)
+	s.give(sim1, jonas)
+	s.give(laptop, jonas)
+	clock.daysAgo(start, loc, 90)
+	s.give(sim4, tomas)
+	clock.daysAgo(start, loc, 60)
+	s.give(sim3, mindaugas)
+	clock.daysAgo(start, loc, 45)
+	s.give(chair, ona)
+	clock.daysAgo(start, loc, 30)
+	s.give(sim2, aleksandr)
+	s.give(phone, aleksandr)
+	clock.daysAgo(start, loc, 25)
+	s.giveBack(sim4)
+	clock.daysAgo(start, loc, 24)
+	s.status(sim4, asset.StatusBlocked)
+	clock.daysAgo(start, loc, 3)
+	s.notReturned(sim3, "Left without notice")
+	clock.daysAgo(start, loc, 2)
+	s.sim("SIM-000006", "8937 0203 5544 0099 001", "", "Tele2", "", asset.StatusNotActivated)
+	if s.err != nil {
+		return s.err
+	}
+
 	logger.Info("demo data seeded",
 		slog.Int("catalogue_items", 10), slog.Int("item_sets", 2), slog.Int("employees", 6), slog.Int("orders", s.ordered),
+		slog.Int("assets", s.assetCount),
 		slog.String("without_shoe_size", rasa.FirstName+" "+rasa.LastName))
 	return nil
 }
@@ -146,14 +192,17 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 // seeder makes each call as the admin and keeps the first error, so the
 // script reads as a list of data rather than of error checks.
 type seeder struct {
-	ctx       context.Context
-	actor     uuid.UUID
-	items     *catalogue.Service
-	employees *employee.Service
-	sets      *itemset.Service
-	orders    *order.Service
-	ordered   int
-	err       error
+	ctx        context.Context
+	actor      uuid.UUID
+	items      *catalogue.Service
+	employees  *employee.Service
+	sets       *itemset.Service
+	orders     *order.Service
+	assets     *asset.Service
+	today      func() string // the clock's day in the organisation's timezone
+	ordered    int
+	assetCount int
+	err        error
 }
 
 func (s *seeder) fail(what string, err error) {
@@ -289,3 +338,74 @@ func optionalInt(n int) *int {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// sim adds a SIM card; without a phone number it has no plan or value yet.
+func (s *seeder) sim(number, simNo, phoneNo, provider, plan string, status asset.Status) asset.View {
+	p := asset.Params{InventoryNo: number, SimNo: &simNo, Provider: &provider}
+	if phoneNo != "" {
+		p.PhoneNo, p.Plan, p.NonReturnValueCents = &phoneNo, &plan, ptr[int64](2500)
+	}
+	return s.addAsset(asset.CreateParams{Kind: asset.KindSIM, ConnectionStatus: &status, Params: p})
+}
+
+// equipment adds one item; furniture has no value, as it is given without a form.
+func (s *seeder) equipment(number, name string, c asset.Category, serial string, valueCents int64) asset.View {
+	p := asset.Params{InventoryNo: number, Name: &name, Category: &c, SerialNo: optional(serial)}
+	if valueCents > 0 {
+		p.NonReturnValueCents = &valueCents
+	}
+	return s.addAsset(asset.CreateParams{Kind: asset.KindEquipment, Params: p})
+}
+
+func (s *seeder) addAsset(p asset.CreateParams) asset.View {
+	if s.err != nil {
+		return asset.View{}
+	}
+	v, err := s.assets.Create(s.ctx, p, s.actor)
+	s.fail("asset "+p.InventoryNo, err)
+	s.assetCount++
+	return v
+}
+
+// give gives the asset today, against its printed and signed form when it
+// needs one, as Give does after Print Form.
+func (s *seeder) give(a asset.View, e employee.Employee) {
+	if s.err != nil {
+		return
+	}
+	p := asset.GiveParams{FormParams: asset.FormParams{EmployeeID: e.ID, GivenDate: s.today()}}
+	if a.NeedsForm {
+		form, err := s.assets.Preview(s.ctx, a.ID, p.FormParams)
+		if err != nil {
+			s.fail("form for "+a.InventoryNo, err)
+			return
+		}
+		p.PaperFormSigned, p.FormHash = true, form.DocumentHash
+	}
+	_, err := s.assets.Give(s.ctx, a.ID, p, s.actor)
+	s.fail("give "+a.InventoryNo, err)
+}
+
+func (s *seeder) giveBack(a asset.View) {
+	if s.err != nil {
+		return
+	}
+	_, err := s.assets.Return(s.ctx, a.ID, asset.ReturnParams{}, s.actor)
+	s.fail("return "+a.InventoryNo, err)
+}
+
+func (s *seeder) status(a asset.View, st asset.Status) {
+	if s.err != nil {
+		return
+	}
+	_, err := s.assets.ChangeStatus(s.ctx, a.ID, string(st), s.actor)
+	s.fail("status of "+a.InventoryNo, err)
+}
+
+func (s *seeder) notReturned(a asset.View, comment string) {
+	if s.err != nil {
+		return
+	}
+	_, err := s.assets.MarkNotReturned(s.ctx, a.ID, asset.NotReturnedParams{Whereabouts: string(asset.WhereaboutsUnknown), Comment: comment}, s.actor)
+	s.fail("not returned "+a.InventoryNo, err)
+}

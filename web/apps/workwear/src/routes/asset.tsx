@@ -16,7 +16,7 @@ import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, holderText, primaryAction, statusLabel, todayIn } from '@/lib/assets'
+import { categoryLabel, formatDay, primaryAction, statusLabel, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 
 const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
@@ -135,7 +135,6 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
                   <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
                     {a.open_assignment.employee_name}
                   </a>
-                  {a.location === 'UNKNOWN' ? <span className="block text-xs text-muted-foreground">{holderText(a).sub}</span> : null}
                   <span className="block text-xs text-muted-foreground">
                     {t.assets.heldSince(formatDay(a.open_assignment.given_date), t.assets.daysHeld(a.open_assignment.days_held))}
                   </span>

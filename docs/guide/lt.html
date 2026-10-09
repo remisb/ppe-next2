@@ -73,7 +73,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
   <nav class="langs" aria-label="Vadovo kalba"><a href="index.html" lang="en">English</a><a href="lt.html" lang="lt" aria-current="page">Lietuvių</a><a href="ru.html" lang="ru">Русский</a></nav>
   <div class="eyebrow">workwear.gavort.nl</div>
   <h1>Darbo drabužiai ir įranga <span>Naudotojo vadovas</span></h1>
-  <p class="lede">Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis.</p>
+  <p class="lede">Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM korteles, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.</p>
   <nav aria-label="Turinys"><ol>
     <li><a href="#sign-in"><b>1</b>Prisijungimas</a></li>
     <li><a href="#dashboard"><b>2</b>Suvestinė</a></li>
@@ -84,18 +84,19 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#record"><b>7</b>Išdavimo įrašas</a></li>
     <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
     <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
-    <li><a href="#administration"><b>10</b>Administravimas</a></li>
-    <li><a href="#overview"><b>11</b>Apžvalga</a></li>
-    <li><a href="#users"><b>12</b>Naudotojai</a></li>
-    <li><a href="#roles"><b>13</b>Rolės ir teisės</a></li>
-    <li><a href="#audit"><b>14</b>Audito žurnalas</a></li>
-    <li><a href="#security"><b>15</b>Sauga</a></li>
-    <li><a href="#system"><b>16</b>Sistema</a></li>
-    <li><a href="#backups"><b>17</b>Atsarginės kopijos</a></li>
-    <li><a href="#usage"><b>18</b>Naudojimas</a></li>
-    <li><a href="#settings"><b>19</b>Nustatymai</a></li>
-    <li><a href="#account"><b>20</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>21</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#assets"><b>10</b>Įmonės turtas</a></li>
+    <li><a href="#administration"><b>11</b>Administravimas</a></li>
+    <li><a href="#overview"><b>12</b>Apžvalga</a></li>
+    <li><a href="#users"><b>13</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>14</b>Rolės ir teisės</a></li>
+    <li><a href="#audit"><b>15</b>Audito žurnalas</a></li>
+    <li><a href="#security"><b>16</b>Sauga</a></li>
+    <li><a href="#system"><b>17</b>Sistema</a></li>
+    <li><a href="#backups"><b>18</b>Atsarginės kopijos</a></li>
+    <li><a href="#usage"><b>19</b>Naudojimas</a></li>
+    <li><a href="#settings"><b>20</b>Nustatymai</a></li>
+    <li><a href="#account"><b>21</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>22</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -232,9 +233,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>jo dydžiai ir pageidaujama kalba;</li>
       <li>visos išduotos prekės su naudojimo trukme ir pakeitimo data;</li>
       <li>dar neišduoti užsakymai;</li>
+      <li>įmonės turtas, kurį jis turi ir turėjo: <b>Išduotos SIM</b> ir <b>Įranga</b>;</li>
       <li><b>Pakeitimai</b>: kas ir kada keitė jo duomenis ar dydžius.</li>
     </ul>
     <p>Šiame puslapyje <b>Naujas užsakymas</b> pradeda užsakymą šiam darbuotojui, o <b>Keisti dydžius</b> pakeičia jo dydžius.</p>
+    <p class="who">Tik administratoriams ir vadovams</p>
+    <p>Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.</p>
     <div class="pair">
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/employees.png" alt="Darbuotojų sąrašas" loading="lazy"></figure>
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/employee.png" alt="Darbuotojo puslapis su išduotomis prekėmis" loading="lazy"></figure>
@@ -254,8 +258,44 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="assets">
+  <h2><span class="n">10</span>Įmonės turtas</h2>
+    <p>Skyriuje <b>Įmonės turtas</b> registruojamos darbuotojams išduodamos įmonės SIM kortelės, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: <b>SIM kortelės</b> ir <b>Įranga ir baldai</b>. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.</p>
+    <p>Jį atidarysite šoninėje juostoje arba paspaudę <kbd>G</kbd>, tada <kbd>A</kbd>.</p>
+    <p class="who">Tik administratoriams ir vadovams</p>
+    <p>Kortelėje <b>Įmonės turtas</b> suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte sąrašą pagal jį.</p>
+    <p>Plytelės viršuje skaičiuoja, kas yra <b>Biure</b>, <b>Pas darbuotojus</b> ir <b>Negrąžinta</b>. Pasirinkite plytelę, kad matytumėte tik juos; skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal būseną, vietą ir tiekėją, o įrangą – pagal kategoriją.</p>
+    <p>SIM kortelės <b>Būsena</b> – tai, ką patvirtina tiekėjas: <b>Neaktyvuota</b>, <b>Aktyvi</b> arba <b>Užblokuota</b>. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/assets.png" alt="SIM kortelės: plytelės, filtrai ir kiekviena kortelė su jos turėtoju" loading="lazy"></figure>
+    </div>
+    <p class="who">Tik administratoriams ir vadovams</p>
+    <p><b>Pridėti SIM kortelę</b> užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Skirtuke <b>Įranga ir baldai</b> mygtukas <b>Pridėti turtą</b> užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, <kbd>PC-000003</kbd>.</p>
+    <p><b>Keisti būseną</b> įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.</p>
+    <p>Kaip išduoti SIM kortelę ar daiktą:</p>
+    <ol>
+      <li>Atidarykite jį ir pasirinkite <b>Išduoti SIM kortelę</b> arba <b>Išduoti turtą</b>. Darbuotojo puslapyje tas pats mygtukas skiltyje <b>Išduotos SIM</b> arba <b>Įranga</b> pradeda nuo darbuotojo ir parodo, kas yra biure.</li>
+      <li>Pasirinkite darbuotoją ir išdavimo datą: šiandien arba anksčiau.</li>
+      <li><b>Spausdinti aktą</b> atidaro išdavimo aktą naujame skirtuke. Išspausdinkite jį ir duokite darbuotojui pasirašyti.</li>
+      <li>Pažymėkite <b>Aktas pasirašytas</b>, tada pasirinkite <b>Išduoti SIM kortelę</b> arba <b>Išduoti turtą</b>.</li>
+    </ol>
+    <p>Išduoti galima tik <b>Aktyvią</b> kortelę, esančią biure ir turinčią telefono numerį; kol to nėra, mygtukas nurodo, ko trūksta. Jei po spausdinimo aktas pasikeičia, žymė <b>Aktas pasirašytas</b> nuimama: išspausdinkite jį dar kartą. Baldai ir kiti daiktai išduodami be akto.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/asset.png" alt="SIM kortelės puslapis: būsena, turėtojas ir išdavimai" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/give-asset.png" alt="Išduoti SIM kortelę: pasirinktas darbuotojas, aktas išspausdintas" loading="lazy"></figure>
+    </div>
+    <p class="who">Tik darbuotojo rolei</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/asset.png" alt="SIM kortelės puslapis: būsena, turėtojas ir išdavimai" loading="lazy"></figure>
+    </div>
+    <p class="who">Tik administratoriams ir vadovams</p>
+    <p>Kai daiktas fiziškai grįžta į biurą, <b>Registruoti SIM grąžinimą</b> arba <b>Registruoti turto grąžinimą</b> jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje <b>Išdavimai</b>, o <b>Spausdinti aktą dar kartą</b> išspausdina jo aktą.</p>
+    <p>Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, <b>Pažymėti kaip negrąžintą</b> įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada <b>Paruošti blokavimo laišką</b> pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane <b>Keisti būseną</b> pasirinkite <b>Užblokuota</b>.</p>
+    <p>Paieška randa SIM kortelę pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.</p>
+</section>
+
 <section id="administration">
-  <h2><span class="n">10</span>Administravimas</h2>
+  <h2><span class="n">11</span>Administravimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b> ir <b>Nustatymai</b>.</p>
     <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
@@ -263,7 +303,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="overview">
-  <h2><span class="n">11</span>Apžvalga</h2>
+  <h2><span class="n">12</span>Apžvalga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Apžvalga</b> atsako į klausimą: ar kas nors negerai? <b>Reikia dėmesio</b> išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma <b>Niekam nereikia jūsų dėmesio.</b></p>
     <ul>
@@ -281,7 +321,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">12</span>Naudotojai</h2>
+  <h2><span class="n">13</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
       <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
@@ -296,7 +336,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">13</span>Rolės ir teisės</h2>
+  <h2><span class="n">14</span>Rolės ir teisės</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
     <ul>
@@ -313,7 +353,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">14</span>Audito žurnalas</h2>
+  <h2><span class="n">15</span>Audito žurnalas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Audito žurnalas</b> rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje <b>Darbo drabužiai ir įranga</b>, <b>Administravime</b>, per darbuotojo <b>Patvirtinimo nuorodą</b> arba pačios <b>Sistemos</b>.</p>
     <p>Filtruokite pagal <b>Sritis</b>, <b>Pakeitimas</b>, <b>Naudotojas</b> ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o <b>Atidaryti programoje „Darbo drabužiai ir įranga“</b> atidaro įrašą. <b>Visi šio įrašo pakeitimai</b> susiaurina sąrašą iki jo.</p>
@@ -330,7 +370,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">15</span>Sauga</h2>
+  <h2><span class="n">16</span>Sauga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sauga</b> turi tris skirtukus:</p>
     <ul>
@@ -346,7 +386,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">16</span>Sistema</h2>
+  <h2><span class="n">17</span>Sistema</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema</b> rodo, kaip veikia programėlė. Ji turi tris skirtukus: <b>Būsena</b>, <b>Klaidos</b> ir <b>Atsarginės kopijos</b>.</p>
     <ul>
@@ -362,7 +402,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">17</span>Atsarginės kopijos</h2>
+  <h2><span class="n">18</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema → Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
@@ -380,7 +420,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">18</span>Naudojimas</h2>
+  <h2><span class="n">19</span>Naudojimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Naudojimas</b> rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.</p>
     <ul>
@@ -397,7 +437,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">19</span>Nustatymai</h2>
+  <h2><span class="n">20</span>Nustatymai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
     <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
@@ -407,7 +447,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">20</span>Jūsų paskyra</h2>
+  <h2><span class="n">21</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -422,13 +462,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">21</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">22</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>
-      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
+      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Pereina į paieškos arba „Pridėti prekę“ lauką.</td></tr>
-      <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).</td></tr>
+      <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>A</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Pereina per Užsakymus arba uždaro atidarytą užsakymą.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Rodo visus sparčiuosius klavišus.</td></tr>

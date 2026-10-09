@@ -4,7 +4,7 @@ const who = { admin: 'Administrators', manager: 'Managers', employee: 'The emplo
 
 export const en: Guide = {
   title: 'User guide',
-  lede: 'The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian.',
+  lede: "The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIM cards, equipment and furniture, and who holds each one.",
   language: 'Guide language',
   device: 'Device',
   devices: { phone: 'Phone', tablet: 'Tablet', desktop: 'Desktop' },
@@ -162,8 +162,9 @@ export const en: Guide = {
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
-        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', '**Changes**: who changed their details or sizes, and when.'] },
+        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**: who changed their details or sizes, and when.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
+        { p: 'An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.', roles: ['admin', 'manager'] },
         {
           shots: [
             { name: 'employees', alt: 'The Employees list' },
@@ -188,6 +189,67 @@ export const en: Guide = {
             { name: 'item-sets', alt: 'Item Sets' },
           ],
         },
+      ],
+    },
+    {
+      id: 'assets',
+      title: 'Company Assets',
+      blocks: [
+        {
+          p: '**Company Assets** records the SIM cards, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIM Cards** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.',
+        },
+        { p: 'Open it from **More**.', devices: ['phone'] },
+        { p: 'Open it from the rail.', devices: ['tablet'] },
+        { p: 'Open it from the sidebar, or press `G` then `A`.', devices: ['desktop'] },
+        { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open the list on it.', roles: ['admin', 'manager'] },
+        {
+          p: 'The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Tap a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee; **Filters** holds status, location and provider, or category for equipment.',
+          devices: ['phone'],
+        },
+        {
+          p: "A SIM card's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.",
+        },
+        { shots: [{ name: 'assets', alt: 'The SIM cards: the tiles, the filters and each card with its holder' }] },
+        {
+          p: '**Add SIM Card** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
+          roles: ['admin', 'manager'],
+        },
+        { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
+        { p: 'To give a SIM card or an item:', roles: ['admin', 'manager'] },
+        {
+          ol: [
+            "Open it and choose **Give SIM Card** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.",
+            'Choose the employee and the given date: today, or earlier.',
+            '**Print Form** opens the assignment form in a new tab. Print it and have the employee sign it.',
+            'Tick **Paper Form Signed**, then choose **Give SIM Card** or **Give Asset**.',
+          ],
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: "Only an **Active** card in the office, with a phone number, can be given; until then the button says what is missing. If the form changes after printing, **Paper Form Signed** is cleared: print it again. Furniture and other items are given without a form.",
+          roles: ['admin', 'manager'],
+        },
+        {
+          shots: [
+            { name: 'asset', alt: "A SIM card's page: its status, holder and assignments" },
+            { name: 'give-asset', alt: 'Give SIM Card with the employee chosen and the form printed' },
+          ],
+          roles: ['admin', 'manager'],
+        },
+        { shots: [{ name: 'asset', alt: "A SIM card's page: its status, holder and assignments" }], roles: ['employee'] },
+        {
+          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.',
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: 'Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.',
+          roles: ['admin', 'manager'],
+        },
+        { p: 'Search finds a SIM card by its SIM, phone or inventory number, and an item by its inventory number.' },
       ],
     },
     {
@@ -431,13 +493,13 @@ export const en: Guide = {
       title: 'Search and shortcuts',
       titleOn: { phone: 'Search', tablet: 'Search' },
       blocks: [
-        { p: 'Open **More**, then **Search**, to find record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.', devices: ['phone'] },
-        { p: '**Search**, at the top of the rail, finds record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.', devices: ['tablet'] },
+        { p: 'Open **More**, then **Search**, to find record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**.', devices: ['phone'] },
+        { p: '**Search**, at the top of the rail, finds record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**.', devices: ['tablet'] },
         {
           keys: [
-            ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**.'],
+            ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**.'],
             ['`/`', 'Go to the search or Add Item field.'],
-            ['`G` then `D` `O` `H` `E` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration).'],
+            ['`G` then `D` `O` `H` `E` `A` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration).'],
             ['`J` / `K`, `Esc`', 'Move through Orders, or close the open order.'],
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],

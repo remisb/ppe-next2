@@ -73,7 +73,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
   <nav class="langs" aria-label="Guide language"><a href="index.html" lang="en" aria-current="page">English</a><a href="lt.html" lang="lt">Lietuvių</a><a href="ru.html" lang="ru">Русский</a></nav>
   <div class="eyebrow">workwear.gavort.nl</div>
   <h1>Workwear &amp; Equipment <span>User guide</span></h1>
-  <p class="lede">The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian.</p>
+  <p class="lede">The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIM cards, equipment and furniture, and who holds each one.</p>
   <nav aria-label="Contents"><ol>
     <li><a href="#sign-in"><b>1</b>Sign in</a></li>
     <li><a href="#dashboard"><b>2</b>Dashboard</a></li>
@@ -84,18 +84,19 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#record"><b>7</b>Items Given Record</a></li>
     <li><a href="#employees"><b>8</b>Employees</a></li>
     <li><a href="#catalogue"><b>9</b>Item Catalogue and Item Sets</a></li>
-    <li><a href="#administration"><b>10</b>Administration</a></li>
-    <li><a href="#overview"><b>11</b>Overview</a></li>
-    <li><a href="#users"><b>12</b>Users</a></li>
-    <li><a href="#roles"><b>13</b>Roles &amp; permissions</a></li>
-    <li><a href="#audit"><b>14</b>Audit log</a></li>
-    <li><a href="#security"><b>15</b>Security</a></li>
-    <li><a href="#system"><b>16</b>System</a></li>
-    <li><a href="#backups"><b>17</b>Backups</a></li>
-    <li><a href="#usage"><b>18</b>Usage</a></li>
-    <li><a href="#settings"><b>19</b>Settings</a></li>
-    <li><a href="#account"><b>20</b>Your account</a></li>
-    <li><a href="#shortcuts"><b>21</b>Search and shortcuts</a></li>
+    <li><a href="#assets"><b>10</b>Company Assets</a></li>
+    <li><a href="#administration"><b>11</b>Administration</a></li>
+    <li><a href="#overview"><b>12</b>Overview</a></li>
+    <li><a href="#users"><b>13</b>Users</a></li>
+    <li><a href="#roles"><b>14</b>Roles &amp; permissions</a></li>
+    <li><a href="#audit"><b>15</b>Audit log</a></li>
+    <li><a href="#security"><b>16</b>Security</a></li>
+    <li><a href="#system"><b>17</b>System</a></li>
+    <li><a href="#backups"><b>18</b>Backups</a></li>
+    <li><a href="#usage"><b>19</b>Usage</a></li>
+    <li><a href="#settings"><b>20</b>Settings</a></li>
+    <li><a href="#account"><b>21</b>Your account</a></li>
+    <li><a href="#shortcuts"><b>22</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -232,9 +233,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>their sizes and preferred language;</li>
       <li>every item given, with its usage time and replacement date;</li>
       <li>orders not yet given;</li>
+      <li>the company assets they hold, and held before: <b>Given SIM</b> and <b>Equipment</b>;</li>
       <li><b>Changes</b>: who changed their details or sizes, and when.</li>
     </ul>
     <p>From that page, <b>New order</b> starts an order for them, and <b>Edit Sizes</b> changes their sizes.</p>
+    <p class="who">Administrators and managers only</p>
+    <p>An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.</p>
     <div class="pair">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/employees.png" alt="The Employees list" loading="lazy"></figure>
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/employee.png" alt="An employee's page with the items given" loading="lazy"></figure>
@@ -254,8 +258,44 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="assets">
+  <h2><span class="n">10</span>Company Assets</h2>
+    <p><b>Company Assets</b> records the SIM cards, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, <b>SIM Cards</b> and <b>Equipment &amp; Furniture</b>. Each item is one record with its own inventory number, so three identical laptops are three assets.</p>
+    <p>Open it from the sidebar, or press <kbd>G</kbd> then <kbd>A</kbd>.</p>
+    <p class="who">Administrators and managers only</p>
+    <p>The <b>Company Assets</b> card on the Dashboard shows the same figures. Choose one to open the list on it.</p>
+    <p>The tiles at the top count what is <b>In Office</b>, <b>With Employees</b> and <b>Not Returned</b>. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.</p>
+    <p>A SIM card's <b>Status</b> is what the provider confirms: <b>Not Activated</b>, <b>Active</b> or <b>Blocked</b>. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/assets.png" alt="The SIM cards: the tiles, the filters and each card with its holder" loading="lazy"></figure>
+    </div>
+    <p class="who">Administrators and managers only</p>
+    <p><b>Add SIM Card</b> registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. On <b>Equipment &amp; Furniture</b>, <b>Add Asset</b> registers one item: its name and category, which suggests its number, such as <kbd>PC-000003</kbd>.</p>
+    <p><b>Change Status</b> records the status the provider confirmed. It does not activate or block the card: email the provider for that.</p>
+    <p>To give a SIM card or an item:</p>
+    <ol>
+      <li>Open it and choose <b>Give SIM Card</b> or <b>Give Asset</b>. On an employee's page, the same button under <b>Given SIM</b> or <b>Equipment</b> starts from the employee and lists what is in the office.</li>
+      <li>Choose the employee and the given date: today, or earlier.</li>
+      <li><b>Print Form</b> opens the assignment form in a new tab. Print it and have the employee sign it.</li>
+      <li>Tick <b>Paper Form Signed</b>, then choose <b>Give SIM Card</b> or <b>Give Asset</b>.</li>
+    </ol>
+    <p>Only an <b>Active</b> card in the office, with a phone number, can be given; until then the button says what is missing. If the form changes after printing, <b>Paper Form Signed</b> is cleared: print it again. Furniture and other items are given without a form.</p>
+    <div class="pair">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/asset.png" alt="A SIM card's page: its status, holder and assignments" loading="lazy"></figure>
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/give-asset.png" alt="Give SIM Card with the employee chosen and the form printed" loading="lazy"></figure>
+    </div>
+    <p class="who">The employee role only</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/asset.png" alt="A SIM card's page: its status, holder and assignments" loading="lazy"></figure>
+    </div>
+    <p class="who">Administrators and managers only</p>
+    <p>When it is physically back in the office, <b>Register SIM Return</b> or <b>Register Asset Return</b> puts it there. Each giving and return stays on its page under <b>Assignments</b>, with <b>Print form again</b> for its form.</p>
+    <p>Leaving never returns anything. When an employee does not give a card back, <b>Mark as Not Returned</b> records where it is: still with them, or unknown. It stays theirs until it comes back. <b>Prepare Blocking Email</b> then gives the text to copy into your own email to the provider; once they confirm, choose <b>Blocked</b> in <b>Change Status</b>.</p>
+    <p>Search finds a SIM card by its SIM, phone or inventory number, and an item by its inventory number.</p>
+</section>
+
 <section id="administration">
-  <h2><span class="n">10</span>Administration</h2>
+  <h2><span class="n">11</span>Administration</h2>
   <p class="who">Administrators only</p>
     <p><b>Administration</b> is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on <b>Overview</b>. Its other screens are <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Audit log</b>, <b>Security</b>, <b>System</b>, <b>Usage</b> and <b>Settings</b>.</p>
     <p>Open it with <b>Administration</b> at the foot of the sidebar. It has a sidebar of its own; <b>Workwear &amp; Equipment</b>, at its foot, takes you back.</p>
@@ -263,7 +303,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="overview">
-  <h2><span class="n">11</span>Overview</h2>
+  <h2><span class="n">12</span>Overview</h2>
   <p class="who">Administrators only</p>
     <p><b>Overview</b> answers the question: is anything wrong? <b>Needs attention</b> lists what to look at, the most urgent first, each with a link to where it is put right. When all is well, it says <b>Nothing needs your attention.</b></p>
     <ul>
@@ -281,7 +321,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">12</span>Users</h2>
+  <h2><span class="n">13</span>Users</h2>
   <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
@@ -296,7 +336,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">13</span>Roles &amp; permissions</h2>
+  <h2><span class="n">14</span>Roles &amp; permissions</h2>
   <p class="who">Administrators only</p>
     <p><b>Roles &amp; permissions</b> lists each role, what it allows and how many users hold it. A role is a set of permissions, such as <b>Manage Item Catalogue</b> or <b>Delete employees</b>. You give roles to users on <b>Users</b>.</p>
     <ul>
@@ -313,7 +353,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">14</span>Audit log</h2>
+  <h2><span class="n">15</span>Audit log</h2>
   <p class="who">Administrators only</p>
     <p><b>Audit log</b> lists every recorded change: what changed, who made it, when, and where. A change is made in <b>Workwear &amp; Equipment</b>, in <b>Administration</b>, through an employee's <b>Confirmation link</b>, or by the <b>System</b> itself.</p>
     <p>Filter by <b>Area</b>, <b>Change</b>, <b>Person</b> and dates. Click a change to open it beside the list. It shows each field before and after, and <b>Open in Workwear &amp; Equipment</b> opens the record. <b>All changes to this record</b> narrows the list to it.</p>
@@ -330,7 +370,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">15</span>Security</h2>
+  <h2><span class="n">16</span>Security</h2>
   <p class="who">Administrators only</p>
     <p><b>Security</b> has three tabs:</p>
     <ul>
@@ -346,7 +386,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">16</span>System</h2>
+  <h2><span class="n">17</span>System</h2>
   <p class="who">Administrators only</p>
     <p><b>System</b> shows how the app is running. It has three tabs: <b>Status</b>, <b>Errors</b> and <b>Backups</b>.</p>
     <ul>
@@ -362,7 +402,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">17</span>Backups</h2>
+  <h2><span class="n">18</span>Backups</h2>
   <p class="who">Administrators only</p>
     <p><b>System → Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
     <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
@@ -380,7 +420,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">18</span>Usage</h2>
+  <h2><span class="n">19</span>Usage</h2>
   <p class="who">Administrators only</p>
     <p><b>Usage</b> shows how the apps are used. No page is tracked: everything comes from what the app records anyway.</p>
     <ul>
@@ -397,7 +437,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">19</span>Settings</h2>
+  <h2><span class="n">20</span>Settings</h2>
   <p class="who">Administrators only</p>
     <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
     <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
@@ -407,7 +447,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">20</span>Your account</h2>
+  <h2><span class="n">21</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -422,13 +462,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">21</span>Search and shortcuts</h2>
+  <h2><span class="n">22</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>
-      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
+      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items, company assets and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Go to the search or Add Item field.</td></tr>
-      <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration).</td></tr>
+      <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>A</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Move through Orders, or close the open order.</td></tr>
       <tr><td><kbd>⌘/Ctrl</kbd> <kbd>Enter</kbd></td><td>On Create Order, review the order.</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show all shortcuts.</td></tr>

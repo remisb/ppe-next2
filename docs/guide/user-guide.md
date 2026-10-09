@@ -2,7 +2,7 @@
 
 English · [Lietuvių](user-guide.lt.md) · [Русский](user-guide.ru.md)
 
-The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian.
+The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIM cards, equipment and furniture, and who holds each one.
 
 ## 1. Sign in
 
@@ -122,9 +122,14 @@ Each employee's page shows:
 - their sizes and preferred language;
 - every item given, with its usage time and replacement date;
 - orders not yet given;
+- the company assets they hold, and held before: **Given SIM** and **Equipment**;
 - **Changes**: who changed their details or sizes, and when.
 
 From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.
+
+*Administrators and managers only:*
+
+An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.
 
 ![The Employees list](../../web/apps/workwear/public/help-img/en/desktop/employees.png)
 ![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
@@ -144,7 +149,53 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 ![The Item Catalogue](../../web/apps/workwear/public/help-img/en/desktop/catalogue.png)
 ![Item Sets](../../web/apps/workwear/public/help-img/en/desktop/item-sets.png)
 
-## 10. Administration
+## 10. Company Assets
+
+**Company Assets** records the SIM cards, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIM Cards** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.
+
+Open it from the sidebar, or press `G` then `A`.
+
+*Administrators and managers only:*
+
+The **Company Assets** card on the Dashboard shows the same figures. Choose one to open the list on it.
+
+The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.
+
+A SIM card's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
+
+![The SIM cards: the tiles, the filters and each card with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
+
+*Administrators and managers only:*
+
+**Add SIM Card** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
+
+**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.
+
+To give a SIM card or an item:
+
+1. Open it and choose **Give SIM Card** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.
+2. Choose the employee and the given date: today, or earlier.
+3. **Print Form** opens the assignment form in a new tab. Print it and have the employee sign it.
+4. Tick **Paper Form Signed**, then choose **Give SIM Card** or **Give Asset**.
+
+Only an **Active** card in the office, with a phone number, can be given; until then the button says what is missing. If the form changes after printing, **Paper Form Signed** is cleared: print it again. Furniture and other items are given without a form.
+
+![A SIM card's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
+![Give SIM Card with the employee chosen and the form printed](../../web/apps/workwear/public/help-img/en/desktop/give-asset.png)
+
+*The employee role only:*
+
+![A SIM card's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
+
+*Administrators and managers only:*
+
+When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.
+
+Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.
+
+Search finds a SIM card by its SIM, phone or inventory number, and an item by its inventory number.
+
+## 11. Administration
 
 *Administrators only.*
 
@@ -154,7 +205,7 @@ Open it with **Administration** at the foot of the sidebar. It has a sidebar of 
 
 You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
 
-## 11. Overview
+## 12. Overview
 
 *Administrators only.*
 
@@ -171,7 +222,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![Overview: what needs attention, then the figures](../../web/apps/workwear/public/help-img/en/desktop/overview.png)
 
-## 12. Users
+## 13. Users
 
 *Administrators only.*
 
@@ -183,7 +234,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 13. Roles & permissions
+## 14. Roles & permissions
 
 *Administrators only.*
 
@@ -198,7 +249,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 ![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
 ![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
 
-## 14. Audit log
+## 15. Audit log
 
 *Administrators only.*
 
@@ -214,7 +265,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)
 
-## 15. Security
+## 16. Security
 
 *Administrators only.*
 
@@ -229,7 +280,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 ![Security: sign-ins with their address and device](../../web/apps/workwear/public/help-img/en/desktop/security.png)
 ![The access review: users, their roles and last sign-in](../../web/apps/workwear/public/help-img/en/desktop/access-review.png)
 
-## 16. System
+## 17. System
 
 *Administrators only.*
 
@@ -244,7 +295,7 @@ When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. Th
 ![System: the app, its requests and the database](../../web/apps/workwear/public/help-img/en/desktop/system.png)
 ![Errors: an error open, with its reference](../../web/apps/workwear/public/help-img/en/desktop/errors.png)
 
-## 17. Backups
+## 18. Backups
 
 *Administrators only.*
 
@@ -263,7 +314,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 18. Usage
+## 19. Usage
 
 *Administrators only.*
 
@@ -278,7 +329,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Usage: active people, sign-ins and more](../../web/apps/workwear/public/help-img/en/desktop/usage.png)
 
-## 19. Settings
+## 20. Settings
 
 *Administrators only.*
 
@@ -288,7 +339,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
 
-## 20. Your account
+## 21. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -299,13 +350,13 @@ The settings are made on the server, and a backup is restored there too: the app
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 21. Search and shortcuts
+## 22. Search and shortcuts
 
 | Key | Does |
 | --- | --- |
-| `⌘K` / `Ctrl K` | Search record numbers, employees, items and screens. For example, type a name, then choose **New order for …**. |
+| `⌘K` / `Ctrl K` | Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
-| `G` then `D` `O` `H` `E` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Catalogue, Item Sets or Users (in Administration). |
+| `G` then `D` `O` `H` `E` `A` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration). |
 | `J` / `K`, `Esc` | Move through Orders, or close the open order. |
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |

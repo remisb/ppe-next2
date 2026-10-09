@@ -73,6 +73,14 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
   })
 
+  it('shows Company Assets to everyone, and giving, returns and Not Returned to those who manage assets', () => {
+    for (const roles of [['admin'], ['manager'], ['employee']] as const) expect(ids(forRoles(guides.en, roles))).toContain('assets')
+    expect(words(forRoles(guides.en, ['manager']))).toContain('Mark as Not Returned')
+    expect(words(forRoles(guides.en, ['admin']))).toContain('Paper Form Signed')
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Mark as Not Returned')
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Print Form')
+  })
+
   it('keeps Delete order for managers only', () => {
     expect(words(forRoles(guides.en, ['manager']))).toContain('Delete order')
     expect(words(forRoles(guides.en, ['admin']))).not.toContain('Delete order')
