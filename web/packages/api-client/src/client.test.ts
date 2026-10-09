@@ -32,6 +32,17 @@ describe('createClient', () => {
     expect((plain as ApiError).reference).toBeUndefined()
   })
 
+  it('names the asset a number conflict is with, and sends the register\'s filters', async () => {
+    const f = fakeFetch(409, '{"error":"SIM number already registered","existing_id":"a1"}')
+    const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })
+    const err = await client.assets.create({ kind: 'SIM', inventory_no: 'SIM-000002', comment: '' }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).isConflict).toBe(true)
+    expect((err as ApiError).existingId).toBe('a1')
+    const g = fakeFetch(200, '{"assets":[],"page":1,"page_size":50,"total":0}')
+    await createClient({ getToken: () => 't', fetch: g as unknown as typeof fetch }).assets.list({ kind: 'SIM', held: true, q: '612 40' })
+    expect(g.mock.calls[0]![0]).toBe('/api/v1/assets?kind=SIM&held=true&q=612+40')
+  })
   it('reports an app\'s error and reads System', async () => {
     const f = fakeFetch(204, '')
     const client = createClient({ getToken: () => 't', fetch: f as unknown as typeof fetch })

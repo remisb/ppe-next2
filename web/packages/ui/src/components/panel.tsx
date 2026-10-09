@@ -71,7 +71,9 @@ export function KeyFigures({ children }: { children: ReactNode }) {
 /**
  * A headline figure. With onOpen it is one button, the whole tile: it goes to
  * the list behind the figure (the rows in Needs you, History, Employees), and
- * a chevron says so. Without, it only reports.
+ * a chevron says so. Without, it only reports. With `pressed` it is a filter
+ * of the list below it instead (Company Assets' tiles): a toggle button,
+ * marked while chosen, with no chevron.
  *
  * On a phone a tile is one fact beside the figure: `brief`, or else the
  * comparison. The full detail then stays for screen readers and shows from md.
@@ -85,6 +87,7 @@ export function Kpi({
   alert = false,
   onOpen,
   openHint,
+  pressed,
 }: {
   label: string
   value: string
@@ -96,15 +99,21 @@ export function Kpi({
   onOpen?: (() => void) | undefined
   /** Where the tile goes, for screen readers: "Show them in Needs you". */
   openHint?: string
+  /** The tile filters the list below and is chosen (true) or not (false). */
+  pressed?: boolean | undefined
 }) {
+  const filter = pressed !== undefined
   const note = brief ?? (change || undefined)
   const body = (
-    <Card size="sm" className={cn('h-full', onOpen && 'transition-colors group-hover:bg-accent/60')}>
+    <Card
+      size="sm"
+      className={cn('h-full', onOpen && 'transition-colors group-hover:bg-accent/60', pressed && 'bg-accent ring-2 ring-primary group-hover:bg-accent')}
+    >
       <CardContent className="flex flex-col gap-1 max-md:gap-0.5">
         <span className="flex items-center gap-1.5 text-muted-foreground max-md:text-xs">
           <span className="min-w-0 truncate">{label}</span>
           {alert ? <AlertTriangle aria-label={uiText().needsAttention} className="size-3.5 shrink-0 text-destructive" /> : null}
-          {onOpen ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
+          {onOpen && !filter ? <ChevronRight aria-hidden className="ml-auto size-4 shrink-0" /> : null}
         </span>
         <span className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-2xl font-semibold tracking-tight tabular-nums max-md:text-xl">{value}</span>
@@ -129,6 +138,7 @@ export function Kpi({
         <button
           type="button"
           onClick={onOpen}
+          aria-pressed={pressed}
           className="group block h-full w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {body}

@@ -79,7 +79,8 @@ data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashb
 the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
 assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
-employee who holds assets. The screens are slices 3–7.
+employee who holds assets. The SIM card register is on screen (`/assets`, `routes/assets.tsx`,
+`lib/assets.ts`: tiles that filter, Add SIM Card, Change Status); slices 4–7 add the rest.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which

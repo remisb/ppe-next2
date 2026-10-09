@@ -29,6 +29,7 @@ type ListParams struct {
 	Kind        string // SIM or EQUIPMENT, required
 	Q           string // SIM, phone or inventory number, or the holder's name
 	Location    string // OFFICE, WITH_EMPLOYEE or UNKNOWN
+	Held        string // "true" keeps the assets someone holds, whereabouts known or not
 	EmployeeID  *uuid.UUID
 	Provider    string
 	Status      string // a connection status
@@ -44,6 +45,7 @@ type ListFilter struct {
 	Kind        Kind
 	Q           string
 	Location    *Location
+	Held        bool
 	EmployeeID  *uuid.UUID
 	Provider    string
 	Status      *Status
@@ -69,6 +71,8 @@ type Summary struct {
 	InOffice      int `json:"in_office"`
 	WithEmployees int `json:"with_employees"`
 	NotReturned   int `json:"not_returned"`
+	// Providers are the providers of the kind's assets, for the register's filter.
+	Providers []string `json:"providers"`
 }
 
 func (p ListParams) filter() (ListFilter, int, int, error) {
@@ -89,6 +93,13 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 			return ListFilter{}, 0, 0, fieldError("status", "must be NOT_ACTIVATED, ACTIVE or BLOCKED")
 		}
 		f.Status = &s
+	}
+	switch p.Held {
+	case "":
+	case "true":
+		f.Held = true
+	default:
+		return ListFilter{}, 0, 0, fieldError("held", "must be true")
 	}
 	switch p.NotReturned {
 	case "":

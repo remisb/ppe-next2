@@ -1085,3 +1085,185 @@ export interface UsageReport {
   }[]
   timezone: string
 }
+
+// Company Assets (docs/specs/asset-service.md): SIM cards and individual
+// equipment and furniture, and their assignments to employees.
+
+/** SIM for a SIM card, EQUIPMENT for equipment and furniture. */
+export type AssetKind = 'SIM' | 'EQUIPMENT'
+
+/** An equipment asset's kind of item; each has its inventory number prefix (PC, PH, DRV, FUR, AST). */
+export type AssetCategory = 'COMPUTER' | 'PHONE' | 'EXTERNAL_DRIVE' | 'FURNITURE' | 'OTHER'
+
+/** A SIM card's connection status, as the provider confirmed it. */
+export type ConnectionStatus = 'NOT_ACTIVATED' | 'ACTIVE' | 'BLOCKED'
+
+/** Where an asset is; it follows from its open assignment. */
+export type AssetLocation = 'OFFICE' | 'WITH_EMPLOYEE' | 'UNKNOWN'
+
+/** What Mark as Not Returned says of the asset. */
+export type Whereabouts = 'WITH_EMPLOYEE' | 'UNKNOWN'
+
+/** The prefixes of suggested inventory numbers. */
+export type InventoryPrefix = 'SIM' | 'PC' | 'PH' | 'DRV' | 'FUR' | 'AST'
+
+/** One giving of an asset to one employee, open until it is returned. */
+export interface AssetAssignment {
+  id: string
+  asset_id: string
+  employee_id: string
+  /** The employee's name now. */
+  employee_name: string
+  /** YYYY-MM-DD, the actual day. */
+  given_date: string
+  given_by_user_id: string
+  created_at: string
+  comment: string
+  /** The assignment form's data as printed; null when the asset needs none. */
+  form: AssignmentForm | null
+  form_template_version: string | null
+  document_hash: string | null
+  paper_form_signed: boolean
+  not_returned_at: string | null
+  not_returned_by_user_id: string | null
+  not_returned_comment: string | null
+  whereabouts: Whereabouts | null
+  returned_date: string | null
+  returned_at: string | null
+  returned_by_user_id: string | null
+  return_comment: string | null
+  /** Whole days from the given date to the return date, or to today while open. */
+  days_held: number
+}
+
+/** The data an assignment form shows, copied when the asset is given. */
+export interface AssignmentForm {
+  template_version: string
+  kind: AssetKind
+  employee: { first_name: string; last_name: string; code: string | null }
+  inventory_no: string
+  category: AssetCategory | null
+  name: string | null
+  serial_no: string | null
+  sim_no: string | null
+  phone_no: string | null
+  provider: string | null
+  plan: string | null
+  non_return_value_cents: number
+  currency: 'EUR'
+  given_date: string
+}
+
+/** An asset as the register lists it: with where it is and its open assignment. */
+export interface Asset {
+  id: string
+  kind: AssetKind
+  category: AssetCategory | null
+  inventory_no: string
+  name: string | null
+  serial_no: string | null
+  /** As typed, leading zeros included. */
+  sim_no: string | null
+  phone_no: string | null
+  provider: string | null
+  plan: string | null
+  non_return_value_cents: number | null
+  currency: 'EUR'
+  connection_status: ConnectionStatus | null
+  /** YYYY-MM-DD: when a SIM card arrived from the provider. */
+  received_date: string | null
+  comment: string
+  created_at: string
+  updated_at: string
+  location: AssetLocation
+  open_assignment: AssetAssignment | null
+}
+
+/** An asset's page: the asset and every assignment, newest first. */
+export interface AssetDetail extends Asset {
+  assignments: AssetAssignment[]
+}
+
+/** One of an employee's assignments, with its asset (GET /api/v1/assets/by-employee/{id}). */
+export interface HeldAsset extends AssetAssignment {
+  asset: Omit<Asset, 'location' | 'open_assignment'>
+}
+
+/** Add SIM Card / Add Asset and Edit: an asset's details. Edit sends no kind or status. */
+export interface AssetInput {
+  category?: AssetCategory | null
+  inventory_no: string
+  name?: string | null
+  serial_no?: string | null
+  sim_no?: string | null
+  phone_no?: string | null
+  provider?: string | null
+  plan?: string | null
+  non_return_value_cents?: number | null
+  received_date?: string | null
+  comment: string
+}
+
+export interface CreateAssetInput extends AssetInput {
+  kind: AssetKind
+  /** A SIM card's status at registration; Not Activated when left out. */
+  connection_status?: ConnectionStatus
+}
+
+/** The register's sorts. */
+export type AssetSort = 'inventory' | 'status' | 'holder' | 'given'
+
+/** The register's filters (GET /api/v1/assets); empty ones are left out. */
+export interface AssetQuery {
+  kind: AssetKind
+  q?: string
+  location?: AssetLocation
+  /** Someone holds it, whereabouts known or not: the With Employees tile. */
+  held?: boolean
+  employee_id?: string
+  provider?: string
+  status?: ConnectionStatus
+  not_returned?: boolean
+  sort?: AssetSort
+  dir?: 'asc' | 'desc'
+  page?: number
+  page_size?: number
+}
+
+export interface AssetPage {
+  assets: Asset[]
+  page: number
+  page_size: number
+  total: number
+}
+
+/** The register's tiles. They overlap: never add them up. */
+export interface AssetSummary {
+  total: number
+  in_office: number
+  with_employees: number
+  not_returned: number
+  /** The providers of the kind's assets, for the filter. */
+  providers: string[]
+}
+
+/** The assignment form's inputs: the plan or value only when the asset lacks them. */
+export interface AssignmentFormInput {
+  employee_id: string
+  given_date: string
+  plan?: string | null
+  non_return_value_cents?: number | null
+}
+
+/** Give SIM Card / Give Asset; form_hash is the printed preview's document hash. */
+export interface GiveAssetInput extends AssignmentFormInput {
+  comment: string
+  paper_form_signed: boolean
+  form_hash: string
+}
+
+/** Preview Form, Print Form, and a stored form for reprinting. */
+export interface AssignmentFormResult {
+  form: AssignmentForm
+  document_hash: string
+}

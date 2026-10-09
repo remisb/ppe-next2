@@ -5,7 +5,7 @@ import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/
 import { Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { BookOpen, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
+import { BookOpen, Boxes, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
@@ -15,6 +15,7 @@ import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { draftLineCount } from '@/lib/working-order'
 
 import { Account } from './routes/account'
+import { Assets } from './routes/assets'
 import { Catalogue } from './routes/catalogue'
 import { CatalogueItemPage } from './routes/catalogue-item'
 import { ConfirmPage } from './routes/confirm'
@@ -44,6 +45,7 @@ const tabs = (): Tab[] => [
   { route: { name: 'createOrder' }, label: t.shell.createOrder, short: t.shell.shortOrder, icon: ClipboardList },
   { route: { name: 'history' }, label: t.shell.history, short: t.shell.shortHistory, icon: HistoryIcon },
   { route: { name: 'employees' }, label: t.shell.employees, short: t.shell.shortEmployees, icon: Users },
+  { route: { name: 'assets' }, label: t.shell.companyAssets, short: t.shell.shortAssets, icon: Boxes },
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   { route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package },
 ]
@@ -103,6 +105,7 @@ export function App() {
     o: { name: 'createOrder' },
     h: { name: 'history' },
     e: { name: 'employees' },
+    a: { name: 'assets' },
     c: { name: 'catalogue' },
     s: { name: 'itemSets' },
     u: { name: 'administration', path: '/users' },
@@ -376,6 +379,7 @@ export function App() {
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
         {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
+        {route.name === 'assets' ? <Assets /> : null}
         {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
         {route.name === 'catalogueItem' ? (
           <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />

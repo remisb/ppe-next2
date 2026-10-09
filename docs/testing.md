@@ -248,3 +248,7 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | Assignments are never rewritten | The trigger refuses a changed giving, a deleted row, a second mark, a reopened return; `ppe_app` cannot delete them or change used numbers | `TestPostgresAssignmentsCannotBeRewritten`, `cmd/api` `TestPostgresAPIRoleIsLeastPrivileged` |
 | Access | Reads for anyone signed in, writes `assets.manage` (Administrator, Manager) | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `role.TestWebClientListsTheCatalogue` |
 | Events | Each kind of change one event, none when nothing changed; known to the web | `TestChangeStatus`, `TestEditRecordsChangedDetailsOnly`, `cmd/api` `TestEveryDomainEventIsKnown`, `audit.TestWebClientListsTheEvents` |
+| The register's tiles filter and keep the other filters (In Office + Blocked); With Employees includes Unknown | `held=true` returns every held card | web `lib/assets.test.ts`; `TestPostgresAssetLifecycle`, HTTP flow; e2e *Company Assets: …* |
+| Add SIM Card on screen: required now vs. later, number suggested, SIM number kept as typed; a duplicate opens the card registered | as the API | web `lib/assets.test.ts`, api-client `client.test.ts` (`existingId`); e2e *Company Assets: …* |
+| Change Status on screen: three choices, saved at once, no confirmation; the activation text on a Not Activated card | as the API | e2e *Company Assets: …* |
+| The register on a phone and tablet scrolls nothing sideways; under More on a phone | — | e2e *phone and tablet: …* |

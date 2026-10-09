@@ -214,6 +214,9 @@ func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Record, 
 			where += ` AND o.whereabouts = 'UNKNOWN'`
 		}
 	}
+	if f.Held {
+		where += ` AND o.id IS NOT NULL`
+	}
 	if f.EmployeeID != nil {
 		add(`o.employee_id = $%d`, *f.EmployeeID)
 	}
@@ -268,6 +271,18 @@ func (r *PostgresRepository) Summary(ctx context.Context, kind Kind) (Summary, e
 	err := r.pool.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE o.id IS NULL), count(o.id),
 			count(*) FILTER (WHERE o.not_returned_at IS NOT NULL)`+recordFrom+`
 		WHERE `+live+` AND a.kind = $1`, kind).Scan(&s.Total, &s.InOffice, &s.WithEmployees, &s.NotReturned)
+	if err != nil {
+		return Summary{}, err
+	}
+	rows, err := r.pool.Query(ctx, `SELECT DISTINCT a.provider FROM assets a
+		WHERE `+live+` AND a.kind = $1 AND a.provider IS NOT NULL ORDER BY a.provider`, kind)
+	if err != nil {
+		return Summary{}, err
+	}
+	s.Providers, err = pgx.CollectRows(rows, pgx.RowTo[string])
+	if s.Providers == nil {
+		s.Providers = make([]string, 0)
+	}
 	return s, err
 }
 

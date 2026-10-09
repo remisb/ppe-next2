@@ -1,6 +1,22 @@
 import { ApiError, NetworkError } from './errors.ts'
 import type {
   AccessReview,
+  Asset,
+  AssetDetail,
+  AssetInput,
+  AssetKind,
+  AssetPage,
+  AssetQuery,
+  AssetAssignment,
+  AssetSummary,
+  AssignmentFormInput,
+  AssignmentFormResult,
+  ConnectionStatus,
+  CreateAssetInput,
+  GiveAssetInput,
+  HeldAsset,
+  InventoryPrefix,
+  Whereabouts,
   AuditEntry,
   AuditIntegrity,
   AuditPage,
@@ -152,7 +168,7 @@ export function createClient(options: ClientOptions) {
     if (res.status === 204) return undefined as T
     if (!res.ok) {
       if (res.status === 401 && handling.signOut) options.onUnauthenticated?.()
-      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text))
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), errorField(text, 'existing_id'))
     }
     return (text ? JSON.parse(text) : undefined) as T
   }
@@ -321,6 +337,44 @@ export function createClient(options: ClientOptions) {
       remove: (id: string) => request<void>('DELETE', `/api/v1/orders/${seg(id)}`),
     },
 
+    /**
+     * Company Assets. Everyone signed in reads; every write needs
+     * assets.manage. Return and Mark as Not Returned act on the asset's open
+     * assignment.
+     */
+    assets: {
+      /** The register: one kind's assets, a page at a time. */
+      list: (query: AssetQuery) => request<AssetPage>('GET', `/api/v1/assets${historyQueryString(query)}`),
+      /** The register's tiles and its providers. */
+      summary: (kind: AssetKind) => request<AssetSummary>('GET', `/api/v1/assets/summary/${seg(kind)}`),
+      /** ⌘K Search: SIM, phone or inventory numbers containing q, spaces ignored. */
+      byNumber: (q: string) => request<Asset[]>('GET', `/api/v1/assets/by-number/${seg(q)}`),
+      /** What an employee holds and held, open first. */
+      byEmployee: (employeeId: string) => request<HeldAsset[]>('GET', `/api/v1/assets/by-employee/${seg(employeeId)}`),
+      /** The next free inventory number of prefix. */
+      nextNumber: (prefix: InventoryPrefix) =>
+        request<{ inventory_no: string }>('GET', `/api/v1/assets/next-number/${seg(prefix)}`).then((r) => r.inventory_no),
+      get: (id: string) => request<AssetDetail>('GET', `/api/v1/assets/${seg(id)}`),
+      /** Add SIM Card / Add Asset. A number in use is a 409 whose existingId names the asset that has it. */
+      create: (input: CreateAssetInput) => request<Asset>('POST', '/api/v1/assets', input),
+      update: (id: string, input: AssetInput) => request<Asset>('PUT', `/api/v1/assets/${seg(id)}`, input),
+      /** Change Status: saved at once; never moves the card or changes its holder. */
+      setStatus: (id: string, status: ConnectionStatus) =>
+        request<Asset>('PUT', `/api/v1/assets/${seg(id)}/status`, { connection_status: status }),
+      /** Preview Form / Print Form: the form Give would store, and its hash. Writes nothing. */
+      previewForm: (id: string, input: AssignmentFormInput) =>
+        request<AssignmentFormResult>('POST', `/api/v1/assets/${seg(id)}/assignments/preview`, input),
+      give: (id: string, input: GiveAssetInput) => request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/assignments`, input),
+      /** Register SIM Return / Register Asset Return; an empty date is today. */
+      registerReturn: (id: string, input: { returned_date?: string; comment: string }) =>
+        request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/return`, input),
+      markNotReturned: (id: string, input: { whereabouts: Whereabouts; comment: string }) =>
+        request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/not-returned`, input),
+      /** An assignment's stored form, for reprinting. */
+      form: (id: string, assignmentId: string) =>
+        request<AssignmentFormResult>('GET', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form`),
+    },
+
     /** Public, token-only routes for the employee's confirmation page. */
     confirmations: {
       view: (token: string) => request<OrderRecord>('POST', '/api/v1/confirmations/view', { token }),
@@ -333,7 +387,7 @@ export function createClient(options: ClientOptions) {
 export type Client = ReturnType<typeof createClient>
 
 /** The query string for a list's filters (Orders, the Audit log, Security), with empty filters left out. */
-export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery): string {
+export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery | AssetQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))
@@ -343,10 +397,15 @@ export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQu
 }
 
 function errorReference(text: string): string | undefined {
+  return errorField(text, 'reference')
+}
+
+/** A string field of an error body, such as its reference or the existing record a conflict is with. */
+function errorField(text: string, key: 'reference' | 'existing_id'): string | undefined {
   try {
     const parsed: unknown = JSON.parse(text)
-    const ref = typeof parsed === 'object' && parsed !== null ? (parsed as { reference?: unknown }).reference : undefined
-    return typeof ref === 'string' && ref !== '' ? ref : undefined
+    const v = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>)[key] : undefined
+    return typeof v === 'string' && v !== '' ? v : undefined
   } catch {
     return undefined
   }
