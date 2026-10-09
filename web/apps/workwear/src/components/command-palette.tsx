@@ -1,11 +1,12 @@
-import type { CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
+import type { Asset, CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
 import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
 import { cn } from '@ppe/ui/lib/utils'
-import { ClipboardList, CornerDownLeft, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
+import { ClipboardList, CornerDownLeft, Smartphone, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
 import { t } from '@/i18n'
+import { holderText, looksLikeAssetNumber } from '@/lib/assets'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
@@ -66,6 +67,8 @@ export function CommandPalette({
   const [employees, setEmployees] = useState<Employee[]>([])
   // The order a record-number search finds, if any: "WE-000004", "we4", "4".
   const [orders, setOrders] = useState<ListedOrder[]>([])
+  // The SIM cards whose SIM, phone or inventory number has what was typed.
+  const [assets, setAssets] = useState<Asset[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
   const [density, setDensity] = useDensity(userId)
   const [theme, setTheme] = useTheme()
@@ -104,6 +107,7 @@ export function CommandPalette({
     if (!term) {
       setEmployees([])
       setOrders([])
+      setAssets([])
       return
     }
     let current = true
@@ -118,6 +122,12 @@ export function CommandPalette({
           () => current && setOrders([]),
         )
       } else setOrders([])
+      if (looksLikeAssetNumber(term)) {
+        client.assets.byNumber(term).then(
+          (r) => current && setAssets(r),
+          () => current && setAssets([]),
+        )
+      } else setAssets([])
     }, 150)
     return () => {
       current = false
@@ -138,6 +148,17 @@ export function CommandPalette({
         hint: statusLabel[o.status],
         icon: <FileText aria-hidden className="size-4" />,
         to: { name: 'history', order: o.id },
+      })
+    }
+    // A card's number is as specific: its card next, to open its page.
+    for (const a of assets.slice(0, PER_GROUP)) {
+      out.push({
+        key: `asset-${a.id}`,
+        group: 'assets',
+        label: `${a.inventory_no} · ${a.phone_no ?? a.sim_no ?? ''}`,
+        hint: holderText(a).main,
+        icon: <Smartphone aria-hidden className="size-4" />,
+        to: { name: 'asset', id: a.id },
       })
     }
     if (!term || has('new order') || has('create order') || has(text.newOrder) || has(text.createOrder)) {
@@ -194,7 +215,7 @@ export function CommandPalette({
       }
     }
     return out
-  }, [q, orders, employees, items, sections, density, setDensity, text])
+  }, [q, orders, assets, employees, items, sections, density, setDensity, text])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]

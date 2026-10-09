@@ -4,8 +4,9 @@
 migration `0029_company_assets`, `internal/domain/asset`, every route below except the
 signed copy's. The SIM card register (slice 3) and the asset page with Give SIM Card,
 Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
-screen; see below.** Upload Signed Form is slice 5; the employee page and ⌘K slice 6;
-Equipment & Furniture slice 7. The product contract is the assets
+screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
+dashboards' Company Assets card (slice 6); see below.** Upload Signed Form is slice 5,
+waiting for open decision 2; Equipment & Furniture is slice 7. The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -314,6 +315,25 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
 - **Prepare Blocking Email**: the brief's English subject and message with the card's
   numbers, each with Copy. The company's name is a `[Company Name]` placeholder until
   Settings holds it (open decision 3). Nothing is sent and nothing changes.
+
+## The employee page, ⌘K and the dashboards (slice 6)
+
+- **Given SIM** on an employee's page (`components/given-sim.tsx`, from
+  `GET /api/v1/assets/by-employee/{id}`): the cards they hold, then those held before, each
+  linking to the card, with its dates, Days Held, Not Returned and Paper form signed.
+- **Give SIM Card** there starts with the employee chosen; the sheet lists the cards in the
+  Office (search by number), each with its status; one Not Activated, Blocked or without a
+  phone number is shown but cannot be chosen (§6). Changing the card after Print Form clears
+  Paper Form Signed, as any other change does.
+- **Delete employee** refused while they hold a card (open decision 1) says so in the user's
+  language and names the cards.
+- **⌘K Search** looks a search with three digits or more, or `SIM-…`, up among the cards'
+  numbers (`GET /api/v1/assets/by-number/{q}`): its own group, **SIM cards**, after the
+  orders; a result opens the card's page.
+- **The Dashboard and the Manager Dashboard** have a Company Assets card
+  (`components/assets-card.tsx`): the four figures, each opening the register on its tile
+  (`/assets?show=in-office|with-employees|not-returned`). The register is under More on a
+  phone, so this is the way there from Home.
 
 ## Open decisions
 

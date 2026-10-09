@@ -1,4 +1,4 @@
-import type { Employee } from '@ppe/api-client'
+import { ApiError, type Employee } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
@@ -17,6 +17,7 @@ import { useMemo, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
+import { GivenSim } from '@/components/given-sim'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { languages, t } from '@/i18n'
@@ -65,7 +66,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
       await client.employees.remove(emp.id)
       navigate({ name: 'employees' })
     } catch (err) {
-      setActionError(err)
+      // Leaving never returns company assets (assets brief §2): the API names the ones still held.
+      const held = err instanceof ApiError && err.isConflict ? /holds company assets: (.+)$/.exec(err.message) : null
+      setActionError(held?.[1] ? new Error(t.assets.holdsAssets(held[1])) : err)
     }
   }
 
@@ -177,6 +180,8 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
             </section>
           ) : null}
+
+          <GivenSim employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
 
           <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} />
 

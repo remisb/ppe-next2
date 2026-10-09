@@ -779,8 +779,8 @@ Rules for using it:
 
 Specified in [asset-service.md](specs/asset-service.md) and
 [ADR 0004](architecture/adr/0004-company-assets.md). The API and the SIM card register are built;
-the asset page with giving, returning, Not Returned and the blocking email too; signed copies,
-the employee page's sections and Equipment & Furniture are not yet. The product contract is
+the asset page with giving, returning, Not Returned and the blocking email, and Given SIM on
+the employee page, too; signed copies and Equipment & Furniture are not yet. The product contract is
 `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (the **assets brief**,
 v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 

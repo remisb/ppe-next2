@@ -7,6 +7,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
+import { AssetsCard } from '@/components/assets-card'
 import { BarList, MonthChart, MoreLink, NeedsYouPanel, formatDate } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { backupHealth, formatBytes, healthText } from '@ppe/backups'
@@ -80,6 +81,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
             <div className="flex flex-col gap-4 md:gap-6">
               <SetupCard d={d} navigate={navigate} />
               <BackupCard navigate={navigate} />
+              <AssetsCard navigate={navigate} />
             </div>
           </div>
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">

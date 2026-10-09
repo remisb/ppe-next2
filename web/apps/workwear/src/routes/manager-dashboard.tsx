@@ -9,6 +9,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from 'lucide-react'
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
+import { AssetsCard } from '@/components/assets-card'
 import { BarList, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
@@ -61,7 +62,10 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
           <Kpis d={d} navigate={navigate} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <OrderedChart d={d} className="lg:col-span-2" />
-            <SizesCard d={d} />
+            <div className="flex flex-col gap-4 md:gap-6">
+              <SizesCard d={d} />
+              <AssetsCard navigate={navigate} />
+            </div>
           </div>
           <ForecastCard d={d} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
