@@ -645,7 +645,7 @@ Rules for using it:
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.
 - **Detail:** for whoever may open the record. Not called History, which is the old name of
   Orders.
-- **Code:** `GET /api/v1/audit-events/{employees|catalogue|orders|users}/{id}`,
+- **Code:** `GET /api/v1/audit-events/{employees|catalogue|orders|assets|users}/{id}`,
   `RecordChanges` in `@ppe/audit`.
 
 ### Soft delete

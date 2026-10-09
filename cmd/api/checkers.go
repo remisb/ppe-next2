@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
@@ -106,4 +107,14 @@ var _ user.Sessions = userSessions{}
 
 func (u userSessions) EndAll(ctx context.Context, userID, keep uuid.UUID, reason string) error {
 	return u.sessions.EndAll(ctx, userID, keep, reason)
+}
+
+// employeeHoldings answers employee.Holdings: Delete employee refuses an
+// employee who holds company assets.
+type employeeHoldings struct{ assets *asset.Service }
+
+var _ employee.Holdings = employeeHoldings{}
+
+func (e employeeHoldings) HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error) {
+	return e.assets.HeldBy(ctx, employeeID)
 }

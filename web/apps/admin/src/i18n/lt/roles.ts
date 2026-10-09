@@ -69,6 +69,10 @@ export const roles: RolesText = {
     },
     'item_sets.manage': { label: 'Tvarkyti prekių rinkinius', grants: 'Pridėti, keisti ir trinti prekių rinkinius.' },
     'orders.delete': { label: 'Trinti užsakymus', grants: 'Pašalinti demonstracinius ir bandomuosius užsakymus; įrašas ir jo istorija lieka.' },
+    'assets.manage': {
+      label: 'Tvarkyti įmonės turtą',
+      grants: 'Pridėti SIM korteles ir įrangą, keisti SIM kortelės būseną, išduoti turtą darbuotojams ir registruoti grąžinimą.',
+    },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },
     'dashboard.employee': { label: 'Darbuotojo suvestinė', grants: 'Paties naudotojo užsakymai ir ką užsakyti toliau.' },

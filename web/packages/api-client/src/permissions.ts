@@ -18,6 +18,7 @@ export const PERMISSIONS = [
   'catalogue.manage',
   'item_sets.manage',
   'orders.delete',
+  'assets.manage',
   'dashboard.overview',
   'dashboard.manager',
   'dashboard.employee',

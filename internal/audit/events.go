@@ -11,6 +11,7 @@ const (
 	AreaCatalogue Area = "catalogue"
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
+	AreaAssets    Area = "assets" // Company Assets
 	AreaSettings  Area = "settings"
 	AreaSecurity  Area = "security" // the access review
 	AreaAudit     Area = "audit"    // the Audit log's own exports and purges
@@ -36,6 +37,7 @@ var areas = []struct {
 	{AreaCatalogue, []string{"catalogue_item"}},
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
+	{AreaAssets, []string{"asset"}},
 	{AreaSettings, []string{"settings"}},
 	{AreaSecurity, []string{"access_review"}},
 	{AreaAudit, []string{EntityLog}},
@@ -54,6 +56,7 @@ var events = []string{
 	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted",
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
+	"asset.registered", "asset.updated", "asset.status_changed", "asset.given", "asset.returned", "asset.marked_not_returned",
 	"settings.supplier_chat_changed",
 	"access_review.completed",
 	EventExported, EventPurged,

@@ -19,6 +19,7 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -527,6 +528,48 @@ func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, 
 	return order.Confirmation{}, order.ErrNotFound
 }
 
+// stubAssets is an empty register: every asset is missing.
+type stubAssets struct{}
+
+func (stubAssets) Create(context.Context, asset.Asset, *asset.Bump, audit.Event) error { return nil }
+func (stubAssets) Get(context.Context, uuid.UUID) (asset.Record, error) {
+	return asset.Record{}, asset.ErrNotFound
+}
+func (stubAssets) Assignments(context.Context, uuid.UUID) ([]asset.Assignment, error) {
+	return []asset.Assignment{}, nil
+}
+func (stubAssets) List(context.Context, asset.ListFilter) ([]asset.Record, int, error) {
+	return []asset.Record{}, 0, nil
+}
+func (stubAssets) Summary(context.Context, asset.Kind) (asset.Summary, error) {
+	return asset.Summary{}, nil
+}
+func (stubAssets) ByNumber(context.Context, string, int) ([]asset.Record, error) {
+	return []asset.Record{}, nil
+}
+func (stubAssets) ByEmployee(context.Context, uuid.UUID) ([]asset.Held, error) {
+	return []asset.Held{}, nil
+}
+func (stubAssets) Employee(context.Context, uuid.UUID) (asset.EmployeeView, error) {
+	return asset.EmployeeView{}, asset.ErrEmployeeNotFound
+}
+func (stubAssets) LastNumber(context.Context, string) (int64, error) { return 0, nil }
+func (stubAssets) NumberOwner(context.Context, string) (uuid.UUID, error) {
+	return uuid.Nil, asset.ErrNotFound
+}
+func (stubAssets) SIMOwner(context.Context, string) (uuid.UUID, error) {
+	return uuid.Nil, asset.ErrNotFound
+}
+func (stubAssets) Update(context.Context, uuid.UUID, asset.Mutation) (asset.Record, error) {
+	return asset.Record{}, asset.ErrNotFound
+}
+func (stubAssets) Give(context.Context, uuid.UUID, uuid.UUID, asset.GiveFunc) (asset.Assignment, error) {
+	return asset.Assignment{}, asset.ErrNotFound
+}
+func (stubAssets) UpdateOpen(context.Context, uuid.UUID, asset.OpenMutation) (asset.Assignment, error) {
+	return asset.Assignment{}, asset.ErrNotFound
+}
+
 type stubDashboard struct{}
 
 func (stubDashboard) ReadSetup(context.Context) (dashboard.Setup, error) {
@@ -594,7 +637,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -722,52 +765,67 @@ var policy = map[string]rule{
 	"POST /api/v1/catalogue/{id}/deactivate":   {role.CatalogueManage, "managers"},
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
 
-	"GET /api/v1/item-sets":                         {"", "any"},
-	"GET /api/v1/item-sets/active":                  {"", "any"},
-	"GET /api/v1/item-sets/{id}":                    {"", "any"},
-	"POST /api/v1/item-sets":                        {role.ItemSetsManage, "managers"},
-	"PUT /api/v1/item-sets/{id}":                    {role.ItemSetsManage, "managers"},
-	"DELETE /api/v1/item-sets/{id}":                 {role.ItemSetsManage, "managers"},
-	"GET /api/v1/item-sets/{id}/apply/{employeeID}": {"", "any"},
-	"GET /api/v1/sizes":                             {"", "any"},
-	"POST /api/v1/orders/resolve":                   {"", "any"},
-	"POST /api/v1/orders":                           {"", "any"},
-	"GET /api/v1/orders":                            {"", "any"},
-	"GET /api/v1/settings":                          {"", "any"},
-	"PUT /api/v1/settings/supplier-chat":            {role.SettingsManage, "admins"},
-	"POST /api/v1/orders/{id}/confirmation-link":    {"", "any"},
-	"POST /api/v1/orders/{id}/confirm-paper":        {"", "any"},
-	"POST /api/v1/orders/{id}/confirm-in-person":    {"", "any"},
-	"GET /api/v1/orders/{id}/record":                {"", "any"},
-	"POST /api/v1/confirmations/view":               {"", "public"},
-	"POST /api/v1/confirmations/confirm":            {"", "public"},
-	"GET /api/v1/orders/{id}":                       {"", "any"},
-	"DELETE /api/v1/orders/{id}":                    {role.OrdersDelete, "manager"},
-	"GET /api/v1/dashboard":                         {role.DashboardOverview, "admins"},
-	"GET /api/v1/dashboard/manager":                 {role.DashboardManager, "manager"},
-	"GET /api/v1/dashboard/employee":                {role.DashboardEmployee, "employee"},
-	"GET /api/v1/replacements":                      {"", "any"},
-	"GET /api/v1/backups":                           {role.BackupsRead, "admins"},
-	"GET /api/v1/audit-events":                      {role.AuditRead, "admins"},
-	"GET /api/v1/audit-events/{id}":                 {role.AuditRead, "admins"},
-	"GET /api/v1/audit-events/integrity":            {role.AuditRead, "admins"},
-	"POST /api/v1/audit-events/verify":              {role.AuditRead, "admins"},
-	"GET /api/v1/audit-events/export":               {role.AuditExport, "admins"},
-	"GET /api/v1/audit-events/employees/{id}":       {"", "any"},
-	"GET /api/v1/audit-events/catalogue/{id}":       {"", "any"},
-	"GET /api/v1/audit-events/orders/{id}":          {"", "any"},
-	"GET /api/v1/audit-events/users/{id}":           {role.UsersRead, "managers"},
-	"GET /api/v1/security/events":                   {role.SecurityRead, "admins"},
-	"GET /api/v1/security/sessions":                 {role.SecurityRead, "admins"},
-	"DELETE /api/v1/security/sessions/{id}":         {role.UsersManage, "admins"},
-	"GET /api/v1/security/access-review":            {role.SecurityRead, "admins"},
-	"POST /api/v1/security/access-review":           {role.SecurityRead, "admins"},
-	"GET /api/v1/system/status":                     {role.SystemRead, "admins"},
-	"GET /api/v1/system/errors":                     {role.SystemRead, "admins"},
-	"GET /api/v1/system/errors/{id}":                {role.SystemRead, "admins"},
-	"POST /api/v1/client-errors":                    {"", "any"},
-	"GET /api/v1/overview":                          {"", "any"},
-	"GET /api/v1/usage":                             {role.UsageRead, "admins"},
+	"GET /api/v1/item-sets":                                   {"", "any"},
+	"GET /api/v1/item-sets/active":                            {"", "any"},
+	"GET /api/v1/item-sets/{id}":                              {"", "any"},
+	"POST /api/v1/item-sets":                                  {role.ItemSetsManage, "managers"},
+	"PUT /api/v1/item-sets/{id}":                              {role.ItemSetsManage, "managers"},
+	"DELETE /api/v1/item-sets/{id}":                           {role.ItemSetsManage, "managers"},
+	"GET /api/v1/item-sets/{id}/apply/{employeeID}":           {"", "any"},
+	"GET /api/v1/sizes":                                       {"", "any"},
+	"POST /api/v1/orders/resolve":                             {"", "any"},
+	"POST /api/v1/orders":                                     {"", "any"},
+	"GET /api/v1/orders":                                      {"", "any"},
+	"GET /api/v1/settings":                                    {"", "any"},
+	"PUT /api/v1/settings/supplier-chat":                      {role.SettingsManage, "admins"},
+	"POST /api/v1/orders/{id}/confirmation-link":              {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-paper":                  {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-in-person":              {"", "any"},
+	"GET /api/v1/orders/{id}/record":                          {"", "any"},
+	"POST /api/v1/confirmations/view":                         {"", "public"},
+	"POST /api/v1/confirmations/confirm":                      {"", "public"},
+	"GET /api/v1/orders/{id}":                                 {"", "any"},
+	"DELETE /api/v1/orders/{id}":                              {role.OrdersDelete, "manager"},
+	"GET /api/v1/assets":                                      {"", "any"},
+	"GET /api/v1/assets/summary/{kind}":                       {"", "any"},
+	"GET /api/v1/assets/by-number/{q}":                        {"", "any"},
+	"GET /api/v1/assets/by-employee/{id}":                     {"", "any"},
+	"GET /api/v1/assets/next-number/{prefix}":                 {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}":                                 {"", "any"},
+	"POST /api/v1/assets":                                     {role.AssetsManage, "managers"},
+	"PUT /api/v1/assets/{id}":                                 {role.AssetsManage, "managers"},
+	"PUT /api/v1/assets/{id}/status":                          {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/assignments/preview":            {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/assignments":                    {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/return":                         {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/not-returned":                   {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}/assignments/{assignmentID}/form": {"", "any"},
+	"GET /api/v1/audit-events/assets/{id}":                    {"", "any"},
+	"GET /api/v1/dashboard":                                   {role.DashboardOverview, "admins"},
+	"GET /api/v1/dashboard/manager":                           {role.DashboardManager, "manager"},
+	"GET /api/v1/dashboard/employee":                          {role.DashboardEmployee, "employee"},
+	"GET /api/v1/replacements":                                {"", "any"},
+	"GET /api/v1/backups":                                     {role.BackupsRead, "admins"},
+	"GET /api/v1/audit-events":                                {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/{id}":                           {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/integrity":                      {role.AuditRead, "admins"},
+	"POST /api/v1/audit-events/verify":                        {role.AuditRead, "admins"},
+	"GET /api/v1/audit-events/export":                         {role.AuditExport, "admins"},
+	"GET /api/v1/audit-events/employees/{id}":                 {"", "any"},
+	"GET /api/v1/audit-events/catalogue/{id}":                 {"", "any"},
+	"GET /api/v1/audit-events/orders/{id}":                    {"", "any"},
+	"GET /api/v1/audit-events/users/{id}":                     {role.UsersRead, "managers"},
+	"GET /api/v1/security/events":                             {role.SecurityRead, "admins"},
+	"GET /api/v1/security/sessions":                           {role.SecurityRead, "admins"},
+	"DELETE /api/v1/security/sessions/{id}":                   {role.UsersManage, "admins"},
+	"GET /api/v1/security/access-review":                      {role.SecurityRead, "admins"},
+	"POST /api/v1/security/access-review":                     {role.SecurityRead, "admins"},
+	"GET /api/v1/system/status":                               {role.SystemRead, "admins"},
+	"GET /api/v1/system/errors":                               {role.SystemRead, "admins"},
+	"GET /api/v1/system/errors/{id}":                          {role.SystemRead, "admins"},
+	"POST /api/v1/client-errors":                              {"", "any"},
+	"GET /api/v1/overview":                                    {"", "any"},
+	"GET /api/v1/usage":                                       {role.UsageRead, "admins"},
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed roles.

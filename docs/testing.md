@@ -222,23 +222,29 @@ review ([specs/security-service.md](specs/security-service.md), ADR 0003).
 | Security screen: tabs and the sign-ins' filters in the address; a failed attempt with its device; signing out another device of one's own; the review marked and opened on the Audit log; no sideways scroll on a phone or tablet; on a phone Roles & permissions and Settings under More | admin web `router` tests; e2e *Security: …*, *phone and tablet: …* |
 
 
-## Company Assets (planned)
+## Company Assets
 
-Not a manual rule: the assets brief's §19 checks
-([specs/asset-service.md](specs/asset-service.md), ADR 0004). Nothing is built yet; each
-row names the slice that adds its tests, and the "Covered by" column is filled in then.
+Not a manual rule: the assets brief's §19 checks and the rules behind them
+([specs/asset-service.md](specs/asset-service.md), ADR 0004). The API is built (slice 2);
+the screens' tests come with slices 3–7. Go tests are in `internal/domain/asset` unless
+named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 
-| Brief §19 check | Expected | Slice | Covered by |
-| --- | --- | --- | --- |
-| A new SIM from the provider | Office, Not Activated, no holder | 2, 3 | — |
-| The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset, which the form links to | 2, 3 | — |
-| Give a Not Activated or Blocked SIM | Refused, with the reason at the field | 2, 4 | — |
-| Give an Active SIM | Holder, location, form and history change together, in one transaction | 2, 4 | — |
-| Give twice, or two users at once | Exactly one assignment (the unique index); the other gets 409 and keeps its entries | 2, 4 | — |
-| Block without a return | Blocked; the holder stays; In Office does not grow | 2, 4 | — |
-| Return an Active or a Blocked SIM | In the Office; the status does not change | 2, 4 | — |
-| Give to a new holder | A new assignment and form; the old one stays | 2, 4 | — |
-| The plan changes after giving | The earlier form keeps its content and hash | 2, 4 | — |
-| The employee no longer works | Nothing is returned automatically | 2 | — |
-| Register and give equipment | A unique number; on the employee's list | 7 | — |
-| The form changes after Print Form | Paper Form Signed is cleared; the API refuses a hash that no longer matches | 4 | — |
+| Brief §19 check or rule | Expected | Covered by |
+| --- | --- | --- |
+| A new SIM from the provider | Office, Not Activated, no holder; received today | `TestAddSIMCardDefaults`, `TestPostgresAssetLifecycle`, HTTP flow |
+| The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset's id; spaces and case ignored | `TestDuplicateNumbersNameTheExistingAsset`, `TestPostgresNumbersAreNeverReused`, HTTP flow (`existing_id`) |
+| Give a Not Activated or Blocked SIM | Refused (409), nothing stored | `TestGiveRefusesWhatCannotBeGiven`, `TestPostgresAssetLifecycle`, HTTP flow |
+| Give an Active SIM | Holder, location, form and history change together, in one transaction | `TestGiveUpdatesEverythingTogether`, `TestGiveFillsAMissingPlanAndValue`, `TestPostgresAssetLifecycle` |
+| Give twice, or two users at once | Exactly one assignment; the others get 409 | `TestGiveUpdatesEverythingTogether`, `TestPostgresConcurrentGiveGivesOnce`, `TestPostgresAssignmentsCannotBeRewritten` (the index) |
+| Block without a return | Blocked; the holder stays; In Office does not grow | `TestBlockingNeitherReturnsNorMoves`, `TestPostgresAssetLifecycle` |
+| Return an Active or a Blocked SIM | In the Office; the status does not change; not before the given date | `TestReturnKeepsTheStatusAndHistory`, `TestPostgresAssetLifecycle` |
+| Give to a new holder | A new assignment and form; the old one stays | `TestANewHolderIsANewAssignment` |
+| The plan changes after giving | The earlier form keeps its content and hash, also read back from JSONB | `TestANewHolderIsANewAssignment`, `TestPostgresAssetLifecycle` |
+| The employee no longer works | Nothing is returned automatically; Delete employee is refused while they hold assets (spec, open decision 1) | `employee.TestDeleteRefusedWhileHoldingAssets`, HTTP flow |
+| Register and give equipment | A unique number per prefix; furniture needs no form, computers need their value | `TestPostgresNumbersAreNeverReused`, `TestFurnitureNeedsNoForm`; the employee's list is `TestPostgresAssetLifecycle` (`ByEmployee`), its screen slice 6 |
+| The form changes after Print Form | The API refuses a hash that no longer matches (409); the form's Paper Form Signed reset is slice 4 | `TestGiveRefusesWhatCannotBeGiven`, HTTP flow |
+| Not Returned | The holder stays; Unknown is a location; the mark is set once and survives the return | `TestNotReturned`, `TestPostgresAssetLifecycle` |
+| Numbers are never reused, nor changed by the system | A corrected-away number stays used; the counter follows typed numbers and skips used ones | `TestNextNumberFollowsTheCounterAndSkipsUsedNumbers`, `TestPostgresNumbersAreNeverReused` |
+| Assignments are never rewritten | The trigger refuses a changed giving, a deleted row, a second mark, a reopened return; `ppe_app` cannot delete them or change used numbers | `TestPostgresAssignmentsCannotBeRewritten`, `cmd/api` `TestPostgresAPIRoleIsLeastPrivileged` |
+| Access | Reads for anyone signed in, writes `assets.manage` (Administrator, Manager) | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `role.TestWebClientListsTheCatalogue` |
+| Events | Each kind of change one event, none when nothing changed; known to the web | `TestChangeStatus`, `TestEditRecordsChangedDetailsOnly`, `cmd/api` `TestEveryDomainEventIsKnown`, `audit.TestWebClientListsTheEvents` |

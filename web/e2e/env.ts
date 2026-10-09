@@ -34,7 +34,7 @@ export function appDSN(): string {
  */
 export async function prepareDatabase(query: (sql: string) => Promise<unknown>, ...more: string[]): Promise<void> {
   await query(
-    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges CASCADE; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
+    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
   )
   await allowAppRole(query)
 }

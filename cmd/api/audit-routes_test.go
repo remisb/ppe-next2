@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
@@ -28,6 +29,8 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		catalogue.EventActivated, catalogue.EventDeactivated, catalogue.EventDeleted,
 		itemset.EventCreated, itemset.EventUpdated, itemset.EventDeleted,
 		order.EventOrdered, order.EventLinkCreated, order.EventLinkOpened, order.EventGiven, order.EventDeleted,
+		asset.EventRegistered, asset.EventUpdated, asset.EventStatusChanged, asset.EventGiven, asset.EventReturned,
+		asset.EventMarkedNotReturned,
 		settings.EventSupplierChatChanged,
 		security.EventAccessReviewCompleted,
 		audit.EventExported, audit.EventPurged,

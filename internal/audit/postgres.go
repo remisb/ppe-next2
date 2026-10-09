@@ -23,7 +23,8 @@ func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore
 
 // entityLabel and entityDeleted name each record type's row now. Deleted
 // rows still exist (soft delete), so a deleted record keeps its name. An
-// order is named by its record number, as order.FormatRecordNumber writes it.
+// order is named by its record number, as order.FormatRecordNumber writes it,
+// and an asset by its inventory number.
 const entityLabel = `CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.first_name || ' ' || x.last_name FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.name FROM catalogue_items x WHERE x.id = a.entity_id)
@@ -32,6 +33,7 @@ const entityLabel = `CASE a.entity_type
 			ELSE x.record_seq::text END FROM orders x WHERE x.id = a.entity_id)
 		WHEN 'user' THEN (SELECT x.name FROM users x WHERE x.id = a.entity_id)
 		WHEN 'role' THEN (SELECT x.name FROM roles x WHERE x.id = a.entity_id)
+		WHEN 'asset' THEN (SELECT x.inventory_no FROM assets x WHERE x.id = a.entity_id)
 	END`
 
 const entityDeleted = `coalesce(CASE a.entity_type
@@ -41,6 +43,7 @@ const entityDeleted = `coalesce(CASE a.entity_type
 		WHEN 'order' THEN (SELECT x.deleted_at IS NOT NULL FROM orders x WHERE x.id = a.entity_id)
 		WHEN 'user' THEN (SELECT x.deleted_at IS NOT NULL FROM users x WHERE x.id = a.entity_id)
 		WHEN 'role' THEN (SELECT x.deleted_at IS NOT NULL FROM roles x WHERE x.id = a.entity_id)
+		WHEN 'asset' THEN (SELECT x.deleted_at IS NOT NULL FROM assets x WHERE x.id = a.entity_id)
 	END, false)`
 
 func (s *PostgresStore) List(ctx context.Context, q Query) ([]Entry, error) {

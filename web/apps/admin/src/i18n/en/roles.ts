@@ -71,6 +71,10 @@ export const roles = {
     },
     'item_sets.manage': { label: 'Manage Item Sets', grants: 'Add, edit and delete item sets.' },
     'orders.delete': { label: 'Delete orders', grants: 'Remove demo and test orders; the record and its history stay.' },
+    'assets.manage': {
+      label: 'Manage Company Assets',
+      grants: 'Add SIM cards and equipment, change a SIM card’s status, give assets to employees and register their return.',
+    },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },
     'dashboard.employee': { label: 'Employee Dashboard', grants: 'The user’s own orders and what to order next.' },
