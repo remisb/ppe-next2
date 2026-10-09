@@ -171,7 +171,8 @@ Rules for using it:
 - **Detail:** has a first and last name (required), an optional **employee code** (unique
   among live employees), size defaults (height, clothing size, shoe size), notes, and a
   preferred language. An employee does not sign in. Deleting one is a soft delete; their
-  orders keep the name snapshot. Full name is derived, never stored.
+  orders keep the name snapshot. Full name is derived, never stored. Planned: an employee
+  may also hold [company assets](#12-company-assets), and leaving never returns them.
 - **Code:** `internal/domain/employee`, table `employees`. **UI:** Employees, an employee's
   page, **Add New Employee**, **Edit details**, **Delete employee…**.
 
@@ -773,6 +774,157 @@ Rules for using it:
 
 ---
 
+## 12. Company Assets
+
+Planned: specified in [asset-service.md](specs/asset-service.md) and
+[ADR 0004](architecture/adr/0004-company-assets.md), not built yet. The product contract is
+`../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (the **assets brief**,
+v1.0, 2026-10-08); § references in this section point to it, not to the manual.
+
+### Company Assets
+- **Brief:** the staff app's section for the company's individually tracked items: SIM
+  Cards, and Equipment & Furniture.
+- **Detail:** a register (list) per kind with summary tiles, an item's page, and the
+  employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
+  catalogue item and quantity, and never comes back.
+- **Code:** `internal/domain/asset` (planned). **UI:** Company Assets, tabs **SIM Cards**
+  and **Equipment & Furniture**.
+
+### Asset
+- **Brief:** one physical item the company owns and tracks on its own: a SIM card, a
+  computer, a desk.
+- **Detail:** one record per physical item; three identical laptops are three assets, never
+  one line with a quantity (§2, §15). Its **kind** is SIM or EQUIPMENT. An asset is not a
+  catalogue item and is never on an order.
+- **Code:** table `assets` (planned). **UI:** "SIM card", "asset"; never "item" alone, which
+  is a catalogue item.
+
+### SIM card
+- **Brief:** an asset of kind SIM: one physical card.
+- **Detail:** its **SIM No.** (the number printed on the card) and **Phone No.** are
+  different facts: a card has one SIM No. for life, and its phone number may be unknown when
+  it arrives (§2, §4). The SIM No. is kept exactly as typed, leading zeros included.
+- **UI:** SIM No., Phone No., **Add SIM Card**.
+
+### Equipment & Furniture
+- **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
+  Drive, Furniture or Other.
+- **Detail:** has a Name and an optional Serial No.; has no connection status (§17).
+- **UI:** **Add Asset**, **Save Asset**.
+
+### Inventory No.
+- **Brief:** the company's unique number of an asset, `SIM-000001`, `PC-000001`, ….
+- **Detail:** suggested from a counter per prefix (SIM, PC, PH, DRV, FUR, AST) or typed in
+  when the company already numbered the item. Unique; a number once used is never given to
+  another asset, and the system never changes one by itself (§16).
+
+### Provider and Plan
+- **Brief:** the mobile operator a SIM card is from, and its tariff plan.
+- **Detail:** the provider's e-mail address is shown where staff must write to it
+  (activation, blocking). Nothing is sent from the app.
+
+### Connection status
+- **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
+  or **Blocked**.
+- **Detail:** recorded by staff with **Change Status** once the provider confirms; changing it
+  never activates or blocks anything, and never changes where the card is or who holds it
+  (§5). SIM cards only. A blocked card is not a returned card.
+- **UI:** Status column, **Change Status**.
+
+### Assignment
+- **Brief:** one giving of an asset to one employee, from its **Given Date** until it is
+  returned.
+- **Detail:** an asset has at most one **open** assignment (not yet returned). A new holder
+  is a new assignment with its own form; the old one is never overwritten (§2, §12). The
+  brief's *išdavimas*.
+- **Code:** table `asset_assignments` (planned). **UI:** **Assignments** on an asset's page.
+
+### Holder (Held By)
+- **Brief:** the employee of an asset's open assignment.
+- **Detail:** stays the holder when the asset is marked Not Returned, and is still shown as
+  the last holder when the whereabouts are Unknown (§3, §13). An employee leaving the company
+  never ends an assignment.
+- **UI:** Held By column.
+
+### Location
+- **Brief:** where an asset physically is: **Office**, **With Employee** or **Unknown**.
+- **Detail:** follows from the assignment, never typed: no open assignment is Office; an
+  open one is With Employee, or Unknown when it is marked Not Returned with unknown
+  whereabouts. Any other place is said in the asset's Comment (§3).
+- **UI:** Held By / Location column, the Office and Unknown filters.
+
+### Give SIM Card, Give Asset
+- **Brief:** registering that an asset was given to an employee: one form.
+- **Detail:** only an asset in the Office with no holder can be given, and a SIM card only
+  when Active. The employee signs the printed assignment form first (§6, §7, §17).
+- **UI:** **Give SIM Card**, **Give Asset**; on success "SIM card given to [Employee Name]."
+
+### Given SIM
+- **Brief:** the employee page's section of SIM cards the employee holds or held.
+- **UI:** **Given SIM**, and **Equipment** beside it.
+
+### Given Date and Days Held
+- **Brief:** the date the asset was actually given, and the days since then (to today, or to
+  the return date).
+- **Detail:** the given date is a calendar day in the organisation timezone, never in the
+  future, and kept apart from when the assignment was typed in. Days Held is how long it was
+  held, not how long the service was active (§10).
+
+### Register SIM Return, Register Asset Return
+- **Brief:** recording that an asset is physically back in the office.
+- **Detail:** ends the open assignment; the asset is in the Office again. The connection
+  status does not change (§11).
+
+### Not Returned
+- **Brief:** a mark on an open assignment: the employee has not returned the asset and is
+  not expected to soon.
+- **Detail:** set with **Mark as Not Returned** and a comment. The asset stays with its
+  holder and out of office stock. A later physical return is registered as usual, and the
+  mark stays in the assignment (§13).
+- **UI:** **Mark as Not Returned**, the Not Returned badge, tile and filter.
+
+### Office stock (In Office)
+- **Brief:** the assets in the office with no holder, the only ones that can be given.
+- **Detail:** derived from open assignments, never counted by hand.
+
+### Summary tiles
+- **Brief:** Total SIM Cards, In Office, With Employees, Not Returned at the top of the
+  register; tapping one filters the list.
+- **Detail:** they overlap (a Not Returned card is also With Employees), so they are never
+  added up (§3). Total excludes written-off cards.
+
+### Assignment form (form)
+- **Brief:** the paper document an employee signs for an assignment of a SIM card or a
+  computer, separate from workwear's Items Given Record.
+- **Detail:** printed from the Give form (**Preview Form**, **Print Form**), dated with the
+  given date. Once the asset is given, the form's data is kept with the assignment and
+  never changes, like a record's snapshot, with its own document hash. **Paper Form Signed**
+  is ticked when the employee has signed; changing the form after printing clears it (§8).
+- **UI:** Preview Form, Print Form, Paper Form Signed.
+
+### Signed copy
+- **Brief:** a scan or photo of the signed assignment form, kept with that assignment.
+- **Detail:** may be added later; its absence never blocks giving once Paper Form Signed is
+  ticked (§9).
+- **UI:** **Upload Signed Form**, **Signed Copy Uploaded**, **Signed Copy Missing**.
+
+### Blocking email
+- **Brief:** a text to copy into the user's own e-mail, asking the provider to block a SIM
+  card.
+- **Detail:** preparing it changes nothing; staff set Blocked with Change Status once the
+  provider confirms (§14).
+- **UI:** **Prepare Blocking Email**.
+
+### Non-return Value
+- **Brief:** what the employee owes if the asset is not returned; printed on the form with
+  its currency.
+
+### Received Date
+- **Brief:** the date a SIM card arrived from the provider.
+- **Detail:** the one place "received" is used; it never means Given.
+
+---
+
 ## Translations
 
 The staff app speaks English, Lithuanian and Russian (each user's choice). The
@@ -846,6 +998,33 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 The dictionaries in `web/apps/workwear/src/i18n/{en,lt,ru}` are the source; this
 table follows them.
 
+Company Assets (proposed: not in the dictionaries yet, which become the source when the
+screens are built):
+
+| English | Lietuvių | Русский |
+|---|---|---|
+| Company Assets | Įmonės turtas | Имущество компании |
+| SIM Cards / SIM card | SIM kortelės / SIM kortelė | SIM-карты / SIM-карта |
+| Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
+| Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
+| Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
+| Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
+| Change Status | Keisti būseną | Изменить статус |
+| Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |
+| Held By | Kas turi | У кого |
+| Assignment / Assignments | Išdavimas / Išdavimai | Выдача / Выдачи |
+| Give SIM Card / Give Asset | Išduoti SIM kortelę / Išduoti turtą | Выдать SIM-карту / Выдать имущество |
+| Given SIM | Išduotos SIM | Выданные SIM |
+| Given Date / Days Held | Išdavimo data / Turima dienų | Дата выдачи / Дней на руках |
+| Register SIM Return / Register Asset Return | Registruoti SIM grąžinimą / Registruoti turto grąžinimą | Зарегистрировать возврат SIM / Зарегистрировать возврат имущества |
+| Not Returned / Mark as Not Returned | Negrąžinta / Pažymėti kaip negrąžintą | Не возвращено / Отметить как не возвращённое |
+| Total SIM Cards / In Office / With Employees | Iš viso SIM kortelių / Biure / Pas darbuotojus | Всего SIM-карт / В офисе / У сотрудников |
+| Preview Form / Print Form / Paper Form Signed | Peržiūrėti aktą / Spausdinti aktą / Aktas pasirašytas | Просмотреть акт / Печать акта / Акт подписан |
+| Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
+| Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
+| Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |
+| Add SIM Card / Add Asset / Save Asset | Pridėti SIM kortelę / Pridėti turtą / Išsaugoti turtą | Добавить SIM-карту / Добавить имущество / Сохранить имущество |
+
 ---
 
 ## Words to avoid
@@ -854,7 +1033,14 @@ table follows them.
 |---|---|---|
 | "employee" for a user | **user**, **staff member**, **the employee role** | An Employee receives workwear and never signs in. |
 | draft order, pending, partial, outstanding (as statuses) | **working order**; **Ordered** | Only ORDERED and GIVEN exist; a working order is not stored. |
-| delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. |
+| delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. A SIM card's **Received Date** (from the provider) is the one exception. |
+| hand-over, issue, allocation (for an asset) | **assignment**; **Give SIM Card** / **Give Asset** | Hand-over mode is workwear's in-person confirmation. |
+| act, receipt, record, hand-over form (for an asset) | **assignment form** (UI: Form) | Record and receipt are the order's Items Given Record. |
+| returned (for a blocked card), deactivated, disconnected | **Blocked** | Blocking is a connection status; only Register SIM Return makes a card returned. |
+| lost, missing, stolen (for an asset) | **Not Returned**; location **Unknown** | Loss and write-off are not defined yet (assets brief §20). |
+| stock, warehouse, free (for assets) | **In Office** (office stock) | One word for the tile, the filter and the location. |
+| item, product (for an asset) | **asset**, **SIM card** | An item is a catalogue item, ordered by quantity. |
+| quantity (of assets) | (none: one asset is one physical item) | |
 | receipt (in the UI) | **Items Given Record** / **record** | `Receipt` is the code name. The UI says "Receipt WE-…" only on an employee's page. |
 | History (in the UI) | **Orders**; a record's **Changes** | `history` is the route and namespace name; the screen is Orders. A record's list of changes is Changes. |
 | activity log, change log, event log | **Audit log** | One screen, one name. |

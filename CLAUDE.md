@@ -75,6 +75,9 @@ spec `docs/specs/usage-service.md`, `internal/usage`) shows active people per da
 changes per week, devices, languages, the confirmation-link funnel
 (`order_confirmations.first_opened_at`, `order.confirmation_link_opened`) and a daily
 data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashboards use too.
+**Company Assets** (SIM cards, equipment and furniture) is specified, not built: slice 1 of
+ADR 0004 wrote its terms (glossary §12), `docs/specs/asset-service.md` and the §19 checks in
+`docs/testing.md`; slices 2–8 build it.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -195,7 +198,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 
 - `docs/architecture/` — the context map (bounded contexts and their dependencies) and the
   ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary;
-  ADR 0003 keeps security events apart from the audit trail and sets their retention.
+  ADR 0003 keeps security events apart from the audit trail and sets their retention;
+  ADR 0004 adds Company Assets (SIM cards, equipment and furniture as individual assets).
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
@@ -205,6 +209,9 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   uptime check and droplet alerts, and what to look at when one fires.
 - `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
   audit log, security, usage analytics and monitoring, in phases (all five are built).
+- `docs/ux/company-assets-ux-review.md` (and `.html`) — the assets brief
+  (`../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf`) against the app,
+  the UI options and the chosen one; the rules are `docs/specs/asset-service.md` (planned).
 - `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
   words to avoid; add a term there before using it.
 - `web/AGENTS.md` — binding rules for frontend apps.
