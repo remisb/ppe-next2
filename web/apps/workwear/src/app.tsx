@@ -382,7 +382,7 @@ export function App() {
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
         {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
-        {route.name === 'assets' ? <Assets navigate={navigate} /> : null}
+        {route.name === 'assets' ? <Assets key={route.tile ?? 'all'} tile={route.tile} navigate={navigate} /> : null}
         {route.name === 'asset' ? <AssetPage id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
         {route.name === 'assetForm' ? (
           <AssetFormPage

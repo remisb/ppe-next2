@@ -21,6 +21,9 @@ describe('router', () => {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
     expect(pathOf({ name: 'assets' })).toBe('/assets')
+    expect(pathOf({ name: 'assets', tile: 'notReturned' })).toBe('/assets?show=not-returned')
+    expect(parsePath('/assets', '?show=in-office')).toEqual({ name: 'assets', tile: 'inOffice' })
+    expect(parsePath('/assets', '?show=everything')).toEqual({ name: 'assets' })
     expect(parsePath(pathOf({ name: 'asset', id: 'a/1' }))).toEqual({ name: 'asset', id: 'a/1' })
     const draft = { name: 'assetForm', id: 'a1', draft: { employeeId: 'e1', givenDate: '2026-10-09', plan: 'Biz 10 GB', valueCents: 2500 }, print: true } as const
     expect(pathOf(draft)).toBe('/assets/a1/form?employee=e1&date=2026-10-09&plan=Biz+10+GB&value=2500&print=1')

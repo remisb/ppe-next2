@@ -152,4 +152,12 @@ export const assets: AssetsText = {
   optional: 'Необязательно.',
   close: 'Закрыть',
   returnBeforeGiven: 'Дата возврата не может быть раньше даты выдачи.',
+  chooseCardReason: 'Выберите SIM-карту.',
+  simCard: 'SIM-карта',
+  searchOfficeCards: 'Поиск карт в офисе',
+  noOfficeCards: 'В офисе таких SIM-карт нет.',
+  givenSim: 'Выданные SIM',
+  givenSimIntro: 'SIM-карты, которые у сотрудника сейчас, затем те, что были раньше.',
+  noGivenSim: (name: string) => `${name}: SIM-карты не выдавались.`,
+  holdsAssets: (numbers: string) => `У этого сотрудника всё ещё ${numbers}. Сначала зарегистрируйте возврат или решите вопрос: увольнение их не возвращает.`,
 }

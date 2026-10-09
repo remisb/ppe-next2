@@ -196,6 +196,8 @@ export function canMarkNotReturned(a: Pick<Asset, 'open_assignment'>): boolean {
 
 /** Give SIM Card's form, as typed. Plan and value are asked only when the card lacks them (§6). */
 export interface GiveDraft {
+  /** The card chosen, when Give starts from the employee; the card's own id when it starts from the card. */
+  assetId: string
   employeeId: string
   employeeName: string
   givenDate: string
@@ -205,12 +207,12 @@ export interface GiveDraft {
 }
 
 export function emptyGiveDraft(today: string): GiveDraft {
-  return { employeeId: '', employeeName: '', givenDate: today, plan: '', value: '', comment: '' }
+  return { assetId: '', employeeId: '', employeeName: '', givenDate: today, plan: '', value: '', comment: '' }
 }
 
 /** What the form prints: the fields that change its content, as one comparable key. */
 export function formKey(d: GiveDraft): string {
-  return JSON.stringify([d.employeeId, d.givenDate, d.plan.trim(), d.value.trim()])
+  return JSON.stringify([d.assetId, d.employeeId, d.givenDate, d.plan.trim(), d.value.trim()])
 }
 
 /** The form's inputs to send: the card's own plan and value stay its own; only missing ones are filled in. */
@@ -231,12 +233,13 @@ export function formInput(a: Pick<Asset, 'plan' | 'non_return_value_cents'>, d: 
  * given from this form at all; the rest the form itself fixes.
  */
 export function giveBlock(
-  a: Pick<Asset, 'open_assignment' | 'connection_status' | 'phone_no' | 'plan' | 'non_return_value_cents'>,
+  a: Pick<Asset, 'open_assignment' | 'connection_status' | 'phone_no' | 'plan' | 'non_return_value_cents'> | null,
   d: GiveDraft,
   today: string,
   printed: { key: string } | null,
   signed: boolean,
 ): string | null {
+  if (!a) return t.assets.chooseCardReason
   if (a.open_assignment) return t.assets.alreadyGivenReason
   if (a.connection_status !== 'ACTIVE') return a.connection_status === 'BLOCKED' ? t.assets.blockedReason : t.assets.notActivatedReason
   if (!a.phone_no) return t.assets.phoneMissingReason
@@ -248,6 +251,18 @@ export function giveBlock(
   if (a.non_return_value_cents === null && (cents === null || Number.isNaN(cents))) return t.assets.valueReason
   if (!printed || printed.key !== formKey(d)) return t.assets.printFirstReason
   if (!signed) return t.assets.tickSignedReason
+  return null
+}
+
+/**
+ * Why a card in the office cannot be chosen on Give SIM Card from the
+ * employee's page, or null: the picker shows every office card with its
+ * status, and greys out these (§6).
+ */
+export function cardBlock(a: Pick<Asset, 'connection_status' | 'phone_no'>): string | null {
+  if (a.connection_status === 'NOT_ACTIVATED') return t.assets.statuses.NOT_ACTIVATED
+  if (a.connection_status === 'BLOCKED') return t.assets.statuses.BLOCKED
+  if (!a.phone_no) return t.assets.noPhoneNo
   return null
 }
 
@@ -275,4 +290,14 @@ export function blockingEmail(a: Pick<Asset, 'phone_no' | 'sim_no'>, company = '
       'Thank you.',
     ].join('\n'),
   }
+}
+
+/**
+ * Whether ⌘K should look a search up among the cards' numbers: three digits
+ * or more (a SIM, phone or inventory number, typed with or without spaces),
+ * or an inventory number's prefix ("SIM-", "sim 12").
+ */
+export function looksLikeAssetNumber(q: string): boolean {
+  const s = q.trim()
+  return /\d{3,}/.test(s.replace(/[\s()+-]/g, '')) || /^sim[\s-]?\d/i.test(s)
 }

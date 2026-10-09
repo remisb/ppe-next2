@@ -55,12 +55,13 @@ const segment =
  * row is two short lines and its actions are on the card's page. Writes need
  * assets.manage.
  */
-export function Assets({ navigate }: { navigate: (to: Route) => void }) {
+export function Assets({ tile, navigate }: { tile?: Tile | undefined; navigate: (to: Route) => void }) {
   const { client } = useApi()
   const canManage = useSession().can('assets.manage')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
-  const [filters, setFilters] = useState<AssetFilters>(noAssetFilters)
+  // A dashboard's Company Assets card opens the register on one of its tiles.
+  const [filters, setFilters] = useState<AssetFilters>(() => (tile ? chooseTile(noAssetFilters, tile) : noAssetFilters))
   // The search as typed; it filters a moment after typing stops.
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortState<AssetSort>>(byNumber)

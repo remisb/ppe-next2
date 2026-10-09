@@ -152,4 +152,12 @@ export const assets: AssetsText = {
   optional: 'Neprivaloma.',
   close: 'Uždaryti',
   returnBeforeGiven: 'Grąžinimo data negali būti ankstesnė už išdavimo datą.',
+  chooseCardReason: 'Pasirinkite SIM kortelę.',
+  simCard: 'SIM kortelė',
+  searchOfficeCards: 'Ieškoti biure esančių kortelių',
+  noOfficeCards: 'Biure tokių SIM kortelių nėra.',
+  givenSim: 'Išduotos SIM',
+  givenSimIntro: 'SIM kortelės, kurias darbuotojas turi, o po jų – turėtos anksčiau.',
+  noGivenSim: (name: string) => `${name} SIM kortelių neišduota.`,
+  holdsAssets: (numbers: string) => `Šis darbuotojas vis dar turi ${numbers}. Pirmiausia užregistruokite grąžinimą arba išspręskite tai: išėjimas jų negrąžina.`,
 }

@@ -8,18 +8,25 @@ import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { Copy, Printer } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
+import { useLoad } from '@ppe/ui/lib/use-load'
 
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { StatusBadge } from '@/components/asset-controls'
-import { EmployeePicker } from '@/components/employee-picker'
+import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { type GiveDraft, blockingEmail, emptyGiveDraft, formatDay, formInput, formKey, giveBlock } from '@/lib/assets'
+import { type GiveDraft, blockingEmail, cardBlock, emptyGiveDraft, formatDay, formInput, formKey, giveBlock } from '@/lib/assets'
 import { pathOf } from '@/lib/router'
 import { parseEuro } from '@/lib/utils'
 import { basePath } from '@ppe/routing'
 
-/** Which action sheet is open, for which card. */
-export type AssetSheet = { kind: 'give' | 'return' | 'notReturned' | 'email'; asset: Asset; note?: string } | null
+/**
+ * Which action sheet is open, for which card; or Give SIM Card for an
+ * employee, started from their page, where the card is chosen on the sheet.
+ */
+export type AssetSheet =
+  | { kind: 'give' | 'return' | 'notReturned' | 'email'; asset: Asset; note?: string }
+  | { kind: 'giveTo'; employee: PickedEmployee }
+  | null
 
 /**
  * The sheets of a card's actions, shared by the register and the card's page.
@@ -41,7 +48,14 @@ export function AssetSheets({
   const close = () => onChange(null)
   return (
     <>
-      <GiveSheet asset={sheet?.kind === 'give' ? sheet.asset : null} today={today} onClose={close} onGiven={(m) => (close(), onDone(m))} />
+      <GiveSheet
+        open={sheet?.kind === 'give' || sheet?.kind === 'giveTo'}
+        asset={sheet?.kind === 'give' ? sheet.asset : null}
+        employee={sheet?.kind === 'giveTo' ? sheet.employee : null}
+        today={today}
+        onClose={close}
+        onGiven={(m) => (close(), onDone(m))}
+      />
       <ReturnSheet asset={sheet?.kind === 'return' ? sheet.asset : null} today={today} onClose={close} onReturned={(m) => (close(), onDone(m))} />
       <NotReturnedSheet
         asset={sheet?.kind === 'notReturned' ? sheet.asset : null}
@@ -73,7 +87,23 @@ const footerButtons = (onClose: () => void, children: ReactNode) => (
  * to the form after printing clears the tick and asks for a reprint, and the
  * API refuses a form that no longer matches what was printed.
  */
-function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; today: string; onClose: () => void; onGiven: (message: string) => void }) {
+function GiveSheet({
+  open,
+  asset: fixed,
+  employee,
+  today,
+  onClose,
+  onGiven,
+}: {
+  open: boolean
+  /** The card, when Give starts from it; null to choose one among the cards in the office. */
+  asset: Asset | null
+  /** The employee, when Give starts from their page. */
+  employee: PickedEmployee | null
+  today: string
+  onClose: () => void
+  onGiven: (message: string) => void
+}) {
   const { client } = useApi()
   const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
   const [printed, setPrinted] = useState<{ key: string; hash: string } | null>(null)
@@ -82,16 +112,23 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
   const [showPreview, setShowPreview] = useState(false)
   const [failure, setFailure] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [picked, setPicked] = useState<Asset | null>(null)
+  const asset = fixed ?? picked
 
   useEffect(() => {
-    if (!asset) return
-    setDraft(emptyGiveDraft(today))
+    if (!open) return
+    setPicked(null)
+    setDraft({
+      ...emptyGiveDraft(today),
+      assetId: fixed?.id ?? '',
+      ...(employee ? { employeeId: employee.id, employeeName: employee.full_name } : {}),
+    })
     setPrinted(null)
     setSigned(false)
     setPreview(null)
     setShowPreview(false)
     setFailure(undefined)
-  }, [asset?.id])
+  }, [open, fixed?.id, employee?.id])
 
   const key = formKey(draft)
   const changedAfterPrint = printed !== null && printed.key !== key
@@ -102,15 +139,17 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
   // A preview shown is of the form as it is now; a change hides it until asked again.
   useEffect(() => setPreview(null), [key])
 
-  if (!asset) return <FormSheet open={false} onClose={onClose} title={t.assets.giveSimCard}>{null}</FormSheet>
+  if (!open) return <FormSheet open={false} onClose={onClose} title={t.assets.giveSimCard}>{null}</FormSheet>
 
   const set = <K extends keyof GiveDraft>(k: K, v: GiveDraft[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const block = giveBlock(asset, draft, today, printed, signed)
   // The form can be printed once its data is complete: the reasons left are about the paper.
   const ready = block === null || block === t.assets.printFirstReason || block === t.assets.tickSignedReason
   const cents = parseEuro(draft.value)
-  const input = formInput(asset, draft)
+  const input = asset ? formInput(asset, draft) : null
   const formPath =
+    asset &&
+    input &&
     basePath +
     pathOf({
       name: 'assetForm',
@@ -125,6 +164,7 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
     })
 
   const loadPreview = async (): Promise<AssignmentFormResult | null> => {
+    if (!asset || !input) return null
     setFailure(undefined)
     try {
       const r = await client.assets.previewForm(asset.id, input)
@@ -137,7 +177,7 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
   }
 
   const give = async () => {
-    if (block !== null || !printed) return
+    if (block !== null || !printed || !asset || !input) return
     setBusy(true)
     setFailure(undefined)
     try {
@@ -170,7 +210,17 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
       )}
     >
       <div className="grid gap-4">
-        <CardLine asset={asset} />
+        {fixed ? (
+          <CardLine asset={fixed} />
+        ) : (
+          <CardPicker
+            selected={picked}
+            onSelect={(a) => {
+              setPicked(a)
+              set('assetId', a.id)
+            }}
+          />
+        )}
         <EmployeePicker
           label={t.assets.employee}
           selected={draft.employeeId ? { id: draft.employeeId, full_name: draft.employeeName, code: null } : null}
@@ -181,12 +231,12 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
           <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={draft.givenDate > today ? t.assets.dateInFuture : undefined}>
             {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
           </Field>
-          {asset.plan === null ? (
+          {asset?.plan === null ? (
             <Field label={t.assets.plan} required hint={t.assets.missingHint}>
               {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
             </Field>
           ) : null}
-          {asset.non_return_value_cents === null ? (
+          {asset?.non_return_value_cents === null ? (
             <Field
               label={t.assets.nonReturnValue}
               required
@@ -217,7 +267,7 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
           </Button>
           {/* A link, so the browser opens the print tab from the click itself; the sheet keeps the printed form's hash. */}
           <a
-            href={formPath}
+            href={formPath || undefined}
             target="_blank"
             rel="noopener"
             aria-disabled={!ready}
@@ -270,6 +320,62 @@ function GiveSheet({ asset, today, onClose, onGiven }: { asset: Asset | null; to
         ) : null}
       </div>
     </FormSheet>
+  )
+}
+
+/**
+ * The cards in the office, for Give SIM Card from an employee's page (§6):
+ * only cards with no holder are listed, each with its status; one that is
+ * not Active or has no phone number is shown but cannot be chosen.
+ */
+function CardPicker({ selected, onSelect }: { selected: Asset | null; onSelect: (a: Asset) => void }) {
+  const { client } = useApi()
+  const [q, setQ] = useState('')
+  const [term, setTerm] = useState('')
+  useEffect(() => {
+    const id = window.setTimeout(() => setTerm(q.trim()), 200)
+    return () => window.clearTimeout(id)
+  }, [q])
+  const cards = useLoad(
+    () => client.assets.list({ kind: 'SIM', location: 'OFFICE', sort: 'status', page_size: 20, ...(term ? { q: term } : {}) }),
+    [term],
+  )
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="mb-1 text-sm font-medium">
+        {t.assets.simCard} <span className="text-destructive">*</span>
+      </legend>
+      <Input type="search" aria-label={t.assets.searchOfficeCards} placeholder={t.assets.searchOfficeCards} value={q} onChange={(e) => setQ(e.target.value)} />
+      <div role="radiogroup" aria-label={t.assets.simCard} className="grid max-h-60 gap-1.5 overflow-y-auto">
+        {cards.data?.assets.length === 0 ? <p className="text-sm text-muted-foreground">{t.assets.noOfficeCards}</p> : null}
+        {(cards.data?.assets ?? []).map((a) => {
+          const why = cardBlock(a)
+          const chosen = selected?.id === a.id
+          return (
+            <button
+              key={a.id}
+              type="button"
+              role="radio"
+              aria-checked={chosen}
+              aria-disabled={why !== null}
+              onClick={() => why === null && onSelect(a)}
+              className={cn(
+                'flex min-h-11 items-center gap-3 rounded-md border border-border px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                chosen && 'border-primary bg-accent',
+                why === null ? 'cursor-pointer hover:bg-muted/50' : 'cursor-not-allowed bg-muted/40 text-muted-foreground',
+              )}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="font-mono font-medium">{a.inventory_no}</span> <span className="font-mono">{a.phone_no ?? a.sim_no}</span>
+                <span className="block text-xs text-muted-foreground">{[a.provider, a.plan].filter(Boolean).join(' · ')}</span>
+              </span>
+              {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
+              {why === t.assets.noPhoneNo ? <span className="text-xs">{why}</span> : null}
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
 

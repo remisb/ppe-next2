@@ -163,6 +163,14 @@ export const assets = {
   optional: 'Optional.',
   close: 'Close',
   returnBeforeGiven: 'The return can’t be before the given date.',
+  chooseCardReason: 'Choose a SIM card.',
+  simCard: 'SIM card',
+  searchOfficeCards: 'Search the cards in the office',
+  noOfficeCards: 'No SIM cards in the office match.',
+  givenSim: 'Given SIM',
+  givenSimIntro: 'The SIM cards this employee holds, then those held before.',
+  noGivenSim: (name: string) => `${name} has not been given a SIM card.`,
+  holdsAssets: (numbers: string) => `This employee still holds ${numbers}. Register the return or resolve it first: leaving never returns them.`,
 }
 
 export type AssetsText = typeof assets

@@ -1,7 +1,7 @@
 import type { Asset } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { assetQuery, blockingEmail, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { assetQuery, blockingEmail, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -115,6 +115,11 @@ describe('Give SIM Card', () => {
     expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, false)).toMatch(/Tick Paper Form Signed/)
     expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, true)).toBeNull()
   })
+  it('from the employee, a card is chosen first; a change of card after printing asks for the form again', () => {
+    expect(giveBlock(null, chosen, today, null, false)).toBe('Choose a SIM card.')
+    const withCard = { ...chosen, assetId: 'a1' }
+    expect(giveBlock(ready, { ...withCard, assetId: 'a2' }, today, { key: formKey(withCard) }, true)).toMatch(/Print the form/)
+  })
   it('a change after printing asks for the form again (§8)', () => {
     const printed = { key: formKey(chosen) }
     expect(giveBlock(ready, { ...chosen, givenDate: '2026-10-08' }, today, printed, true)).toMatch(/Print the form/)
@@ -134,5 +139,12 @@ describe('Prepare Blocking Email', () => {
     expect(mail.body).toContain('Phone number: +370 612 40118\nSIM number: 0089370011\nCompany: [Company Name]')
     expect(mail.body).toMatch(/^Hello,/)
     expect(mail.body).toMatch(/Thank you\.$/)
+  })
+})
+
+describe('⌘K', () => {
+  it('looks numbers up among the cards, not names', () => {
+    for (const q of ['612 40', '+370 612', '0089370011', 'SIM-000001', 'sim 1']) expect(looksLikeAssetNumber(q), q).toBe(true)
+    for (const q of ['Ona', 'we4', '12', 'gloves']) expect(looksLikeAssetNumber(q), q).toBe(false)
   })
 })

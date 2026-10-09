@@ -1239,6 +1239,58 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   }
 })
 
+test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holder is not deleted', async () => {
+  // Given SIM on her page: the card she held, returned (§18).
+  await openTab('Employees')
+  await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
+  const givenSim = page.getByRole('region', { name: 'Given SIM' })
+  await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toBeVisible()
+  await expect(givenSim).toContainText('Returned')
+  // Give SIM Card from her page: she is already chosen; the cards in the office are listed with their status (§6).
+  await givenSim.getByRole('button', { name: 'Give SIM Card' }).click()
+  const give = page.getByRole('dialog')
+  await expect(give.getByRole('combobox', { name: 'Employee' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
+  await expect(give.getByText('Choose a SIM card.')).toBeVisible()
+  const card = give.getByRole('radio', { name: /SIM-000001/ })
+  await expect(card).toContainText('Active')
+  await card.click()
+  await expect(card).toHaveAttribute('aria-checked', 'true')
+  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
+  await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
+  await printTab.close()
+  await give.getByLabel('Paper Form Signed').check()
+  await give.getByRole('button', { name: 'Give SIM Card' }).click()
+  await expect(page.getByText('SIM card given to Ona Kazlauskienė.')).toBeVisible()
+  await expect(givenSim).toContainText('Not returned yet')
+  // Leaving never returns a card: while she holds one she is not deleted, and the app says which (§2).
+  await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('menuitem', { name: 'Delete employee…' }).click()
+  await expect(page.getByText(/This employee still holds SIM-000001/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+
+  // ⌘K finds the card by its phone number, typed with a space.
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  await palette.getByRole('combobox').fill('612 40')
+  const found = palette.getByRole('option', { name: /^SIM-000001 · \+370 612 40118/ })
+  await expect(found).toContainText('Ona Kazlauskienė')
+  await found.click()
+  await expect(page).toHaveURL(/\/assets\/[0-9a-f-]{36}$/)
+  // Back in the office, for the steps after this one.
+  await page.getByRole('main').getByRole('button', { name: 'Register SIM Return' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
+  await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
+
+  // The Dashboard's Company Assets card opens the register on a tile.
+  await openTab('Dashboard')
+  const assetsCard = page.getByRole('region', { name: 'Company Assets' })
+  await expect(assetsCard.getByRole('link', { name: /Total SIM Cards\s*1/ })).toBeVisible()
+  await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
+  await expect(page).toHaveURL(/\/assets\?show=in-office$/)
+  await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')

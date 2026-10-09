@@ -23,8 +23,8 @@ export type Route =
   | { name: 'employees'; missing?: boolean }
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
-  /** Company Assets: the SIM card register. */
-  | { name: 'assets' }
+  /** Company Assets: the SIM card register; tile opens it on a tile (a dashboard's Company Assets card). */
+  | { name: 'assets'; tile?: AssetTile }
   /** One asset: where it is, who holds it, its assignments and Changes, and its actions. */
   | { name: 'asset'; id: string }
   /**
@@ -50,6 +50,10 @@ export type Route =
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
   | { name: 'confirm'; token: string }
+
+/** A Company Assets tile the register can open on, besides Total. */
+export type AssetTile = 'inOffice' | 'withEmployees' | 'notReturned'
+const assetTiles: Record<AssetTile, string> = { inOffice: 'in-office', withEmployees: 'with-employees', notReturned: 'not-returned' }
 
 /** The form Give would store: its employee, date, and the plan or value the card lacks. */
 export interface FormDraft {
@@ -100,6 +104,10 @@ export function parsePath(pathname: string, search = ''): Route {
   if (path === fixed.history || path === '/history') {
     const status = query.get('status')
     return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
+  }
+  if (path === fixed.assets) {
+    const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
+    return tile ? { name: 'assets', tile } : { name: 'assets' }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
   if (movedToAdministration.includes(path)) return { name: 'administration', path }
@@ -175,6 +183,8 @@ export function pathOf(route: Route): string {
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':
       return `/catalogue/${encodeURIComponent(route.id)}`
+    case 'assets':
+      return route.tile ? `${fixed.assets}?show=${assetTiles[route.tile]}` : fixed.assets
     case 'asset':
       return `/assets/${encodeURIComponent(route.id)}`
     case 'assetForm': {

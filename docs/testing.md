@@ -257,3 +257,7 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | Print Form prints the API's form in its own tab; printing is not giving | the form names the employee and value; nothing stored until Give | e2e *Company Assets: give a SIM card …* |
 | Give, Not Returned (Unknown, the holder kept, the blocking email offered next), Return (status and mark kept), each in Changes | as the API | e2e *Company Assets: give a SIM card …* |
 | The blocking email is the brief's text with the card's numbers | §14 | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |
+| Given SIM on the employee page; Give SIM Card there with the employee chosen and the office cards listed with their status | §6, §18 | web `lib/assets.test.ts` (a card chosen first); e2e *Company Assets on the employee page, …* |
+| Delete employee refused while they hold a card, naming it | open decision 1 | `employee.TestDeleteRefusedWhileHoldingAssets`, HTTP flow; e2e *Company Assets on the employee page, …* |
+| ⌘K finds a card by any of its numbers, spaces ignored | — | web `lib/assets.test.ts` (`looksLikeAssetNumber`); e2e *Company Assets on the employee page, …* |
+| The dashboards' Company Assets card opens the register on its tile | — | web `router.test.ts` (`?show=`); e2e *Company Assets on the employee page, …* |
