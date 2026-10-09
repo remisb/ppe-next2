@@ -15,6 +15,8 @@ import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { draftLineCount } from '@/lib/working-order'
 
 import { Account } from './routes/account'
+import { AssetPage } from './routes/asset'
+import { AssetFormPage } from './routes/asset-form'
 import { Assets } from './routes/assets'
 import { Catalogue } from './routes/catalogue'
 import { CatalogueItemPage } from './routes/catalogue-item'
@@ -68,6 +70,7 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
     (current === 'record' && tab === 'history') ||
     (current === 'createOrder' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
+    ((current === 'asset' || current === 'assetForm') && tab === 'assets') ||
     (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
     (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard')) ||
@@ -379,7 +382,17 @@ export function App() {
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
         {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
-        {route.name === 'assets' ? <Assets /> : null}
+        {route.name === 'assets' ? <Assets navigate={navigate} /> : null}
+        {route.name === 'asset' ? <AssetPage id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
+        {route.name === 'assetForm' ? (
+          <AssetFormPage
+            id={route.id}
+            assignment={route.assignment}
+            draft={route.draft}
+            autoPrint={route.print ?? false}
+            onBack={back({ name: 'asset', id: route.id })}
+          />
+        ) : null}
         {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
         {route.name === 'catalogueItem' ? (
           <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />
