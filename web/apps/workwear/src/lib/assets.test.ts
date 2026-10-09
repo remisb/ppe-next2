@@ -1,7 +1,7 @@
 import type { Asset } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { assetQuery, blockingEmail, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { assetQuery, blockingEmail, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -10,20 +10,20 @@ describe('tiles and filters', () => {
     expect(f).toMatchObject({ place: 'office', status: 'BLOCKED', notReturned: false })
     expect(tilePressed(f, 'inOffice')).toBe(true)
     expect(tilePressed(f, 'total')).toBe(false)
-    expect(assetQuery(f, 'inventory', 'asc', 1)).toEqual({ kind: 'SIM', location: 'OFFICE', status: 'BLOCKED', sort: 'inventory', dir: 'asc', page: 1, page_size: 50 })
+    expect(assetQuery('SIM', f, 'inventory', 'asc', 1)).toEqual({ kind: 'SIM', location: 'OFFICE', status: 'BLOCKED', sort: 'inventory', dir: 'asc', page: 1, page_size: 50 })
   })
   it('With Employees is everyone holding a card, whereabouts known or not', () => {
-    expect(assetQuery(chooseTile(noAssetFilters, 'withEmployees'), 'holder', 'desc', 2)).toMatchObject({ held: true, sort: 'holder', dir: 'desc', page: 2 })
-    expect(assetQuery(chooseTile(noAssetFilters, 'withEmployees'), 'inventory', 'asc', 1)).not.toHaveProperty('location')
+    expect(assetQuery('SIM', chooseTile(noAssetFilters, 'withEmployees'), 'holder', 'desc', 2)).toMatchObject({ held: true, sort: 'holder', dir: 'desc', page: 2 })
+    expect(assetQuery('SIM', chooseTile(noAssetFilters, 'withEmployees'), 'inventory', 'asc', 1)).not.toHaveProperty('location')
   })
   it('Not Returned and Total', () => {
     const nr = chooseTile({ ...noAssetFilters, place: 'office' }, 'notReturned')
-    expect(assetQuery(nr, 'inventory', 'asc', 1)).toMatchObject({ not_returned: true })
-    expect(assetQuery(nr, 'inventory', 'asc', 1)).not.toHaveProperty('location')
+    expect(assetQuery('SIM', nr, 'inventory', 'asc', 1)).toMatchObject({ not_returned: true })
+    expect(assetQuery('SIM', nr, 'inventory', 'asc', 1)).not.toHaveProperty('location')
     expect(tilePressed(chooseTile(nr, 'total'), 'total')).toBe(true)
   })
   it('leaves out what is not set, and trims the search', () => {
-    expect(assetQuery({ ...noAssetFilters, q: '  612 40 ', provider: 'Telia', place: 'unknown' }, 'inventory', 'asc', 1)).toEqual({
+    expect(assetQuery('SIM', { ...noAssetFilters, q: '  612 40 ', provider: 'Telia', place: 'unknown' }, 'inventory', 'asc', 1)).toEqual({
       kind: 'SIM', q: '612 40', provider: 'Telia', location: 'UNKNOWN', sort: 'inventory', dir: 'asc', page: 1, page_size: 50,
     })
   })
@@ -32,7 +32,7 @@ describe('tiles and filters', () => {
 const card = (over: Partial<Asset>): Asset => ({
   id: 'a', kind: 'SIM', category: null, inventory_no: 'SIM-000001', name: null, serial_no: null, sim_no: '0089370011', phone_no: null,
   provider: 'Telia', plan: null, non_return_value_cents: null, currency: 'EUR', connection_status: 'NOT_ACTIVATED', received_date: '2026-10-01',
-  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, ...over,
+  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, ...over,
 })
 
 describe('held by / location', () => {
@@ -105,7 +105,7 @@ describe('Give SIM Card', () => {
   it('says the first reason it cannot be given yet, ending at the signed paper (§6)', () => {
     expect(giveBlock(card({ connection_status: 'NOT_ACTIVATED' }), chosen, today, null, false)).toMatch(/not activated/)
     expect(giveBlock(card({ connection_status: 'BLOCKED' }), chosen, today, null, false)).toMatch(/blocked/)
-    expect(giveBlock({ ...ready, open_assignment: { not_returned_at: null } as Asset['open_assignment'] }, chosen, today, null, false)).toMatch(/already holds/)
+    expect(giveBlock({ ...ready, open_assignment: { not_returned_at: null } as Asset['open_assignment'] }, chosen, today, null, false)).toMatch(/already holds it/)
     expect(giveBlock({ ...ready, phone_no: null }, chosen, today, null, false)).toMatch(/phone number/)
     expect(giveBlock(ready, emptyGiveDraft(today), today, null, false)).toBe('Choose the employee.')
     expect(giveBlock(ready, { ...chosen, givenDate: '2026-10-10' }, today, null, false)).toMatch(/later than today/)
@@ -146,5 +146,27 @@ describe('⌘K', () => {
   it('looks numbers up among the cards, not names', () => {
     for (const q of ['612 40', '+370 612', '0089370011', 'SIM-000001', 'sim 1']) expect(looksLikeAssetNumber(q), q).toBe(true)
     for (const q of ['Ona', 'we4', '12', 'gloves']) expect(looksLikeAssetNumber(q), q).toBe(false)
+  })
+})
+
+describe('Equipment & Furniture', () => {
+  const today = '2026-10-09'
+  const chosen = { ...emptyGiveDraft(today), assetId: 'a1', employeeId: 'e1', employeeName: 'Jonas Petraitis' }
+  const laptop = card({ kind: 'EQUIPMENT', category: 'COMPUTER', name: 'Laptop', sim_no: null, provider: null, connection_status: null, received_date: null, needs_form: true })
+  const desk = { ...laptop, category: 'FURNITURE' as const, name: 'Desk', needs_form: false }
+  it('in the office it can always be given: no connection status', () => {
+    expect(primaryAction(laptop)).toBe('give')
+    expect(primaryAction({ ...laptop, open_assignment: { not_returned_at: null } as Asset['open_assignment'] })).toBe('return')
+  })
+  it('a computer needs its value and the signed form; a desk needs neither (open decision 6)', () => {
+    expect(giveBlock(laptop, chosen, today, null, false)).toBe('Fill in the non-return value: the form needs it.')
+    expect(giveBlock({ ...laptop, non_return_value_cents: 90000 }, chosen, today, null, false)).toMatch(/Print the form/)
+    expect(giveBlock(desk, chosen, today, null, false)).toBeNull()
+    expect(giveBlock(null, chosen, today, null, false, 'EQUIPMENT')).toBe('Choose an item.')
+  })
+  it('Add Asset needs a name, a category and a number (§15)', () => {
+    expect(Object.keys(checkEquipmentDraft(emptyEquipmentDraft()).errors).sort()).toEqual(['category', 'inventoryNo', 'name'])
+    const { input } = checkEquipmentDraft({ ...emptyEquipmentDraft(), name: ' Laptop ', category: 'COMPUTER', inventoryNo: 'PC-000001', value: '900' })
+    expect(input).toEqual({ category: 'COMPUTER', inventory_no: 'PC-000001', name: 'Laptop', serial_no: null, non_return_value_cents: 90000, comment: '' })
   })
 })

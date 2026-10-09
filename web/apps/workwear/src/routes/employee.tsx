@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
-import { GivenSim } from '@/components/given-sim'
+import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { languages, t } from '@/i18n'
@@ -181,7 +181,8 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             </section>
           ) : null}
 
-          <GivenSim employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+          <HeldAssets kind="SIM" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+          <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
 
           <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} />
 

@@ -1,4 +1,4 @@
-import type { Asset, AssignmentFormResult, Whereabouts } from '@ppe/api-client'
+import type { Asset, AssetKind, AssignmentFormResult, Whereabouts } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
@@ -14,7 +14,7 @@ import { AssignmentFormDocument } from '@/components/assignment-form'
 import { StatusBadge } from '@/components/asset-controls'
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { type GiveDraft, blockingEmail, cardBlock, emptyGiveDraft, formatDay, formInput, formKey, giveBlock } from '@/lib/assets'
+import { type GiveDraft, blockingEmail, cardBlock, categoryLabel, emptyGiveDraft, formatDay, formInput, formKey, giveBlock } from '@/lib/assets'
 import { pathOf } from '@/lib/router'
 import { parseEuro } from '@/lib/utils'
 import { basePath } from '@ppe/routing'
@@ -25,7 +25,7 @@ import { basePath } from '@ppe/routing'
  */
 export type AssetSheet =
   | { kind: 'give' | 'return' | 'notReturned' | 'email'; asset: Asset; note?: string }
-  | { kind: 'giveTo'; employee: PickedEmployee }
+  | { kind: 'giveTo'; employee: PickedEmployee; assetKind: AssetKind }
   | null
 
 /**
@@ -52,6 +52,7 @@ export function AssetSheets({
         open={sheet?.kind === 'give' || sheet?.kind === 'giveTo'}
         asset={sheet?.kind === 'give' ? sheet.asset : null}
         employee={sheet?.kind === 'giveTo' ? sheet.employee : null}
+        assetKind={sheet?.kind === 'giveTo' ? sheet.assetKind : sheet?.kind === 'give' ? sheet.asset.kind : 'SIM'}
         today={today}
         onClose={close}
         onGiven={(m) => (close(), onDone(m))}
@@ -63,7 +64,8 @@ export function AssetSheets({
         onMarked={(a, m) => {
           onDone(m)
           // The next step is offered at once: ask the provider to block the card, unless it already is.
-          onChange(a.connection_status === 'BLOCKED' ? null : { kind: 'email', asset: a, note: `${m} ${t.assets.nextStepBlock}` })
+          // Equipment has no provider to ask.
+          onChange(a.kind !== 'SIM' || a.connection_status === 'BLOCKED' ? null : { kind: 'email', asset: a, note: `${m} ${t.assets.nextStepBlock}` })
         }}
       />
       <BlockingEmailSheet asset={sheet?.kind === 'email' ? sheet.asset : null} note={sheet?.kind === 'email' ? sheet.note : undefined} onClose={close} />
@@ -91,6 +93,7 @@ function GiveSheet({
   open,
   asset: fixed,
   employee,
+  assetKind,
   today,
   onClose,
   onGiven,
@@ -100,6 +103,8 @@ function GiveSheet({
   asset: Asset | null
   /** The employee, when Give starts from their page. */
   employee: PickedEmployee | null
+  /** SIM cards or equipment: which to choose from, and the words. */
+  assetKind: AssetKind
   today: string
   onClose: () => void
   onGiven: (message: string) => void
@@ -142,7 +147,10 @@ function GiveSheet({
   if (!open) return <FormSheet open={false} onClose={onClose} title={t.assets.giveSimCard}>{null}</FormSheet>
 
   const set = <K extends keyof GiveDraft>(k: K, v: GiveDraft[K]) => setDraft((d) => ({ ...d, [k]: v }))
-  const block = giveBlock(asset, draft, today, printed, signed)
+  const sim = assetKind === 'SIM'
+  const block = giveBlock(asset, draft, today, printed, signed, assetKind)
+  // Furniture and other items are given without a signed form (spec, open decision 6).
+  const paper = asset === null || asset.needs_form
   // The form can be printed once its data is complete: the reasons left are about the paper.
   const ready = block === null || block === t.assets.printFirstReason || block === t.assets.tickSignedReason
   const cents = parseEuro(draft.value)
@@ -177,12 +185,17 @@ function GiveSheet({
   }
 
   const give = async () => {
-    if (block !== null || !printed || !asset || !input) return
+    if (block !== null || !asset || !input || (asset.needs_form && !printed)) return
     setBusy(true)
     setFailure(undefined)
     try {
-      const a = await client.assets.give(asset.id, { ...input, comment: draft.comment.trim(), paper_form_signed: true, form_hash: printed.hash })
-      onGiven(t.assets.givenTo(a.employee_name))
+      const a = await client.assets.give(asset.id, {
+        ...input,
+        comment: draft.comment.trim(),
+        paper_form_signed: asset.needs_form,
+        form_hash: asset.needs_form && printed ? printed.hash : '',
+      })
+      onGiven(sim ? t.assets.givenTo(a.employee_name) : t.assets.assetGivenTo(a.employee_name))
     } catch (err) {
       // What was entered stays (§7); only a form that changed must be printed again.
       if (err instanceof ApiError && err.isConflict && /already given/i.test(err.message)) setFailure(t.assets.alreadyGivenError)
@@ -200,12 +213,12 @@ function GiveSheet({
     <FormSheet
       open
       onClose={onClose}
-      title={t.assets.giveSimCard}
-      description={t.assets.giveDescription}
+      title={sim ? t.assets.giveSimCard : t.assets.giveAsset}
+      description={sim ? t.assets.giveDescription : t.assets.giveAssetDescription}
       footer={footerButtons(
         onClose,
         <Button onClick={() => void give()} disabled={busy} aria-disabled={block !== null} className={cn(block !== null && 'opacity-50')}>
-          {t.assets.giveSimCard}
+          {sim ? t.assets.giveSimCard : t.assets.giveAsset}
         </Button>,
       )}
     >
@@ -214,6 +227,7 @@ function GiveSheet({
           <CardLine asset={fixed} />
         ) : (
           <CardPicker
+            kind={assetKind}
             selected={picked}
             onSelect={(a) => {
               setPicked(a)
@@ -236,7 +250,7 @@ function GiveSheet({
               {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
             </Field>
           ) : null}
-          {asset?.non_return_value_cents === null ? (
+          {asset?.needs_form && asset.non_return_value_cents === null ? (
             <Field
               label={t.assets.nonReturnValue}
               required
@@ -251,6 +265,8 @@ function GiveSheet({
           {(p) => <Textarea {...controlProps(p)} rows={2} value={draft.comment} onChange={(e) => set('comment', e.target.value)} />}
         </Field>
 
+        {paper ? (
+          <>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
@@ -308,6 +324,10 @@ function GiveSheet({
           />
           {t.assets.paperFormSigned}
         </label>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t.assets.noFormNeeded}</p>
+        )}
         {block ? (
           <p className="text-sm text-muted-foreground" id="give-reason">
             {block}
@@ -328,7 +348,8 @@ function GiveSheet({
  * only cards with no holder are listed, each with its status; one that is
  * not Active or has no phone number is shown but cannot be chosen.
  */
-function CardPicker({ selected, onSelect }: { selected: Asset | null; onSelect: (a: Asset) => void }) {
+function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: Asset | null; onSelect: (a: Asset) => void }) {
+  const sim = kind === 'SIM'
   const { client } = useApi()
   const [q, setQ] = useState('')
   const [term, setTerm] = useState('')
@@ -337,17 +358,23 @@ function CardPicker({ selected, onSelect }: { selected: Asset | null; onSelect: 
     return () => window.clearTimeout(id)
   }, [q])
   const cards = useLoad(
-    () => client.assets.list({ kind: 'SIM', location: 'OFFICE', sort: 'status', page_size: 20, ...(term ? { q: term } : {}) }),
+    () => client.assets.list({ kind, location: 'OFFICE', sort: sim ? 'status' : 'name', page_size: 20, ...(term ? { q: term } : {}) }),
     [term],
   )
   return (
     <fieldset className="grid gap-2">
       <legend className="mb-1 text-sm font-medium">
-        {t.assets.simCard} <span className="text-destructive">*</span>
+        {sim ? t.assets.simCard : t.assets.item} <span className="text-destructive">*</span>
       </legend>
-      <Input type="search" aria-label={t.assets.searchOfficeCards} placeholder={t.assets.searchOfficeCards} value={q} onChange={(e) => setQ(e.target.value)} />
-      <div role="radiogroup" aria-label={t.assets.simCard} className="grid max-h-60 gap-1.5 overflow-y-auto">
-        {cards.data?.assets.length === 0 ? <p className="text-sm text-muted-foreground">{t.assets.noOfficeCards}</p> : null}
+      <Input
+        type="search"
+        aria-label={sim ? t.assets.searchOfficeCards : t.assets.searchOfficeItems}
+        placeholder={sim ? t.assets.searchOfficeCards : t.assets.searchOfficeItems}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <div role="radiogroup" aria-label={sim ? t.assets.simCard : t.assets.item} className="grid max-h-60 gap-1.5 overflow-y-auto">
+        {cards.data?.assets.length === 0 ? <p className="text-sm text-muted-foreground">{sim ? t.assets.noOfficeCards : t.assets.noOfficeItems}</p> : null}
         {(cards.data?.assets ?? []).map((a) => {
           const why = cardBlock(a)
           const chosen = selected?.id === a.id
@@ -366,8 +393,10 @@ function CardPicker({ selected, onSelect }: { selected: Asset | null; onSelect: 
               )}
             >
               <span className="min-w-0 flex-1">
-                <span className="font-mono font-medium">{a.inventory_no}</span> <span className="font-mono">{a.phone_no ?? a.sim_no}</span>
-                <span className="block text-xs text-muted-foreground">{[a.provider, a.plan].filter(Boolean).join(' · ')}</span>
+                <span className="font-mono font-medium">{a.inventory_no}</span> {sim ? <span className="font-mono">{a.phone_no ?? a.sim_no}</span> : <span>{a.name}</span>}
+                <span className="block text-xs text-muted-foreground">
+                  {(sim ? [a.provider, a.plan] : [a.category ? categoryLabel(a.category) : null, a.serial_no]).filter(Boolean).join(' · ')}
+                </span>
               </span>
               {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
               {why === t.assets.noPhoneNo ? <span className="text-xs">{why}</span> : null}
@@ -384,7 +413,11 @@ function CardLine({ asset }: { asset: Asset }) {
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border px-3 py-2 text-sm">
       <span className="font-mono font-medium">{asset.inventory_no}</span>
-      <span className="font-mono text-muted-foreground">{asset.phone_no ?? asset.sim_no}</span>
+      {asset.kind === 'SIM' ? (
+        <span className="font-mono text-muted-foreground">{asset.phone_no ?? asset.sim_no}</span>
+      ) : (
+        <span className="text-muted-foreground">{[asset.name, asset.category ? categoryLabel(asset.category) : null].filter(Boolean).join(' · ')}</span>
+      )}
       {asset.connection_status ? <StatusBadge status={asset.connection_status} /> : null}
     </p>
   )
@@ -424,8 +457,8 @@ function ReturnSheet({ asset, today, onClose, onReturned }: { asset: Asset | nul
     <FormSheet
       open={asset !== null}
       onClose={onClose}
-      title={t.assets.registerReturn}
-      description={t.assets.returnDescription}
+      title={asset?.kind === 'EQUIPMENT' ? t.assets.registerAssetReturn : t.assets.registerReturn}
+      description={asset?.kind === 'EQUIPMENT' ? t.assets.returnAssetDescription : t.assets.returnDescription}
       footer={footerButtons(
         onClose,
         <Button onClick={() => void submit()} disabled={busy || !date || date > today || tooEarly}>
@@ -491,7 +524,7 @@ function NotReturnedSheet({ asset, onClose, onMarked }: { asset: Asset | null; o
       open={asset !== null}
       onClose={onClose}
       title={t.assets.markNotReturned}
-      description={t.assets.notReturnedDescription}
+      description={asset?.kind === 'EQUIPMENT' ? t.assets.notReturnedDescriptionItem : t.assets.notReturnedDescription}
       footer={footerButtons(
         onClose,
         <Button onClick={() => void submit()} disabled={busy || !where}>

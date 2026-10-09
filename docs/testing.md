@@ -261,3 +261,6 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | Delete employee refused while they hold a card, naming it | open decision 1 | `employee.TestDeleteRefusedWhileHoldingAssets`, HTTP flow; e2e *Company Assets on the employee page, …* |
 | ⌘K finds a card by any of its numbers, spaces ignored | — | web `lib/assets.test.ts` (`looksLikeAssetNumber`); e2e *Company Assets on the employee page, …* |
 | The dashboards' Company Assets card opens the register on its tile | — | web `router.test.ts` (`?show=`); e2e *Company Assets on the employee page, …* |
+| Equipment: one record per item; Add Asset suggests the category's number; the register filters by category | §15, §16 | `TestFurnitureNeedsNoForm`, `TestPostgresNumbersAreNeverReused` (category filter, name sort); web `lib/assets.test.ts`; e2e *Equipment & Furniture: …* |
+| A computer is given against its signed form; a desk without one; no connection status | §17, open decision 6 | `TestFurnitureNeedsNoForm` (`needs_form`); web `lib/assets.test.ts`; e2e *Equipment & Furniture: …* |
+| Equipment on the employee page, kept apart from Given SIM | §18 | e2e *Equipment & Furniture: …* |

@@ -7,14 +7,16 @@ import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { formatEuro } from '@ppe/i18n'
+import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
+import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { formatDay, holderText, primaryAction, statusLabel, todayIn } from '@/lib/assets'
+import { categoryLabel, formatDay, holderText, primaryAction, statusLabel, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 
 const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
@@ -39,6 +41,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
   const [saving, setSaving] = useState(false)
 
   const a = asset.data
+  const sim = a?.kind !== 'EQUIPMENT'
   const changeStatus = async (next: ConnectionStatus) => {
     if (!a) return
     setSaving(true)
@@ -68,12 +71,16 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
         <>
           <PageHeader
             title={a.inventory_no}
-            description={[a.provider, a.plan].filter(Boolean).join(' · ')}
+            description={(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
             actions={
               canManage ? (
                 <>
-                  {primaryAction(a) === 'give' ? <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{t.assets.giveSimCard}</Button> : null}
-                  {primaryAction(a) === 'return' ? <Button onClick={() => setSheet({ kind: 'return', asset: a })}>{t.assets.registerReturn}</Button> : null}
+                  {primaryAction(a) === 'give' ? (
+                    <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
+                  ) : null}
+                  {primaryAction(a) === 'return' ? (
+                    <Button onClick={() => setSheet({ kind: 'return', asset: a })}>{sim ? t.assets.registerReturn : t.assets.registerAssetReturn}</Button>
+                  ) : null}
                   <AssetMoreActions
                     asset={a}
                     onStatus={(next) => void changeStatus(next)}
@@ -85,6 +92,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
               ) : undefined
             }
           />
+          {sim ? (
           <p className="mb-4 flex flex-wrap gap-x-6 gap-y-1">
             {a.sim_no ? (
               <span className="flex items-center gap-2 text-sm">
@@ -97,13 +105,15 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
               {a.phone_no ? <CopyNumber value={a.phone_no} label={t.assets.copyPhoneNo(a.phone_no)} onCopied={copied(a.phone_no)} /> : <span>{t.assets.noPhoneNo}</span>}
             </span>
           </p>
+          ) : null}
           <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
             {message}
           </p>
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
           {/* The three facts the brief keeps apart: changing one never changes another (§2). */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <div className={cn('mb-4 grid gap-3', sim ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+            {sim ? (
             <Fact title={t.assets.connection}>
               <span className="flex flex-wrap items-center gap-2">
                 {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
@@ -112,6 +122,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
                 ) : null}
               </span>
             </Fact>
+            ) : null}
             <Fact title={t.assets.where}>
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{a.location === 'OFFICE' ? t.assets.office : a.location === 'UNKNOWN' ? t.assets.unknown : t.assets.withAnEmployee}</span>
@@ -141,10 +152,19 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
           ) : null}
 
           <dl aria-label={t.assets.details} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-3">
-            <Detail label={t.assets.provider}>{a.provider ?? '—'}</Detail>
-            <Detail label={t.assets.plan}>{a.plan ?? '—'}</Detail>
+            {sim ? (
+              <>
+                <Detail label={t.assets.provider}>{a.provider ?? '—'}</Detail>
+                <Detail label={t.assets.plan}>{a.plan ?? '—'}</Detail>
+              </>
+            ) : (
+              <>
+                <Detail label={t.assets.category}>{a.category ? categoryLabel(a.category) : '—'}</Detail>
+                <Detail label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '—'}</Detail>
+              </>
+            )}
             <Detail label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '—' : formatEuro(a.non_return_value_cents)}</Detail>
-            <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '—'}</Detail>
+            {sim ? <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '—'}</Detail> : null}
             {a.comment ? (
               <div className="col-span-2 sm:col-span-3">
                 <Detail label={t.assets.comment}>
@@ -181,21 +201,37 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
               asset.reload()
             }}
           />
-          <SimCardForm
-            card={editing ? a : null}
-            today={today}
-            providers={[]}
-            onClose={() => setEditing(false)}
-            onSaved={(saved) => {
-              setEditing(false)
-              setMessage(t.assets.saved(saved.inventory_no))
-              asset.reload()
-            }}
-            onOpenExisting={(other) => {
-              setEditing(false)
-              navigate({ name: 'asset', id: other })
-            }}
-          />
+          {sim ? (
+            <SimCardForm
+              card={editing ? a : null}
+              today={today}
+              providers={[]}
+              onClose={() => setEditing(false)}
+              onSaved={(saved) => {
+                setEditing(false)
+                setMessage(t.assets.saved(saved.inventory_no))
+                asset.reload()
+              }}
+              onOpenExisting={(other) => {
+                setEditing(false)
+                navigate({ name: 'asset', id: other })
+              }}
+            />
+          ) : (
+            <EquipmentForm
+              item={editing ? a : null}
+              onClose={() => setEditing(false)}
+              onSaved={(saved) => {
+                setEditing(false)
+                setMessage(t.assets.saved(saved.inventory_no))
+                asset.reload()
+              }}
+              onOpenExisting={(other) => {
+                setEditing(false)
+                navigate({ name: 'asset', id: other })
+              }}
+            />
+          )}
         </>
       )}
     </>

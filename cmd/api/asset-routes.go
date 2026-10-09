@@ -99,7 +99,7 @@ type notReturnedRequest struct {
 // assetListParams are the register's query parameters: a paged search list,
 // the domain-service contract's exception to path-segment filters.
 var assetListParams = map[string]bool{
-	"kind": true, "q": true, "location": true, "held": true, "employee_id": true, "provider": true, "status": true,
+	"kind": true, "q": true, "location": true, "held": true, "employee_id": true, "provider": true, "category": true, "status": true,
 	"not_returned": true, "sort": true, "dir": true, "page": true, "page_size": true,
 }
 
@@ -112,7 +112,7 @@ func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	p := asset.ListParams{
-		Kind: q.Get("kind"), Q: q.Get("q"), Location: q.Get("location"), Held: q.Get("held"), Provider: q.Get("provider"), Status: q.Get("status"),
+		Kind: q.Get("kind"), Q: q.Get("q"), Location: q.Get("location"), Held: q.Get("held"), Provider: q.Get("provider"), Category: q.Get("category"), Status: q.Get("status"),
 		NotReturned: q.Get("not_returned"), Sort: q.Get("sort"), Dir: q.Get("dir"), Page: q.Get("page"), PageSize: q.Get("page_size"),
 	}
 	if v := q.Get("employee_id"); v != "" {

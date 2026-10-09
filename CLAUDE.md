@@ -83,8 +83,9 @@ employee who holds assets. The SIM card register is on screen (`/assets`, `route
 `lib/assets.ts`: tiles that filter, Add SIM Card, Change Status) and the asset page (`/assets/<id>`:
 Give SIM Card against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
-Company Assets card on the dashboards; slice 5 (signed copies) waits for a storage decision, slice 7
-adds Equipment & Furniture.
+Company Assets card on the dashboards, and Equipment & Furniture on the same engine (`?kind=equipment`,
+`components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`). Slice 5
+(signed copies) waits for a storage decision; slice 8 (go-live tools) for the open decisions.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which

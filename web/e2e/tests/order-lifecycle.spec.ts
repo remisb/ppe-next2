@@ -1291,6 +1291,70 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('Equipment & Furniture: one record per item, numbered by category; a computer is given against its form, a desk without one', async () => {
+  await openTab('Company Assets')
+  await page.getByRole('link', { name: 'Equipment & Furniture' }).click()
+  await expect(page).toHaveURL(/\/assets\?kind=equipment$/)
+  await expect(page.getByText(/No equipment or furniture yet/)).toBeVisible()
+  // Add Asset: the category suggests its number (§15, §16).
+  const addAsset = async (name: string, category: string, number: string, value?: string) => {
+    await page.getByRole('button', { name: 'Add Asset' }).click()
+    const form = page.getByRole('dialog')
+    await form.getByLabel('Name').fill(name)
+    await form.getByLabel('Category').selectOption({ label: category })
+    await expect(form.getByLabel('Inventory No.')).toHaveValue(number)
+    if (value) await form.getByLabel('Non-return Value').fill(value)
+    await form.getByRole('button', { name: 'Save Asset' }).click()
+    await expect(page.getByText(`${number} added.`)).toBeVisible()
+  }
+  await addAsset('Laptop', 'Computer', 'PC-000001', '900.00')
+  await addAsset('Desk', 'Furniture', 'FUR-000001')
+  await page.getByRole('main').getByLabel('Category', { exact: true }).selectOption({ label: 'Furniture' })
+  await expect(page.getByRole('row', { name: /FUR-000001/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /PC-000001/ })).toHaveCount(0)
+
+  // A desk is given without a signed form (open decision 6).
+  await page.getByRole('row', { name: /FUR-000001/ }).getByRole('button', { name: 'Give Asset' }).click()
+  const giveDesk = page.getByRole('dialog')
+  await giveDesk.getByRole('combobox', { name: 'Employee' }).fill('Ona')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  await expect(giveDesk.getByText('Furniture and other items are given without a signed form.')).toBeVisible()
+  await expect(giveDesk.getByRole('link', { name: 'Print Form' })).toHaveCount(0)
+  await giveDesk.getByRole('button', { name: 'Give Asset' }).click()
+  await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
+
+  // The laptop from her page: chosen among the items in the office, given against its printed form.
+  await openTab('Employees')
+  await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
+  const equipment = page.getByRole('region', { name: 'Equipment' })
+  await expect(equipment.getByRole('link', { name: 'FUR-000001' })).toBeVisible()
+  await equipment.getByRole('button', { name: 'Give Asset' }).click()
+  const give = page.getByRole('dialog')
+  await expect(give.getByRole('radio', { name: /FUR-000001/ })).toHaveCount(0)
+  await give.getByRole('radio', { name: /PC-000001/ }).click()
+  await expect(give.getByText('Print the form, then have it signed.')).toBeVisible()
+  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
+  await expect(printTab.getByRole('heading', { name: /Equipment Assignment Form/ })).toBeVisible()
+  await expect(printTab.getByText('€900.00')).toBeVisible()
+  await printTab.close()
+  await give.getByLabel('Paper Form Signed').check()
+  await give.getByRole('button', { name: 'Give Asset' }).click()
+  await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
+  await expect(equipment.getByRole('link', { name: 'PC-000001' })).toBeVisible()
+  await expect(equipment).toContainText('Paper form signed')
+  // Kept apart from her SIM cards on the same page (§18).
+  await expect(page.getByRole('region', { name: 'Given SIM' }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
+
+  // The desk comes back: Register Asset Return on its page; no connection status anywhere.
+  await equipment.getByRole('link', { name: 'FUR-000001' }).click()
+  const main = page.getByRole('main')
+  await expect(main.getByText('Connection')).toHaveCount(0)
+  await main.getByRole('button', { name: 'Register Asset Return' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
+  await expect(page.getByText('FUR-000001 is back in the office.')).toBeVisible()
+  await expect(main.getByRole('button', { name: 'Give Asset' })).toBeVisible()
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')

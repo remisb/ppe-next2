@@ -23,8 +23,11 @@ export type Route =
   | { name: 'employees'; missing?: boolean }
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
-  /** Company Assets: the SIM card register; tile opens it on a tile (a dashboard's Company Assets card). */
-  | { name: 'assets'; tile?: AssetTile }
+  /**
+   * Company Assets: the SIM card register, or with equipment the Equipment &
+   * Furniture one; tile opens it on a tile (a dashboard's Company Assets card).
+   */
+  | { name: 'assets'; equipment?: boolean; tile?: AssetTile }
   /** One asset: where it is, who holds it, its assignments and Changes, and its actions. */
   | { name: 'asset'; id: string }
   /**
@@ -107,7 +110,7 @@ export function parsePath(pathname: string, search = ''): Route {
   }
   if (path === fixed.assets) {
     const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
-    return tile ? { name: 'assets', tile } : { name: 'assets' }
+    return { name: 'assets', ...(query.get('kind') === 'equipment' ? { equipment: true } : {}), ...(tile ? { tile } : {}) }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
   if (movedToAdministration.includes(path)) return { name: 'administration', path }
@@ -183,8 +186,12 @@ export function pathOf(route: Route): string {
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':
       return `/catalogue/${encodeURIComponent(route.id)}`
-    case 'assets':
-      return route.tile ? `${fixed.assets}?show=${assetTiles[route.tile]}` : fixed.assets
+    case 'assets': {
+      const q = new URLSearchParams()
+      if (route.equipment) q.set('kind', 'equipment')
+      if (route.tile) q.set('show', assetTiles[route.tile])
+      return q.toString() ? `${fixed.assets}?${q}` : fixed.assets
+    }
     case 'asset':
       return `/assets/${encodeURIComponent(route.id)}`
     case 'assetForm': {

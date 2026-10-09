@@ -1177,6 +1177,8 @@ export interface Asset {
   updated_at: string
   location: AssetLocation
   open_assignment: AssetAssignment | null
+  /** Giving it needs a signed form: SIM cards and computer equipment (spec, open decision 6). */
+  needs_form: boolean
 }
 
 /** An asset's page: the asset and every assignment, newest first. */
@@ -1186,7 +1188,7 @@ export interface AssetDetail extends Asset {
 
 /** One of an employee's assignments, with its asset (GET /api/v1/assets/by-employee/{id}). */
 export interface HeldAsset extends AssetAssignment {
-  asset: Omit<Asset, 'location' | 'open_assignment'>
+  asset: Omit<Asset, 'location' | 'open_assignment' | 'needs_form'>
 }
 
 /** Add SIM Card / Add Asset and Edit: an asset's details. Edit sends no kind or status. */
@@ -1211,7 +1213,7 @@ export interface CreateAssetInput extends AssetInput {
 }
 
 /** The register's sorts. */
-export type AssetSort = 'inventory' | 'status' | 'holder' | 'given'
+export type AssetSort = 'inventory' | 'name' | 'status' | 'holder' | 'given'
 
 /** The register's filters (GET /api/v1/assets); empty ones are left out. */
 export interface AssetQuery {
@@ -1222,6 +1224,7 @@ export interface AssetQuery {
   held?: boolean
   employee_id?: string
   provider?: string
+  category?: AssetCategory
   status?: ConnectionStatus
   not_returned?: boolean
   sort?: AssetSort

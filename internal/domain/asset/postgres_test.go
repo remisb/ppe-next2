@@ -185,6 +185,18 @@ func TestPostgresNumbersAreNeverReused(t *testing.T) {
 	if n, _ := svc.NextNumber(ctx, "PC"); n != "PC-000008" {
 		t.Errorf("next PC = %s", n)
 	}
+	for _, c := range []struct {
+		p    ListParams
+		want int
+	}{
+		{ListParams{Kind: "EQUIPMENT", Category: "COMPUTER", Sort: "name"}, 1},
+		{ListParams{Kind: "EQUIPMENT", Category: "FURNITURE"}, 0},
+		{ListParams{Kind: "EQUIPMENT", Q: "lapt"}, 1},
+	} {
+		if res, err := svc.List(ctx, c.p); err != nil || res.Total != c.want {
+			t.Errorf("%+v: %d, %v; want %d", c.p, res.Total, err, c.want)
+		}
+	}
 	var stored int
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM asset_numbers`).Scan(&stored); err != nil || stored != 3 {
 		t.Errorf("%d numbers used, %v; want SIM-000001, SIM-000010 and PC-000007", stored, err)
