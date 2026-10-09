@@ -331,6 +331,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return { href: staffHref(`/catalogue/${id}`) }
     case 'order':
       return { href: staffHref(`/orders/${id}`) }
+    case 'asset':
+      return { href: staffHref(`/assets/${id}`) }
     case 'item_set':
       return { href: staffHref('/item-sets') }
     case 'role':

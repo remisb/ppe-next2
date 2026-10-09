@@ -1152,6 +1152,93 @@ test('Company Assets: Add SIM Card, Change Status saved at once, a duplicate nam
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
 })
 
+test('Company Assets: give a SIM card against its printed form, mark it not returned, then register its return', async () => {
+  await openTab('Company Assets')
+  await page.getByRole('link', { name: 'SIM-000001', exact: true }).click()
+  const main = page.getByRole('main')
+  await expect(main.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+  await expect(main.getByText('No one')).toBeVisible()
+  // Giving needs a phone number on the card: Edit adds it.
+  await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  await page.getByRole('menuitem', { name: 'Edit' }).click()
+  const edit = page.getByRole('dialog')
+  await edit.getByLabel('Phone No.').fill('+370 612 40118')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
+
+  // Give SIM Card: one form, the reason by the button until it can be given (§6).
+  await main.getByRole('button', { name: 'Give SIM Card' }).click()
+  const give = page.getByRole('dialog')
+  await expect(give.getByText('Choose the employee.')).toBeVisible()
+  await give.getByRole('combobox', { name: 'Employee' }).fill('Ona')
+  await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
+  await expect(give.getByText('Fill in the non-return value: the form needs it.')).toBeVisible()
+  await give.getByLabel('Non-return Value').fill('25.00')
+  await expect(give.getByText('Print the form, then have it signed.')).toBeVisible()
+  await expect(give.getByLabel('Paper Form Signed')).toBeDisabled()
+  // Print Form prints the form the API would store, in a tab of its own; printing is not giving (§8).
+  await page.context().addInitScript(() => {
+    window.print = () => {
+      ;(window as unknown as { __printed: number }).__printed = 1
+    }
+  })
+  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
+  await expect(printTab.getByRole('heading', { name: /SIM Card Assignment Form/ })).toBeVisible()
+  await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
+  await expect(printTab.getByText('€25.00')).toBeVisible()
+  await expect.poll(() => printTab.evaluate(() => (window as unknown as { __printed?: number }).__printed)).toBe(1)
+  await printTab.close()
+  await expect(give.getByText('Ask the employee to sign the printed form before handing over the SIM card.')).toBeVisible()
+  await give.getByLabel('Paper Form Signed').check()
+  // A change to the form after printing takes the tick away and asks for a reprint.
+  const today = await give.getByLabel('Given Date').inputValue()
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  await give.getByLabel('Given Date').fill(yesterday)
+  await expect(give.getByText(/The form changed after printing/)).toBeVisible()
+  await expect(give.getByLabel('Paper Form Signed')).not.toBeChecked()
+  await give.getByLabel('Given Date').fill(today)
+  await give.getByLabel('Paper Form Signed').check()
+  await give.getByRole('button', { name: 'Give SIM Card' }).click()
+  await expect(page.getByText('SIM card given to Ona Kazlauskienė.')).toBeVisible()
+  // One action changed the holder, the location, the form and the history (§7).
+  await expect(main.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
+  await expect(main.getByText('With an employee')).toBeVisible()
+  const assignments = main.getByRole('region', { name: 'Assignments' })
+  await expect(assignments.getByText('Paper form signed')).toBeVisible()
+  await expect(assignments.getByRole('link', { name: 'Print form again' })).toBeVisible()
+  await expect(main.getByRole('button', { name: 'Give SIM Card' })).toHaveCount(0)
+
+  // Mark as Not Returned, and the blocking email offered next (§13, §14).
+  await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  await page.getByRole('menuitem', { name: 'Mark as Not Returned' }).click()
+  const mark = page.getByRole('dialog')
+  await mark.getByLabel('Whereabouts unknown').check()
+  await mark.getByLabel('Comment').fill('Left without notice')
+  await mark.getByRole('button', { name: 'Mark as Not Returned' }).click()
+  const email = page.getByRole('dialog')
+  await expect(email.getByText('SIM-000001 marked as not returned. Next: ask the provider to block the card.')).toBeVisible()
+  await expect(email.getByLabel('Subject')).toHaveValue('SIM blocking request - +370 612 40118')
+  await expect(email.getByLabel('Message')).toHaveValue(/SIM number: 0089370011/)
+  await email.getByRole('button', { name: 'Close' }).last().click()
+  // Unknown, the last holder kept; still Active: preparing the email changes nothing.
+  await expect(main.getByText('Unknown', { exact: true }).first()).toBeVisible()
+  await expect(main.getByText('Not Returned').first()).toBeVisible()
+  await expect(main.getByText('Active', { exact: true }).first()).toBeVisible()
+
+  // Register SIM Return: back in the office, the status and the mark kept (§11).
+  await main.getByRole('button', { name: 'Register SIM Return' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
+  await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
+  await expect(main.getByText('No one')).toBeVisible()
+  await expect(assignments.getByText(/· Returned /)).toBeVisible()
+  await expect(assignments.getByText('Not Returned', { exact: true })).toBeVisible()
+  await expect(main.getByRole('button', { name: 'Give SIM Card' })).toBeVisible()
+  // Its Changes tell the story.
+  for (const change of ['Given to an employee', 'Marked as Not Returned', 'Returned to the office']) {
+    await expect(main.getByText(change, { exact: true }).first()).toBeVisible()
+  }
+})
+
 test('⌘K finds an order by its record number, however it is typed', async () => {
   await openTab('Employees')
   await page.keyboard.press('ControlOrMeta+k')

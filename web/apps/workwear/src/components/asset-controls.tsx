@@ -1,19 +1,21 @@
-import type { ConnectionStatus } from '@ppe/api-client'
+import type { Asset, ConnectionStatus } from '@ppe/api-client'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuNote,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ppe/ui/components/dropdown-menu'
+import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ChevronDown, Copy } from 'lucide-react'
 
 import { t } from '@/i18n'
-import { statusLabel, statusVariant } from '@/lib/assets'
+import { canMarkNotReturned, statusLabel, statusVariant } from '@/lib/assets'
 
 const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
 
@@ -95,5 +97,48 @@ export function CopyNumber({ value, label, onCopied }: { value: string; label: s
         <Copy aria-hidden />
       </Button>
     </span>
+  )
+}
+
+/**
+ * A card's less frequent actions under ⋯ (web/AGENTS.md: one everyday action
+ * visible, the rest here). With `status` the three statuses are here too, for
+ * a row whose visible action is another one.
+ */
+export function AssetMoreActions({
+  asset,
+  status = false,
+  onStatus,
+  onEdit,
+  onNotReturned,
+  onBlockingEmail,
+}: {
+  asset: Asset
+  status?: boolean
+  onStatus: (next: ConnectionStatus) => void
+  onEdit: () => void
+  onNotReturned: () => void
+  onBlockingEmail: () => void
+}) {
+  const current = asset.connection_status
+  return (
+    <MoreActions label={t.common.moreActions(asset.inventory_no)}>
+      {status && current ? (
+        <>
+          <DropdownMenuNote>{t.assets.changeStatus}</DropdownMenuNote>
+          <DropdownMenuRadioGroup value={current} onValueChange={(next: ConnectionStatus) => next !== current && onStatus(next)}>
+            {statuses.map((s) => (
+              <DropdownMenuRadioItem key={s} value={s}>
+                {statusLabel(s)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+        </>
+      ) : null}
+      <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
+      {canMarkNotReturned(asset) ? <DropdownMenuItem onClick={onNotReturned}>{t.assets.markNotReturned}</DropdownMenuItem> : null}
+      {current && current !== 'BLOCKED' ? <DropdownMenuItem onClick={onBlockingEmail}>{t.assets.prepareBlockingEmail}</DropdownMenuItem> : null}
+    </MoreActions>
   )
 }

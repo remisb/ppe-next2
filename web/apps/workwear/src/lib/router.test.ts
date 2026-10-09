@@ -21,6 +21,12 @@ describe('router', () => {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
     expect(pathOf({ name: 'assets' })).toBe('/assets')
+    expect(parsePath(pathOf({ name: 'asset', id: 'a/1' }))).toEqual({ name: 'asset', id: 'a/1' })
+    const draft = { name: 'assetForm', id: 'a1', draft: { employeeId: 'e1', givenDate: '2026-10-09', plan: 'Biz 10 GB', valueCents: 2500 }, print: true } as const
+    expect(pathOf(draft)).toBe('/assets/a1/form?employee=e1&date=2026-10-09&plan=Biz+10+GB&value=2500&print=1')
+    expect(parsePath('/assets/a1/form', '?employee=e1&date=2026-10-09&plan=Biz+10+GB&value=2500&print=1')).toEqual(draft)
+    expect(parsePath(pathOf({ name: 'assetForm', id: 'a1', assignment: 's1' }))).toEqual({ name: 'assetForm', id: 'a1', assignment: 's1' })
+    expect(parsePath('/assets/a1/form', '?employee=e1&date=9.10.2026')).toEqual({ name: 'assetForm', id: 'a1' })
     expect(parsePath(pathOf({ name: 'employee', id: 'a/b' }))).toEqual({ name: 'employee', id: 'a/b' })
     expect(parsePath(pathOf({ name: 'catalogueItem', id: 'x/y' }))).toEqual({ name: 'catalogueItem', id: 'x/y' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })

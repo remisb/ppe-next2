@@ -2,9 +2,7 @@ import type { Asset, AssetSort, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
-import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Input, Select } from '@ppe/ui/components/field'
-import { MoreActions } from '@ppe/ui/components/more-actions'
 import { KeyFigures, Kpi } from '@ppe/ui/components/panel'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -12,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { Plus, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import {
@@ -29,10 +28,12 @@ import {
   formatDay,
   holderText,
   noAssetFilters,
+  primaryAction,
   statusLabel,
   tilePressed,
   todayIn,
 } from '@/lib/assets'
+import { type Route, linkTo } from '@/lib/router'
 
 const columns = (): SortColumn<AssetSort>[] => [
   { key: 'inventory', label: t.assets.colInventoryNo },
@@ -48,10 +49,13 @@ const segment =
 /**
  * Company Assets: the SIM card register (assets brief §3–§5). The tiles
  * filter the list and keep the other filters, so In Office with Blocked is
- * the blocked cards in the office. Each row's everyday action is Change
- * Status, saved at once; Edit is under ⋯. Writes need assets.manage.
+ * the blocked cards in the office. A row opens the card's page; on a wide
+ * screen it also offers the one action the card's state calls for (Give SIM
+ * Card, Register SIM Return or Change Status), the rest under ⋯. On a phone a
+ * row is two short lines and its actions are on the card's page. Writes need
+ * assets.manage.
  */
-export function Assets() {
+export function Assets({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const canManage = useSession().can('assets.manage')
   const settings = useLoad(() => client.settings())
@@ -65,6 +69,7 @@ export function Assets() {
   // Phone only: the filters fold away so the cards start near the top.
   const [showFilters, setShowFilters] = useState(false)
   const [editing, setEditing] = useState<Asset | 'new' | null>(null)
+  const [sheet, setSheet] = useState<AssetSheet>(null)
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [actionError, setActionError] = useState<unknown>()
@@ -244,7 +249,7 @@ export function Assets() {
         </EmptyState>
       ) : (
         <>
-          <Table stack stackBelow="lg" sortControl={<SortControl columns={columns()} {...sortProps} />}>
+          <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
                 <SortableHead column={columns()[0]!} {...sortProps} />
@@ -262,10 +267,28 @@ export function Assets() {
               {list.data.assets.map((a) => {
                 const holder = holderText(a)
                 const open = a.open_assignment
+                const action = primaryAction(a)
                 return (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-mono font-medium stacked:text-base">{a.inventory_no}</TableCell>
-                    <TableCell label={t.assets.colNumbers}>
+                  <TableRow
+                    key={a.id}
+                    className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50"
+                    // The whole row opens the card; its number is the real link, for keyboards and new tabs.
+                    onClick={(ev) => {
+                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      navigate({ name: 'asset', id: a.id })
+                    }}
+                  >
+                    <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
+                      <a {...linkTo({ name: 'asset', id: a.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                        {a.inventory_no}
+                      </a>
+                    </TableCell>
+                    {/* The stacked row's second line: phone, provider and where the card is. */}
+                    <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                      {[a.phone_no ?? a.sim_no, a.provider, holder.main].filter(Boolean).join(' · ')}
+                      {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
+                    </TableCell>
+                    <TableCell className="stacked:hidden">
                       <span className="flex flex-col items-start">
                         {a.sim_no ? <CopyNumber value={a.sim_no} label={t.assets.copySimNo(a.sim_no)} onCopied={copied(a.sim_no)} /> : null}
                         {a.phone_no ? (
@@ -275,47 +298,56 @@ export function Assets() {
                         )}
                       </span>
                     </TableCell>
-                    <TableCell label={t.assets.colProvider}>
+                    <TableCell className="stacked:hidden">
                       {a.provider}
-                      {a.plan ? <span className="block text-xs text-muted-foreground stacked:inline stacked:before:content-['_·_']">{a.plan}</span> : null}
+                      {a.plan ? <span className="block text-xs text-muted-foreground">{a.plan}</span> : null}
                     </TableCell>
-                    <TableCell label={t.assets.colStatus}>{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
-                    <TableCell label={t.assets.colHeldBy}>
+                    <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                    <TableCell className="stacked:hidden">
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
                         {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
                       </span>
                       {holder.sub ? <span className="block text-xs text-muted-foreground">{holder.sub}</span> : null}
                     </TableCell>
-                    <TableCell label={t.assets.colGiven} className={cn(!open && 'stacked:hidden')}>
+                    <TableCell className="stacked:hidden">
                       {open ? (
                         <>
                           <span className="tabular-nums">{formatDay(open.given_date)}</span>
-                          <span className="block text-xs text-muted-foreground stacked:inline stacked:before:content-['_·_']">{t.assets.daysHeld(open.days_held)}</span>
+                          <span className="block text-xs text-muted-foreground">{t.assets.daysHeld(open.days_held)}</span>
                         </>
                       ) : (
                         '—'
                       )}
                     </TableCell>
-                    <TableCell label={t.assets.colDocuments} className={cn(!open?.paper_form_signed && 'stacked:hidden')}>
-                      {open?.paper_form_signed ? t.assets.formSigned : '—'}
-                    </TableCell>
-                    <TableCell label={t.assets.colComment} className={cn('max-w-48 truncate', !a.comment && 'stacked:hidden')} title={a.comment || undefined}>
+                    <TableCell className="stacked:hidden">{open?.paper_form_signed ? t.assets.formSigned : '—'}</TableCell>
+                    <TableCell className="max-w-48 truncate stacked:hidden" title={a.comment || undefined}>
                       {a.comment || '—'}
                     </TableCell>
+                    <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2] stacked:items-center">
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </TableCell>
                     {canManage ? (
-                      <TableCell className="text-right whitespace-nowrap stacked:pt-2 stacked:text-left">
-                        {a.connection_status ? (
-                          <StatusMenu
-                            number={a.inventory_no}
-                            status={a.connection_status}
-                            disabled={saving === a.id}
-                            onChange={(next) => void changeStatus(a, next)}
-                          />
+                      <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                        {action === 'give' ? (
+                          <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
+                            {t.assets.giveSimCard}
+                          </Button>
+                        ) : action === 'return' ? (
+                          <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })}>
+                            {t.assets.registerReturn}
+                          </Button>
+                        ) : a.connection_status ? (
+                          <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
                         ) : null}{' '}
-                        <MoreActions label={t.common.moreActions(a.inventory_no)}>
-                          <DropdownMenuItem onClick={() => setEditing(a)}>{t.common.edit}</DropdownMenuItem>
-                        </MoreActions>
+                        <AssetMoreActions
+                          asset={a}
+                          status={action !== 'status'}
+                          onStatus={(next) => void changeStatus(a, next)}
+                          onEdit={() => setEditing(a)}
+                          onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
+                          onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                        />
                       </TableCell>
                     ) : null}
                   </TableRow>
@@ -340,6 +372,15 @@ export function Assets() {
         </>
       )}
 
+      <AssetSheets
+        sheet={sheet}
+        today={today}
+        onChange={setSheet}
+        onDone={(m) => {
+          setMessage(m)
+          reload()
+        }}
+      />
       <SimCardForm
         card={editing}
         today={today}

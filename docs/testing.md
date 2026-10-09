@@ -252,3 +252,8 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | Add SIM Card on screen: required now vs. later, number suggested, SIM number kept as typed; a duplicate opens the card registered | as the API | web `lib/assets.test.ts`, api-client `client.test.ts` (`existingId`); e2e *Company Assets: …* |
 | Change Status on screen: three choices, saved at once, no confirmation; the activation text on a Not Activated card | as the API | e2e *Company Assets: …* |
 | The register on a phone and tablet scrolls nothing sideways; under More on a phone | — | e2e *phone and tablet: …* |
+| A card's one action follows its state; Mark as Not Returned once | Return while held, Give when Active in the Office, else Change Status | web `lib/assets.test.ts` |
+| Give SIM Card on screen: the reasons in order down to the signed paper; a change after Print Form clears Paper Form Signed; only the missing plan or value is sent | as the API | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |
+| Print Form prints the API's form in its own tab; printing is not giving | the form names the employee and value; nothing stored until Give | e2e *Company Assets: give a SIM card …* |
+| Give, Not Returned (Unknown, the holder kept, the blocking email offered next), Return (status and mark kept), each in Changes | as the API | e2e *Company Assets: give a SIM card …* |
+| The blocking email is the brief's text with the card's numbers | §14 | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |

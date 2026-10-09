@@ -25,6 +25,13 @@ export type Route =
   | { name: 'employee'; id: string }
   /** Company Assets: the SIM card register. */
   | { name: 'assets' }
+  /** One asset: where it is, who holds it, its assignments and Changes, and its actions. */
+  | { name: 'asset'; id: string }
+  /**
+   * An assignment form to print: a stored one (assignment), or, while Give SIM
+   * Card is open, the form it would store (draft); print opens the print dialog once loaded.
+   */
+  | { name: 'assetForm'; id: string; assignment?: string; draft?: FormDraft; print?: boolean }
   | { name: 'catalogue' }
   /** One catalogue item: its current values and the item sets that hold it. */
   | { name: 'catalogueItem'; id: string }
@@ -43,6 +50,14 @@ export type Route =
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
   | { name: 'confirm'; token: string }
+
+/** The form Give would store: its employee, date, and the plan or value the card lacks. */
+export interface FormDraft {
+  employeeId: string
+  givenDate: string
+  plan?: string
+  valueCents?: number
+}
 
 /**
  * Items to start an order with: a reorder (for the employee, each at the
@@ -97,11 +112,34 @@ export function parsePath(pathname: string, search = ''): Route {
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
   if (item?.[1]) return { name: 'catalogueItem', id: decodeURIComponent(item[1]) }
+  const asset = /^\/assets\/([^/]+)$/.exec(path)
+  if (asset?.[1]) return { name: 'asset', id: decodeURIComponent(asset[1]) }
+  const storedForm = /^\/assets\/([^/]+)\/assignments\/([^/]+)\/form$/.exec(path)
+  if (storedForm?.[1] && storedForm[2]) {
+    return { name: 'assetForm', id: decodeURIComponent(storedForm[1]), assignment: decodeURIComponent(storedForm[2]), ...(query.has('print') ? { print: true } : {}) }
+  }
+  const draftForm = /^\/assets\/([^/]+)\/form$/.exec(path)
+  if (draftForm?.[1]) {
+    const draft = parseFormDraft(query)
+    return { name: 'assetForm', id: decodeURIComponent(draftForm[1]), ...(draft ? { draft } : {}), ...(query.has('print') ? { print: true } : {}) }
+  }
   const record = /^\/orders\/([^/]+)\/record$/.exec(path)
   if (record?.[1]) return { name: 'record', id: decodeURIComponent(record[1]) }
   const confirm = /^\/confirm\/([^/]+)$/.exec(path)
   if (confirm?.[1]) return { name: 'confirm', token: decodeURIComponent(confirm[1]) }
   return { name: 'home' }
+}
+
+/** ?employee=<id>&date=YYYY-MM-DD[&plan=…][&value=<cents>]; anything missing or malformed is no draft. */
+function parseFormDraft(q: URLSearchParams): FormDraft | undefined {
+  const employeeId = q.get('employee')
+  const givenDate = q.get('date')
+  if (!employeeId || !givenDate || !/^\d{4}-\d{2}-\d{2}$/.test(givenDate)) return undefined
+  const plan = q.get('plan')
+  const value = q.get('value')
+  const valueCents = value === null ? undefined : Number(value)
+  if (valueCents !== undefined && (!Number.isInteger(valueCents) || valueCents < 0)) return undefined
+  return { employeeId, givenDate, ...(plan ? { plan } : {}), ...(valueCents !== undefined ? { valueCents } : {}) }
 }
 
 /** ?employee=<id>&item=<id>:<quantity>&item=… (one of the two at least); anything malformed is no prefill. */
@@ -137,6 +175,21 @@ export function pathOf(route: Route): string {
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':
       return `/catalogue/${encodeURIComponent(route.id)}`
+    case 'asset':
+      return `/assets/${encodeURIComponent(route.id)}`
+    case 'assetForm': {
+      const base = `/assets/${encodeURIComponent(route.id)}`
+      const q = new URLSearchParams()
+      if (route.draft) {
+        q.set('employee', route.draft.employeeId)
+        q.set('date', route.draft.givenDate)
+        if (route.draft.plan) q.set('plan', route.draft.plan)
+        if (route.draft.valueCents !== undefined) q.set('value', String(route.draft.valueCents))
+      }
+      if (route.print) q.set('print', '1')
+      const search = q.toString() ? `?${q}` : ''
+      return route.assignment ? `${base}/assignments/${encodeURIComponent(route.assignment)}/form${search}` : `${base}/form${search}`
+    }
     case 'record':
       return `/orders/${encodeURIComponent(route.id)}/record`
     case 'confirm':

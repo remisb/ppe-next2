@@ -80,7 +80,9 @@ the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
 assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
 employee who holds assets. The SIM card register is on screen (`/assets`, `routes/assets.tsx`,
-`lib/assets.ts`: tiles that filter, Add SIM Card, Change Status); slices 4–7 add the rest.
+`lib/assets.ts`: tiles that filter, Add SIM Card, Change Status) and the asset page (`/assets/<id>`:
+Give SIM Card against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
+Email; `components/asset-sheets.tsx`); slices 5–7 add signed copies, the employee page and equipment.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which

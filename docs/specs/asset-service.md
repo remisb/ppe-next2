@@ -2,9 +2,10 @@
 
 **Status: the API is built (slice 2 of [ADR 0004](../architecture/adr/0004-company-assets.md)):
 migration `0029_company_assets`, `internal/domain/asset`, every route below except the
-signed copy's. The SIM card register is on screen (slice 3, below).** The asset page, Give
-and Return on screen are slice 4; Upload Signed Form slice 5; the employee page and ⌘K
-slice 6; Equipment & Furniture slice 7. The product contract is the assets
+signed copy's. The SIM card register (slice 3) and the asset page with Give SIM Card,
+Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
+screen; see below.** Upload Signed Form is slice 5; the employee page and ⌘K slice 6;
+Equipment & Furniture slice 7. The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -276,8 +277,43 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   and value can wait; a new card is Not Activated or Active. A number in use shows *This
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
+- A row opens the card's page (`/assets/<id>`); its number is the link. On a wide screen it
+  also offers the one action its state calls for (Give SIM Card when Active in the Office,
+  Register SIM Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
+  as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
+  buttons.
 - Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
-  decision 4); rows open the asset's page from slice 4.
+  decision 4).
+
+## The asset page and its actions (slice 4)
+
+`routes/asset.tsx`, the sheets in `components/asset-sheets.tsx`, the rules in
+`lib/assets.ts` (`primaryAction`, `giveBlock`, `formKey`, `blockingEmail`):
+
+- **The page**: the numbers with copy buttons; three blocks, Connection (status, Change
+  Status), Where (Office, With an employee or Unknown, with Not Returned) and Held by (the
+  holder, linked, since when and Days Held); the activation text on a Not Activated card;
+  the details; **Assignments**, newest first, each with its dates, comments, Not Returned
+  mark and **Print form again**; and **Changes**.
+- **Give SIM Card**: the card, the employee (search), the given date (today, not later),
+  the plan and value only when the card lacks them, a comment. **Preview Form** shows the
+  form the API builds; **Print Form** opens it in a tab of its own
+  (`/assets/<id>/form?employee=&date=&plan=&value=&print`, `routes/asset-form.tsx`) and keeps
+  its hash. The reminder to sign comes before **Paper Form Signed**, which is enabled only
+  once printed and cleared when the employee, date, plan or value change after printing.
+  The button shows the first reason it cannot be used yet; a refusal from the API (given
+  meanwhile, form changed) keeps what was entered.
+- **The printed form** is English / Russian, like the Items Given Record: a plain layout of
+  the form's data and signature lines, with no wording of terms, until the company's
+  template is added (open decision 11). A stored one reprints at
+  `/assets/<id>/assignments/<assignmentId>/form`.
+- **Register SIM Return**: the return date (today, not before the given date, not later)
+  and a comment; **Register Return to Office**.
+- **Mark as Not Returned**: where it is (still with the employee, or unknown) and a
+  comment; then **Prepare Blocking Email** opens at once unless the card is already Blocked.
+- **Prepare Blocking Email**: the brief's English subject and message with the card's
+  numbers, each with Copy. The company's name is a `[Company Name]` placeholder until
+  Settings holds it (open decision 3). Nothing is sent and nothing changes.
 
 ## Open decisions
 
