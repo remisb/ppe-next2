@@ -21,6 +21,7 @@ const (
 const (
 	defaultPageSize = 50
 	maxPageSize     = 100
+	maxPage         = 1_000_000 // keeps the offset far from overflowing
 	numberLimit     = 20
 )
 
@@ -143,6 +144,9 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 	}
 	if size > maxPageSize {
 		return ListFilter{}, 0, 0, fieldError("page_size", "must be at most 100")
+	}
+	if page > maxPage {
+		return ListFilter{}, 0, 0, fieldError("page", "must be at most 1000000")
 	}
 	f.Limit, f.Offset = size, (page-1)*size
 	return f, page, size, nil

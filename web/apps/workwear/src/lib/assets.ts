@@ -219,13 +219,13 @@ export function formKey(d: GiveDraft): string {
   return JSON.stringify([d.assetId, d.employeeId, d.givenDate, d.plan.trim(), d.value.trim()])
 }
 
-/** The form's inputs to send: the card's own plan and value stay its own; only missing ones are filled in. */
-export function formInput(a: Pick<Asset, 'plan' | 'non_return_value_cents'>, d: GiveDraft): AssignmentFormInput {
+/** The form's inputs to send: the card's own plan and value stay its own; only missing ones are filled in. Only a SIM card has a plan. */
+export function formInput(a: Pick<Asset, 'kind' | 'plan' | 'non_return_value_cents'>, d: GiveDraft): AssignmentFormInput {
   const cents = parseEuro(d.value)
   return {
     employee_id: d.employeeId,
     given_date: d.givenDate,
-    ...(a.plan === null && d.plan.trim() ? { plan: d.plan.trim() } : {}),
+    ...(a.kind === 'SIM' && a.plan === null && d.plan.trim() ? { plan: d.plan.trim() } : {}),
     ...(a.non_return_value_cents === null && cents !== null && !Number.isNaN(cents) ? { non_return_value_cents: cents } : {}),
   }
 }

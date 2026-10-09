@@ -128,7 +128,9 @@ describe('Give SIM Card', () => {
   it('sends only the plan and value the card lacks', () => {
     const d = { ...chosen, plan: 'Biz 5 GB', value: '15,00' }
     expect(formInput(ready, d)).toEqual({ employee_id: 'e1', given_date: today })
-    expect(formInput({ plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, plan: 'Biz 5 GB', non_return_value_cents: 1500 })
+    expect(formInput({ kind: 'SIM', plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, plan: 'Biz 5 GB', non_return_value_cents: 1500 })
+    // Equipment has no plan (it is always null), so a typed one is never sent.
+    expect(formInput({ kind: 'EQUIPMENT', plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, non_return_value_cents: 1500 })
   })
 })
 

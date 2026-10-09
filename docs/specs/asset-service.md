@@ -46,7 +46,7 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `inventory_no` | Required. Unique over every asset ever created; see [Numbers](#numbers) |
 | `name` | EQUIPMENT: required. SIM: null (a card is named by its numbers) |
 | `serial_no` | EQUIPMENT, optional. Not unique (§15 does not ask for it) |
-| `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4). Unique among assets not soft-deleted, compared with spaces removed |
+| `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4). Unique among assets not soft-deleted, compared with spaces removed and letters in either case |
 | `phone_no` | SIM, optional at registration (§4); needed to give |
 | `provider` | SIM: required |
 | `plan` | SIM, optional at registration; needed to give |

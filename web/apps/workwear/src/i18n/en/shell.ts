@@ -53,11 +53,11 @@ export const shell = {
   },
   // The ⌘K palette.
   searchOrJump: 'Search or jump to',
-  paletteHint: 'Search orders, SIM cards, employees, items and screens…',
+  paletteHint: 'Search orders, company assets, employees, items and screens…',
   results: 'Results',
   groups: {
     orders: 'Orders',
-    assets: 'SIM cards',
+    assets: 'Company Assets',
     actions: 'Actions',
     screens: 'Screens',
     employees: 'Employees',

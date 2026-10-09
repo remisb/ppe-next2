@@ -105,7 +105,7 @@ export function SimCardForm({
             className="cursor-pointer font-medium underline underline-offset-4 pointer-coarse:min-h-11"
             onClick={() => onOpenExisting(taken.existingId!)}
           >
-            {t.assets.openExisting}
+            {field === 'simNo' ? t.assets.openExisting : t.assets.openExistingItem}
           </button>
         ) : null}
         {field === 'inventoryNo' && !existing ? (

@@ -223,6 +223,9 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Record, 
 	if err := f.useNumber(id, next.InventoryNo); err != nil {
 		return Record{}, err
 	}
+	if b := BumpOf(next); b != nil && !strings.EqualFold(cur.InventoryNo, next.InventoryNo) && b.N > f.counters[b.Prefix] {
+		f.counters[b.Prefix] = b.N
+	}
 	f.assets[id] = next
 	f.events = append(f.events, evs...)
 	return Record{Asset: next, Open: open}, nil
@@ -434,7 +437,7 @@ func TestNextNumberFollowsTheCounterAndSkipsUsedNumbers(t *testing.T) {
 	if n, _ := f.svc.NextNumber(f.ctx, "SIM"); n != "SIM-000006" {
 		t.Errorf("after 5 = %s", n)
 	}
-	// A number used but not counted (an edited one) is skipped.
+	// A number used but not counted is skipped.
 	f.repo.numbers["SIM-000006"] = uuid.New()
 	if n, _ := f.svc.NextNumber(f.ctx, "SIM"); n != "SIM-000007" {
 		t.Errorf("skipping a used number = %s", n)
@@ -444,6 +447,16 @@ func TestNextNumberFollowsTheCounterAndSkipsUsedNumbers(t *testing.T) {
 	}
 	if _, err := f.svc.NextNumber(f.ctx, "XX"); !errors.Is(err, ErrInvalid) {
 		t.Errorf("unknown prefix: %v", err)
+	}
+	// Edit taking an own-prefix number raises the counter too.
+	v := f.sim(t, "SIM-000007", StatusActive, true)
+	p := Params{InventoryNo: "SIM-000020", SimNo: v.SimNo, PhoneNo: v.PhoneNo, Provider: v.Provider, Plan: v.Plan,
+		NonReturnValueCents: v.NonReturnValueCents, ReceivedDate: v.ReceivedDate}
+	if _, err := f.svc.Update(f.ctx, v.ID, p, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := f.svc.NextNumber(f.ctx, "SIM"); n != "SIM-000021" {
+		t.Errorf("after editing to 20 = %s", n)
 	}
 }
 
@@ -769,6 +782,7 @@ func TestListParams(t *testing.T) {
 	for _, p := range []ListParams{
 		{}, {Kind: "CAR"}, {Kind: "SIM", Location: "HOME"}, {Kind: "SIM", Status: "LOST"}, {Kind: "SIM", NotReturned: "yes"},
 		{Kind: "EQUIPMENT", Category: "TABLE"}, {Kind: "SIM", Held: "yes"}, {Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
+		{Kind: "SIM", Page: "200000000000000000"},
 	} {
 		if _, err := f.svc.List(f.ctx, p); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%+v: %v, want ErrInvalid", p, err)

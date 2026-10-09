@@ -10,6 +10,7 @@ import (
 const (
 	DefaultPageSize = 20
 	MaxPageSize     = 100
+	MaxPage         = 1_000_000 // keeps the offset far from overflowing
 	dateLayout      = "2006-01-02"
 )
 
@@ -91,6 +92,8 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 	switch {
 	case page < 1:
 		return f, 0, 0, fieldError("page", "must be at least 1")
+	case page > MaxPage:
+		return f, 0, 0, fieldError("page", "must be at most 1000000")
 	case size < 1 || size > MaxPageSize:
 		return f, 0, 0, fieldError("page_size", "must be between 1 and 100")
 	}

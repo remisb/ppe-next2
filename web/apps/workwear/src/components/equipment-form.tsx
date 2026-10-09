@@ -44,8 +44,12 @@ export function EquipmentForm({
   const [failure, setFailure] = useState<string>()
   const [saving, setSaving] = useState(false)
   const numberTyped = useRef(false)
+  // Only the latest category's suggestion applies: an earlier answer that
+  // arrives late, or one for a form since closed, is dropped.
+  const asked = useRef(0)
 
   useEffect(() => {
+    asked.current++
     if (item === null) return
     setDraft(existing ? equipmentDraftOf(existing) : emptyEquipmentDraft())
     setErrors({})
@@ -54,13 +58,15 @@ export function EquipmentForm({
     numberTyped.current = existing !== undefined
   }, [item])
 
-  const suggest = (category: AssetCategory) =>
-    client.assets.nextNumber(categoryPrefix[category]).then(
-      (n) => {
-        if (!numberTyped.current) setDraft((d) => ({ ...d, inventoryNo: n }))
+  const suggest = (category: AssetCategory) => {
+    const n = ++asked.current
+    return client.assets.nextNumber(categoryPrefix[category]).then(
+      (number) => {
+        if (n === asked.current && !numberTyped.current) setDraft((d) => ({ ...d, inventoryNo: number }))
       },
       () => {},
     )
+  }
 
   const set = <K extends keyof EquipmentDraft>(k: K, v: EquipmentDraft[K]) => {
     setDraft((d) => ({ ...d, [k]: v }))

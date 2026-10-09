@@ -1320,6 +1320,8 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   await expect(giveDesk.getByText('Furniture and other items are given without a signed form.')).toBeVisible()
   await expect(giveDesk.getByRole('link', { name: 'Print Form' })).toHaveCount(0)
+  // A plan is a SIM card's: never asked for an item.
+  await expect(giveDesk.getByLabel('Plan')).toHaveCount(0)
   await giveDesk.getByRole('button', { name: 'Give Asset' }).click()
   await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
 
@@ -1353,6 +1355,17 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('FUR-000001 is back in the office.')).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give Asset' })).toBeVisible()
+
+  // ⌘K finds an item by its number, named as an item, among Company Assets.
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  await palette.getByRole('combobox').fill('PC-000001')
+  const found = palette.getByRole('option', { name: /^PC-000001 · Laptop/ })
+  await expect(found).toContainText('Ona Kazlauskienė')
+  await found.click()
+  // From the desk's page to the laptop's: the page shows the laptop, not the desk.
+  await expect(main.getByRole('heading', { name: 'PC-000001' })).toBeVisible()
+  await expect(page.getByText('FUR-000001 is back in the office.')).toHaveCount(0)
 })
 
 test('⌘K finds an order by its record number, however it is typed', async () => {

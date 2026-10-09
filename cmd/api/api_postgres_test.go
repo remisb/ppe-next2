@@ -295,6 +295,104 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	}
 }
 
+// Edit, Mark as Not Returned and a return after it, and furniture given
+// without a form: the routes and status answers the main flow does not reach.
+func TestPostgresAssetsEditNotReturnedAndFurniture(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Rūta", "last_name": "Kazlauskienė"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	today := time.Now().Format(time.DateOnly)
+
+	sim := map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011", "phone_no": "+370 612 40118",
+		"provider": "Telia", "plan": "Biz 10 GB", "non_return_value_cents": 2500, "connection_status": "ACTIVE"}
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, sim)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add SIM = %d %s", rec.Code, rec.Body)
+	}
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	sim["inventory_no"], sim["sim_no"] = "SIM-000002", "0089370012"
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, sim)
+	otherID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	// Edit: a number another card has names it; an own-prefix number raises the counter.
+	edit := map[string]any{"inventory_no": "SIM-000002", "sim_no": "0089370011", "phone_no": "+370 612 40118",
+		"provider": "Telia", "plan": "Biz 20 GB", "non_return_value_cents": 2500, "received_date": today}
+	rec = api.do(t, "PUT", "/api/v1/assets/"+id, mgr, edit)
+	if body := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusConflict || body["existing_id"] != otherID {
+		t.Errorf("edit to a taken number = %d %s", rec.Code, rec.Body)
+	}
+	edit["inventory_no"] = "SIM-000005"
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+id, mgr, edit); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"plan":"Biz 20 GB"`) {
+		t.Fatalf("edit = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/next-number/SIM", mgr, nil); !strings.Contains(rec.Body.String(), "SIM-000006") {
+		t.Errorf("next after editing to 5 = %s", rec.Body)
+	}
+
+	// Not Returned before giving is refused; once given it is set once, and a
+	// later return keeps it.
+	notReturned := map[string]any{"whereabouts": "UNKNOWN", "comment": "left without notice"}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/not-returned", mgr, notReturned); rec.Code != http.StatusConflict {
+		t.Errorf("mark in the office = %d %s", rec.Code, rec.Body)
+	}
+	form := map[string]any{"employee_id": empID, "given_date": today}
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/preview", mgr, form)
+	give := map[string]any{"employee_id": empID, "given_date": today, "paper_form_signed": true,
+		"form_hash": decode[map[string]any](t, rec.Body.Bytes())["document_hash"]}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give); rec.Code != http.StatusCreated {
+		t.Fatalf("give = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/not-returned", mgr, notReturned); rec.Code != http.StatusOK {
+		t.Fatalf("mark = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/not-returned", mgr, notReturned); rec.Code != http.StatusConflict {
+		t.Errorf("second mark = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/summary/SIM", mgr, nil); !strings.Contains(rec.Body.String(), `"not_returned":1`) {
+		t.Errorf("summary = %s", rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/return", mgr, map[string]any{"comment": "found"}); rec.Code != http.StatusOK {
+		t.Fatalf("return after the mark = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil)
+	detail := decode[map[string]any](t, rec.Body.Bytes())
+	last := detail["assignments"].([]any)[0].(map[string]any)
+	if detail["location"] != "OFFICE" || last["not_returned_at"] == nil || last["whereabouts"] != "UNKNOWN" || last["returned_date"] != today {
+		t.Errorf("after the return = %v", detail)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events/assets/"+id, mgr, nil)
+	for _, ev := range []string{"asset.updated", "asset.marked_not_returned", "asset.returned"} {
+		if !strings.Contains(rec.Body.String(), ev) {
+			t.Errorf("changes lack %s: %s", ev, rec.Body)
+		}
+	}
+
+	// Furniture has no form: no preview, and it is given unsigned without a hash.
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, map[string]any{"kind": "EQUIPMENT", "category": "FURNITURE",
+		"inventory_no": "FUR-000001", "name": "Desk"})
+	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"needs_form":false`) {
+		t.Fatalf("add desk = %d %s", rec.Code, rec.Body)
+	}
+	desk := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	if rec := api.do(t, "POST", "/api/v1/assets/"+desk+"/assignments/preview", mgr, form); rec.Code != http.StatusNotFound {
+		t.Errorf("preview a desk = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+desk+"/assignments", mgr,
+		map[string]any{"employee_id": empID, "given_date": today, "plan": "Biz", "paper_form_signed": false, "form_hash": ""}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a plan for a desk = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets/"+desk+"/assignments", mgr,
+		map[string]any{"employee_id": empID, "given_date": today, "paper_form_signed": false, "form_hash": ""})
+	if body := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusCreated || body["form"] != nil || body["document_hash"] != nil {
+		t.Errorf("give a desk = %d %s", rec.Code, rec.Body)
+	}
+
+	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&page=200000000000000000", mgr, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("a huge page = %d %s", rec.Code, rec.Body)
+	}
+}
+
 func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 	api, _ := newPostgresAPI(t)
 	_, staff := api.userWith(t, role.KeyEmployee)

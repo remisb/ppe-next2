@@ -51,11 +51,11 @@ export const shell: ShellText = {
     help: 'Показать эти сочетания клавиш',
   },
   searchOrJump: 'Поиск и переход',
-  paletteHint: 'Поиск заказов, SIM-карт, сотрудников, предметов и экранов…',
+  paletteHint: 'Поиск заказов, имущества компании, сотрудников, предметов и экранов…',
   results: 'Результаты',
   groups: {
     orders: 'Заказы',
-    assets: 'SIM-карты',
+    assets: 'Имущество компании',
     actions: 'Действия',
     screens: 'Экраны',
     employees: 'Сотрудники',

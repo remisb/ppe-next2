@@ -318,8 +318,9 @@ func numberOf(prefix, number string) int64 {
 	return n
 }
 
-// compactSIM is a SIM number as compared: without spaces.
-func compactSIM(s string) string { return strings.ReplaceAll(s, " ", "") }
+// compactSIM is a SIM number as compared: without spaces, in capitals (an
+// ICCID may end in a hex digit, typed either way).
+func compactSIM(s string) string { return strings.ToUpper(strings.ReplaceAll(s, " ", "")) }
 
 func isDate(s string) bool {
 	_, err := time.Parse(time.DateOnly, s)

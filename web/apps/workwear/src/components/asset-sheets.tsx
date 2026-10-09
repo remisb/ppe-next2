@@ -7,7 +7,7 @@ import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { Copy, Printer } from 'lucide-react'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
 import { AssignmentFormDocument } from '@/components/assignment-form'
@@ -119,8 +119,13 @@ function GiveSheet({
   const [busy, setBusy] = useState(false)
   const [picked, setPicked] = useState<Asset | null>(null)
   const asset = fixed ?? picked
+  // Which opening of the sheet and which form a preview answers: one that
+  // arrives after the sheet closed or the form changed is dropped.
+  const session = useRef(0)
+  const currentKey = useRef('')
 
   useEffect(() => {
+    session.current++
     if (!open) return
     setPicked(null)
     setDraft({
@@ -136,6 +141,9 @@ function GiveSheet({
   }, [open, fixed?.id, employee?.id])
 
   const key = formKey(draft)
+  useEffect(() => {
+    currentKey.current = key
+  }, [key])
   const changedAfterPrint = printed !== null && printed.key !== key
   // Anything that changes the form after printing takes the signature away (§8).
   useEffect(() => {
@@ -174,12 +182,15 @@ function GiveSheet({
   const loadPreview = async (): Promise<AssignmentFormResult | null> => {
     if (!asset || !input) return null
     setFailure(undefined)
+    const asked = { session: session.current, key }
+    const current = () => session.current === asked.session && currentKey.current === asked.key
     try {
       const r = await client.assets.previewForm(asset.id, input)
+      if (!current()) return null
       setPreview(r)
       return r
     } catch (err) {
-      setFailure(errorText(err))
+      if (current()) setFailure(errorText(err))
       return null
     }
   }
@@ -245,7 +256,7 @@ function GiveSheet({
           <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={draft.givenDate > today ? t.assets.dateInFuture : undefined}>
             {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
           </Field>
-          {asset?.plan === null ? (
+          {asset?.kind === 'SIM' && asset.plan === null ? (
             <Field label={t.assets.plan} required hint={t.assets.missingHint}>
               {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
             </Field>
