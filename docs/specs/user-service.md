@@ -42,6 +42,7 @@ roles did:
 | `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
 | `item_sets.manage` | add, edit, delete item sets | ✓ | ✓ | |
 | `orders.delete` | delete orders | | ✓ | |
+| `assets.manage` | add and edit Company Assets, Change Status, give, return, Mark as Not Returned (migration 0029; spec, open decision 5) | ✓ | ✓ | |
 | `dashboard.overview` | the Dashboard | ✓ | | |
 | `dashboard.manager` | the Manager Dashboard | | ✓ | |
 | `dashboard.employee` | the Employee Dashboard (the user's own orders) | | | ✓ |

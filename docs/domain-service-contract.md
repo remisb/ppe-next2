@@ -236,8 +236,9 @@ several filters that combine freely (History: employee × date range × status, 
 paging), nested segments would need a route per combination. Such a list uses query
 parameters instead, and must: reject unknown parameters with 400, treat every filter as a
 *filter* (no match is `200` with an empty page), and name the exception in its service
-spec. `GET /api/v1/orders` is the only such route; see
-[order service](specs/order-service.md#history--get-apiv1orders).
+spec. `GET /api/v1/orders` and `GET /api/v1/assets` are the only such routes; see
+[order service](specs/order-service.md#history--get-apiv1orders) and
+[asset service](specs/asset-service.md#routes).
 
 What the route returns determines its empty-result status:
 

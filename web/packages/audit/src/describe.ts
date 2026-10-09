@@ -22,7 +22,25 @@ export interface FieldChange {
   after: string | null
 }
 
-type Format = 'text' | 'money' | 'months' | 'cm' | 'bool' | 'language' | 'sizeGroup' | 'icon' | 'status' | 'method' | 'roles' | 'permissions' | 'lines' | 'date' | 'changed'
+type Format =
+  | 'text'
+  | 'money'
+  | 'months'
+  | 'cm'
+  | 'bool'
+  | 'language'
+  | 'sizeGroup'
+  | 'icon'
+  | 'status'
+  | 'method'
+  | 'roles'
+  | 'permissions'
+  | 'lines'
+  | 'date'
+  | 'changed'
+  | 'kind'
+  | 'category'
+  | 'whereabouts'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -77,10 +95,26 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['entity_id', 'text'],
   ['rows', 'text'],
   ['older_than', 'text'],
+  ['kind', 'kind'],
+  ['category', 'category'],
+  ['inventory_no', 'text'],
+  ['serial_no', 'text'],
+  ['sim_no', 'text'],
+  ['phone_no', 'text'],
+  ['provider', 'text'],
+  ['plan', 'text'],
+  ['non_return_value_cents', 'money'],
+  ['connection_status', 'status'],
+  ['received_date', 'text'],
+  ['comment_changed', 'changed'],
+  ['employee_name', 'text'],
+  ['given_date', 'text'],
+  ['returned_date', 'text'],
+  ['whereabouts', 'whereabouts'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
-const hidden = new Set(['employee_id', 'confirmation_id', 'currency'])
+const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'currency'])
 
 /** Events from before migration 0021 hold the accounting price under this key. */
 const legacyKeys: Record<string, string> = { unit_price_cents: 'accounting_price_cents' }
@@ -134,6 +168,12 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
       return t.statuses[String(value)] ?? String(value)
     case 'method':
       return t.methods[String(value)] ?? String(value)
+    case 'kind':
+      return t.kinds[String(value)] ?? String(value)
+    case 'category':
+      return t.categories[String(value)] ?? String(value)
+    case 'whereabouts':
+      return t.whereabouts[String(value)] ?? String(value)
     case 'roles':
       if (!Array.isArray(value)) return String(value)
       if (value.length === 0) return t.none

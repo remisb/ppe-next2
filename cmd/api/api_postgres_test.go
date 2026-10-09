@@ -20,6 +20,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -51,8 +52,9 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	// audit_seals and audit_purges reference nothing, so the cascade misses them.
-	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges CASCADE`); err != nil {
+	// audit_seals, audit_purges and asset_number_counters reference nothing, so
+	// the cascade misses them.
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	// The truncation reaches roles through their actor keys.
@@ -75,6 +77,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
+		asset.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
@@ -178,6 +181,116 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	}
 	if rec := api.do(t, "GET", "/api/v1/employees/"+id, staff, nil); rec.Code != http.StatusNotFound {
 		t.Errorf("get deleted = %d", rec.Code)
+	}
+}
+
+// TestPostgresAssetsHTTPFlow runs a SIM card through Company Assets: added,
+// activated, given against its printed form, held while its employee may not
+// be deleted, and returned (docs/specs/asset-service.md).
+func TestPostgresAssetsHTTPFlow(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, admin := api.userWith(t, role.KeyAdmin)
+
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Jonas", "last_name": "Petraitis"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	rec = api.do(t, "GET", "/api/v1/assets/next-number/SIM", mgr, nil)
+	if rec.Code != http.StatusOK || decode[map[string]string](t, rec.Body.Bytes())["inventory_no"] != "SIM-000001" {
+		t.Fatalf("next number = %d %s", rec.Code, rec.Body)
+	}
+	sim := map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011", "phone_no": "+370 612 40118",
+		"provider": "Telia", "plan": "Biz 10 GB", "non_return_value_cents": 2500}
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, sim)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add SIM = %d %s", rec.Code, rec.Body)
+	}
+	created := decode[map[string]any](t, rec.Body.Bytes())
+	id := created["id"].(string)
+	if created["connection_status"] != "NOT_ACTIVATED" || created["location"] != "OFFICE" || created["sim_no"] != "0089370011" {
+		t.Errorf("added = %v", created)
+	}
+	// The same card again names the one registered (§4).
+	sim["inventory_no"] = "SIM-000002"
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, sim)
+	if body := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusConflict || body["existing_id"] != id {
+		t.Errorf("duplicate = %d %s", rec.Code, rec.Body)
+	}
+
+	today := time.Now().Format(time.DateOnly) // the test API's timezone is UTC
+	form := map[string]any{"employee_id": empID, "given_date": today}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/preview", mgr, form); rec.Code != http.StatusOK {
+		t.Fatalf("preview = %d %s", rec.Code, rec.Body)
+	}
+	give := map[string]any{"employee_id": empID, "given_date": today, "paper_form_signed": true, "form_hash": "x"}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give); rec.Code != http.StatusConflict {
+		t.Errorf("give not activated = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+id+"/status", mgr, map[string]any{"connection_status": "ACTIVE"}); rec.Code != http.StatusOK {
+		t.Fatalf("activate = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give); rec.Code != http.StatusConflict ||
+		!strings.Contains(rec.Body.String(), "changed after it was printed") {
+		t.Errorf("give with another form's hash = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/preview", mgr, form)
+	give["form_hash"] = decode[map[string]any](t, rec.Body.Bytes())["document_hash"]
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("give = %d %s", rec.Code, rec.Body)
+	}
+	assignment := decode[map[string]any](t, rec.Body.Bytes())
+	if assignment["employee_name"] != "Jonas Petraitis" || assignment["days_held"] != float64(0) {
+		t.Errorf("assignment = %v", assignment)
+	}
+
+	// Leaving never returns an asset, so its holder is not deleted (§2).
+	if rec := api.do(t, "DELETE", "/api/v1/employees/"+empID, mgr, nil); rec.Code != http.StatusConflict ||
+		!strings.Contains(rec.Body.String(), "SIM-000001") {
+		t.Errorf("delete holder = %d %s", rec.Code, rec.Body)
+	}
+
+	rec = api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil)
+	detail := decode[map[string]any](t, rec.Body.Bytes())
+	if detail["location"] != "WITH_EMPLOYEE" || detail["open_assignment"] == nil || len(detail["assignments"].([]any)) != 1 {
+		t.Errorf("asset = %v", detail)
+	}
+	for path, want := range map[string]string{
+		"/api/v1/assets?kind=SIM&location=WITH_EMPLOYEE&q=petr":                        `"total":1`,
+		"/api/v1/assets?kind=SIM&location=OFFICE":                                      `"total":0`,
+		"/api/v1/assets/summary/SIM":                                                   `{"total":1,"in_office":0,"with_employees":1,"not_returned":0}`,
+		"/api/v1/assets/by-number/612%2040":                                            `"inventory_no":"SIM-000001"`,
+		"/api/v1/assets/by-employee/" + empID:                                          `"inventory_no":"SIM-000001"`,
+		"/api/v1/assets/" + id + "/assignments/" + assignment["id"].(string) + "/form": `"document_hash":"` + give["form_hash"].(string),
+	} {
+		if rec := api.do(t, "GET", path, mgr, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("%s = %d %s; want %s", path, rec.Code, rec.Body, want)
+		}
+	}
+	for _, q := range []string{"", "?kind=SIM&colour=red", "?kind=SIM&kind=SIM", "?kind=SIM&location=HOME"} {
+		if rec := api.do(t, "GET", "/api/v1/assets"+q, mgr, nil); rec.Code != http.StatusBadRequest {
+			t.Errorf("list %q = %d, want 400", q, rec.Code)
+		}
+	}
+
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/return", mgr, map[string]any{}); rec.Code != http.StatusOK {
+		t.Fatalf("return = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/return", mgr, map[string]any{}); rec.Code != http.StatusConflict {
+		t.Errorf("second return = %d", rec.Code)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/employees/"+empID, mgr, nil); rec.Code != http.StatusNoContent {
+		t.Errorf("delete after the return = %d %s", rec.Code, rec.Body)
+	}
+
+	rec = api.do(t, "GET", "/api/v1/audit-events/assets/"+id, mgr, nil)
+	for _, ev := range []string{"asset.registered", "asset.status_changed", "asset.given", "asset.returned"} {
+		if !strings.Contains(rec.Body.String(), ev) {
+			t.Errorf("changes lack %s: %s", ev, rec.Body)
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/audit-events?area=assets", admin, nil); !strings.Contains(rec.Body.String(), `"entity_label":"SIM-000001"`) {
+		t.Errorf("Audit log = %d %s", rec.Code, rec.Body)
 	}
 }
 
@@ -1131,6 +1244,9 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`TRUNCATE app_settings`,
 		`INSERT INTO schema_migrations (filename) VALUES ('9999_x.up.sql')`,
 		`DELETE FROM dbbackup_runs`,
+		`DELETE FROM asset_assignments`,
+		`UPDATE asset_numbers SET number = number`,
+		`DELETE FROM asset_numbers`,
 		`DROP TRIGGER audit_events_no_update_delete ON audit_events`,
 		`ALTER TABLE users ADD COLUMN x int`,
 		`CREATE TABLE x (id int)`,

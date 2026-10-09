@@ -2,6 +2,7 @@ package employee
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -21,15 +22,25 @@ const (
 )
 
 type Service struct {
-	repo  Repository
-	now   func() time.Time
-	newID func() uuid.UUID
+	repo     Repository
+	now      func() time.Time
+	newID    func() uuid.UUID
+	holdings Holdings
+}
+
+// Holdings answers which company assets an employee holds now, by inventory
+// number (Company Assets, docs/specs/asset-service.md).
+type Holdings interface {
+	HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error)
 }
 
 type Option func(*Service)
 
 func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
+
+// WithHoldings lets Delete refuse an employee who still holds company assets.
+func WithHoldings(h Holdings) Option { return func(s *Service) { s.holdings = h } }
 
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
@@ -186,12 +197,25 @@ func (s *Service) touch(cur, next Employee, actor uuid.UUID) (Employee, []audit.
 	return next, evs, nil
 }
 
-// Delete soft-deletes an employee. Their orders keep their snapshots.
+// Delete soft-deletes an employee. Their orders keep their snapshots. An
+// employee who holds company assets is not deleted: leaving never returns
+// them (assets brief §2), so they are returned or resolved first. The check
+// runs under the employee's row lock, which giving an asset share-locks, so
+// the two cannot pass each other.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
 	}
 	_, err := s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
+		if s.holdings != nil {
+			held, err := s.holdings.HeldBy(ctx, cur.ID)
+			if err != nil {
+				return cur, nil, err
+			}
+			if len(held) > 0 {
+				return cur, nil, fmt.Errorf("%w: %s", ErrHoldsAssets, strings.Join(held, ", "))
+			}
+		}
 		now := s.now()
 		next := cur
 		next.DeletedAt, next.DeletedByUserID = &now, &actor

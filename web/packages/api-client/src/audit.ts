@@ -5,7 +5,7 @@
  * The apps' words are typed against these lists, so a new event cannot be
  * shown without a description.
  */
-export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'settings', 'security', 'audit'] as const
+export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'assets', 'settings', 'security', 'audit'] as const
 
 export const AUDIT_EVENTS = [
   'user.created',
@@ -37,6 +37,12 @@ export const AUDIT_EVENTS = [
   'order.confirmation_link_opened',
   'order.given',
   'order.deleted',
+  'asset.registered',
+  'asset.updated',
+  'asset.status_changed',
+  'asset.given',
+  'asset.returned',
+  'asset.marked_not_returned',
   'settings.supplier_chat_changed',
   'access_review.completed',
   'audit.exported',

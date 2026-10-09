@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -82,6 +83,7 @@ var errorStatuses = []struct {
 	{order.ErrActorNotFound, http.StatusUnauthorized},
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
 	{role.ErrActorNotFound, http.StatusUnauthorized},
+	{asset.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
 	{role.ErrNotFound, http.StatusNotFound},
@@ -94,6 +96,9 @@ var errorStatuses = []struct {
 	{order.ErrItemSetNotFound, http.StatusNotFound},
 	{audit.ErrNotFound, http.StatusNotFound},
 	{security.ErrNotFound, http.StatusNotFound},
+	{asset.ErrNotFound, http.StatusNotFound},
+	{asset.ErrEmployeeNotFound, http.StatusNotFound},
+	{asset.ErrNoForm, http.StatusNotFound},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -106,6 +111,14 @@ var errorStatuses = []struct {
 	{order.ErrPriceMissing, http.StatusConflict},
 	{order.ErrItemUnavailable, http.StatusConflict},
 	{order.ErrNotOrdered, http.StatusConflict},
+	{employee.ErrHoldsAssets, http.StatusConflict},
+	{asset.ErrInventoryNoTaken, http.StatusConflict},
+	{asset.ErrSIMNoTaken, http.StatusConflict},
+	{asset.ErrAlreadyGiven, http.StatusConflict},
+	{asset.ErrNotActive, http.StatusConflict},
+	{asset.ErrNotGiven, http.StatusConflict},
+	{asset.ErrAlreadyMarked, http.StatusConflict},
+	{asset.ErrFormChanged, http.StatusConflict},
 	{order.ErrLinkExpired, http.StatusGone},
 
 	{user.ErrInvalid, http.StatusBadRequest},
@@ -120,6 +133,7 @@ var errorStatuses = []struct {
 	{settings.ErrInvalid, http.StatusBadRequest},
 	{audit.ErrInvalid, http.StatusBadRequest},
 	{security.ErrInvalid, http.StatusBadRequest},
+	{asset.ErrInvalid, http.StatusBadRequest},
 	{system.ErrNotFound, http.StatusNotFound},
 	{system.ErrInvalid, http.StatusBadRequest},
 }
@@ -133,6 +147,12 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 			msg := err.Error()
 			if m.status == http.StatusUnauthorized {
 				msg = "unauthenticated"
+			}
+			// A conflict with an existing record names it, so the app can open it.
+			var existing interface{ ExistingID() uuid.UUID }
+			if errors.As(err, &existing) {
+				writeJSON(w, m.status, errorBody{Error: msg, ExistingID: existing.ExistingID().String()})
+				return
 			}
 			writeErrorMessage(w, m.status, msg)
 			return
@@ -155,6 +175,9 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 type errorBody struct {
 	Error     string `json:"error"`
 	Reference string `json:"reference,omitempty"`
+	// ExistingID is the record a conflict is with: the asset that already
+	// has the SIM or inventory number.
+	ExistingID string `json:"existing_id,omitempty"`
 }
 
 // parseUUIDPath reads path wildcard key as a UUID; a malformed one is a 400.

@@ -242,6 +242,33 @@ func TestDeleteIsSoft(t *testing.T) {
 	}
 }
 
+// holdings is an employee.Holdings that reports fixed inventory numbers.
+type holdings map[uuid.UUID][]string
+
+func (h holdings) HeldBy(_ context.Context, id uuid.UUID) ([]string, error) { return h[id], nil }
+
+// An employee holding company assets is not deleted: leaving never returns
+// them (assets brief §2, §19).
+func TestDeleteRefusedWhileHoldingAssets(t *testing.T) {
+	repo := newFakeRepo()
+	held := holdings{}
+	svc := NewService(repo, WithHoldings(held))
+	ctx := context.Background()
+	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, testActor)
+	held[e.ID] = []string{"SIM-000001", "PC-000002"}
+	err := svc.Delete(ctx, e.ID, testActor)
+	if !errors.Is(err, ErrHoldsAssets) || !strings.Contains(err.Error(), "SIM-000001, PC-000002") {
+		t.Fatalf("delete = %v, want ErrHoldsAssets naming the assets", err)
+	}
+	if repo.rows[e.ID].Deleted() || repo.events[len(repo.events)-1].Event == EventDeleted {
+		t.Error("deleted anyway")
+	}
+	delete(held, e.ID)
+	if err := svc.Delete(ctx, e.ID, testActor); err != nil {
+		t.Errorf("delete after the return: %v", err)
+	}
+}
+
 func TestDetailChangesAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()

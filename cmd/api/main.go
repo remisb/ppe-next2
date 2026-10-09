@@ -21,6 +21,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
+	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
@@ -86,6 +87,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
+		asset.NewPostgresRepository(pool),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
@@ -174,6 +176,7 @@ type services struct {
 	catalogue *catalogue.Service
 	itemSets  *itemset.Service
 	orders    *order.Service
+	assets    *asset.Service
 	dashboard *dashboard.Service
 	settings  *settings.Service
 	backups   *backup.Service
@@ -194,14 +197,14 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
 		security:  sec,
 		roles:     roles,
 		users:     users,
-		employees: employee.NewService(employees),
+		assets:    asset.NewService(assets, asset.WithLocation(loc)),
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
@@ -215,6 +218,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		jobs:      &jobRuns{},
 		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
+	s.employees = employee.NewService(employees, employee.WithHoldings(employeeHoldings{s.assets}))
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
 		Employees: orderEmployees{s.employees},
@@ -241,6 +245,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
+	registerAssetRoutes(rt, svc.assets)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerBackupRoutes(rt, svc.backups)

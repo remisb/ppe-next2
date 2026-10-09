@@ -52,12 +52,12 @@ func BuiltinID(key string) uuid.UUID {
 var builtins = map[string][]Permission{
 	KeyAdmin: {
 		UsersRead, UsersManage, RolesManage, SettingsManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead,
-		EmployeesDelete, CatalogueManage, ItemSetsManage,
+		EmployeesDelete, CatalogueManage, ItemSetsManage, AssetsManage,
 		DashboardOverview,
 	},
 	KeyManager: {
 		UsersRead,
-		EmployeesDelete, CatalogueManage, ItemSetsManage, OrdersDelete,
+		EmployeesDelete, CatalogueManage, ItemSetsManage, OrdersDelete, AssetsManage,
 		DashboardManager,
 	},
 	KeyEmployee: {DashboardEmployee},

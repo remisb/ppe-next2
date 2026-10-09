@@ -698,13 +698,13 @@ export interface BackupRun {
 }
 
 /** The record types the API records changes to (entity_type). */
-export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'settings' | 'access_review' | 'audit_log'
+export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'asset' | 'settings' | 'access_review' | 'audit_log'
 
 /** Where a change was made. */
 export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'
 
 /** The records with a History of their own (GET /api/v1/audit-events/{record}/{id}). */
-export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'users'
+export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'assets' | 'users'
 
 /**
  * One recorded change (GET /api/v1/audit-events). `event` is one of

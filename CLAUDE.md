@@ -75,9 +75,11 @@ spec `docs/specs/usage-service.md`, `internal/usage`) shows active people per da
 changes per week, devices, languages, the confirmation-link funnel
 (`order_confirmations.first_opened_at`, `order.confirmation_link_opened`) and a daily
 data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashboards use too.
-**Company Assets** (SIM cards, equipment and furniture) is specified, not built: slice 1 of
-ADR 0004 wrote its terms (glossary §12), `docs/specs/asset-service.md` and the §19 checks in
-`docs/testing.md`; slices 2–8 build it.
+**Company Assets** (SIM cards, equipment and furniture, ADR 0004; terms in glossary §12):
+the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
+`docs/specs/asset-service.md`): assets, assignments with one open per asset, the
+assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
+employee who holds assets. The screens are slices 3–7.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -86,6 +88,9 @@ days) and `purge_auth_events` (over 30 days)), and the six refuse TRUNCATE unles
 transaction sets `SET LOCAL ppe.allow_truncate = on`, as test setup does; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
 `given_*` columns to the status; a catalogue item's accounting price and service period are
 nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
+`asset_assignments` allow one open assignment per asset (a partial unique index) and a
+trigger refuses deleting one, changing its giving, or setting its Not Returned mark or return
+twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not change it).
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
 but shown on no order or record. The app labels the accounting price "Price"; the record's
 `unit_price_cents` key holds it and never changes, because it is part of the document hash.
@@ -100,7 +105,8 @@ every query over `orders`, the dashboards' included, must filter `deleted_at IS 
 dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests
 must `TRUNCATE ... CASCADE` because of the actor foreign keys, after
 `SET LOCAL ppe.allow_truncate = on` in the same `Exec`, and must name `audit_seals,
-audit_purges` when they empty `audit_events`.
+audit_purges` when they empty `audit_events`, and `asset_number_counters` when they need
+inventory numbers to start again (no key reaches it).
 The API connects as the least-privilege role **`ppe_app`** in production (once
 `API_DB_USER`/`API_DB_PASSWORD` are set), in local dev (`.env.example`, with the tests'
 password `ppe-app-test`: roles are shared by `ppe2` and `ppe2_test`) and in the API's
