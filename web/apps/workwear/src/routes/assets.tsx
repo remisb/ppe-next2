@@ -116,11 +116,17 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
     }
   }
 
-  // The card that already has a number typed on the form: found by its own number.
+  // The card that already has a number typed on the form: found in this
+  // register by its own number. An inventory number may be another kind's
+  // (numbers are unique across assets), which opens that item's page.
   const openExisting = async (id: string) => {
     setEditing(null)
     try {
       const found = await client.assets.get(id)
+      if (found.kind !== kind) {
+        navigate({ name: 'asset', id })
+        return
+      }
       setSearch(found.inventory_no)
       update({ ...noAssetFilters, q: found.inventory_no })
     } catch (err) {

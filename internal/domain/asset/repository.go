@@ -41,6 +41,15 @@ type Bump struct {
 	N      int64
 }
 
+// BumpOf is the counter a's inventory number raises: its prefix's own
+// PREFIX-NNNNNN, or nil for any other number.
+func BumpOf(a Asset) *Bump {
+	if n := numberOf(a.Prefix(), a.InventoryNo); n > 0 {
+		return &Bump{Prefix: a.Prefix(), N: n}
+	}
+	return nil
+}
+
 // Repository is the persistence the asset service needs. Reads return live
 // assets that are not written off; implementations translate storage errors
 // to this package's sentinels and never validate.

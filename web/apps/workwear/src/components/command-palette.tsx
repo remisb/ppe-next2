@@ -1,7 +1,7 @@
 import type { Asset, CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
 import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
 import { cn } from '@ppe/ui/lib/utils'
-import { ClipboardList, CornerDownLeft, Smartphone, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
+import { Boxes, ClipboardList, CornerDownLeft, Smartphone, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
@@ -67,7 +67,7 @@ export function CommandPalette({
   const [employees, setEmployees] = useState<Employee[]>([])
   // The order a record-number search finds, if any: "WE-000004", "we4", "4".
   const [orders, setOrders] = useState<ListedOrder[]>([])
-  // The SIM cards whose SIM, phone or inventory number has what was typed.
+  // The assets whose inventory number, or a SIM card's SIM or phone number, has what was typed.
   const [assets, setAssets] = useState<Asset[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
   const [density, setDensity] = useDensity(userId)
@@ -150,14 +150,15 @@ export function CommandPalette({
         to: { name: 'history', order: o.id },
       })
     }
-    // A card's number is as specific: its card next, to open its page.
+    // An asset's number is as specific: its asset next, to open its page.
     for (const a of assets.slice(0, PER_GROUP)) {
+      const sim = a.kind === 'SIM'
       out.push({
         key: `asset-${a.id}`,
         group: 'assets',
-        label: `${a.inventory_no} · ${a.phone_no ?? a.sim_no ?? ''}`,
+        label: `${a.inventory_no} · ${(sim ? (a.phone_no ?? a.sim_no) : a.name) ?? ''}`,
         hint: holderText(a).main,
-        icon: <Smartphone aria-hidden className="size-4" />,
+        icon: sim ? <Smartphone aria-hidden className="size-4" /> : <Boxes aria-hidden className="size-4" />,
         to: { name: 'asset', id: a.id },
       })
     }

@@ -176,7 +176,8 @@ func TestPostgresNumbersAreNeverReused(t *testing.T) {
 	if _, err := svc.Create(ctx, CreateParams{Kind: KindSIM, Params: Params{InventoryNo: "SIM-000001", SimNo: sp("2"), Provider: sp("Bitė")}}, actor); !errors.Is(err, ErrInventoryNoTaken) {
 		t.Errorf("a corrected-away number: %v", err)
 	}
-	if n, err := svc.NextNumber(ctx, "SIM"); err != nil || n != "SIM-000002" {
+	// Edit took SIM-000010, which raises the counter as Add does.
+	if n, err := svc.NextNumber(ctx, "SIM"); err != nil || n != "SIM-000011" {
 		t.Errorf("next = %s, %v", n, err)
 	}
 	if _, err := svc.Create(ctx, CreateParams{Kind: KindEquipment, Params: Params{InventoryNo: "PC-000007", Name: sp("Laptop"), Category: ptr(CategoryComputer)}}, actor); err != nil {
@@ -229,6 +230,72 @@ func TestPostgresConcurrentGiveGivesOnce(t *testing.T) {
 	var rows int
 	if err := owner.QueryRow(context.Background(), `SELECT count(*) FROM asset_assignments WHERE asset_id = $1`, v.ID).Scan(&rows); err != nil || given != 1 || rows != 1 {
 		t.Errorf("%d gave, %d assignments, %v; want exactly one", given, rows, err)
+	}
+}
+
+// A second Return or Mark as Not Returned that waited for the first one's lock
+// sees it done (409), not the assignment as it was before (a trigger error, 500).
+func TestPostgresConcurrentReturnAndMarkAnswerConflict(t *testing.T) {
+	app, _, actor, emps := newTestPool(t)
+	svc := newPostgresService(app)
+	ctx := context.Background()
+	for _, c := range []struct {
+		name, number string
+		do           func(id uuid.UUID) error
+		want         error
+	}{
+		{"return", "SIM-000001", func(id uuid.UUID) error {
+			_, err := svc.Return(ctx, id, ReturnParams{}, actor)
+			return err
+		}, ErrNotGiven},
+		{"not returned", "SIM-000002", func(id uuid.UUID) error {
+			_, err := svc.MarkNotReturned(ctx, id, NotReturnedParams{Whereabouts: string(WhereaboutsUnknown)}, actor)
+			return err
+		}, ErrAlreadyMarked},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			v := addSIM(t, svc, actor, c.number, c.number[4:], StatusActive)
+			if _, err := giveNow(svc, v.ID, emps[0], actor); err != nil {
+				t.Fatal(err)
+			}
+			var wg sync.WaitGroup
+			errs := make([]error, 8)
+			for i := range errs {
+				wg.Add(1)
+				go func(i int) {
+					defer wg.Done()
+					errs[i] = c.do(v.ID)
+				}(i)
+			}
+			wg.Wait()
+			done := 0
+			for _, err := range errs {
+				switch {
+				case err == nil:
+					done++
+				case !errors.Is(err, c.want):
+					t.Errorf("unexpected: %v", err)
+				}
+			}
+			if done != 1 {
+				t.Errorf("%d succeeded, want exactly one", done)
+			}
+		})
+	}
+}
+
+// SIM numbers compare without spaces and in either case: an ICCID may end in
+// a hex digit typed in capitals or not.
+func TestPostgresSIMNumbersIgnoreCase(t *testing.T) {
+	app, _, actor, _ := newTestPool(t)
+	svc := newPostgresService(app)
+	first := addSIM(t, svc, actor, "SIM-000001", "8937 0012 34F", StatusActive)
+	_, err := svc.Create(context.Background(), CreateParams{Kind: KindSIM, Params: Params{
+		InventoryNo: "SIM-000002", SimNo: sp("89370012 34f"), Provider: sp("Telia"),
+	}}, actor)
+	var dup *DuplicateError
+	if !errors.Is(err, ErrSIMNoTaken) || !errors.As(err, &dup) || dup.ExistingID() != first.ID {
+		t.Errorf("same SIM number in lower case: %v", err)
 	}
 }
 

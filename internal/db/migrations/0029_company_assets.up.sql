@@ -44,7 +44,7 @@ CREATE TABLE assets (
 );
 
 CREATE UNIQUE INDEX assets_inventory_no_idx ON assets (upper(inventory_no));
-CREATE UNIQUE INDEX assets_sim_no_live_idx ON assets (replace(sim_no, ' ', ''))
+CREATE UNIQUE INDEX assets_sim_no_live_idx ON assets (upper(replace(sim_no, ' ', '')))
     WHERE deleted_at IS NULL AND sim_no IS NOT NULL;
 CREATE INDEX assets_kind_idx ON assets (kind, upper(inventory_no)) WHERE deleted_at IS NULL;
 

@@ -227,12 +227,13 @@ review ([specs/security-service.md](specs/security-service.md), ADR 0003).
 Not a manual rule: the assets brief's §19 checks and the rules behind them
 ([specs/asset-service.md](specs/asset-service.md), ADR 0004). The API is built (slice 2);
 the screens' tests come with slices 3–7. Go tests are in `internal/domain/asset` unless
-named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
+named otherwise; the HTTP flows are `TestPostgresAssetsHTTPFlow` and
+`TestPostgresAssetsEditNotReturnedAndFurniture` in `cmd/api`.
 
 | Brief §19 check or rule | Expected | Covered by |
 | --- | --- | --- |
 | A new SIM from the provider | Office, Not Activated, no holder; received today | `TestAddSIMCardDefaults`, `TestPostgresAssetLifecycle`, HTTP flow |
-| The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset's id; spaces and case ignored | `TestDuplicateNumbersNameTheExistingAsset`, `TestPostgresNumbersAreNeverReused`, HTTP flow (`existing_id`) |
+| The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset's id; spaces and case ignored (a SIM number's letters too) | `TestDuplicateNumbersNameTheExistingAsset`, `TestPostgresNumbersAreNeverReused`, `TestPostgresSIMNumbersIgnoreCase`, HTTP flows (`existing_id`, also on Edit) |
 | Give a Not Activated or Blocked SIM | Refused (409), nothing stored | `TestGiveRefusesWhatCannotBeGiven`, `TestPostgresAssetLifecycle`, HTTP flow |
 | Give an Active SIM | Holder, location, form and history change together, in one transaction | `TestGiveUpdatesEverythingTogether`, `TestGiveFillsAMissingPlanAndValue`, `TestPostgresAssetLifecycle` |
 | Give twice, or two users at once | Exactly one assignment; the others get 409 | `TestGiveUpdatesEverythingTogether`, `TestPostgresConcurrentGiveGivesOnce`, `TestPostgresAssignmentsCannotBeRewritten` (the index) |
@@ -243,8 +244,9 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | The employee no longer works | Nothing is returned automatically; Delete employee is refused while they hold assets (spec, open decision 1) | `employee.TestDeleteRefusedWhileHoldingAssets`, HTTP flow |
 | Register and give equipment | A unique number per prefix; furniture needs no form, computers need their value | `TestPostgresNumbersAreNeverReused`, `TestFurnitureNeedsNoForm`; the employee's list is `TestPostgresAssetLifecycle` (`ByEmployee`), its screen slice 6 |
 | The form changes after Print Form | The API refuses a hash that no longer matches (409); the form's Paper Form Signed reset is slice 4 | `TestGiveRefusesWhatCannotBeGiven`, HTTP flow |
-| Not Returned | The holder stays; Unknown is a location; the mark is set once and survives the return | `TestNotReturned`, `TestPostgresAssetLifecycle` |
-| Numbers are never reused, nor changed by the system | A corrected-away number stays used; the counter follows typed numbers and skips used ones | `TestNextNumberFollowsTheCounterAndSkipsUsedNumbers`, `TestPostgresNumbersAreNeverReused` |
+| Not Returned | The holder stays; Unknown is a location; the mark is set once and survives the return | `TestNotReturned`, `TestPostgresAssetLifecycle`, `TestPostgresAssetsEditNotReturnedAndFurniture` |
+| Return or Not Returned twice, or by two users at once | Exactly one succeeds; the others get 409, not a trigger's 500 | `TestPostgresConcurrentReturnAndMarkAnswerConflict`, HTTP flow |
+| Numbers are never reused, nor changed by the system | A corrected-away number stays used; the counter follows numbers typed on Add or Edit and skips used ones | `TestNextNumberFollowsTheCounterAndSkipsUsedNumbers`, `TestPostgresNumbersAreNeverReused`, `TestPostgresAssetsEditNotReturnedAndFurniture` |
 | Assignments are never rewritten | The trigger refuses a changed giving, a deleted row, a second mark, a reopened return; `ppe_app` cannot delete them or change used numbers | `TestPostgresAssignmentsCannotBeRewritten`, `cmd/api` `TestPostgresAPIRoleIsLeastPrivileged` |
 | Access | Reads for anyone signed in, writes `assets.manage` (Administrator, Manager) | `TestRoutePolicy`, `TestSeededRolesKeepPolicy`, `role.TestWebClientListsTheCatalogue` |
 | Events | Each kind of change one event, none when nothing changed; known to the web | `TestChangeStatus`, `TestEditRecordsChangedDetailsOnly`, `cmd/api` `TestEveryDomainEventIsKnown`, `audit.TestWebClientListsTheEvents` |
@@ -262,5 +264,7 @@ named otherwise; the HTTP flow is `TestPostgresAssetsHTTPFlow` in `cmd/api`.
 | ⌘K finds a card by any of its numbers, spaces ignored | — | web `lib/assets.test.ts` (`looksLikeAssetNumber`); e2e *Company Assets on the employee page, …* |
 | The dashboards' Company Assets card opens the register on its tile | — | web `router.test.ts` (`?show=`); e2e *Company Assets on the employee page, …* |
 | Equipment: one record per item; Add Asset suggests the category's number; the register filters by category | §15, §16 | `TestFurnitureNeedsNoForm`, `TestPostgresNumbersAreNeverReused` (category filter, name sort); web `lib/assets.test.ts`; e2e *Equipment & Furniture: …* |
-| A computer is given against its signed form; a desk without one; no connection status | §17, open decision 6 | `TestFurnitureNeedsNoForm` (`needs_form`); web `lib/assets.test.ts`; e2e *Equipment & Furniture: …* |
+| A computer is given against its signed form; a desk without one; no connection status; no plan asked or sent for an item | §17, open decision 6 | `TestFurnitureNeedsNoForm` (`needs_form`), `TestPostgresAssetsEditNotReturnedAndFurniture` (no preview, a plan refused); web `lib/assets.test.ts` (`formInput`); e2e *Equipment & Furniture: …* |
+| ⌘K finds an item by its number, named as an item; opening another asset's page from one shows that asset only | — | e2e *Equipment & Furniture: …* |
+| A page number too large for an offset | 400, not 500 | `TestListParams`, `order.TestListParamsRejections`, HTTP flow |
 | Equipment on the employee page, kept apart from Given SIM | §18 | e2e *Equipment & Furniture: …* |

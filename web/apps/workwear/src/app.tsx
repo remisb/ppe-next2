@@ -385,7 +385,7 @@ export function App() {
         {route.name === 'assets' ? (
           <Assets key={`${route.equipment ? 'equipment' : 'sim'}-${route.tile ?? 'all'}`} kind={route.equipment ? 'EQUIPMENT' : 'SIM'} tile={route.tile} navigate={navigate} />
         ) : null}
-        {route.name === 'asset' ? <AssetPage id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
+        {route.name === 'asset' ? <AssetPage key={route.id} id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
         {route.name === 'assetForm' ? (
           <AssetFormPage
             id={route.id}

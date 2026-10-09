@@ -49,11 +49,11 @@ export const shell: ShellText = {
     help: 'Rodyti šiuos sparčiuosius klavišus',
   },
   searchOrJump: 'Ieškoti arba pereiti',
-  paletteHint: 'Ieškoti užsakymų, SIM kortelių, darbuotojų, prekių ir ekranų…',
+  paletteHint: 'Ieškoti užsakymų, įmonės turto, darbuotojų, prekių ir ekranų…',
   results: 'Rezultatai',
   groups: {
     orders: 'Užsakymai',
-    assets: 'SIM kortelės',
+    assets: 'Įmonės turtas',
     actions: 'Veiksmai',
     screens: 'Ekranai',
     employees: 'Darbuotojai',

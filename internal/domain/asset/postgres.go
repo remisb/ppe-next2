@@ -137,15 +137,21 @@ func (r *PostgresRepository) Create(ctx context.Context, a Asset, bump *Bump, ev
 			return err
 		}
 		if bump != nil {
-			if _, err := tx.Exec(ctx, `
-				INSERT INTO asset_number_counters (prefix, last) VALUES ($1, $2)
-				ON CONFLICT (prefix) DO UPDATE SET last = greatest(asset_number_counters.last, excluded.last)`,
-				bump.Prefix, bump.N); err != nil {
+			if err := raiseCounter(ctx, tx, *bump); err != nil {
 				return err
 			}
 		}
 		return audit.Insert(ctx, tx, ev)
 	}))
+}
+
+// raiseCounter raises the prefix's counter to at least b.N.
+func raiseCounter(ctx context.Context, tx pgx.Tx, b Bump) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO asset_number_counters (prefix, last) VALUES ($1, $2)
+		ON CONFLICT (prefix) DO UPDATE SET last = greatest(asset_number_counters.last, excluded.last)`,
+		b.Prefix, b.N)
+	return err
 }
 
 // useNumber records number as asset id's. A number another asset ever used
@@ -365,17 +371,27 @@ func (r *PostgresRepository) NumberOwner(ctx context.Context, number string) (uu
 func (r *PostgresRepository) SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT id FROM assets
-		WHERE deleted_at IS NULL AND sim_no IS NOT NULL AND replace(sim_no, ' ', '') = $1`, compactSIM(simNo)).Scan(&id)
+		WHERE deleted_at IS NULL AND sim_no IS NOT NULL AND upper(replace(sim_no, ' ', '')) = $1`, compactSIM(simNo)).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uuid.Nil, ErrNotFound
 	}
 	return id, err
 }
 
-// lock locks the live asset and its open assignment.
+// lock locks the live asset and its open assignment. The asset is locked in a
+// statement of its own and read in the next: a statement that waited for the
+// lock would see the assignment as it was before the holder committed (only
+// the locked row is re-read), so a second Return would find it still open.
 func lock(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Record, error) {
+	var locked uuid.UUID
+	if err := tx.QueryRow(ctx, `SELECT a.id FROM assets a WHERE a.id = $1 AND `+live+` FOR UPDATE`, id).Scan(&locked); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Record{}, ErrNotFound
+		}
+		return Record{}, err
+	}
 	r, err := scanRecord(tx.QueryRow(ctx, `SELECT `+assetColumns+`, `+assignmentColumns+recordFrom+`
-		WHERE a.id = $1 AND `+live+` FOR UPDATE OF a`, id))
+		WHERE a.id = $1`, id))
 	if err != nil {
 		return Record{}, err
 	}
@@ -415,11 +431,17 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 }
 
 // writeAsset writes next's details over cur's, recording a new inventory
-// number as used.
+// number as used and, when it is the next prefix's own PREFIX-NNNNNN, raising
+// that counter, as Add does (spec, Numbers).
 func writeAsset(ctx context.Context, tx pgx.Tx, cur, next Asset) error {
 	if !strings.EqualFold(cur.InventoryNo, next.InventoryNo) {
 		if err := useNumber(ctx, tx, next.ID, next.InventoryNo, next.UpdatedAt); err != nil {
 			return err
+		}
+		if b := BumpOf(next); b != nil {
+			if err := raiseCounter(ctx, tx, *b); err != nil {
+				return err
+			}
 		}
 	}
 	_, err := tx.Exec(ctx, `

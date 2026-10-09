@@ -215,10 +215,7 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 		}
 		a.ConnectionStatus, a.ReceivedDate = &status, &received
 	}
-	var bump *Bump
-	if n := numberOf(a.Prefix(), a.InventoryNo); n > 0 {
-		bump = &Bump{Prefix: a.Prefix(), N: n}
-	}
+	bump := BumpOf(a)
 	ev, err := s.event(actor, EventRegistered, a.ID, now, nil, facts(a))
 	if err != nil {
 		return View{}, err

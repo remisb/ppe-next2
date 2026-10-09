@@ -74,6 +74,7 @@ func TestListParamsRejections(t *testing.T) {
 		"from after to": {FromDate: "2026-09-25", ToDate: "2026-09-24"},
 		"page 0 size":   {PageSize: 101},
 		"negative page": {Page: -1},
+		"huge page":     {Page: 1 << 62},
 		"unknown sort":  {Sort: "price"},
 		"bad direction": {Sort: "total", Dir: "down"},
 		"bad record":    {Record: "WE-12a"},
