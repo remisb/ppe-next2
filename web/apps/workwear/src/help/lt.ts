@@ -4,7 +4,7 @@ const who = { admin: 'administratoriams', manager: 'vadovams', employee: 'darbuo
 
 export const lt: Guide = {
   title: 'Naudotojo vadovas',
-  lede: 'Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM korteles, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.',
+  lede: 'Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.',
   language: 'Vadovo kalba',
   device: 'Įrenginys',
   devices: { phone: 'Telefonas', tablet: 'Planšetė', desktop: 'Kompiuteris' },
@@ -199,7 +199,7 @@ export const lt: Guide = {
       title: 'Įmonės turtas',
       blocks: [
         {
-          p: 'Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM kortelės, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM kortelės** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.',
+          p: 'Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.',
         },
         { p: 'Jį atidarysite per **Daugiau**.', devices: ['phone'] },
         { p: 'Jį atidarysite juostoje kairėje.', devices: ['tablet'] },
@@ -214,49 +214,49 @@ export const lt: Guide = {
           devices: ['phone'],
         },
         {
-          p: 'SIM kortelės **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.',
+          p: 'SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.',
         },
-        { shots: [{ name: 'assets', alt: 'SIM kortelės: plytelės, filtrai ir kiekviena kortelė su jos turėtoju' }] },
+        { shots: [{ name: 'assets', alt: 'SIM: plytelės, filtrai ir kiekviena kortelė su jos turėtoju' }] },
         {
-          p: '**Pridėti SIM kortelę** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
+          p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Pažymėjus **Numatytasis naujoms kortelėms**, kitą kartą „Pridėti SIM“ įrašys šį tiekėją. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: '**Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.', roles: ['admin', 'manager'] },
-        { p: 'Kaip išduoti SIM kortelę ar daiktą:', roles: ['admin', 'manager'] },
+        { p: 'SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:', roles: ['admin', 'manager'] },
         {
           ol: [
-            'Atidarykite jį ir pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.',
-            'Pasirinkite darbuotoją ir išdavimo datą: šiandien arba anksčiau.',
-            '**Spausdinti aktą** atidaro išdavimo aktą naujame skirtuke. Išspausdinkite jį ir duokite darbuotojui pasirašyti.',
-            'Pažymėkite **Aktas pasirašytas**, tada pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**.',
+            'Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.',
+            '**Kam ir kada**: pasirinkite darbuotoją ir išdavimo datą, šiandien arba anksčiau. SIM planas neprivalomas; negrąžinimo vertė yra akte, todėl ji reikalinga.',
+            '**Atspausdinkite aktą ir duokite pasirašyti**: **Spausdinti aktą** išspausdina išdavimo aktą iš šio puslapio, neatidarydamas naujo skirtuko, o **Atsisiųsti PDF** išsaugo tą patį aktą failu. Duokite darbuotojui pasirašyti popierinį aktą, tada pažymėkite **Darbuotojas pasirašė atspausdintą aktą**.',
+            '**Perduokite SIM** arba **Perduokite daiktą**: pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Tai iš karto įrašo turėtoją, vietą ir pasirašytą aktą.',
           ],
           roles: ['admin', 'manager'],
         },
         {
-          p: 'Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį; kol to nėra, mygtukas nurodo, ko trūksta. Jei po spausdinimo aktas pasikeičia, žymė **Aktas pasirašytas** nuimama: išspausdinkite jį dar kartą. Baldai ir kiti daiktai išduodami be akto.',
+          p: 'Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko nurodo, kas liko. Išspausdinus aktą, darbuotojas ir data sutraukiami į vieną eilutę; **Keisti** juos vėl atveria. Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį. Jei po spausdinimo aktas pasikeičia, žymė nuimama: atspausdinkite jį dar kartą ir duokite pasirašyti. Jei po spausdinimo langas uždaromas ar puslapis įkeliamas iš naujo, „Išduoti SIM“ vėl atsidaro su įvestais duomenimis ir atspausdintu aktu. Baldai ir kiti daiktai išduodami be akto, dviem žingsniais.',
           roles: ['admin', 'manager'],
         },
         {
           shots: [
-            { name: 'asset', alt: 'SIM kortelės puslapis: būsena, turėtojas ir išdavimai' },
-            { name: 'give-asset', alt: 'Išduoti SIM kortelę: pasirinktas darbuotojas, aktas išspausdintas' },
+            { name: 'asset', alt: 'SIM puslapis: būsena, turėtojas ir išdavimai' },
+            { name: 'give-asset', alt: 'Išduoti SIM: duomenys įvesti, aktas atspausdintas ir pasirašytas, galima išduoti' },
           ],
           roles: ['admin', 'manager'],
         },
-        { shots: [{ name: 'asset', alt: 'SIM kortelės puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
+        { shots: [{ name: 'asset', alt: 'SIM puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
         { p: 'Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.' },
         { p: 'Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo išdavimu pasirinkite **Įkelti pasirašytą aktą**: PDF, JPEG arba PNG failą iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
         { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'Išdavimas su įkelta pasirašyta kopija' }] },
         {
-          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** išspausdina jo aktą.',
+          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**.',
           roles: ['admin', 'manager'],
         },
         {
           p: 'Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, **Pažymėti kaip negrąžintą** įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada **Paruošti blokavimo laišką** pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane **Keisti būseną** pasirinkite **Užblokuota**.',
           roles: ['admin', 'manager'],
         },
-        { p: 'Paieška randa SIM kortelę pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.' },
+        { p: 'Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.' },
       ],
     },
     {

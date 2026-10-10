@@ -2,7 +2,7 @@
 
 [English](user-guide.md) · Lietuvių · [Русский](user-guide.ru.md)
 
-Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM korteles, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.
+Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.
 
 ## 1. Prisijungimas
 
@@ -151,7 +151,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ## 10. Įmonės turtas
 
-Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM kortelės, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM kortelės** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
+Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
 Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`.
 
@@ -161,31 +161,31 @@ Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirink
 
 Plytelės viršuje skaičiuoja, kas yra **Biure**, **Pas darbuotojus** ir **Negrąžinta**. Pasirinkite plytelę, kad matytumėte tik juos; skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal būseną, vietą ir tiekėją, o įrangą – pagal kategoriją.
 
-SIM kortelės **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.
+SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.
 
-![SIM kortelės: plytelės, filtrai ir kiekviena kortelė su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
+![SIM: plytelės, filtrai ir kiekviena kortelė su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
 
 *Tik administratoriams ir vadovams:*
 
-**Pridėti SIM kortelę** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
+**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Pažymėjus **Numatytasis naujoms kortelėms**, kitą kartą „Pridėti SIM“ įrašys šį tiekėją. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
 
 **Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.
 
-Kaip išduoti SIM kortelę ar daiktą:
+SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:
 
-1. Atidarykite jį ir pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.
-2. Pasirinkite darbuotoją ir išdavimo datą: šiandien arba anksčiau.
-3. **Spausdinti aktą** atidaro išdavimo aktą naujame skirtuke. Išspausdinkite jį ir duokite darbuotojui pasirašyti.
-4. Pažymėkite **Aktas pasirašytas**, tada pasirinkite **Išduoti SIM kortelę** arba **Išduoti turtą**.
+1. Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.
+2. **Kam ir kada**: pasirinkite darbuotoją ir išdavimo datą, šiandien arba anksčiau. SIM planas neprivalomas; negrąžinimo vertė yra akte, todėl ji reikalinga.
+3. **Atspausdinkite aktą ir duokite pasirašyti**: **Spausdinti aktą** išspausdina išdavimo aktą iš šio puslapio, neatidarydamas naujo skirtuko, o **Atsisiųsti PDF** išsaugo tą patį aktą failu. Duokite darbuotojui pasirašyti popierinį aktą, tada pažymėkite **Darbuotojas pasirašė atspausdintą aktą**.
+4. **Perduokite SIM** arba **Perduokite daiktą**: pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Tai iš karto įrašo turėtoją, vietą ir pasirašytą aktą.
 
-Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį; kol to nėra, mygtukas nurodo, ko trūksta. Jei po spausdinimo aktas pasikeičia, žymė **Aktas pasirašytas** nuimama: išspausdinkite jį dar kartą. Baldai ir kiti daiktai išduodami be akto.
+Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko nurodo, kas liko. Išspausdinus aktą, darbuotojas ir data sutraukiami į vieną eilutę; **Keisti** juos vėl atveria. Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį. Jei po spausdinimo aktas pasikeičia, žymė nuimama: atspausdinkite jį dar kartą ir duokite pasirašyti. Jei po spausdinimo langas uždaromas ar puslapis įkeliamas iš naujo, „Išduoti SIM“ vėl atsidaro su įvestais duomenimis ir atspausdintu aktu. Baldai ir kiti daiktai išduodami be akto, dviem žingsniais.
 
-![SIM kortelės puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
-![Išduoti SIM kortelę: pasirinktas darbuotojas, aktas išspausdintas](../../web/apps/workwear/public/help-img/lt/desktop/give-asset.png)
+![SIM puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
+![Išduoti SIM: duomenys įvesti, aktas atspausdintas ir pasirašytas, galima išduoti](../../web/apps/workwear/public/help-img/lt/desktop/give-asset.png)
 
 *Tik darbuotojo rolei:*
 
-![SIM kortelės puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
+![SIM puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
 
 Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.
 
@@ -197,11 +197,11 @@ Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo iš
 
 *Tik administratoriams ir vadovams:*
 
-Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** išspausdina jo aktą.
+Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**.
 
 Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, **Pažymėti kaip negrąžintą** įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada **Paruošti blokavimo laišką** pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane **Keisti būseną** pasirinkite **Užblokuota**.
 
-Paieška randa SIM kortelę pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.
+Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.
 
 ## 11. Administravimas
 

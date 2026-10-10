@@ -25,6 +25,10 @@ let confirmationURL = ''
 test.beforeAll(async ({ browser }) => {
   // Behind the e2e API's trusted proxy, so Signed-in devices shows an address from the documentation range.
   page = await browser.newPage({ ...deviceWindow, locale, extraHTTPHeaders: { 'X-Forwarded-For': '203.0.113.24' } })
+  // Print Form opens the print dialog, which would wait for a person; printing is ended with afterprint instead.
+  await page.addInitScript(() => {
+    window.print = () => {}
+  })
 })
 
 /** Settles the page (no hover, no pending requests, finished transitions) and saves it. */
@@ -175,7 +179,7 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await shot('backups')
 })
 
-test('company assets: the SIM cards, a card, giving one', async () => {
+test('company assets: the SIMs, a card, giving one', async () => {
   // The demo's cards (cmd/api/seed-demo.go): SIM-000003 is not returned, SIM-000005 is Active in the office.
   await page.goto('/assets')
   await expect(page.getByRole('link', { name: 'SIM-000003' }).filter({ visible: true }).first()).toBeVisible()
@@ -201,21 +205,17 @@ test('company assets: the SIM cards, a card, giving one', async () => {
   const give = page.getByRole('dialog')
   await give.getByRole('combobox', { name: T.assets.employee }).fill('Kazlausk')
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
-  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: T.assets.printForm }).click()])
-  await printTab.close()
+  // Print Form prints in place, with no tab of its own; the print dialog closing ends it.
+  await give.getByRole('button', { name: T.assets.printForm }).click()
+  await expect(page.locator('#print-in-place')).toBeAttached()
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+  await expect(give.getByRole('button', { name: T.assets.printAgain })).toBeVisible()
   await give.getByLabel(T.assets.paperFormSigned).check()
-  await expect(give.getByRole('button', { name: T.assets.giveSimCard })).toBeEnabled()
-  // Taller than a phone, the sheet shows it all from the employee chosen down to the tick.
+  await expect(give.getByText(T.assets.readyToGive)).toBeVisible()
+  // Taller than a phone, the sheet shows all three steps, the first folded, down to the button.
   if (device === 'desktop') await page.setViewportSize({ width: 1280, height: 1000 })
-  if (device !== 'phone') {
-    await give.getByRole('combobox', { name: T.assets.employee }).evaluate((e) => {
-      e.scrollIntoView({ block: 'start' })
-      // And its label above it.
-      let box = e.parentElement
-      while (box && box.scrollHeight <= box.clientHeight) box = box.parentElement
-      box?.scrollBy(0, -40)
-    })
-  }
+  // A phone's sheet scrolls: from the first step down, all three fit above the button.
+  if (device === 'phone') await give.getByRole('region', { name: T.assets.stepDetails }).evaluate((e) => e.scrollIntoView({ block: 'start' }))
   await shot('give-asset')
   if (device === 'desktop') await page.setViewportSize(deviceWindow.viewport)
   await give.getByRole('button', { name: T.common.cancel }).click()

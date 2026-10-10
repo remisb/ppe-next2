@@ -2,7 +2,7 @@
 
 English · [Lietuvių](user-guide.lt.md) · [Русский](user-guide.ru.md)
 
-The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIM cards, equipment and furniture, and who holds each one.
+The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIMs, equipment and furniture, and who holds each one.
 
 ## 1. Sign in
 
@@ -151,7 +151,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ## 10. Company Assets
 
-**Company Assets** records the SIM cards, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIM Cards** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.
+**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIMs** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
 Open it from the sidebar, or press `G` then `A`.
 
@@ -161,31 +161,31 @@ The **Company Assets** card on the Dashboard shows the same figures. Choose one 
 
 The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.
 
-A SIM card's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
+A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
 
-![The SIM cards: the tiles, the filters and each card with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
+![The SIMs: the tiles, the filters and each card with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
 
 *Administrators and managers only:*
 
-**Add SIM Card** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
+**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. Tick **Default for new cards** and Add SIM fills in that provider next time. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
 
 **Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.
 
-To give a SIM card or an item:
+To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:
 
-1. Open it and choose **Give SIM Card** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.
-2. Choose the employee and the given date: today, or earlier.
-3. **Print Form** opens the assignment form in a new tab. Print it and have the employee sign it.
-4. Tick **Paper Form Signed**, then choose **Give SIM Card** or **Give Asset**.
+1. Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.
+2. **Who and when**: choose the employee and the given date, today or earlier. A SIM's plan is optional; its non-return value is on the form, so it is needed.
+3. **Print the form and have it signed**: **Print Form** prints the assignment form from this page, with no new tab, and **Download PDF** saves the same form as a file. Have the employee sign the paper, then tick **The employee has signed the printed form**.
+4. **Hand over the SIM** or **Hand over the item**: choose **Give SIM** or **Give Asset**. It records the holder, the location and the signed form at once.
 
-Only an **Active** card in the office, with a phone number, can be given; until then the button says what is missing. If the form changes after printing, **Paper Form Signed** is cleared: print it again. Furniture and other items are given without a form.
+Each step opens when the one before it is done, and the line beside the button says what is left. Once the form is printed, the employee and date fold into one line; **Change** opens them again. Only an **Active** card in the office, with a phone number, can be given. If the form changes after printing, the tick is cleared: print it again and have it signed. Closed or reloaded after printing, Give SIM opens again with the details and the printed form. Furniture and other items are given without a form, in two steps.
 
-![A SIM card's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
-![Give SIM Card with the employee chosen and the form printed](../../web/apps/workwear/public/help-img/en/desktop/give-asset.png)
+![A SIM's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
+![Give SIM: the details done, the form printed and signed, ready to give](../../web/apps/workwear/public/help-img/en/desktop/give-asset.png)
 
 *The employee role only:*
 
-![A SIM card's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
+![A SIM's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
 
 On an assignment with a form, the card's page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.
 
@@ -197,11 +197,11 @@ Once the employee has signed, scan or photograph the form and choose **Upload Si
 
 *Administrators and managers only:*
 
-When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.
+When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**.
 
 Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.
 
-Search finds a SIM card by its SIM, phone or inventory number, and an item by its inventory number.
+Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.
 
 ## 11. Administration
 

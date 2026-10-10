@@ -76,9 +76,10 @@ describe('forReader', () => {
   it('shows Company Assets to everyone, and giving, returns and Not Returned to those who manage assets', () => {
     for (const roles of [['admin'], ['manager'], ['employee']] as const) expect(ids(forRoles(guides.en, roles))).toContain('assets')
     expect(words(forRoles(guides.en, ['manager']))).toContain('Mark as Not Returned')
-    expect(words(forRoles(guides.en, ['admin']))).toContain('Paper Form Signed')
+    expect(words(forRoles(guides.en, ['admin']))).toContain('The employee has signed the printed form')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Mark as Not Returned')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Print Form')
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Download PDF')
     expect(words(forRoles(guides.en, ['manager']))).toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Signed Copy Missing')

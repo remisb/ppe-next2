@@ -4,7 +4,7 @@ const who = { admin: 'Administrators', manager: 'Managers', employee: 'The emplo
 
 export const en: Guide = {
   title: 'User guide',
-  lede: "The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIM cards, equipment and furniture, and who holds each one.",
+  lede: "The app records workwear and safety equipment given to employees. You prepare an order and mark it as ordered. After the employee receives the items, they confirm receipt, and the app keeps a locked record in English and Russian. It also keeps track of the company's SIMs, equipment and furniture, and who holds each one.",
   language: 'Guide language',
   device: 'Device',
   devices: { phone: 'Phone', tablet: 'Tablet', desktop: 'Desktop' },
@@ -196,7 +196,7 @@ export const en: Guide = {
       title: 'Company Assets',
       blocks: [
         {
-          p: '**Company Assets** records the SIM cards, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIM Cards** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.',
+          p: '**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIMs** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.',
         },
         { p: 'Open it from **More**.', devices: ['phone'] },
         { p: 'Open it from the rail.', devices: ['tablet'] },
@@ -211,49 +211,49 @@ export const en: Guide = {
           devices: ['phone'],
         },
         {
-          p: "A SIM card's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.",
+          p: "A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.",
         },
-        { shots: [{ name: 'assets', alt: 'The SIM cards: the tiles, the filters and each card with its holder' }] },
+        { shots: [{ name: 'assets', alt: 'The SIMs: the tiles, the filters and each card with its holder' }] },
         {
-          p: '**Add SIM Card** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
+          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. Tick **Default for new cards** and Add SIM fills in that provider next time. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
-        { p: 'To give a SIM card or an item:', roles: ['admin', 'manager'] },
+        { p: 'To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:', roles: ['admin', 'manager'] },
         {
           ol: [
-            "Open it and choose **Give SIM Card** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.",
-            'Choose the employee and the given date: today, or earlier.',
-            '**Print Form** opens the assignment form in a new tab. Print it and have the employee sign it.',
-            'Tick **Paper Form Signed**, then choose **Give SIM Card** or **Give Asset**.',
+            "Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.",
+            "**Who and when**: choose the employee and the given date, today or earlier. A SIM's plan is optional; its non-return value is on the form, so it is needed.",
+            "**Print the form and have it signed**: **Print Form** prints the assignment form from this page, with no new tab, and **Download PDF** saves the same form as a file. Have the employee sign the paper, then tick **The employee has signed the printed form**.",
+            '**Hand over the SIM** or **Hand over the item**: choose **Give SIM** or **Give Asset**. It records the holder, the location and the signed form at once.',
           ],
           roles: ['admin', 'manager'],
         },
         {
-          p: "Only an **Active** card in the office, with a phone number, can be given; until then the button says what is missing. If the form changes after printing, **Paper Form Signed** is cleared: print it again. Furniture and other items are given without a form.",
+          p: "Each step opens when the one before it is done, and the line beside the button says what is left. Once the form is printed, the employee and date fold into one line; **Change** opens them again. Only an **Active** card in the office, with a phone number, can be given. If the form changes after printing, the tick is cleared: print it again and have it signed. Closed or reloaded after printing, Give SIM opens again with the details and the printed form. Furniture and other items are given without a form, in two steps.",
           roles: ['admin', 'manager'],
         },
         {
           shots: [
-            { name: 'asset', alt: "A SIM card's page: its status, holder and assignments" },
-            { name: 'give-asset', alt: 'Give SIM Card with the employee chosen and the form printed' },
+            { name: 'asset', alt: "A SIM's page: its status, holder and assignments" },
+            { name: 'give-asset', alt: 'Give SIM: the details done, the form printed and signed, ready to give' },
           ],
           roles: ['admin', 'manager'],
         },
-        { shots: [{ name: 'asset', alt: "A SIM card's page: its status, holder and assignments" }], roles: ['employee'] },
+        { shots: [{ name: 'asset', alt: "A SIM's page: its status, holder and assignments" }], roles: ['employee'] },
         { p: 'On an assignment with a form, the card\'s page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.' },
         { p: 'Once the employee has signed, scan or photograph the form and choose **Upload Signed Form** under its assignment: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
         { p: 'Once the employee has signed, choose **Upload Signed Form** under its assignment, then take a photo of the form or choose a file: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'An assignment with its signed copy uploaded' }] },
         {
-          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.',
+          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**.',
           roles: ['admin', 'manager'],
         },
         {
           p: 'Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.',
           roles: ['admin', 'manager'],
         },
-        { p: 'Search finds a SIM card by its SIM, phone or inventory number, and an item by its inventory number.' },
+        { p: 'Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.' },
       ],
     },
     {
