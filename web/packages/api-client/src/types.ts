@@ -358,7 +358,7 @@ export interface Settings {
   currency: 'EUR'
   /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
   supplier_chat: SupplierChat | null
-  /** The provider Add SIM Card fills in for a new card; null when there is none. */
+  /** The provider Add SIM fills in for a new card; null when there is none. */
   default_sim_provider: string | null
 }
 
@@ -1211,7 +1211,7 @@ export interface HeldAsset extends AssetAssignment {
   asset: Omit<Asset, 'location' | 'open_assignment' | 'needs_form'>
 }
 
-/** Add SIM Card / Add Asset and Edit: an asset's details. Edit sends no kind or status. */
+/** Add SIM / Add Asset and Edit: an asset's details. Edit sends no kind or status. */
 export interface AssetInput {
   category?: AssetCategory | null
   inventory_no: string
@@ -1280,7 +1280,7 @@ export interface AssignmentFormInput {
   non_return_value_cents?: number | null
 }
 
-/** Give SIM Card / Give Asset; form_hash is the printed preview's document hash. */
+/** Give SIM / Give Asset; form_hash is the printed preview's document hash. */
 export interface GiveAssetInput extends AssignmentFormInput {
   comment: string
   paper_form_signed: boolean

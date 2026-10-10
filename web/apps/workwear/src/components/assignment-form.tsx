@@ -18,7 +18,7 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
   return (
     <article className="receipt mx-auto max-w-3xl rounded-lg border border-border bg-card p-4 text-card-foreground sm:p-6 print:max-w-none print:min-w-[179mm] print:rounded-none print:border-0 print:bg-white print:p-0 print:text-black">
       <header className="mb-6">
-        <h1 className="text-lg font-semibold">{sim ? 'SIM Card Assignment Form / Акт выдачи SIM-карты' : 'Equipment Assignment Form / Акт выдачи оборудования'}</h1>
+        <h1 className="text-lg font-semibold">{sim ? 'SIM Assignment Form / Акт выдачи SIM' : 'Equipment Assignment Form / Акт выдачи оборудования'}</h1>
         <p className="text-sm text-muted-foreground print:text-black">Inventory No. / Инвентарный №: {form.inventory_no}</p>
       </header>
       <dl className="mb-6 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 print:grid-cols-2">

@@ -20,7 +20,7 @@ import { parseEuro } from '@/lib/utils'
 import { basePath } from '@ppe/routing'
 
 /**
- * Which action sheet is open, for which card; or Give SIM Card for an
+ * Which action sheet is open, for which card; or Give SIM for an
  * employee, started from their page, where the card is chosen on the sheet.
  */
 export type AssetSheet =
@@ -83,9 +83,9 @@ const footerButtons = (onClose: () => void, children: ReactNode) => (
 )
 
 /**
- * Give SIM Card (§6–§8). The employee, the given date and any plan or value
+ * Give SIM (§6–§8). The employee, the given date and any plan or value
  * the card lacks; Print Form prints the form the API would store, in a tab of
- * its own; the employee signs it; Paper Form Signed; Give SIM Card. A change
+ * its own; the employee signs it; Paper Form Signed; Give SIM. A change
  * to the form after printing clears the tick and asks for a reprint, and the
  * API refuses a form that no longer matches what was printed.
  */
@@ -111,7 +111,10 @@ function GiveSheet({
 }) {
   const { client } = useApi()
   const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
-  const [printed, setPrinted] = useState<{ key: string; hash: string } | null>(null)
+  // The form printed: its data's key, and its hash once known (null while it is fetched).
+  const [printed, setPrinted] = useState<{ key: string; hash: string | null } | null>(null)
+  // The hash of the form as the data is now, fetched ahead of Print Form.
+  const [hashed, setHashed] = useState<{ key: string; hash: string } | null>(null)
   const [signed, setSigned] = useState(false)
   const [preview, setPreview] = useState<AssignmentFormResult | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -134,6 +137,7 @@ function GiveSheet({
       ...(employee ? { employeeId: employee.id, employeeName: employee.full_name } : {}),
     })
     setPrinted(null)
+    setHashed(null)
     setSigned(false)
     setPreview(null)
     setShowPreview(false)
@@ -152,17 +156,28 @@ function GiveSheet({
   // A preview shown is of the form as it is now; a change hides it until asked again.
   useEffect(() => setPreview(null), [key])
 
-  if (!open) return <FormSheet open={false} onClose={onClose} title={t.assets.giveSimCard}>{null}</FormSheet>
-
-  const set = <K extends keyof GiveDraft>(k: K, v: GiveDraft[K]) => setDraft((d) => ({ ...d, [k]: v }))
-  const sim = assetKind === 'SIM'
   const block = giveBlock(asset, draft, today, printed, signed, assetKind)
   // Furniture and other items are given without a signed form (spec, open decision 6).
   const paper = asset === null || asset.needs_form
   // The form can be printed once its data is complete: the reasons left are about the paper.
   const ready = block === null || block === t.assets.printFirstReason || block === t.assets.tickSignedReason
-  const cents = parseEuro(draft.value)
   const input = asset ? formInput(asset, draft) : null
+
+  // The form is fetched ahead, a moment after its data stops changing, so that
+  // Print Form marks it printed at the click itself: Safari does not finish a
+  // request the page starts as the click opens the print tab.
+  const prefetch = open && paper && ready && asset !== null
+  useEffect(() => {
+    if (!prefetch) return
+    const id = window.setTimeout(() => void loadPreview(true), 300)
+    return () => window.clearTimeout(id)
+  }, [prefetch, key, asset?.id])
+
+  if (!open) return <FormSheet open={false} onClose={onClose} title={t.assets.giveSimCard}>{null}</FormSheet>
+
+  const set = <K extends keyof GiveDraft>(k: K, v: GiveDraft[K]) => setDraft((d) => ({ ...d, [k]: v }))
+  const sim = assetKind === 'SIM'
+  const cents = parseEuro(draft.value)
   const formPath =
     asset &&
     input &&
@@ -179,20 +194,26 @@ function GiveSheet({
       print: true,
     })
 
-  const loadPreview = async (): Promise<AssignmentFormResult | null> => {
-    if (!asset || !input) return null
-    setFailure(undefined)
+  /** The form as the data is now; quiet (fetched ahead) leaves a failure unsaid. */
+  function loadPreview(quiet = false): Promise<AssignmentFormResult | null> {
+    if (!asset || !input) return Promise.resolve(null)
+    if (!quiet) setFailure(undefined)
     const asked = { session: session.current, key }
     const current = () => session.current === asked.session && currentKey.current === asked.key
-    try {
-      const r = await client.assets.previewForm(asset.id, input)
-      if (!current()) return null
-      setPreview(r)
-      return r
-    } catch (err) {
-      if (current()) setFailure(errorText(err))
-      return null
-    }
+    return client.assets.previewForm(asset.id, input).then(
+      (r) => {
+        if (!current()) return null
+        setPreview(r)
+        setHashed({ key: asked.key, hash: r.document_hash })
+        // Printed before the hash came: it is this form's.
+        setPrinted((p) => (p && p.key === asked.key && p.hash === null ? { ...p, hash: r.document_hash } : p))
+        return r
+      },
+      (err: unknown) => {
+        if (current() && !quiet) setFailure(errorText(err))
+        return null
+      },
+    )
   }
 
   const give = async () => {
@@ -200,11 +221,13 @@ function GiveSheet({
     setBusy(true)
     setFailure(undefined)
     try {
+      // A hash still missing (its request lost to the print tab) is the same form's, asked again.
+      const hash = asset.needs_form && printed ? (printed.hash ?? (await client.assets.previewForm(asset.id, input)).document_hash) : ''
       const a = await client.assets.give(asset.id, {
         ...input,
         comment: draft.comment.trim(),
         paper_form_signed: asset.needs_form,
-        form_hash: asset.needs_form && printed ? printed.hash : '',
+        form_hash: hash,
       })
       onGiven(sim ? t.assets.givenTo(a.employee_name) : t.assets.assetGivenTo(a.employee_name))
     } catch (err) {
@@ -304,7 +327,10 @@ function GiveSheet({
                 e.preventDefault()
                 return
               }
-              void loadPreview().then((r) => r && setPrinted({ key, hash: r.document_hash }))
+              // Marked at once, with the hash fetched ahead when there is one: nothing waits on this page.
+              const hash = hashed?.key === key ? hashed.hash : null
+              setPrinted({ key, hash })
+              if (hash === null) void loadPreview()
             }}
           >
             <Printer aria-hidden /> {t.assets.printForm}
@@ -355,7 +381,7 @@ function GiveSheet({
 }
 
 /**
- * The cards in the office, for Give SIM Card from an employee's page (§6):
+ * The cards in the office, for Give SIM from an employee's page (§6):
  * only cards with no holder are listed, each with its status; one that is
  * not Active or has no phone number is shown but cannot be chosen.
  */

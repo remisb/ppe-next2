@@ -46,7 +46,7 @@ describe('held by / location', () => {
   })
 })
 
-describe('Add SIM Card', () => {
+describe('Add SIM', () => {
   it('needs the SIM No., provider, inventory number and received date now; the rest can wait (§4)', () => {
     const { errors, input } = checkSimDraft(emptySimDraft('2026-10-09'), '2026-10-09')
     expect(input).toBeUndefined()
@@ -110,7 +110,7 @@ describe('dates', () => {
 
 describe('the action a card calls for', () => {
   const held = { not_returned_at: null } as Asset['open_assignment']
-  it('Register SIM Return while held; Give SIM Card when Active in the office; else Change Status', () => {
+  it('Register SIM Return while held; Give SIM when Active in the office; else Change Status', () => {
     expect(primaryAction(card({ open_assignment: held, connection_status: 'BLOCKED' }))).toBe('return')
     expect(primaryAction(card({ connection_status: 'ACTIVE' }))).toBe('give')
     expect(primaryAction(card({ connection_status: 'NOT_ACTIVATED' }))).toBe('status')
@@ -123,7 +123,7 @@ describe('the action a card calls for', () => {
   })
 })
 
-describe('Give SIM Card', () => {
+describe('Give SIM', () => {
   const today = '2026-10-09'
   const ready = card({ connection_status: 'ACTIVE', phone_no: '+370 612 40118', plan: 'Biz 10 GB', non_return_value_cents: 2500 })
   const chosen = { ...emptyGiveDraft(today), employeeId: 'e1', employeeName: 'Jonas Petraitis' }
@@ -142,7 +142,7 @@ describe('Give SIM Card', () => {
     expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, true)).toBeNull()
   })
   it('from the employee, a card is chosen first; a change of card after printing asks for the form again', () => {
-    expect(giveBlock(null, chosen, today, null, false)).toBe('Choose a SIM card.')
+    expect(giveBlock(null, chosen, today, null, false)).toBe('Choose a SIM.')
     const withCard = { ...chosen, assetId: 'a1' }
     expect(giveBlock(ready, { ...withCard, assetId: 'a2' }, today, { key: formKey(withCard) }, true)).toMatch(/Print the form/)
   })

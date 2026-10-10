@@ -71,7 +71,7 @@ export const roles: RolesText = {
     'orders.delete': { label: 'Trinti užsakymus', grants: 'Pašalinti demonstracinius ir bandomuosius užsakymus; įrašas ir jo istorija lieka.' },
     'assets.manage': {
       label: 'Tvarkyti įmonės turtą',
-      grants: 'Pridėti SIM korteles ir įrangą, keisti SIM kortelės būseną, išduoti turtą darbuotojams ir registruoti grąžinimą.',
+      grants: 'Pridėti SIM ir įrangą, keisti SIM būseną, išduoti turtą darbuotojams ir registruoti grąžinimą.',
     },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },

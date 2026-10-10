@@ -29,7 +29,7 @@ Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/test
 which maps every manual §7 rule and status transition to its tests. Administrators set the
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
 at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
-the same row holds the default SIM card provider (migration 0031), set from Add SIM Card with `assets.manage`.
+the same row holds the default SIM card provider (migration 0031), set from Add SIM with `assets.manage`.
 Database backups: the `backup` compose service is the agent from the separate library
 `github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
 Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
@@ -81,8 +81,8 @@ the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
 assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
 employee who holds assets. The SIM card register is on screen (`/assets`, `routes/assets.tsx`,
-`lib/assets.ts`: tiles that filter, Add SIM Card, Change Status) and the asset page (`/assets/<id>`:
-Give SIM Card against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
+`lib/assets.ts`: tiles that filter, Add SIM, Change Status) and the asset page (`/assets/<id>`:
+Give SIM against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
 Company Assets card on the dashboards, and Equipment & Furniture on the same engine (`?kind=equipment`,
 `components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`), and

@@ -1,7 +1,7 @@
 // Package settings holds the organisation's settings that administrators
 // change in the app, one set for the whole organisation: the supplier's
 // WhatsApp group, which Copy for WhatsApp opens for the order message, and the
-// default SIM card provider, which Add SIM Card fills in. Settings fixed at
+// default SIM card provider, which Add SIM fills in. Settings fixed at
 // deployment (timezone, currency) stay in config.
 package settings
 
@@ -30,7 +30,7 @@ var inviteCode = regexp.MustCompile(`^[A-Za-z0-9]{10,40}$`)
 // what a database with no settings row reads as.
 type Settings struct {
 	SupplierChat SupplierChat
-	// DefaultSIMProvider is the provider Add SIM Card fills in for a new
+	// DefaultSIMProvider is the provider Add SIM fills in for a new
 	// card; empty when there is none.
 	DefaultSIMProvider string
 	UpdatedAt          time.Time

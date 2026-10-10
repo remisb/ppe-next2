@@ -11,7 +11,7 @@ import type { FormDraft } from '@/lib/router'
 
 /**
  * An assignment form on its own page, for printing (§8): a stored one, as it
- * was given, or the one Give SIM Card would store, built by the API from the
+ * was given, or the one Give SIM would store, built by the API from the
  * draft. Printing is not giving. With autoPrint the print dialog opens once it
  * has loaded, as Print Record does.
  */

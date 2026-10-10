@@ -17,7 +17,7 @@ interface Taken {
 }
 
 /**
- * Add SIM Card and Edit (§4): one card at a time, in one sheet. A new card
+ * Add SIM and Edit (§4): one card at a time, in one sheet. A new card
  * starts in the Office, Not Activated (or Active, chosen here), received
  * today, with the default provider and the next free inventory number
  * suggested; "Default for new cards" makes the typed provider the default
@@ -33,13 +33,13 @@ export function SimCardForm({
   onSaved,
   onOpenExisting,
 }: {
-  /** 'new' for Add SIM Card, a card to Edit it, null when closed. */
+  /** 'new' for Add SIM, a card to Edit it, null when closed. */
   card: Asset | 'new' | null
   /** The organisation's day: the default and latest received date. */
   today: string
   /** The providers already in use, offered as the provider is typed. */
   providers: string[]
-  /** The provider a new card starts with (Settings' default_sim_provider); Add SIM Card only. */
+  /** The provider a new card starts with (Settings' default_sim_provider); Add SIM only. */
   defaultProvider?: string | null | undefined
   onClose: () => void
   onSaved: (saved: Asset, added: boolean) => void
@@ -194,15 +194,22 @@ export function SimCardForm({
             )}
           </Field>
           {existing ? null : (
-            <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
-              <input type="checkbox" className="size-5 accent-primary" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
-              <span className="flex flex-col">
+            <div>
+              <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-primary"
+                  checked={makeDefault}
+                  aria-describedby={`${providerList}-default`}
+                  onChange={(e) => setMakeDefault(e.target.checked)}
+                />
                 {t.assets.makeDefaultProvider}
-                <span className="text-xs font-normal text-muted-foreground">
-                  {t.assets.makeDefaultProviderHint}
-                </span>
-              </span>
-            </label>
+              </label>
+              {/* The hint stays out of the label: it names the provider, and the label must not. */}
+              <p id={`${providerList}-default`} className="-mt-2 pl-8 text-xs text-muted-foreground">
+                {t.assets.makeDefaultProviderHint}
+              </p>
+            </div>
           )}
         </div>
         <Field label={t.assets.plan} hint={t.assets.optional}>

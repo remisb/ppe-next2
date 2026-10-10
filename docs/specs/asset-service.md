@@ -1,7 +1,7 @@
 # Asset service (Company Assets)
 
 **Status: the API is built (slice 2 of [ADR 0004](../architecture/adr/0004-company-assets.md)):
-migration `0029_company_assets`, `internal/domain/asset`, every route below. The SIM card register (slice 3) and the asset page with Give SIM Card,
+migration `0029_company_assets`, `internal/domain/asset`, every route below. The SIM card register (slice 3) and the asset page with Give SIM,
 Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
 screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
 dashboards' Company Assets card (slice 6), Equipment & Furniture (slice 7) and Upload Signed
@@ -111,7 +111,7 @@ inventory number.
 
 Every write needs `assets.manage`. Reads need sign-in, like employees and orders.
 
-### Add SIM Card, Add Asset (§4, §15)
+### Add SIM, Add Asset (§4, §15)
 
 One form, one asset at a time; no bulk entry. SIM defaults: Office, Not Activated, Received
 Date today, the next SIM number; **Active** may be chosen when the card is already active.
@@ -133,7 +133,7 @@ SIM only. Any of the three statuses to any other, saved at once with no confirma
 Event `asset.status_changed` with the old and new status. Changing to the same status is a
 no-op that writes nothing. The holder and location stay as they are.
 
-### Give SIM Card, Give Asset (§6, §7, §17)
+### Give SIM, Give Asset (§6, §7, §17)
 
 Request: employee, given date, comment, the missing plan or value if the asset lacks them,
 `paper_form_signed`, and `form_hash`, the document hash of the form preview that was printed.
@@ -231,7 +231,7 @@ stays with its assignment when the asset later goes to someone else.
 | `GET /api/v1/assets/by-employee/{id}` | authenticated | **filter**: the employee's assignments with their assets, open first; none is `200 []` |
 | `GET /api/v1/assets/next-number/{prefix}` | `assets.manage` | `{"inventory_no": "SIM-000002"}` |
 | `GET /api/v1/assets/{id}` | authenticated | the asset with `location`, `open_assignment`, `needs_form` and every assignment, newest first; 404 |
-| `POST /api/v1/assets` | `assets.manage` | Add SIM Card, Add Asset (201) |
+| `POST /api/v1/assets` | `assets.manage` | Add SIM, Add Asset (201) |
 | `PUT /api/v1/assets/{id}` | `assets.manage` | Edit, full replace of the details |
 | `PUT /api/v1/assets/{id}/status` | `assets.manage` | Change Status, `{"connection_status"}` |
 | `POST /api/v1/assets/{id}/assignments/preview` | `assets.manage` | the form and its hash, no write |
@@ -289,7 +289,7 @@ for any client.
 The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
 `lib/assets.ts`; after Employees in the sidebar and rail, under More on a phone; G then A):
 
-- **Tiles** Total SIM Cards, In Office, With Employees, Not Returned: one is chosen at a time
+- **Tiles** Total SIMs, In Office, With Employees, Not Returned: one is chosen at a time
   and filters the list, keeping the status, provider and search, so In Office with Blocked is
   the blocked cards in the office (§3). A note says the figures overlap.
 - **Filters**: the search (numbers with spaces ignored, or a holder's name), the status
@@ -302,7 +302,7 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
 - **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
   statuses with the brief's note, and for a Not Activated card the activation text. The
   choice is saved at once and announced. Edit is under ⋯.
-- **Add SIM Card** (and Edit) is one sheet: SIM No., provider (the default one filled in)
+- **Add SIM** (and Edit) is one sheet: SIM No., provider (the default one filled in)
   and inventory number (the next one suggested) and the received date (today) are required;
   the phone number, plan and value can wait; a new card is Not Activated or Active.
   **Default for new cards** under the provider sets or clears the default provider as the
@@ -310,7 +310,7 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
 - A row opens the card's page (`/assets/<id>`); its number is the link. On a wide screen it
-  also offers the one action its state calls for (Give SIM Card when Active in the Office,
+  also offers the one action its state calls for (Give SIM when Active in the Office,
   Register SIM Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
   as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
   buttons.
@@ -327,11 +327,14 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   holder, linked, since when and Days Held); the activation text on a Not Activated card;
   the details; **Assignments**, newest first, each with its dates, comments, Not Returned
   mark and **Print form again**; and **Changes**.
-- **Give SIM Card**: the card, the employee (search), the given date (today, not later),
+- **Give SIM**: the card, the employee (search), the given date (today, not later),
   the plan (optional) and value only when the card lacks them, a comment. **Preview Form** shows the
   form the API builds; **Print Form** opens it in a tab of its own
   (`/assets/<id>/form?employee=&date=&plan=&value=&print`, `routes/asset-form.tsx`) and keeps
-  its hash. The reminder to sign comes before **Paper Form Signed**, which is enabled only
+  its hash. The sheet fetches the form a moment after its data is complete, so Print Form
+  marks it printed at the click itself: Safari does not finish a request the page starts as
+  the click opens the tab, which once left Paper Form Signed disabled. A hash still missing
+  at Give is asked for again. The reminder to sign comes before **Paper Form Signed**, which is enabled only
   once printed and cleared when the employee, date, plan or value change after printing.
   The button shows the first reason it cannot be used yet; a refusal from the API (given
   meanwhile, form changed) keeps what was entered.
@@ -352,7 +355,7 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
 - **Given SIM** on an employee's page (`components/given-sim.tsx`, from
   `GET /api/v1/assets/by-employee/{id}`): the cards they hold, then those held before, each
   linking to the card, with its dates, Days Held, Not Returned and Paper form signed.
-- **Give SIM Card** there starts with the employee chosen; the sheet lists the cards in the
+- **Give SIM** there starts with the employee chosen; the sheet lists the cards in the
   Office (search by number), each with its status; one Not Activated, Blocked or without a
   phone number is shown but cannot be chosen (§6). Changing the card after Print Form clears
   Paper Form Signed, as any other change does.

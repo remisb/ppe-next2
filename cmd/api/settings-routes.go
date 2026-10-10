@@ -14,7 +14,7 @@ type settingsHandler struct {
 
 // registerSettingsRoutes mounts /api/v1/settings. Every signed-in user reads
 // them (dates in the zone Orders filters use; the supplier's WhatsApp group
-// for Copy for WhatsApp; the default SIM card provider for Add SIM Card); only
+// for Copy for WhatsApp; the default SIM card provider for Add SIM); only
 // administrators change the supplier's group, and whoever registers SIM cards
 // (assets.manage) the default provider.
 func registerSettingsRoutes(rt *router, svc *settings.Service, timezone string) {

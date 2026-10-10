@@ -13,7 +13,7 @@ currency) stay in config; `GET /api/v1/settings` returns both kinds together.
 
 In the web app they are the Settings screen in Administration (`/admin/settings`); the
 staff app's old `/settings` leads there. The default SIM card provider is set where it is
-used, on Add SIM Card.
+used, on Add SIM.
 
 ## The supplier's WhatsApp group
 
@@ -40,7 +40,7 @@ GIVEN order's Share via WhatsApp still let the user pick the chat.
 
 ## The default SIM card provider
 
-Add SIM Card (Company Assets, [asset-service.md](asset-service.md)) fills in the provider
+Add SIM (Company Assets, [asset-service.md](asset-service.md)) fills in the provider
 with the default, when there is one. Below the field, **Default for new cards** is ticked
 while the provider is the default one; ticking it for another provider makes that one the
 default, and unticking it on the default one clears it, both as the card is saved (the

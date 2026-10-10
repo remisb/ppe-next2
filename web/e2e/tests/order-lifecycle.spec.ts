@@ -1112,12 +1112,12 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
   await expect.poll(height).toBeGreaterThan(33)
 })
 
-test('Company Assets: Add SIM Card, Change Status saved at once, a duplicate names the card', async () => {
+test('Company Assets: Add SIM, Change Status saved at once, a duplicate names the card', async () => {
   await openTab('Company Assets')
   await expect(page.getByRole('heading', { name: 'Company Assets', exact: true })).toBeVisible()
-  await expect(page.getByText(/No SIM cards yet/)).toBeVisible()
+  await expect(page.getByText(/No SIMs yet/)).toBeVisible()
   // One card, in the Office and Not Activated, with the next number suggested (§4).
-  await page.getByRole('button', { name: 'Add SIM Card' }).click()
+  await page.getByRole('button', { name: 'Add SIM' }).click()
   const form = page.getByRole('dialog')
   await expect(form.getByLabel('Inventory No.')).toHaveValue('SIM-000001')
   await form.getByLabel('SIM No.').fill('0089370011')
@@ -1132,29 +1132,29 @@ test('Company Assets: Add SIM Card, Change Status saved at once, a duplicate nam
   await expect(page.getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
   // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
   await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
-  await expect(page.getByText(/Email your provider to activate this SIM card/)).toBeVisible()
+  await expect(page.getByText(/Email your provider to activate this SIM/)).toBeVisible()
   await page.getByRole('menuitemradio', { name: 'Active' }).click()
   await expect(page.getByText('SIM-000001: status changed to Active.')).toBeVisible()
   await expect(card.getByText('Active', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
   // The same card again, its number typed with a space: refused, and the form opens the one registered.
-  await page.getByRole('button', { name: 'Add SIM Card' }).click()
+  await page.getByRole('button', { name: 'Add SIM' }).click()
   await form.getByLabel('SIM No.').fill('0089 370011')
   await form.getByLabel('Provider').fill('Bitė')
   await form.getByRole('button', { name: 'Save' }).click()
   await expect(form.getByText('This SIM number is already registered.')).toBeVisible()
-  await form.getByRole('button', { name: 'Open the existing SIM card' }).click()
-  await expect(page.getByLabel('Search SIM cards')).toHaveValue('SIM-000001')
+  await form.getByRole('button', { name: 'Open the existing SIM' }).click()
+  await expect(page.getByLabel('Search SIMs')).toHaveValue('SIM-000001')
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
   // A tile keeps the other filters: In Office with Blocked is the blocked cards in the office (§3).
   await page.getByRole('button', { name: /^In Office/ }).click()
   await page.getByRole('button', { name: 'Blocked', exact: true }).click()
-  await expect(page.getByText('No SIM cards match these filters.')).toBeVisible()
+  await expect(page.getByText('No SIMs match these filters.')).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters' }).first().click()
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
 })
 
-test('Company Assets: give a SIM card against its printed form, mark it not returned, then register its return', async () => {
+test('Company Assets: give a SIM against its printed form, mark it not returned, then register its return', async () => {
   await openTab('Company Assets')
   await page.getByRole('link', { name: 'SIM-000001', exact: true }).click()
   const main = page.getByRole('main')
@@ -1168,8 +1168,8 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
 
-  // Give SIM Card: one form, the reason by the button until it can be given (§6).
-  await main.getByRole('button', { name: 'Give SIM Card' }).click()
+  // Give SIM: one form, the reason by the button until it can be given (§6).
+  await main.getByRole('button', { name: 'Give SIM' }).click()
   const give = page.getByRole('dialog')
   await expect(give.getByText('Choose the employee.')).toBeVisible()
   await give.getByRole('combobox', { name: 'Employee' }).fill('Ona')
@@ -1185,12 +1185,12 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
     }
   })
   const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
-  await expect(printTab.getByRole('heading', { name: /SIM Card Assignment Form/ })).toBeVisible()
+  await expect(printTab.getByRole('heading', { name: /SIM Assignment Form/ })).toBeVisible()
   await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
   await expect(printTab.getByText('€25.00')).toBeVisible()
   await expect.poll(() => printTab.evaluate(() => (window as unknown as { __printed?: number }).__printed)).toBe(1)
   await printTab.close()
-  await expect(give.getByText('Ask the employee to sign the printed form before handing over the SIM card.')).toBeVisible()
+  await expect(give.getByText('Ask the employee to sign the printed form before handing over the SIM.')).toBeVisible()
   await give.getByLabel('Paper Form Signed').check()
   // A change to the form after printing takes the tick away and asks for a reprint.
   const today = await give.getByLabel('Given Date').inputValue()
@@ -1200,15 +1200,15 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   await expect(give.getByLabel('Paper Form Signed')).not.toBeChecked()
   await give.getByLabel('Given Date').fill(today)
   await give.getByLabel('Paper Form Signed').check()
-  await give.getByRole('button', { name: 'Give SIM Card' }).click()
-  await expect(page.getByText('SIM card given to Ona Kazlauskienė.')).toBeVisible()
+  await give.getByRole('button', { name: 'Give SIM' }).click()
+  await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
   // One action changed the holder, the location, the form and the history (§7).
   await expect(main.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
   await expect(main.getByText('With an employee')).toBeVisible()
   const assignments = main.getByRole('region', { name: 'Assignments' })
   await expect(assignments.getByText('Paper form signed')).toBeVisible()
   await expect(assignments.getByRole('link', { name: 'Print form again' })).toBeVisible()
-  await expect(main.getByRole('button', { name: 'Give SIM Card' })).toHaveCount(0)
+  await expect(main.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
 
   // Upload Signed Form (§9): Signed Copy Missing until a scan is in. A file that is
   // not what its name says is refused; the copy downloads as it was sent.
@@ -1251,7 +1251,7 @@ test('Company Assets: give a SIM card against its printed form, mark it not retu
   await expect(main.getByText('No one')).toBeVisible()
   await expect(assignments.getByText(/· Returned /)).toBeVisible()
   await expect(assignments.getByText('Not Returned', { exact: true })).toBeVisible()
-  await expect(main.getByRole('button', { name: 'Give SIM Card' })).toBeVisible()
+  await expect(main.getByRole('button', { name: 'Give SIM' })).toBeVisible()
   // Its Changes tell the story.
   for (const change of ['Given to an employee', 'Signed copy uploaded', 'Marked as Not Returned', 'Returned to the office']) {
     await expect(main.getByText(change, { exact: true }).first()).toBeVisible()
@@ -1265,21 +1265,28 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   const givenSim = page.getByRole('region', { name: 'Given SIM' })
   await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toBeVisible()
   await expect(givenSim).toContainText('Returned')
-  // Give SIM Card from her page: she is already chosen; the cards in the office are listed with their status (§6).
-  await givenSim.getByRole('button', { name: 'Give SIM Card' }).click()
+  // Give SIM from her page: she is already chosen; the cards in the office are listed with their status (§6).
+  await givenSim.getByRole('button', { name: 'Give SIM' }).click()
   const give = page.getByRole('dialog')
   await expect(give.getByRole('combobox', { name: 'Employee' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
-  await expect(give.getByText('Choose a SIM card.')).toBeVisible()
+  await expect(give.getByText('Choose a SIM.')).toBeVisible()
   const card = give.getByRole('radio', { name: /SIM-000001/ })
   await expect(card).toContainText('Active')
+  // The sheet fetches the form once its data is complete, ahead of Print Form.
+  const fetchedAhead = page.waitForResponse((r) => r.url().endsWith('/assignments/preview') && r.ok())
   await card.click()
   await expect(card).toHaveAttribute('aria-checked', 'true')
+  await fetchedAhead
+  // As in Safari, a request this page starts as the print tab opens never finishes:
+  // Print Form still marks the form printed, and Give needs nothing more (the print tab is a page of its own).
+  await page.route('**/assignments/preview', (r) => r.abort())
   const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
   await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
   await printTab.close()
   await give.getByLabel('Paper Form Signed').check()
-  await give.getByRole('button', { name: 'Give SIM Card' }).click()
-  await expect(page.getByText('SIM card given to Ona Kazlauskienė.')).toBeVisible()
+  await give.getByRole('button', { name: 'Give SIM' }).click()
+  await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
+  await page.unroute('**/assignments/preview')
   await expect(givenSim).toContainText('Not returned yet')
   // Leaving never returns a card: while she holds one she is not deleted, and the app says which (§2).
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
@@ -1304,7 +1311,7 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   // The Dashboard's Company Assets card opens the register on a tile.
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
-  await expect(assetsCard.getByRole('link', { name: /Total SIM Cards\s*1/ })).toBeVisible()
+  await expect(assetsCard.getByRole('link', { name: /Total SIMs\s*1/ })).toBeVisible()
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
   await expect(page).toHaveURL(/\/assets\?show=in-office$/)
   await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
@@ -1339,7 +1346,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   await expect(giveDesk.getByText('Furniture and other items are given without a signed form.')).toBeVisible()
   await expect(giveDesk.getByRole('link', { name: 'Print Form' })).toHaveCount(0)
-  // A plan is a SIM card's: never asked for an item.
+  // A plan is a SIM's: never asked for an item.
   await expect(giveDesk.getByLabel('Plan')).toHaveCount(0)
   await giveDesk.getByRole('button', { name: 'Give Asset' }).click()
   await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
@@ -1364,7 +1371,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await expect(equipment.getByRole('link', { name: 'PC-000001' })).toBeVisible()
   // Given on a form, its signed copy not uploaded yet.
   await expect(equipment).toContainText('Signed Copy Missing')
-  // Kept apart from her SIM cards on the same page (§18).
+  // Kept apart from her SIMs on the same page (§18).
   await expect(page.getByRole('region', { name: 'Given SIM' }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
 
   // The desk comes back: Register Asset Return on its page; no connection status anywhere.

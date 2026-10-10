@@ -274,7 +274,7 @@ func (h *assetHandler) preview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, f)
 }
 
-// give is Give SIM Card and Give Asset.
+// give is Give SIM and Give Asset.
 func (h *assetHandler) give(w http.ResponseWriter, r *http.Request) {
 	actor, id, req, ok := withAsset[giveRequest](w, r)
 	if !ok {

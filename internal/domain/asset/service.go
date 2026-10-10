@@ -188,7 +188,7 @@ func (s *Service) duplicate(ctx context.Context, err error, a Asset) error {
 	return &DuplicateError{Err: ErrSIMNoTaken, Existing: owner}
 }
 
-// Create is Add SIM Card and Add Asset (§4, §15): one asset, Office, with no
+// Create is Add SIM and Add Asset (§4, §15): one asset, Office, with no
 // holder. A SIM card is Not Activated and received today unless stated.
 func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (View, error) {
 	if actor == uuid.Nil {
@@ -486,7 +486,7 @@ func (s *Service) Preview(ctx context.Context, id uuid.UUID, p FormParams) (Form
 	return FormResult{Form: b, DocumentHash: hash}, nil
 }
 
-// GiveParams are Give SIM Card's and Give Asset's form. FormHash is the hash
+// GiveParams are Give SIM's and Give Asset's form. FormHash is the hash
 // Preview returned for the form that was printed and signed.
 type GiveParams struct {
 	FormParams

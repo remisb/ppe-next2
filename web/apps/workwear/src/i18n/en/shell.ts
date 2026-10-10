@@ -39,7 +39,7 @@ export const shell = {
   draftLines: (n: number) => plural(n, { one: '(draft, # line)', other: '(draft, # lines)' }),
   waiting: (n: number) => plural(n, { one: '(# waiting for confirmation)', other: '(# waiting for confirmation)' }),
   shortcuts: {
-    palette: 'Search record numbers, SIM cards, employees, items and screens, and jump to them',
+    palette: 'Search record numbers, SIMs, employees, items and screens, and jump to them',
     search: 'Go to the search or Add Item field on this screen',
     newOrder: 'New order',
     /** The key names stay; only the word between them is translated. */

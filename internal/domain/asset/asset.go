@@ -176,7 +176,7 @@ func (a Asset) missingFormData() string {
 	return ""
 }
 
-// Params are an asset's details, as Add SIM Card, Add Asset and Edit set them.
+// Params are an asset's details, as Add SIM, Add Asset and Edit set them.
 // Which fields apply depends on the kind.
 type Params struct {
 	Category            *Category

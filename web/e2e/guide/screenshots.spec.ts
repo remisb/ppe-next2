@@ -194,7 +194,7 @@ test('company assets: the SIM cards, a card, giving one', async () => {
   await assignments.evaluate((e) => e.scrollIntoView({ block: 'start' }))
   await shot('signed-copy')
 
-  // Give SIM Card up to the signed paper, and no further: the demo keeps the card in the office.
+  // Give SIM up to the signed paper, and no further: the demo keeps the card in the office.
   await page.goto('/assets')
   await page.getByRole('link', { name: 'SIM-000005' }).filter({ visible: true }).first().click()
   await page.getByRole('main').getByRole('button', { name: T.assets.giveSimCard }).click()

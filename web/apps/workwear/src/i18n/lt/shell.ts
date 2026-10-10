@@ -37,7 +37,7 @@ export const shell: ShellText = {
   draftLines: (n: number) => plural(n, { one: '(juodraštis, # eilutė)', few: '(juodraštis, # eilutės)', other: '(juodraštis, # eilučių)' }),
   waiting: (n: number) => plural(n, { one: '(# laukia patvirtinimo)', other: '(# laukia patvirtinimo)' }),
   shortcuts: {
-    palette: 'Ieškoti įrašų numerių, SIM kortelių, darbuotojų, prekių ir ekranų ir pereiti prie jų',
+    palette: 'Ieškoti įrašų numerių, SIM, darbuotojų, prekių ir ekranų ir pereiti prie jų',
     search: 'Pereiti į šio ekrano paieškos arba prekės pridėjimo lauką',
     newOrder: 'Naujas užsakymas',
     goToKeys: 'G, tada D, O, H, E, A, C, S, U',

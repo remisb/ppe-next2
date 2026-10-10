@@ -360,7 +360,7 @@ export function createClient(options: ClientOptions) {
       nextNumber: (prefix: InventoryPrefix) =>
         request<{ inventory_no: string }>('GET', `/api/v1/assets/next-number/${seg(prefix)}`).then((r) => r.inventory_no),
       get: (id: string) => request<AssetDetail>('GET', `/api/v1/assets/${seg(id)}`),
-      /** Add SIM Card / Add Asset. A number in use is a 409 whose existingId names the asset that has it. */
+      /** Add SIM / Add Asset. A number in use is a 409 whose existingId names the asset that has it. */
       create: (input: CreateAssetInput) => request<Asset>('POST', '/api/v1/assets', input),
       update: (id: string, input: AssetInput) => request<Asset>('PUT', `/api/v1/assets/${seg(id)}`, input),
       /** Change Status: saved at once; never moves the card or changes its holder. */

@@ -456,7 +456,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           onClose={() => setEditing(null)}
           onSaved={(saved, added) => {
             setEditing(null)
-            // Add SIM Card may have changed the default provider.
+            // Add SIM may have changed the default provider.
             if (added) settings.reload()
             setMessage(added ? t.assets.added(saved.inventory_no) : t.assets.saved(saved.inventory_no))
             reload()

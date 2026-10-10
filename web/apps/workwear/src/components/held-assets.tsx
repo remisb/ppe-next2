@@ -20,7 +20,7 @@ const link = 'rounded-sm font-mono font-medium underline-offset-4 outline-none h
 /**
  * Given SIM and Equipment on an employee's page (assets brief §1, §18): the
  * assets of one kind they hold, then those they held, each linking to its
- * page; and Give SIM Card or Give Asset with them already chosen (§6).
+ * page; and Give SIM or Give Asset with them already chosen (§6).
  * Workwear stays in Items given: the categories are kept apart on one page,
  * not in separate systems.
  */

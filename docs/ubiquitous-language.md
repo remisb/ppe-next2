@@ -791,7 +791,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
 - **Code:** `internal/domain/asset`, `routes/assets.tsx` (`/assets`, G then A). **UI:**
-  Company Assets (short label Assets), tabs **SIM Cards** and **Equipment & Furniture**
+  Company Assets (short label Assets), tabs **SIMs** and **Equipment & Furniture**
   (`/assets?kind=equipment`).
 
 ### Asset
@@ -800,7 +800,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** one record per physical item; three identical laptops are three assets, never
   one line with a quantity (§2, §15). Its **kind** is SIM or EQUIPMENT. An asset is not a
   catalogue item and is never on an order.
-- **Code:** table `assets` (planned). **UI:** "SIM card", "asset"; never "item" alone, which
+- **Code:** table `assets` (planned). **UI:** "SIM", "asset"; never "item" alone, which
   is a catalogue item.
 
 ### SIM card
@@ -808,7 +808,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** its **SIM No.** (the number printed on the card) and **Phone No.** are
   different facts: a card has one SIM No. for life, and its phone number may be unknown when
   it arrives (§2, §4). The SIM No. is kept exactly as typed, leading zeros included.
-- **UI:** SIM No., Phone No., **Add SIM Card**.
+- **UI:** "SIM" (plural "SIMs"), never "SIM card": **Add SIM**, **Edit SIM**, SIM No., Phone No.
+  Lithuanian and Russian also say "SIM" (not "SIM kortelė", "SIM-карта").
 
 ### Equipment & Furniture
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
@@ -828,9 +829,9 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   (activation, blocking). Nothing is sent from the app.
 
 ### Default provider
-- **Brief:** the provider Add SIM Card fills in for a new card, one for the organisation.
+- **Brief:** the provider Add SIM fills in for a new card, one for the organisation.
 - **Code:** `settings.DefaultSIMProvider`, `default_sim_provider`. **UI:** **Default for new
-  cards**, under Provider on Add SIM Card.
+  cards**, under Provider on Add SIM.
 - **Detail:** set or cleared there as a card is saved; it changes no card already registered.
 
 ### Connection status
@@ -863,11 +864,11 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   whereabouts. Any other place is said in the asset's Comment (§3).
 - **UI:** Held By / Location column, the Office and Unknown filters.
 
-### Give SIM Card, Give Asset
+### Give SIM, Give Asset
 - **Brief:** registering that an asset was given to an employee: one form.
 - **Detail:** only an asset in the Office with no holder can be given, and a SIM card only
   when Active. The employee signs the printed assignment form first (§6, §7, §17).
-- **UI:** **Give SIM Card**, **Give Asset**; on success "SIM card given to [Employee Name]."
+- **UI:** **Give SIM**, **Give Asset**; on success "SIM given to [Employee Name]."
 
 ### Given SIM
 - **Brief:** the employee page's section of SIM cards the employee holds or held.
@@ -898,7 +899,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** derived from open assignments, never counted by hand.
 
 ### Summary tiles
-- **Brief:** Total SIM Cards, In Office, With Employees, Not Returned at the top of the
+- **Brief:** Total SIMs, In Office, With Employees, Not Returned at the top of the
   register; tapping one filters the list.
 - **Detail:** they overlap (a Not Returned card is also With Employees), so they are never
   added up (§3). Total excludes written-off cards.
@@ -1016,7 +1017,7 @@ screens are built):
 | English | Lietuvių | Русский |
 |---|---|---|
 | Company Assets | Įmonės turtas | Имущество компании |
-| SIM Cards / SIM card | SIM kortelės / SIM kortelė | SIM-карты / SIM-карта |
+| SIMs / SIM | SIM | SIM |
 | Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
 | Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
@@ -1026,17 +1027,17 @@ screens are built):
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |
 | Held By | Kas turi | У кого |
 | Assignment / Assignments | Išdavimas / Išdavimai | Выдача / Выдачи |
-| Give SIM Card / Give Asset | Išduoti SIM kortelę / Išduoti turtą | Выдать SIM-карту / Выдать имущество |
+| Give SIM / Give Asset | Išduoti SIM / Išduoti turtą | Выдать SIM / Выдать имущество |
 | Given SIM | Išduotos SIM | Выданные SIM |
 | Given Date / Days Held | Išdavimo data / Turima dienų | Дата выдачи / Дней на руках |
 | Register SIM Return / Register Asset Return | Registruoti SIM grąžinimą / Registruoti turto grąžinimą | Зарегистрировать возврат SIM / Зарегистрировать возврат имущества |
 | Not Returned / Mark as Not Returned | Negrąžinta / Pažymėti kaip negrąžintą | Не возвращено / Отметить как не возвращённое |
-| Total SIM Cards / In Office / With Employees | Iš viso SIM kortelių / Biure / Pas darbuotojus | Всего SIM-карт / В офисе / У сотрудников |
+| Total SIMs / In Office / With Employees | Iš viso SIM / Biure / Pas darbuotojus | Всего SIM / В офисе / У сотрудников |
 | Preview Form / Print Form / Paper Form Signed | Peržiūrėti aktą / Spausdinti aktą / Aktas pasirašytas | Просмотреть акт / Печать акта / Акт подписан |
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |
-| Add SIM Card / Add Asset / Save Asset | Pridėti SIM kortelę / Pridėti turtą / Išsaugoti turtą | Добавить SIM-карту / Добавить имущество / Сохранить имущество |
+| Add SIM / Add Asset / Save Asset | Pridėti SIM / Pridėti turtą / Išsaugoti turtą | Добавить SIM / Добавить имущество / Сохранить имущество |
 
 ---
 
@@ -1044,10 +1045,11 @@ screens are built):
 
 | Avoid | Say instead | Why |
 |---|---|---|
+| SIM card, SIM Card (in the UI), SIM kortelė, SIM-карта | **SIM**, **SIMs** | Since 2026-10-10 the screens say SIM; the code and these docs may still say SIM card. |
 | "employee" for a user | **user**, **staff member**, **the employee role** | An Employee receives workwear and never signs in. |
 | draft order, pending, partial, outstanding (as statuses) | **working order**; **Ordered** | Only ORDERED and GIVEN exist; a working order is not stored. |
 | delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. A SIM card's **Received Date** (from the provider) is the one exception. |
-| hand-over, issue, allocation (for an asset) | **assignment**; **Give SIM Card** / **Give Asset** | Hand-over mode is workwear's in-person confirmation. |
+| hand-over, issue, allocation (for an asset) | **assignment**; **Give SIM** / **Give Asset** | Hand-over mode is workwear's in-person confirmation. |
 | act, receipt, record, hand-over form (for an asset) | **assignment form** (UI: Form) | Record and receipt are the order's Items Given Record. |
 | returned (for a blocked card), deactivated, disconnected | **Blocked** | Blocking is a connection status; only Register SIM Return makes a card returned. |
 | lost, missing, stolen (for an asset) | **Not Returned**; location **Unknown** | Loss and write-off are not defined yet (assets brief §20). |

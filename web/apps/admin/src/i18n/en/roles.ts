@@ -73,7 +73,7 @@ export const roles = {
     'orders.delete': { label: 'Delete orders', grants: 'Remove demo and test orders; the record and its history stay.' },
     'assets.manage': {
       label: 'Manage Company Assets',
-      grants: 'Add SIM cards and equipment, change a SIM card’s status, give assets to employees and register their return.',
+      grants: 'Add SIMs and equipment, change a SIM’s status, give assets to employees and register their return.',
     },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },

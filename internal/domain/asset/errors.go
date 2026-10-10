@@ -18,7 +18,7 @@ var (
 	ErrInventoryNoTaken = errors.New("inventory number already used")
 	ErrSIMNoTaken       = errors.New("SIM number already registered")
 	ErrAlreadyGiven     = errors.New("asset already given to another employee")
-	ErrNotActive        = errors.New("SIM card is not active")
+	ErrNotActive        = errors.New("SIM is not active")
 	ErrNotGiven         = errors.New("asset is not given to anyone")
 	ErrAlreadyMarked    = errors.New("asset is already marked as not returned")
 	ErrFormChanged      = errors.New("the form changed after it was printed")

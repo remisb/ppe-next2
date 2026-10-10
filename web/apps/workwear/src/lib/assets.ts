@@ -1,6 +1,6 @@
 /**
  * Company Assets' rules for the SIM card register, as pure functions: the
- * tiles and filters as one query, where a card is, and Add SIM Card's and
+ * tiles and filters as one query, where a card is, and Add SIM's and
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
 import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
@@ -104,7 +104,7 @@ export function todayIn(timeZone: string | undefined, now = new Date()): string 
   return formatDateTime(now.toISOString(), timeZone).slice(0, 10)
 }
 
-/** Add SIM Card's and Edit's fields, as typed. */
+/** Add SIM's and Edit's fields, as typed. */
 export interface SimDraft {
   simNo: string
   phoneNo: string
@@ -117,18 +117,18 @@ export interface SimDraft {
   comment: string
 }
 
-/** Add SIM Card starts with the default provider, when there is one. */
+/** Add SIM starts with the default provider, when there is one. */
 export function emptySimDraft(today: string, provider = ''): SimDraft {
   return { simNo: '', phoneNo: '', provider, plan: '', value: '', receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
 }
 
-/** Whether provider is the default one: Add SIM Card's "Default for new cards" as the provider is typed. */
+/** Whether provider is the default one: Add SIM's "Default for new cards" as the provider is typed. */
 export function isDefaultProvider(provider: string, current: string | null | undefined): boolean {
   return !!current && provider.trim() === current
 }
 
 /**
- * The default provider Add SIM Card saves with the card: the typed provider
+ * The default provider Add SIM saves with the card: the typed provider
  * when "Default for new cards" is ticked, '' (none) when the default one is
  * unticked, undefined when the default stays as it is.
  */
@@ -188,7 +188,7 @@ export function checkSimDraft(d: SimDraft, today: string): { errors: SimErrors; 
   }
 }
 
-/** Add SIM Card's request: the details, the kind and the status chosen. */
+/** Add SIM's request: the details, the kind and the status chosen. */
 export function newSimInput(input: AssetInput, status: SimDraft['status']): CreateAssetInput {
   return { ...input, kind: 'SIM', connection_status: status }
 }
@@ -202,7 +202,7 @@ export function formatDay(date: string): string {
 
 /**
  * The one action a card's state calls for (§3: "situacijai tinkami
- * veiksmai"): Register SIM Return while someone holds it, Give SIM Card when
+ * veiksmai"): Register SIM Return while someone holds it, Give SIM when
  * it is in the office and Active, else Change Status (to get it Active).
  */
 export type PrimaryAction = 'return' | 'give' | 'status'
@@ -218,7 +218,7 @@ export function canMarkNotReturned(a: Pick<Asset, 'open_assignment'>): boolean {
   return a.open_assignment !== null && a.open_assignment.not_returned_at === null
 }
 
-/** Give SIM Card's form, as typed. Plan and value are asked only when the card lacks them (§6); the plan may stay empty. */
+/** Give SIM's form, as typed. Plan and value are asked only when the card lacks them (§6); the plan may stay empty. */
 export interface GiveDraft {
   /** The card chosen, when Give starts from the employee; the card's own id when it starts from the card. */
   assetId: string
@@ -251,7 +251,7 @@ export function formInput(a: Pick<Asset, 'kind' | 'plan' | 'non_return_value_cen
 }
 
 /**
- * Why Give SIM Card cannot be done yet, the first reason only, shown by the
+ * Why Give SIM cannot be done yet, the first reason only, shown by the
  * button (§6: the reason at the field or button), or null when it can. A
  * card someone holds, one not Active or without a phone number cannot be
  * given from this form at all; the rest the form itself fixes.
@@ -283,7 +283,7 @@ export function giveBlock(
 }
 
 /**
- * Why a card in the office cannot be chosen on Give SIM Card from the
+ * Why a card in the office cannot be chosen on Give SIM from the
  * employee's page, or null: the picker shows every office card with its
  * status, and greys out these (§6).
  */
@@ -308,13 +308,13 @@ export function blockingEmail(a: Pick<Asset, 'phone_no' | 'sim_no'>, company = '
     body: [
       'Hello,',
       '',
-      'Please block the following SIM card:',
+      'Please block the following SIM:',
       '',
       `Phone number: ${phone}`,
       `SIM number: ${a.sim_no ?? ''}`,
       `Company: ${company}`,
       '',
-      'Please confirm once the SIM card has been blocked.',
+      'Please confirm once the SIM has been blocked.',
       '',
       'Thank you.',
     ].join('\n'),
