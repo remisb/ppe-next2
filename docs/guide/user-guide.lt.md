@@ -187,6 +187,14 @@ Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefon
 
 ![SIM kortelės puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
 
+Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.
+
+*Tik administratoriams ir vadovams:*
+
+Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo išdavimu pasirinkite **Įkelti pasirašytą aktą**: PDF, JPEG arba PNG failą iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.
+
+![Išdavimas su įkelta pasirašyta kopija](../../web/apps/workwear/public/help-img/lt/desktop/signed-copy.png)
+
 *Tik administratoriams ir vadovams:*
 
 Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** išspausdina jo aktą.

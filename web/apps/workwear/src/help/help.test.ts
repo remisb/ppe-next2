@@ -79,6 +79,9 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['admin']))).toContain('Paper Form Signed')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Mark as Not Returned')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Print Form')
+    expect(words(forRoles(guides.en, ['manager']))).toContain('Upload Signed Form')
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Upload Signed Form')
+    expect(words(forRoles(guides.en, ['employee']))).toContain('Signed Copy Missing')
   })
 
   it('keeps Delete order for managers only', () => {

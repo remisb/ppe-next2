@@ -244,6 +244,10 @@ export const lt: Guide = {
           roles: ['admin', 'manager'],
         },
         { shots: [{ name: 'asset', alt: 'SIM kortelės puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
+        { p: 'Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.' },
+        { p: 'Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo išdavimu pasirinkite **Įkelti pasirašytą aktą**: PDF, JPEG arba PNG failą iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
+        { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
+        { shots: [{ name: 'signed-copy', alt: 'Išdavimas su įkelta pasirašyta kopija' }] },
         {
           p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** išspausdina jo aktą.',
           roles: ['admin', 'manager'],

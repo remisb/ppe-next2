@@ -187,6 +187,14 @@ Only an **Active** card in the office, with a phone number, can be given; until 
 
 ![A SIM card's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
 
+On an assignment with a form, the card's page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.
+
+*Administrators and managers only:*
+
+Once the employee has signed, scan or photograph the form and choose **Upload Signed Form** under its assignment: a PDF, JPEG or PNG of up to 10 MB. A photo's location and camera details are removed. Uploading again keeps the earlier copies, under the newest.
+
+![An assignment with its signed copy uploaded](../../web/apps/workwear/public/help-img/en/desktop/signed-copy.png)
+
 *Administrators and managers only:*
 
 When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.

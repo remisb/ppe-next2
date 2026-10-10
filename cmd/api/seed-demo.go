@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/size"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/files"
 )
 
 // seedClock is the clock every seeding service reads. Moving it back lets the
@@ -51,6 +53,12 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return err
 	}
 
+	// Signed copies go where the API keeps them; without a store the demo has none.
+	store, err := files.Open(cfg.FilesTarget, cfg.FilesAccessKey, cfg.FilesSecretKey)
+	if err != nil {
+		return err
+	}
+
 	clock := &seedClock{}
 	start := time.Now()
 	clock.daysAgo(start, loc, 150)
@@ -63,7 +71,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 			Catalogue: orderCatalogue{items},
 			ItemSets:  orderItemSets{sets},
 		}, order.WithLocation(loc), order.WithConfirmTTL(cfg.ConfirmTTL), order.WithClock(clock.now))
-		assets = asset.NewService(asset.NewPostgresRepository(pool), asset.WithLocation(loc), asset.WithClock(clock.now))
+		assets = asset.NewService(asset.NewPostgresRepository(pool), asset.WithLocation(loc), asset.WithClock(clock.now), asset.WithFiles(store))
 	)
 
 	existingItems, err := items.List(ctx)
@@ -159,8 +167,13 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	s.equipment("FUR-000002", "Standing desk", asset.CategoryFurniture, "", 0)
 
 	clock.daysAgo(start, loc, 95)
-	s.give(sim1, jonas)
+	jonasSIM := s.give(sim1, jonas)
 	s.give(laptop, jonas)
+	// The signed form scanned the next day; the laptop's is still missing.
+	clock.daysAgo(start, loc, 94)
+	if store != nil {
+		s.signedCopy(sim1, jonasSIM, "SIM-000001 Jonas Petraitis signed.pdf")
+	}
 	clock.daysAgo(start, loc, 90)
 	s.give(sim4, tomas)
 	clock.daysAgo(start, loc, 60)
@@ -369,21 +382,57 @@ func (s *seeder) addAsset(p asset.CreateParams) asset.View {
 
 // give gives the asset today, against its printed and signed form when it
 // needs one, as Give does after Print Form.
-func (s *seeder) give(a asset.View, e employee.Employee) {
+func (s *seeder) give(a asset.View, e employee.Employee) uuid.UUID {
 	if s.err != nil {
-		return
+		return uuid.Nil
 	}
 	p := asset.GiveParams{FormParams: asset.FormParams{EmployeeID: e.ID, GivenDate: s.today()}}
 	if a.NeedsForm {
 		form, err := s.assets.Preview(s.ctx, a.ID, p.FormParams)
 		if err != nil {
 			s.fail("form for "+a.InventoryNo, err)
-			return
+			return uuid.Nil
 		}
 		p.PaperFormSigned, p.FormHash = true, form.DocumentHash
 	}
-	_, err := s.assets.Give(s.ctx, a.ID, p, s.actor)
+	given, err := s.assets.Give(s.ctx, a.ID, p, s.actor)
 	s.fail("give "+a.InventoryNo, err)
+	return given.ID
+}
+
+// signedCopy uploads a one-page PDF as the scan of the assignment's signed form.
+func (s *seeder) signedCopy(a asset.View, assignmentID uuid.UUID, name string) {
+	if s.err != nil {
+		return
+	}
+	_, err := s.assets.UploadSignedCopy(s.ctx, a.ID, assignmentID, asset.Upload{FileName: name, Data: onePagePDF("Signed assignment form " + a.InventoryNo)}, s.actor)
+	s.fail("signed copy of "+a.InventoryNo, err)
+}
+
+// onePagePDF is a valid one-page PDF showing text: a demo stand-in for a scan.
+func onePagePDF(text string) []byte {
+	stream := "BT /F1 18 Tf 72 720 Td (" + text + ") Tj ET"
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+		fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(stream), stream),
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+	var b strings.Builder
+	b.WriteString("%PDF-1.4\n")
+	offsets := make([]int, len(objects))
+	for i, o := range objects {
+		offsets[i] = b.Len()
+		fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, o)
+	}
+	xref := b.Len()
+	fmt.Fprintf(&b, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	for _, off := range offsets {
+		fmt.Fprintf(&b, "%010d 00000 n \n", off)
+	}
+	fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	return []byte(b.String())
 }
 
 func (s *seeder) giveBack(a asset.View) {

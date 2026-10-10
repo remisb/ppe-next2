@@ -241,6 +241,10 @@ export const en: Guide = {
           roles: ['admin', 'manager'],
         },
         { shots: [{ name: 'asset', alt: "A SIM card's page: its status, holder and assignments" }], roles: ['employee'] },
+        { p: 'On an assignment with a form, the card\'s page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.' },
+        { p: 'Once the employee has signed, scan or photograph the form and choose **Upload Signed Form** under its assignment: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
+        { p: 'Once the employee has signed, choose **Upload Signed Form** under its assignment, then take a photo of the form or choose a file: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['phone'] },
+        { shots: [{ name: 'signed-copy', alt: 'An assignment with its signed copy uploaded' }] },
         {
           p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** for its form.',
           roles: ['admin', 'manager'],

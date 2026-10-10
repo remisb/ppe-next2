@@ -186,6 +186,14 @@ test('company assets: the SIM cards, a card, giving one', async () => {
   await expect(page.getByRole('heading', { name: T.assets.assignmentsTitle })).toBeVisible()
   await shot('asset')
 
+  // A signed copy uploaded: SIM-000001's, scanned the day after it was given (cmd/api/seed-demo.go).
+  await page.goto('/assets')
+  await page.getByRole('link', { name: 'SIM-000001' }).filter({ visible: true }).first().click()
+  const assignments = page.getByRole('region', { name: T.assets.assignmentsTitle })
+  await expect(assignments.getByText(T.assets.signedCopyUploaded)).toBeVisible()
+  await assignments.evaluate((e) => e.scrollIntoView({ block: 'start' }))
+  await shot('signed-copy')
+
   // Give SIM Card up to the signed paper, and no further: the demo keeps the card in the office.
   await page.goto('/assets')
   await page.getByRole('link', { name: 'SIM-000005' }).filter({ visible: true }).first().click()
