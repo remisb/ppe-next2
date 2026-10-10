@@ -23,8 +23,12 @@ const (
 	EventReturned           = "asset.returned"
 	EventMarkedNotReturned  = "asset.marked_not_returned"
 	EventSignedCopyUploaded = "asset.signed_copy_uploaded"
-	auditEntity             = "asset"
-	maxSuggestTries         = 1000
+	// Printing a form and preparing the blocking email change nothing, but
+	// they are the user's activity on the asset, so they are recorded too.
+	EventFormPrinted           = "asset.form_printed"
+	EventBlockingEmailPrepared = "asset.blocking_email_prepared"
+	auditEntity                = "asset"
+	maxSuggestTries            = 1000
 )
 
 type Service struct {
@@ -692,4 +696,80 @@ func (s *Service) Form(ctx context.Context, assetID, assignmentID uuid.UUID) (Fo
 		return FormResult{Form: b, DocumentHash: hash}, nil
 	}
 	return FormResult{}, ErrNotFound
+}
+
+// RecordFormPrinted records asset.form_printed for the form Give would store,
+// checked and built as Preview builds it: printing is not giving (§8), but who
+// printed which form for whom is recorded.
+func (s *Service) RecordFormPrinted(ctx context.Context, id uuid.UUID, p FormParams, actor uuid.UUID) error {
+	if actor == uuid.Nil {
+		return fieldError("actor", "is required")
+	}
+	f, err := s.Preview(ctx, id, p)
+	if err != nil {
+		return err
+	}
+	emp, err := s.repo.Employee(ctx, p.EmployeeID)
+	if err != nil {
+		return err
+	}
+	ev, err := s.event(actor, EventFormPrinted, id, s.now(), nil, map[string]any{
+		"employee_id": emp.ID, "employee_name": emp.FullName(), "given_date": p.GivenDate, "document_hash": f.DocumentHash,
+	})
+	if err != nil {
+		return err
+	}
+	return s.repo.Record(ctx, ev)
+}
+
+// RecordFormReprinted records asset.form_printed for an assignment's stored
+// form, printed again.
+func (s *Service) RecordFormReprinted(ctx context.Context, assetID, assignmentID uuid.UUID, actor uuid.UUID) error {
+	if actor == uuid.Nil {
+		return fieldError("actor", "is required")
+	}
+	f, err := s.Form(ctx, assetID, assignmentID)
+	if err != nil {
+		return err
+	}
+	as, err := s.repo.Assignments(ctx, assetID)
+	if err != nil {
+		return err
+	}
+	after := map[string]any{"assignment_id": assignmentID, "document_hash": f.DocumentHash}
+	for _, a := range as {
+		if a.ID == assignmentID {
+			after["employee_id"], after["employee_name"], after["given_date"] = a.EmployeeID, a.EmployeeName, a.GivenDate
+		}
+	}
+	ev, err := s.event(actor, EventFormPrinted, assetID, s.now(), nil, after)
+	if err != nil {
+		return err
+	}
+	return s.repo.Record(ctx, ev)
+}
+
+// RecordBlockingEmail records asset.blocking_email_prepared: the text asking
+// the provider to block a SIM card was copied (§14). Nothing is sent and the
+// status does not change.
+func (s *Service) RecordBlockingEmail(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
+	if actor == uuid.Nil {
+		return fieldError("actor", "is required")
+	}
+	r, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if r.Asset.Kind != KindSIM {
+		return fieldError("kind", "must be SIM: only a SIM card is blocked by its provider")
+	}
+	after := map[string]any{"sim_no": r.Asset.SimNo, "phone_no": r.Asset.PhoneNo, "provider": r.Asset.Provider}
+	if r.Open != nil {
+		after["assignment_id"], after["employee_id"], after["employee_name"] = r.Open.ID, r.Open.EmployeeID, r.Open.EmployeeName
+	}
+	ev, err := s.event(actor, EventBlockingEmailPrepared, id, s.now(), nil, after)
+	if err != nil {
+		return err
+	}
+	return s.repo.Record(ctx, ev)
 }

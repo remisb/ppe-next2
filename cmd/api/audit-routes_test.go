@@ -31,7 +31,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		order.EventOrdered, order.EventLinkCreated, order.EventLinkOpened, order.EventGiven, order.EventDeleted,
 		asset.EventRegistered, asset.EventUpdated, asset.EventStatusChanged, asset.EventGiven, asset.EventReturned,
 		asset.EventMarkedNotReturned,
-		asset.EventSignedCopyUploaded,
+		asset.EventSignedCopyUploaded, asset.EventFormPrinted, asset.EventBlockingEmailPrepared,
 		settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged,
 		security.EventAccessReviewCompleted,
 		audit.EventExported, audit.EventPurged,

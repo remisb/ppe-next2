@@ -90,6 +90,8 @@ type Repository interface {
 	// AddSignedCopy locks the asset, reads its assignment (ErrAssignmentNotFound),
 	// calls fn and writes the signed copy and its event.
 	AddSignedCopy(ctx context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error
+	// Record writes ev alone: an action on the asset that changes nothing.
+	Record(ctx context.Context, ev audit.Event) error
 	// SignedCopy is one signed copy of the asset's assignment, or ErrNotFound.
 	SignedCopy(ctx context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error)
 }

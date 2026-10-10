@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, defaultProviderChange, emptySimDraft, isDefaultProvider, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, defaultProviderChange, emptySimDraft, isDefaultProvider, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -138,7 +138,7 @@ describe('Give SIM', () => {
     expect(giveBlock({ ...ready, plan: null }, chosen, today, null, false)).toMatch(/Print the form/)
     expect(giveBlock({ ...ready, non_return_value_cents: null }, chosen, today, null, false)).toBe('Fill in the non-return value: the form needs it.')
     expect(giveBlock(ready, chosen, today, null, false)).toMatch(/Print the form/)
-    expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, false)).toMatch(/Tick Paper Form Signed/)
+    expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, false)).toMatch(/Tick that the employee has signed/)
     expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, true)).toBeNull()
   })
   it('from the employee, a card is chosen first; a change of card after printing asks for the form again', () => {
@@ -157,6 +157,44 @@ describe('Give SIM', () => {
     expect(formInput({ kind: 'SIM', plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, plan: 'Biz 5 GB', non_return_value_cents: 1500 })
     // Equipment has no plan (it is always null), so a typed one is never sent.
     expect(formInput({ kind: 'EQUIPMENT', plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, non_return_value_cents: 1500 })
+  })
+})
+
+describe('a printed form survives a reload', () => {
+  const store = () => {
+    const m = new Map<string, string>()
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) } as Storage
+  }
+  const draft = { ...emptyGiveDraft('2026-10-10'), assetId: 'a1', employeeId: 'e1', employeeName: 'Ona', value: '25' }
+  const form = { key: formKey(draft), hash: 'h1', draft, at: 1_000 }
+
+  it('brings back the card’s form for its user, for a day', () => {
+    const s = store()
+    rememberPrinted('u1', form, s)
+    expect(recallPrinted('u1', 'a1', 2_000, s)).toEqual(form)
+    expect(recallPrinted('u2', 'a1', 2_000, s)).toBeNull()
+    expect(recallPrinted('u1', 'a2', 2_000, s)).toBeNull()
+    expect(recallPrinted('u1', 'a1', 1_000 + 86_400_000, s)).toBeNull()
+  })
+
+  it('keeps one per card, and Give and Sign out drop them', () => {
+    const s = store()
+    rememberPrinted('u1', form, s)
+    rememberPrinted('u1', { ...form, hash: 'h2', draft: { ...draft, assetId: 'a2' }, at: 1_500 }, s)
+    rememberPrinted('u1', { ...form, hash: 'h3', at: 1_600 }, s)
+    expect(recallPrinted('u1', 'a1', 2_000, s)?.hash).toBe('h3')
+    forgetPrinted('u1', 'a1', 2_000, s)
+    expect(recallPrinted('u1', 'a1', 2_000, s)).toBeNull()
+    expect(recallPrinted('u1', 'a2', 2_000, s)?.hash).toBe('h2')
+    forgetAllPrinted('u1', s)
+    expect(recallPrinted('u1', 'a2', 2_000, s)).toBeNull()
+  })
+
+  it('reads nothing from storage it cannot use', () => {
+    const s = store()
+    s.setItem('workwear.printedForms.v1.u1', 'not json')
+    expect(recallPrinted('u1', 'a1', 2_000, s)).toBeNull()
+    expect(recallPrinted('u1', 'a1', 2_000, undefined)).toBeNull()
   })
 })
 

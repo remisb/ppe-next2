@@ -57,7 +57,7 @@ var events = []string{
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"asset.registered", "asset.updated", "asset.status_changed", "asset.given", "asset.returned", "asset.marked_not_returned",
-	"asset.signed_copy_uploaded",
+	"asset.signed_copy_uploaded", "asset.form_printed", "asset.blocking_email_prepared",
 	"settings.supplier_chat_changed", "settings.default_sim_provider_changed",
 	"access_review.completed",
 	EventExported, EventPurged,

@@ -69,6 +69,13 @@ func (f *fakeRepo) open(assetID uuid.UUID) *Assignment {
 	return nil
 }
 
+func (f *fakeRepo) Record(_ context.Context, ev audit.Event) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.events = append(f.events, ev)
+	return nil
+}
+
 func (f *fakeRepo) Create(_ context.Context, a Asset, bump *Bump, ev audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -651,6 +658,67 @@ func TestGiveWithoutAPlan(t *testing.T) {
 	// The form keeps the plan's place, empty.
 	if !strings.Contains(string(a.Form), `"plan":null`) {
 		t.Errorf("form = %s", a.Form)
+	}
+}
+
+func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
+	f := newFixture(t)
+	v := f.sim(t, "SIM-000001", StatusActive, true)
+	fp := FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09"}
+	prev, err := f.svc.Preview(f.ctx, v.ID, fp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Print Form: the form Give would store, for whom, nothing else changed.
+	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, fp, testActor); err != nil {
+		t.Fatal(err)
+	}
+	ev := f.repo.events[len(f.repo.events)-1]
+	if ev.Event != EventFormPrinted || ev.EntityID != v.ID || *ev.ActorUserID != testActor || ev.Before != nil ||
+		!strings.Contains(string(ev.After), prev.DocumentHash) || !strings.Contains(string(ev.After), f.emp.ID.String()) {
+		t.Errorf("printed: %s %s", ev.Event, ev.After)
+	}
+	if got, _ := f.svc.Get(f.ctx, v.ID); got.Open != nil {
+		t.Error("printing gave the card")
+	}
+	// A form that could not be printed is not recorded.
+	n := len(f.repo.events)
+	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, FormParams{GivenDate: "2026-10-09"}, testActor); !errors.Is(err, ErrInvalid) || len(f.repo.events) != n {
+		t.Errorf("no employee: %v, %d events", err, len(f.repo.events)-n)
+	}
+
+	// Print form again: the assignment's stored form.
+	a, err := f.give(t, v.ID, f.emp, "2026-10-09")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, a.ID, testActor); err != nil {
+		t.Fatal(err)
+	}
+	ev = f.repo.events[len(f.repo.events)-1]
+	if ev.Event != EventFormPrinted || !strings.Contains(string(ev.After), a.ID.String()) || !strings.Contains(string(ev.After), *a.DocumentHash) {
+		t.Errorf("reprinted: %s %s", ev.Event, ev.After)
+	}
+	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, uuid.New(), testActor); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown assignment: %v", err)
+	}
+
+	// Prepare Blocking Email: a SIM card's numbers and its holder.
+	if err := f.svc.RecordBlockingEmail(f.ctx, v.ID, testActor); err != nil {
+		t.Fatal(err)
+	}
+	ev = f.repo.events[len(f.repo.events)-1]
+	if ev.Event != EventBlockingEmailPrepared || !strings.Contains(string(ev.After), `"sim_no"`) || !strings.Contains(string(ev.After), a.ID.String()) {
+		t.Errorf("blocking email: %s %s", ev.Event, ev.After)
+	}
+	for name, err := range map[string]error{
+		"no actor":   f.svc.RecordBlockingEmail(f.ctx, v.ID, uuid.Nil),
+		"no asset":   f.svc.RecordBlockingEmail(f.ctx, uuid.New(), testActor),
+		"print, nil": f.svc.RecordFormPrinted(f.ctx, v.ID, fp, uuid.Nil),
+	} {
+		if err == nil {
+			t.Errorf("%s: recorded", name)
+		}
 	}
 }
 

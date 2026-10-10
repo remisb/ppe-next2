@@ -375,6 +375,13 @@ export function createClient(options: ClientOptions) {
         request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/return`, input),
       markNotReturned: (id: string, input: { whereabouts: Whereabouts; comment: string }) =>
         request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/not-returned`, input),
+      /** Records that Print Form printed the form Give would store (asset.form_printed); changes nothing. */
+      recordFormPrinted: (id: string, input: AssignmentFormInput) => request<void>('POST', `/api/v1/assets/${seg(id)}/form-printed`, input),
+      /** Records that an assignment's stored form was printed again; any signed-in user. */
+      recordFormReprinted: (id: string, assignmentId: string) =>
+        request<void>('POST', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form-printed`),
+      /** Records that Prepare Blocking Email's text was copied (asset.blocking_email_prepared); nothing is sent. */
+      recordBlockingEmail: (id: string) => request<void>('POST', `/api/v1/assets/${seg(id)}/blocking-email`),
       /** An assignment's stored form, for reprinting. */
       form: (id: string, assignmentId: string) =>
         request<AssignmentFormResult>('GET', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form`),

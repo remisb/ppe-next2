@@ -184,8 +184,10 @@ assignment once. The asset stays with its holder and out of office stock. Event
 
 ### Prepare Blocking Email (§14)
 
-Built in the web app from the asset, its provider's contact and the company name; there is no
-route, and nothing is sent or changed. Subject `SIM blocking request - [Phone Number]`; body as
+Built in the web app from the asset, its provider's contact and the company name; nothing is
+sent or changed. The first copy of each opening records `asset.blocking_email_prepared`
+(`POST /api/v1/assets/{id}/blocking-email`, `assets.manage`, 204): the SIM and phone numbers,
+the provider and, when held, the assignment and its holder. Subject `SIM blocking request - [Phone Number]`; body as
 §14 gives it.
 
 ### Upload Signed Form (§9, slice 5)
@@ -239,6 +241,9 @@ stays with its assignment when the asset later goes to someone else.
 | `POST /api/v1/assets/{id}/return` | `assets.manage` | Register Return, on the open assignment |
 | `POST /api/v1/assets/{id}/not-returned` | `assets.manage` | Mark as Not Returned, on the open assignment |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; 404 when the asset needed none |
+| `POST /api/v1/assets/{id}/form-printed` | `assets.manage` | records `asset.form_printed` for the form Give would store (Preview's body, checked as Preview checks it); 204, writes nothing else |
+| `POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed` | authenticated | records `asset.form_printed` for an assignment's stored form, printed again; 204 |
+| `POST /api/v1/assets/{id}/blocking-email` | `assets.manage` | records `asset.blocking_email_prepared` (Prepare Blocking Email copied); 204, SIM cards only |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
 | `GET /api/v1/audit-events/assets/{id}` | authenticated | the asset's Changes, as for the other records |
@@ -264,7 +269,9 @@ total}`.
 
 Entity type `asset`, entity id the asset's, so an asset's Changes show its whole story:
 `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`,
-`asset.marked_not_returned`, `asset.signed_copy_uploaded`. Assignment
+`asset.marked_not_returned`, `asset.signed_copy_uploaded`, and two that change nothing but are
+the user's activity: `asset.form_printed` (employee, given date and document hash; on a
+reprint also the assignment) and `asset.blocking_email_prepared`. Assignment
 events name the assignment and employee ids, the employee's name and the dates. They are in
 `audit.Events()`, `AUDIT_EVENTS` and the Audit log's area **Company Assets** (`assets`),
 with their words in `@ppe/audit`; the Audit log names an asset by its inventory number.
@@ -327,14 +334,26 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   holder, linked, since when and Days Held); the activation text on a Not Activated card;
   the details; **Assignments**, newest first, each with its dates, comments, Not Returned
   mark and **Print form again**; and **Changes**.
-- **Give SIM**: the card, the employee (search), the given date (today, not later),
+- **Give SIM** is three numbered steps, the current one outlined and later ones greyed with
+  only their title until reached: **Who and when** (the card when chosen here, the employee,
+  the given date, the plan and value the card lacks, a comment), **Print the form and have it
+  signed**, and **Hand over the SIM**. A step done shows a tick; Who and when folds to one line
+  with **Change** once the form is printed (never while typing). The footer always says what
+  is left beside the button ("Print the form, then have it signed.", "Ready: give the SIM.").
+  Give Asset is the same; an item needing no form has two steps. The checkbox reads "The
+  employee has signed the printed form" (Paper Form Signed in records); Print Form becomes
+  Print again once printed. The fields: the employee (search), the given date (today, not later),
   the plan (optional) and value only when the card lacks them, a comment. **Preview Form** shows the
   form the API builds; **Print Form** opens it in a tab of its own
   (`/assets/<id>/form?employee=&date=&plan=&value=&print`, `routes/asset-form.tsx`) and keeps
-  its hash. The sheet fetches the form a moment after its data is complete, so Print Form
+  its hash. That tab records `asset.form_printed` just before each print dialog (Print form
+  again too), so a print is attributed even when the page that opened it is in the background. The sheet fetches the form a moment after its data is complete, so Print Form
   marks it printed at the click itself: Safari does not finish a request the page starts as
   the click opens the tab, which once left Paper Form Signed disabled. A hash still missing
-  at Give is asked for again. The reminder to sign comes before **Paper Form Signed**, which is enabled only
+  at Give is asked for again. A printed form is also kept on the device per user
+  (`workwear.printedForms.v1.<user>`, one per card, for a day; Give, a refused changed form and
+  Sign out drop it): Safari may reload the page while the print tab is in front, and Give
+  opened again on that card brings back the details and the printed mark. The reminder to sign comes before **Paper Form Signed**, which is enabled only
   once printed and cleared when the employee, date, plan or value change after printing.
   The button shows the first reason it cannot be used yet; a refusal from the API (given
   meanwhile, form changed) keeps what was entered.

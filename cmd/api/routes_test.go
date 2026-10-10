@@ -532,6 +532,7 @@ func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, 
 type stubAssets struct{}
 
 func (stubAssets) Create(context.Context, asset.Asset, *asset.Bump, audit.Event) error { return nil }
+func (stubAssets) Record(context.Context, audit.Event) error                           { return nil }
 func (stubAssets) Get(context.Context, uuid.UUID) (asset.Record, error) {
 	return asset.Record{}, asset.ErrNotFound
 }
@@ -802,6 +803,9 @@ var policy = map[string]rule{
 	"POST /api/v1/assets":                                                       {role.AssetsManage, "managers"},
 	"PUT /api/v1/assets/{id}":                                                   {role.AssetsManage, "managers"},
 	"PUT /api/v1/assets/{id}/status":                                            {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/form-printed":                                     {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed":          {"", "any"},
+	"POST /api/v1/assets/{id}/blocking-email":                                   {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/assignments/preview":                              {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/assignments":                                      {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/return":                                           {role.AssetsManage, "managers"},

@@ -1,12 +1,12 @@
 import type { Asset, AssetKind, AssignmentFormResult, Whereabouts } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { Copy, Printer } from 'lucide-react'
+import { ArrowRight, Check, Copy, Printer } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
@@ -14,9 +14,22 @@ import { AssignmentFormDocument } from '@/components/assignment-form'
 import { StatusBadge } from '@/components/asset-controls'
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { type GiveDraft, blockingEmail, cardBlock, categoryLabel, emptyGiveDraft, formatDay, formInput, formKey, giveBlock } from '@/lib/assets'
+import {
+  type GiveDraft,
+  blockingEmail,
+  cardBlock,
+  categoryLabel,
+  emptyGiveDraft,
+  forgetPrinted,
+  formatDay,
+  formInput,
+  formKey,
+  giveBlock,
+  recallPrinted,
+  rememberPrinted,
+} from '@/lib/assets'
 import { pathOf } from '@/lib/router'
-import { parseEuro } from '@/lib/utils'
+import { formatEuro, parseEuro } from '@/lib/utils'
 import { basePath } from '@ppe/routing'
 
 /**
@@ -110,6 +123,7 @@ function GiveSheet({
   onGiven: (message: string) => void
 }) {
   const { client } = useApi()
+  const { userId } = useSession()
   const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
   // The form printed: its data's key, and its hash once known (null while it is fetched).
   const [printed, setPrinted] = useState<{ key: string; hash: string | null } | null>(null)
@@ -121,6 +135,8 @@ function GiveSheet({
   const [failure, setFailure] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [picked, setPicked] = useState<Asset | null>(null)
+  // A finished first step folds to one line; Change opens it again.
+  const [editingDetails, setEditingDetails] = useState(false)
   const asset = fixed ?? picked
   // Which opening of the sheet and which form a preview answers: one that
   // arrives after the sheet closed or the form changed is dropped.
@@ -131,24 +147,45 @@ function GiveSheet({
     session.current++
     if (!open) return
     setPicked(null)
-    setDraft({
+    const base = {
       ...emptyGiveDraft(today),
       assetId: fixed?.id ?? '',
       ...(employee ? { employeeId: employee.id, employeeName: employee.full_name } : {}),
-    })
+    }
+    setDraft(base)
     setPrinted(null)
     setHashed(null)
     setSigned(false)
     setPreview(null)
     setShowPreview(false)
     setFailure(undefined)
+    setEditingDetails(false)
+    if (fixed) restorePrinted(fixed.id, base)
   }, [open, fixed?.id, employee?.id])
+
+  /**
+   * Back on a card whose form was printed here before the page reloaded (as
+   * Safari may while the print tab is in front): its details and the printed
+   * mark, so the paper in hand can be ticked as signed.
+   */
+  function restorePrinted(assetId: string, base: GiveDraft) {
+    const form = recallPrinted(userId, assetId)
+    if (!form || (base.employeeId !== '' && base.employeeId !== form.draft.employeeId) || form.draft.givenDate > today) return
+    setDraft(form.draft)
+    setPrinted({ key: form.key, hash: form.hash })
+  }
 
   const key = formKey(draft)
   useEffect(() => {
     currentKey.current = key
   }, [key])
   const changedAfterPrint = printed !== null && printed.key !== key
+  // A form printed, once its hash is known, is kept on this device for a reload.
+  useEffect(() => {
+    if (!printed?.hash || printed.key !== key || !draft.assetId) return
+    if (recallPrinted(userId, draft.assetId)?.key === key) return
+    rememberPrinted(userId, { key, hash: printed.hash, draft, at: Date.now() })
+  }, [printed?.hash, printed?.key])
   // Anything that changes the form after printing takes the signature away (§8).
   useEffect(() => {
     if (changedAfterPrint) setSigned(false)
@@ -229,12 +266,14 @@ function GiveSheet({
         paper_form_signed: asset.needs_form,
         form_hash: hash,
       })
+      forgetPrinted(userId, asset.id)
       onGiven(sim ? t.assets.givenTo(a.employee_name) : t.assets.assetGivenTo(a.employee_name))
     } catch (err) {
       // What was entered stays (§7); only a form that changed must be printed again.
       if (err instanceof ApiError && err.isConflict && /already given/i.test(err.message)) setFailure(t.assets.alreadyGivenError)
       else if (err instanceof ApiError && err.isConflict && /form changed/i.test(err.message)) {
         setFailure(t.assets.formChangedError)
+        forgetPrinted(userId, asset.id)
         setPrinted(null)
         setSigned(false)
       } else setFailure(errorText(err))
@@ -243,133 +282,191 @@ function GiveSheet({
     }
   }
 
+  // The steps: who and when, the paper (when the asset needs a form), the hand-over.
+  const detailsDone = ready
+  const paperDone = printed !== null && !changedAfterPrint && signed
+  const detailsState: StepState = detailsDone ? 'done' : 'current'
+  // The details fold to one line once the form is printed from them (never while typing).
+  const detailsFolded = detailsDone && paper && printed !== null && !changedAfterPrint && !editingDetails
+  const paperState: StepState = !detailsDone ? 'locked' : paperDone ? 'done' : 'current'
+  const handOverState: StepState = block === null ? 'current' : 'locked'
+  const summary = [draft.employeeName, draft.givenDate ? formatDay(draft.givenDate) : null, input?.non_return_value_cents != null ? formatEuro(input.non_return_value_cents) : null]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <FormSheet
       open
       onClose={onClose}
       title={sim ? t.assets.giveSimCard : t.assets.giveAsset}
       description={sim ? t.assets.giveDescription : t.assets.giveAssetDescription}
-      footer={footerButtons(
-        onClose,
-        <Button onClick={() => void give()} disabled={busy} aria-disabled={block !== null} className={cn(block !== null && 'opacity-50')}>
-          {sim ? t.assets.giveSimCard : t.assets.giveAsset}
-        </Button>,
-      )}
-    >
-      <div className="grid gap-4">
-        {fixed ? (
-          <CardLine asset={fixed} />
-        ) : (
-          <CardPicker
-            kind={assetKind}
-            selected={picked}
-            onSelect={(a) => {
-              setPicked(a)
-              set('assetId', a.id)
-            }}
-          />
-        )}
-        <EmployeePicker
-          label={t.assets.employee}
-          selected={draft.employeeId ? { id: draft.employeeId, full_name: draft.employeeName, code: null } : null}
-          onSelect={(e) => setDraft((d) => ({ ...d, employeeId: e.id, employeeName: e.full_name }))}
-          onClear={() => setDraft((d) => ({ ...d, employeeId: '', employeeName: '' }))}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={draft.givenDate > today ? t.assets.dateInFuture : undefined}>
-            {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
-          </Field>
-          {asset?.kind === 'SIM' && asset.plan === null ? (
-            <Field label={t.assets.plan} hint={t.assets.planGiveHint}>
-              {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
-            </Field>
-          ) : null}
-          {asset?.needs_form && asset.non_return_value_cents === null ? (
-            <Field
-              label={t.assets.nonReturnValue}
-              required
-              hint={t.assets.missingHint}
-              error={draft.value.trim() && (cents === null || Number.isNaN(cents)) ? t.assets.valueInvalid : undefined}
-            >
-              {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder="0.00" value={draft.value} onChange={(e) => set('value', e.target.value)} />}
-            </Field>
-          ) : null}
+      footer={
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          {/* What is left, always in sight beside the button that waits for it. */}
+          <p id="give-reason" role="status" className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground sm:mr-auto">
+            {block ? (
+              <>
+                <ArrowRight aria-hidden className="size-4 shrink-0" /> {block}
+              </>
+            ) : (
+              <>
+                <Check aria-hidden className="size-4 shrink-0" /> {sim ? t.assets.readyToGive : t.assets.readyToGiveAsset}
+              </>
+            )}
+          </p>
+          {/* As every sheet's footer: on a phone, full width with the action above Cancel. */}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            {footerButtons(
+              onClose,
+              <Button onClick={() => void give()} disabled={busy} aria-disabled={block !== null} aria-describedby="give-reason" className={cn(block !== null && 'opacity-50')}>
+                {sim ? t.assets.giveSimCard : t.assets.giveAsset}
+              </Button>,
+            )}
+          </div>
         </div>
-        <Field label={t.assets.comment} hint={t.assets.optional}>
-          {(p) => <Textarea {...controlProps(p)} rows={2} value={draft.comment} onChange={(e) => set('comment', e.target.value)} />}
-        </Field>
+      }
+    >
+      <div className="grid gap-3">
+        {fixed ? <CardLine asset={fixed} /> : null}
+
+        <Step n={1} state={detailsState} title={t.assets.stepDetails}>
+          {detailsFolded ? (
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <p className="min-w-0 text-sm">
+                {!fixed && asset ? <span className="font-mono">{asset.inventory_no} · </span> : null}
+                {summary}
+              </p>
+              <Button variant="link" className="h-auto p-0 pointer-coarse:min-h-11" onClick={() => setEditingDetails(true)}>
+                {t.assets.changeDetails}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {fixed ? null : (
+                <CardPicker
+                  kind={assetKind}
+                  selected={picked}
+                  onSelect={(a) => {
+                    setPicked(a)
+                    set('assetId', a.id)
+                    restorePrinted(a.id, { ...draft, assetId: a.id })
+                  }}
+                />
+              )}
+              <div className="grid gap-1.5">
+                <span aria-hidden className="text-sm font-medium">
+                  {t.assets.employee} <span className="text-destructive">*</span>
+                </span>
+                <EmployeePicker
+                  label={t.assets.employee}
+                  selected={draft.employeeId ? { id: draft.employeeId, full_name: draft.employeeName, code: null } : null}
+                  onSelect={(e) => setDraft((d) => ({ ...d, employeeId: e.id, employeeName: e.full_name }))}
+                  onClear={() => setDraft((d) => ({ ...d, employeeId: '', employeeName: '' }))}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={draft.givenDate > today ? t.assets.dateInFuture : undefined}>
+                  {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
+                </Field>
+                {asset?.kind === 'SIM' && asset.plan === null ? (
+                  <Field label={t.assets.plan} hint={t.assets.planGiveHint}>
+                    {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
+                  </Field>
+                ) : null}
+                {asset?.needs_form && asset.non_return_value_cents === null ? (
+                  <Field
+                    label={t.assets.nonReturnValue}
+                    required
+                    hint={t.assets.missingHint}
+                    error={draft.value.trim() && (cents === null || Number.isNaN(cents)) ? t.assets.valueInvalid : undefined}
+                  >
+                    {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder="0.00" value={draft.value} onChange={(e) => set('value', e.target.value)} />}
+                  </Field>
+                ) : null}
+              </div>
+              <Field label={t.assets.comment} hint={t.assets.optional}>
+                {(p) => <Textarea {...controlProps(p)} rows={2} value={draft.comment} onChange={(e) => set('comment', e.target.value)} />}
+              </Field>
+              {editingDetails && detailsDone && printed !== null ? (
+                <Button variant="outline" className="justify-self-start" onClick={() => setEditingDetails(false)}>
+                  {t.assets.doneDetails}
+                </Button>
+              ) : null}
+            </div>
+          )}
+        </Step>
 
         {paper ? (
-          <>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            disabled={!ready}
-            onClick={() => {
-              if (showPreview) setShowPreview(false)
-              else {
-                setShowPreview(true)
-                void loadPreview()
-              }
-            }}
-          >
-            {showPreview ? t.assets.hidePreview : t.assets.previewForm}
-          </Button>
-          {/* A link, so the browser opens the print tab from the click itself; the sheet keeps the printed form's hash. */}
-          <a
-            href={formPath || undefined}
-            target="_blank"
-            rel="noopener"
-            aria-disabled={!ready}
-            className={cn(buttonVariants({ variant: 'outline' }), !ready && 'pointer-events-none opacity-50')}
-            onClick={(e) => {
-              if (!ready) {
-                e.preventDefault()
-                return
-              }
-              // Marked at once, with the hash fetched ahead when there is one: nothing waits on this page.
-              const hash = hashed?.key === key ? hashed.hash : null
-              setPrinted({ key, hash })
-              if (hash === null) void loadPreview()
-            }}
-          >
-            <Printer aria-hidden /> {t.assets.printForm}
-          </a>
-        </div>
-        {showPreview && preview ? (
-          <div className="max-h-96 overflow-auto rounded-lg border border-border">
-            <p className="px-4 pt-3 text-xs text-muted-foreground">{t.assets.formLayoutNote}</p>
-            <AssignmentFormDocument form={preview.form} documentHash={preview.document_hash} />
-          </div>
-        ) : null}
-        {changedAfterPrint ? (
-          <p role="alert" className="text-sm text-destructive">
-            {t.assets.changedAfterPrint}
-          </p>
-        ) : printed ? (
-          <p className="text-sm text-muted-foreground">{t.assets.printedNote}</p>
+          <Step n={2} state={paperState} title={t.assets.stepPaper} hint={sim ? t.assets.signReminder : t.assets.signReminderAsset}>
+            <div className="flex flex-wrap gap-2">
+              {/* A link, so the browser opens the print tab from the click itself; the sheet keeps the printed form's hash. */}
+              <a
+                href={formPath || undefined}
+                target="_blank"
+                rel="noopener"
+                aria-disabled={!ready}
+                className={cn(buttonVariants({ variant: printed && !changedAfterPrint ? 'outline' : 'default' }), !ready && 'pointer-events-none opacity-50')}
+                onClick={(e) => {
+                  if (!ready) {
+                    e.preventDefault()
+                    return
+                  }
+                  // Marked at once, with the hash fetched ahead when there is one: nothing waits on this page.
+                  const hash = hashed?.key === key ? hashed.hash : null
+                  setPrinted({ key, hash })
+                  setEditingDetails(false)
+                  if (hash === null) void loadPreview()
+                }}
+              >
+                <Printer aria-hidden /> {printed && !changedAfterPrint ? t.assets.printAgain : t.assets.printForm}
+              </a>
+              <Button
+                variant="ghost"
+                disabled={!ready}
+                onClick={() => {
+                  if (showPreview) setShowPreview(false)
+                  else {
+                    setShowPreview(true)
+                    void loadPreview()
+                  }
+                }}
+              >
+                {showPreview ? t.assets.hidePreview : t.assets.previewForm}
+              </Button>
+            </div>
+            {showPreview && preview ? (
+              <div className="max-h-96 overflow-auto rounded-lg border border-border">
+                <p className="px-4 pt-3 text-xs text-muted-foreground">{t.assets.formLayoutNote}</p>
+                <AssignmentFormDocument form={preview.form} documentHash={preview.document_hash} />
+              </div>
+            ) : null}
+            {changedAfterPrint ? (
+              <p role="alert" className="text-sm text-destructive">
+                {t.assets.changedAfterPrint}
+              </p>
+            ) : printed ? (
+              <p className="text-sm text-muted-foreground">{t.assets.printedNote}</p>
+            ) : null}
+            <label className={cn('flex min-h-11 items-center gap-3 text-sm font-medium', (!printed || changedAfterPrint) && 'text-muted-foreground')}>
+              <input
+                type="checkbox"
+                className="size-5 accent-primary"
+                checked={signed}
+                disabled={!printed || changedAfterPrint}
+                onChange={(e) => setSigned(e.target.checked)}
+              />
+              {t.assets.paperFormSigned}
+            </label>
+          </Step>
         ) : null}
 
-        <p className="rounded-md bg-muted px-3 py-2 text-sm font-medium">{t.assets.signReminder}</p>
-        <label className={cn('flex min-h-11 items-center gap-3 text-sm font-medium', (!printed || changedAfterPrint) && 'text-muted-foreground')}>
-          <input
-            type="checkbox"
-            className="size-5 accent-primary"
-            checked={signed}
-            disabled={!printed || changedAfterPrint}
-            onChange={(e) => setSigned(e.target.checked)}
-          />
-          {t.assets.paperFormSigned}
-        </label>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">{t.assets.noFormNeeded}</p>
-        )}
-        {block ? (
-          <p className="text-sm text-muted-foreground" id="give-reason">
-            {block}
-          </p>
-        ) : null}
+        <Step
+          n={paper ? 3 : 2}
+          state={handOverState}
+          title={sim ? t.assets.stepHandOver : t.assets.stepHandOverAsset}
+          hint={paper ? (sim ? t.assets.stepHandOverHint : t.assets.stepHandOverHintAsset) : t.assets.noFormNeeded}
+        />
+
         {failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}
@@ -377,6 +474,49 @@ function GiveSheet({
         ) : null}
       </div>
     </FormSheet>
+  )
+}
+
+type StepState = 'done' | 'current' | 'locked'
+
+/**
+ * One step of Give: its number (a tick once done), its title and what it
+ * asks for. The current step stands out; a later one is greyed until the
+ * steps before it are done, so the order is plain without reading.
+ */
+function Step({ n, state, title, hint, children }: { n: number; state: StepState; title: string; hint?: string; children?: ReactNode }) {
+  return (
+    <section
+      aria-label={title}
+      aria-current={state === 'current' ? 'step' : undefined}
+      className={cn(
+        'grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 rounded-lg border p-3',
+        state === 'current' ? 'border-primary/40 bg-background' : 'border-transparent',
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'flex size-7 items-center justify-center rounded-full text-sm font-medium',
+          state === 'done' && 'bg-primary text-primary-foreground',
+          state === 'current' && 'border-2 border-primary text-foreground',
+          state === 'locked' && 'border border-border text-muted-foreground',
+        )}
+      >
+        {state === 'done' ? <Check className="size-4" /> : n}
+      </span>
+      <div className={cn('grid min-w-0 gap-3', state === 'locked' && 'text-muted-foreground')}>
+        <div className="grid min-h-7 content-center gap-0.5">
+          <h3 className="text-sm font-semibold">
+            <span className="sr-only">{t.assets.stepOf(n, state)} </span>
+            {title}
+          </h3>
+          {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
+        </div>
+        {/* A step not reached yet shows only what it will ask. */}
+        {state === 'locked' ? null : children}
+      </div>
+    </section>
   )
 }
 
@@ -600,15 +740,30 @@ function NotReturnedSheet({ asset, onClose, onMarked }: { asset: Asset | null; o
 
 /**
  * Prepare Blocking Email (§14): the request to copy into the user's own
- * e-mail. Nothing is sent and the status does not change.
+ * e-mail. Nothing is sent and the status does not change; the first copy of
+ * each opening is recorded as the user's activity (asset.blocking_email_prepared).
  */
 function BlockingEmailSheet({ asset, note, onClose }: { asset: Asset | null; note: string | undefined; onClose: () => void }) {
+  const { client } = useApi()
   const [copied, setCopied] = useState<string>()
-  useEffect(() => setCopied(undefined), [asset?.id])
+  const recorded = useRef(false)
+  useEffect(() => {
+    setCopied(undefined)
+    recorded.current = false
+  }, [asset?.id])
   const mail = asset ? blockingEmail(asset) : null
   const copy = (what: 'subject' | 'body', text: string) =>
     (navigator.clipboard?.writeText(text) ?? Promise.reject(new Error('no clipboard'))).then(
-      () => setCopied(what),
+      () => {
+        setCopied(what)
+        if (asset && !recorded.current) {
+          recorded.current = true
+          // Recording is the user's activity, not the copy: a failure leaves the copy as it is.
+          client.assets.recordBlockingEmail(asset.id).catch(() => {
+            recorded.current = false
+          })
+        }
+      },
       () => setCopied('failed'),
     )
   return (

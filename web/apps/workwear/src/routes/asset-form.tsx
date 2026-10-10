@@ -45,10 +45,28 @@ export function AssetFormPage({
   )
   const printed = useRef(false)
 
+  // Each print is recorded as the user's activity (asset.form_printed) before
+  // the dialog opens: this tab does it, so it is not lost when the page that
+  // opened the tab is in the background. Printing goes ahead if it fails.
+  const print = async () => {
+    const record = assignment
+      ? client.assets.recordFormReprinted(id, assignment)
+      : draft
+        ? client.assets.recordFormPrinted(id, {
+            employee_id: draft.employeeId,
+            given_date: draft.givenDate,
+            ...(draft.plan ? { plan: draft.plan } : {}),
+            ...(draft.valueCents !== undefined ? { non_return_value_cents: draft.valueCents } : {}),
+          })
+        : Promise.resolve()
+    await record.catch(() => {})
+    window.print()
+  }
+
   useEffect(() => {
     if (autoPrint && form.data && !printed.current) {
       printed.current = true
-      window.print()
+      void print()
     }
   }, [autoPrint, form.data])
 
@@ -59,7 +77,7 @@ export function AssetFormPage({
           <ArrowLeft aria-hidden /> {t.common.back}
         </Button>
         {form.data ? (
-          <Button onClick={() => window.print()}>
+          <Button onClick={() => void print()}>
             <Printer aria-hidden /> {t.assets.printForm}
           </Button>
         ) : null}

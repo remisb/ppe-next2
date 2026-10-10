@@ -201,7 +201,7 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 // activated, given against its printed form, held while its employee may not
 // be deleted, and returned (docs/specs/asset-service.md).
 func TestPostgresAssetsHTTPFlow(t *testing.T) {
-	api, _ := newPostgresAPI(t)
+	api, pool := newPostgresAPI(t)
 	_, mgr := api.userWith(t, role.KeyManager)
 	_, admin := api.userWith(t, role.KeyAdmin)
 
@@ -255,6 +255,23 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	assignment := decode[map[string]any](t, rec.Body.Bytes())
 	if assignment["employee_name"] != "Jonas Petraitis" || assignment["days_held"] != float64(0) {
 		t.Errorf("assignment = %v", assignment)
+	}
+
+	// Printing and the blocking email change nothing but are recorded, as ppe_app.
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/form-printed", mgr, form); rec.Code != http.StatusNoContent {
+		t.Errorf("form printed = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/"+assignment["id"].(string)+"/form-printed", mgr, nil); rec.Code != http.StatusNoContent {
+		t.Errorf("form reprinted = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/blocking-email", mgr, nil); rec.Code != http.StatusNoContent {
+		t.Errorf("blocking email = %d %s", rec.Code, rec.Body)
+	}
+	var printed, prepared int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FILTER (WHERE event = 'asset.form_printed'),
+		count(*) FILTER (WHERE event = 'asset.blocking_email_prepared') FROM audit_events WHERE entity_id = $1`, id).Scan(&printed, &prepared); err != nil ||
+		printed != 2 || prepared != 1 {
+		t.Errorf("recorded %d prints, %d blocking emails, %v", printed, prepared, err)
 	}
 
 	// Leaving never returns an asset, so its holder is not deleted (§2).

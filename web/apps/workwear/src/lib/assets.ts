@@ -239,6 +239,63 @@ export function formKey(d: GiveDraft): string {
   return JSON.stringify([d.assetId, d.employeeId, d.givenDate, d.plan.trim(), d.value.trim()])
 }
 
+/**
+ * A form printed for Give SIM, kept on this device per user: Safari may reload
+ * the page while the print tab is in front, and the sheet then forgets what
+ * was printed, so the paper in hand could never be ticked as signed. Opening
+ * Give again on the same card brings back the details and the printed mark
+ * (the API still refuses a form the card has changed since). One per card,
+ * for a day; Give and Sign out drop them.
+ */
+export interface PrintedForm {
+  key: string
+  hash: string
+  draft: GiveDraft
+  /** When it was printed, ms since the epoch. */
+  at: number
+}
+
+const PRINTED_PREFIX = 'workwear.printedForms.v1.'
+const PRINTED_FOR_MS = 86_400_000
+
+function readPrinted(userId: string, storage: Storage | undefined, now: number): Record<string, PrintedForm> {
+  try {
+    const all = JSON.parse(storage?.getItem(PRINTED_PREFIX + userId) ?? '{}') as Record<string, PrintedForm>
+    return Object.fromEntries(Object.entries(all).filter(([, f]) => typeof f?.key === 'string' && typeof f.hash === 'string' && now - f.at < PRINTED_FOR_MS))
+  } catch {
+    return {}
+  }
+}
+
+function writePrinted(userId: string, all: Record<string, PrintedForm>, storage: Storage | undefined): void {
+  try {
+    if (Object.keys(all).length === 0) storage?.removeItem(PRINTED_PREFIX + userId)
+    else storage?.setItem(PRINTED_PREFIX + userId, JSON.stringify(all))
+  } catch {
+    // Storage unavailable (private mode, quota): a reload asks for the form to be printed again.
+  }
+}
+
+export function rememberPrinted(userId: string, form: PrintedForm, storage: Storage | undefined = globalThis.localStorage): void {
+  writePrinted(userId, { ...readPrinted(userId, storage, form.at), [form.draft.assetId]: form }, storage)
+}
+
+/** The card's form printed within the day, or null. */
+export function recallPrinted(userId: string, assetId: string, now = Date.now(), storage: Storage | undefined = globalThis.localStorage): PrintedForm | null {
+  return readPrinted(userId, storage, now)[assetId] ?? null
+}
+
+export function forgetPrinted(userId: string, assetId: string, now = Date.now(), storage: Storage | undefined = globalThis.localStorage): void {
+  const all = readPrinted(userId, storage, now)
+  delete all[assetId]
+  writePrinted(userId, all, storage)
+}
+
+/** Sign out forgets every form the user printed here. */
+export function forgetAllPrinted(userId: string, storage: Storage | undefined = globalThis.localStorage): void {
+  writePrinted(userId, {}, storage)
+}
+
 /** The form's inputs to send: the card's own plan and value stay its own; only missing ones are filled in. Only a SIM card has a plan. */
 export function formInput(a: Pick<Asset, 'kind' | 'plan' | 'non_return_value_cents'>, d: GiveDraft): AssignmentFormInput {
   const cents = parseEuro(d.value)

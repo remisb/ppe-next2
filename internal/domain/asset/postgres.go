@@ -610,6 +610,10 @@ func nullJSON(b []byte) any {
 	return b
 }
 
+func (r *PostgresRepository) Record(ctx context.Context, ev audit.Event) error {
+	return translate(audit.Insert(ctx, r.pool, ev))
+}
+
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

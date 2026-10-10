@@ -37,6 +37,10 @@ func registerAssetRoutes(rt *router, assets *asset.Service) {
 	rt.restricted("POST /api/v1/assets/{id}/return", h.giveBack, role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/not-returned", h.markNotReturned, role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form", h.form)
+	// Printing and the blocking email change nothing; these record who did them.
+	rt.restricted("POST /api/v1/assets/{id}/form-printed", h.formPrinted, role.AssetsManage)
+	rt.authenticated("POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed", h.formReprinted)
+	rt.restricted("POST /api/v1/assets/{id}/blocking-email", h.blockingEmail, role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.uploadSignedCopy, role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.signedCopy)
 }
@@ -411,4 +415,61 @@ func (h *assetHandler) signedCopy(w http.ResponseWriter, r *http.Request) {
 	hd.Set("Cache-Control", "private, no-store")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, body)
+}
+
+// formPrinted records that Print Form printed the form Give would store; the
+// body is Preview's.
+func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request) {
+	actor, id, req, ok := withAsset[formRequest](w, r)
+	if !ok {
+		return
+	}
+	if err := h.assets.RecordFormPrinted(r.Context(), id, req.params(), actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// formReprinted records that an assignment's stored form was printed again.
+func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	assignmentID, err := parseUUIDPath(r, "assignmentID")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.assets.RecordFormReprinted(r.Context(), id, assignmentID, actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// blockingEmail records that Prepare Blocking Email's text was copied.
+func (h *assetHandler) blockingEmail(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.assets.RecordBlockingEmail(r.Context(), id, actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

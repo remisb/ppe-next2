@@ -1168,7 +1168,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
 
-  // Give SIM: one form, the reason by the button until it can be given (§6).
+  // Give SIM: three steps, what is left always beside the button (§6).
   await main.getByRole('button', { name: 'Give SIM' }).click()
   const give = page.getByRole('dialog')
   await expect(give.getByText('Choose the employee.')).toBeVisible()
@@ -1177,7 +1177,8 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(give.getByText('Fill in the non-return value: the form needs it.')).toBeVisible()
   await give.getByLabel('Non-return Value').fill('25.00')
   await expect(give.getByText('Print the form, then have it signed.')).toBeVisible()
-  await expect(give.getByLabel('Paper Form Signed')).toBeDisabled()
+  await expect(give.getByRole('region', { name: 'Print the form and have it signed' })).toHaveAttribute('aria-current', 'step')
+  await expect(give.getByLabel('The employee has signed the printed form')).toBeDisabled()
   // Print Form prints the form the API would store, in a tab of its own; printing is not giving (§8).
   await page.context().addInitScript(() => {
     window.print = () => {
@@ -1190,18 +1191,29 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(printTab.getByText('€25.00')).toBeVisible()
   await expect.poll(() => printTab.evaluate(() => (window as unknown as { __printed?: number }).__printed)).toBe(1)
   await printTab.close()
+  // Safari may reload the page while the print tab is in front: Give SIM again
+  // brings back the details and the printed mark, so the paper can be ticked.
+  await page.reload()
+  await main.getByRole('button', { name: 'Give SIM' }).click()
+  // Printed, the details fold to one line.
+  await expect(give.getByText(/Ona Kazlauskienė · .* · €25\.00/)).toBeVisible()
+  await expect(give.getByText('Printed. Once the employee has signed it, tick below.')).toBeVisible()
   await expect(give.getByText('Ask the employee to sign the printed form before handing over the SIM.')).toBeVisible()
-  await give.getByLabel('Paper Form Signed').check()
+  await give.getByLabel('The employee has signed the printed form').check()
+  await expect(give.getByText('Ready: give the SIM.')).toBeVisible()
   // A change to the form after printing takes the tick away and asks for a reprint.
+  await give.getByRole('button', { name: 'Change' }).click()
   const today = await give.getByLabel('Given Date').inputValue()
   const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
   await give.getByLabel('Given Date').fill(yesterday)
   await expect(give.getByText(/The form changed after printing/)).toBeVisible()
-  await expect(give.getByLabel('Paper Form Signed')).not.toBeChecked()
+  await expect(give.getByLabel('The employee has signed the printed form')).not.toBeChecked()
   await give.getByLabel('Given Date').fill(today)
-  await give.getByLabel('Paper Form Signed').check()
+  await give.getByLabel('The employee has signed the printed form').check()
   await give.getByRole('button', { name: 'Give SIM' }).click()
   await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
+  // Printing changed nothing but is the user's activity: in the card's Changes.
+  await expect(main.getByRole('region', { name: 'Changes' }).getByText('Form printed').first()).toBeVisible()
   // One action changed the holder, the location, the form and the history (§7).
   await expect(main.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
   await expect(main.getByText('With an employee')).toBeVisible()
@@ -1283,7 +1295,7 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
   await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
   await printTab.close()
-  await give.getByLabel('Paper Form Signed').check()
+  await give.getByLabel('The employee has signed the printed form').check()
   await give.getByRole('button', { name: 'Give SIM' }).click()
   await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
   await page.unroute('**/assignments/preview')
@@ -1365,7 +1377,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await expect(printTab.getByRole('heading', { name: /Equipment Assignment Form/ })).toBeVisible()
   await expect(printTab.getByText('€900.00')).toBeVisible()
   await printTab.close()
-  await give.getByLabel('Paper Form Signed').check()
+  await give.getByLabel('The employee has signed the printed form').check()
   await give.getByRole('button', { name: 'Give Asset' }).click()
   await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()
   await expect(equipment.getByRole('link', { name: 'PC-000001' })).toBeVisible()

@@ -911,7 +911,10 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   given date. Once the asset is given, the form's data is kept with the assignment and
   never changes, like a record's snapshot, with its own document hash. **Paper Form Signed**
   is ticked when the employee has signed; changing the form after printing clears it (§8).
-- **UI:** Preview Form, Print Form, Paper Form Signed.
+- **UI:** Preview Form, Print Form (Print again once printed), and the checkbox "The employee has
+  signed the printed form", recorded as Paper Form Signed. Give's steps: **Who and when**,
+  **Print the form and have it signed**, **Hand over the SIM** (the item). A print and a copied
+  blocking email are recorded: "Form printed", "Blocking email prepared".
 
 ### Signed copy
 - **Brief:** a scan or photo of the signed assignment form, kept with that assignment.
