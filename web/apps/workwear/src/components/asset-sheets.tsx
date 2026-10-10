@@ -257,7 +257,7 @@ function GiveSheet({
             {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
           </Field>
           {asset?.kind === 'SIM' && asset.plan === null ? (
-            <Field label={t.assets.plan} required hint={t.assets.missingHint}>
+            <Field label={t.assets.plan} hint={t.assets.planGiveHint}>
               {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
             </Field>
           ) : null}

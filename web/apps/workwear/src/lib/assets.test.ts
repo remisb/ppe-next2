@@ -134,7 +134,8 @@ describe('Give SIM Card', () => {
     expect(giveBlock({ ...ready, phone_no: null }, chosen, today, null, false)).toMatch(/phone number/)
     expect(giveBlock(ready, emptyGiveDraft(today), today, null, false)).toBe('Choose the employee.')
     expect(giveBlock(ready, { ...chosen, givenDate: '2026-10-10' }, today, null, false)).toMatch(/later than today/)
-    expect(giveBlock({ ...ready, plan: null }, chosen, today, null, false)).toBe('Fill in the plan: the form needs it.')
+    // The plan is optional: a card without one goes on to the value and the paper.
+    expect(giveBlock({ ...ready, plan: null }, chosen, today, null, false)).toMatch(/Print the form/)
     expect(giveBlock({ ...ready, non_return_value_cents: null }, chosen, today, null, false)).toBe('Fill in the non-return value: the form needs it.')
     expect(giveBlock(ready, chosen, today, null, false)).toMatch(/Print the form/)
     expect(giveBlock(ready, chosen, today, { key: formKey(chosen) }, false)).toMatch(/Tick Paper Form Signed/)

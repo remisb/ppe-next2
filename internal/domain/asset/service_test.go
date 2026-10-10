@@ -637,6 +637,23 @@ func TestGiveFillsAMissingPlanAndValue(t *testing.T) {
 	}
 }
 
+func TestGiveWithoutAPlan(t *testing.T) {
+	f := newFixture(t)
+	v := f.sim(t, "SIM-000001", StatusActive, false)
+	if _, err := f.svc.Update(f.ctx, v.ID, Params{InventoryNo: v.InventoryNo, SimNo: v.SimNo, Provider: v.Provider,
+		PhoneNo: sp("+370 600 00001"), NonReturnValueCents: ip(1500), ReceivedDate: v.ReceivedDate}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	a, err := f.give(t, v.ID, f.emp, "2026-10-09")
+	if err != nil {
+		t.Fatalf("a card without a plan: %v", err)
+	}
+	// The form keeps the plan's place, empty.
+	if !strings.Contains(string(a.Form), `"plan":null`) {
+		t.Errorf("form = %s", a.Form)
+	}
+}
+
 func TestBlockingNeitherReturnsNorMoves(t *testing.T) {
 	f := newFixture(t)
 	v := f.sim(t, "SIM-000001", StatusActive, true)

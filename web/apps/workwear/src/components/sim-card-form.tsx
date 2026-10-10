@@ -205,7 +205,7 @@ export function SimCardForm({
             </label>
           )}
         </div>
-        <Field label={t.assets.plan} hint={t.assets.laterHint}>
+        <Field label={t.assets.plan} hint={t.assets.optional}>
           {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
         </Field>
         <Field label={t.assets.nonReturnValue} hint={t.assets.nonReturnValueHint} error={errors.value}>

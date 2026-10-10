@@ -235,7 +235,7 @@ named otherwise; the HTTP flows are `TestPostgresAssetsHTTPFlow` and
 | A new SIM from the provider | Office, Not Activated, no holder; received today | `TestAddSIMCardDefaults`, `TestPostgresAssetLifecycle`, HTTP flow |
 | The SIM No. or Inventory No. already exists | No duplicate; 409 with the existing asset's id; spaces and case ignored (a SIM number's letters too) | `TestDuplicateNumbersNameTheExistingAsset`, `TestPostgresNumbersAreNeverReused`, `TestPostgresSIMNumbersIgnoreCase`, HTTP flows (`existing_id`, also on Edit) |
 | Give a Not Activated or Blocked SIM | Refused (409), nothing stored | `TestGiveRefusesWhatCannotBeGiven`, `TestPostgresAssetLifecycle`, HTTP flow |
-| Give an Active SIM | Holder, location, form and history change together, in one transaction | `TestGiveUpdatesEverythingTogether`, `TestGiveFillsAMissingPlanAndValue`, `TestPostgresAssetLifecycle` |
+| Give an Active SIM | Holder, location, form and history change together, in one transaction; a card without a plan is given, the form's plan blank | `TestGiveUpdatesEverythingTogether`, `TestGiveFillsAMissingPlanAndValue`, `TestGiveWithoutAPlan`, `TestPostgresAssetLifecycle` |
 | Give twice, or two users at once | Exactly one assignment; the others get 409 | `TestGiveUpdatesEverythingTogether`, `TestPostgresConcurrentGiveGivesOnce`, `TestPostgresAssignmentsCannotBeRewritten` (the index) |
 | Block without a return | Blocked; the holder stays; In Office does not grow | `TestBlockingNeitherReturnsNorMoves`, `TestPostgresAssetLifecycle` |
 | Return an Active or a Blocked SIM | In the Office; the status does not change; not before the given date | `TestReturnKeepsTheStatusAndHistory`, `TestPostgresAssetLifecycle` |
@@ -256,7 +256,7 @@ named otherwise; the HTTP flows are `TestPostgresAssetsHTTPFlow` and
 | Change Status on screen: three choices, saved at once, no confirmation; the activation text on a Not Activated card | as the API | e2e *Company Assets: …* |
 | The register on a phone and tablet scrolls nothing sideways; under More on a phone | — | e2e *phone and tablet: …* |
 | A card's one action follows its state; Mark as Not Returned once | Return while held, Give when Active in the Office, else Change Status | web `lib/assets.test.ts` |
-| Give SIM Card on screen: the reasons in order down to the signed paper; a change after Print Form clears Paper Form Signed; only the missing plan or value is sent | as the API | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |
+| Give SIM Card on screen: the reasons in order down to the signed paper; a change after Print Form clears Paper Form Signed; only the missing plan or value is sent; the plan is optional | as the API | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |
 | Print Form prints the API's form in its own tab; printing is not giving | the form names the employee and value; nothing stored until Give | e2e *Company Assets: give a SIM card …* |
 | Give, Not Returned (Unknown, the holder kept, the blocking email offered next), Return (status and mark kept), each in Changes | as the API | e2e *Company Assets: give a SIM card …* |
 | The blocking email is the brief's text with the card's numbers | §14 | web `lib/assets.test.ts`; e2e *Company Assets: give a SIM card …* |

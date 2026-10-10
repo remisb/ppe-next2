@@ -48,7 +48,7 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4). Unique among assets not soft-deleted, compared with spaces removed and letters in either case |
 | `phone_no` | SIM, optional at registration (§4); needed to give |
 | `provider` | SIM: required |
-| `plan` | SIM, optional at registration; needed to give |
+| `plan` | SIM, optional; a card without one is given with the form's plan left blank |
 | `non_return_value_cents`, `currency` | Optional at registration; needed to give when the asset needs a form. Currency is the organisation's (`EUR`, as for the catalogue) |
 | `connection_status` | SIM only: `NOT_ACTIVATED` (default), `ACTIVE`, `BLOCKED`. Null for EQUIPMENT (§17) |
 | `received_date` | SIM: the date it arrived from the provider, default today in the organisation timezone |
@@ -148,7 +148,7 @@ SHARE`, and the service checks, in this order, answering the first that fails:
 | Employee live (read with the lock) | 404 `ErrEmployeeNotFound` |
 | No open assignment | 409 `ErrAlreadyGiven`: *This SIM card has already been given to another employee. Select another SIM card.* (§7) |
 | SIM: status Active | 409 `ErrNotActive`, saying Not Activated or Blocked; a returned blocked card must be unblocked with the provider and set Active first (§12) |
-| Form data complete (SIM: Phone No., Plan, value; EQUIPMENT needing a form: value) | 400, naming the field |
+| Form data complete (SIM: Phone No., value; EQUIPMENT needing a form: value; a plan is optional) | 400, naming the field |
 | Given date not in the future | 400 |
 | Form needed: `paper_form_signed` true | 400 |
 | Form needed: `form_hash` equals the hash of the form built now | 409 `ErrFormChanged`: print the updated form |
@@ -328,7 +328,7 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   the details; **Assignments**, newest first, each with its dates, comments, Not Returned
   mark and **Print form again**; and **Changes**.
 - **Give SIM Card**: the card, the employee (search), the given date (today, not later),
-  the plan and value only when the card lacks them, a comment. **Preview Form** shows the
+  the plan (optional) and value only when the card lacks them, a comment. **Preview Form** shows the
   form the API builds; **Print Form** opens it in a tab of its own
   (`/assets/<id>/form?employee=&date=&plan=&value=&print`, `routes/asset-form.tsx`) and keeps
   its hash. The reminder to sign comes before **Paper Form Signed**, which is enabled only

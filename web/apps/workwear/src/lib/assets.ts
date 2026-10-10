@@ -218,7 +218,7 @@ export function canMarkNotReturned(a: Pick<Asset, 'open_assignment'>): boolean {
   return a.open_assignment !== null && a.open_assignment.not_returned_at === null
 }
 
-/** Give SIM Card's form, as typed. Plan and value are asked only when the card lacks them (§6). */
+/** Give SIM Card's form, as typed. Plan and value are asked only when the card lacks them (§6); the plan may stay empty. */
 export interface GiveDraft {
   /** The card chosen, when Give starts from the employee; the card's own id when it starts from the card. */
   assetId: string
@@ -274,7 +274,6 @@ export function giveBlock(
   if (!d.givenDate) return t.assets.givenDateReason
   if (d.givenDate > today) return t.assets.dateInFuture
   const cents = parseEuro(d.value)
-  if (a.kind === 'SIM' && a.plan === null && !d.plan.trim()) return t.assets.planReason
   if (a.needs_form && a.non_return_value_cents === null && (cents === null || Number.isNaN(cents))) return t.assets.valueReason
   // Furniture and other items need no signed form (spec, open decision 6).
   if (!a.needs_form) return null
