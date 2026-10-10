@@ -5,7 +5,7 @@ import type { Guide } from './guide'
 import { lt } from './lt'
 import { ru } from './ru'
 
-export type { Device, Guide, Section, Block, Item, Shot, ShotName } from './guide'
+export type { Device, Guide, Section, Block, Item, Role, Shot, ShotName } from './guide'
 export { deviceFor, deviceOrder, forReader, helpAudiences, inline, isFor, shotPath } from './guide'
 
 /** The user guide in each language the app speaks. */

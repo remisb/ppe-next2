@@ -383,7 +383,13 @@ export function App() {
         {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
         {route.name === 'assets' ? (
-          <Assets key={`${route.equipment ? 'equipment' : 'sim'}-${route.tile ?? 'all'}`} kind={route.equipment ? 'EQUIPMENT' : 'SIM'} tile={route.tile} navigate={navigate} />
+          // Equipment & Furniture is for the Equipment Assignments role (equipment.read); others get the SIMs.
+          <Assets
+            key={`${route.equipment ? 'equipment' : 'sim'}-${route.tile ?? 'all'}`}
+            kind={route.equipment && session.can('equipment.read') ? 'EQUIPMENT' : 'SIM'}
+            tile={route.tile}
+            navigate={navigate}
+          />
         ) : null}
         {route.name === 'asset' ? <AssetPage key={route.id} id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
         {route.name === 'assetForm' ? (

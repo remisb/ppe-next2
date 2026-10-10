@@ -111,6 +111,25 @@ inventory number.
 
 Every write needs `assets.manage`. Reads need sign-in, like employees and orders.
 
+**Equipment & Furniture needs `equipment.read`** (migration 0032), which only the built-in
+role **Equipment Assignments** grants: not Administrator or Manager. Who holds which
+computer or phone is for the people given that role. Without it (`asset.Sight`, decided in
+`cmd/api` from the token):
+
+- the register and its tiles for `EQUIPMENT` (`?kind=EQUIPMENT`, `summary/EQUIPMENT`) and
+  Add Asset are 403 (`asset.ErrNotPermitted`);
+- every route on one equipment item, reads and writes, its form, PDF, signed copies and
+  Changes, is 404, as for an asset that does not exist (`Service.Seen`, checked first);
+- ⌘K Search (`by-number`) and the employee's assets (`by-employee`) leave equipment out;
+- the apps show no Equipment & Furniture tab, no Equipment section on the employee page and
+  no equipment figures on the dashboards' Company Assets card; `/assets?kind=equipment`
+  shows the SIMs.
+
+Giving, returning and editing equipment needs both `assets.manage` and `equipment.read`.
+SIMs stay as they were. Delete employee still refuses an employee who holds any asset, and
+names it. The Audit log (`audit.read`) keeps every event, equipment's included: it is the
+complete record, and its export must match the seals.
+
 ### Add SIM, Add Asset (§4, §15)
 
 One form, one asset at a time; no bulk entry. SIM defaults: Office, Not Activated, Received
@@ -249,6 +268,9 @@ stays with its assignment when the asset later goes to someone else.
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
 | `GET /api/v1/audit-events/assets/{id}` | authenticated | the asset's Changes, as for the other records |
+
+Every route on `{id}`, and `kind=EQUIPMENT` on the list, tiles and Add Asset, also needs
+`equipment.read` for an equipment item (404 on one item, 403 by kind; see Actions).
 
 The return and the mark act on the asset's only open assignment, so they are the asset's
 routes (the contract's aggregate rule). `GET /api/v1/assets/{id}` carries the assignments

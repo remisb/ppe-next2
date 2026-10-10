@@ -20,9 +20,11 @@ type assetHandler struct {
 }
 
 // registerAssetRoutes mounts Company Assets (docs/specs/asset-service.md).
-// Every signed-in user reads the register; every write needs assets.manage.
-// The return and the Not Returned mark act on the asset's open assignment,
-// so they are the asset's routes.
+// Every signed-in user reads the SIM register; Equipment & Furniture needs
+// equipment.read too (asset.Sight), and every write needs assets.manage. Each
+// route on one asset goes through seen, so without equipment.read an
+// equipment item is not found. The return and the Not Returned mark act on
+// the asset's open assignment, so they are the asset's routes.
 func registerAssetRoutes(rt *router, assets *asset.Service) {
 	h := &assetHandler{assets: assets}
 	rt.authenticated("GET /api/v1/assets", h.list)
@@ -30,25 +32,47 @@ func registerAssetRoutes(rt *router, assets *asset.Service) {
 	rt.authenticated("GET /api/v1/assets/by-number/{q}", h.byNumber)
 	rt.authenticated("GET /api/v1/assets/by-employee/{id}", h.byEmployee)
 	rt.restricted("GET /api/v1/assets/next-number/{prefix}", h.nextNumber, role.AssetsManage)
-	rt.authenticated("GET /api/v1/assets/{id}", h.get)
+	rt.authenticated("GET /api/v1/assets/{id}", h.seen(h.get))
 	rt.restricted("POST /api/v1/assets", h.create, role.AssetsManage)
-	rt.restricted("PUT /api/v1/assets/{id}", h.update, role.AssetsManage)
-	rt.restricted("PUT /api/v1/assets/{id}/status", h.changeStatus, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments/preview", h.preview, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments", h.give, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/return", h.giveBack, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/not-returned", h.markNotReturned, role.AssetsManage)
-	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form", h.form)
+	rt.restricted("PUT /api/v1/assets/{id}", h.seen(h.update), role.AssetsManage)
+	rt.restricted("PUT /api/v1/assets/{id}/status", h.seen(h.changeStatus), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/assignments/preview", h.seen(h.preview), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/assignments", h.seen(h.give), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/return", h.seen(h.giveBack), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/not-returned", h.seen(h.markNotReturned), role.AssetsManage)
+	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form", h.seen(h.form))
 	// Printing and the blocking email change nothing; these record who did them.
-	rt.restricted("POST /api/v1/assets/{id}/form-printed", h.formPrinted, role.AssetsManage)
-	rt.authenticated("POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed", h.formReprinted)
+	rt.restricted("POST /api/v1/assets/{id}/form-printed", h.seen(h.formPrinted), role.AssetsManage)
+	rt.authenticated("POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed", h.seen(h.formReprinted))
 	// The form as a PDF, recorded as printed (format pdf): the one Give would
 	// store, its details in the query as Preview takes them; or an assignment's.
-	rt.restricted("GET /api/v1/assets/{id}/assignments/preview.pdf", h.formPDF, role.AssetsManage)
-	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf", h.storedFormPDF)
-	rt.restricted("POST /api/v1/assets/{id}/blocking-email", h.blockingEmail, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.uploadSignedCopy, role.AssetsManage)
-	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.signedCopy)
+	rt.restricted("GET /api/v1/assets/{id}/assignments/preview.pdf", h.seen(h.formPDF), role.AssetsManage)
+	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf", h.seen(h.storedFormPDF))
+	rt.restricted("POST /api/v1/assets/{id}/blocking-email", h.seen(h.blockingEmail), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.seen(h.uploadSignedCopy), role.AssetsManage)
+	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.seen(h.signedCopy))
+}
+
+// sight is which assets the request's user may see: Equipment & Furniture
+// only with equipment.read.
+func sight(r *http.Request) asset.Sight {
+	return asset.Sight{Equipment: holds(r, role.EquipmentRead)}
+}
+
+// seen answers 404 for an asset the user may not see, before next runs.
+func (h *assetHandler) seen(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUUIDPath(r, "id")
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		if err := h.assets.Seen(r.Context(), id, sight(r)); err != nil {
+			writeError(w, r, err)
+			return
+		}
+		next(w, r)
+	}
 }
 
 // assetParams is an asset's details as Add and Edit send them.
@@ -139,7 +163,7 @@ func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
 		}
 		p.EmployeeID = &id
 	}
-	res, err := h.assets.List(r.Context(), p)
+	res, err := h.assets.List(r.Context(), p, sight(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -148,7 +172,7 @@ func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *assetHandler) summary(w http.ResponseWriter, r *http.Request) {
-	s, err := h.assets.Summary(r.Context(), r.PathValue("kind"))
+	s, err := h.assets.Summary(r.Context(), r.PathValue("kind"), sight(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -158,7 +182,7 @@ func (h *assetHandler) summary(w http.ResponseWriter, r *http.Request) {
 
 // byNumber is ⌘K Search's filter: no match is 200 [].
 func (h *assetHandler) byNumber(w http.ResponseWriter, r *http.Request) {
-	vs, err := h.assets.ByNumber(r.Context(), r.PathValue("q"))
+	vs, err := h.assets.ByNumber(r.Context(), r.PathValue("q"), sight(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -173,7 +197,7 @@ func (h *assetHandler) byEmployee(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	hs, err := h.assets.ByEmployee(r.Context(), id)
+	hs, err := h.assets.ByEmployee(r.Context(), id, sight(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -212,6 +236,11 @@ func (h *assetHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 	var req createAssetRequest
 	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	// Add Asset makes an item its maker could not then open.
+	if err := sight(r).Check(req.Kind); err != nil {
 		writeError(w, r, err)
 		return
 	}

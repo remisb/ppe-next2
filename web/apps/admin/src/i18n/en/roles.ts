@@ -73,7 +73,11 @@ export const roles = {
     'orders.delete': { label: 'Delete orders', grants: 'Remove demo and test orders; the record and its history stay.' },
     'assets.manage': {
       label: 'Manage Company Assets',
-      grants: 'Add SIMs and equipment, change a SIM’s status, give assets to employees and register their return.',
+      grants: 'Add SIMs and equipment, change a SIM’s status, give assets to employees and register their return. Equipment also needs See Equipment & Furniture.',
+    },
+    'equipment.read': {
+      label: 'See Equipment & Furniture',
+      grants: 'Each item and who holds it: in Company Assets, on employee pages and in search. Without it, not even an administrator sees them.',
     },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },

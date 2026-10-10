@@ -46,7 +46,9 @@ Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/ro
 `role_permissions`, `user_roles`; spec `docs/specs/role-service.md`). The built-in
 Administrator, Manager and Employee reproduce the old three roles; administrators add and
 change others on Roles & permissions. The token's `perms` claim carries what the user's
-roles allow. **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
+roles allow. A fourth built-in, **Equipment Assignments** (migration 0032), alone grants
+`equipment.read`: Equipment & Furniture and who holds each item are hidden from everyone
+else, administrators included (`asset.Sight`; the API answers 404 for such an item). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
 Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration

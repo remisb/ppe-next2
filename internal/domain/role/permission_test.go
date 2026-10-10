@@ -48,14 +48,27 @@ func TestBuiltinsGrantKnownPermissionsWithTheirRequirements(t *testing.T) {
 			}
 		}
 	}
-	// The administrator holds everything but the other roles' own dashboards
-	// and deleting orders, which is the manager's.
+	// The administrator holds everything but the other roles' own dashboards,
+	// deleting orders, which is the manager's, and seeing Equipment &
+	// Furniture, which only Equipment Assignments grants.
 	admin := BuiltinPermissions([]string{KeyAdmin})
 	for _, p := range Catalogue() {
-		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete
+		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead
 		if slices.Contains(admin, p.Key) != want {
 			t.Errorf("admin has %s = %v, want %v", p.Key, !want, want)
 		}
+	}
+}
+
+// Equipment Assignments is the only built-in role that sees Equipment & Furniture.
+func TestOnlyEquipmentAssignmentsSeesEquipment(t *testing.T) {
+	for _, key := range BuiltinKeys() {
+		if got, want := slices.Contains(BuiltinPermissions([]string{key}), EquipmentRead), key == KeyEquipment; got != want {
+			t.Errorf("built-in role %s has equipment.read = %v, want %v", key, got, want)
+		}
+	}
+	if !slices.Equal(BuiltinPermissions([]string{KeyEquipment}), []Permission{EquipmentRead}) {
+		t.Errorf("Equipment Assignments = %v, want only equipment.read", BuiltinPermissions([]string{KeyEquipment}))
 	}
 }
 

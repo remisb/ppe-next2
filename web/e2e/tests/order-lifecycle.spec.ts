@@ -1330,6 +1330,36 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {
+  // Without it: no tab, no figures on the Dashboard, and its address shows the SIMs.
+  await openTab('Company Assets')
+  await expect(page.getByRole('heading', { name: 'Company Assets' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Equipment & Furniture' })).toHaveCount(0)
+  await page.goto('/assets?kind=equipment')
+  await expect(page.getByRole('button', { name: 'Add SIM' })).toBeVisible()
+  await openTab('Dashboard')
+  const assetsCard = page.getByRole('region', { name: 'Company Assets' })
+  await expect(assetsCard.getByRole('link', { name: /Total SIMs/ })).toBeVisible()
+  await expect(assetsCard.getByRole('link', { name: /Total items/ })).toHaveCount(0)
+  // Administrator does not have it, and cannot: it is the built-in role's.
+  await openTab('Roles & permissions')
+  await page.getByRole('row', { name: /^Administrator/ }).getByRole('button', { name: 'View Administrator' }).click()
+  let dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('checkbox', { name: /^See Equipment & Furniture/ })).not.toBeChecked()
+  await dialog.getByRole('button', { name: 'Close' }).last().click()
+  await expect(page.getByRole('row', { name: /^Equipment Assignments/ })).toContainText('See Equipment & Furniture')
+  // The administrator gives it to themselves on Users; the sign-in's next renewal carries it.
+  await openTab('Users')
+  await page.getByRole('button', { name: `Edit ${admin.name}` }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('checkbox', { name: /^Equipment Assignments/ }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(admin.name) })).toContainText('Equipment Assignments')
+  await openTab('Company Assets')
+  await page.reload()
+  await expect(page.getByRole('link', { name: 'Equipment & Furniture' })).toBeVisible()
+})
+
 test('Equipment & Furniture: one record per item, numbered by category; a computer is given against its form, a desk without one', async () => {
   await openTab('Company Assets')
   await page.getByRole('link', { name: 'Equipment & Furniture' }).click()

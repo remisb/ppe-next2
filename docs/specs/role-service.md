@@ -21,8 +21,8 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
 
 | Field | Notes |
 | --- | --- |
-| `id` | UUID; the built-ins have fixed ids (`role.AdminID`, `ManagerID`, `EmployeeID`) |
-| `key` | `admin`, `manager` or `employee` on a built-in role, `null` otherwise |
+| `id` | UUID; the built-ins have fixed ids (`role.AdminID`, `ManagerID`, `EmployeeID`, `EquipmentID`) |
+| `key` | `admin`, `manager`, `employee` or `equipment` on a built-in role, `null` otherwise |
 | `name` | Required, ≤ 100 characters; unique among live roles, case-insensitively |
 | `description` | ≤ 500 characters |
 | `permissions` | Known keys, in catalogue order |
@@ -34,12 +34,17 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
 
 - **Built-in roles** exist in every database (migration 0022; `role.EnsureBuiltins` puts
   them back after a test or e2e run empties the tables, and `-seed-admin` calls it).
-  Installed, they reproduce the access the three fixed roles gave (`builtin.go`;
-  `TestSeededRolesKeepPolicy`, `TestPostgresBuiltinsMatchCode`).
+  Installed, the first three reproduce the access the three fixed roles gave (`builtin.go`;
+  `TestSeededRolesKeepPolicy`, `TestPostgresBuiltinsMatchCode`), less Equipment & Furniture.
+- **Equipment Assignments** (key `equipment`, migration 0032) grants `equipment.read` alone:
+  seeing Equipment & Furniture and who holds each item (`docs/specs/asset-service.md`).
+  No other built-in role has it, Administrator included; an administrator gives it on Users,
+  to themselves too. With Manager's `assets.manage` it also lets one give and return them.
 - **Administrator** cannot be changed or deleted (409); it holds `users.manage` and
   `roles.manage`, and at least one active user always holds it (user service), so someone
-  can always manage users and roles. **Manager** and **Employee** keep their names and descriptions (the apps
-  translate them by key) and cannot be deleted; their permissions can change.
+  can always manage users and roles. **Manager**, **Employee** and **Equipment Assignments** keep
+  their names and descriptions (the apps translate them by key) and cannot be deleted; their
+  permissions can change.
 - A role a live user holds is not deleted (409); deletion is soft, and frees the name.
 - **No escalation.** Only whoever holds `roles.manage` grants any permission. Anyone else
   adds, changes, gives or takes away only permissions they hold themselves
@@ -57,7 +62,7 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
 | Route | Access | Kind |
 | --- | --- | --- |
 | `GET /api/v1/permissions` | `users.read` | `[{key, group, requires}]` in catalogue order; labels are the apps' |
-| `GET /api/v1/roles` | `users.read` | live roles, built-ins first (admin, manager, employee), then by name |
+| `GET /api/v1/roles` | `users.read` | live roles, built-ins first (admin, manager, employee, equipment), then by name |
 | `GET /api/v1/roles/{id}` | `users.read` | one role, 404 on miss |
 | `POST /api/v1/roles` | `roles.manage`, sensitive | body `{name, description, permissions}`; 201 with `Location` |
 | `PUT /api/v1/roles/{id}` | `roles.manage`, sensitive | full replace; Administrator 409, a built-in's new name or description 400 |

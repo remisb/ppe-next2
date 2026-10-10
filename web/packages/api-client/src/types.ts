@@ -7,7 +7,7 @@
 import type { Permission } from './permissions.ts'
 
 /** A built-in role's key; a role an administrator added has none. */
-export type RoleKey = 'admin' | 'manager' | 'employee'
+export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
 /** A user's interface language; each user sets their own. */

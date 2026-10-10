@@ -378,15 +378,24 @@ func (r *PostgresRepository) Summary(ctx context.Context, kind Kind) (Summary, e
 	return s, err
 }
 
-func (r *PostgresRepository) ByNumber(ctx context.Context, q string, limit int) ([]Record, error) {
+func (r *PostgresRepository) ByNumber(ctx context.Context, q string, kinds []Kind, limit int) ([]Record, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+assetColumns+`, `+assignmentColumns+recordFrom+`
-		WHERE `+live+` AND (replace(coalesce(a.sim_no, ''), ' ', '') ILIKE $1
+		WHERE `+live+` AND a.kind = ANY($3) AND (replace(coalesce(a.sim_no, ''), ' ', '') ILIKE $1
 			OR replace(coalesce(a.phone_no, ''), ' ', '') ILIKE $1 OR replace(a.inventory_no, ' ', '') ILIKE $1)
-		ORDER BY upper(a.inventory_no), a.id LIMIT $2`, contains(q), limit)
+		ORDER BY upper(a.inventory_no), a.id LIMIT $2`, contains(q), limit, kindStrings(kinds))
 	if err != nil {
 		return nil, err
 	}
 	return scanRecords(rows)
+}
+
+// kindStrings is kinds as a text[] parameter.
+func kindStrings(kinds []Kind) []string {
+	out := make([]string, len(kinds))
+	for i, k := range kinds {
+		out[i] = string(k)
+	}
+	return out
 }
 
 func (r *PostgresRepository) ByEmployee(ctx context.Context, employeeID uuid.UUID) ([]Held, error) {

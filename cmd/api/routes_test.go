@@ -545,7 +545,7 @@ func (stubAssets) List(context.Context, asset.ListFilter) ([]asset.Record, int, 
 func (stubAssets) Summary(context.Context, asset.Kind) (asset.Summary, error) {
 	return asset.Summary{}, nil
 }
-func (stubAssets) ByNumber(context.Context, string, int) ([]asset.Record, error) {
+func (stubAssets) ByNumber(context.Context, string, []asset.Kind, int) ([]asset.Record, error) {
 	return []asset.Record{}, nil
 }
 func (stubAssets) ByEmployee(context.Context, uuid.UUID) ([]asset.Held, error) {
@@ -843,9 +843,10 @@ var policy = map[string]rule{
 	"GET /api/v1/usage":                                                         {role.UsageRead, "admins"},
 }
 
-// allowedRoles is who each audience was before permissions: the three fixed roles.
+// allowedRoles is who each audience was before permissions: the three fixed
+// roles, and Equipment Assignments, which reaches what any signed-in user does.
 var allowedRoles = map[string][]string{
-	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
+	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment},
 	"managers": {role.KeyAdmin, role.KeyManager},
 	"admins":   {role.KeyAdmin},
 	"manager":  {role.KeyManager},

@@ -113,7 +113,7 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 	if _, err := svc.MarkNotReturned(ctx, v.ID, NotReturnedParams{Whereabouts: "UNKNOWN", Comment: "Left without notice"}, actor); err != nil {
 		t.Fatal(err)
 	}
-	s, err := svc.Summary(ctx, "SIM")
+	s, err := svc.Summary(ctx, "SIM", all)
 	if err != nil || s.Total != 1 || s.InOffice != 0 || s.WithEmployees != 1 || s.NotReturned != 1 || !slices.Equal(s.Providers, []string{"Telia"}) {
 		t.Errorf("summary = %+v, %v", s, err)
 	}
@@ -133,7 +133,7 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 		{ListParams{Kind: "SIM", Provider: "telia", Sort: "holder", Dir: "desc"}, 1},
 		{ListParams{Kind: "EQUIPMENT"}, 0},
 	} {
-		res, err := svc.List(ctx, c.p)
+		res, err := svc.List(ctx, c.p, all)
 		if err != nil || res.Total != c.want || len(res.Assets) != c.want {
 			t.Errorf("%+v: total %d, %d rows, %v; want %d", c.p, res.Total, len(res.Assets), err, c.want)
 		}
@@ -146,7 +146,7 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 	if got.Location != LocationOffice || *got.ConnectionStatus != StatusBlocked || len(got.Assignments) != 1 {
 		t.Errorf("after return: %s, %s, %d assignments", got.Location, *got.ConnectionStatus, len(got.Assignments))
 	}
-	held, err := svc.ByEmployee(ctx, emps[0].ID)
+	held, err := svc.ByEmployee(ctx, emps[0].ID, all)
 	if err != nil || len(held) != 1 || held[0].Asset.InventoryNo != "SIM-000001" || held[0].Open() {
 		t.Errorf("by employee = %+v, %v", held, err)
 	}
@@ -196,7 +196,7 @@ func TestPostgresNumbersAreNeverReused(t *testing.T) {
 		{ListParams{Kind: "EQUIPMENT", Category: "FURNITURE"}, 0},
 		{ListParams{Kind: "EQUIPMENT", Q: "lapt"}, 1},
 	} {
-		if res, err := svc.List(ctx, c.p); err != nil || res.Total != c.want {
+		if res, err := svc.List(ctx, c.p, all); err != nil || res.Total != c.want {
 			t.Errorf("%+v: %d, %v; want %d", c.p, res.Total, err, c.want)
 		}
 	}
@@ -360,7 +360,7 @@ func TestPostgresSignedCopies(t *testing.T) {
 		t.Fatal(err)
 	}
 	missing := func() int {
-		res, err := svc.List(ctx, ListParams{Kind: "SIM", SignedCopy: "missing"})
+		res, err := svc.List(ctx, ListParams{Kind: "SIM", SignedCopy: "missing"}, all)
 		if err != nil {
 			t.Fatal(err)
 		}

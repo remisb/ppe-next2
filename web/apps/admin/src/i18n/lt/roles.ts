@@ -71,7 +71,11 @@ export const roles: RolesText = {
     'orders.delete': { label: 'Trinti užsakymus', grants: 'Pašalinti demonstracinius ir bandomuosius užsakymus; įrašas ir jo istorija lieka.' },
     'assets.manage': {
       label: 'Tvarkyti įmonės turtą',
-      grants: 'Pridėti SIM ir įrangą, keisti SIM būseną, išduoti turtą darbuotojams ir registruoti grąžinimą.',
+      grants: 'Pridėti SIM ir įrangą, keisti SIM būseną, išduoti turtą darbuotojams ir registruoti grąžinimą. Įrangai dar reikia leidimo „Matyti įrangą ir baldus“.',
+    },
+    'equipment.read': {
+      label: 'Matyti įrangą ir baldus',
+      grants: 'Kiekvieną daiktą ir pas ką jis yra: įmonės turte, darbuotojų puslapiuose ir paieškoje. Be šio leidimo jų nemato net administratorius.',
     },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },

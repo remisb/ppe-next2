@@ -1,7 +1,6 @@
-import type { RoleKey as Role } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { type Block, type Device, type Guide, type Item, deviceFor, forReader, guides, helpAudiences, inline, shotPath } from './index'
+import { type Block, type Device, type Guide, type Item, type Role, deviceFor, forReader, guides, helpAudiences, inline, shotPath } from './index'
 
 /** A guide's shape without its words: what must match across languages. */
 function shape(g: Guide) {

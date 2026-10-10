@@ -63,7 +63,9 @@ const segment =
 export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile | undefined; navigate: (to: Route) => void }) {
   const sim = kind === 'SIM'
   const { client } = useApi()
-  const canManage = useSession().can('assets.manage')
+  const session = useSession()
+  const canManage = session.can('assets.manage')
+  const seesEquipment = session.can('equipment.read')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
   // A dashboard's Company Assets card opens the register on one of its tiles.
@@ -186,19 +188,22 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           </>
         }
       />
-      {/* The two registers, each at its own address: SIM cards, and equipment and furniture. */}
-      <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-        {([['SIM', t.assets.simCards], ['EQUIPMENT', t.assets.equipmentTab]] as const).map(([k, label]) => (
-          <a
-            key={k}
-            {...linkTo({ name: 'assets', ...(k === 'EQUIPMENT' ? { equipment: true } : {}) }, navigate)}
-            aria-current={kind === k ? 'page' : undefined}
-            className={cn(segment, 'aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm')}
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
+      {/* The two registers, each at its own address: SIM cards, and equipment and furniture,
+          which only the Equipment Assignments role sees; without it there is nothing to switch to. */}
+      {seesEquipment ? (
+        <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
+          {([['SIM', t.assets.simCards], ['EQUIPMENT', t.assets.equipmentTab]] as const).map(([k, label]) => (
+            <a
+              key={k}
+              {...linkTo({ name: 'assets', ...(k === 'EQUIPMENT' ? { equipment: true } : {}) }, navigate)}
+              aria-current={kind === k ? 'page' : undefined}
+              className={cn(segment, 'aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm')}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
 
       <KeyFigures>
         {tiles.map((k) => (

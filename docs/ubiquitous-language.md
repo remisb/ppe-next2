@@ -33,17 +33,19 @@ Rules for using it:
 - **Code:** `internal/domain/user`, table `users`. **UI:** Users screen, Account.
 
 ### Role
-- **Brief:** a named bundle of permissions a user holds: the built-in `admin`, `manager`
-  and `employee`, or a custom role an administrator adds.
+- **Brief:** a named bundle of permissions a user holds: the built-in `admin`, `manager`,
+  `employee` and `equipment`, or a custom role an administrator adds.
 - **Detail:** roles stack: a user may do what any of their roles allows. **Administrator**
   manages users, roles, Settings and Backups, plus everything a manager can do.
   **Manager** manages Item Catalogue prices and Item Sets, and may delete an order, plus
   everything the employee role can do. **Employee** (the role) prepares orders, follows
-  them in Orders, and manages employees and sizes. A role change reaches the user within
+  them in Orders, and manages employees and sizes. **Equipment Assignments** sees Equipment &
+  Furniture and who holds each item, which no other role does. A role change reaches the user within
   minutes (at their next token refresh). Every route's permission is pinned in
   `cmd/api/routes_test.go`.
-- **Code:** `internal/domain/role` (`role.KeyAdmin`, `KeyManager`, `KeyEmployee`); JWT
-  `perms` claim. **UI:** Administrator, Manager, Employee.
+- **Code:** `internal/domain/role` (`role.KeyAdmin`, `KeyManager`, `KeyEmployee`,
+  `KeyEquipment`); JWT `perms` claim. **UI:** Administrator, Manager, Employee, Equipment
+  Assignments.
 
 ### Permission
 - **Brief:** one thing a role may allow, such as deleting orders or managing users.
@@ -54,8 +56,12 @@ Rules for using it:
   **UI:** Permission (on **Roles & permissions**).
 
 ### Built-in role
-- **Brief:** Administrator, Manager or Employee: the roles every installation has.
-- **Detail:** reproduce the access of the three fixed roles that came before permissions.
+- **Brief:** Administrator, Manager, Employee or Equipment Assignments: the roles every
+  installation has.
+- **Detail:** the first three reproduce the access of the three fixed roles that came before
+  permissions, less Equipment & Furniture. Equipment Assignments (migration 0032) grants only
+  **See Equipment & Furniture** (`equipment.read`): who holds which computer, phone or desk is
+  for the people given it, administrators included only when they hold it.
   Administrator cannot be changed or deleted; at least one active user always holds it.
 
 ### Administration
@@ -962,6 +968,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Administration | Administravimas | Администрирование |
 | Roles & permissions | Rolės ir teisės | Роли и права |
 | Role / Permission | Rolė / Teisė | Роль / Право |
+| Equipment Assignments (role) / See Equipment & Furniture (permission) | Įrangos išdavimai / Matyti įrangą ir baldus | Выдачи оборудования / Видеть оборудование и мебель |
 | Settings | Nustatymai | Настройки |
 | Backups | Atsarginės kopijos | Резервные копии |
 | Audit log | Audito žurnalas | Журнал аудита |

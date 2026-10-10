@@ -70,6 +70,7 @@ var errorStatuses = []struct {
 	{errPermissionWithdrawn, http.StatusForbidden},
 	{user.ErrNotPermitted, http.StatusForbidden},
 	{role.ErrNotPermitted, http.StatusForbidden},
+	{asset.ErrNotPermitted, http.StatusForbidden},
 
 	// The actor comes from a verified token, so an unknown actor is an
 	// authentication problem, not a bad request.

@@ -200,14 +200,14 @@ func (f *fakeRepo) Summary(_ context.Context, kind Kind) (Summary, error) {
 	return s, nil
 }
 
-func (f *fakeRepo) ByNumber(_ context.Context, q string, limit int) ([]Record, error) {
+func (f *fakeRepo) ByNumber(_ context.Context, q string, kinds []Kind, limit int) ([]Record, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	q = strings.ToLower(q)
 	out := make([]Record, 0)
 	for _, a := range f.assets {
 		hay := strings.ToLower(compactSIM(a.InventoryNo + "|" + deref(a.SimNo) + "|" + deref(a.PhoneNo)))
-		if !a.Deleted() && strings.Contains(hay, q) && len(out) < limit {
+		if !a.Deleted() && slices.Contains(kinds, a.Kind) && strings.Contains(hay, q) && len(out) < limit {
 			out = append(out, Record{Asset: a, Open: f.open(a.ID)})
 		}
 	}
@@ -596,7 +596,7 @@ func TestGiveUpdatesEverythingTogether(t *testing.T) {
 	if got.Location != LocationWithEmployee || got.Open == nil || got.Open.EmployeeID != f.emp.ID || len(got.Assignments) != 1 {
 		t.Errorf("after giving: %s, open %+v, %d assignments", got.Location, got.Open, len(got.Assignments))
 	}
-	if s, _ := f.svc.Summary(f.ctx, "SIM"); s.Total != 1 || s.WithEmployees != 1 || s.InOffice != 0 || !slices.Equal(s.Providers, []string{"Telia"}) {
+	if s, _ := f.svc.Summary(f.ctx, "SIM", all); s.Total != 1 || s.WithEmployees != 1 || s.InOffice != 0 || !slices.Equal(s.Providers, []string{"Telia"}) {
 		t.Errorf("summary = %+v", s)
 	}
 	held, _ := f.svc.HeldBy(f.ctx, f.emp.ID)
@@ -734,7 +734,7 @@ func TestBlockingNeitherReturnsNorMoves(t *testing.T) {
 	if err != nil || got.Location != LocationWithEmployee || got.Open == nil || got.Open.EmployeeID != f.emp.ID {
 		t.Errorf("blocked: %s, open %+v, %v", got.Location, got.Open, err)
 	}
-	if s, _ := f.svc.Summary(f.ctx, "SIM"); s.InOffice != 0 {
+	if s, _ := f.svc.Summary(f.ctx, "SIM", all); s.InOffice != 0 {
 		t.Errorf("in office = %d after blocking, want 0", s.InOffice)
 	}
 }
@@ -789,7 +789,7 @@ func TestNotReturned(t *testing.T) {
 	if got.Location != LocationUnknown || got.Open == nil || got.Open.EmployeeName != "Jonas Petraitis" {
 		t.Errorf("unknown: %s, last holder %+v", got.Location, got.Open)
 	}
-	if s, _ := f.svc.Summary(f.ctx, "SIM"); s.Total != 1 || s.WithEmployees != 1 || s.NotReturned != 1 {
+	if s, _ := f.svc.Summary(f.ctx, "SIM", all); s.Total != 1 || s.WithEmployees != 1 || s.NotReturned != 1 {
 		t.Errorf("summary = %+v", s)
 	}
 	if _, err := f.svc.MarkNotReturned(f.ctx, v.ID, NotReturnedParams{Whereabouts: "WITH_EMPLOYEE"}, testActor); !errors.Is(err, ErrAlreadyMarked) {
@@ -853,7 +853,7 @@ func TestFurnitureNeedsNoForm(t *testing.T) {
 	if got, _ := f.svc.Get(f.ctx, desk.ID); got.NeedsForm {
 		t.Error("a desk needs a form")
 	}
-	if res, _ := f.svc.List(f.ctx, ListParams{Kind: "EQUIPMENT", Category: "FURNITURE"}); res.Total != 1 {
+	if res, _ := f.svc.List(f.ctx, ListParams{Kind: "EQUIPMENT", Category: "FURNITURE"}, all); res.Total != 1 {
 		t.Errorf("furniture listed = %d, want 1", res.Total)
 	}
 	a, err := f.svc.Give(f.ctx, desk.ID, GiveParams{FormParams: fp}, testActor)
@@ -905,11 +905,11 @@ func TestByNumberIgnoresSpaces(t *testing.T) {
 	f := newFixture(t)
 	f.sim(t, "SIM-000001", StatusActive, true)
 	for _, q := range []string{"61240", "612 40", "sim-0000", "0001"} {
-		if vs, err := f.svc.ByNumber(f.ctx, q); err != nil || len(vs) != 1 {
+		if vs, err := f.svc.ByNumber(f.ctx, q, all); err != nil || len(vs) != 1 {
 			t.Errorf("%q: %d, %v", q, len(vs), err)
 		}
 	}
-	if vs, _ := f.svc.ByNumber(f.ctx, "  "); len(vs) != 0 {
+	if vs, _ := f.svc.ByNumber(f.ctx, "  ", all); len(vs) != 0 {
 		t.Errorf("blank matched %d", len(vs))
 	}
 }
@@ -921,11 +921,11 @@ func TestListParams(t *testing.T) {
 		{Kind: "EQUIPMENT", Category: "TABLE"}, {Kind: "SIM", Held: "yes"}, {Kind: "SIM", Sort: "price"}, {Kind: "SIM", Dir: "up"}, {Kind: "SIM", Page: "0"}, {Kind: "SIM", PageSize: "101"},
 		{Kind: "SIM", Page: "200000000000000000"},
 	} {
-		if _, err := f.svc.List(f.ctx, p); !errors.Is(err, ErrInvalid) {
+		if _, err := f.svc.List(f.ctx, p, all); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%+v: %v, want ErrInvalid", p, err)
 		}
 	}
-	if res, err := f.svc.List(f.ctx, ListParams{Kind: "SIM"}); err != nil || res.Page != 1 || res.PageSize != 50 || res.Assets == nil {
+	if res, err := f.svc.List(f.ctx, ListParams{Kind: "SIM"}, all); err != nil || res.Page != 1 || res.PageSize != 50 || res.Assets == nil {
 		t.Errorf("defaults = %+v, %v", res, err)
 	}
 }

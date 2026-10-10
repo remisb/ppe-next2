@@ -1,5 +1,5 @@
 import type { AssetSummary } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Panel } from '@ppe/ui/components/panel'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -17,13 +17,15 @@ import { type AssetTile, type Route, linkTo } from '@/lib/router'
  */
 export function AssetsCard({ navigate, className }: { navigate: (to: Route) => void; className?: string }) {
   const { client } = useApi()
+  // Equipment & Furniture's figures only for the Equipment Assignments role (equipment.read).
+  const seesEquipment = useSession().can('equipment.read')
   const sims = useLoad(() => client.assets.summary('SIM'))
-  const equipment = useLoad(() => client.assets.summary('EQUIPMENT'))
-  if (!sims.data || !equipment.data) return null
+  const equipment = useLoad(() => (seesEquipment ? client.assets.summary('EQUIPMENT') : Promise.resolve(null)), [seesEquipment])
+  if (!sims.data || (seesEquipment && !equipment.data)) return null
   return (
     <Panel title={t.assets.title} description={t.assets.tilesOverlap} className={className}>
       <Figures heading={t.assets.simCards} s={sims.data} total={t.assets.totalSimCards} equipment={false} navigate={navigate} />
-      <Figures heading={t.assets.equipmentTab} s={equipment.data} total={t.assets.totalItems} equipment navigate={navigate} />
+      {equipment.data ? <Figures heading={t.assets.equipmentTab} s={equipment.data} total={t.assets.totalItems} equipment navigate={navigate} /> : null}
     </Panel>
   )
 }

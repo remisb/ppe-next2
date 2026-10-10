@@ -249,10 +249,13 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (Detail, error) {
 	return d, nil
 }
 
-// List is the register: one page of one kind's assets.
-func (s *Service) List(ctx context.Context, p ListParams) (ListResult, error) {
+// List is the register: one page of one kind's assets, a kind see allows.
+func (s *Service) List(ctx context.Context, p ListParams, see Sight) (ListResult, error) {
 	f, page, size, err := p.filter()
 	if err != nil {
+		return ListResult{}, err
+	}
+	if err := see.Check(f.Kind); err != nil {
 		return ListResult{}, err
 	}
 	rs, total, err := s.repo.List(ctx, f)
@@ -266,22 +269,25 @@ func (s *Service) List(ctx context.Context, p ListParams) (ListResult, error) {
 	return out, nil
 }
 
-// Summary is the register's tiles for kind.
-func (s *Service) Summary(ctx context.Context, kind string) (Summary, error) {
+// Summary is the register's tiles for kind, a kind see allows.
+func (s *Service) Summary(ctx context.Context, kind string, see Sight) (Summary, error) {
 	if !Kind(kind).valid() {
 		return Summary{}, fieldError("kind", "must be SIM or EQUIPMENT")
+	}
+	if err := see.Check(Kind(kind)); err != nil {
+		return Summary{}, err
 	}
 	return s.repo.Summary(ctx, Kind(kind))
 }
 
 // ByNumber is ⌘K Search's filter: SIM, phone or inventory numbers containing
-// q, spaces ignored. A blank query matches nothing.
-func (s *Service) ByNumber(ctx context.Context, q string) ([]View, error) {
+// q, spaces ignored, among the assets see allows. A blank query matches nothing.
+func (s *Service) ByNumber(ctx context.Context, q string, see Sight) ([]View, error) {
 	q = compactSIM(strings.TrimSpace(q))
 	if q == "" {
 		return make([]View, 0), nil
 	}
-	rs, err := s.repo.ByNumber(ctx, q, numberLimit)
+	rs, err := s.repo.ByNumber(ctx, q, see.Kinds(), numberLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -292,15 +298,18 @@ func (s *Service) ByNumber(ctx context.Context, q string) ([]View, error) {
 	return out, nil
 }
 
-// ByEmployee is what an employee holds and held, open first (§18).
-func (s *Service) ByEmployee(ctx context.Context, employeeID uuid.UUID) ([]HeldView, error) {
+// ByEmployee is what an employee holds and held, open first (§18), of the
+// assets see allows.
+func (s *Service) ByEmployee(ctx context.Context, employeeID uuid.UUID, see Sight) ([]HeldView, error) {
 	hs, err := s.repo.ByEmployee(ctx, employeeID)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]HeldView, len(hs))
-	for i, h := range hs {
-		out[i] = HeldView{AssignmentView: s.assignmentView(h.Assignment), Asset: h.Asset}
+	out := make([]HeldView, 0, len(hs))
+	for _, h := range hs {
+		if see.Sees(h.Asset.Kind) {
+			out = append(out, HeldView{AssignmentView: s.assignmentView(h.Assignment), Asset: h.Asset})
+		}
 	}
 	return out, nil
 }

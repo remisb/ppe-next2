@@ -182,7 +182,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
           ) : null}
 
           <HeldAssets kind="SIM" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
-          <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+          {session.can('equipment.read') ? (
+            <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+          ) : null}
 
           <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} />
 

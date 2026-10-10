@@ -11,16 +11,20 @@ const (
 	KeyAdmin    = "admin"
 	KeyManager  = "manager"
 	KeyEmployee = "employee"
+	// KeyEquipment is Equipment Assignments (migration 0032): the only
+	// built-in role that sees Equipment & Furniture and who holds each item.
+	KeyEquipment = "equipment"
 )
 
 // The built-in roles' fixed ids, the same in every database.
 var (
-	AdminID    = uuid.MustParse("a0e1d000-0000-4000-8000-000000000001")
-	ManagerID  = uuid.MustParse("a0e1d000-0000-4000-8000-000000000002")
-	EmployeeID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000003")
+	AdminID     = uuid.MustParse("a0e1d000-0000-4000-8000-000000000001")
+	ManagerID   = uuid.MustParse("a0e1d000-0000-4000-8000-000000000002")
+	EmployeeID  = uuid.MustParse("a0e1d000-0000-4000-8000-000000000003")
+	EquipmentID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000004")
 )
 
-// builtin is a built-in role as migration 0022 creates it. Its name and
+// builtin is a built-in role as migration 0022 (Equipment Assignments, 0032) creates it. Its name and
 // description never change; the apps translate them by key (Administration's
 // users dictionaries hold the same English).
 type builtin struct {
@@ -33,6 +37,7 @@ var builtinRoles = []builtin{
 	{AdminID, KeyAdmin, "Administrator", "Manages users, plus everything a manager can do."},
 	{ManagerID, KeyManager, "Manager", "Manages Item Catalogue prices and Item Sets, plus everything an employee can do."},
 	{EmployeeID, KeyEmployee, "Employee", "Prepares orders and follows them in Orders, manages employees and sizes."},
+	{EquipmentID, KeyEquipment, "Equipment Assignments", "Sees Equipment & Furniture: each item and who holds it."},
 }
 
 // BuiltinID is the id of the built-in role with key, or uuid.Nil.
@@ -45,8 +50,9 @@ func BuiltinID(key string) uuid.UUID {
 	return uuid.Nil
 }
 
-// builtins are the built-in roles' permissions as installed. Together they
-// reproduce the access the three fixed roles had before permissions existed;
+// builtins are the built-in roles' permissions as installed. Together the
+// first three reproduce the access the three fixed roles had before
+// permissions existed, with Equipment & Furniture since taken from them;
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
@@ -61,10 +67,12 @@ var builtins = map[string][]Permission{
 		DashboardManager,
 	},
 	KeyEmployee: {DashboardEmployee},
+	// Not even Administrator sees Equipment & Furniture without this role.
+	KeyEquipment: {EquipmentRead},
 }
 
 // BuiltinKeys returns the built-in role keys in display order.
-func BuiltinKeys() []string { return []string{KeyAdmin, KeyManager, KeyEmployee} }
+func BuiltinKeys() []string { return []string{KeyAdmin, KeyManager, KeyEmployee, KeyEquipment} }
 
 // BuiltinPermissions returns the permissions the built-in roles named by keys
 // are installed with, in catalogue order. Unknown keys grant nothing.

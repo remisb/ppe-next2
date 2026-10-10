@@ -64,8 +64,8 @@ type Repository interface {
 	List(ctx context.Context, f ListFilter) ([]Record, int, error)
 	Summary(ctx context.Context, kind Kind) (Summary, error)
 	// ByNumber matches q, spaces ignored, against SIM, phone and inventory
-	// numbers, case-insensitively.
-	ByNumber(ctx context.Context, q string, limit int) ([]Record, error)
+	// numbers, case-insensitively, among assets of kinds.
+	ByNumber(ctx context.Context, q string, kinds []Kind, limit int) ([]Record, error)
 	// ByEmployee is the employee's assignments, open first, then newest.
 	ByEmployee(ctx context.Context, employeeID uuid.UUID) ([]Held, error)
 	// Employee reads a live employee, or ErrEmployeeNotFound.

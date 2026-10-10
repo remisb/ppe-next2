@@ -343,7 +343,7 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 // without a form: the routes and status answers the main flow does not reach.
 func TestPostgresAssetsEditNotReturnedAndFurniture(t *testing.T) {
 	api, _ := newPostgresAPI(t)
-	_, mgr := api.userWith(t, role.KeyManager)
+	_, mgr := api.userWith(t, role.KeyManager, role.KeyEquipment)
 	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Rūta", "last_name": "Kazlauskienė"})
 	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
 	today := time.Now().Format(time.DateOnly)
@@ -434,6 +434,93 @@ func TestPostgresAssetsEditNotReturnedAndFurniture(t *testing.T) {
 
 	if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM&page=200000000000000000", mgr, nil); rec.Code != http.StatusBadRequest {
 		t.Errorf("a huge page = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// Equipment & Furniture, and who holds each item, need the Equipment
+// Assignments role (equipment.read): without it a manager may not list, count,
+// add or find them, and an item is not found, on every route on it; SIMs stay
+// everyone's. The role alone sees them but changes nothing.
+func TestPostgresEquipmentNeedsTheRole(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, both := api.userWith(t, role.KeyManager, role.KeyEquipment)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, viewer := api.userWith(t, role.KeyEmployee, role.KeyEquipment)
+	rec := api.do(t, "POST", "/api/v1/employees", both, map[string]any{"first_name": "Rūta", "last_name": "Kazlauskienė"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	today := time.Now().Format(time.DateOnly)
+
+	laptop := map[string]any{"kind": "EQUIPMENT", "category": "COMPUTER", "inventory_no": "PC-000001", "name": "Laptop", "non_return_value_cents": 90000}
+	if rec := api.do(t, "POST", "/api/v1/assets", mgr, laptop); rec.Code != http.StatusForbidden {
+		t.Errorf("add equipment without the role = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets", both, laptop)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add laptop = %d %s", rec.Code, rec.Body)
+	}
+	pc := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	form := map[string]any{"employee_id": empID, "given_date": today}
+	rec = api.do(t, "POST", "/api/v1/assets/"+pc+"/assignments/preview", both, form)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("preview = %d %s", rec.Code, rec.Body)
+	}
+	hash := decode[map[string]any](t, rec.Body.Bytes())["document_hash"]
+	rec = api.do(t, "POST", "/api/v1/assets/"+pc+"/assignments", both, map[string]any{"employee_id": empID, "given_date": today, "paper_form_signed": true, "form_hash": hash})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("give laptop = %d %s", rec.Code, rec.Body)
+	}
+	assignment := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	sim := map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011", "phone_no": "+370 612 40118",
+		"provider": "Telia", "non_return_value_cents": 2500, "connection_status": "ACTIVE"}
+	if rec := api.do(t, "POST", "/api/v1/assets", mgr, sim); rec.Code != http.StatusCreated {
+		t.Fatalf("add SIM without the role = %d %s", rec.Code, rec.Body)
+	}
+
+	for _, tok := range []string{mgr, staff} {
+		for _, path := range []string{"/api/v1/assets?kind=EQUIPMENT", "/api/v1/assets/summary/EQUIPMENT"} {
+			if rec := api.do(t, "GET", path, tok, nil); rec.Code != http.StatusForbidden {
+				t.Errorf("GET %s without the role = %d %s", path, rec.Code, rec.Body)
+			}
+		}
+		for _, path := range []string{"/api/v1/assets/" + pc, "/api/v1/audit-events/assets/" + pc,
+			"/api/v1/assets/" + pc + "/assignments/" + assignment + "/form", "/api/v1/assets/" + pc + "/assignments/" + assignment + "/form.pdf"} {
+			if rec := api.do(t, "GET", path, tok, nil); rec.Code != http.StatusNotFound {
+				t.Errorf("GET %s without the role = %d %s", path, rec.Code, rec.Body)
+			}
+		}
+		if rec := api.do(t, "GET", "/api/v1/assets/by-number/000001", tok, nil); strings.Contains(rec.Body.String(), "PC-000001") || !strings.Contains(rec.Body.String(), "SIM-000001") {
+			t.Errorf("search without the role = %s", rec.Body)
+		}
+		if rec := api.do(t, "GET", "/api/v1/assets/by-employee/"+empID, tok, nil); rec.Code != http.StatusOK || rec.Body.String() != "[]\n" {
+			t.Errorf("held without the role = %d %s", rec.Code, rec.Body)
+		}
+		if rec := api.do(t, "GET", "/api/v1/assets?kind=SIM", tok, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "SIM-000001") {
+			t.Errorf("SIMs without the role = %d %s", rec.Code, rec.Body)
+		}
+	}
+	for _, path := range []string{"/return", "/not-returned", "/blocking-email"} {
+		if rec := api.do(t, "POST", "/api/v1/assets/"+pc+path, mgr, map[string]any{}); rec.Code != http.StatusNotFound {
+			t.Errorf("POST %s without the role = %d %s", path, rec.Code, rec.Body)
+		}
+	}
+
+	for _, tok := range []string{both, viewer} {
+		if rec := api.do(t, "GET", "/api/v1/assets/"+pc, tok, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Kazlauskienė") {
+			t.Errorf("laptop with the role = %d %s", rec.Code, rec.Body)
+		}
+		if rec := api.do(t, "GET", "/api/v1/assets/by-employee/"+empID, tok, nil); !strings.Contains(rec.Body.String(), "PC-000001") {
+			t.Errorf("held with the role = %s", rec.Body)
+		}
+		if rec := api.do(t, "GET", "/api/v1/assets/summary/EQUIPMENT", tok, nil); !strings.Contains(rec.Body.String(), `"with_employees":1`) {
+			t.Errorf("summary with the role = %s", rec.Body)
+		}
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+pc+"/return", viewer, map[string]any{}); rec.Code != http.StatusForbidden {
+		t.Errorf("return by the role alone = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+pc+"/return", both, map[string]any{}); rec.Code != http.StatusOK {
+		t.Errorf("return with the role = %d %s", rec.Code, rec.Body)
 	}
 }
 
@@ -1171,7 +1258,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 
 	rec := api.do(t, "GET", "/api/v1/roles", adminTok, nil)
 	roles := decode[[]role.Role](t, rec.Body.Bytes())
-	if rec.Code != http.StatusOK || len(roles) != 3 || roles[0].ID != role.AdminID || !roles[0].Locked || roles[0].UserCount != 1 {
+	if rec.Code != http.StatusOK || len(roles) != len(role.BuiltinKeys()) || roles[0].ID != role.AdminID || !roles[0].Locked || roles[0].UserCount != 1 {
 		t.Fatalf("roles = %d %s", rec.Code, rec.Body)
 	}
 	rec = api.do(t, "POST", "/api/v1/roles", adminTok, map[string]any{"name": "Storekeeper", "permissions": []string{"catalogue.manage"}})

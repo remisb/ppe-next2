@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -160,6 +161,13 @@ func (t *tokens) bearer(r *http.Request) (accessClaims, error) {
 		return accessClaims{}, errUnauthenticated
 	}
 	return claims, nil
+}
+
+// holds reports whether the request's token grants p. Routes need one
+// permission each (router); this is for what a route shows depending on more.
+func holds(r *http.Request, p role.Permission) bool {
+	c, ok := middleware.ClaimsFromContext(r.Context())
+	return ok && slices.Contains(c.Roles, string(p))
 }
 
 // actorID returns the authenticated user's ID. Routes calling it sit behind

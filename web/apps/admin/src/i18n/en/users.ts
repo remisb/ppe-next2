@@ -26,6 +26,8 @@ export const users = {
   managerGrants: 'Manages Item Catalogue prices and Item Sets, plus everything an employee can do.',
   employee: 'Employee',
   employeeGrants: 'Prepares orders and follows them in Orders, manages employees and sizes.',
+  equipment: 'Equipment Assignments',
+  equipmentGrants: 'Sees Equipment & Furniture: each item and who holds it.',
 
   // Add User / Edit User
   editUser: (name: string) => `Edit User: ${name}`,

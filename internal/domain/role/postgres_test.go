@@ -61,8 +61,8 @@ func TestPostgresBuiltinsMatchCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) != 3 {
-		t.Fatalf("roles = %+v, want the three built-ins", list)
+	if len(list) != len(builtinRoles) {
+		t.Fatalf("roles = %+v, want the %d built-ins", list, len(builtinRoles))
 	}
 	for i, b := range builtinRoles {
 		r := list[i]
@@ -126,7 +126,7 @@ func TestPostgresRoles(t *testing.T) {
 	// Custom roles list after the built-ins; a holder counts.
 	holder := addUser(t, pool, r.ID, EmployeeID)
 	list, _ := svc.List(ctx)
-	if len(list) != 4 || list[3].ID != r.ID || list[3].UserCount != 1 {
+	if n := len(builtinRoles); len(list) != n+1 || list[n].ID != r.ID || list[n].UserCount != 1 {
 		t.Errorf("list = %+v", list)
 	}
 	if perms, _ := svc.PermissionsOf(ctx, holder); !slices.Equal(perms, []Permission{CatalogueManage, OrdersDelete, DashboardEmployee}) {

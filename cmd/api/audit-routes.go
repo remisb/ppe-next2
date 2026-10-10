@@ -131,10 +131,12 @@ func registerAuditRoutes(rt *router, svc services) {
 		_, err := svc.orders.Get(ctx, id)
 		return err
 	}))
-	rt.authenticated("GET /api/v1/audit-events/assets/{id}", history("asset", func(ctx context.Context, id uuid.UUID) error {
-		_, err := svc.assets.Get(ctx, id)
-		return err
-	}))
+	// An asset's Changes name who held it: an equipment item's need equipment.read.
+	rt.authenticated("GET /api/v1/audit-events/assets/{id}", func(w http.ResponseWriter, r *http.Request) {
+		history("asset", func(ctx context.Context, id uuid.UUID) error {
+			return svc.assets.Seen(ctx, id, sight(r))
+		})(w, r)
+	})
 	rt.restricted("GET /api/v1/audit-events/users/{id}", history("user", func(ctx context.Context, id uuid.UUID) error {
 		_, err := svc.users.Get(ctx, id)
 		return err

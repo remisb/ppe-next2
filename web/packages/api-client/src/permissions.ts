@@ -19,6 +19,7 @@ export const PERMISSIONS = [
   'item_sets.manage',
   'orders.delete',
   'assets.manage',
+  'equipment.read',
   'dashboard.overview',
   'dashboard.manager',
   'dashboard.employee',
