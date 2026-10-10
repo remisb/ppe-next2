@@ -206,6 +206,8 @@ export function createClient(options: ClientOptions) {
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** Set or clear the supplier's WhatsApp group; administrators only. Returns the settings. */
     updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
+    /** Set or (empty) clear the default SIM card provider; needs assets.manage. Returns the settings. */
+    updateDefaultSimProvider: (provider: string) => request<Settings>('PUT', '/api/v1/settings/default-sim-provider', { provider }),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
     /** The database backups the backup agent recorded; admins only. */

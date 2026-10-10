@@ -67,6 +67,8 @@ export const assets: AssetsText = {
   phoneNo: 'Telefono Nr.',
   laterHint: 'Galima įrašyti vėliau; reikia kortelei išduoti.',
   plan: 'Planas',
+  makeDefaultProvider: 'Numatytasis naujoms kortelėms',
+  makeDefaultProviderHint: 'Kitą kartą „Pridėti SIM kortelę“ įrašys šį tiekėją.',
   nonReturnValue: 'Negrąžinimo vertė (€)',
   nonReturnValueHint: 'Kiek darbuotojas turi sumokėti, jei kortelės negrąžina; reikia jai išduoti.',
   receivedDate: 'Gavimo data',

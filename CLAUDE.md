@@ -28,7 +28,8 @@ the signed-in user's own orders; spec `docs/specs/dashboard-service.md`). Slice 
 Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/testing.md`,
 which maps every manual §7 rule and status transition to its tests. Administrators set the
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
-at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages.
+at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
+the same row holds the default SIM card provider (migration 0031), set from Add SIM Card with `assets.manage`.
 Database backups: the `backup` compose service is the agent from the separate library
 `github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
 Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`

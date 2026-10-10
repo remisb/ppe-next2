@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	EventSupplierChatChanged = "settings.supplier_chat_changed"
-	auditEntity              = "settings"
+	EventSupplierChatChanged       = "settings.supplier_chat_changed"
+	EventDefaultSIMProviderChanged = "settings.default_sim_provider_changed"
+	auditEntity                    = "settings"
 )
 
 // AuditEntityID names the organisation's settings in audit events: there is
@@ -57,6 +58,35 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 		next := cur
 		next.SupplierChat, next.UpdatedAt, next.UpdatedByUserID = chat, now, actor
 		ev, err := audit.New(s.newID(), &actor, EventSupplierChatChanged, auditEntity, AuditEntityID, now, cur.SupplierChat, chat)
+		if err != nil {
+			return Settings{}, nil, err
+		}
+		return next, &ev, nil
+	})
+}
+
+// UpdateDefaultSIMProvider sets, changes or (empty) clears the provider Add
+// SIM Card fills in, recording settings.default_sim_provider_changed when it differs.
+func (s *Service) UpdateDefaultSIMProvider(ctx context.Context, provider string, actor uuid.UUID) (Settings, error) {
+	if actor == uuid.Nil {
+		return Settings{}, fieldError("actor", "is required")
+	}
+	provider = NormalizeProvider(provider)
+	if err := validateProvider(provider); err != nil {
+		return Settings{}, err
+	}
+	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
+		if provider == cur.DefaultSIMProvider {
+			return cur, nil, nil
+		}
+		now := s.now()
+		next := cur
+		next.DefaultSIMProvider, next.UpdatedAt, next.UpdatedByUserID = provider, now, actor
+		type value struct {
+			Provider string `json:"provider"`
+		}
+		ev, err := audit.New(s.newID(), &actor, EventDefaultSIMProviderChanged, auditEntity, AuditEntityID, now,
+			value{cur.DefaultSIMProvider}, value{provider})
 		if err != nil {
 			return Settings{}, nil, err
 		}

@@ -302,9 +302,11 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
 - **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
   statuses with the brief's note, and for a Not Activated card the activation text. The
   choice is saved at once and announced. Edit is under ⋯.
-- **Add SIM Card** (and Edit) is one sheet: SIM No., provider and inventory number (the
-  next one suggested) and the received date (today) are required; the phone number, plan
-  and value can wait; a new card is Not Activated or Active. A number in use shows *This
+- **Add SIM Card** (and Edit) is one sheet: SIM No., provider (the default one filled in)
+  and inventory number (the next one suggested) and the received date (today) are required;
+  the phone number, plan and value can wait; a new card is Not Activated or Active.
+  **Default for new cards** under the provider sets or clears the default provider as the
+  card is saved ([settings-service.md](settings-service.md)). A number in use shows *This
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
 - A row opens the card's page (`/assets/<id>`); its number is the link. On a wide screen it

@@ -358,6 +358,8 @@ export interface Settings {
   currency: 'EUR'
   /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
   supplier_chat: SupplierChat | null
+  /** The provider Add SIM Card fills in for a new card; null when there is none. */
+  default_sim_provider: string | null
 }
 
 /** A WhatsApp group: its name as staff know it and its invite link (https://chat.whatsapp.com/<code>). */

@@ -136,3 +136,49 @@ func TestUpdateSupplierChatRejects(t *testing.T) {
 		t.Fatalf("a refused save recorded events: %+v", repo.events)
 	}
 }
+
+func TestUpdateDefaultSIMProvider(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	actor := uuid.New()
+
+	s, err := svc.UpdateDefaultSIMProvider(ctx, "  Telia  ", actor)
+	if err != nil || s.DefaultSIMProvider != "Telia" || s.UpdatedByUserID != actor || !s.UpdatedAt.Equal(at) {
+		t.Fatalf("set: %+v, %v", s, err)
+	}
+	if len(repo.events) != 1 || repo.events[0].Event != EventDefaultSIMProviderChanged || repo.events[0].EntityID != AuditEntityID {
+		t.Fatalf("events = %+v", repo.events)
+	}
+
+	// The same provider again records nothing; the supplier's group is left alone.
+	repo.cur.SupplierChat = SupplierChat{Name: "Supplier", Link: "https://chat.whatsapp.com/AbCdEfGhIjKl"}
+	if s, err := svc.UpdateDefaultSIMProvider(ctx, "Telia", actor); err != nil || len(repo.events) != 1 || !s.SupplierChat.Set() {
+		t.Fatalf("unchanged: %+v, %v, %d events", s, err, len(repo.events))
+	}
+
+	// Empty clears it.
+	if s, err := svc.UpdateDefaultSIMProvider(ctx, " ", actor); err != nil || s.DefaultSIMProvider != "" || len(repo.events) != 2 {
+		t.Fatalf("clear: %+v, %v, %d events", s, err, len(repo.events))
+	}
+
+	long := make([]byte, maxProviderLen+1)
+	for i := range long {
+		long[i] = 'a'
+	}
+	for name, c := range map[string]struct {
+		provider string
+		actor    uuid.UUID
+	}{
+		"no actor": {"Telia", uuid.Nil},
+		"too long": {string(long), actor},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := svc.UpdateDefaultSIMProvider(ctx, c.provider, c.actor); !errors.Is(err, ErrInvalid) {
+				t.Fatalf("err = %v, want ErrInvalid", err)
+			}
+		})
+	}
+	if len(repo.events) != 2 {
+		t.Fatalf("a refused save recorded events: %+v", repo.events)
+	}
+}

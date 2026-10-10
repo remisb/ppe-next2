@@ -8,7 +8,7 @@ import { errorText } from '@ppe/ui/lib/use-load'
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { type SimDraft, type SimErrors, checkSimDraft, emptySimDraft, newSimInput, simDraftOf } from '@/lib/assets'
+import { type SimDraft, type SimErrors, checkSimDraft, defaultProviderChange, emptySimDraft, isDefaultProvider, newSimInput, simDraftOf } from '@/lib/assets'
 
 /** A number another card already has: which field, and the card, so the form can open it (§4). */
 interface Taken {
@@ -19,13 +19,16 @@ interface Taken {
 /**
  * Add SIM Card and Edit (§4): one card at a time, in one sheet. A new card
  * starts in the Office, Not Activated (or Active, chosen here), received
- * today, with the next free inventory number suggested. The phone number,
- * plan and value may wait until the card is given.
+ * today, with the default provider and the next free inventory number
+ * suggested; "Default for new cards" makes the typed provider the default
+ * (or, unticked, clears it) as the card is saved. The phone number, plan and
+ * value may wait until the card is given.
  */
 export function SimCardForm({
   card,
   today,
   providers,
+  defaultProvider,
   onClose,
   onSaved,
   onOpenExisting,
@@ -36,6 +39,8 @@ export function SimCardForm({
   today: string
   /** The providers already in use, offered as the provider is typed. */
   providers: string[]
+  /** The provider a new card starts with (Settings' default_sim_provider); Add SIM Card only. */
+  defaultProvider?: string | null | undefined
   onClose: () => void
   onSaved: (saved: Asset, added: boolean) => void
   /** Show the card that already has the number. */
@@ -44,6 +49,7 @@ export function SimCardForm({
   const { client } = useApi()
   const existing = card !== 'new' && card !== null ? card : undefined
   const [draft, setDraft] = useState<SimDraft>(() => emptySimDraft(today))
+  const [makeDefault, setMakeDefault] = useState(false)
   const [errors, setErrors] = useState<SimErrors>({})
   const [taken, setTaken] = useState<Taken>()
   const [failure, setFailure] = useState<string>()
@@ -62,7 +68,8 @@ export function SimCardForm({
 
   useEffect(() => {
     if (card === null) return
-    setDraft(existing ? simDraftOf(existing) : emptySimDraft(today))
+    setDraft(existing ? simDraftOf(existing) : emptySimDraft(today, defaultProvider ?? ''))
+    setMakeDefault(!existing && !!defaultProvider)
     setErrors({})
     setTaken(undefined)
     setFailure(undefined)
@@ -84,6 +91,9 @@ export function SimCardForm({
     if (!input) return
     setSaving(true)
     try {
+      // The default first: a refusal then leaves no card added to save again.
+      const nextDefault = existing ? undefined : defaultProviderChange(draft.provider, makeDefault, defaultProvider)
+      if (nextDefault !== undefined) await client.updateDefaultSimProvider(nextDefault)
       const saved = existing ? await client.assets.update(existing.id, input) : await client.assets.create(newSimInput(input, draft.status))
       onSaved(saved, !existing)
     } catch (err) {
@@ -161,18 +171,40 @@ export function SimCardForm({
         <Field label={t.assets.phoneNo} hint={t.assets.laterHint} error={errors.phoneNo}>
           {(p) => <Input {...controlProps(p)} type="tel" autoComplete="off" value={draft.phoneNo} onChange={(e) => set('phoneNo', e.target.value)} />}
         </Field>
-        <Field label={t.assets.provider} required error={errors.provider}>
-          {(p) => (
-            <>
-              <Input {...controlProps(p)} list={providerList} autoComplete="off" value={draft.provider} onChange={(e) => set('provider', e.target.value)} />
-              <datalist id={providerList}>
-                {providers.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            </>
+        <div className="flex flex-col gap-1.5">
+          <Field label={t.assets.provider} required error={errors.provider}>
+            {(p) => (
+              <>
+                <Input
+                  {...controlProps(p)}
+                  list={providerList}
+                  autoComplete="off"
+                  value={draft.provider}
+                  onChange={(e) => {
+                    set('provider', e.target.value)
+                    setMakeDefault(isDefaultProvider(e.target.value, defaultProvider))
+                  }}
+                />
+                <datalist id={providerList}>
+                  {providers.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              </>
+            )}
+          </Field>
+          {existing ? null : (
+            <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+              <input type="checkbox" className="size-5 accent-primary" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
+              <span className="flex flex-col">
+                {t.assets.makeDefaultProvider}
+                <span className="text-xs font-normal text-muted-foreground">
+                  {t.assets.makeDefaultProviderHint}
+                </span>
+              </span>
+            </label>
           )}
-        </Field>
+        </div>
         <Field label={t.assets.plan} hint={t.assets.laterHint}>
           {(p) => <Input {...controlProps(p)} autoComplete="off" value={draft.plan} onChange={(e) => set('plan', e.target.value)} />}
         </Field>

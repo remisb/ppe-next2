@@ -72,6 +72,8 @@ export const assets = {
   phoneNo: 'Phone No.',
   laterHint: 'Can be added later; needed to give the card.',
   plan: 'Plan',
+  makeDefaultProvider: 'Default for new cards',
+  makeDefaultProviderHint: 'Add SIM Card fills in this provider next time.',
   nonReturnValue: 'Non-return Value (€)',
   nonReturnValueHint: 'What the employee owes if the card is not returned; needed to give it.',
   receivedDate: 'Received Date',

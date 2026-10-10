@@ -73,3 +73,33 @@ func TestPostgresSupplierChat(t *testing.T) {
 		t.Fatalf("unknown actor: err = %v, want ErrActorNotFound", err)
 	}
 }
+
+func TestPostgresDefaultSIMProvider(t *testing.T) {
+	pool, actor := newTestPool(t)
+	svc := NewService(NewPostgresRepository(pool))
+	ctx := context.Background()
+
+	if _, err := svc.UpdateDefaultSIMProvider(ctx, "Telia", actor); err != nil {
+		t.Fatal(err)
+	}
+	link := "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
+	if _, err := svc.UpdateSupplierChat(ctx, SupplierChatParams{Name: "Supplier", Link: link}, actor); err != nil {
+		t.Fatal(err)
+	}
+	// Each save keeps the other setting.
+	s, err := svc.Get(ctx)
+	if err != nil || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link {
+		t.Fatalf("Get = %+v, %v", s, err)
+	}
+	if _, err := svc.UpdateDefaultSIMProvider(ctx, "", actor); err != nil {
+		t.Fatal(err)
+	}
+	s, err = svc.Get(ctx)
+	if err != nil || s.DefaultSIMProvider != "" || s.SupplierChat.Link != link {
+		t.Fatalf("after clearing: %+v, %v", s, err)
+	}
+	var events int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1`, EventDefaultSIMProviderChanged).Scan(&events); err != nil || events != 2 {
+		t.Fatalf("events = %d, %v", events, err)
+	}
+}

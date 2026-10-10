@@ -1,7 +1,8 @@
 // Package settings holds the organisation's settings that administrators
-// change in the app, one set for the whole organisation. Today that is the
-// supplier's WhatsApp group, which Copy for WhatsApp opens for the order
-// message. Settings fixed at deployment (timezone, currency) stay in config.
+// change in the app, one set for the whole organisation: the supplier's
+// WhatsApp group, which Copy for WhatsApp opens for the order message, and the
+// default SIM card provider, which Add SIM Card fills in. Settings fixed at
+// deployment (timezone, currency) stay in config.
 package settings
 
 import (
@@ -13,7 +14,11 @@ import (
 	"github.com/google/uuid"
 )
 
-const maxChatNameLen = 100
+const (
+	maxChatNameLen = 100
+	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
+	maxProviderLen = 100
+)
 
 // chatHost is where WhatsApp group invite links live.
 const chatHost = "chat.whatsapp.com"
@@ -24,9 +29,12 @@ var inviteCode = regexp.MustCompile(`^[A-Za-z0-9]{10,40}$`)
 // Settings is the organisation's one set. The zero value is the defaults,
 // what a database with no settings row reads as.
 type Settings struct {
-	SupplierChat    SupplierChat
-	UpdatedAt       time.Time
-	UpdatedByUserID uuid.UUID
+	SupplierChat SupplierChat
+	// DefaultSIMProvider is the provider Add SIM Card fills in for a new
+	// card; empty when there is none.
+	DefaultSIMProvider string
+	UpdatedAt          time.Time
+	UpdatedByUserID    uuid.UUID
 }
 
 // SupplierChat is the supplier's WhatsApp group. WhatsApp has no link that
@@ -86,4 +94,15 @@ func parseInvite(link string) (string, bool) {
 		return "", false
 	}
 	return code, true
+}
+
+// NormalizeProvider trims a provider as an asset's provider is trimmed, so the
+// default reads the same as the cards that use it.
+func NormalizeProvider(p string) string { return strings.TrimSpace(p) }
+
+func validateProvider(p string) error {
+	if len(p) > maxProviderLen {
+		return fieldError("provider", "is too long")
+	}
+	return nil
 }

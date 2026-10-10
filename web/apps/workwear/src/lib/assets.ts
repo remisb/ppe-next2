@@ -117,8 +117,25 @@ export interface SimDraft {
   comment: string
 }
 
-export function emptySimDraft(today: string): SimDraft {
-  return { simNo: '', phoneNo: '', provider: '', plan: '', value: '', receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
+/** Add SIM Card starts with the default provider, when there is one. */
+export function emptySimDraft(today: string, provider = ''): SimDraft {
+  return { simNo: '', phoneNo: '', provider, plan: '', value: '', receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
+}
+
+/** Whether provider is the default one: Add SIM Card's "Default for new cards" as the provider is typed. */
+export function isDefaultProvider(provider: string, current: string | null | undefined): boolean {
+  return !!current && provider.trim() === current
+}
+
+/**
+ * The default provider Add SIM Card saves with the card: the typed provider
+ * when "Default for new cards" is ticked, '' (none) when the default one is
+ * unticked, undefined when the default stays as it is.
+ */
+export function defaultProviderChange(provider: string, makeDefault: boolean, current: string | null | undefined): string | undefined {
+  const typed = provider.trim()
+  if (makeDefault) return typed && typed !== current ? typed : undefined
+  return isDefaultProvider(typed, current) ? '' : undefined
 }
 
 /** Edit starts from the card as it is. */

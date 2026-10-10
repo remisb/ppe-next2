@@ -827,6 +827,12 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** the provider's e-mail address is shown where staff must write to it
   (activation, blocking). Nothing is sent from the app.
 
+### Default provider
+- **Brief:** the provider Add SIM Card fills in for a new card, one for the organisation.
+- **Code:** `settings.DefaultSIMProvider`, `default_sim_provider`. **UI:** **Default for new
+  cards**, under Provider on Add SIM Card.
+- **Detail:** set or cleared there as a card is saved; it changes no card already registered.
+
 ### Connection status
 - **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
   or **Blocked**.
@@ -1014,6 +1020,7 @@ screens are built):
 | Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
 | Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
+| Default for new cards | Numatytasis naujoms kortelėms | По умолчанию для новых карт |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, defaultProviderChange, emptySimDraft, isDefaultProvider, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -69,6 +69,29 @@ describe('Add SIM Card', () => {
   it('Edit starts from the card', () => {
     const d = simDraftOf(card({ phone_no: '+370 612 40118', non_return_value_cents: 2500, connection_status: 'ACTIVE', comment: 'Spare' }))
     expect(d).toMatchObject({ simNo: '0089370011', phoneNo: '+370 612 40118', value: '25.00', status: 'ACTIVE', receivedDate: '2026-10-01', comment: 'Spare' })
+  })
+})
+
+describe('default provider', () => {
+  it('fills in a new card', () => {
+    expect(emptySimDraft('2026-10-09', 'Telia').provider).toBe('Telia')
+    expect(emptySimDraft('2026-10-09').provider).toBe('')
+  })
+
+  it('is ticked for the default provider only', () => {
+    expect(isDefaultProvider(' Telia ', 'Telia')).toBe(true)
+    expect(isDefaultProvider('Bitė', 'Telia')).toBe(false)
+    expect(isDefaultProvider('', null)).toBe(false)
+  })
+
+  it('changes only when the choice differs from the default', () => {
+    expect(defaultProviderChange(' Bitė ', true, 'Telia')).toBe('Bitė')
+    expect(defaultProviderChange('Telia', true, null)).toBe('Telia')
+    expect(defaultProviderChange('Telia', true, 'Telia')).toBeUndefined()
+    expect(defaultProviderChange('  ', true, 'Telia')).toBeUndefined()
+    expect(defaultProviderChange('Telia', false, 'Telia')).toBe('')
+    expect(defaultProviderChange('Bitė', false, 'Telia')).toBeUndefined()
+    expect(defaultProviderChange('Bitė', false, null)).toBeUndefined()
   })
 })
 

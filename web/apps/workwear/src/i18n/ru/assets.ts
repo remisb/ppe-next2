@@ -67,6 +67,8 @@ export const assets: AssetsText = {
   phoneNo: '№ телефона',
   laterHint: 'Можно добавить позже; нужно для выдачи карты.',
   plan: 'Тариф',
+  makeDefaultProvider: 'По умолчанию для новых карт',
+  makeDefaultProviderHint: 'В следующий раз «Добавить SIM-карту» подставит этого оператора.',
   nonReturnValue: 'Стоимость при невозврате (€)',
   nonReturnValueHint: 'Сколько сотрудник должен, если не вернёт карту; нужно для выдачи.',
   receivedDate: 'Дата получения',
