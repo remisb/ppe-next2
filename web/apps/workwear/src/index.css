@@ -40,3 +40,21 @@
     color: black !important;
   }
 }
+
+/*
+ * Print in place (components/print-in-place.tsx): an assignment form prints
+ * from the page it is on, with no tab of its own. While it prints it is all
+ * the paper shows; the page, and the sheet it was printed from, are hidden.
+ */
+#print-in-place {
+  display: none;
+}
+@media print {
+  html[data-printing] body > :not(#print-in-place),
+  html[data-printing] dialog {
+    display: none !important;
+  }
+  html[data-printing] #print-in-place {
+    display: block;
+  }
+}

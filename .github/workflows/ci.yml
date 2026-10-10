@@ -15,10 +15,10 @@ env:
   # The Makefile runs psql inside docker compose locally; CI talks to the service directly.
   PSQL_CI: psql -d postgres://ppe2:ppe2@localhost:5432/ppe2_test?sslmode=disable -v ON_ERROR_STOP=1 -q
   PGOPTIONS: -c client_min_messages=warning
-  # github.com/remisb/dbbackup is private: fetched straight from GitHub (not the
-  # proxy) with the DBBACKUP_READ_TOKEN secret, a fine-grained token that can only
-  # read that repository's contents.
-  GOPRIVATE: github.com/remisb/dbbackup
+  # github.com/remisb/dbbackup and github.com/remisb/pdf-mini are private: fetched
+  # straight from GitHub (not the proxy) with the DBBACKUP_READ_TOKEN secret, a
+  # fine-grained token that can only read those two repositories' contents.
+  GOPRIVATE: github.com/remisb/dbbackup,github.com/remisb/pdf-mini
 
 jobs:
   go:
@@ -40,8 +40,10 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - name: Read access to the private dbbackup module
-        run: git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/dbbackup".insteadOf "https://github.com/remisb/dbbackup"
+      - name: Read access to the private dbbackup and pdf-mini modules
+        run: |
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/dbbackup".insteadOf "https://github.com/remisb/dbbackup"
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/pdf-mini".insteadOf "https://github.com/remisb/pdf-mini"
         env:
           DBBACKUP_READ_TOKEN: ${{ secrets.DBBACKUP_READ_TOKEN }}
       - name: gofmt
@@ -96,8 +98,10 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - name: Read access to the private dbbackup module
-        run: git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/dbbackup".insteadOf "https://github.com/remisb/dbbackup"
+      - name: Read access to the private dbbackup and pdf-mini modules
+        run: |
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/dbbackup".insteadOf "https://github.com/remisb/dbbackup"
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/pdf-mini".insteadOf "https://github.com/remisb/pdf-mini"
         env:
           DBBACKUP_READ_TOKEN: ${{ secrets.DBBACKUP_READ_TOKEN }}
       - uses: pnpm/action-setup@v6

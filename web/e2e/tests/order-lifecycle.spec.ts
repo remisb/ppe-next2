@@ -1179,18 +1179,25 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(give.getByText('Print the form, then have it signed.')).toBeVisible()
   await expect(give.getByRole('region', { name: 'Print the form and have it signed' })).toHaveAttribute('aria-current', 'step')
   await expect(give.getByLabel('The employee has signed the printed form')).toBeDisabled()
-  // Print Form prints the form the API would store, in a tab of its own; printing is not giving (§8).
-  await page.context().addInitScript(() => {
-    window.print = () => {
-      ;(window as unknown as { __printed: number }).__printed = 1
-    }
-  })
-  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
-  await expect(printTab.getByRole('heading', { name: /SIM Assignment Form/ })).toBeVisible()
-  await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
-  await expect(printTab.getByText('€25.00')).toBeVisible()
-  await expect.poll(() => printTab.evaluate(() => (window as unknown as { __printed?: number }).__printed)).toBe(1)
-  await printTab.close()
+  // Print Form prints the form the API would store from this page, with no tab
+  // of its own: on paper the form alone, the sheet hidden. Printing is not giving (§8).
+  const printed = () => page.evaluate(() => (window as unknown as { __printed?: number }).__printed ?? 0)
+  const before = await printed()
+  await give.getByRole('button', { name: 'Print Form' }).click()
+  await expect.poll(printed).toBe(before + 1)
+  await page.emulateMedia({ media: 'print' })
+  const paper = page.locator('#print-in-place')
+  await expect(paper.getByRole('heading', { name: /SIM Assignment Form/ })).toBeVisible()
+  await expect(paper.getByText('Ona Kazlauskienė')).toBeVisible()
+  await expect(paper.getByText('€25.00')).toBeVisible()
+  await expect(give).toBeHidden()
+  await page.emulateMedia({ media: 'screen' })
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+  await expect(paper).toHaveCount(0)
+  await expect(give.getByRole('button', { name: 'Print again' })).toBeVisible()
+  // Download PDF: the same form as a file, from the API.
+  const [pdf] = await Promise.all([page.waitForEvent('download'), give.getByRole('button', { name: 'Download PDF' }).click()])
+  expect(pdf.suggestedFilename()).toMatch(/^assignment-form-SIM-000001-\d{4}-\d{2}-\d{2}\.pdf$/)
   // Safari may reload the page while the print tab is in front: Give SIM again
   // brings back the details and the printed mark, so the paper can be ticked.
   await page.reload()
@@ -1219,7 +1226,8 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(main.getByText('With an employee')).toBeVisible()
   const assignments = main.getByRole('region', { name: 'Assignments' })
   await expect(assignments.getByText('Paper form signed')).toBeVisible()
-  await expect(assignments.getByRole('link', { name: 'Print form again' })).toBeVisible()
+  await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
+  await expect(assignments.getByRole('button', { name: 'Download PDF' })).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
 
   // Upload Signed Form (§9): Signed Copy Missing until a scan is in. A file that is
@@ -1284,21 +1292,14 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await expect(give.getByText('Choose a SIM.')).toBeVisible()
   const card = give.getByRole('radio', { name: /SIM-000001/ })
   await expect(card).toContainText('Active')
-  // The sheet fetches the form once its data is complete, ahead of Print Form.
-  const fetchedAhead = page.waitForResponse((r) => r.url().endsWith('/assignments/preview') && r.ok())
   await card.click()
   await expect(card).toHaveAttribute('aria-checked', 'true')
-  await fetchedAhead
-  // As in Safari, a request this page starts as the print tab opens never finishes:
-  // Print Form still marks the form printed, and Give needs nothing more (the print tab is a page of its own).
-  await page.route('**/assignments/preview', (r) => r.abort())
-  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
-  await expect(printTab.getByText('Ona Kazlauskienė')).toBeVisible()
-  await printTab.close()
+  await give.getByRole('button', { name: 'Print Form' }).click()
+  await expect(page.locator('#print-in-place').getByText('Ona Kazlauskienė')).toBeAttached()
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
   await give.getByLabel('The employee has signed the printed form').check()
   await give.getByRole('button', { name: 'Give SIM' }).click()
   await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
-  await page.unroute('**/assignments/preview')
   await expect(givenSim).toContainText('Not returned yet')
   // Leaving never returns a card: while she holds one she is not deleted, and the app says which (§2).
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
@@ -1373,10 +1374,12 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await expect(give.getByRole('radio', { name: /FUR-000001/ })).toHaveCount(0)
   await give.getByRole('radio', { name: /PC-000001/ }).click()
   await expect(give.getByText('Print the form, then have it signed.')).toBeVisible()
-  const [printTab] = await Promise.all([page.waitForEvent('popup'), give.getByRole('link', { name: 'Print Form' }).click()])
-  await expect(printTab.getByRole('heading', { name: /Equipment Assignment Form/ })).toBeVisible()
-  await expect(printTab.getByText('€900.00')).toBeVisible()
-  await printTab.close()
+  await give.getByRole('button', { name: 'Print Form' }).click()
+  const paper = page.locator('#print-in-place')
+  // Shown on paper only: on screen it is in the page but hidden.
+  await expect(paper.getByText(/Equipment Assignment Form/)).toBeAttached()
+  await expect(paper.getByText('€900.00')).toBeAttached()
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
   await give.getByLabel('The employee has signed the printed form').check()
   await give.getByRole('button', { name: 'Give Asset' }).click()
   await expect(page.getByText('Asset given to Ona Kazlauskienė.')).toBeVisible()

@@ -806,6 +806,8 @@ var policy = map[string]rule{
 	"POST /api/v1/assets/{id}/form-printed":                                     {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed":          {"", "any"},
 	"POST /api/v1/assets/{id}/blocking-email":                                   {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}/assignments/preview.pdf":                           {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf":               {"", "any"},
 	"POST /api/v1/assets/{id}/assignments/preview":                              {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/assignments":                                      {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/return":                                           {role.AssetsManage, "managers"},

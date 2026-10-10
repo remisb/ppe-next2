@@ -911,10 +911,12 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   given date. Once the asset is given, the form's data is kept with the assignment and
   never changes, like a record's snapshot, with its own document hash. **Paper Form Signed**
   is ticked when the employee has signed; changing the form after printing clears it (§8).
-- **UI:** Preview Form, Print Form (Print again once printed), and the checkbox "The employee has
-  signed the printed form", recorded as Paper Form Signed. Give's steps: **Who and when**,
+- **UI:** Preview Form, Print Form (Print again once printed; prints from the page, no tab),
+  Download PDF, and the checkbox "The employee has signed the printed form", recorded as
+  Paper Form Signed. On an assignment: Print form again, Download PDF. Give's steps: **Who and when**,
   **Print the form and have it signed**, **Hand over the SIM** (the item). A print and a copied
-  blocking email are recorded: "Form printed", "Blocking email prepared".
+  blocking email are recorded: "Form printed" (Format: Printed or PDF downloaded), "Blocking email
+  prepared".
 
 ### Signed copy
 - **Brief:** a scan or photo of the signed assignment form, kept with that assignment.
@@ -1037,6 +1039,7 @@ screens are built):
 | Not Returned / Mark as Not Returned | Negrąžinta / Pažymėti kaip negrąžintą | Не возвращено / Отметить как не возвращённое |
 | Total SIMs / In Office / With Employees | Iš viso SIM / Biure / Pas darbuotojus | Всего SIM / В офисе / У сотрудников |
 | Preview Form / Print Form / Paper Form Signed | Peržiūrėti aktą / Spausdinti aktą / Aktas pasirašytas | Просмотреть акт / Печать акта / Акт подписан |
+| Download PDF / Print again | Atsisiųsti PDF / Spausdinti dar kartą | Скачать PDF / Напечатать ещё раз |
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |

@@ -267,10 +267,24 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/blocking-email", mgr, nil); rec.Code != http.StatusNoContent {
 		t.Errorf("blocking email = %d %s", rec.Code, rec.Body)
 	}
+	// The form as a PDF, the one Give would store and the assignment's: each recorded as printed.
+	for _, path := range []string{
+		"/api/v1/assets/" + id + "/assignments/preview.pdf?employee=" + empID + "&date=" + today,
+		"/api/v1/assets/" + id + "/assignments/" + assignment["id"].(string) + "/form.pdf",
+	} {
+		rec := api.do(t, "GET", path, mgr, nil)
+		if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "application/pdf" || !strings.HasPrefix(rec.Body.String(), "%PDF-") ||
+			!strings.Contains(rec.Header().Get("Content-Disposition"), "assignment-form-SIM-000001-") {
+			t.Errorf("GET %s = %d %s %q", path, rec.Code, rec.Header().Get("Content-Type"), rec.Header().Get("Content-Disposition"))
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/"+id+"/assignments/preview.pdf?employee=nobody&date="+today, mgr, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("PDF without an employee = %d", rec.Code)
+	}
 	var printed, prepared int
 	if err := pool.QueryRow(context.Background(), `SELECT count(*) FILTER (WHERE event = 'asset.form_printed'),
 		count(*) FILTER (WHERE event = 'asset.blocking_email_prepared') FROM audit_events WHERE entity_id = $1`, id).Scan(&printed, &prepared); err != nil ||
-		printed != 2 || prepared != 1 {
+		printed != 4 || prepared != 1 {
 		t.Errorf("recorded %d prints, %d blocking emails, %v", printed, prepared, err)
 	}
 

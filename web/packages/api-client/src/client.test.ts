@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { RECENT_SIGN_IN_REQUIRED, createClient, historyQueryString } from './client.ts'
+import { RECENT_SIGN_IN_REQUIRED, attachmentName, createClient, historyQueryString } from './client.ts'
 import { ApiError, NetworkError } from './errors.ts'
 
 function fakeFetch(status: number, body: string) {
@@ -252,5 +252,17 @@ describe('historyQueryString', () => {
     expect(historyQueryString({ status: 'GIVEN', from: '', page: 2 })).toBe('?status=GIVEN&page=2')
     expect(historyQueryString({ sort: 'total', dir: 'desc' })).toBe('?sort=total&dir=desc')
     expect(historyQueryString({ catalogue_item_id: 'i1', page_size: 100 })).toBe('?catalogue_item_id=i1&page_size=100')
+  })
+})
+
+describe('attachmentName', () => {
+  it('reads the name however Go writes it', () => {
+    // mime.FormatMediaType leaves a plain name bare, quotes one with spaces and encodes one beyond ASCII.
+    expect(attachmentName('attachment; filename=assignment-form-SIM-000001-2026-10-10.pdf')).toBe('assignment-form-SIM-000001-2026-10-10.pdf')
+    expect(attachmentName('attachment; filename="audit log.csv"')).toBe('audit log.csv')
+    expect(attachmentName('attachment; filename="say \\"hi\\".pdf"')).toBe('say "hi".pdf')
+    expect(attachmentName("attachment; filename*=utf-8''Kazlauskien%C4%97.pdf")).toBe('Kazlauskienė.pdf')
+    expect(attachmentName('attachment')).toBe('download')
+    expect(attachmentName(null)).toBe('download')
   })
 })

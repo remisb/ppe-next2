@@ -136,6 +136,8 @@ export const assets = {
   stepHandOverHintAsset: 'Give Asset records the holder, the location and the signed form at once.',
   changeDetails: 'Change',
   doneDetails: 'Done',
+  downloadPdf: 'Download PDF',
+  downloadingPdf: 'Downloading…',
   printAgain: 'Print again',
   readyToGive: 'Ready: give the SIM.',
   readyToGiveAsset: 'Ready: give the item.',

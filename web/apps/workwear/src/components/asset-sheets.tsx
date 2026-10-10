@@ -1,18 +1,20 @@
 import type { Asset, AssetKind, AssignmentFormResult, Whereabouts } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { Button } from '@ppe/ui/components/button'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowRight, Check, Copy, Printer } from 'lucide-react'
+import { ArrowRight, Check, Copy, FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { StatusBadge } from '@/components/asset-controls'
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
+import { usePrintInPlace } from '@/components/print-in-place'
 import { t } from '@/i18n'
 import {
   type GiveDraft,
@@ -28,9 +30,7 @@ import {
   recallPrinted,
   rememberPrinted,
 } from '@/lib/assets'
-import { pathOf } from '@/lib/router'
 import { formatEuro, parseEuro } from '@/lib/utils'
-import { basePath } from '@ppe/routing'
 
 /**
  * Which action sheet is open, for which card; or Give SIM for an
@@ -127,8 +127,10 @@ function GiveSheet({
   const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
   // The form printed: its data's key, and its hash once known (null while it is fetched).
   const [printed, setPrinted] = useState<{ key: string; hash: string | null } | null>(null)
-  // The hash of the form as the data is now, fetched ahead of Print Form.
-  const [hashed, setHashed] = useState<{ key: string; hash: string } | null>(null)
+  // The form as the data is now, fetched ahead of Print Form and Download PDF.
+  const [fetched, setFetched] = useState<{ key: string; result: AssignmentFormResult } | null>(null)
+  const [downloading, setDownloading] = useState(false)
+  const { print, printing } = usePrintInPlace()
   const [signed, setSigned] = useState(false)
   const [preview, setPreview] = useState<AssignmentFormResult | null>(null)
   const [showPreview, setShowPreview] = useState(false)
@@ -154,7 +156,7 @@ function GiveSheet({
     }
     setDraft(base)
     setPrinted(null)
-    setHashed(null)
+    setFetched(null)
     setSigned(false)
     setPreview(null)
     setShowPreview(false)
@@ -215,21 +217,42 @@ function GiveSheet({
   const set = <K extends keyof GiveDraft>(k: K, v: GiveDraft[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const sim = assetKind === 'SIM'
   const cents = parseEuro(draft.value)
-  const formPath =
-    asset &&
-    input &&
-    basePath +
-    pathOf({
-      name: 'assetForm',
-      id: asset.id,
-      draft: {
-        employeeId: draft.employeeId,
-        givenDate: draft.givenDate,
-        ...(input.plan ? { plan: input.plan } : {}),
-        ...(input.non_return_value_cents != null ? { valueCents: input.non_return_value_cents } : {}),
-      },
-      print: true,
-    })
+  /** The form for the data as it is now: the one fetched ahead, else asked for. */
+  const formNow = (): Promise<AssignmentFormResult | null> => (fetched?.key === key ? Promise.resolve(fetched.result) : loadPreview())
+
+  /**
+   * Print Form: the browser's print dialog over this sheet, the form the only
+   * thing on the paper (no tab of its own). Recorded first as the user's
+   * activity; printing goes ahead if that fails.
+   */
+  const printForm = async () => {
+    if (!ready || !asset || !input) return
+    const r = await formNow()
+    if (!r) return
+    setPrinted({ key, hash: r.document_hash })
+    setEditingDetails(false)
+    await client.assets.recordFormPrinted(asset.id, input).catch(() => {})
+    print(<AssignmentFormDocument form={r.form} documentHash={r.document_hash} />)
+  }
+
+  /** Download PDF: the same form as a file to print or keep; the API records it. */
+  const downloadPDF = async () => {
+    if (!ready || !asset || !input) return
+    setFailure(undefined)
+    setDownloading(true)
+    try {
+      const [r, file] = await Promise.all([formNow(), client.assets.formPDF(asset.id, input)])
+      saveFile(file.blob, file.filename)
+      if (r) {
+        setPrinted({ key, hash: r.document_hash })
+        setEditingDetails(false)
+      }
+    } catch (err) {
+      setFailure(errorText(err))
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   /** The form as the data is now; quiet (fetched ahead) leaves a failure unsaid. */
   function loadPreview(quiet = false): Promise<AssignmentFormResult | null> {
@@ -241,7 +264,7 @@ function GiveSheet({
       (r) => {
         if (!current()) return null
         setPreview(r)
-        setHashed({ key: asked.key, hash: r.document_hash })
+        setFetched({ key: asked.key, result: r })
         // Printed before the hash came: it is this form's.
         setPrinted((p) => (p && p.key === asked.key && p.hash === null ? { ...p, hash: r.document_hash } : p))
         return r
@@ -399,27 +422,12 @@ function GiveSheet({
         {paper ? (
           <Step n={2} state={paperState} title={t.assets.stepPaper} hint={sim ? t.assets.signReminder : t.assets.signReminderAsset}>
             <div className="flex flex-wrap gap-2">
-              {/* A link, so the browser opens the print tab from the click itself; the sheet keeps the printed form's hash. */}
-              <a
-                href={formPath || undefined}
-                target="_blank"
-                rel="noopener"
-                aria-disabled={!ready}
-                className={cn(buttonVariants({ variant: printed && !changedAfterPrint ? 'outline' : 'default' }), !ready && 'pointer-events-none opacity-50')}
-                onClick={(e) => {
-                  if (!ready) {
-                    e.preventDefault()
-                    return
-                  }
-                  // Marked at once, with the hash fetched ahead when there is one: nothing waits on this page.
-                  const hash = hashed?.key === key ? hashed.hash : null
-                  setPrinted({ key, hash })
-                  setEditingDetails(false)
-                  if (hash === null) void loadPreview()
-                }}
-              >
+              <Button variant={printed && !changedAfterPrint ? 'outline' : 'default'} disabled={!ready} onClick={() => void printForm()}>
                 <Printer aria-hidden /> {printed && !changedAfterPrint ? t.assets.printAgain : t.assets.printForm}
-              </a>
+              </Button>
+              <Button variant="outline" disabled={!ready || downloading} onClick={() => void downloadPDF()}>
+                <FileDown aria-hidden /> {downloading ? t.assets.downloadingPdf : t.assets.downloadPdf}
+              </Button>
               <Button
                 variant="ghost"
                 disabled={!ready}
@@ -472,6 +480,7 @@ function GiveSheet({
             {failure}
           </p>
         ) : null}
+        {printing}
       </div>
     </FormSheet>
   )

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"mime"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/formpdf"
 )
 
 type assetHandler struct {
@@ -40,6 +42,10 @@ func registerAssetRoutes(rt *router, assets *asset.Service) {
 	// Printing and the blocking email change nothing; these record who did them.
 	rt.restricted("POST /api/v1/assets/{id}/form-printed", h.formPrinted, role.AssetsManage)
 	rt.authenticated("POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed", h.formReprinted)
+	// The form as a PDF, recorded as printed (format pdf): the one Give would
+	// store, its details in the query as Preview takes them; or an assignment's.
+	rt.restricted("GET /api/v1/assets/{id}/assignments/preview.pdf", h.formPDF, role.AssetsManage)
+	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf", h.storedFormPDF)
 	rt.restricted("POST /api/v1/assets/{id}/blocking-email", h.blockingEmail, role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.uploadSignedCopy, role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.signedCopy)
@@ -424,7 +430,7 @@ func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := h.assets.RecordFormPrinted(r.Context(), id, req.params(), actor); err != nil {
+	if err := h.assets.RecordFormPrinted(r.Context(), id, req.params(), asset.OutputPrint, actor); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -448,7 +454,7 @@ func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	if err := h.assets.RecordFormReprinted(r.Context(), id, assignmentID, actor); err != nil {
+	if err := h.assets.RecordFormReprinted(r.Context(), id, assignmentID, asset.OutputPrint, actor); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -472,4 +478,92 @@ func (h *assetHandler) blockingEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// formPDF is Download PDF on Give: the form Give would store, from
+// ?employee=&date=&plan=&value= (cents), as Preview builds it.
+func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	q := r.URL.Query()
+	p := asset.FormParams{GivenDate: q.Get("date")}
+	if p.EmployeeID, err = uuid.Parse(q.Get("employee")); err != nil {
+		writeError(w, r, errBadRequest)
+		return
+	}
+	if plan := q.Get("plan"); plan != "" {
+		p.Plan = &plan
+	}
+	if v := q.Get("value"); v != "" {
+		cents, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			writeError(w, r, errBadRequest)
+			return
+		}
+		p.NonReturnValueCents = &cents
+	}
+	f, err := h.assets.Preview(r.Context(), id, p)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.writeFormPDF(w, r, f, func() error { return h.assets.RecordFormPrinted(r.Context(), id, p, asset.OutputPDF, actor) })
+}
+
+// storedFormPDF is Download PDF on an assignment: its stored form.
+func (h *assetHandler) storedFormPDF(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	assignmentID, err := parseUUIDPath(r, "assignmentID")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	f, err := h.assets.Form(r.Context(), id, assignmentID)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	h.writeFormPDF(w, r, f, func() error {
+		return h.assets.RecordFormReprinted(r.Context(), id, assignmentID, asset.OutputPDF, actor)
+	})
+}
+
+// writeFormPDF draws the form, records the download and sends it as an
+// attachment. Nothing is sent unless the download is recorded.
+func (h *assetHandler) writeFormPDF(w http.ResponseWriter, r *http.Request, f asset.FormResult, record func() error) {
+	var form asset.Form
+	if err := json.Unmarshal(f.Form, &form); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	b, err := formpdf.Render(form, f.DocumentHash)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := record(); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": formpdf.Filename(form)}))
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(b)
 }

@@ -127,6 +127,8 @@ export const assets: AssetsText = {
   stepHandOverHintAsset: '«Выдать имущество» сразу записывает держателя, местонахождение и подписанный акт.',
   changeDetails: 'Изменить',
   doneDetails: 'Готово',
+  downloadPdf: 'Скачать PDF',
+  downloadingPdf: 'Скачивание…',
   printAgain: 'Напечатать ещё раз',
   readyToGive: 'Готово: выдайте SIM.',
   readyToGiveAsset: 'Готово: выдайте предмет.',

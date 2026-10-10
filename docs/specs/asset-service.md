@@ -243,6 +243,8 @@ stays with its assignment when the asset later goes to someone else.
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; 404 when the asset needed none |
 | `POST /api/v1/assets/{id}/form-printed` | `assets.manage` | records `asset.form_printed` for the form Give would store (Preview's body, checked as Preview checks it); 204, writes nothing else |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed` | authenticated | records `asset.form_printed` for an assignment's stored form, printed again; 204 |
+| `GET /api/v1/assets/{id}/assignments/preview.pdf` | `assets.manage` | Download PDF on Give: the form Give would store as a PDF, from `?employee=&date=&plan=&value=` (cents), checked as Preview checks it; records `asset.form_printed` (format pdf) first; an attachment `assignment-form-<number>-<date>.pdf` |
+| `GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf` | authenticated | Download PDF on an assignment: its stored form; recorded the same way |
 | `POST /api/v1/assets/{id}/blocking-email` | `assets.manage` | records `asset.blocking_email_prepared` (Prepare Blocking Email copied); 204, SIM cards only |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
@@ -344,23 +346,27 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   employee has signed the printed form" (Paper Form Signed in records); Print Form becomes
   Print again once printed. The fields: the employee (search), the given date (today, not later),
   the plan (optional) and value only when the card lacks them, a comment. **Preview Form** shows the
-  form the API builds; **Print Form** opens it in a tab of its own
-  (`/assets/<id>/form?employee=&date=&plan=&value=&print`, `routes/asset-form.tsx`) and keeps
-  its hash. That tab records `asset.form_printed` just before each print dialog (Print form
-  again too), so a print is attributed even when the page that opened it is in the background. The sheet fetches the form a moment after its data is complete, so Print Form
-  marks it printed at the click itself: Safari does not finish a request the page starts as
-  the click opens the tab, which once left Paper Form Signed disabled. A hash still missing
-  at Give is asked for again. A printed form is also kept on the device per user
+  form the API builds. **Print Form** prints it from the page itself, with no tab of its own
+  (`components/print-in-place.tsx`): the form is drawn into a container only print shows,
+  `index.css` hides the page and the sheet while it prints, and the browser's print dialog
+  opens over the sheet. **Download PDF** saves the same form as a PDF the API draws
+  (`internal/formpdf`, with pdf-mini and the Go fonts for Lithuanian and Cyrillic), to print
+  from a PDF viewer or keep. Each is recorded as `asset.form_printed` (`format` print or pdf):
+  Print Form records just before the dialog opens; the PDF route records before it answers.
+  The sheet fetches the form a moment after its data is complete, so Print Form needs no
+  request at the click. A printed form is also kept on the device per user
   (`workwear.printedForms.v1.<user>`, one per card, for a day; Give, a refused changed form and
-  Sign out drop it): Safari may reload the page while the print tab is in front, and Give
-  opened again on that card brings back the details and the printed mark. The reminder to sign comes before **Paper Form Signed**, which is enabled only
+  Sign out drop it): a page reloaded after printing, and Give opened again on that card,
+  brings back the details and the printed mark. The reminder to sign comes before **Paper Form Signed**, which is enabled only
   once printed and cleared when the employee, date, plan or value change after printing.
   The button shows the first reason it cannot be used yet; a refusal from the API (given
   meanwhile, form changed) keeps what was entered.
 - **The printed form** is English / Russian, like the Items Given Record: a plain layout of
   the form's data and signature lines, with no wording of terms, until the company's
-  template is added (open decision 11). A stored one reprints at
-  `/assets/<id>/assignments/<assignmentId>/form`.
+  template is added (open decision 11). An assignment's **Print form again** prints its
+  stored form in place and **Download PDF** saves it, each recorded. The page
+  `/assets/<id>/assignments/<assignmentId>/form` (and `/assets/<id>/form?…` for a new one),
+  which printed in a tab of its own before, still answers old links; nothing opens it now.
 - **Register SIM Return**: the return date (today, not before the given date, not later)
   and a comment; **Register Return to Office**.
 - **Mark as Not Returned**: where it is (still with the employee, or unknown) and a

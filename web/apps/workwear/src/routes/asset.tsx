@@ -5,15 +5,18 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
-import { useLoad } from '@ppe/ui/lib/use-load'
+import { saveFile } from '@ppe/ui/lib/save-file'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { formatEuro } from '@ppe/i18n'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { ArrowLeft, FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssignmentFormDocument } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
+import { usePrintInPlace } from '@/components/print-in-place'
 import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
@@ -312,14 +315,63 @@ function AssignmentItem({
       {s.paper_form_signed ? (
         <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span>{t.assets.formSigned}</span>
-          <a {...linkTo({ name: 'assetForm', id: assetId, assignment: s.id }, navigate)} className={`${link} inline-flex min-h-11 items-center gap-1 md:min-h-0`}>
-            <Printer aria-hidden className="size-3.5" /> {t.assets.printFormAgain}
-          </a>
+          <StoredFormActions assetId={assetId} assignmentId={s.id} />
         </p>
       ) : null}
       {s.paper_form_signed ? (
         <SignedCopies assetId={assetId} inventoryNo={inventoryNo} assignment={s} canManage={canManage} timeZone={timeZone} onUploaded={onUploaded} />
       ) : null}
     </li>
+  )
+}
+
+/**
+ * Print form again and Download PDF for an assignment's stored form: printed
+ * from this page with no tab of its own, or saved as a PDF. Each is recorded
+ * as the user's activity (asset.form_printed).
+ */
+function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignmentId: string }) {
+  const { client } = useApi()
+  const { print, printing } = usePrintInPlace()
+  const [busy, setBusy] = useState(false)
+  const [failure, setFailure] = useState<string>()
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true)
+    setFailure(undefined)
+    try {
+      await action()
+    } catch (err) {
+      setFailure(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const reprint = () =>
+    run(async () => {
+      const f = await client.assets.form(assetId, assignmentId)
+      await client.assets.recordFormReprinted(assetId, assignmentId).catch(() => {})
+      print(<AssignmentFormDocument form={f.form} documentHash={f.document_hash} />)
+    })
+  const download = () =>
+    run(async () => {
+      const { blob, filename } = await client.assets.storedFormPDF(assetId, assignmentId)
+      saveFile(blob, filename)
+    })
+  const action = `${link} inline-flex min-h-11 cursor-pointer items-center gap-1 disabled:opacity-50 md:min-h-0`
+  return (
+    <>
+      <button type="button" className={action} disabled={busy} onClick={() => void reprint()}>
+        <Printer aria-hidden className="size-3.5" /> {t.assets.printFormAgain}
+      </button>
+      <button type="button" className={action} disabled={busy} onClick={() => void download()}>
+        <FileDown aria-hidden className="size-3.5" /> {t.assets.downloadPdf}
+      </button>
+      {failure ? (
+        <span role="alert" className="basis-full text-destructive">
+          {failure}
+        </span>
+      ) : null}
+      {printing}
+    </>
   )
 }

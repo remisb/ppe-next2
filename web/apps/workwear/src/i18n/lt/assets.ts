@@ -127,6 +127,8 @@ export const assets: AssetsText = {
   stepHandOverHintAsset: '„Išduoti turtą“ iš karto įrašo turėtoją, vietą ir pasirašytą aktą.',
   changeDetails: 'Keisti',
   doneDetails: 'Baigta',
+  downloadPdf: 'Atsisiųsti PDF',
+  downloadingPdf: 'Atsisiunčiama…',
   printAgain: 'Spausdinti dar kartą',
   readyToGive: 'Paruošta: išduokite SIM.',
   readyToGiveAsset: 'Paruošta: išduokite daiktą.',

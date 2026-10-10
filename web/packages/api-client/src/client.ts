@@ -112,6 +112,26 @@ interface Handling {
 const normal: Handling = { renew: true, signOut: true }
 const signInRoute: Handling = { renew: false, signOut: false }
 
+/**
+ * The file name a Content-Disposition header gives: RFC 5987's filename* (a
+ * name with letters beyond ASCII), else filename quoted or bare, as Go's
+ * mime.FormatMediaType writes them; "download" when there is none.
+ */
+export function attachmentName(header: string | null): string {
+  if (!header) return 'download'
+  const star = /filename\*\s*=\s*utf-8''([^;]+)/i.exec(header)
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1])
+    } catch {
+      // A malformed escape: fall back to the plain name.
+    }
+  }
+  const quoted = /filename\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(header)
+  if (quoted?.[1] !== undefined) return quoted[1].replace(/\\(.)/g, '$1')
+  return /filename\s*=\s*([^;\s]+)/i.exec(header)?.[1] ?? 'download'
+}
+
 export function createClient(options: ClientOptions) {
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis)
   const base = options.baseUrl ?? ''
@@ -136,8 +156,7 @@ export function createClient(options: ClientOptions) {
       if (res.status === 401) options.onUnauthenticated?.()
       throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text))
     }
-    const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'download'
-    return { blob: await res.blob(), filename: name }
+    return { blob: await res.blob(), filename: attachmentName(res.headers.get('Content-Disposition')) }
   }
 
   async function send(method: Method, path: string, body: unknown): Promise<{ res: Response; text: string }> {
@@ -382,6 +401,15 @@ export function createClient(options: ClientOptions) {
         request<void>('POST', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form-printed`),
       /** Records that Prepare Blocking Email's text was copied (asset.blocking_email_prepared); nothing is sent. */
       recordBlockingEmail: (id: string) => request<void>('POST', `/api/v1/assets/${seg(id)}/blocking-email`),
+      /** Download PDF on Give: the form Give would store, as a PDF; recorded as printed (format pdf). */
+      formPDF: (id: string, input: AssignmentFormInput) => {
+        const q = new URLSearchParams({ employee: input.employee_id, date: input.given_date })
+        if (input.plan) q.set('plan', input.plan)
+        if (input.non_return_value_cents != null) q.set('value', String(input.non_return_value_cents))
+        return download(`/api/v1/assets/${seg(id)}/assignments/preview.pdf?${q.toString()}`)
+      },
+      /** Download PDF on an assignment: its stored form; recorded as printed (format pdf). */
+      storedFormPDF: (id: string, assignmentId: string) => download(`/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form.pdf`),
       /** An assignment's stored form, for reprinting. */
       form: (id: string, assignmentId: string) =>
         request<AssignmentFormResult>('GET', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form`),

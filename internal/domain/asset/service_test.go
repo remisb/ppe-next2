@@ -670,7 +670,7 @@ func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Print Form: the form Give would store, for whom, nothing else changed.
-	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, fp, testActor); err != nil {
+	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, fp, OutputPrint, testActor); err != nil {
 		t.Fatal(err)
 	}
 	ev := f.repo.events[len(f.repo.events)-1]
@@ -683,7 +683,7 @@ func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
 	}
 	// A form that could not be printed is not recorded.
 	n := len(f.repo.events)
-	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, FormParams{GivenDate: "2026-10-09"}, testActor); !errors.Is(err, ErrInvalid) || len(f.repo.events) != n {
+	if err := f.svc.RecordFormPrinted(f.ctx, v.ID, FormParams{GivenDate: "2026-10-09"}, OutputPrint, testActor); !errors.Is(err, ErrInvalid) || len(f.repo.events) != n {
 		t.Errorf("no employee: %v, %d events", err, len(f.repo.events)-n)
 	}
 
@@ -692,14 +692,15 @@ func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, a.ID, testActor); err != nil {
+	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, a.ID, OutputPDF, testActor); err != nil {
 		t.Fatal(err)
 	}
 	ev = f.repo.events[len(f.repo.events)-1]
-	if ev.Event != EventFormPrinted || !strings.Contains(string(ev.After), a.ID.String()) || !strings.Contains(string(ev.After), *a.DocumentHash) {
+	if ev.Event != EventFormPrinted || !strings.Contains(string(ev.After), a.ID.String()) || !strings.Contains(string(ev.After), *a.DocumentHash) ||
+		!strings.Contains(string(ev.After), `"format":"pdf"`) {
 		t.Errorf("reprinted: %s %s", ev.Event, ev.After)
 	}
-	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, uuid.New(), testActor); !errors.Is(err, ErrNotFound) {
+	if err := f.svc.RecordFormReprinted(f.ctx, v.ID, uuid.New(), OutputPrint, testActor); !errors.Is(err, ErrNotFound) {
 		t.Errorf("unknown assignment: %v", err)
 	}
 
@@ -714,7 +715,8 @@ func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
 	for name, err := range map[string]error{
 		"no actor":   f.svc.RecordBlockingEmail(f.ctx, v.ID, uuid.Nil),
 		"no asset":   f.svc.RecordBlockingEmail(f.ctx, uuid.New(), testActor),
-		"print, nil": f.svc.RecordFormPrinted(f.ctx, v.ID, fp, uuid.Nil),
+		"print, nil": f.svc.RecordFormPrinted(f.ctx, v.ID, fp, OutputPrint, uuid.Nil),
+		"no format":  f.svc.RecordFormPrinted(f.ctx, v.ID, fp, "fax", testActor),
 	} {
 		if err == nil {
 			t.Errorf("%s: recorded", name)

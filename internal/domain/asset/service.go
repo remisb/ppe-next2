@@ -698,12 +698,26 @@ func (s *Service) Form(ctx context.Context, assetID, assignmentID uuid.UUID) (Fo
 	return FormResult{}, ErrNotFound
 }
 
+// Output is how a form left the app: printed from the browser, or
+// downloaded as a PDF to print or keep.
+type Output string
+
+const (
+	OutputPrint Output = "print"
+	OutputPDF   Output = "pdf"
+)
+
+func (o Output) valid() bool { return o == OutputPrint || o == OutputPDF }
+
 // RecordFormPrinted records asset.form_printed for the form Give would store,
 // checked and built as Preview builds it: printing is not giving (§8), but who
-// printed which form for whom is recorded.
-func (s *Service) RecordFormPrinted(ctx context.Context, id uuid.UUID, p FormParams, actor uuid.UUID) error {
+// printed which form for whom, and how, is recorded.
+func (s *Service) RecordFormPrinted(ctx context.Context, id uuid.UUID, p FormParams, out Output, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
+	}
+	if !out.valid() {
+		return fieldError("format", "must be print or pdf")
 	}
 	f, err := s.Preview(ctx, id, p)
 	if err != nil {
@@ -715,6 +729,7 @@ func (s *Service) RecordFormPrinted(ctx context.Context, id uuid.UUID, p FormPar
 	}
 	ev, err := s.event(actor, EventFormPrinted, id, s.now(), nil, map[string]any{
 		"employee_id": emp.ID, "employee_name": emp.FullName(), "given_date": p.GivenDate, "document_hash": f.DocumentHash,
+		"format": out,
 	})
 	if err != nil {
 		return err
@@ -724,9 +739,12 @@ func (s *Service) RecordFormPrinted(ctx context.Context, id uuid.UUID, p FormPar
 
 // RecordFormReprinted records asset.form_printed for an assignment's stored
 // form, printed again.
-func (s *Service) RecordFormReprinted(ctx context.Context, assetID, assignmentID uuid.UUID, actor uuid.UUID) error {
+func (s *Service) RecordFormReprinted(ctx context.Context, assetID, assignmentID uuid.UUID, out Output, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
+	}
+	if !out.valid() {
+		return fieldError("format", "must be print or pdf")
 	}
 	f, err := s.Form(ctx, assetID, assignmentID)
 	if err != nil {
@@ -736,7 +754,7 @@ func (s *Service) RecordFormReprinted(ctx context.Context, assetID, assignmentID
 	if err != nil {
 		return err
 	}
-	after := map[string]any{"assignment_id": assignmentID, "document_hash": f.DocumentHash}
+	after := map[string]any{"assignment_id": assignmentID, "document_hash": f.DocumentHash, "format": out}
 	for _, a := range as {
 		if a.ID == assignmentID {
 			after["employee_id"], after["employee_name"], after["given_date"] = a.EmployeeID, a.EmployeeName, a.GivenDate

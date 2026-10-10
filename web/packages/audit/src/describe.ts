@@ -41,6 +41,7 @@ type Format =
   | 'kind'
   | 'category'
   | 'whereabouts'
+  | 'output'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -78,6 +79,8 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['method', 'method'],
   ['confirmed_name', 'text'],
   ['document_hash', 'text'],
+  // How a form left the app (print or pdf), and an export's format (csv, json) as stored.
+  ['format', 'output'],
   ['expires_at', 'date'],
   ['link', 'text'],
   ['users', 'text'],
@@ -85,7 +88,6 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['administrators', 'text'],
   ['dormant', 'text'],
   ['no_sign_in', 'text'],
-  ['format', 'text'],
   ['from', 'text'],
   ['to', 'text'],
   ['area', 'text'],
@@ -178,6 +180,8 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
       return t.categories[String(value)] ?? String(value)
     case 'whereabouts':
       return t.whereabouts[String(value)] ?? String(value)
+    case 'output':
+      return t.outputs[String(value)] ?? String(value)
     case 'roles':
       if (!Array.isArray(value)) return String(value)
       if (value.length === 0) return t.none

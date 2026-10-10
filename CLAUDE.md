@@ -177,9 +177,10 @@ The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
 volume, on the droplet only; `docs/backups.md` sets up a Spaces bucket, encryption,
 restore and the major-upgrade steps). The db volume is named by `POSTGRES_VOLUME`
 (default `ppe-next2-prod_db-data`, the name compose gave it).
-dbbackup is a **private** repository: the `api` and `backup` image builds read it with the
-`github_token` build secret, the gitignored file `.github-token` (a fine-grained token,
-read-only on remisb/dbbackup) beside `.env.prod`; CI uses the `DBBACKUP_READ_TOKEN` secret.
+dbbackup and pdf-mini (the assignment form's PDF, `internal/formpdf`) are **private**
+repositories: the `api` and `backup` image builds read them with the `github_token` build
+secret, the gitignored file `.github-token` (a fine-grained token, read-only on
+remisb/dbbackup and remisb/pdf-mini) beside `.env.prod`; CI uses the `DBBACKUP_READ_TOKEN` secret.
 Locally, Go fetches it over your own git credentials with `GOPRIVATE=github.com/remisb/*`.
 The DigitalOcean droplet serves it at `https://workwear.gavort.nl` (an A record in
 gavort.nl's Hostinger DNS; the domain's own website stays at Hostinger) from
