@@ -6,7 +6,6 @@ export const history = {
   filters: 'Filters',
   filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
-  awaiting: 'Awaiting',
   employee: 'Employee',
   from: 'From',
   to: 'To',

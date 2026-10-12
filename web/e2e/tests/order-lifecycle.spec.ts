@@ -496,7 +496,7 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   // The navigation counts the orders waiting for confirmation.
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Orders (1 waiting for confirmation)' })).toBeVisible()
   // The status tabs count what is waiting and what was given.
-  await expect(page.getByRole('button', { name: 'Awaiting 1' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ordered 1' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Ordered')
@@ -652,7 +652,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
   await expect(order).toContainText('confirmed on paper')
-  await expect(page.getByRole('button', { name: 'Awaiting 0' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ordered 0' })).toBeVisible()
 })
 
 test('Item page: price history and the orders that hold the item', async () => {
@@ -1707,10 +1707,10 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(priceChange).toContainText('+20%')
   await expect(other.getByRole('region', { name: 'Without a price or service period' })).toContainText('Safety helmet')
   await expect(other.getByText('Size 42: 1 employee')).toBeAttached()
-  // A figure with a list behind it opens that list: On order opens Orders on its Awaiting tab.
+  // A figure with a list behind it opens that list: On order opens Orders on its Ordered tab.
   await other.getByRole('list', { name: 'Key figures' }).getByRole('button', { name: /^On order/ }).click()
   await expect(other.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible()
-  await expect(other.getByRole('button', { name: /^Awaiting/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(other.getByRole('button', { name: /^Ordered/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(other).toHaveURL(/\/orders\?status=ORDERED$/)
   await other.goBack()
   await other.setViewportSize({ width: 375, height: 812 })

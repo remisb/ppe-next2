@@ -319,7 +319,7 @@ Rules for using it:
 - **Detail:** **Ordered** (`ORDERED`): marked as ordered, waiting for the employee to
   confirm receipt. **Given** (`GIVEN`): the employee confirmed, the record is locked with
   its evidence. There is no draft, partial or outstanding status.
-- **UI:** Ordered, Given; the Orders filters **Awaiting** (= Ordered), **Given**, **All**.
+- **UI:** Ordered, Given; the Orders filters **Ordered**, **Given**, **All**.
 
 ### Working order (draft)
 - **Brief:** the order being prepared on Create Order, before Mark as Ordered.
@@ -981,7 +981,6 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Review / Review order | Peržiūrėti / Užsakymo peržiūra | Проверить / Проверка заказа |
 | Mark as Ordered | Pažymėti kaip užsakytą | Отметить как заказанный |
 | Ordered / Given | Užsakyta / Išduota | Заказано / Выдано |
-| Awaiting | Laukia | Ожидают |
 | Open Employee Confirmation | Atidaryti darbuotojo patvirtinimą | Открыть подтверждение сотрудника |
 | Confirmation link | Patvirtinimo nuoroda | Ссылка для подтверждения |
 | Send link | Siųsti nuorodą | Отправить ссылку |

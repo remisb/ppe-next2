@@ -16,7 +16,7 @@ export type Route =
   | { name: 'createOrder'; prefill?: Prefill }
   /**
    * History; order opens one order beside the list, or on its own on a narrow
-   * screen; status opens it on that tab (a dashboard's Awaiting tile).
+   * screen; status opens it on that tab (a dashboard's Awaiting confirmation tile).
    */
   | { name: 'history'; order?: string; status?: OrderStatus }
   /** Employees; missing opens it filtered to those missing a size (a dashboard's Missing sizes tile). */

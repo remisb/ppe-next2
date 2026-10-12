@@ -7,7 +7,6 @@ export const history: HistoryText = {
   filters: 'Filtrai',
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
-  awaiting: 'Laukia',
   employee: 'Darbuotojas',
   from: 'Nuo',
   to: 'Iki',

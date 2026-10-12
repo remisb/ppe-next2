@@ -35,7 +35,7 @@ const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
 
 /** The status tabs: the question most people bring to History is what is still waiting. */
 const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
-  { value: 'ORDERED', label: t.history.awaiting },
+  { value: 'ORDERED', label: t.common.ordered },
   { value: 'GIVEN', label: t.common.given },
   { value: '', label: t.common.all },
 ]
@@ -73,7 +73,7 @@ export function History({
   onOpenRecord,
 }: {
   selected: string | undefined
-  /** The tab to open on, from the address (a dashboard's Awaiting tile); later tab changes stay on the screen. */
+  /** The tab to open on, from the address (a dashboard's Awaiting confirmation tile); later tab changes stay on the screen. */
   status?: OrderStatus | undefined
   navigate: (to: Route, options?: NavigateOptions) => void
   onOpenRecord: (id: string, print: boolean) => void
