@@ -1565,6 +1565,11 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const historyRow = page.getByRole('row', { name: new RegExp(recordNumber) })
   expect((await historyRow.boundingBox())!.height, 'an Orders row on a phone').toBeLessThan(80)
   await expect(page.getByLabel('Sort by').filter({ visible: true })).toHaveCount(0)
+  // The employee search stays in view, without its heading; Filters folds away the rest.
+  const filters = page.getByRole('region', { name: 'Filters' })
+  await expect(filters.getByRole('combobox', { name: 'Employee' })).toBeVisible()
+  await expect(filters.locator('p').getByText('Employee', { exact: true })).toBeHidden()
+  await expect(filters.getByText('From', { exact: true })).toBeHidden()
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
   // No time zone note on Orders.
@@ -1984,7 +1989,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await page.setViewportSize({ width: 375, height: 812 })
   await expect(devices.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
-  await expect(page.locator('#orders')).toContainText('Filters holds the employee and date filters')
+  await expect(page.locator('#orders')).toContainText('Filters holds the date filters and the sort order')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
   await devices.getByRole('button', { name: 'Tablet' }).click()
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)

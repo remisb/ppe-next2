@@ -169,6 +169,10 @@ export function History({
   const activeFilters = [filters.employee, filters.from, filters.to].filter(Boolean).length
   const dateError = filters.from && filters.to && filters.from > filters.to ? t.history.fromAfterTo : undefined
 
+  // What Filters folds away on a phone, and so counts there: the employee search stays in view.
+  const folded = !showFilters && 'max-md:hidden'
+  const foldedFilters = [filters.from, filters.to].filter(Boolean).length
+
   return (
     <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
       {/* Narrow, an open order takes the screen; its list keeps its state behind it. */}
@@ -182,7 +186,7 @@ export function History({
                 <Plus aria-hidden /> {t.shell.createOrder}
               </a>
               <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
-                <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.history.filtersCount(activeFilters) : t.history.filters}
+                <SlidersHorizontal aria-hidden /> {foldedFilters > 0 ? t.history.filtersCount(foldedFilters) : t.history.filters}
               </Button>
             </>
           }
@@ -210,11 +214,12 @@ export function History({
             'mb-4 grid gap-3 sm:grid-cols-2',
             // Beside an open order the list is narrow: two columns there, three on their own.
             !selected && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_auto]',
-            !showFilters && 'max-md:hidden',
           )}
         >
+          {/* On a phone the employee search stays in view, without its heading (its placeholder
+              says what it is), and Filters folds away only the dates, Clear filters and the sort. */}
           <div>
-            <p className="mb-1.5 text-sm font-medium">{t.history.employee}</p>
+            <p className="mb-1.5 text-sm font-medium max-md:hidden">{t.history.employee}</p>
             <EmployeePicker
               label={t.history.employee}
               selected={filters.employee}
@@ -222,7 +227,7 @@ export function History({
               onClear={() => setFilter('employee', null)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn('grid grid-cols-2 gap-2', folded)}>
             <label className="text-sm font-medium">
               {t.history.from}
               <Input type="date" className="mt-1.5" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
@@ -232,7 +237,7 @@ export function History({
               <Input type="date" className="mt-1.5" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
             </label>
           </div>
-          <div className="flex items-end">
+          <div className={cn('flex items-end', folded)}>
             <Button
               variant="ghost"
               className="w-full sm:w-auto"
@@ -246,7 +251,7 @@ export function History({
             </Button>
           </div>
           {/* On a phone the sort order folds away with the filters; wider, it sits above the rows. */}
-          <div className="md:hidden">
+          <div className={cn('md:hidden', folded)}>
             <SortControl columns={columns} {...sortProps} />
           </div>
         </section>

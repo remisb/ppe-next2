@@ -116,7 +116,7 @@ test('orders, an order and its record', async () => {
   await page.getByRole('button', { name: T.order.startNewOrder }).click()
   await openTab(T.shell.history)
   await page.getByRole('link', { name: /^WE-\d{6}$/ }).filter({ visible: true }).first().click()
-  await expect(order().getByRole('button', { name: T.history.openConfirmation })).toBeVisible()
+  await expect(order().getByRole('button', { name: T.history.createLink })).toBeVisible()
   if (device === 'desktop') {
     // Taller, so the order's actions show below its lines.
     await page.setViewportSize({ width: 1280, height: 1200 })

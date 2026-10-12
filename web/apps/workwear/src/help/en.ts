@@ -128,17 +128,17 @@ export const en: Guide = {
       blocks: [
         { p: '**Orders** lists every order placed. **Create Order**, at the top, starts a new one.' },
         {
-          p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
+          p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
           devices: ['desktop'],
         },
-        { p: '**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['tablet'] },
-        { p: '**Awaiting**, **Given** and **All** filter the orders by status; **Filters** holds the employee and date filters. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['tablet'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds the date filters and the sort order. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
         { p: 'An **Ordered** order has these actions:' },
         {
           ul: [
-            '**Open Employee Confirmation** makes a new link. It also records a signed paper copy (**Record signed paper confirmation**).',
-            '**Hand over now** turns this device to the employee, who confirms on it in person.',
-            '**Print Record** prints the record for signing.',
+            '**Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.',
+            '**Print Record** prints the record for the employee to sign.',
+            '**Sign → Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, and the button says **Signed**.',
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },

@@ -131,17 +131,17 @@ export const lt: Guide = {
       blocks: [
         { p: '**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.' },
         {
-          p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
+          p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
           devices: ['desktop'],
         },
-        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
-        { p: '**Laukia**, **Išduota** ir **Visi** filtruoja užsakymus pagal būseną; mygtuke **Filtrai** – filtrai pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – filtrai pagal datą ir rikiavimas. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
         { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
         {
           ul: [
-            '**Atidaryti darbuotojo patvirtinimą** sukuria naują nuorodą. Ten pat galima pažymėti pasirašytą popierinį egzempliorių (**Pažymėti pasirašytą popierinį patvirtinimą**).',
-            '**Išduoti dabar** perduoda šį įrenginį darbuotojui, ir jis patvirtina gavimą vietoje.',
-            '**Spausdinti įrašą** atspausdina įrašą pasirašyti.',
+            '**Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.',
+            '**Spausdinti įrašą** atspausdina įrašą, kurį darbuotojas pasirašo.',
+            '**Pasirašyti → Išduota** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o mygtukas rodo **Pasirašyta**.',
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
