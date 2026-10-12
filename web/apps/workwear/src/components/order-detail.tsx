@@ -1,4 +1,4 @@
-import type { Order } from '@ppe/api-client'
+import type { ConfirmationLink, Order } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
@@ -8,10 +8,10 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, FileText, Handshake, Link2, Printer, X } from 'lucide-react'
+import { ArrowLeft, FileSignature, FileText, Handshake, Link2, Printer, X } from 'lucide-react'
 import { useState } from 'react'
 
-import { ConfirmationSheet } from '@/components/confirmation-sheet'
+import { ConfirmationLinkView } from '@/components/confirmation-sheet'
 import { HandOver } from '@/components/hand-over'
 import { OrderLinesTable } from '@/components/order-lines'
 import { t } from '@/i18n'
@@ -46,7 +46,6 @@ export function OrderDetail({
   const { client } = useApi()
   const session = useSession()
   const order = useLoad(() => client.orders.get(id), [id])
-  const [confirming, setConfirming] = useState(false)
   const [handingOver, setHandingOver] = useState(false)
   const [deleteError, setDeleteError] = useState<unknown>()
   const o = order.data
@@ -83,10 +82,15 @@ export function OrderDetail({
           <Summary order={o} timeZone={timeZone} navigate={navigate} />
           <OrderLinesTable order={o} />
           <Actions
+            // A link is shown once, for the order it was created for.
+            key={o.id}
             order={o}
-            onConfirm={() => setConfirming(true)}
             onHandOver={() => setHandingOver(true)}
             onOpenRecord={(print) => onOpenRecord(o.id, print)}
+            onGiven={() => {
+              order.reload()
+              onChanged()
+            }}
             // Only the manager role clears demo and test orders; the API allows no one else.
             onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
           />
@@ -103,16 +107,6 @@ export function OrderDetail({
               onClose={() => setHandingOver(false)}
             />
           ) : null}
-          <ConfirmationSheet
-            order={confirming ? { ...o, usage_months: null } : null}
-            onClose={() => setConfirming(false)}
-            onGiven={() => {
-              setConfirming(false)
-              order.reload()
-              onChanged()
-            }}
-            onPrint={(orderId) => onOpenRecord(orderId, true)}
-          />
         </>
       )}
     </article>
@@ -149,52 +143,96 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
 }
 
 /**
- * ORDERED: Open Employee Confirmation, Hand over now (the employee confirms on
- * this device, at the counter), and Print Record for a paper signature; the
- * supplier message is Create Order's, not here. GIVEN: View Record and Print
- * Record. The items (View Items in the manual) are always shown above.
+ * ORDERED: Create confirmation link (electronic; the link then shows below,
+ * once), Hand over now (the employee confirms on this device, at the counter),
+ * Print Record and Record signed paper confirmation (paper); the supplier
+ * message is Create Order's, not here. GIVEN: View Record and Print Record.
+ * The items (View Items in the manual) are always shown above.
  */
 function Actions({
   order: o,
-  onConfirm,
   onHandOver,
   onOpenRecord,
+  onGiven,
   onDelete,
 }: {
   order: Order
-  onConfirm: () => void
   onHandOver: () => void
   onOpenRecord: (print: boolean) => void
+  /** A signed paper confirmation was recorded: the order is Given. */
+  onGiven: () => void
   /** Managers only: Delete order under ⋯, last and asking first. */
   onDelete?: (() => void) | undefined
 }) {
+  const { client } = useApi()
+  const [link, setLink] = useState<ConfirmationLink | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<unknown>()
   const actions = historyActions(o.status)
+  const name = `${o.employee_first_name} ${o.employee_last_name}`
+
+  const run = async (f: () => Promise<void>) => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      await f()
+    } catch (err) {
+      setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const recordPaper = () => {
+    if (!window.confirm(t.history.recordPaperQuestion(name, o.record_number))) return
+    void run(async () => {
+      await client.orders.confirmPaper(o.id)
+      onGiven()
+    })
+  }
+
   return (
-    <div className="grid gap-2 sm:flex sm:flex-wrap">
-      {actions.includes('openConfirmation') ? (
-        <Button onClick={onConfirm}>
-          <Link2 aria-hidden /> {t.history.openConfirmation}
-        </Button>
-      ) : null}
-      {actions.includes('openConfirmation') ? (
-        <Button variant="outline" onClick={onHandOver}>
-          <Handshake aria-hidden /> {t.history.handOverNow}
-        </Button>
-      ) : null}
-      {actions.includes('viewRecord') ? (
-        <Button variant="outline" onClick={() => onOpenRecord(false)}>
-          <FileText aria-hidden /> {t.history.viewRecord}
-        </Button>
-      ) : null}
-      <Button variant="outline" onClick={() => onOpenRecord(true)}>
-        <Printer aria-hidden /> {t.history.printRecord}
-      </Button>
-      {onDelete ? (
-        <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
-          <DropdownMenuItem variant="destructive" onClick={onDelete}>
-            {t.history.deleteOrder}
-          </DropdownMenuItem>
-        </MoreActions>
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
+        {/* Once created, the link is shown below instead: another would replace it. */}
+        {actions.includes('createLink') && !link ? (
+          <Button disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(o.id)))}>
+            <Link2 aria-hidden /> {t.history.createLink}
+          </Button>
+        ) : null}
+        {actions.includes('handOver') ? (
+          <Button variant="outline" onClick={onHandOver}>
+            <Handshake aria-hidden /> {t.history.handOverNow}
+          </Button>
+        ) : null}
+        {actions.includes('viewRecord') ? (
+          <Button variant="outline" onClick={() => onOpenRecord(false)}>
+            <FileText aria-hidden /> {t.history.viewRecord}
+          </Button>
+        ) : null}
+        {actions.includes('printRecord') ? (
+          <Button variant="outline" onClick={() => onOpenRecord(true)}>
+            <Printer aria-hidden /> {t.history.printRecord}
+          </Button>
+        ) : null}
+        {actions.includes('recordPaper') ? (
+          <Button variant="outline" disabled={busy} onClick={recordPaper}>
+            <FileSignature aria-hidden /> {t.history.recordPaper}
+          </Button>
+        ) : null}
+        {onDelete ? (
+          <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              {t.history.deleteOrder}
+            </DropdownMenuItem>
+          </MoreActions>
+        ) : null}
+      </div>
+      {error ? <ErrorState title={t.history.didNotWork} error={error} /> : null}
+      {link && actions.includes('createLink') ? (
+        <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
+        </section>
       ) : null}
     </div>
   )

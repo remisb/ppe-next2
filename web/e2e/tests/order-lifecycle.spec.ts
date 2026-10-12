@@ -506,20 +506,24 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   const order = await openOrder(recordNumber)
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
   await expect(order.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
-  await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toBeVisible()
+  // The employee's confirmation is on the order itself: electronic, at the counter, or on paper.
+  for (const name of ['Create confirmation link', 'Hand over now', 'Print Record', 'Record signed paper confirmation']) {
+    await expect(order.getByRole('button', { name })).toBeVisible()
+  }
+  await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Record' })).toHaveCount(0)
   // The supplier message is Create Order's review's, not the order's.
   await expect(order.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
 })
 
-test('Open Employee Confirmation creates a link', async () => {
-  await page.getByRole('complementary', { name: 'Order' }).getByRole('button', { name: 'Open Employee Confirmation' }).click()
-  const dialog = page.getByRole('dialog')
-  await dialog.getByRole('button', { name: 'Create confirmation link' }).click()
-  const link = dialog.getByLabel('Confirmation link')
+test('Create confirmation link shows the link on the order', async () => {
+  const order = page.getByRole('complementary', { name: 'Order' })
+  await order.getByRole('button', { name: 'Create confirmation link' }).click()
+  const link = order.getByRole('textbox', { name: 'Confirmation link' })
   await expect(link).toHaveValue(/\/confirm\/[\w-]{40,}$/)
   confirmationURL = await link.inputValue()
-  await dialog.getByRole('button', { name: 'Close' }).click()
+  // Shown once: another link would replace it, so the button gives way to it.
+  await expect(order.getByRole('button', { name: 'Create confirmation link' })).toHaveCount(0)
 })
 
 test('the employee confirms on the public page; a second confirmation is a no-op', async ({ browser }) => {
@@ -588,7 +592,9 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await expect(row).toContainText('0.0 months')
   order = await openOrder(recordNumber)
   await expect(order).toContainText('confirmed electronically')
-  await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
+  for (const name of ['Create confirmation link', 'Hand over now', 'Record signed paper confirmation']) {
+    await expect(order.getByRole('button', { name })).toHaveCount(0)
+  }
   await expect(order.getByRole('button', { name: 'View Record' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Print Record' })).toBeVisible()
   // No WhatsApp on a given order: the supplier message is Create Order's review's.
@@ -648,9 +654,8 @@ test('paper confirmation: a second order signed on paper', async () => {
 
   await openTab('Orders')
   const order = await openOrder(paperRecord)
-  await order.getByRole('button', { name: 'Open Employee Confirmation' }).click()
   page.once('dialog', (d) => void d.accept())
-  await page.getByRole('dialog').getByRole('button', { name: 'Record signed paper confirmation' }).click()
+  await order.getByRole('button', { name: 'Record signed paper confirmation' }).click()
   await expect(order).toContainText('confirmed on paper')
   await expect(page.getByRole('button', { name: 'Ordered 0' })).toBeVisible()
 })

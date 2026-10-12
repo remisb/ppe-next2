@@ -9,20 +9,24 @@ import { intlLocale, t } from '@/i18n'
 
 export type HistoryAction =
   | 'viewItems'
-  | 'openConfirmation'
+  | 'createLink'
+  | 'handOver'
+  | 'recordPaper'
   | 'viewRecord'
   | 'printRecord'
 
 /**
- * Manual §6: ORDERED shows View Items and Open Employee Confirmation; GIVEN
+ * Manual §6: ORDERED shows View Items and the employee's confirmation; GIVEN
  * shows View Items, View Record and Print Record, and never confirmation or
- * edit actions. The manual's Copy for WhatsApp on ORDERED and Share via
- * WhatsApp on GIVEN are left out: the supplier message is sent from Create
- * Order's review.
+ * edit actions. The manual's Open Employee Confirmation is not a button of its
+ * own: its actions (Create confirmation link, Print Record, Record signed paper
+ * confirmation) sit on the order, with Hand over now. The manual's Copy for
+ * WhatsApp on ORDERED and Share via WhatsApp on GIVEN are left out: the
+ * supplier message is sent from Create Order's review.
  */
 export function historyActions(status: OrderStatus): HistoryAction[] {
   return status === 'ORDERED'
-    ? ['viewItems', 'openConfirmation']
+    ? ['viewItems', 'createLink', 'handOver', 'printRecord', 'recordPaper']
     : ['viewItems', 'viewRecord', 'printRecord']
 }
 

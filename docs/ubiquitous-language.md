@@ -735,8 +735,10 @@ Rules for using it:
 
 ### Order pane
 - **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
-- **Detail:** holds the order's actions by status. Ordered: Open Employee Confirmation,
-  Hand over now, Print Record. Given: View Record, Print Record, Share via WhatsApp.
+- **Detail:** holds the order's actions by status. Ordered: Create confirmation link (the
+  link then shows below it), Hand over now, Print Record, Record signed paper confirmation;
+  no Open Employee Confirmation button, which only Create Order's Send confirmation link
+  still opens. Given: View Record, Print Record.
   Manager role: ⋯ → Delete order…
 
 ### Record number preview

@@ -4,9 +4,9 @@ import { activityAt, deleteQuestion, formatUsage, formatWaiting, historyActions,
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
-    expect(historyActions('ORDERED')).toEqual(['viewItems', 'openConfirmation'])
+    expect(historyActions('ORDERED')).toEqual(['viewItems', 'createLink', 'handOver', 'printRecord', 'recordPaper'])
     expect(historyActions('GIVEN')).toEqual(['viewItems', 'viewRecord', 'printRecord'])
-    expect(historyActions('GIVEN')).not.toContain('openConfirmation')
+    for (const a of ['createLink', 'handOver', 'recordPaper'] as const) expect(historyActions('GIVEN')).not.toContain(a)
   })
 })
 
