@@ -198,12 +198,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="orders">
   <h2><span class="n">6</span>Orders</h2>
     <p><b>Orders</b> lists every order placed. <b>Create Order</b>, at the top, starts a new one.</p>
-    <p><b>Awaiting</b>, <b>Given</b> and <b>All</b> filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. <kbd>J</kbd> and <kbd>K</kbd> move between orders, and <kbd>Esc</kbd> closes the order.</p>
+    <p><b>All</b>, <b>Ordered</b> and <b>Given</b> filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. <kbd>J</kbd> and <kbd>K</kbd> move between orders, and <kbd>Esc</kbd> closes the order.</p>
     <p>An <b>Ordered</b> order has these actions:</p>
     <ul>
-      <li><b>Open Employee Confirmation</b> makes a new link. It also records a signed paper copy (<b>Record signed paper confirmation</b>).</li>
-      <li><b>Hand over now</b> turns this device to the employee, who confirms on it in person.</li>
-      <li><b>Print Record</b> prints the record for signing.</li>
+      <li><b>Create confirmation link</b> makes a new link for the employee and shows it below, with <b>Copy link</b> and <b>Share link via WhatsApp</b>. The button then becomes <b>Confirmation link</b>, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.</li>
+      <li><b>Print Record</b> prints the record for the employee to sign.</li>
+      <li><b>Sign → Given</b> records that the employee signed the printed record. The app asks first; the order is then <b>Given</b>, and the button says <b>Signed</b>.</li>
     </ul>
     <p class="who">Managers only</p>
     <p><b>⋯ → Delete order…</b> removes an order, such as a test order, after asking.</p>

@@ -88,13 +88,13 @@ If the employee will sign on paper, choose **Print record** instead.
 
 **Orders** lists every order placed. **Create Order**, at the top, starts a new one.
 
-**Awaiting**, **Given** and **All** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
+**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
 
 An **Ordered** order has these actions:
 
-- **Open Employee Confirmation** makes a new link. It also records a signed paper copy (**Record signed paper confirmation**).
-- **Hand over now** turns this device to the employee, who confirms on it in person.
-- **Print Record** prints the record for signing.
+- **Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.
+- **Print Record** prints the record for the employee to sign.
+- **Sign → Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, and the button says **Signed**.
 
 *Managers only:*
 
