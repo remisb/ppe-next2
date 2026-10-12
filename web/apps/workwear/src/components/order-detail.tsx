@@ -146,7 +146,7 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
  * ORDERED: Create confirmation link on its own row (electronic; the link
  * then shows right below it, and the button becomes Confirmation link, which
  * collapses and expands it), Hand over now (the employee confirms on this device, at the counter),
- * Print Record and Sign → Given (records the signed paper copy); the supplier
+ * Print Record and Mark as Signed & Given (records the signed paper copy); the supplier
  * message is Create Order's, not here. GIVEN: View Record, Print Record and
  * Signed in Sign's place, its icon green where Sign's is amber.
  * The items (View Items in the manual) are always shown above.

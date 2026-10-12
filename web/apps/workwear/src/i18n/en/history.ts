@@ -62,8 +62,8 @@ export const history = {
   paperConfirmation: 'Paper confirmation',
   paperSteps: 'Print the record, have the employee sign it, then record that the signed copy was received.',
   recordPaper: 'Record signed paper confirmation',
-  // The order's paper step: Sign → Given while it waits (saying what it does), Signed once given.
-  sign: 'Sign → Given',
+  // The order's paper step: Mark as Signed & Given while it waits (saying what it does), Signed once given.
+  sign: 'Mark as Signed & Given',
   signed: 'Signed',
   recordPaperQuestion: (name: string, record: string) =>
     `Record that ${name} signed the paper record for ${record}? The order becomes Given.`,

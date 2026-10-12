@@ -429,8 +429,8 @@ Rules for using it:
 
 ### Paper confirmation
 - **Brief:** the employee signs the printed record; staff record that it was signed.
-- **UI:** **Print Record**, then on the order pane **Sign → Given** (amber pen; it says
-  what it does), which becomes **Signed**
+- **UI:** **Print Record**, then on the order pane **Mark as Signed & Given** (amber pen;
+  it says what it does), which becomes **Signed**
   (green tick, not pressable) once the order is Given; Create Order's sheet still says
   **Record signed paper confirmation**.
 
@@ -741,7 +741,7 @@ Rules for using it:
 - **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
 - **Detail:** holds the order's actions by status. Ordered: Create confirmation link on its
   own row (once pressed the link shows right below it and the button becomes **Confirmation
-  link**, a disclosure with a chevron that collapses and expands that same link), Print Record, Sign → Given (and Hand over now, hidden for now);
+  link**, a disclosure with a chevron that collapses and expands that same link), Print Record, Mark as Signed & Given (and Hand over now, hidden for now);
   no Open Employee Confirmation button, which only Create Order's Send confirmation link
   still opens. Given: View Record, Print Record, Signed.
   Manager role: ⋯ → Delete order…
@@ -993,7 +993,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Send link | Siųsti nuorodą | Отправить ссылку |
 | Hand over now | Išduoti dabar | Выдать сейчас |
 | Record signed paper confirmation | Pažymėti pasirašytą popierinį patvirtinimą | Отметить подписанное подтверждение на бумаге |
-| Sign → Given / Signed | Pasirašyti → Išduota / Pasirašyta | Подписать → Выдано / Подписано |
+| Mark as Signed & Given / Signed | Pažymėti kaip pasirašytą ir išduotą / Pasirašyta | Отметить как подписанный и выданный / Подписано |
 | View Record / Print Record | Peržiūrėti įrašą / Spausdinti įrašą | Открыть запись / Печать записи |
 | Delete order… | Ištrinti užsakymą… | Удалить заказ… |
 | Copy for WhatsApp | Kopijuoti į WhatsApp | Копировать для WhatsApp |
