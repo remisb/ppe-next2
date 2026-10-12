@@ -8,8 +8,8 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ChevronDown, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
+import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
 import { HandOver } from '@/components/hand-over'
@@ -143,9 +143,10 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
 }
 
 /**
- * ORDERED: Create confirmation link (electronic; the link then shows below,
- * once), Hand over now (the employee confirms on this device, at the counter),
- * Print Record and Sign (records the signed paper copy); the supplier
+ * ORDERED: Create confirmation link on its own row (electronic; the link
+ * then shows right below it, and the button becomes Confirmation link, which
+ * collapses and expands it), Hand over now (the employee confirms on this device, at the counter),
+ * Print Record and Sign → Given (records the signed paper copy); the supplier
  * message is Create Order's, not here. GIVEN: View Record, Print Record and
  * Signed in Sign's place, its icon green where Sign's is amber.
  * The items (View Items in the manual) are always shown above.
@@ -167,6 +168,8 @@ function Actions({
 }) {
   const { client } = useApi()
   const [link, setLink] = useState<ConfirmationLink | null>(null)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const linkId = useId()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>()
   const actions = historyActions(o.status)
@@ -194,13 +197,46 @@ function Actions({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Electronic first, on its own. Create confirmation link makes the link and opens it right
+          below; the button then becomes Confirmation link, a disclosure (chevron, aria-expanded)
+          that hides and shows that same link, never making another, which would replace it. */}
+      {actions.includes('createLink') ? (
+        <div className="flex flex-col gap-2">
+          {link ? (
+            <Button
+              variant="outline"
+              className="w-full sm:w-fit"
+              aria-expanded={linkOpen}
+              aria-controls={linkId}
+              onClick={() => setLinkOpen((v) => !v)}
+            >
+              <Link2 aria-hidden /> {t.history.confirmationLink}
+              <ChevronDown aria-hidden className={cn('transition-transform motion-reduce:transition-none', linkOpen && 'rotate-180')} />
+            </Button>
+          ) : (
+            <Button
+              className="w-full sm:w-fit"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  setLink(await client.orders.createConfirmationLink(o.id))
+                  setLinkOpen(true)
+                })
+              }
+            >
+              <Link2 aria-hidden /> {t.history.createLink}
+            </Button>
+          )}
+          <div id={linkId} className="empty:hidden">
+            {link && linkOpen ? (
+              <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
+              </section>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-2 sm:flex sm:flex-wrap">
-        {/* Once created, the link is shown below instead: another would replace it. */}
-        {actions.includes('createLink') && !link ? (
-          <Button disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(o.id)))}>
-            <Link2 aria-hidden /> {t.history.createLink}
-          </Button>
-        ) : null}
         {actions.includes('handOver') ? (
           <Button variant="outline" onClick={onHandOver}>
             <Handshake aria-hidden /> {t.history.handOverNow}
@@ -236,11 +272,6 @@ function Actions({
         ) : null}
       </div>
       {error ? <ErrorState title={t.history.didNotWork} error={error} /> : null}
-      {link && actions.includes('createLink') ? (
-        <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 rounded-lg border border-border p-3">
-          <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
-        </section>
-      ) : null}
     </div>
   )
 }

@@ -17,6 +17,12 @@ export type HistoryAction =
   | 'printRecord'
 
 /**
+ * Hand over now (hand-over mode) is hidden for now and may come back: set this
+ * and the e2e suite's HAND_OVER_NOW to true to show it on ordered orders again.
+ */
+export const HAND_OVER_NOW = false
+
+/**
  * Manual §6: ORDERED shows View Items and the employee's confirmation; GIVEN
  * shows View Items, View Record and Print Record, and never confirmation or
  * edit actions. The manual's Open Employee Confirmation is not a button of its
@@ -28,7 +34,7 @@ export type HistoryAction =
  */
 export function historyActions(status: OrderStatus): HistoryAction[] {
   return status === 'ORDERED'
-    ? ['viewItems', 'createLink', 'handOver', 'printRecord', 'sign']
+    ? ['viewItems', 'createLink', ...(HAND_OVER_NOW ? (['handOver'] as const) : []), 'printRecord', 'sign']
     : ['viewItems', 'viewRecord', 'printRecord', 'signed']
 }
 

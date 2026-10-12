@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { activityAt, deleteQuestion, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
+import { HAND_OVER_NOW, activityAt, deleteQuestion, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
-    expect(historyActions('ORDERED')).toEqual(['viewItems', 'createLink', 'handOver', 'printRecord', 'sign'])
+    expect(historyActions('ORDERED')).toEqual(['viewItems', 'createLink', ...(HAND_OVER_NOW ? ['handOver'] : []), 'printRecord', 'sign'])
     expect(historyActions('GIVEN')).toEqual(['viewItems', 'viewRecord', 'printRecord', 'signed'])
     for (const a of ['createLink', 'handOver', 'sign'] as const) expect(historyActions('GIVEN')).not.toContain(a)
   })

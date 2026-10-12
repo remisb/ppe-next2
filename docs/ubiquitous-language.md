@@ -424,11 +424,13 @@ Rules for using it:
 - **Detail:** fills the screen with no app navigation and shows what the confirmation page
   shows. The staff member is recorded as giver and open links are revoked. **Hand back**
   (held for 1.5 seconds, or `Esc`) leaves it before the employee confirms.
-- **Code:** `components/hand-over.tsx`. **UI:** **Hand over now**, Hand back.
+- **Code:** `components/hand-over.tsx`. **UI:** **Hand over now**, Hand back. Hidden for now:
+  `HAND_OVER_NOW` in `lib/history.ts` brings the button back on the order pane.
 
 ### Paper confirmation
 - **Brief:** the employee signs the printed record; staff record that it was signed.
-- **UI:** **Print Record**, then on the order pane **Sign** (amber pen), which becomes **Signed**
+- **UI:** **Print Record**, then on the order pane **Sign → Given** (amber pen; it says
+  what it does), which becomes **Signed**
   (green tick, not pressable) once the order is Given; Create Order's sheet still says
   **Record signed paper confirmation**.
 
@@ -737,8 +739,9 @@ Rules for using it:
 
 ### Order pane
 - **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
-- **Detail:** holds the order's actions by status. Ordered: Create confirmation link (the
-  link then shows below it), Hand over now, Print Record, Sign;
+- **Detail:** holds the order's actions by status. Ordered: Create confirmation link on its
+  own row (once pressed the link shows right below it and the button becomes **Confirmation
+  link**, a disclosure with a chevron that collapses and expands that same link), Print Record, Sign → Given (and Hand over now, hidden for now);
   no Open Employee Confirmation button, which only Create Order's Send confirmation link
   still opens. Given: View Record, Print Record, Signed.
   Manager role: ⋯ → Delete order…
@@ -990,7 +993,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Send link | Siųsti nuorodą | Отправить ссылку |
 | Hand over now | Išduoti dabar | Выдать сейчас |
 | Record signed paper confirmation | Pažymėti pasirašytą popierinį patvirtinimą | Отметить подписанное подтверждение на бумаге |
-| Sign / Signed | Pasirašyti / Pasirašyta | Подписать / Подписано |
+| Sign → Given / Signed | Pasirašyti → Išduota / Pasirašyta | Подписать → Выдано / Подписано |
 | View Record / Print Record | Peržiūrėti įrašą / Spausdinti įrašą | Открыть запись / Печать записи |
 | Delete order… | Ištrinti užsakymą… | Удалить заказ… |
 | Copy for WhatsApp | Kopijuoti į WhatsApp | Копировать для WhatsApp |
