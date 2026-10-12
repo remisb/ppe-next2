@@ -33,11 +33,11 @@ interface Filters {
 
 const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
 
-/** The status tabs: the question most people bring to History is what is still waiting. */
+/** The status tabs, All first as the screen opens on it, then Given and Ordered. */
 const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
-  { value: 'ORDERED', label: t.common.ordered },
-  { value: 'GIVEN', label: t.common.given },
   { value: '', label: t.common.all },
+  { value: 'GIVEN', label: t.common.given },
+  { value: 'ORDERED', label: t.common.ordered },
 ]
 
 // History is paged, so the API sorts it (the whole history, not one page).
