@@ -19,9 +19,12 @@ export const admin = { email: 'e2e-admin@example.com', password: 'e2e-password-1
 /**
  * The API connects as the least-privilege role ppe_app (migration 0026), as
  * production does, so every step exercises its grants; setup (prepareDatabase)
- * gives it this test-only password. Setup itself connects as the owner.
+ * gives it this test-only password. Setup itself connects as the owner. Roles
+ * are shared by every database on the server, so it is the one the Go tests
+ * (internal/db/dbtest) and local dev's .env use: any other would leave the dev
+ * API unable to sign in after a run.
  */
-const appPassword = 'e2e-app-password'
+const appPassword = 'ppe-app-test'
 
 export function appDSN(): string {
   const u = new URL(dbDSN)
