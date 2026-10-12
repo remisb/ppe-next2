@@ -33,11 +33,11 @@ interface Filters {
 
 const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
 
-/** The status tabs, All first as the screen opens on it, then Given and Ordered. */
+/** The status tabs, All first as the screen opens on it, then Ordered and Given, in the order's own sequence. */
 const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
   { value: '', label: t.common.all },
-  { value: 'GIVEN', label: t.common.given },
   { value: 'ORDERED', label: t.common.ordered },
+  { value: 'GIVEN', label: t.common.given },
 ]
 
 // History is paged, so the API sorts it (the whole history, not one page).
