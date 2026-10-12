@@ -8,7 +8,7 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, FileSignature, FileText, Handshake, Link2, Printer, X } from 'lucide-react'
+import { ArrowLeft, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
@@ -145,8 +145,9 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
 /**
  * ORDERED: Create confirmation link (electronic; the link then shows below,
  * once), Hand over now (the employee confirms on this device, at the counter),
- * Print Record and Record signed paper confirmation (paper); the supplier
- * message is Create Order's, not here. GIVEN: View Record and Print Record.
+ * Print Record and Sign (records the signed paper copy); the supplier
+ * message is Create Order's, not here. GIVEN: View Record, Print Record and
+ * Signed in Sign's place, its icon green where Sign's is amber.
  * The items (View Items in the manual) are always shown above.
  */
 function Actions({
@@ -183,7 +184,7 @@ function Actions({
     }
   }
 
-  const recordPaper = () => {
+  const sign = () => {
     if (!window.confirm(t.history.recordPaperQuestion(name, o.record_number))) return
     void run(async () => {
       await client.orders.confirmPaper(o.id)
@@ -215,9 +216,15 @@ function Actions({
             <Printer aria-hidden /> {t.history.printRecord}
           </Button>
         ) : null}
-        {actions.includes('recordPaper') ? (
-          <Button variant="outline" disabled={busy} onClick={recordPaper}>
-            <FileSignature aria-hidden /> {t.history.recordPaper}
+        {actions.includes('sign') ? (
+          <Button variant="outline" disabled={busy} onClick={sign}>
+            <PenLine aria-hidden className="text-warning" /> {t.history.sign}
+          </Button>
+        ) : null}
+        {/* Done, so not pressable, but at full strength: the green tick is the point. */}
+        {actions.includes('signed') ? (
+          <Button variant="outline" disabled className="disabled:opacity-100">
+            <CircleCheck aria-hidden className="text-success" /> {t.history.signed}
           </Button>
         ) : null}
         {onDelete ? (

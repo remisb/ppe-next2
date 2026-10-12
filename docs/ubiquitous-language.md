@@ -428,7 +428,9 @@ Rules for using it:
 
 ### Paper confirmation
 - **Brief:** the employee signs the printed record; staff record that it was signed.
-- **UI:** **Print Record**, **Record signed paper confirmation**.
+- **UI:** **Print Record**, then on the order pane **Sign** (amber pen), which becomes **Signed**
+  (green tick, not pressable) once the order is Given; Create Order's sheet still says
+  **Record signed paper confirmation**.
 
 ### Items Given Record (record)
 - **Brief:** the locked bilingual document of an order, in English and Russian.
@@ -736,9 +738,9 @@ Rules for using it:
 ### Order pane
 - **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
 - **Detail:** holds the order's actions by status. Ordered: Create confirmation link (the
-  link then shows below it), Hand over now, Print Record, Record signed paper confirmation;
+  link then shows below it), Hand over now, Print Record, Sign;
   no Open Employee Confirmation button, which only Create Order's Send confirmation link
-  still opens. Given: View Record, Print Record.
+  still opens. Given: View Record, Print Record, Signed.
   Manager role: ⋯ → Delete order…
 
 ### Record number preview
@@ -988,6 +990,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Send link | Siųsti nuorodą | Отправить ссылку |
 | Hand over now | Išduoti dabar | Выдать сейчас |
 | Record signed paper confirmation | Pažymėti pasirašytą popierinį patvirtinimą | Отметить подписанное подтверждение на бумаге |
+| Sign / Signed | Pasirašyti / Pasirašyta | Подписать / Подписано |
 | View Record / Print Record | Peržiūrėti įrašą / Spausdinti įrašą | Открыть запись / Печать записи |
 | Delete order… | Ištrinti užsakymą… | Удалить заказ… |
 | Copy for WhatsApp | Kopijuoti į WhatsApp | Копировать для WhatsApp |

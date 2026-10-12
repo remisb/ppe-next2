@@ -61,6 +61,8 @@ export const history: HistoryText = {
   paperConfirmation: 'Patvirtinimas popieriuje',
   paperSteps: 'Atspausdinkite įrašą, duokite darbuotojui pasirašyti, tada pažymėkite, kad pasirašyta kopija gauta.',
   recordPaper: 'Pažymėti pasirašytą popierinį patvirtinimą',
+  sign: 'Pasirašyti',
+  signed: 'Pasirašyta',
   recordPaperQuestion: (name: string, record: string) =>
     `Pažymėti, kad ${name} pasirašė popierinį įrašą ${record}? Užsakymas taps išduotu.`,
   confirmationLink: 'Patvirtinimo nuoroda',

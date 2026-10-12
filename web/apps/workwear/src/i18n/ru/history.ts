@@ -62,6 +62,8 @@ export const history: HistoryText = {
   paperConfirmation: 'Подтверждение на бумаге',
   paperSteps: 'Распечатайте запись, дайте сотруднику подписать её, затем отметьте, что подписанный экземпляр получен.',
   recordPaper: 'Отметить подписанное подтверждение на бумаге',
+  sign: 'Подписать',
+  signed: 'Подписано',
   recordPaperQuestion: (name: string, record: string) =>
     `Отметить, что ${name} подписал(а) бумажную запись ${record}? Заказ получит статус «Выдано».`,
   confirmationLink: 'Ссылка для подтверждения',
