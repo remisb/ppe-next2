@@ -12,7 +12,6 @@ export type HistoryAction =
   | 'createLink'
   | 'handOver'
   | 'sign'
-  | 'signed'
   | 'viewRecord'
   | 'printRecord'
 
@@ -26,16 +25,16 @@ export const HAND_OVER_NOW = false
  * Manual §6: ORDERED shows View Items and the employee's confirmation; GIVEN
  * shows View Items, View Record and Print Record, and never confirmation or
  * edit actions. The manual's Open Employee Confirmation is not a button of its
- * own: its actions (Create confirmation link, Print Record, and Sign for the
- * signed paper copy) sit on the order, with Hand over now; a GIVEN order shows
- * Signed in Sign's place, however it was confirmed. The manual's Copy for
+ * own: its actions (Create confirmation link, Print Record, and Mark as Signed
+ * & Given for the signed paper copy) sit on the order, with Hand over now; a
+ * GIVEN order says Signed beside its status instead, however it was confirmed. The manual's Copy for
  * WhatsApp on ORDERED and Share via WhatsApp on GIVEN are left out: the
  * supplier message is sent from Create Order's review.
  */
 export function historyActions(status: OrderStatus): HistoryAction[] {
   return status === 'ORDERED'
     ? ['viewItems', 'createLink', ...(HAND_OVER_NOW ? (['handOver'] as const) : []), 'printRecord', 'sign']
-    : ['viewItems', 'viewRecord', 'printRecord', 'signed']
+    : ['viewItems', 'viewRecord', 'printRecord']
 }
 
 /** A status in the interface language, read when used: `statusLabel[o.status]`. */

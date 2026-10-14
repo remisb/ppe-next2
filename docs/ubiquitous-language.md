@@ -430,8 +430,8 @@ Rules for using it:
 ### Paper confirmation
 - **Brief:** the employee signs the printed record; staff record that it was signed.
 - **UI:** **Print Record**, then on the order pane **Mark as Signed & Given** (amber pen;
-  it says what it does), which becomes **Signed**
-  (green tick, not pressable) once the order is Given; Create Order's sheet still says
+  it says what it does); a Given order then says **Signed** with a green tick beside its
+  status, at the top of the order; Create Order's sheet still says
   **Record signed paper confirmation**.
 
 ### Items Given Record (record)
@@ -743,7 +743,8 @@ Rules for using it:
   own row (once pressed the link shows right below it and the button becomes **Confirmation
   link**, a disclosure with a chevron that collapses and expands that same link), Print Record, Mark as Signed & Given (and Hand over now, hidden for now);
   no Open Employee Confirmation button, which only Create Order's Send confirmation link
-  still opens. Given: View Record, Print Record, Signed.
+  still opens. Given: View Record, Print Record; **Signed** with a green tick beside the
+  status at the top.
   Manager role: ⋯ → Delete order…
 
 ### Record number preview

@@ -5,7 +5,7 @@ import { HAND_OVER_NOW, activityAt, deleteQuestion, formatUsage, formatWaiting, 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
     expect(historyActions('ORDERED')).toEqual(['viewItems', 'createLink', ...(HAND_OVER_NOW ? ['handOver'] : []), 'printRecord', 'sign'])
-    expect(historyActions('GIVEN')).toEqual(['viewItems', 'viewRecord', 'printRecord', 'signed'])
+    expect(historyActions('GIVEN')).toEqual(['viewItems', 'viewRecord', 'printRecord'])
     for (const a of ['createLink', 'handOver', 'sign'] as const) expect(historyActions('GIVEN')).not.toContain(a)
   })
 })

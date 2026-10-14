@@ -124,7 +124,12 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
           <span className={cn('text-sm', days > LONG_WAIT_DAYS ? 'font-medium text-destructive' : 'text-muted-foreground')}>
             {days === 0 ? t.history.waitingToday : t.history.waitingFor(days)}
           </span>
-        ) : null}
+        ) : (
+          // Where an ordered order says how long it has waited: done, with the green tick.
+          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <CircleCheck aria-hidden className="size-4 text-success" /> {t.history.signed}
+          </span>
+        )}
       </div>
       <p className="font-medium">
         <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className="underline-offset-4 hover:underline">
@@ -147,8 +152,8 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
  * then shows right below it, and the button becomes Confirmation link, which
  * collapses and expands it), Hand over now (the employee confirms on this device, at the counter),
  * Print Record and Mark as Signed & Given (records the signed paper copy); the supplier
- * message is Create Order's, not here. GIVEN: View Record, Print Record and
- * Signed in Sign's place, its icon green where Sign's is amber.
+ * message is Create Order's, not here. GIVEN: View Record and Print Record;
+ * Signed, with a green tick, is beside its status at the top (Summary).
  * The items (View Items in the manual) are always shown above.
  */
 function Actions({
@@ -255,12 +260,6 @@ function Actions({
         {actions.includes('sign') ? (
           <Button variant="outline" disabled={busy} onClick={sign}>
             <PenLine aria-hidden className="text-warning" /> {t.history.sign}
-          </Button>
-        ) : null}
-        {/* Done, so not pressable, but at full strength: the green tick is the point. */}
-        {actions.includes('signed') ? (
-          <Button variant="outline" disabled className="disabled:opacity-100">
-            <CircleCheck aria-hidden className="text-success" /> {t.history.signed}
           </Button>
         ) : null}
         {onDelete ? (
