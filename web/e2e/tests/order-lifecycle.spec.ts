@@ -1201,6 +1201,12 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await page.getByRole('link', { name: 'SIM-000001', exact: true }).click()
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+  // The card's Changes are closed at first; open them (they stay open on its page).
+  const openChanges = async () => {
+    const toggle = main.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
+    if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
+  }
+  await expect(main.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })).toHaveAttribute('aria-expanded', 'false')
   await expect(main.getByText('No one')).toBeVisible()
   // Giving needs a phone number on the card: Edit adds it.
   await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
@@ -1262,6 +1268,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await give.getByRole('button', { name: 'Give SIM' }).click()
   await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
   // Printing changed nothing but is the user's activity: in the card's Changes.
+  await openChanges()
   await expect(main.getByRole('region', { name: 'Changes' }).getByText('Form printed').first()).toBeVisible()
   // One action changed the holder, the location, the form and the history (§7).
   await expect(main.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
@@ -1315,6 +1322,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(assignments.getByText('Not Returned', { exact: true })).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give SIM' })).toBeVisible()
   // Its Changes tell the story.
+  await openChanges()
   for (const change of ['Given to an employee', 'Signed copy uploaded', 'Marked as Not Returned', 'Returned to the office']) {
     await expect(main.getByText(change, { exact: true }).first()).toBeVisible()
   }

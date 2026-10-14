@@ -205,7 +205,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
             )}
           </section>
 
-          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} />
+          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} collapsible className="mb-0" />
 
           <AssetSheets
             sheet={sheet}
