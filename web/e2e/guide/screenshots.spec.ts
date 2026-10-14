@@ -141,6 +141,8 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await shot('employees')
   await page.getByRole('link', { name: 'Jonas Petraitis' }).click()
   await expect(page.getByRole('heading', { name: 'Jonas Petraitis' })).toBeVisible()
+  // Items given is closed at first; the shot shows it open.
+  await page.getByRole('button', { name: new RegExp(`^${T.employees.itemsGiven}`) }).click()
   await shot('employee')
 
   await openTab(T.shell.catalogue)

@@ -119,13 +119,15 @@ The list shows each employee's sizes and note, and marks anyone missing a size. 
 
 Each employee's page shows:
 
-- their sizes and preferred language;
-- every item given, with its usage time and replacement date;
-- orders not yet given;
+- **Sizes** and **Preferred language**, each with its own **Edit**;
+- **Items given**: every item given, with its usage time and replacement date;
+- **Ordered, not yet given**: orders not yet given;
 - the company assets they hold, and held before: **Given SIM** and **Equipment**;
-- **Changes**, closed at first: who changed their details or sizes, and when.
+- **Changes**: who changed their details or sizes, and when.
 
-From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.
+The sections below the sizes are closed at first, each title counting what it holds; choose a title to open or close it.
+
+**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way. **New order** starts an order for them.
 
 *Administrators and managers only:*
 
@@ -173,7 +175,7 @@ A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** 
 
 To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:
 
-1. Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.
+1. Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button beside **Given SIM** or **Equipment** starts from the employee and lists what is in the office.
 2. **Who and when**: choose the employee and the given date, today or earlier. A SIM's plan is optional; its non-return value is on the form, so it is needed.
 3. **Print the form and have it signed**: **Print Form** prints the assignment form from this page, with no new tab, and **Download PDF** saves the same form as a file. Have the employee sign the paper, then tick **The employee has signed the printed form**.
 4. **Hand over the SIM** or **Hand over the item**: choose **Give SIM** or **Give Asset**. It records the holder, the location and the signed form at once.

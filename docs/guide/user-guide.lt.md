@@ -119,13 +119,15 @@ Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems 
 
 Darbuotojo puslapyje rodoma:
 
-- jo dydžiai ir pageidaujama kalba;
-- visos išduotos prekės su naudojimo trukme ir pakeitimo data;
-- dar neišduoti užsakymai;
+- **Dydžiai** ir **Pageidaujama kalba**, kiekvienas su savo mygtuku **Redaguoti**;
+- **Išduotos prekės**: visos išduotos prekės su naudojimo trukme ir pakeitimo data;
+- **Užsakyta, dar neišduota**: dar neišduoti užsakymai;
 - įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;
-- **Pakeitimai**, iš pradžių suskleisti: kas ir kada keitė jo duomenis ar dydžius.
+- **Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.
 
-Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.
+Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, kiek jose įrašų; pasirinkite pavadinimą, kad skiltį atidarytumėte ar suskleistumėte.
+
+**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat. **Naujas užsakymas** pradeda užsakymą šiam darbuotojui.
 
 *Tik administratoriams ir vadovams:*
 
@@ -173,7 +175,7 @@ SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** a
 
 SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:
 
-1. Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.
+1. Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas prie skilties **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.
 2. **Kam ir kada**: pasirinkite darbuotoją ir išdavimo datą, šiandien arba anksčiau. SIM planas neprivalomas; negrąžinimo vertė yra akte, todėl ji reikalinga.
 3. **Atspausdinkite aktą ir duokite pasirašyti**: **Spausdinti aktą** išspausdina išdavimo aktą iš šio puslapio, neatidarydamas naujo skirtuko, o **Atsisiųsti PDF** išsaugo tą patį aktą failu. Duokite darbuotojui pasirašyti popierinį aktą, tada pažymėkite **Darbuotojas pasirašė atspausdintą aktą**.
 4. **Perduokite SIM** arba **Perduokite daiktą**: pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Tai iš karto įrašo turėtoją, vietą ir pasirašytą aktą.

@@ -165,8 +165,9 @@ export const lt: Guide = {
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją.', devices: ['phone', 'tablet'] },
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.', devices: ['desktop'] },
         { p: 'Darbuotojo puslapyje rodoma:' },
-        { ul: ['jo dydžiai ir pageidaujama kalba;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**, iš pradžių suskleisti: kas ir kada keitė jo duomenis ar dydžius.'] },
-        { p: 'Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.' },
+        { ul: ['**Dydžiai** ir **Pageidaujama kalba**, kiekvienas su savo mygtuku **Redaguoti**;', '**Išduotos prekės**: visos išduotos prekės su naudojimo trukme ir pakeitimo data;', '**Užsakyta, dar neišduota**: dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
+        { p: 'Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, kiek jose įrašų; pasirinkite pavadinimą, kad skiltį atidarytumėte ar suskleistumėte.' },
+        { p: '**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat. **Naujas užsakymas** pradeda užsakymą šiam darbuotojui.' },
         { p: 'Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.', roles: ['admin', 'manager'] },
         {
           shots: [
@@ -225,7 +226,7 @@ export const lt: Guide = {
         { p: 'SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:', roles: ['admin', 'manager'] },
         {
           ol: [
-            'Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas skiltyje **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.',
+            'Atidarykite jį ir pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Darbuotojo puslapyje tas pats mygtukas prie skilties **Išduotos SIM** arba **Įranga** pradeda nuo darbuotojo ir parodo, kas yra biure.',
             '**Kam ir kada**: pasirinkite darbuotoją ir išdavimo datą, šiandien arba anksčiau. SIM planas neprivalomas; negrąžinimo vertė yra akte, todėl ji reikalinga.',
             '**Atspausdinkite aktą ir duokite pasirašyti**: **Spausdinti aktą** išspausdina išdavimo aktą iš šio puslapio, neatidarydamas naujo skirtuko, o **Atsisiųsti PDF** išsaugo tą patį aktą failu. Duokite darbuotojui pasirašyti popierinį aktą, tada pažymėkite **Darbuotojas pasirašė atspausdintą aktą**.',
             '**Perduokite SIM** arba **Perduokite daiktą**: pasirinkite **Išduoti SIM** arba **Išduoti turtą**. Tai iš karto įrašo turėtoją, vietą ir pasirašytą aktą.',

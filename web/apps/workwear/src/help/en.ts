@@ -162,8 +162,9 @@ export const en: Guide = {
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
-        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**, closed at first: who changed their details or sizes, and when.'] },
-        { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
+        { ul: ['**Sizes** and **Preferred language**, each with its own **Edit**;', '**Items given**: every item given, with its usage time and replacement date;', '**Ordered, not yet given**: orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**: who changed their details or sizes, and when.'] },
+        { p: 'The sections below the sizes are closed at first, each title counting what it holds; choose a title to open or close it.' },
+        { p: "**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way. **New order** starts an order for them." },
         { p: 'An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.', roles: ['admin', 'manager'] },
         {
           shots: [
@@ -222,7 +223,7 @@ export const en: Guide = {
         { p: 'To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:', roles: ['admin', 'manager'] },
         {
           ol: [
-            "Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button under **Given SIM** or **Equipment** starts from the employee and lists what is in the office.",
+            "Open it and choose **Give SIM** or **Give Asset**. On an employee's page, the same button beside **Given SIM** or **Equipment** starts from the employee and lists what is in the office.",
             "**Who and when**: choose the employee and the given date, today or earlier. A SIM's plan is optional; its non-return value is on the form, so it is needed.",
             "**Print the form and have it signed**: **Print Form** prints the assignment form from this page, with no new tab, and **Download PDF** saves the same form as a file. Have the employee sign the paper, then tick **The employee has signed the printed form**.",
             '**Hand over the SIM** or **Hand over the item**: choose **Give SIM** or **Give Asset**. It records the holder, the location and the signed form at once.',
