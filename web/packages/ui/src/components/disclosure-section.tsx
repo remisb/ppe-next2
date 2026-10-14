@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react'
-import { type ReactNode, useId, useState } from 'react'
+import { type ReactNode, useId } from 'react'
+import { useRememberedOpen } from '../lib/remembered-open.ts'
 import { cn } from '../lib/utils.ts'
 
 /**
@@ -9,6 +10,7 @@ import { cn } from '../lib/utils.ts'
  * much it holds. description explains the section without taking room: a
  * tooltip over the title, and the heading button's description for a screen reader.
  * action, such as a Give button, sits beside the title, outside the toggle.
+ * rememberAs keeps it as it was left, under that storage key (useRememberedOpen).
  * open with onOpenChange makes it controlled, for a page that opens it itself.
  */
 export function DisclosureSection({
@@ -18,6 +20,7 @@ export function DisclosureSection({
   description,
   action,
   defaultOpen = false,
+  rememberAs,
   open: openProp,
   onOpenChange,
   className,
@@ -30,13 +33,14 @@ export function DisclosureSection({
   description?: string | undefined
   action?: ReactNode
   defaultOpen?: boolean
+  rememberAs?: string | undefined
   open?: boolean | undefined
   onOpenChange?: ((open: boolean) => void) | undefined
   /** Replaces the room below it (mb-1 closed, so closed sections stack closely; mb-6 open). */
   className?: string | undefined
   children: ReactNode
 }) {
-  const [openState, setOpenState] = useState(defaultOpen)
+  const [openState, setOpenState] = useRememberedOpen(rememberAs, defaultOpen)
   const open = openProp ?? openState
   const toggle = () => {
     setOpenState(!open)

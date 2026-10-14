@@ -4,6 +4,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
+import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { Plus } from 'lucide-react'
@@ -14,6 +15,7 @@ import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import type { PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
 import { categoryLabel, documentsText, formatDay, todayIn } from '@/lib/assets'
+import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
 
 const link = 'rounded-sm font-mono font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
@@ -43,10 +45,13 @@ export function HeldAssets({
   const canManage = useSession().can('assets.manage')
   const held = useLoad(() => client.assets.byEmployee(employee.id), [employee.id])
   const [sheet, setSheet] = useState<AssetSheet>(null)
-  const [message, setMessage] = useState('')
-  // Closed at first, as the page's other sections; Give opens it, so the new card shows.
-  const [open, setOpen] = useState(false)
   const sim = kind === 'SIM'
+  const [message, setMessage] = useState('')
+  // Closed at first, as the page's other sections, then as the user left it. Give opens
+  // it, so the new card shows, without changing what is remembered.
+  const [remembered, remember] = useRememberedOpen(useOpenKey(sim ? 'employee.sim' : 'employee.equipment'), false)
+  const [opened, setOpened] = useState(false)
+  const open = remembered || opened
   const rows = (held.data ?? []).filter((h) => h.asset.kind === kind)
   const heading = `held-${kind.toLowerCase()}`
 
@@ -57,14 +62,17 @@ export function HeldAssets({
       count={held.data ? rows.length : undefined}
       description={sim ? t.assets.givenSimIntro : t.assets.equipmentIntro}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        setOpened(false)
+        remember(next)
+      }}
       action={
         canManage ? (
           <Button
             size="sm"
             variant="outline"
             onClick={() => {
-              setOpen(true)
+              setOpened(true)
               setSheet({ kind: 'giveTo', employee, assetKind: kind })
             }}
           >

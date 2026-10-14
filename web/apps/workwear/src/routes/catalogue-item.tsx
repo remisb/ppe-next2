@@ -21,6 +21,7 @@ import { formatDateTime } from '@ppe/ui/lib/dates'
 import { activityAt, statusLabel } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
+import { useOpenKey } from '@/lib/open-sections'
 
 import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
 
@@ -37,6 +38,7 @@ const ORDERS_SHOWN = 100
 export function CatalogueItemPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
   const canManageItems = useSession().can('catalogue.manage')
+  const changesKey = useOpenKey('item.changes')
   const item = useLoad(() => client.catalogue.get(id), [id])
   const sets = useLoad(() => client.itemSets.list())
   const settings = useLoad(() => client.settings())
@@ -197,7 +199,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
             </a>
           </section>
 
-          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} collapsible className="mb-0" />
+          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
 
           <ItemForm
             item={editing ? i : null}

@@ -55,6 +55,14 @@ async function switchApp(linkName: string) {
  * under More. Users, Settings and System are in Administration, reached by
  * its link and left by Workwear & Equipment, as people do.
  */
+/** Opens a collapsible section unless it is open already: sections are remembered as they were left. */
+async function openSection(name: RegExp) {
+  const toggle = page.getByRole('button', { name })
+  await expect(toggle).toBeVisible()
+  if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+}
+
 async function openTab(name: string) {
   const inAdministration = new URL(page.url()).pathname.startsWith('/admin/')
   if (administrationTabs.includes(name) && !inAdministration) await switchApp('Administration')
@@ -1111,6 +1119,8 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page).toHaveURL(employeeURL)
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  // Items given stays open as she left it, on this device, for this user.
+  await expect(page.getByRole('button', { name: /^Items given/ })).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('button', { name: 'Employees' }).click()
   await expect(page.getByRole('heading', { name: 'Employees' })).toBeVisible()
 })
@@ -1498,7 +1508,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
   const equipment = page.getByRole('region', { name: /^Equipment/ })
-  await equipment.getByRole('button', { name: /^Equipment/ }).click()
+  await openSection(/^Equipment/)
   await expect(equipment.getByRole('link', { name: 'FUR-000001' })).toBeVisible()
   await equipment.getByRole('button', { name: 'Give Asset' }).click()
   const give = page.getByRole('dialog')
@@ -1518,7 +1528,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   // Given on a form, its signed copy not uploaded yet.
   await expect(equipment).toContainText('Signed Copy Missing')
   // Kept apart from her SIMs on the same page (§18).
-  await page.getByRole('button', { name: /^Given SIM/ }).click()
+  await openSection(/^Given SIM/)
   await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'SIM-000001' }).first()).toBeVisible()
   await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
 
@@ -1670,7 +1680,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   expect((await page.getByRole('row', { name: /Safety shoes/ }).boundingBox())!.height, 'a Catalogue row on a phone').toBeLessThan(80)
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
-  await page.getByRole('button', { name: /^Items given/ }).click()
+  await openSection(/^Items given/)
   await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
   expect(await fits(), 'the employee page scrolls sideways').toBe(true)
   await openTab('Item Catalogue')
@@ -1734,7 +1744,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     }
     await openTab('Employees')
     await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
-    await page.getByRole('button', { name: /^Items given/ }).click()
+    await openSection(/^Items given/)
     await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
     expect(await fits(), `the employee page scrolls sideways at ${width}px`).toBe(true)
     await openTab('Item Catalogue')

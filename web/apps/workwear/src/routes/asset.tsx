@@ -22,6 +22,7 @@ import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import { categoryLabel, formatDay, primaryAction, statusLabel, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
+import { useOpenKey } from '@/lib/open-sections'
 
 const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -34,6 +35,7 @@ const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:under
 export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
   const { client } = useApi()
   const canManage = useSession().can('assets.manage')
+  const changesKey = useOpenKey('asset.changes')
   const settings = useLoad(() => client.settings())
   const tz = settings.data?.timezone
   const today = todayIn(tz)
@@ -205,7 +207,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
             )}
           </section>
 
-          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} collapsible className="mb-0" />
+          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
 
           <AssetSheets
             sheet={sheet}

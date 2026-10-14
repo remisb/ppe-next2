@@ -18,6 +18,7 @@ import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { LONG_WAIT_DAYS, deleteQuestion, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
+import { useOpenKey } from '@/lib/open-sections'
 
 /**
  * One stored order from History: who and when, its snapshot lines and the
@@ -45,6 +46,7 @@ export function OrderDetail({
 }) {
   const { client } = useApi()
   const session = useSession()
+  const changesKey = useOpenKey('order.changes')
   const order = useLoad(() => client.orders.get(id), [id])
   const [handingOver, setHandingOver] = useState(false)
   const [deleteError, setDeleteError] = useState<unknown>()
@@ -97,7 +99,7 @@ export function OrderDetail({
           {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
           {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
               the order is (after a confirmation), so its new step shows. */}
-          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} collapsible className="mb-0" />
+          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} collapsible rememberAs={changesKey} className="mb-0" />
           {handingOver ? (
             <HandOver
               orderId={o.id}

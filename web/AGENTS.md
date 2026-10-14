@@ -182,6 +182,11 @@ The workwear app is the reference.
   shrinks a touch target or the printed record. `Table` already gives unstacked rows 32px
   and their buttons and ⋯ 28px (WCAG 2.5.8's 24px minimum); a stacked table keeps its
   own spacing, so `compact:` is declared before `stacked:` in `index.css`.
+- **Collapsible sections** on a record page are `DisclosureSection` (`@ppe/ui`; Changes is
+  `RecordChanges collapsible`): closed at first, a count in the title, the explanation a
+  tooltip over it, an action such as Give beside it. Pass `rememberAs={useOpenKey('<page>.<section>')}`
+  (`lib/open-sections.ts`) so it stays as the user left it on this device, per kind of
+  section, not per record (`workwear.open.<user>.<page>.<section>`, `lib/remembered-open.ts`).
 - **Dates in lists** are relative (`RelativeDate`: "Today 14:03", "3 days ago", "in 5
   days", then the date), in the organisation timezone, with the exact time in the
   `title`. Records, receipts and the order pane keep absolute dates.

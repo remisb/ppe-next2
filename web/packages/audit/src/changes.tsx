@@ -120,7 +120,7 @@ export function ChangeDetail({
  * reads them (client.audit.history); a new value in deps, such as the record's
  * updated_at, loads them again, so an edit made on the page shows at once.
  * collapsible makes the heading a disclosure, closed at first; the changes are
- * read only once it is opened.
+ * read only once it is opened. rememberAs keeps it open or closed as it was left.
  */
 export function RecordChanges({
   load,
@@ -128,6 +128,7 @@ export function RecordChanges({
   timeZone,
   options,
   collapsible = false,
+  rememberAs,
   className,
 }: {
   load: () => Promise<AuditEntry[]>
@@ -135,6 +136,7 @@ export function RecordChanges({
   timeZone: string | undefined
   options?: DescribeOptions | undefined
   collapsible?: boolean
+  rememberAs?: string | undefined
   /** Replaces the room below it (mb-8), for a section that ends a smaller panel. */
   className?: string | undefined
 }) {
@@ -142,7 +144,7 @@ export function RecordChanges({
   const body = <ChangesBody load={load} deps={deps} timeZone={timeZone} options={options} />
   if (collapsible) {
     return (
-      <DisclosureSection id="record-changes" title={t.changes} className={className}>
+      <DisclosureSection id="record-changes" title={t.changes} rememberAs={rememberAs} className={className}>
         {body}
       </DisclosureSection>
     )

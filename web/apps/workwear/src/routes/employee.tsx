@@ -26,6 +26,7 @@ import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
 import { missingSizes } from '@/lib/missing-sizes'
+import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
 import { sizeRank } from '@/lib/sort'
 import { clothingBands, clothingSizeLabel, formatMonths, formatSize } from '@/lib/utils'
@@ -49,6 +50,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
   const [actionError, setActionError] = useState<unknown>()
+  const givenKey = useOpenKey('employee.items-given')
+  const orderedKey = useOpenKey('employee.items-ordered')
+  const changesKey = useOpenKey('employee.changes')
   // The card's Edit buttons turn its sizes, or the preferred language, into their fields in
   // place, one at a time. Closing gives focus back to the Edit the form hid.
   const [inPlace, setInPlace] = useState<'sizes' | 'language' | null>(null)
@@ -304,6 +308,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             title={t.employees.itemsGiven}
             count={orders.data ? items.given.length : undefined}
             description={`${t.employees.itemsGivenHint}${tz ? ` ${t.employees.datesIn(tz)}` : ''}`}
+            rememberAs={givenKey}
           >
             {orders.error ? (
               <ErrorState error={orders.error} onRetry={orders.reload} />
@@ -317,7 +322,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
           </DisclosureSection>
 
           {items.ordered.length > 0 ? (
-            <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt}>
+            <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt} rememberAs={orderedKey}>
               <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
             </DisclosureSection>
           ) : null}
@@ -327,7 +332,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
           ) : null}
 
-          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} collapsible className="mb-0" />
+          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
 
           <EmployeeForm
             open={editing}
