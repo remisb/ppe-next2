@@ -24,6 +24,7 @@ export const employees: EmployeesText = {
   missingTitle: 'При создании заказа потребуется этот размер',
   noSizesSaved: 'Размеры не указаны',
   heightCm: (n: number) => `${n} см`,
+  sizes: 'Размеры',
   editSizes: 'Изменить размеры',
   editDetails: 'Изменить данные',
   deleteEmployee: 'Удалить сотрудника…',
@@ -44,6 +45,7 @@ export const employees: EmployeesText = {
   newOrder: 'Новый заказ',
   notes: 'Примечания',
   preferredLanguage: 'Предпочитаемый язык',
+  editLanguage: 'Изменить предпочитаемый язык',
   dueForReplacement: (n: number) =>
     plural(n, {
       one: '# предмет требует замены',

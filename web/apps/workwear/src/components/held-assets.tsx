@@ -2,6 +2,7 @@ import type { AssetKind, HeldAsset } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -43,23 +44,35 @@ export function HeldAssets({
   const held = useLoad(() => client.assets.byEmployee(employee.id), [employee.id])
   const [sheet, setSheet] = useState<AssetSheet>(null)
   const [message, setMessage] = useState('')
+  // Closed at first, as the page's other sections; Give opens it, so the new card shows.
+  const [open, setOpen] = useState(false)
   const sim = kind === 'SIM'
   const rows = (held.data ?? []).filter((h) => h.asset.kind === kind)
   const heading = `held-${kind.toLowerCase()}`
 
   return (
-    <section aria-labelledby={heading} className="mb-8">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 id={heading} className="text-lg font-semibold">
-          {sim ? t.assets.givenSim : t.assets.equipmentSection}
-        </h2>
-        {canManage ? (
-          <Button variant="outline" onClick={() => setSheet({ kind: 'giveTo', employee, assetKind: kind })}>
+    <DisclosureSection
+      id={heading}
+      title={sim ? t.assets.givenSim : t.assets.equipmentSection}
+      count={held.data ? rows.length : undefined}
+      description={sim ? t.assets.givenSimIntro : t.assets.equipmentIntro}
+      open={open}
+      onOpenChange={setOpen}
+      action={
+        canManage ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setOpen(true)
+              setSheet({ kind: 'giveTo', employee, assetKind: kind })
+            }}
+          >
             <Plus aria-hidden /> {sim ? t.assets.giveSimCard : t.assets.giveAsset}
           </Button>
-        ) : null}
-      </div>
-      <p className="mb-3 text-sm text-muted-foreground">{sim ? t.assets.givenSimIntro : t.assets.equipmentIntro}</p>
+        ) : null
+      }
+    >
       <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
         {message}
       </p>
@@ -86,7 +99,7 @@ export function HeldAssets({
           onChanged?.()
         }}
       />
-    </section>
+    </DisclosureSection>
   )
 }
 

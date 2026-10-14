@@ -187,8 +187,8 @@ Rules for using it:
 - **Detail:** height (100–250 cm), clothing size (even EU 44–66) and shoe size (39–46).
   Changing them affects future orders only; order lines snapshot the size they used. There
   is deliberately no glove size.
-- **Code:** `size.Defaults`, `employee.SizesParams`. **UI:** **Edit Sizes**, "Saved sizes
-  of …", "Affects future orders only."
+- **Code:** `size.Defaults`, `employee.SizesParams`. **UI:** **Edit Sizes** (a sheet from the Employees
+  list; on the employee page, the **Sizes** card's **Edit**, in place), "Saved sizes of …", "Affects future orders only."
 
 ### Size group
 - **Brief:** which size dimension a catalogue item uses: Clothing, Shoes or No size.
@@ -234,6 +234,8 @@ Rules for using it:
 - **Brief:** the language an employee reads best: en, lt or ru, or not recorded.
 - **Detail:** the confirmation page and hand-over mode open in it when it is English or
   Russian. It is looked up, not stored on the order; the record never changes with it.
+- **UI:** set in Add / Edit employee, or with its own **Edit** on the employee page, in place
+  ("Edit preferred language").
 
 ---
 

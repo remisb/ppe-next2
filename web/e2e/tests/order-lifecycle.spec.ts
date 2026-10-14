@@ -1050,14 +1050,57 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
   await page.keyboard.press('Escape')
+  // Sizes has its own Edit, which turns the values into their fields in place; Escape or Save gives focus back to it.
+  const sizesCard = page.getByRole('region', { name: 'Sizes' })
+  const editSizes = sizesCard.getByRole('button', { name: 'Edit Sizes', exact: true })
+  await expect(editSizes).toHaveText('Edit')
+  await editSizes.click()
+  const sizesForm = sizesCard.getByRole('form', { name: 'Edit Sizes: Ona Kazlauskienė' })
+  await expect(sizesForm.getByLabel('Height (cm)')).toBeFocused()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(editSizes).toHaveCount(0)
+  await sizesForm.getByLabel('Height (cm)').fill('50')
+  await sizesForm.getByRole('button', { name: 'Save' }).click()
+  await expect(sizesForm.getByRole('alert')).toHaveText('Height must be 100–250 cm.')
+  await page.keyboard.press('Escape')
+  await expect(sizesForm).toHaveCount(0)
+  await expect(editSizes).toBeFocused()
+  await editSizes.click()
+  await sizesForm.getByRole('button', { name: 'Save' }).click()
+  await expect(sizesForm).toHaveCount(0)
+  await expect(editSizes).toBeFocused()
+  // Her preferred language has its own Edit in the same card, saved with her details.
+  const editLanguage = page.getByRole('button', { name: 'Edit preferred language' })
+  const languageForm = page.getByRole('form', { name: 'Edit preferred language' })
+  const languageFact = page.locator('dl').filter({ hasText: 'Preferred language' }).first()
+  for (const [value, shown] of [['lt', 'Lietuvių'], ['ru', 'Русский']] as const) {
+    await editLanguage.click()
+    await expect(languageForm.getByLabel('Preferred language')).toBeFocused()
+    await languageForm.getByLabel('Preferred language').selectOption(value)
+    await languageForm.getByRole('button', { name: 'Save' }).click()
+    await expect(languageForm).toHaveCount(0)
+    await expect(languageFact).toContainText(shown)
+    await expect(editLanguage).toBeFocused()
+  }
 
   // Both her orders are GIVEN; the first was bought before the price change and still shows €49.99 on its receipt.
-  const given = page.getByRole('region', { name: 'Items given' })
+  // Items given is closed at first, its heading saying how many lines it holds; it opens to show them.
+  const given = page.getByRole('region', { name: /^Items given/ })
+  const givenToggle = given.getByRole('button', { name: /^Items given/ })
+  await expect(givenToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(givenToggle).toHaveText(/^Items given\s*\d+$/)
+  // What it is shows over the title, not as a line of its own.
+  await expect(givenToggle).toHaveAttribute('title', /^As recorded on each receipt/)
+  await expect(givenToggle).toHaveAccessibleDescription(/^As recorded on each receipt/)
+  await expect(given.getByRole('row')).toHaveCount(0)
+  await givenToggle.click()
+  await expect(givenToggle).toHaveAttribute('aria-expanded', 'true')
   await expect(given.getByRole('row', { name: /Safety shoes/ })).toHaveCount(2)
+  await expect(given.getByText('As recorded on each receipt')).toBeHidden()
   // Each item's latest line shows when it is due for replacement; an older one is replaced.
   await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: 'Replaced' })).toHaveCount(1)
   await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: /Due \d{4}-\d{2}-\d{2}/ })).toHaveCount(1)
-  await expect(page.getByRole('region', { name: 'Ordered, not yet given' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: /^Ordered, not yet given/ })).toHaveCount(0)
   await given.getByRole('link', { name: `Receipt ${recordNumber}` }).first().click()
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}\/record$/)
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
@@ -1332,7 +1375,14 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   // Given SIM on her page: the card she held, returned (§18).
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
-  const givenSim = page.getByRole('region', { name: 'Given SIM' })
+  const givenSim = page.getByRole('region', { name: /^Given SIM/ })
+  // Closed at first, with its count, what it is over the title, and Give SIM beside it.
+  const givenSimToggle = givenSim.getByRole('button', { name: /^Given SIM/ })
+  await expect(givenSimToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(givenSimToggle).toHaveText(/^Given SIM\s*1$/)
+  await expect(givenSimToggle).toHaveAttribute('title', 'The SIMs this employee holds, then those held before.')
+  await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toHaveCount(0)
+  await givenSimToggle.click()
   await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toBeVisible()
   await expect(givenSim).toContainText('Returned')
   // Give SIM from her page: she is already chosen; the cards in the office are listed with their status (§6).
@@ -1447,7 +1497,8 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   // The laptop from her page: chosen among the items in the office, given against its printed form.
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
-  const equipment = page.getByRole('region', { name: 'Equipment' })
+  const equipment = page.getByRole('region', { name: /^Equipment/ })
+  await equipment.getByRole('button', { name: /^Equipment/ }).click()
   await expect(equipment.getByRole('link', { name: 'FUR-000001' })).toBeVisible()
   await equipment.getByRole('button', { name: 'Give Asset' }).click()
   const give = page.getByRole('dialog')
@@ -1467,7 +1518,9 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   // Given on a form, its signed copy not uploaded yet.
   await expect(equipment).toContainText('Signed Copy Missing')
   // Kept apart from her SIMs on the same page (§18).
-  await expect(page.getByRole('region', { name: 'Given SIM' }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
+  await page.getByRole('button', { name: /^Given SIM/ }).click()
+  await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'SIM-000001' }).first()).toBeVisible()
+  await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
 
   // The desk comes back: Register Asset Return on its page; no connection status anywhere.
   await equipment.getByRole('link', { name: 'FUR-000001' }).click()
@@ -1617,6 +1670,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   expect((await page.getByRole('row', { name: /Safety shoes/ }).boundingBox())!.height, 'a Catalogue row on a phone').toBeLessThan(80)
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
+  await page.getByRole('button', { name: /^Items given/ }).click()
   await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
   expect(await fits(), 'the employee page scrolls sideways').toBe(true)
   await openTab('Item Catalogue')
@@ -1680,6 +1734,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     }
     await openTab('Employees')
     await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()
+    await page.getByRole('button', { name: /^Items given/ }).click()
     await expect(page.getByRole('link', { name: `Receipt ${recordNumber}` }).first()).toBeVisible()
     expect(await fits(), `the employee page scrolls sideways at ${width}px`).toBe(true)
     await openTab('Item Catalogue')

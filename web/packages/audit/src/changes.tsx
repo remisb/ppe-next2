@@ -1,11 +1,11 @@
 import type { AuditEntry } from '@ppe/api-client'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown } from 'lucide-react'
-import { type ReactNode, useId, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { type DescribeOptions, type FieldChange, auditChanges, auditTitle, deviceText, sourceLabel } from './describe.ts'
 import { auditText } from './text.ts'
@@ -139,31 +139,20 @@ export function RecordChanges({
   className?: string | undefined
 }) {
   const t = auditText()
-  const [open, setOpen] = useState(!collapsible)
-  const bodyId = useId()
+  const body = <ChangesBody load={load} deps={deps} timeZone={timeZone} options={options} />
+  if (collapsible) {
+    return (
+      <DisclosureSection id="record-changes" title={t.changes} className={className}>
+        {body}
+      </DisclosureSection>
+    )
+  }
   return (
     <section aria-labelledby="record-changes" className={cn('mb-8', className)}>
-      {collapsible ? (
-        <h2 id="record-changes" className="mb-1 text-lg font-semibold">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={bodyId}
-            onClick={() => setOpen((v) => !v)}
-            className="-mx-2 flex min-h-11 w-[calc(100%+1rem)] cursor-pointer items-center justify-between gap-2 rounded-md px-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {t.changes}
-            <ChevronDown aria-hidden className={cn('size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none', open && 'rotate-180')} />
-          </button>
-        </h2>
-      ) : (
-        <h2 id="record-changes" className="mb-1 text-lg font-semibold">
-          {t.changes}
-        </h2>
-      )}
-      <div id={bodyId} className="empty:hidden">
-        {open ? <ChangesBody load={load} deps={deps} timeZone={timeZone} options={options} /> : null}
-      </div>
+      <h2 id="record-changes" className="mb-1 text-lg font-semibold">
+        {t.changes}
+      </h2>
+      {body}
     </section>
   )
 }

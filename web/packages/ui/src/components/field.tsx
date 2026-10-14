@@ -41,18 +41,20 @@ interface FieldProps {
   error?: string | undefined
   hint?: string | undefined
   required?: boolean
+  /** Added to the wrapper, e.g. to put the label beside the control on a phone. */
+  className?: string | undefined
   children: (props: { id: string; describedBy: string | undefined; invalid: boolean }) => ReactNode
 }
 
 /** A labelled control with its error and hint wired up for screen readers. */
-export function Field({ label, error, hint, required, children }: FieldProps) {
+export function Field({ label, error, hint, required, className, children }: FieldProps) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
   const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ')
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn('flex flex-col gap-1.5', className)}>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
         {required ? <span className="text-destructive"> *</span> : null}

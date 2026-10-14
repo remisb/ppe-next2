@@ -24,6 +24,7 @@ export const employees: EmployeesText = {
   missingTitle: 'Kuriant užsakymą bus paprašyta šio dydžio',
   noSizesSaved: 'Dydžiai neįvesti',
   heightCm: (n: number) => `${n} cm`,
+  sizes: 'Dydžiai',
   editSizes: 'Keisti dydžius',
   editDetails: 'Redaguoti duomenis',
   deleteEmployee: 'Ištrinti darbuotoją…',
@@ -44,6 +45,7 @@ export const employees: EmployeesText = {
   newOrder: 'Naujas užsakymas',
   notes: 'Pastabos',
   preferredLanguage: 'Pageidaujama kalba',
+  editLanguage: 'Keisti pageidaujamą kalbą',
   dueForReplacement: (n: number) =>
     plural(n, { one: '# prekę reikia pakeisti', few: '# prekes reikia pakeisti', other: '# prekių reikia pakeisti' }),
   dueItemOverdue: (item: string) => `${item} (pavėluota)`,

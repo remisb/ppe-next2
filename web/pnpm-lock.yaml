@@ -378,9 +378,6 @@ importers:
       '@ppe/ui':
         specifier: workspace:*
         version: link:../ui
-      lucide-react:
-        specifier: ^1.48.0
-        version: 1.48.0(react@19.3.0)
     devDependencies:
       '@types/react':
         specifier: ^19.3.0

@@ -262,24 +262,16 @@ export function MissingBadge({ optional = false }: { optional?: boolean }) {
   )
 }
 
-/** Edit Sizes: changes defaults for future resolutions only. */
-export function EditSizes({
-  employee,
-  sizes,
-  onClose,
-  onSaved,
-}: {
-  employee: Employee | null
-  sizes: Sizes | undefined
-  onClose: () => void
-  onSaved: () => void
-}) {
+/**
+ * The sizes being edited for `employee` (null: none), reset whenever it changes. Shared by the
+ * Edit Sizes sheet and the employee page, which edits them in place.
+ */
+export function useSizesDraft(employee: Employee | null, onSaved: () => void) {
   const { client } = useApi()
   const [height, setHeight] = useState('')
   const [clothing, setClothing] = useState('')
   const [shoe, setShoe] = useState('')
   const [error, setError] = useState<string>()
-  const bands = clothingBands(sizes?.clothing ?? [])
 
   useEffect(() => {
     setHeight(employee?.height_cm?.toString() ?? '')
@@ -304,6 +296,76 @@ export function EditSizes({
     }
   }
 
+  return { height, setHeight, clothing, setClothing, shoe, setShoe, error, submit }
+}
+
+export type SizesDraft = ReturnType<typeof useSizesDraft>
+
+export type SizeField = 'height' | 'clothing' | 'shoe'
+
+/** Height, Clothing size and Shoe size, as fields of a form. */
+// On a phone each size is one line, its label beside the control.
+const sizeRow = 'max-sm:grid max-sm:grid-cols-[7.5rem_minmax(0,1fr)] max-sm:items-center max-sm:gap-x-3'
+
+/** `autoFocus`: the field that takes focus when they appear. */
+export function SizeFields({ draft, sizes, autoFocus }: { draft: SizesDraft; sizes: Sizes | undefined; autoFocus?: SizeField }) {
+  const bands = clothingBands(sizes?.clothing ?? [])
+  return (
+    <>
+      <Field label={t.employees.heightLabel} className={sizeRow}>
+        {(p) => (
+          <Input
+            {...controlProps(p)}
+            inputMode="numeric"
+            enterKeyHint="next"
+            autoFocus={autoFocus === 'height'}
+            value={draft.height}
+            onChange={(e) => draft.setHeight(e.target.value)}
+          />
+        )}
+      </Field>
+      <Field label={t.employees.clothingSize} className={sizeRow}>
+        {(p) => (
+          <Select {...controlProps(p)} autoFocus={autoFocus === 'clothing'} value={clothingBandValue(bands, draft.clothing)} onChange={(e) => draft.setClothing(e.target.value)}>
+            <option value="">{t.employees.notSet}</option>
+            {bands.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Field label={t.employees.shoeSize} className={sizeRow}>
+        {(p) => (
+          <Select {...controlProps(p)} autoFocus={autoFocus === 'shoe'} value={draft.shoe} onChange={(e) => draft.setShoe(e.target.value)}>
+            <option value="">{t.employees.notSet}</option>
+            {sizes?.shoes.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.code}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+    </>
+  )
+}
+
+/** Edit Sizes: changes defaults for future resolutions only. */
+export function EditSizes({
+  employee,
+  sizes,
+  onClose,
+  onSaved,
+}: {
+  employee: Employee | null
+  sizes: Sizes | undefined
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const draft = useSizesDraft(employee, onSaved)
+
   return (
     <FormSheet
       open={employee !== null}
@@ -321,33 +383,9 @@ export function EditSizes({
         </>
       }
     >
-      <form id="sizes-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
-        <Field label={t.employees.heightLabel}>{(p) => <Input {...controlProps(p)} inputMode="numeric" enterKeyHint="next" value={height} onChange={(e) => setHeight(e.target.value)} />}</Field>
-        <Field label={t.employees.clothingSize}>
-          {(p) => (
-            <Select {...controlProps(p)} value={clothingBandValue(bands, clothing)} onChange={(e) => setClothing(e.target.value)}>
-              <option value="">{t.employees.notSet}</option>
-              {bands.map((b) => (
-                <option key={b.value} value={b.value}>
-                  {b.label}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label={t.employees.shoeSize}>
-          {(p) => (
-            <Select {...controlProps(p)} value={shoe} onChange={(e) => setShoe(e.target.value)}>
-              <option value="">{t.employees.notSet}</option>
-              {sizes?.shoes.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.code}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        {error ? <p role="alert" className="text-sm text-destructive sm:col-span-3">{error}</p> : null}
+      <form id="sizes-form" onSubmit={draft.submit} className="grid gap-4 sm:grid-cols-3">
+        <SizeFields draft={draft} sizes={sizes} />
+        {draft.error ? <p role="alert" className="text-sm text-destructive sm:col-span-3">{draft.error}</p> : null}
       </form>
     </FormSheet>
   )

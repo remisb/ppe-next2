@@ -13,8 +13,7 @@
   "dependencies": {
     "@ppe/api-client": "workspace:*",
     "@ppe/i18n": "workspace:*",
-    "@ppe/ui": "workspace:*",
-    "lucide-react": "^1.48.0"
+    "@ppe/ui": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.3.0"

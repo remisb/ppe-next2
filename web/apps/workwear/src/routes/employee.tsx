@@ -4,23 +4,25 @@ import { RecordChanges } from '@ppe/audit'
 import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
+import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
-import { useLoad } from '@ppe/ui/lib/use-load'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, FileText, Plus, RotateCcw } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowLeft, FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { type FormEvent, useMemo, useRef, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { languages, t } from '@/i18n'
+import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
 import { missingSizes } from '@/lib/missing-sizes'
@@ -28,7 +30,7 @@ import { type Route, linkTo } from '@/lib/router'
 import { sizeRank } from '@/lib/sort'
 import { clothingBands, clothingSizeLabel, formatMonths, formatSize } from '@/lib/utils'
 
-import { EditSizes, MissingBadge } from './employees'
+import { MissingBadge, type SizeField, SizeFields, useSizesDraft } from './employees'
 
 /**
  * One employee (/employees/<id>): details and size defaults, the items given
@@ -46,8 +48,55 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
-  const [sizing, setSizing] = useState(false)
   const [actionError, setActionError] = useState<unknown>()
+  // The card's Edit buttons turn its sizes, or the preferred language, into their fields in
+  // place, one at a time. Closing gives focus back to the Edit the form hid.
+  const [inPlace, setInPlace] = useState<'sizes' | 'language' | null>(null)
+  const sizing = inPlace === 'sizes'
+  const [focusField, setFocusField] = useState<SizeField>('height')
+  const editSizesButton = useRef<HTMLButtonElement>(null)
+  const editLanguageButton = useRef<HTMLButtonElement>(null)
+  const openSizes = (field: SizeField) => {
+    setFocusField(field)
+    setInPlace('sizes')
+  }
+  const closeInPlace = () => {
+    const button = inPlace === 'language' ? editLanguageButton : editSizesButton
+    setInPlace(null)
+    requestAnimationFrame(() => button.current?.focus())
+  }
+  const draft = useSizesDraft(sizing ? (employee.data ?? null) : null, () => {
+    closeInPlace()
+    employee.reload()
+  })
+  const [language, setLanguage] = useState('')
+  const [languageError, setLanguageError] = useState<string>()
+  const openLanguage = (emp: Employee) => {
+    setLanguage(emp.preferred_language ?? '')
+    setLanguageError(undefined)
+    setInPlace('language')
+  }
+  // The language is one of the employee's details, saved with the rest of them as they are.
+  const saveLanguage = async (ev: FormEvent, emp: Employee) => {
+    ev.preventDefault()
+    const { first_name, last_name, code, height_cm, clothing_size, shoe_size, notes } = emp
+    try {
+      await client.employees.update(emp.id, {
+        first_name,
+        last_name,
+        code,
+        height_cm,
+        clothing_size,
+        shoe_size,
+        notes,
+        preferred_language: isLang(language) ? language : null,
+      })
+      closeInPlace()
+      employee.reload()
+    } catch (err) {
+      setLanguageError(errorText(err))
+    }
+  }
 
   const items = useMemo(() => employeeItems(orders.data ?? []), [orders.data])
   const due = useMemo(() => replacementsDue(orders.data ?? [], new Date()), [orders.data])
@@ -91,9 +140,6 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
                   <Plus aria-hidden /> {t.employees.newOrder}
                 </Button>
-                <Button variant="outline" onClick={() => setSizing(true)}>
-                  {t.employees.editSizes}
-                </Button>
                 <MoreActions label={t.common.moreActions(e.full_name)}>
                   <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem>
                   {session.can('employees.delete') ? (
@@ -108,21 +154,121 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               </>
             }
           />
-          <dl className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-4">
-            {/* As in the list: grey when a saved clothing size makes the height unnecessary. */}
-            <Fact label={t.employees.height}>{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</Fact>
-            <Fact label={t.employees.clothing}>{missing.clothing ? <MissingBadge /> : clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)}</Fact>
-            <Fact label={t.employees.shoes}>{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</Fact>
-            <Fact label={t.employees.preferredLanguage}>
-              <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '—'}</span>
-            </Fact>
-            {e.notes ? (
-              <div className="col-span-full">
-                <dt className="text-muted-foreground">{t.employees.notes}</dt>
-                <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
+          {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
+          <div className={cn('mb-8 rounded-lg border border-border text-sm transition-shadow sm:max-w-2xl', inPlace && 'border-ring ring-3 ring-ring/20')}>
+            <section aria-labelledby="sizes-heading">
+              <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-2">
+                <h2 id="sizes-heading" className="font-semibold">
+                  {t.employees.sizes}
+                </h2>
+                {sizing ? (
+                  <p className="text-muted-foreground">{t.employees.futureOnly}</p>
+                ) : (
+                  <Button ref={editSizesButton} size="sm" variant="outline" aria-label={t.employees.editSizes} onClick={() => openSizes('height')}>
+                    <Pencil aria-hidden /> {t.common.edit}
+                  </Button>
+                )}
               </div>
-            ) : null}
-          </dl>
+              {sizing ? (
+                <form
+                  aria-label={t.employees.editSizesTitle(e.full_name)}
+                  onSubmit={draft.submit}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Escape') closeInPlace()
+                  }}
+                  className="grid gap-3 px-4 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
+                >
+                  <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
+                  {draft.error ? (
+                    <p role="alert" className="col-span-full text-destructive">
+                      {draft.error}
+                    </p>
+                  ) : null}
+                  <div className="col-span-full flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={closeInPlace}>
+                      {t.common.cancel}
+                    </Button>
+                    <Button type="submit">{t.common.save}</Button>
+                  </div>
+                </form>
+              ) : (
+                <dl className="grid grid-cols-3 gap-4 px-4 pt-2 pb-4">
+                  {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
+                  <Fact label={t.employees.height}>
+                    {e.height_cm ? (
+                      t.employees.heightCm(e.height_cm)
+                    ) : (
+                      <SetMissing label={t.employees.height} optional={!missing.clothing} onClick={() => openSizes('height')} />
+                    )}
+                  </Fact>
+                  <Fact label={t.employees.clothing}>
+                    {missing.clothing ? (
+                      <SetMissing label={t.employees.clothing} onClick={() => openSizes('clothing')} />
+                    ) : (
+                      clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)
+                    )}
+                  </Fact>
+                  <Fact label={t.employees.shoes}>
+                    {missing.shoes ? <SetMissing label={t.employees.shoes} onClick={() => openSizes('shoe')} /> : formatSize(e.shoe_size)}
+                  </Fact>
+                </dl>
+              )}
+            </section>
+            <div className="grid gap-4 border-t border-border p-4">
+              {inPlace === 'language' ? (
+                <form
+                  aria-label={t.employees.editLanguage}
+                  onSubmit={(ev) => void saveLanguage(ev, e)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Escape') closeInPlace()
+                  }}
+                  className="grid gap-4 sm:grid-cols-3 sm:items-end"
+                >
+                  <Field label={t.employees.preferredLanguage}>
+                    {(p) => (
+                      // Each language named in itself, as on Account.
+                      <Select {...controlProps(p)} autoFocus value={language} onChange={(ev) => setLanguage(ev.target.value)}>
+                        <option value="">{t.employees.notSet}</option>
+                        {languages.map((l) => (
+                          <option key={l.value} value={l.value} lang={l.value}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                  <div className="flex justify-end gap-2 sm:col-span-2">
+                    <Button type="button" variant="outline" onClick={closeInPlace}>
+                      {t.common.cancel}
+                    </Button>
+                    <Button type="submit">{t.common.save}</Button>
+                  </div>
+                  {languageError ? (
+                    <p role="alert" className="col-span-full text-destructive">
+                      {languageError}
+                    </p>
+                  ) : null}
+                </form>
+              ) : (
+                <div className="flex items-start justify-between gap-3">
+                  <dl>
+                    <Fact label={t.employees.preferredLanguage}>
+                      <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '—'}</span>
+                    </Fact>
+                  </dl>
+                  <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
+                    <Pencil aria-hidden /> {t.common.edit}
+                  </Button>
+                </div>
+              )}
+              {e.notes ? (
+                <dl>
+                  <dt className="text-muted-foreground">{t.employees.notes}</dt>
+                  <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
+                </dl>
+              ) : null}
+            </div>
+          </div>
 
           {reorder.length > 0 ? (
             <Alert className="mb-6">
@@ -152,14 +298,13 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
           ) : null}
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
-          <section aria-labelledby="items-given" className="mb-8">
-            <h2 id="items-given" className="mb-1 text-lg font-semibold">
-              {t.employees.itemsGiven}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {t.employees.itemsGivenHint}
-              {tz ? ` ${t.employees.datesIn(tz)}` : ''}
-            </p>
+          {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
+          <DisclosureSection
+            id="items-given"
+            title={t.employees.itemsGiven}
+            count={orders.data ? items.given.length : undefined}
+            description={`${t.employees.itemsGivenHint}${tz ? ` ${t.employees.datesIn(tz)}` : ''}`}
+          >
             {orders.error ? (
               <ErrorState error={orders.error} onRetry={orders.reload} />
             ) : !orders.data ? (
@@ -169,16 +314,12 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             ) : (
               <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} />
             )}
-          </section>
+          </DisclosureSection>
 
           {items.ordered.length > 0 ? (
-            <section aria-labelledby="items-ordered" className="mb-8">
-              <h2 id="items-ordered" className="mb-1 text-lg font-semibold">
-                {t.employees.orderedNotGiven}
-              </h2>
-              <p className="mb-3 text-sm text-muted-foreground">{t.employees.waitingForReceipt}</p>
+            <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt}>
               <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
-            </section>
+            </DisclosureSection>
           ) : null}
 
           <HeldAssets kind="SIM" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
@@ -195,15 +336,6 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             onClose={() => setEditing(false)}
             onSaved={() => {
               setEditing(false)
-              employee.reload()
-            }}
-          />
-          <EditSizes
-            employee={sizing ? e : null}
-            sizes={sizes.data}
-            onClose={() => setSizing(false)}
-            onSaved={() => {
-              setSizing(false)
               employee.reload()
             }}
           />
@@ -367,5 +499,19 @@ function DueCell({ due, tz }: { due: Due | undefined; tz: string | undefined }) 
         />
       </span>
     </span>
+  )
+}
+
+/** A missing size: its badge, which opens Edit Sizes at that size's field. */
+function SetMissing({ label, optional = false, onClick }: { label: string; optional?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={`${t.employees.editSizes}: ${label}`}
+      onClick={onClick}
+      className="-m-1 inline-flex rounded-md p-1 outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 pointer-coarse:min-h-11 pointer-coarse:items-center"
+    >
+      <MissingBadge optional={optional} />
+    </button>
   )
 }
