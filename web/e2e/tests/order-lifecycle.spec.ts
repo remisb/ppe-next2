@@ -1035,6 +1035,14 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page')
   // Her facts at the top; her Changes further down name the field too.
   await expect(page.locator('dl').filter({ hasText: 'Preferred language' }).first()).toContainText('Русский')
+  // Her Changes are closed at first and open to list what was recorded.
+  const herChanges = page.getByRole('region', { name: 'Changes' })
+  const toggle = herChanges.getByRole('button', { name: 'Changes' })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(herChanges.getByRole('listitem')).toHaveCount(0)
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(herChanges.getByRole('listitem').first()).toBeVisible()
   // The page holds her actions: Delete, as in the table, is under ⋯.
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()

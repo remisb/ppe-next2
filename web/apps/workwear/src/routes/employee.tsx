@@ -186,7 +186,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
           ) : null}
 
-          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} />
+          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} collapsible className="mb-0" />
 
           <EmployeeForm
             open={editing}

@@ -655,8 +655,8 @@ Rules for using it:
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.
 - **Detail:** for whoever may open the record. Not called History, which is the old name of
-  Orders. On an order it is closed at first (its heading opens it, `collapsible`), so the
-  actions stay near the top.
+  Orders. On an order and an employee's page it is closed at first (its heading opens it,
+  `collapsible`), so what comes before it stays in view.
 - **Code:** `GET /api/v1/audit-events/{employees|catalogue|orders|assets|users}/{id}`,
   `RecordChanges` in `@ppe/audit`.
 
