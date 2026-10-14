@@ -202,12 +202,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>An <b>Ordered</b> order has these actions:</p>
     <ul>
       <li><b>Create confirmation link</b> makes a new link for the employee and shows it below, with <b>Copy link</b> and <b>Share link via WhatsApp</b>. The button then becomes <b>Confirmation link</b>, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.</li>
-      <li><b>Print Record</b> prints the record for the employee to sign.</li>
-      <li><b>Sign → Given</b> records that the employee signed the printed record. The app asks first; the order is then <b>Given</b>, and the button says <b>Signed</b>.</li>
+      <li><b>Print Order</b> prints the order's record for the employee to sign.</li>
+      <li><b>Mark as Signed &amp; Given</b> records that the employee signed the printed record. The app asks first; the order is then <b>Given</b>, with a green <b>Signed</b> badge beside its status.</li>
     </ul>
     <p class="who">Managers only</p>
     <p><b>⋯ → Delete order…</b> removes an order, such as a test order, after asking.</p>
-    <p>An order's <b>Changes</b> list what happened to it and who did it: ordered, a link made or opened, given.</p>
+    <p>An order's <b>Changes</b> list what happened to it and who did it: ordered, a link made or opened, given. They are closed at first; choose <b>Changes</b> to open them.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/history.png" alt="Orders with an ordered order open" loading="lazy"></figure>
     </div>
@@ -215,9 +215,9 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 
 <section id="record">
   <h2><span class="n">7</span>Items Given Record</h2>
-    <p>A <b>Given</b> order has a locked record in English and Russian. Open it with <b>View Record</b>.</p>
+    <p>A <b>Given</b> order has a locked record in English and Russian. Open it with <b>View Order</b>.</p>
     <ul>
-      <li><b>Print Record</b> prints it on one A4 page.</li>
+      <li><b>Print Record</b> prints it on one A4 page; <b>Print Order</b> on the order does the same.</li>
       <li><b>Share via WhatsApp</b> sends it.</li>
     </ul>
     <div class="shots">
@@ -234,7 +234,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>every item given, with its usage time and replacement date;</li>
       <li>orders not yet given;</li>
       <li>the company assets they hold, and held before: <b>Given SIM</b> and <b>Equipment</b>;</li>
-      <li><b>Changes</b>: who changed their details or sizes, and when.</li>
+      <li><b>Changes</b>, closed at first: who changed their details or sizes, and when.</li>
     </ul>
     <p>From that page, <b>New order</b> starts an order for them, and <b>Edit Sizes</b> changes their sizes.</p>
     <p class="who">Administrators and managers only</p>

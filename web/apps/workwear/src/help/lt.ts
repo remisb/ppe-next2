@@ -140,12 +140,12 @@ export const lt: Guide = {
         {
           ul: [
             '**Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.',
-            '**Spausdinti įrašą** atspausdina įrašą, kurį darbuotojas pasirašo.',
-            '**Pasirašyti → Išduota** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o mygtukas rodo **Pasirašyta**.',
+            '**Spausdinti užsakymą** atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.',
+            '**Pažymėti kaip pasirašytą ir išduotą** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.',
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
-        { p: 'Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota.' },
+        { p: 'Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota. Iš pradžių jie suskleisti; pasirinkite **Pakeitimai**, kad juos atidarytumėte.' },
         { shots: [{ name: 'history', alt: 'Užsakymai su atidarytu užsakymu' }] },
       ],
     },
@@ -153,8 +153,8 @@ export const lt: Guide = {
       id: 'record',
       title: 'Išdavimo įrašas',
       blocks: [
-        { p: 'Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti įrašą**.' },
-        { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
+        { p: 'Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.' },
+        { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
         { shots: [{ name: 'record', alt: 'Dvikalbis išdavimo įrašas' }] },
       ],
     },
@@ -165,7 +165,7 @@ export const lt: Guide = {
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją.', devices: ['phone', 'tablet'] },
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.', devices: ['desktop'] },
         { p: 'Darbuotojo puslapyje rodoma:' },
-        { ul: ['jo dydžiai ir pageidaujama kalba;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
+        { ul: ['jo dydžiai ir pageidaujama kalba;', 'visos išduotos prekės su naudojimo trukme ir pakeitimo data;', 'dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**, iš pradžių suskleisti: kas ir kada keitė jo duomenis ar dydžius.'] },
         { p: 'Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.' },
         { p: 'Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.', roles: ['admin', 'manager'] },
         {

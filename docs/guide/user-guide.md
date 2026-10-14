@@ -93,22 +93,22 @@ If the employee will sign on paper, choose **Print record** instead.
 An **Ordered** order has these actions:
 
 - **Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.
-- **Print Record** prints the record for the employee to sign.
-- **Sign → Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, and the button says **Signed**.
+- **Print Order** prints the order's record for the employee to sign.
+- **Mark as Signed & Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.
 
 *Managers only:*
 
 **⋯ → Delete order…** removes an order, such as a test order, after asking.
 
-An order's **Changes** list what happened to it and who did it: ordered, a link made or opened, given.
+An order's **Changes** list what happened to it and who did it: ordered, a link made or opened, given. They are closed at first; choose **Changes** to open them.
 
 ![Orders with an ordered order open](../../web/apps/workwear/public/help-img/en/desktop/history.png)
 
 ## 7. Items Given Record
 
-A **Given** order has a locked record in English and Russian. Open it with **View Record**.
+A **Given** order has a locked record in English and Russian. Open it with **View Order**.
 
-- **Print Record** prints it on one A4 page.
+- **Print Record** prints it on one A4 page; **Print Order** on the order does the same.
 - **Share via WhatsApp** sends it.
 
 ![The bilingual Items Given Record](../../web/apps/workwear/public/help-img/en/desktop/record.png)
@@ -123,7 +123,7 @@ Each employee's page shows:
 - every item given, with its usage time and replacement date;
 - orders not yet given;
 - the company assets they hold, and held before: **Given SIM** and **Equipment**;
-- **Changes**: who changed their details or sizes, and when.
+- **Changes**, closed at first: who changed their details or sizes, and when.
 
 From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.
 

@@ -137,12 +137,12 @@ export const en: Guide = {
         {
           ul: [
             '**Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.',
-            '**Print Record** prints the record for the employee to sign.',
-            '**Sign → Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, and the button says **Signed**.',
+            '**Print Order** prints the order\'s record for the employee to sign.',
+            '**Mark as Signed & Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.',
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
-        { p: "An order's **Changes** list what happened to it and who did it: ordered, a link made or opened, given." },
+        { p: "An order's **Changes** list what happened to it and who did it: ordered, a link made or opened, given. They are closed at first; choose **Changes** to open them." },
         { shots: [{ name: 'history', alt: 'Orders with an ordered order open' }] },
       ],
     },
@@ -150,8 +150,8 @@ export const en: Guide = {
       id: 'record',
       title: 'Items Given Record',
       blocks: [
-        { p: 'A **Given** order has a locked record in English and Russian. Open it with **View Record**.' },
-        { ul: ['**Print Record** prints it on one A4 page.', '**Share via WhatsApp** sends it.'] },
+        { p: 'A **Given** order has a locked record in English and Russian. Open it with **View Order**.' },
+        { ul: ['**Print Record** prints it on one A4 page; **Print Order** on the order does the same.', '**Share via WhatsApp** sends it.'] },
         { shots: [{ name: 'record', alt: 'The bilingual Items Given Record' }] },
       ],
     },
@@ -162,7 +162,7 @@ export const en: Guide = {
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
-        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**: who changed their details or sizes, and when.'] },
+        { ul: ['their sizes and preferred language;', 'every item given, with its usage time and replacement date;', 'orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**, closed at first: who changed their details or sizes, and when.'] },
         { p: 'From that page, **New order** starts an order for them, and **Edit Sizes** changes their sizes.' },
         { p: 'An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.', roles: ['admin', 'manager'] },
         {

@@ -93,22 +93,22 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 
 - **Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.
-- **Spausdinti įrašą** atspausdina įrašą, kurį darbuotojas pasirašo.
-- **Pasirašyti → Išduota** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o mygtukas rodo **Pasirašyta**.
+- **Spausdinti užsakymą** atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.
+- **Pažymėti kaip pasirašytą ir išduotą** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.
 
 *Tik vadovams:*
 
 **⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.
 
-Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota.
+Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, sukurta ar atidaryta nuoroda, išduota. Iš pradžių jie suskleisti; pasirinkite **Pakeitimai**, kad juos atidarytumėte.
 
 ![Užsakymai su atidarytu užsakymu](../../web/apps/workwear/public/help-img/lt/desktop/history.png)
 
 ## 7. Išdavimo įrašas
 
-Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti įrašą**.
+Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.
 
-- **Spausdinti įrašą** atspausdina jį viename A4 lape.
+- **Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.
 - **Siųsti per WhatsApp** jį išsiunčia.
 
 ![Dvikalbis išdavimo įrašas](../../web/apps/workwear/public/help-img/lt/desktop/record.png)
@@ -123,7 +123,7 @@ Darbuotojo puslapyje rodoma:
 - visos išduotos prekės su naudojimo trukme ir pakeitimo data;
 - dar neišduoti užsakymai;
 - įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;
-- **Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.
+- **Pakeitimai**, iš pradžių suskleisti: kas ir kada keitė jo duomenis ar dydžius.
 
 Šiame puslapyje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui, o **Keisti dydžius** pakeičia jo dydžius.
 
