@@ -180,7 +180,7 @@ export const en: Guide = {
         {
           p: "Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.",
         },
-        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes** list who changed the item, and when." },
+        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when." },
         { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
         { p: 'You add and change items in **Item Catalogue**, and kits in **Item Sets**.', roles: ['admin', 'manager'] },
         {
@@ -246,7 +246,7 @@ export const en: Guide = {
         { p: 'Once the employee has signed, choose **Upload Signed Form** under its assignment, then take a photo of the form or choose a file: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'An assignment with its signed copy uploaded' }] },
         {
-          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**.',
+          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.',
           roles: ['admin', 'manager'],
         },
         {

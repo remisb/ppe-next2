@@ -183,7 +183,7 @@ export const lt: Guide = {
         {
           p: 'Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.',
         },
-        { p: 'Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai** rodo, kas ir kada keitė prekę.' },
+        { p: 'Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.' },
         { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.' },
         { p: 'Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.', roles: ['admin', 'manager'] },
         {
@@ -249,7 +249,7 @@ export const lt: Guide = {
         { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'Išdavimas su įkelta pasirašyta kopija' }] },
         {
-          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**.',
+          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.',
           roles: ['admin', 'manager'],
         },
         {

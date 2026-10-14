@@ -138,7 +138,7 @@ An employee who still holds a company asset cannot be deleted: leaving never ret
 
 Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.
 
-An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes** list who changed the item, and when.
+An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when.
 
 An item set is a kit of items with default quantities. You apply it on Create Order in one tap.
 
@@ -197,7 +197,7 @@ Once the employee has signed, scan or photograph the form and choose **Upload Si
 
 *Administrators and managers only:*
 
-When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**.
+When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.
 
 Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.
 
