@@ -169,7 +169,7 @@ SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** a
 
 *Tik administratoriams ir vadovams:*
 
-**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Pažymėjus **Numatytasis naujoms kortelėms**, kitą kartą „Pridėti SIM“ įrašys šį tiekėją. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
+**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
 
 **Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.
 
@@ -348,6 +348,12 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 **Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.
 
 ![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
+
+**SIM kortelių tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.
+
+Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo.
+
+![Nustatymai: SIM kortelių tiekėjai, vienas iš jų numatytasis](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
 ## 21. Jūsų paskyra
 

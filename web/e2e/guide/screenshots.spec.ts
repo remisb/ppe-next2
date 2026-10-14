@@ -172,9 +172,15 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await page.goto('/admin/settings')
   await page.getByLabel(A.settings.groupName).fill('Superman Rubai Group')
   await page.getByLabel(A.settings.inviteLink).fill('https://chat.whatsapp.com/DemoSupplierGroup01')
-  await page.getByRole('button', { name: A.settings.save }).click()
-  await expect(page.getByRole('main').getByRole('status')).toContainText('Superman Rubai Group')
+  await page.getByRole('button', { name: A.settings.save, exact: true }).click()
+  const chat = page.getByRole('region', { name: A.settings.supplierChat })
+  await expect(chat.getByRole('status')).toContainText('Superman Rubai Group')
   await shot('settings')
+  // The SIM card providers the demo lists (cmd/api/seed-demo.go), Telia the default.
+  const providers = page.getByRole('region', { name: A.settings.simProviders })
+  await providers.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await expect(providers.getByRole('radio', { name: 'Telia' })).toBeChecked()
+  await shot('sim-providers')
   // The backup history guide/setup.ts inserted.
   await page.goto('/admin/backups')
   await expect(page.getByRole('heading', { name: A.backups.recent })).toBeVisible()

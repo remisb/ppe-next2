@@ -219,7 +219,7 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'SIM: plytelės, filtrai ir kiekviena kortelė su jos turėtoju' }] },
         {
-          p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Pažymėjus **Numatytasis naujoms kortelėms**, kitą kartą „Pridėti SIM“ įrašys šį tiekėją. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
+          p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: '**Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.', roles: ['admin', 'manager'] },
@@ -442,6 +442,11 @@ export const lt: Guide = {
           p: '**Kopijuoti į WhatsApp** tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. **Pašalinti grupę** grąžina WhatsApp atidarymą nepasirinkus pokalbio.',
         },
         { shots: [{ name: 'settings', alt: 'Nustatymai: tiekėjo WhatsApp grupė' }] },
+        {
+          p: '**SIM kortelių tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.',
+        },
+        { p: 'Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo.' },
+        { shots: [{ name: 'sim-providers', alt: 'Nustatymai: SIM kortelių tiekėjai, vienas iš jų numatytasis' }] },
       ],
     },
     {

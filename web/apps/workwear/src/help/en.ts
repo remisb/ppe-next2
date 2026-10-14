@@ -216,7 +216,7 @@ export const en: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'The SIMs: the tiles, the filters and each card with its holder' }] },
         {
-          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. Tick **Default for new cards** and Add SIM fills in that provider next time. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
+          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
@@ -475,6 +475,11 @@ export const en: Guide = {
           p: '**Copy for WhatsApp** then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. **Remove the group** goes back to opening WhatsApp without a chat chosen.',
         },
         { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
+        {
+          p: '**SIM card providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.',
+        },
+        { p: 'A card already registered keeps its provider, even one you remove from the list.' },
+        { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM card providers, one of them the default' }] },
       ],
     },
     {

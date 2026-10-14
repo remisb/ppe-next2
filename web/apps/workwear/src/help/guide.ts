@@ -122,6 +122,7 @@ export type ShotName =
   | 'errors'
   | 'usage'
   | 'settings'
+  | 'sim-providers'
   | 'backups'
   | 'account'
   | 'devices'
