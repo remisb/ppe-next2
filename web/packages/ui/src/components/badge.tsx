@@ -7,7 +7,7 @@ import { cn } from '../lib/utils.ts'
  * A small status label.
  *
  * Mirrors the registry component's variant names — default, secondary,
- * destructive, outline — so markup written against shadcn's docs works here
+ * destructive, outline — plus success, so markup written against shadcn's docs works here
  * unchanged. The registry's implementation renders through Base UI's
  * `useRender`; this one is a plain span, because nothing in this app needs a
  * badge to take over another element's tag.
@@ -24,6 +24,8 @@ const badgeVariants = cva(
         default: 'bg-primary text-primary-foreground',
         secondary: 'bg-muted text-muted-foreground',
         destructive: 'bg-destructive text-destructive-foreground',
+        // Done: a state reached, such as a signed order.
+        success: 'bg-success text-success-foreground',
         outline: 'border border-border text-foreground',
       },
     },

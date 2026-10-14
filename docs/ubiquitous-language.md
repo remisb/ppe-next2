@@ -429,8 +429,8 @@ Rules for using it:
 
 ### Paper confirmation
 - **Brief:** the employee signs the printed record; staff record that it was signed.
-- **UI:** **Print Record**, then on the order pane **Mark as Signed & Given** (amber pen;
-  it says what it does); a Given order then says **Signed** with a green tick beside its
+- **UI:** **Print Record** (on the order pane **Print Order**), then **Mark as Signed & Given** (amber pen;
+  it says what it does); a Given order then says **Signed**, a green badge with a tick, beside its
   status, at the top of the order; Create Order's sheet still says
   **Record signed paper confirmation**.
 
@@ -440,7 +440,8 @@ Rules for using it:
   carries the confirmation statements of the order's **receipt text version**. Once Given,
   it shows the evidence and its document hash. It prints on one A4 page with signature lines.
 - **Code:** `order.Receipt`, `ReceiptOf`, `order.Record`, `components/receipt.tsx`.
-  **UI:** **View Record**, **Print Record**, **Share via WhatsApp**, "Receipt WE-000123" on an
+  **UI:** **View Record**, **Print Record** (on the order pane **View Order**, **Print Order**),
+  **Share via WhatsApp**, "Receipt WE-000123" on an
   employee's page.
 
 ### Confirmation text (consent statement)
@@ -654,7 +655,8 @@ Rules for using it:
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.
 - **Detail:** for whoever may open the record. Not called History, which is the old name of
-  Orders.
+  Orders. On an order it is closed at first (its heading opens it, `collapsible`), so the
+  actions stay near the top.
 - **Code:** `GET /api/v1/audit-events/{employees|catalogue|orders|assets|users}/{id}`,
   `RecordChanges` in `@ppe/audit`.
 
@@ -741,9 +743,9 @@ Rules for using it:
 - **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
 - **Detail:** holds the order's actions by status. Ordered: Create confirmation link on its
   own row (once pressed the link shows right below it and the button becomes **Confirmation
-  link**, a disclosure with a chevron that collapses and expands that same link), Print Record, Mark as Signed & Given (and Hand over now, hidden for now);
+  link**, a disclosure with a chevron that collapses and expands that same link), Print Order, Mark as Signed & Given (and Hand over now, hidden for now);
   no Open Employee Confirmation button, which only Create Order's Send confirmation link
-  still opens. Given: View Record, Print Record; **Signed** with a green tick beside the
+  still opens. Given: View Order, Print Order (both the Items Given Record); **Signed**, a green badge with a tick, beside the
   status at the top.
   Manager role: ⋯ → Delete order…
 
@@ -996,6 +998,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Record signed paper confirmation | Pažymėti pasirašytą popierinį patvirtinimą | Отметить подписанное подтверждение на бумаге |
 | Mark as Signed & Given / Signed | Pažymėti kaip pasirašytą ir išduotą / Pasirašyta | Отметить как подписанный и выданный / Подписано |
 | View Record / Print Record | Peržiūrėti įrašą / Spausdinti įrašą | Открыть запись / Печать записи |
+| View Order / Print Order (order pane) | Peržiūrėti užsakymą / Spausdinti užsakymą | Открыть заказ / Печать заказа |
 | Delete order… | Ištrinti užsakymą… | Удалить заказ… |
 | Copy for WhatsApp | Kopijuoti į WhatsApp | Копировать для WhatsApp |
 | Supplier's WhatsApp group | Tiekėjo WhatsApp grupė | Группа поставщика в WhatsApp |

@@ -510,13 +510,13 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
   await expect(order.getByRole('cell', { name: 'Safety shoes S3 SRC', exact: true })).toBeVisible()
   // The employee's confirmation is on the order itself: electronic, at the counter, or on paper.
-  for (const name of ['Create confirmation link', 'Print Record', 'Mark as Signed & Given']) {
+  for (const name of ['Create confirmation link', 'Print Order', 'Mark as Signed & Given']) {
     await expect(order.getByRole('button', { name, exact: true })).toBeVisible()
   }
   await expect(order.getByRole('button', { name: 'Hand over now' })).toHaveCount(HAND_OVER_NOW ? 1 : 0)
   await expect(order.locator('header').getByText('Signed', { exact: true })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
-  await expect(order.getByRole('button', { name: 'View Record' })).toHaveCount(0)
+  await expect(order.getByRole('button', { name: 'View Order' })).toHaveCount(0)
   // The supplier message is Create Order's review's, not the order's.
   await expect(order.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
 })
@@ -612,10 +612,17 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   // Signed beside the status at the top, however it was confirmed; no button for it.
   await expect(order.locator('header').getByText('Signed', { exact: true })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Signed', exact: true })).toHaveCount(0)
-  await expect(order.getByRole('button', { name: 'View Record' })).toBeVisible()
-  await expect(order.getByRole('button', { name: 'Print Record' })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'View Order' })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'Print Order' })).toBeVisible()
   // No WhatsApp on a given order: the supplier message is Create Order's review's.
   await expect(order.getByRole('button', { name: /WhatsApp/ })).toHaveCount(0)
+  // Its Changes are closed at first and open to show its steps.
+  const changes = order.getByRole('button', { name: 'Changes' })
+  await expect(changes).toHaveAttribute('aria-expanded', 'false')
+  await expect(order.getByText('Marked as ordered')).toHaveCount(0)
+  await changes.click()
+  await expect(changes).toHaveAttribute('aria-expanded', 'true')
+  await expect(order.getByText('Marked as ordered')).toBeVisible()
 })
 
 test('a later price change does not alter the stored record', async () => {
@@ -630,7 +637,7 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
 
   await openTab('Orders')
-  await (await openOrder(recordNumber)).getByRole('button', { name: 'View Record' }).click()
+  await (await openOrder(recordNumber)).getByRole('button', { name: 'View Order' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(page.getByRole('cell', { name: '€49.99' }).first()).toBeVisible()
   await expect(page.getByText('€59.99')).toHaveCount(0)
@@ -949,7 +956,7 @@ test('hand-over: the employee confirms on this device, recorded in person', asyn
   await screen.getByRole('button', { name: 'Done' }).click()
 
   await expect(order).toContainText('confirmed in person on a staff device')
-  await order.getByRole('button', { name: 'View Record' }).click()
+  await order.getByRole('button', { name: 'View Order' }).click()
   await expect(page.getByText(/Confirmed in person on a staff device by Ona Kazlauskienė/)).toBeVisible()
 })
 
@@ -1625,7 +1632,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await openOrder(recordNumber)
   await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeHidden()
   expect(await fits(), 'an order scrolls sideways').toBe(true)
-  await page.getByRole('button', { name: 'View Record' }).click()
+  await page.getByRole('button', { name: 'View Order' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   expect(await fits(), 'the record scrolls sideways').toBe(true)
 
@@ -1963,7 +1970,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await expect(page.getByRole('heading', { name: 'Užsakymai', exact: true })).toBeVisible()
   // The record stays English / Russian whatever the interface language.
   await openOrder(recordNumber)
-  await page.getByRole('button', { name: 'Peržiūrėti įrašą' }).click()
+  await page.getByRole('button', { name: 'Peržiūrėti užsakymą' }).click()
   await expect(page.getByRole('heading', { name: 'Items Given Record / Акт выдачи' })).toBeVisible()
 
   // Saved on the account, so a sign-in on another device opens in Lithuanian too.

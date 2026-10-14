@@ -95,8 +95,9 @@ export function OrderDetail({
             onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
           />
           {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
-          {/* Loaded again whenever the order is (after a confirmation), so its new step shows. */}
-          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} />
+          {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
+              the order is (after a confirmation), so its new step shows. */}
+          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} collapsible className="mb-0" />
           {handingOver ? (
             <HandOver
               orderId={o.id}
@@ -125,10 +126,10 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
             {days === 0 ? t.history.waitingToday : t.history.waitingFor(days)}
           </span>
         ) : (
-          // Where an ordered order says how long it has waited: done, with the green tick.
-          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-            <CircleCheck aria-hidden className="size-4 text-success" /> {t.history.signed}
-          </span>
+          // Where an ordered order says how long it has waited: done, a green badge with its tick.
+          <Badge variant="success">
+            <CircleCheck aria-hidden /> {t.history.signed}
+          </Badge>
         )}
       </div>
       <p className="font-medium">
@@ -151,8 +152,8 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
  * ORDERED: Create confirmation link on its own row (electronic; the link
  * then shows right below it, and the button becomes Confirmation link, which
  * collapses and expands it), Hand over now (the employee confirms on this device, at the counter),
- * Print Record and Mark as Signed & Given (records the signed paper copy); the supplier
- * message is Create Order's, not here. GIVEN: View Record and Print Record;
+ * Print Order (prints the record) and Mark as Signed & Given (records the signed paper copy); the supplier
+ * message is Create Order's, not here. GIVEN: View Order and Print Order (both the record);
  * Signed, with a green tick, is beside its status at the top (Summary).
  * The items (View Items in the manual) are always shown above.
  */
@@ -249,12 +250,12 @@ function Actions({
         ) : null}
         {actions.includes('viewRecord') ? (
           <Button variant="outline" onClick={() => onOpenRecord(false)}>
-            <FileText aria-hidden /> {t.history.viewRecord}
+            <FileText aria-hidden /> {t.history.viewOrder}
           </Button>
         ) : null}
         {actions.includes('printRecord') ? (
           <Button variant="outline" onClick={() => onOpenRecord(true)}>
-            <Printer aria-hidden /> {t.history.printRecord}
+            <Printer aria-hidden /> {t.history.printOrder}
           </Button>
         ) : null}
         {actions.includes('sign') ? (

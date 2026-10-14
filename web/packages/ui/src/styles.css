@@ -98,6 +98,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -153,8 +154,10 @@
      more saturated -- this same value dims to brown on a dark surface. */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  /* A state's icon: done (success) or still to do (warning), deep enough for 3:1 on white. */
+  /* A state: done (success) or still to do (warning), as an icon (3:1 on white) or, with its
+     foreground, a badge (white on success is 5:1). */
   --success: oklch(0.527 0.154 150.069);
+  --success-foreground: oklch(0.985 0 0);
   --warning: oklch(0.555 0.163 48.998);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -217,6 +220,7 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.792 0.209 151.711);
+  --success-foreground: oklch(0.205 0 0);
   --warning: oklch(0.828 0.189 84.429);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
@@ -349,6 +353,7 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.792 0.209 151.711);
+  --success-foreground: oklch(0.205 0 0);
   --warning: oklch(0.828 0.189 84.429);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);

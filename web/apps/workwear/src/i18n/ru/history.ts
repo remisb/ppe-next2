@@ -45,8 +45,9 @@ export const history: HistoryText = {
   },
   openConfirmation: 'Открыть подтверждение сотрудника',
   handOverNow: 'Выдать сейчас',
-  viewRecord: 'Открыть запись',
+  viewOrder: 'Открыть заказ',
   printRecord: 'Печать записи',
+  printOrder: 'Печать заказа',
   shareWhatsApp: 'Отправить в WhatsApp',
   deleteOrder: 'Удалить заказ…',
   deleteOrdered: (record: string, name: string) =>

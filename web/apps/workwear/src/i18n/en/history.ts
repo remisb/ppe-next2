@@ -44,8 +44,10 @@ export const history = {
   },
   openConfirmation: 'Open Employee Confirmation',
   handOverNow: 'Hand over now',
-  viewRecord: 'View Record',
+  // The order pane's: they open and print the order's Items Given Record.
+  viewOrder: 'View Order',
   printRecord: 'Print Record',
+  printOrder: 'Print Order',
   shareWhatsApp: 'Share via WhatsApp',
   deleteOrder: 'Delete order…',
   deleteOrdered: (record: string, name: string) =>

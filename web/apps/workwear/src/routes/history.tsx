@@ -434,7 +434,7 @@ export function History({
             }}
           />
           {/* Beside the list only, and only where there is a keyboard. */}
-          <p className="mt-4 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
+          <p className="mt-3 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
             <Kbd>J</Kbd> / <Kbd>K</Kbd> {t.history.nextOrPrevious} · <Kbd>Esc</Kbd> {t.history.closeHint}
           </p>
         </aside>

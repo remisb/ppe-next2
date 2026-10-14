@@ -130,7 +130,7 @@ test('orders, an order and its record', async () => {
 
   await page.goto('/orders?status=GIVEN')
   await page.getByRole('link', { name: /^WE-\d{6}$/ }).filter({ visible: true }).first().click()
-  await order().getByRole('button', { name: T.history.viewRecord }).click()
+  await order().getByRole('button', { name: T.history.viewOrder }).click()
   await expect(page.getByText(/Items Given Record/i).first()).toBeVisible()
   await shot('record')
 })

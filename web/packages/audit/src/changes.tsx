@@ -3,7 +3,9 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import type { ReactNode } from 'react'
+import { cn } from '@ppe/ui/lib/utils'
+import { ChevronDown } from 'lucide-react'
+import { type ReactNode, useId, useState } from 'react'
 
 import { type DescribeOptions, type FieldChange, auditChanges, auditTitle, deviceText, sourceLabel } from './describe.ts'
 import { auditText } from './text.ts'
@@ -117,8 +119,57 @@ export function ChangeDetail({
  * A record page's Changes section: its recorded changes, newest first. load
  * reads them (client.audit.history); a new value in deps, such as the record's
  * updated_at, loads them again, so an edit made on the page shows at once.
+ * collapsible makes the heading a disclosure, closed at first; the changes are
+ * read only once it is opened.
  */
 export function RecordChanges({
+  load,
+  deps,
+  timeZone,
+  options,
+  collapsible = false,
+  className,
+}: {
+  load: () => Promise<AuditEntry[]>
+  deps: readonly unknown[]
+  timeZone: string | undefined
+  options?: DescribeOptions | undefined
+  collapsible?: boolean
+  /** Replaces the room below it (mb-8), for a section that ends a smaller panel. */
+  className?: string | undefined
+}) {
+  const t = auditText()
+  const [open, setOpen] = useState(!collapsible)
+  const bodyId = useId()
+  return (
+    <section aria-labelledby="record-changes" className={cn('mb-8', className)}>
+      {collapsible ? (
+        <h2 id="record-changes" className="mb-1 text-lg font-semibold">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={bodyId}
+            onClick={() => setOpen((v) => !v)}
+            className="-mx-2 flex min-h-11 w-[calc(100%+1rem)] cursor-pointer items-center justify-between gap-2 rounded-md px-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t.changes}
+            <ChevronDown aria-hidden className={cn('size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none', open && 'rotate-180')} />
+          </button>
+        </h2>
+      ) : (
+        <h2 id="record-changes" className="mb-1 text-lg font-semibold">
+          {t.changes}
+        </h2>
+      )}
+      <div id={bodyId} className="empty:hidden">
+        {open ? <ChangesBody load={load} deps={deps} timeZone={timeZone} options={options} /> : null}
+      </div>
+    </section>
+  )
+}
+
+/** The intro and the changes themselves, read when shown. */
+function ChangesBody({
   load,
   deps,
   timeZone,
@@ -132,10 +183,7 @@ export function RecordChanges({
   const t = auditText()
   const changes = useLoad(load, deps)
   return (
-    <section aria-labelledby="record-changes" className="mb-8">
-      <h2 id="record-changes" className="mb-1 text-lg font-semibold">
-        {t.changes}
-      </h2>
+    <>
       <p className="mb-3 text-sm text-muted-foreground">{t.changesIntro}</p>
       {changes.error ? (
         <ErrorState error={changes.error} onRetry={changes.reload} />
@@ -146,6 +194,6 @@ export function RecordChanges({
       ) : (
         <ChangeList entries={changes.data} timeZone={timeZone} options={options} />
       )}
-    </section>
+    </>
   )
 }

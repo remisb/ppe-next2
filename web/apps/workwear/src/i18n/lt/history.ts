@@ -44,8 +44,9 @@ export const history: HistoryText = {
   },
   openConfirmation: 'Atidaryti darbuotojo patvirtinimą',
   handOverNow: 'Išduoti dabar',
-  viewRecord: 'Peržiūrėti įrašą',
+  viewOrder: 'Peržiūrėti užsakymą',
   printRecord: 'Spausdinti įrašą',
+  printOrder: 'Spausdinti užsakymą',
   shareWhatsApp: 'Siųsti per WhatsApp',
   deleteOrder: 'Ištrinti užsakymą…',
   deleteOrdered: (record: string, name: string) =>
