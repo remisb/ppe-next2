@@ -708,9 +708,12 @@ test('Item page: price history and the orders that hold the item', async () => {
 })
 
 test('Audit log: who changed a price, when and where; the item\'s Changes say the same', async () => {
-  // The item's own page lists its changes, newest first.
+  // The item's own page lists its changes, newest first, once its closed Changes are opened.
   await openTab('Item Catalogue')
   await page.getByRole('link', { name: 'Safety shoes' }).click()
+  const toggle = page.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.click()
   const changes = page.getByRole('region', { name: 'Changes' }).getByRole('listitem')
   await expect(changes.first()).toContainText('Price changed')
   await expect(changes.first()).toContainText('€49.99 → €59.99')

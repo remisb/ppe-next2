@@ -197,7 +197,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
             </a>
           </section>
 
-          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} />
+          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} collapsible className="mb-0" />
 
           <ItemForm
             item={editing ? i : null}
