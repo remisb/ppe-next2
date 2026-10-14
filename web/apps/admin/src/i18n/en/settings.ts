@@ -1,4 +1,4 @@
-/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group). */
+/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group, the SIM card providers). */
 export const settings = {
   title: 'Settings',
   description: 'For the whole organisation. Only administrators change them.',
@@ -19,6 +19,26 @@ export const settings = {
   tryIt: 'Open the group',
   nameRequired: 'Give the group a name: staff see it on Copy for WhatsApp.',
   invalidLink: 'Paste the group invite link from WhatsApp: it starts with https://chat.whatsapp.com/',
+  simProviders: 'SIM card providers',
+  simProvidersIntro: 'Add SIM offers these providers, the default one chosen first. A card already registered keeps its provider.',
+  noProviders: 'None listed: Add SIM asks for the provider to be typed.',
+  defaultProviderIs: (name: string) => `Add SIM chooses ${name} first.`,
+  noDefaultProvider: 'No default: Add SIM asks which one.',
+  unsaved: 'Changes not saved yet.',
+  defaultProvider: 'Default provider',
+  defaultBadge: 'Default',
+  noDefault: 'No default',
+  removeProvider: (name: string) => `Remove ${name}`,
+  addProviderLabel: 'Provider name',
+  addProvider: 'Add',
+  providerProblems: {
+    empty: 'Type the provider’s name.',
+    duplicate: 'This provider is already listed.',
+    tooLong: 'At most 100 characters.',
+    tooMany: 'At most 50 providers.',
+  },
+  saveProviders: 'Save providers',
+  discard: 'Discard changes',
 }
 
 export type SettingsText = typeof settings

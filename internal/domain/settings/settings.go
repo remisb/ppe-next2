@@ -1,11 +1,12 @@
 // Package settings holds the organisation's settings that administrators
 // change in the app, one set for the whole organisation: the supplier's
 // WhatsApp group, which Copy for WhatsApp opens for the order message, and the
-// default SIM card provider, which Add SIM fills in. Settings fixed at
-// deployment (timezone, currency) stay in config.
+// SIM card providers, which Add SIM offers, the default one chosen. Settings
+// fixed at deployment (timezone, currency) stay in config.
 package settings
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
@@ -18,6 +19,7 @@ const (
 	maxChatNameLen = 100
 	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
 	maxProviderLen = 100
+	maxProviders   = 50
 )
 
 // chatHost is where WhatsApp group invite links live.
@@ -30,8 +32,11 @@ var inviteCode = regexp.MustCompile(`^[A-Za-z0-9]{10,40}$`)
 // what a database with no settings row reads as.
 type Settings struct {
 	SupplierChat SupplierChat
-	// DefaultSIMProvider is the provider Add SIM fills in for a new
-	// card; empty when there is none.
+	// SIMProviders are the providers Add SIM offers, in the administrator's
+	// order; never nil once read.
+	SIMProviders []string
+	// DefaultSIMProvider is the one of them Add SIM chooses for a new card;
+	// empty when there is none.
 	DefaultSIMProvider string
 	UpdatedAt          time.Time
 	UpdatedByUserID    uuid.UUID
@@ -96,13 +101,51 @@ func parseInvite(link string) (string, bool) {
 	return code, true
 }
 
-// NormalizeProvider trims a provider as an asset's provider is trimmed, so the
-// default reads the same as the cards that use it.
-func NormalizeProvider(p string) string { return strings.TrimSpace(p) }
+// SIMProvidersParams replace the SIM card providers: the list, and the one of
+// them Add SIM chooses first, or empty for none.
+type SIMProvidersParams struct {
+	Providers []string
+	Default   string
+}
 
-func validateProvider(p string) error {
-	if len(p) > maxProviderLen {
-		return fieldError("provider", "is too long")
+// Normalize trims each provider, as an asset's provider is trimmed so the
+// list reads the same as the cards that use it, and drops empty ones. A
+// default that names a listed provider in another case takes the list's spelling.
+func (p *SIMProvidersParams) Normalize() {
+	list := make([]string, 0, len(p.Providers))
+	for _, name := range p.Providers {
+		if name = strings.TrimSpace(name); name != "" {
+			list = append(list, name)
+		}
+	}
+	p.Providers = list
+	p.Default = strings.TrimSpace(p.Default)
+	for _, name := range list {
+		if strings.EqualFold(name, p.Default) {
+			p.Default = name
+			break
+		}
+	}
+}
+
+func (p *SIMProvidersParams) Validate() error {
+	p.Normalize()
+	if len(p.Providers) > maxProviders {
+		return fieldError("providers", fmt.Sprintf("may list at most %d", maxProviders))
+	}
+	seen := make(map[string]bool, len(p.Providers))
+	for _, name := range p.Providers {
+		if len(name) > maxProviderLen {
+			return fieldError("provider", "is too long")
+		}
+		key := strings.ToLower(name)
+		if seen[key] {
+			return fieldError("providers", fmt.Sprintf("list %s twice", name))
+		}
+		seen[key] = true
+	}
+	if p.Default != "" && !seen[strings.ToLower(p.Default)] {
+		return fieldError("default", "must be one of the providers")
 	}
 	return nil
 }

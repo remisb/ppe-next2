@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,7 +11,11 @@ import (
 )
 
 const (
-	EventSupplierChatChanged       = "settings.supplier_chat_changed"
+	EventSupplierChatChanged = "settings.supplier_chat_changed"
+	EventSIMProvidersChanged = "settings.sim_providers_changed"
+	// EventDefaultSIMProviderChanged was recorded when Add SIM set the default
+	// provider (migration 0031) and is no longer written; the audit log still
+	// reads the events from then.
 	EventDefaultSIMProviderChanged = "settings.default_sim_provider_changed"
 	auditEntity                    = "settings"
 )
@@ -65,31 +70,40 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 	})
 }
 
-// UpdateDefaultSIMProvider sets, changes or (empty) clears the provider Add
-// SIM Card fills in, recording settings.default_sim_provider_changed when it differs.
-func (s *Service) UpdateDefaultSIMProvider(ctx context.Context, provider string, actor uuid.UUID) (Settings, error) {
+// UpdateSIMProviders replaces the SIM card providers and the default one,
+// recording settings.sim_providers_changed when either differs. Cards already
+// registered keep their provider, listed or not.
+func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, actor uuid.UUID) (Settings, error) {
 	if actor == uuid.Nil {
 		return Settings{}, fieldError("actor", "is required")
 	}
-	provider = NormalizeProvider(provider)
-	if err := validateProvider(provider); err != nil {
+	if err := p.Validate(); err != nil {
 		return Settings{}, err
 	}
 	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
-		if provider == cur.DefaultSIMProvider {
+		if slices.Equal(p.Providers, cur.SIMProviders) && p.Default == cur.DefaultSIMProvider {
 			return cur, nil, nil
 		}
 		now := s.now()
 		next := cur
-		next.DefaultSIMProvider, next.UpdatedAt, next.UpdatedByUserID = provider, now, actor
+		next.SIMProviders, next.DefaultSIMProvider, next.UpdatedAt, next.UpdatedByUserID = p.Providers, p.Default, now, actor
 		type value struct {
-			Provider string `json:"provider"`
+			Providers []string `json:"providers"`
+			Default   string   `json:"default_provider"`
 		}
-		ev, err := audit.New(s.newID(), &actor, EventDefaultSIMProviderChanged, auditEntity, AuditEntityID, now,
-			value{cur.DefaultSIMProvider}, value{provider})
+		ev, err := audit.New(s.newID(), &actor, EventSIMProvidersChanged, auditEntity, AuditEntityID, now,
+			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider}, value{p.Providers, p.Default})
 		if err != nil {
 			return Settings{}, nil, err
 		}
 		return next, &ev, nil
 	})
+}
+
+// orEmpty keeps a list that was never set from reading as null in the event.
+func orEmpty(list []string) []string {
+	if list == nil {
+		return []string{}
+	}
+	return list
 }

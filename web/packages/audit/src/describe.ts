@@ -42,6 +42,7 @@ type Format =
   | 'category'
   | 'whereabouts'
   | 'output'
+  | 'list'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -104,6 +105,8 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['sim_no', 'text'],
   ['phone_no', 'text'],
   ['provider', 'text'],
+  ['providers', 'list'],
+  ['default_provider', 'text'],
   ['plan', 'text'],
   ['non_return_value_cents', 'money'],
   ['connection_status', 'status'],
@@ -190,6 +193,9 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
       if (!Array.isArray(value)) return String(value)
       if (value.length === 0) return t.none
       return options.permissionLabel ? value.map((k) => options.permissionLabel!(String(k)) ?? String(k)).join(', ') : t.permissionCount(value.length)
+    case 'list':
+      if (!Array.isArray(value)) return String(value)
+      return value.length === 0 ? t.none : value.map(String).join(', ')
     case 'lines':
       return Array.isArray(value) ? t.items(value.length) : String(value)
     case 'date':

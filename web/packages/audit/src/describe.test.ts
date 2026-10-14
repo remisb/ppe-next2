@@ -32,6 +32,18 @@ describe('auditChanges', () => {
     ])
   })
 
+  it('lists the SIM card providers, and says when there are none', () => {
+    expect(
+      auditChanges({
+        before: { providers: [], default_provider: '' },
+        after: { providers: ['Telia', 'Bitė'], default_provider: 'Telia' },
+      }),
+    ).toEqual([
+      { key: 'providers', label: 'Providers', before: 'None', after: 'Telia, Bitė' },
+      { key: 'default_provider', label: 'Default provider', before: null, after: 'Telia' },
+    ])
+  })
+
   it('shows what a record was created with', () => {
     expect(auditChanges({ before: null, after: { height_cm: 180, clothing_size: 54, shoe_size: null } })).toEqual([
       { key: 'height_cm', label: 'Height', before: null, after: '180 cm' },

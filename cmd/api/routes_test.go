@@ -785,7 +785,7 @@ var policy = map[string]rule{
 	"GET /api/v1/orders":                                                        {"", "any"},
 	"GET /api/v1/settings":                                                      {"", "any"},
 	"PUT /api/v1/settings/supplier-chat":                                        {role.SettingsManage, "admins"},
-	"PUT /api/v1/settings/default-sim-provider":                                 {role.AssetsManage, "managers"},
+	"PUT /api/v1/settings/sim-providers":                                        {role.SettingsManage, "admins"},
 	"POST /api/v1/orders/{id}/confirmation-link":                                {"", "any"},
 	"POST /api/v1/orders/{id}/confirm-paper":                                    {"", "any"},
 	"POST /api/v1/orders/{id}/confirm-in-person":                                {"", "any"},

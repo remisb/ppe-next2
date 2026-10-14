@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, defaultProviderChange, emptySimDraft, isDefaultProvider, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -78,20 +78,11 @@ describe('default provider', () => {
     expect(emptySimDraft('2026-10-09').provider).toBe('')
   })
 
-  it('is ticked for the default provider only', () => {
-    expect(isDefaultProvider(' Telia ', 'Telia')).toBe(true)
-    expect(isDefaultProvider('Bitė', 'Telia')).toBe(false)
-    expect(isDefaultProvider('', null)).toBe(false)
-  })
-
-  it('changes only when the choice differs from the default', () => {
-    expect(defaultProviderChange(' Bitė ', true, 'Telia')).toBe('Bitė')
-    expect(defaultProviderChange('Telia', true, null)).toBe('Telia')
-    expect(defaultProviderChange('Telia', true, 'Telia')).toBeUndefined()
-    expect(defaultProviderChange('  ', true, 'Telia')).toBeUndefined()
-    expect(defaultProviderChange('Telia', false, 'Telia')).toBe('')
-    expect(defaultProviderChange('Bitė', false, 'Telia')).toBeUndefined()
-    expect(defaultProviderChange('Bitė', false, null)).toBeUndefined()
+  it('offers the providers listed on Settings, and a card’s own when it is not listed', () => {
+    expect(providerOptions(['Telia', 'Bitė'])).toEqual(['Telia', 'Bitė'])
+    expect(providerOptions(['Telia', 'Bitė'], 'Bitė')).toEqual(['Telia', 'Bitė'])
+    expect(providerOptions(['Telia'], ' Tele2 ')).toEqual(['Telia', 'Tele2'])
+    expect(providerOptions([], null)).toEqual([])
   })
 })
 

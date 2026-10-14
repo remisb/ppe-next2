@@ -48,6 +48,7 @@ export const AUDIT_EVENTS = [
   'asset.blocking_email_prepared',
   'settings.supplier_chat_changed',
   'settings.default_sim_provider_changed',
+  'settings.sim_providers_changed',
   'access_review.completed',
   'audit.exported',
   'audit.purged',

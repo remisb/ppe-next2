@@ -456,13 +456,12 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
         <SimCardForm
           card={editing}
           today={today}
-          providers={s?.providers ?? []}
+          providers={settings.data?.sim_providers ?? []}
+          inUse={s?.providers ?? []}
           defaultProvider={settings.data?.default_sim_provider}
           onClose={() => setEditing(null)}
           onSaved={(saved, added) => {
             setEditing(null)
-            // Add SIM may have changed the default provider.
-            if (added) settings.reload()
             setMessage(added ? t.assets.added(saved.inventory_no) : t.assets.saved(saved.inventory_no))
             reload()
           }}

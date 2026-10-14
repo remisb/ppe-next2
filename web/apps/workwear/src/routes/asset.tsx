@@ -222,7 +222,7 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
             <SimCardForm
               card={editing ? a : null}
               today={today}
-              providers={[]}
+              providers={settings.data?.sim_providers ?? []}
               onClose={() => setEditing(false)}
               onSaved={(saved) => {
                 setEditing(false)

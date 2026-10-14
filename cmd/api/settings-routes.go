@@ -14,27 +14,31 @@ type settingsHandler struct {
 
 // registerSettingsRoutes mounts /api/v1/settings. Every signed-in user reads
 // them (dates in the zone Orders filters use; the supplier's WhatsApp group
-// for Copy for WhatsApp; the default SIM card provider for Add SIM); only
-// administrators change the supplier's group, and whoever registers SIM cards
-// (assets.manage) the default provider.
+// for Copy for WhatsApp; the SIM card providers for Add SIM); only
+// administrators change them.
 func registerSettingsRoutes(rt *router, svc *settings.Service, timezone string) {
 	h := &settingsHandler{settings: svc, timezone: timezone}
 	rt.authenticated("GET /api/v1/settings", h.get)
 	rt.restricted("PUT /api/v1/settings/supplier-chat", h.updateSupplierChat, role.SettingsManage)
-	rt.restricted("PUT /api/v1/settings/default-sim-provider", h.updateDefaultSIMProvider, role.AssetsManage)
+	rt.restricted("PUT /api/v1/settings/sim-providers", h.updateSIMProviders, role.SettingsManage)
 }
 
 // settingsJSON: timezone and currency come from config, the rest from the
-// settings service. supplier_chat and default_sim_provider are null when not set.
+// settings service. supplier_chat and default_sim_provider are null when not
+// set; sim_providers is a list, empty when there are none.
 type settingsJSON struct {
 	Timezone           string                 `json:"timezone"`
 	Currency           string                 `json:"currency"`
 	SupplierChat       *settings.SupplierChat `json:"supplier_chat"`
+	SIMProviders       []string               `json:"sim_providers"`
 	DefaultSIMProvider *string                `json:"default_sim_provider"`
 }
 
 func (h *settingsHandler) toJSON(s settings.Settings) settingsJSON {
-	out := settingsJSON{Timezone: h.timezone, Currency: "EUR"}
+	out := settingsJSON{Timezone: h.timezone, Currency: "EUR", SIMProviders: s.SIMProviders}
+	if out.SIMProviders == nil {
+		out.SIMProviders = []string{}
+	}
 	if s.SupplierChat.Set() {
 		chat := s.SupplierChat
 		out.SupplierChat = &chat
@@ -79,23 +83,24 @@ func (h *settingsHandler) updateSupplierChat(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, h.toJSON(s))
 }
 
-// defaultSIMProviderRequest replaces the default provider; empty clears it.
-type defaultSIMProviderRequest struct {
-	Provider string `json:"provider"`
+// simProvidersRequest replaces the providers and the default one (empty for none).
+type simProvidersRequest struct {
+	Providers []string `json:"providers"`
+	Default   string   `json:"default"`
 }
 
-func (h *settingsHandler) updateDefaultSIMProvider(w http.ResponseWriter, r *http.Request) {
+func (h *settingsHandler) updateSIMProviders(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	var req defaultSIMProviderRequest
+	var req simProvidersRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, r, err)
 		return
 	}
-	s, err := h.settings.UpdateDefaultSIMProvider(r.Context(), req.Provider, actor)
+	s, err := h.settings.UpdateSIMProviders(r.Context(), settings.SIMProvidersParams{Providers: req.Providers, Default: req.Default}, actor)
 	if err != nil {
 		writeError(w, r, err)
 		return

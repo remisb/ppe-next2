@@ -16,6 +16,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/size"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
@@ -154,6 +155,10 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	// item, given on paper forms (furniture without one), one card returned and
 	// then blocked, one not returned.
 	clock.daysAgo(start, loc, 100)
+	prefs := settings.NewService(settings.NewPostgresRepository(pool), settings.WithClock(clock.now))
+	if _, err := prefs.UpdateSIMProviders(ctx, settings.SIMProvidersParams{Providers: []string{"Telia", "Bitė", "Tele2"}, Default: "Telia"}, admin.ID); err != nil {
+		return fmt.Errorf("SIM card providers: %w", err)
+	}
 	sim1 := s.sim("SIM-000001", "8937 0011 2233 4455 667", "+370 612 40118", "Telia", "Biz 10 GB", asset.StatusActive)
 	sim2 := s.sim("SIM-000002", "8937 0011 2233 4455 668", "+370 612 40119", "Telia", "Biz 10 GB", asset.StatusActive)
 	sim3 := s.sim("SIM-000003", "8937 0102 7788 1200 015", "+370 655 21987", "Bitė", "Verslas 20 GB", asset.StatusActive)

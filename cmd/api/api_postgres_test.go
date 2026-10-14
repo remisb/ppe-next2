@@ -945,8 +945,26 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	if rec := api.do(t, "GET", "/api/v1/catalogue/"+uuid.NewString()+"/price-history", staff, nil); rec.Code != http.StatusNotFound {
 		t.Errorf("unknown item history = %d, want 404", rec.Code)
 	}
+	type settingsBody struct {
+		Timezone           string   `json:"timezone"`
+		SIMProviders       []string `json:"sim_providers"`
+		DefaultSIMProvider *string  `json:"default_sim_provider"`
+	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if decode[map[string]string](t, rec.Body.Bytes())["timezone"] != "Europe/Vilnius" {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil {
+		t.Errorf("settings = %s", rec.Body)
+	}
+	// An administrator lists the SIM card providers (as ppe_app); everyone reads them for Add SIM.
+	_, settingsAdmin := api.userWith(t, role.KeyAdmin)
+	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia"}
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, providers); rec.Code != http.StatusOK {
+		t.Fatalf("sim providers = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []string{"Telia"}, "default": "Tele2"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("an unlisted default = %d, want 400", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
+	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" {
 		t.Errorf("settings = %s", rec.Body)
 	}
 }

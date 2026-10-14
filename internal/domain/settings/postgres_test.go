@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -74,12 +75,17 @@ func TestPostgresSupplierChat(t *testing.T) {
 	}
 }
 
-func TestPostgresDefaultSIMProvider(t *testing.T) {
+func TestPostgresSIMProviders(t *testing.T) {
 	pool, actor := newTestPool(t)
 	svc := NewService(NewPostgresRepository(pool))
 	ctx := context.Background()
 
-	if _, err := svc.UpdateDefaultSIMProvider(ctx, "Telia", actor); err != nil {
+	// No row: no providers, an empty list rather than none.
+	s, err := svc.Get(ctx)
+	if err != nil || s.SIMProviders == nil || len(s.SIMProviders) != 0 {
+		t.Fatalf("Get on an empty table = %#v, %v", s.SIMProviders, err)
+	}
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Telia", "Bitė"}, Default: "Telia"}, actor); err != nil {
 		t.Fatal(err)
 	}
 	link := "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
@@ -87,19 +93,23 @@ func TestPostgresDefaultSIMProvider(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Each save keeps the other setting.
-	s, err := svc.Get(ctx)
-	if err != nil || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link {
+	s, err = svc.Get(ctx)
+	if err != nil || !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link {
 		t.Fatalf("Get = %+v, %v", s, err)
 	}
-	if _, err := svc.UpdateDefaultSIMProvider(ctx, "", actor); err != nil {
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{}, actor); err != nil {
 		t.Fatal(err)
 	}
 	s, err = svc.Get(ctx)
-	if err != nil || s.DefaultSIMProvider != "" || s.SupplierChat.Link != link {
+	if err != nil || len(s.SIMProviders) != 0 || s.DefaultSIMProvider != "" || s.SupplierChat.Link != link {
 		t.Fatalf("after clearing: %+v, %v", s, err)
 	}
 	var events int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1`, EventDefaultSIMProviderChanged).Scan(&events); err != nil || events != 2 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1`, EventSIMProvidersChanged).Scan(&events); err != nil || events != 2 {
 		t.Fatalf("events = %d, %v", events, err)
+	}
+	// The database keeps the default among the providers, whatever writes the row.
+	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_provider = 'Tele2'`); err == nil {
+		t.Fatal("a default that is not listed was stored")
 	}
 }

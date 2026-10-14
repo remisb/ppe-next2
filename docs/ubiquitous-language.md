@@ -846,11 +846,14 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** the provider's e-mail address is shown where staff must write to it
   (activation, blocking). Nothing is sent from the app.
 
-### Default provider
-- **Brief:** the provider Add SIM fills in for a new card, one for the organisation.
-- **Code:** `settings.DefaultSIMProvider`, `default_sim_provider`. **UI:** **Default for new
-  cards**, under Provider on Add SIM.
-- **Detail:** set or cleared there as a card is saved; it changes no card already registered.
+### SIM card providers and the default provider
+- **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
+  and the one of them Add SIM chooses first.
+- **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
+  `default_sim_provider`. **UI:** **SIM card providers** on Settings in Administration, with
+  **Default provider** and **No default**.
+- **Detail:** changing them changes no card already registered; a card whose provider is no
+  longer listed keeps it.
 
 ### Connection status
 - **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
@@ -1046,7 +1049,8 @@ screens are built):
 | Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
 | Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
-| Default for new cards | Numatytasis naujoms kortelėms | По умолчанию для новых карт |
+| SIM card providers | SIM kortelių tiekėjai | Операторы SIM-карт |
+| Default provider / No default | Numatytasis tiekėjas / Be numatytojo | Оператор по умолчанию / Без оператора по умолчанию |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |

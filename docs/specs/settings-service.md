@@ -7,13 +7,12 @@ currency) stay in config; `GET /api/v1/settings` returns both kinds together.
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/settings` | any authenticated: `{timezone, currency, supplier_chat, default_sim_provider}`, `supplier_chat` being `{name, link}` or `null` when not set, `default_sim_provider` a string or `null` |
+| `GET /api/v1/settings` | any authenticated: `{timezone, currency, supplier_chat, sim_providers, default_sim_provider}`, `supplier_chat` being `{name, link}` or `null` when not set, `sim_providers` a list (empty when none), `default_sim_provider` one of them or `null` |
 | `PUT /api/v1/settings/supplier-chat` | `settings.manage` (administrators): body `{name, link}`, both set or both empty to clear; returns the settings |
-| `PUT /api/v1/settings/default-sim-provider` | `assets.manage` (whoever registers SIM cards): body `{provider}`, empty to clear; returns the settings |
+| `PUT /api/v1/settings/sim-providers` | `settings.manage` (administrators): body `{providers, default}`, `default` one of `providers` or `''` for none; returns the settings |
 
 In the web app they are the Settings screen in Administration (`/admin/settings`); the
-staff app's old `/settings` leads there. The default SIM card provider is set where it is
-used, on Add SIM.
+staff app's old `/settings` leads there.
 
 ## The supplier's WhatsApp group
 
@@ -38,18 +37,29 @@ GIVEN order's Share via WhatsApp still let the user pick the chat.
   an invite link lets whoever holds it join the group, so it is never put in the code or
   the client bundle.
 
-## The default SIM card provider
+## The SIM card providers
 
-Add SIM (Company Assets, [asset-service.md](asset-service.md)) fills in the provider
-with the default, when there is one. Below the field, **Default for new cards** is ticked
-while the provider is the default one; ticking it for another provider makes that one the
-default, and unticking it on the default one clears it, both as the card is saved (the
-default first, so a refused default adds no card). Edit does not offer it.
+An administrator lists the SIM card providers on Settings and marks one as the default
+(or none). Add SIM (Company Assets, [asset-service.md](asset-service.md)) offers them in
+a select, the default one chosen; Edit offers them too, with the card's own provider added
+when it is no longer listed. With none listed, the provider is typed, as before the list
+existed, and the field says an administrator can list them.
 
-- `provider` is trimmed, as an asset's provider is, at most 100 characters; empty clears it.
-- It only fills in the form: a card's provider is still its own, and changing the default
-  changes no card.
-- Stored in `app_settings.default_sim_provider` (migration 0031), `''` when none.
+- On the screen the list is a draft: **Add** (the first provider added becomes the default
+  when there is none), **Remove** (removing the default leaves none), the **Default
+  provider** radios with **No default**, then **Save providers** sends it all.
+- Each provider is trimmed, as an asset's provider is, empty ones dropped, at most 100
+  characters; one listed twice in any case, more than 50, or a default not among them is
+  `ErrInvalid` (400). A default naming a listed provider in another case takes the list's
+  spelling. The administrator's order is kept.
+- The list only feeds the form: the API does not refuse a card whose provider is not
+  listed, a card's provider is still its own, and changing the list changes no card.
+- Stored in `app_settings.sim_providers` (`TEXT[]`, migration 0033) and
+  `default_sim_provider` (migration 0031, `''` when none); a CHECK keeps the default among
+  the providers. Migration 0033 began the list with the default and the providers of the
+  SIM cards registered, one spelling each, where the settings row existed.
+- Until 0033 the default was set from Add SIM (**Default for new cards**, `assets.manage`,
+  `PUT /api/v1/settings/default-sim-provider`); that route is gone.
 
 ## Storage and audit
 
@@ -60,5 +70,6 @@ The first save inserts the row (`ON CONFLICT (singleton) DO UPDATE` for two at o
 later ones lock it `FOR UPDATE`. A save that changes the group records
 `settings.supplier_chat_changed` with the old and new `{name, link}`, entity type
 `settings` and a fixed entity id (`settings.AuditEntityID`); one that changes the default
-SIM card provider records `settings.default_sim_provider_changed` with the old and new
-`{provider}`. An unchanged save writes nothing, and each save keeps the other setting.
+SIM card providers records `settings.sim_providers_changed` with the old and new
+`{providers, default_provider}` (older events, `settings.default_sim_provider_changed`,
+hold `{provider}`). An unchanged save writes nothing, and each save keeps the other setting.
