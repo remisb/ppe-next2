@@ -115,8 +115,8 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 
 	jonas := s.employee("Jonas", "Petraitis", "W-001", 184, 58, "43", "", "lt")
 	ona := s.employee("Ona", "Kazlauskienė", "W-002", 165, 46, "39", "", "")
-	tomas := s.employee("Tomas", "Jankauskas", "W-003", 190, 0, "45", "Clothing size not recorded yet; suggested from height", "")
-	rasa := s.employee("Rasa", "Stankevičiūtė", "W-004", 171, 50, "", "Shoe size missing", "")
+	tomas := s.employee("Tomas", "Jankauskas", "W-003", 190, 0, "45", "", "")
+	rasa := s.employee("Rasa", "Stankevičiūtė", "W-004", 171, 50, "", "", "")
 	mindaugas := s.employee("Mindaugas", "Vasiliauskas", "", 178, 54, "44", "", "")
 	aleksandr := s.employee("Aleksandr", "Ivanov", "W-006", 189, 62, "46", "Prefers Russian", "ru")
 	if s.err != nil {
