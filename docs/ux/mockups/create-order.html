@@ -1,0 +1,970 @@
+<title>Create Order Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a control bar over a grey stage that holds one scaled device; a journey panel beside it (below on narrow screens).
+   The mocked app inside the device is styled only by its own --a-* tokens, one set per style direction. */
+:root {
+  --c-bg: #f3f3f6; --c-panel: #ffffff; --c-fg: #16152b; --c-mut: #5d5c72; --c-line: #dcdbe6;
+  --c-acc: #110f36; --c-acc-fg: #ffffff; --c-stage: #e6e5ee; --c-soft: #ecebf6; --c-hl: #3d39b8; --c-ok: #1d7a43;
+  --c-font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --c-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-bg: #0d0d16; --c-panel: #16162a; --c-fg: #ecebf7; --c-mut: #a3a2bb; --c-line: #2b2a44;
+    --c-acc: #c9c7ff; --c-acc-fg: #110f36; --c-stage: #08080f; --c-soft: #1f1e38; --c-hl: #a9a6ff; --c-ok: #5fd08c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --c-bg: #0d0d16; --c-panel: #16162a; --c-fg: #ecebf7; --c-mut: #a3a2bb; --c-line: #2b2a44;
+  --c-acc: #c9c7ff; --c-acc-fg: #110f36; --c-stage: #08080f; --c-soft: #1f1e38; --c-hl: #a9a6ff; --c-ok: #5fd08c; color-scheme: dark;
+}
+body { background: var(--c-bg); color: var(--c-fg); font-family: var(--c-font); }
+.wrap { padding-inline: 16px; padding-block: 20px 48px; max-width: 1720px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; }
+@media (min-width: 900px) { .wrap { padding-inline: 28px; } }
+
+/* ---------- Review chrome ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-family: var(--c-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--c-mut); }
+.top h1 { margin: 4px 0 6px; font-size: clamp(24px, 3vw, 32px); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.top p { margin: 0; max-width: 64ch; color: var(--c-mut); line-height: 1.5; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 12px 14px; background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 12px; z-index: 5; }
+@media (min-width: 1120px) and (min-height: 760px) { .controls { position: sticky; top: env(safe-area-inset-top, 0px); } }
+.ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.ctl-l { font-family: var(--c-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--c-mut); }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; background: var(--c-soft); padding: 3px; border-radius: 9px; }
+.seg button { font: inherit; font-size: 13px; color: var(--c-fg); background: transparent; border: 0; border-radius: 7px; padding: 0 11px; min-height: 34px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.seg button:hover { background: var(--c-panel); }
+.seg button[aria-checked="true"] { background: var(--c-acc); color: var(--c-acc-fg); }
+.seg button:focus-visible, .tog input:focus-visible, .jstep button:focus-visible { outline: 2px solid var(--c-hl); outline-offset: 2px; }
+.sw { width: 14px; height: 14px; border-radius: 50%; border: 3px solid; flex: none; }
+.tog { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; min-height: 34px; }
+.tog input { width: 16px; height: 16px; accent-color: var(--c-hl); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (min-width: 1120px) { .main { grid-template-columns: minmax(0, 1fr) 21rem; } }
+.stage { background: var(--c-stage); border-radius: 14px; padding: 20px 12px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.stage.actual { overflow-x: auto; align-items: flex-start; }
+.fw { position: relative; flex: none; }
+.frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.stage-meta { font-family: var(--c-mono); font-size: 12px; color: var(--c-mut); text-align: center; }
+
+.journey { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.journey h2, .notes h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.journey > p { margin: 0; font-size: 13px; color: var(--c-mut); line-height: 1.45; }
+.jlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.jstep { border: 1px solid var(--c-line); border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 10px; }
+.jstep.now { border-color: var(--c-hl); box-shadow: 0 0 0 1px var(--c-hl); }
+.jn { grid-row: span 3; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-family: var(--c-mono); font-size: 12px; background: var(--c-soft); color: var(--c-fg); }
+.jstep.done .jn { background: var(--c-ok); color: var(--c-panel); }
+.jstep.now .jn { background: var(--c-hl); color: var(--c-panel); }
+.jt { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.jt button { font: inherit; font-size: 12px; font-weight: 500; color: var(--c-hl); background: none; border: 0; cursor: pointer; padding: 2px 0; white-space: nowrap; }
+.jtry, .jq { font-size: 13px; line-height: 1.45; margin: 0; }
+.jq { color: var(--c-mut); }
+.jq b { font-weight: 600; color: var(--c-fg); }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 18px; }
+.note { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.note dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-size: 13px; line-height: 1.45; }
+.note dt { color: var(--c-mut); }
+.note dd { margin: 0; }
+.foot { font-size: 12px; color: var(--c-mut); line-height: 1.5; }
+
+/* ---------- Device frames ---------- */
+.bz { background: #1c1c21; box-shadow: 0 1px 0 #3a3a42 inset, 0 30px 60px -20px rgba(10, 10, 30, .45); }
+.bz-phone, .bz-native { padding: 12px; border-radius: 58px; }
+.bz-phone .screen, .bz-native .screen { border-radius: 46px; }
+.bz-tablet { padding: 18px; border-radius: 42px; }
+.bz-tablet .screen { border-radius: 24px; }
+.bz-desktop, .bz-ultra { padding: 10px; border-radius: 16px; }
+.bz-desktop .screen, .bz-ultra .screen { border-radius: 6px; }
+.screen { position: relative; overflow: hidden; background: #fff; }
+.browser { height: 40px; background: #ececf0; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #d4d4da; font-family: var(--c-font); }
+.browser i { width: 11px; height: 11px; border-radius: 50%; background: #c9c9cf; }
+.browser .url { margin-inline: auto; background: #fff; border-radius: 7px; padding: 4px 60px; font-size: 13px; color: #55555f; }
+.vp { position: relative; }
+
+/* ---------- The mocked app ---------- */
+.st-calm { --a-bg: #f6f6f7; --a-sf: #ffffff; --a-fg: #18181b; --a-mut: #6b6b76; --a-ln: #e4e4e7; --a-ac: #2563eb; --a-acf: #ffffff; --a-acs: #e8effd; --a-bad: #c81e1e; --a-badbg: #fdecec; --a-warn: #8a5300; --a-warnbg: #fff4e0; --a-ok: #15803d; --a-r: 10px; --a-rs: 8px; --a-row: 44px; --a-fs: 14px; --a-font: 'IBM Plex Sans', system-ui, sans-serif; --a-hfont: var(--a-font); --a-htt: none; --a-hls: 0; --a-hw: 600; --a-bw: 1px; --a-num: var(--a-font); --a-nav: #ffffff; --a-navfg: #18181b; --a-navac: #f0f0f2; --a-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+.st-safety { --a-bg: #fffbeb; --a-sf: #ffffff; --a-fg: #0a0a0a; --a-mut: #44403c; --a-ln: #a8a29e; --a-ac: #f59e0b; --a-acf: #0a0a0a; --a-acs: #fdecc0; --a-bad: #b91c1c; --a-badbg: #fee2e2; --a-warn: #6b3f00; --a-warnbg: #fde68a; --a-ok: #166534; --a-r: 4px; --a-rs: 4px; --a-row: 56px; --a-fs: 17px; --a-font: 'Atkinson Hyperlegible', system-ui, sans-serif; --a-hfont: var(--a-font); --a-htt: none; --a-hls: 0; --a-hw: 700; --a-bw: 2px; --a-num: var(--a-font); --a-nav: #0a0a0a; --a-navfg: #ffffff; --a-navac: #f59e0b; --a-shadow: none; }
+.st-warm { --a-bg: #f5f1ea; --a-sf: #fffdf8; --a-fg: #2b2a26; --a-mut: #6b645a; --a-ln: #d6cfc2; --a-ac: #c2410c; --a-acf: #ffffff; --a-acs: #f7e3d6; --a-bad: #a3162b; --a-badbg: #f9e1e3; --a-warn: #7a4f00; --a-warnbg: #f6e7c4; --a-ok: #3f6b2a; --a-r: 14px; --a-rs: 10px; --a-row: 48px; --a-fs: 15px; --a-font: 'Barlow', system-ui, sans-serif; --a-hfont: 'Barlow Condensed', 'Barlow', sans-serif; --a-htt: uppercase; --a-hls: .04em; --a-hw: 700; --a-bw: 1px; --a-num: var(--a-font); --a-nav: #2b2a26; --a-navfg: #f5f1ea; --a-navac: #c2410c; --a-shadow: 0 1px 0 rgba(43, 42, 38, .06); }
+.st-pro { --a-bg: #0f1115; --a-sf: #181b21; --a-fg: #e6e8eb; --a-mut: #9aa3ae; --a-ln: #2c313a; --a-ac: #22c55e; --a-acf: #06240f; --a-acs: #123322; --a-bad: #f87171; --a-badbg: #3a1618; --a-warn: #fbbf24; --a-warnbg: #33270a; --a-ok: #4ade80; --a-r: 6px; --a-rs: 4px; --a-row: 32px; --a-fs: 13px; --a-font: 'IBM Plex Sans', system-ui, sans-serif; --a-hfont: var(--a-font); --a-htt: none; --a-hls: 0; --a-hw: 600; --a-bw: 1px; --a-num: 'IBM Plex Mono', ui-monospace, monospace; --a-nav: #0b0d10; --a-navfg: #e6e8eb; --a-navac: #1d2129; --a-shadow: none; }
+.st-native { --a-bg: #f2f2f7; --a-sf: #ffffff; --a-fg: #000000; --a-mut: #6d6d72; --a-ln: #d1d1d6; --a-ac: #007aff; --a-acf: #ffffff; --a-acs: #e5f0ff; --a-bad: #e0261b; --a-badbg: #ffeceb; --a-warn: #a14a00; --a-warnbg: #fff1dc; --a-ok: #248a3d; --a-r: 12px; --a-rs: 10px; --a-row: 44px; --a-fs: 15px; --a-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif; --a-hfont: var(--a-font); --a-htt: none; --a-hls: 0; --a-hw: 600; --a-bw: 1px; --a-num: var(--a-font); --a-nav: #ebebf0; --a-navfg: #000000; --a-navac: #dcdce2; --a-shadow: none; }
+
+.app { position: absolute; inset: 0; display: flex; background: var(--a-bg); color: var(--a-fg); font: var(--a-fs)/1.4 var(--a-font); overflow: hidden; }
+.app.col { flex-direction: column; }
+.app * { box-sizing: border-box; }
+.app button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; text-align: inherit; }
+.app button:disabled { opacity: .35; cursor: default; }
+.app button:focus-visible { outline: 2px solid var(--a-ac); outline-offset: 2px; }
+.app .h { font-family: var(--a-hfont); text-transform: var(--a-htt); letter-spacing: var(--a-hls); font-weight: var(--a-hw); }
+.app .mut { color: var(--a-mut); }
+.app .num { font-family: var(--a-num); font-variant-numeric: tabular-nums; }
+.app .bad { color: var(--a-bad); }
+.app .okc { color: var(--a-ok); }
+.app .btn { min-height: var(--a-row); padding: 0 1.1em; border-radius: var(--a-rs); border: var(--a-bw) solid var(--a-ln); background: var(--a-sf); font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: .5em; white-space: nowrap; text-align: center; }
+.app .btn.pri { background: var(--a-ac); color: var(--a-acf); border-color: var(--a-ac); }
+.app .btn.dng { color: var(--a-bad); }
+.app .btn.blk { width: 100%; }
+.app .btn.sm { min-height: calc(var(--a-row) * .78); font-size: .9em; padding: 0 .9em; }
+.app .card { background: var(--a-sf); border: var(--a-bw) solid var(--a-ln); border-radius: var(--a-r); box-shadow: var(--a-shadow); }
+.app .scroll { flex: 1; overflow: auto; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.app .ico { width: 1.35em; height: 1.35em; flex: none; }
+.app .sec { display: flex; flex-direction: column; gap: 8px; }
+.app .sec-l { font-size: .8em; font-weight: 600; color: var(--a-mut); display: flex; align-items: center; gap: 6px; }
+.app .cnt { background: var(--a-acs); color: var(--a-fg); border-radius: 99px; padding: 0 7px; font-size: .95em; }
+
+/* status bars and device chrome inside the app */
+.sbar { height: 50px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 30px 0 36px; font-weight: 600; font-size: 15px; position: relative; font-family: -apple-system, system-ui, sans-serif; }
+.sbar .isl { position: absolute; left: 50%; top: 11px; width: 122px; height: 35px; margin-left: -61px; background: #000; border-radius: 20px; }
+.sbar .sig { display: flex; gap: 5px; align-items: center; }
+.sbar .sig i { display: block; width: 4px; background: currentColor; border-radius: 1px; }
+.sbar .bat { width: 25px; height: 12px; border: 1.5px solid currentColor; border-radius: 4px; padding: 1.5px; opacity: .9; }
+.sbar .bat::after { content: ""; display: block; width: 70%; height: 100%; background: currentColor; border-radius: 1.5px; }
+.L-tablet .sbar { height: 28px; font-size: 12px; padding: 0 24px; }
+.L-tablet .sbar .isl { display: none; }
+.safari { flex: none; height: 64px; background: rgba(248, 248, 250, .96); border-top: 1px solid #d9d9de; display: flex; justify-content: center; padding-top: 8px; font-family: -apple-system, system-ui, sans-serif; }
+.safari span { background: #e5e5ea; color: #222; border-radius: 12px; height: 34px; padding: 0 70px; display: flex; align-items: center; font-size: 14px; }
+.home-ind { position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: var(--a-fg); opacity: .85; z-index: 4; }
+
+/* top bar (web phone and tablet) */
+.tbar { flex: none; height: 54px; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: var(--a-sf); border-bottom: var(--a-bw) solid var(--a-ln); }
+.tbar .tb-t { font-size: 1.15em; flex: 1; }
+.tbar .tb-a { color: var(--a-ac); font-weight: 600; min-height: 44px; padding: 0 4px; }
+.tbar .menu { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--a-rs); }
+.tbar .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.brand-m { width: 22px; height: 22px; border-radius: 6px; background: #110f36; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; flex: none; }
+.st-safety .tbar, .st-warm .tbar { background: var(--a-nav); color: var(--a-navfg); border-color: var(--a-nav); }
+.st-safety .tbar .tb-a, .st-warm .tbar .tb-a { color: var(--a-navac); }
+
+/* native title */
+.ntitle { display: flex; align-items: flex-end; justify-content: space-between; padding: 4px 4px 0; }
+.ntitle .h { font-size: 2.1em; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
+.ntitle button { color: var(--a-ac); font-size: 1.1em; min-height: 44px; }
+
+/* tab bars */
+.tabs { flex: none; display: flex; background: var(--a-sf); border-top: var(--a-bw) solid var(--a-ln); padding: 4px 4px 2px; }
+.tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--a-mut); min-height: 50px; justify-content: center; text-align: center; }
+.tabs button.on { color: var(--a-ac); font-weight: 600; }
+.tabs .ico { width: 24px; height: 24px; }
+.L-native .tabs { background: rgba(249, 249, 251, .94); padding-bottom: 30px; border-top-color: rgba(0, 0, 0, .12); }
+.st-pro.L-native .tabs { background: rgba(24, 27, 33, .96); border-top-color: var(--a-ln); }
+.st-safety .tabs { background: var(--a-nav); color: var(--a-navfg); border-color: var(--a-nav); }
+.st-safety .tabs button { color: #d6d3d1; }
+.st-safety .tabs button.on { color: var(--a-navac); }
+
+/* assigned to */
+.who { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: calc(var(--a-row) + 16px); width: 100%; }
+.who .av { width: 40px; height: 40px; border-radius: 50%; background: var(--a-acs); color: var(--a-fg); display: grid; place-items: center; font-weight: 600; flex: none; font-size: 14px; }
+.who .av.empty { background: transparent; border: 2px dashed var(--a-ln); color: var(--a-mut); }
+.who .wm { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.who .wn { font-weight: 600; font-size: 1.05em; }
+.who .ws { font-size: .88em; }
+.who .chg { color: var(--a-ac); font-weight: 600; font-size: .92em; flex: none; }
+.who.pick .wn { color: var(--a-ac); }
+.due { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--a-warnbg); color: var(--a-warn); border-radius: var(--a-rs); font-size: .9em; }
+.due .dm { flex: 1; min-width: 0; }
+.due b { font-weight: 600; color: var(--a-fg); }
+.due .btn { color: var(--a-fg); }
+.due.got { background: var(--a-acs); color: var(--a-fg); }
+.note-e { font-size: .85em; color: var(--a-mut); padding: 0 2px; }
+
+/* item set chips */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips button { flex: none; min-height: calc(var(--a-row) * .86); padding: 0 14px; border-radius: 99px; border: var(--a-bw) solid var(--a-ln); background: var(--a-sf); font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.chips button.on { background: var(--a-acs); border-color: var(--a-ac); }
+.chips .n { color: var(--a-mut); font-size: .88em; }
+.hint { font-size: .85em; color: var(--a-mut); }
+
+/* add item field */
+.add { display: flex; align-items: center; gap: 10px; min-height: var(--a-row); padding: 0 12px; border: var(--a-bw) solid var(--a-ln); border-radius: var(--a-rs); background: var(--a-sf); color: var(--a-mut); width: 100%; }
+.add span { flex: 1; }
+.add kbd, .keys kbd { font-family: var(--a-num); font-size: .8em; border: 1px solid var(--a-ln); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--a-mut); background: var(--a-bg); }
+
+/* lines */
+.lines { overflow: hidden; }
+.lh, .ln { display: grid; align-items: center; column-gap: 10px; padding: 8px 12px; }
+.lh { font-size: .78em; font-weight: 600; color: var(--a-mut); border-bottom: var(--a-bw) solid var(--a-ln); padding-block: 8px; }
+.ln + .ln { border-top: var(--a-bw) solid var(--a-ln); }
+.ln.err { background: var(--a-badbg); }
+.ln .ic { width: 32px; height: 32px; border-radius: var(--a-rs); background: var(--a-acs); display: grid; place-items: center; color: var(--a-fg); }
+.ln .ic .ico { width: 20px; height: 20px; }
+.ln-m { min-width: 0; }
+.ln-n { font-weight: 600; line-height: 1.25; }
+.ln-s { font-size: .85em; }
+.ln-u, .ln-t { text-align: right; }
+.ln-t { font-weight: 600; }
+.ln-x { width: 32px; height: 32px; border-radius: var(--a-rs); color: var(--a-mut); font-size: 1.2em; display: grid; place-items: center; }
+.ln-x:hover { background: var(--a-bg); }
+.ln-e { grid-column: 1 / -1; color: var(--a-bad); font-size: .85em; padding-top: 4px; }
+.szc { min-width: 54px; min-height: calc(var(--a-row) * .8); padding: 0 8px; border-radius: var(--a-rs); border: var(--a-bw) solid var(--a-ln); background: var(--a-sf); font-weight: 600; font-family: var(--a-num); text-align: center !important; white-space: nowrap; }
+.szc.miss { border-color: var(--a-bad); color: var(--a-bad); }
+.szc.sug { border-style: dashed; border-color: var(--a-ac); }
+.szc.man { border-color: var(--a-ac); }
+.szc.none { color: var(--a-mut); font-family: var(--a-font); }
+.stp { display: inline-flex; align-items: center; border: var(--a-bw) solid var(--a-ln); border-radius: var(--a-rs); background: var(--a-sf); height: calc(var(--a-row) * .8); }
+.stp button { width: calc(var(--a-row) * .8); height: 100%; display: grid; place-items: center; font-size: 1.2em; text-align: center; }
+.stp span { min-width: 26px; text-align: center; font-weight: 600; }
+.L-native .stp { background: var(--a-bg); border: 0; border-radius: 9px; }
+.ask { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; padding: 10px; border-radius: var(--a-rs); background: var(--a-acs); font-size: .9em; }
+.ask span { flex: 1 1 14em; }
+.empty-l { padding: 20px 16px; text-align: center; color: var(--a-mut); font-size: .92em; }
+
+/* line grid per layout */
+.L-phone .ln, .L-native .ln { grid-template-columns: 32px minmax(0, 1fr) auto auto; }
+.L-phone .ln-u, .L-phone .ln-sp, .L-phone .ln-t, .L-phone .ln-x, .L-native .ln-u, .L-native .ln-sp, .L-native .ln-t, .L-native .ln-x, .L-phone .ln-d, .L-native .ln-d { display: none; }
+.L-tablet .ln { grid-template-columns: 36px minmax(0, 1fr) auto auto 84px 32px; }
+.L-tablet .ln-u, .L-tablet .ln-sp { display: none; }
+.L-desktop .ln, .L-desktop .lh, .L-ultra .ln, .L-ultra .lh { grid-template-columns: 36px minmax(0, 1fr) 76px 64px 76px 122px 86px 32px; }
+.L-desktop .ln-pp, .L-ultra .ln-pp { display: none; }
+.L-phone .lh, .L-native .lh, .L-tablet .lh { display: none; }
+
+/* review bar (web phone and tablet) */
+.rbar { flex: none; padding: 10px 16px; background: var(--a-sf); border-top: var(--a-bw) solid var(--a-ln); display: flex; align-items: center; gap: 14px; }
+.rbar .rb-s { font-size: .88em; }
+.L-phone .rbar .rb-s, .L-phone .rbar .rb-t { display: none; }
+.rbar .rb-t { margin-left: auto; font-size: 1.15em; font-weight: 600; }
+.L-tablet .rbar .btn { min-width: 220px; }
+.btn .sp { flex: 1; }
+.L-phone .rbar .btn { justify-content: space-between; }
+
+/* native floating review */
+.fab { position: absolute; left: 16px; right: 16px; bottom: 98px; z-index: 3; }
+.fab .btn { width: 100%; justify-content: space-between; border-radius: 16px; min-height: 52px; box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .35); }
+
+/* native grouped sections */
+.L-native .scroll { gap: 22px; padding-top: 6px; }
+.L-native .sec-l { text-transform: uppercase; font-weight: 400; font-size: .8em; letter-spacing: .02em; padding-left: 16px; }
+.L-native .card { border: 0; }
+.L-native .ln + .ln { border-top: 0; box-shadow: inset 60px 0 0 var(--a-sf), inset 0 1px 0 var(--a-ln); }
+.L-native .add { border: 0; color: var(--a-ac); border-radius: var(--a-r); }
+.L-native .who { border: 0; }
+
+/* sidebar (desktop and ultrawide) */
+.side { flex: none; width: 236px; background: var(--a-nav); color: var(--a-navfg); border-right: var(--a-bw) solid var(--a-ln); display: flex; flex-direction: column; padding: 16px 12px; gap: 2px; }
+.side .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; padding: 4px 8px 18px; }
+.side button { display: flex; align-items: center; gap: 10px; padding: 0 10px; min-height: 36px; border-radius: var(--a-rs); color: inherit; opacity: .82; }
+.side button.on { background: var(--a-navac); opacity: 1; font-weight: 600; }
+.st-safety .side button.on, .st-warm .side button.on { color: var(--a-acf); }
+.st-warm .side button.on { color: #fff; }
+.side .me { margin-top: auto; padding: 10px; font-size: .88em; opacity: .75; }
+.dmain { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+.L-desktop .scroll, .L-ultra .scroll { padding: 0; }
+.dwrap { width: 100%; max-width: 1260px; padding: 28px 32px 40px; display: flex; flex-direction: column; gap: 20px; }
+.L-ultra .dwrap { max-width: 3000px; padding: 36px 44px 48px; margin-inline: auto; }
+.phead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.phead .h { font-size: 1.75em; margin: 0; }
+.phead p { margin: 4px 0 0; }
+.dgrid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.dcol { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.ugrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .85fr); gap: 32px; align-items: start; }
+
+/* summary panel */
+.sum { position: sticky; top: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.sum .h { font-size: 1.1em; }
+.kv { display: flex; justify-content: space-between; gap: 12px; font-size: .92em; }
+.kv > :last-child { text-align: right; }
+.sum hr, .ctx hr { border: 0; border-top: var(--a-bw) solid var(--a-ln); margin: 2px 0; width: 100%; }
+.sum-ls { display: flex; flex-direction: column; gap: 6px; font-size: .88em; }
+.sum-ls div { display: flex; justify-content: space-between; gap: 10px; }
+.sum-tot { display: flex; justify-content: space-between; align-items: baseline; }
+.sum-tot .num { font-size: 1.6em; font-weight: 600; }
+.keys { font-size: .8em; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.dues { display: flex; flex-direction: column; gap: 6px; font-size: .88em; }
+.dues div { display: flex; gap: 8px; align-items: baseline; }
+
+/* ultrawide panes */
+.pane-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pane-h .h { font-size: 1.1em; }
+.cat { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.tile { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.tile .ic { width: 44px; height: 44px; border-radius: var(--a-rs); background: var(--a-acs); display: grid; place-items: center; }
+.tile .ic .ico { width: 26px; height: 26px; }
+.tile .tn { font-weight: 600; }
+.tile .ts { font-size: .85em; }
+.tile .btn { margin-top: auto; }
+.fchips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fchips button { padding: 0 12px; min-height: 32px; border-radius: 99px; border: var(--a-bw) solid var(--a-ln); background: var(--a-sf); font-size: .9em; }
+.fchips button.on { background: var(--a-fg); color: var(--a-bg); border-color: var(--a-fg); }
+.ctx { padding: 18px; display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.held { display: flex; flex-direction: column; }
+.held div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 8px 0; border-top: var(--a-bw) solid var(--a-ln); font-size: .9em; }
+.held div:first-child { border-top: 0; }
+.held .hs { grid-column: 1 / -1; font-size: .92em; }
+
+/* overlays */
+.ov { position: absolute; inset: 0; background: rgba(8, 8, 20, .42); z-index: 8; }
+.sheet, .dlg { position: absolute; z-index: 9; background: var(--a-sf); color: var(--a-fg); display: flex; flex-direction: column; overflow: hidden; }
+.sheet { left: 0; right: 0; bottom: 0; max-height: 90%; border-radius: calc(var(--a-r) + 6px) calc(var(--a-r) + 6px) 0 0; padding-bottom: 24px; }
+.L-native .sheet { top: 58px; max-height: none; background: var(--a-bg); }
+.dlg { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(600px, 92%); max-height: 82%; border-radius: var(--a-r); box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .5); }
+.L-ultra .dlg { width: 680px; }
+.grab { width: 38px; height: 5px; border-radius: 3px; background: var(--a-ln); margin: 8px auto 0; flex: none; }
+.shd { display: flex; align-items: center; gap: 12px; padding: 14px 18px 10px; }
+.shd .h { flex: 1; font-size: 1.15em; }
+.shd .x { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--a-bg); font-size: 1.2em; text-align: center; }
+.L-native .shd { padding: 14px 16px; }
+.L-native .shd .h { text-align: center; font-size: 1.05em; }
+.L-native .shd button { color: var(--a-ac); min-width: 64px; }
+.shb { overflow: auto; padding: 4px 18px 16px; display: flex; flex-direction: column; gap: 12px; min-height: 0; flex: 1; }
+.shf { padding: 12px 18px 4px; display: flex; flex-direction: column; gap: 10px; border-top: var(--a-bw) solid var(--a-ln); }
+.shf .row2 { display: flex; gap: 10px; flex-wrap: wrap; }
+.shf .row2 .btn { flex: 1 1 10em; }
+.srch { display: flex; align-items: center; gap: 8px; min-height: var(--a-row); padding: 0 12px; border-radius: var(--a-rs); background: var(--a-bg); border: var(--a-bw) solid var(--a-ln); }
+.srch input { flex: 1; border: 0; background: transparent; font: inherit; color: inherit; outline: none; min-width: 0; }
+.L-native .srch { border: 0; background: rgba(118, 118, 128, .14); }
+.plist { display: flex; flex-direction: column; }
+.prow { display: flex; align-items: center; gap: 12px; padding: 10px 4px; min-height: var(--a-row); border-top: var(--a-bw) solid var(--a-ln); width: 100%; }
+.prow:first-child { border-top: 0; }
+.prow:hover { background: var(--a-bg); }
+.prow .pm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.prow .pn { font-weight: 600; }
+.prow .ps { font-size: .85em; }
+.prow .ic { width: 36px; height: 36px; border-radius: var(--a-rs); background: var(--a-acs); display: grid; place-items: center; flex: none; }
+.prow .tag { font-size: .78em; padding: 2px 8px; border-radius: 99px; background: var(--a-acs); white-space: nowrap; }
+.prow.addnew .pn { color: var(--a-ac); }
+.szgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.szgrid button { border: var(--a-bw) solid var(--a-ln); border-radius: var(--a-rs); min-height: calc(var(--a-row) + 8px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; padding: 4px; }
+.szgrid button b { font-family: var(--a-num); font-size: 1.05em; }
+.szgrid button small { font-size: .72em; color: var(--a-mut); }
+.szgrid button.on { background: var(--a-ac); border-color: var(--a-ac); color: var(--a-acf); }
+.szgrid button.on small { color: inherit; opacity: .85; }
+.szgrid button.saved:not(.on) { border-color: var(--a-ac); }
+.rv { display: flex; flex-direction: column; }
+.rv div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: var(--a-bw) solid var(--a-ln); }
+.rv div:first-child { border-top: 0; }
+.rv .tot { font-weight: 600; font-size: 1.1em; border-top-width: calc(var(--a-bw) * 2); }
+.chk { display: flex; align-items: center; gap: 10px; min-height: var(--a-row); cursor: pointer; }
+.chk .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--a-ln); display: grid; place-items: center; flex: none; color: var(--a-acf); font-size: 14px; }
+.chk.on .box { background: var(--a-ac); border-color: var(--a-ac); }
+.warnline { font-size: .88em; color: var(--a-warn); background: var(--a-warnbg); padding: 8px 10px; border-radius: var(--a-rs); }
+
+/* done */
+.done { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
+.L-phone .done, .L-native .done, .L-tablet .done { max-width: none; }
+.done-ic { width: 56px; height: 56px; border-radius: 50%; background: var(--a-ok); color: #fff; display: grid; place-items: center; font-size: 28px; }
+.done-t { font-size: 1.5em; margin: 0; }
+.done p { margin: 0; line-height: 1.5; }
+.linkbox { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.url { font-size: .88em; padding: 10px; border-radius: var(--a-rs); background: var(--a-bg); word-break: break-all; }
+.done-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.done-acts .btn { flex: 1 1 10em; }
+
+/* toast */
+.toast { position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%); z-index: 12; background: var(--a-fg); color: var(--a-bg); padding: 10px 16px; border-radius: 12px; font-size: .9em; max-width: 86%; text-align: center; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .5); }
+.L-desktop .toast, .L-ultra .toast { bottom: 32px; }
+
+/* hints: what can be clicked */
+.app.hints [data-act]:not(.ov) { outline: 2px dashed var(--a-ac); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet.enter { animation: up .28s cubic-bezier(.2, .8, .2, 1); }
+  .dlg.enter { animation: pop .2s ease-out; }
+  .ov.enter { animation: fade .2s ease-out; }
+  .toast { animation: fade .2s ease-out; }
+  @keyframes up { from { transform: translateY(40%); opacity: .3; } to { transform: none; opacity: 1; } }
+  @keyframes pop { from { transform: translate(-50%, -47%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Workwear &amp; Equipment · clickable mockup · round 1</div>
+      <h1>Create Order</h1>
+      <p>Walk through ordering workwear for one employee, as a store manager would. Pick a screen and a style; everything inside the device can be tapped. The people, items and prices are demo examples, not real records.</p>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Mockup controls">
+    <div class="ctl"><span class="ctl-l" id="l-dev">Screen</span><div class="seg" id="seg-device" role="radiogroup" aria-labelledby="l-dev"></div></div>
+    <div class="ctl"><span class="ctl-l" id="l-sty">Style</span><div class="seg" id="seg-style" role="radiogroup" aria-labelledby="l-sty"></div></div>
+    <div class="ctl"><span class="ctl-l" id="l-view">View</span><div class="seg" id="seg-fit" role="radiogroup" aria-labelledby="l-view"></div>
+      <label class="tog"><input type="checkbox" id="hints"> Show what can be tapped</label></div>
+  </div>
+
+  <div class="main">
+    <section class="stage" id="stage" aria-label="Device preview">
+      <div class="fw" id="fw"><div class="frame" id="frame"></div></div>
+      <div class="stage-meta" id="meta"></div>
+    </section>
+    <aside class="journey" aria-labelledby="j-h">
+      <h2 id="j-h">The journey</h2>
+      <p>Steps tick off as you go. Jump to any step to see its screen, then answer its question in a comment.</p>
+      <ol class="jlist" id="jlist"></ol>
+    </aside>
+  </div>
+
+  <section class="notes" aria-label="About this screen and style">
+    <div class="note" id="note-dev"></div>
+    <div class="note" id="note-sty"></div>
+  </section>
+  <p class="foot">Built from the live app's Create Order rules: sizes come from the employee's saved sizes or, for clothing, from their height; an item with no price cannot be ordered; nothing is final until Mark as Ordered. English only in this round.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  /* ---------- Data (demo examples) ---------- */
+  var ITEMS = {
+    shoes: { name: 'Safety shoes', det: 'S3 SRC, steel toe cap', g: 'shoe', p: 5490, m: 12, ic: 'shoe' },
+    jacket: { name: 'Work jacket', det: 'Polyester/cotton, reflective strips', g: 'cl', p: 7900, m: 24, ic: 'jacket' },
+    trousers: { name: 'Work trousers', det: 'Knee-pad pockets', g: 'cl', p: 4550, m: 12, ic: 'trousers' },
+    gloves: { name: 'Protective gloves', det: 'Nitrile-coated, pair', g: '', p: 320, m: 1, ic: 'gloves' },
+    helmet: { name: 'Safety helmet', det: 'EN 397, adjustable', g: '', p: 1800, m: 36, ic: 'helmet' },
+    vest: { name: 'Hi-vis vest', det: 'Class 2, yellow', g: 'cl', p: 990, m: 12, ic: 'vest' },
+    glasses: { name: 'Safety glasses', det: 'Anti-fog, clear lens', g: '', p: 650, m: 12, ic: 'glasses' },
+    ear: { name: 'Ear defenders', det: 'SNR 30 dB', g: '', p: 2200, m: 24, ic: 'ear' },
+    winter: { name: 'Winter jacket', det: 'Insulated, waterproof', g: 'cl', p: null, m: null, ic: 'jacket' }
+  };
+  var ITEM_ORDER = ['shoes', 'jacket', 'trousers', 'gloves', 'helmet', 'vest', 'glasses', 'ear', 'winter'];
+  var SETS = [
+    { id: 'starter', name: 'Warehouse starter kit', items: [['shoes', 1], ['jacket', 1], ['trousers', 2], ['gloves', 10], ['helmet', 1]] },
+    { id: 'visitor', name: 'Visitor PPE', items: [['vest', 1], ['glasses', 1], ['helmet', 1]] }
+  ];
+  var BANDS = [[46, 160, 167], [50, 168, 175], [54, 176, 181], [58, 182, 187], [62, 188, 193], [66, 194, 200]];
+  var LETTERS = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+  var EMPS = [
+    { id: 'jonas', first: 'Jonas', last: 'Petraitis', code: 'W-001', h: 184, cl: 58, sh: '43', lastOrder: 'WE-000009 · 17 Jun',
+      due: [{ item: 'trousers', over: false, date: '20 Oct', lastGiven: '20 Oct 2025', qty: 2 }],
+      held: [['Safety shoes', '1 × 43', 'Given 20 Oct 2025', 'Due 20 Oct 2026'], ['Work jacket', '1 × 58', 'Given 20 Oct 2025', 'Due 20 Oct 2027'], ['Work trousers', '2 × 58', 'Given 20 Oct 2025', 'Due 20 Oct 2026'], ['Safety helmet', '1', 'Given 20 Oct 2025', 'Due 20 Oct 2028']] },
+    { id: 'ona', first: 'Ona', last: 'Kazlauskienė', code: 'W-002', h: 165, cl: 46, sh: '39', lastOrder: 'WE-000012 · 30 Aug',
+      due: [{ item: 'gloves', over: true, date: '30 Sep', lastGiven: '30 Aug', qty: 10 }],
+      held: [['Safety shoes', '1 × 39', 'Given 30 Jul 2026', 'Due 30 Jul 2027'], ['Work jacket', '1 × 46', 'Given 30 Jul 2026', 'Due 30 Jul 2028'], ['Work trousers', '2 × 46', 'Given 30 Jul 2026', 'Due 30 Jul 2027'], ['Protective gloves', '10', 'Given 30 Aug 2026', 'Overdue since 30 Sep'], ['Safety helmet', '1', 'Given 30 Jul 2026', 'Due 30 Jul 2029']] },
+    { id: 'tomas', first: 'Tomas', last: 'Jankauskas', code: 'W-003', h: 190, cl: null, sh: '45', note: 'Clothing size not recorded yet; suggested from height', due: [], held: [] },
+    { id: 'rasa', first: 'Rasa', last: 'Stankevičiūtė', code: 'W-004', h: 171, cl: 50, sh: null, note: 'Shoe size missing', due: [], held: [] },
+    { id: 'mindaugas', first: 'Mindaugas', last: 'Vasiliauskas', code: '', h: 178, cl: 54, sh: '44', due: [], held: [] },
+    { id: 'aleksandr', first: 'Aleksandr', last: 'Ivanov', code: 'W-006', h: 189, cl: 62, sh: '46', note: 'Prefers Russian', due: [], held: [] }
+  ];
+
+  var DEVICES = {
+    phone: { label: 'Phone', w: 390, h: 844, who: 'Managers on the go; employees confirming their own orders.', layout: 'One column. Item sets scroll sideways, each line is one row with a size chip and a stepper, and Review sits in a bar above the tab bar.', nav: 'Bottom tab bar in the browser; the review is a bottom sheet.' },
+    tablet: { label: 'Tablet', w: 820, h: 1180, who: 'Hand-over at the stores counter.', layout: 'One wider column: each line also shows its price, service period and total. Review sits in a bar with the total.', nav: 'Top bar with a menu; the review is a dialog.' },
+    desktop: { label: 'Desktop', w: 1440, h: 900, who: 'Administrators and managers in the office.', layout: 'Sidebar, the lines as a table, and an order summary panel beside them that stays in view.', nav: 'Full sidebar; keys / add an item, ⌘↵ review.' },
+    ultra: { label: 'Ultrawide', w: 3440, h: 1440, who: 'Managers who keep the app open all day.', layout: 'Three panes: the catalogue to add from, the order, and the summary with what the employee already holds.', nav: 'Full sidebar; nothing hidden behind a picker.' },
+    native: { label: 'Native iOS', w: 393, h: 852, who: 'Employees and managers with the app installed from the App Store.', layout: 'iOS grouped lists, a large title, sheets with a grabber, and a floating Review button.', nav: 'iOS tab bar; the review is a page sheet.' }
+  };
+  var STYLES = {
+    calm: { label: 'Calm utility', mood: 'Today’s neutral look, tidied.', best: 'Office staff on mixed devices.', trade: 'Generic; says little about the company.', font: 'IBM Plex Sans', sw: ['#2563eb', '#f6f6f7'] },
+    safety: { label: 'Safety high-contrast', mood: 'Large type and 56 px targets, usable in work gloves.', best: 'Stores counter, hand-over on a tablet, bright light.', trade: 'Fewer rows per screen; more scrolling on desktop.', font: 'Atkinson Hyperlegible', sw: ['#f59e0b', '#0a0a0a'] },
+    warm: { label: 'Industrial warm', mood: 'Workwear-brand feel: warm paper, rust accent, condensed headings.', best: 'Employee views, the confirmation page, receipts.', trade: 'Needs the client’s brand approval.', font: 'Barlow and Barlow Condensed', sw: ['#c2410c', '#f5f1ea'] },
+    pro: { label: 'Pro data-dense', mood: 'Dark, compact, many columns at once.', best: 'Managers on desktop and ultrawide.', trade: 'Too small for a phone (32 px rows); poor in daylight.', font: 'IBM Plex Sans with Plex Mono figures', sw: ['#22c55e', '#0f1115'] },
+    native: { label: 'Native feel', mood: 'Follows iOS idioms: grouped lists, system font, blue tint.', best: 'An App Store build; employees on their own phones.', trade: 'Android users would expect Material instead.', font: 'The system font (San Francisco on Apple devices)', sw: ['#007aff', '#f2f2f7'] }
+  };
+  var STEPS = [
+    { t: 'Choose who it’s for', try: 'Tap Assigned to and pick Ona Kazlauskienė. Her saved sizes appear under her name.', q: 'Is the employee always known first, or do you sometimes start from a kit?' },
+    { t: 'Add the items', try: 'Tap Warehouse starter kit, add the overdue gloves, or use Add an item.', q: 'Which kits do you hand out most? Should they come before the search?' },
+    { t: 'Check sizes and quantities', try: 'Change a size or a quantity. Jump here to see Rasa, whose shoe size is missing.', q: 'When you pick a size that differs from the saved one, should it be saved every time?' },
+    { t: 'Review and mark as ordered', try: 'Open Review. After Mark as Ordered the record cannot be changed.', q: 'Is that warning clear enough? Should the WhatsApp message go before or after?' },
+    { t: 'Send for confirmation', try: 'Send the confirmation link, or print the record for signing.', q: 'Do employees confirm on their own phone, or at the counter on yours?' }
+  ];
+
+  var ICONS = {
+    shoe: 'M3 18h18v-2.5c0-1-.6-1.6-1.6-1.9L14 12l-2-4H6L4.5 6H3z M3 15h18',
+    jacket: 'M9 3l3 2 3-2 4 3-1.5 4H17v11H7V10H5.5L4 6z M12 5v16',
+    trousers: 'M7 3h10l1.2 18h-4.4L12 10l-1.8 11H5.8z',
+    gloves: 'M7 21v-6l-3-4 1.5-1.2L8 12V5.5a1 1 0 0 1 2 0V11V4a1 1 0 0 1 2 0v7V5a1 1 0 0 1 2 0v7V7a1 1 0 0 1 2 0v8l-1.5 6z',
+    helmet: 'M3 17h18v2H3z M5 17v-2a7 7 0 0 1 14 0v2 M10 8.5V6h4v2.5',
+    vest: 'M8 3L5 6v15h6v-8l1-2 1 2v8h6V6l-3-3-2.5 5h-3z',
+    glasses: 'M2.5 11h19 M3.5 11l1 5h5l1.5-4 M20.5 11l-1 5h-5L13 12',
+    ear: 'M5 13a7 7 0 0 1 14 0 M4 13h3v6H4z M17 13h3v6h-3z',
+    home: 'M4 11l8-7 8 7v9h-5v-6H9v6H4z',
+    order: 'M5 4h14v16H5z M12 8v8 M8 12h8',
+    orders: 'M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01',
+    people: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6 M16 4.5a3.5 3.5 0 0 1 0 6.5 M18 14c2 .8 3 3 3 6',
+    more: 'M5 12h.01 M12 12h.01 M19 12h.01',
+    search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4',
+    menu: 'M4 7h16 M4 12h16 M4 17h16',
+    box: 'M4 8l8-4 8 4v8l-8 4-8-4z M4 8l8 4 8-4 M12 12v8',
+    gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M12 3v2 M12 19v2 M3 12h2 M19 12h2 M5.6 5.6l1.4 1.4 M17 17l1.4 1.4 M5.6 18.4L7 17 M17 7l1.4-1.4',
+    help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17h.01',
+    sets: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
+    sim: 'M7 3h7l4 4v14H7z M10 12h5v5h-5z'
+  };
+
+  /* ---------- State ---------- */
+  var S = {
+    device: 'phone', style: 'calm', fit: 'fit', hints: false,
+    emp: null, lines: [], applied: [], sheet: null, lineI: null, q: '', done: false, link: true,
+    askSave: null, toast: null, cat: 'all', enter: false, record: 'WE-000014'
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem('co-mock') || '{}');
+    if (DEVICES[saved.device]) S.device = saved.device;
+    if (STYLES[saved.style]) S.style = saved.style;
+    if (saved.fit === 'actual') S.fit = 'actual';
+  } catch (e) { /* storage unavailable: defaults */ }
+  function remember() { try { localStorage.setItem('co-mock', JSON.stringify({ device: S.device, style: S.style, fit: S.fit })); } catch (e) { } }
+
+  /* ---------- Helpers ---------- */
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function eur(c) { return '€' + (c / 100).toFixed(2); }
+  function icon(k, cls) { return '<svg class="ico ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (k === 'more' ? 3 : 1.7) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + ICONS[k] + '"/></svg>'; }
+  function band(n) { return LETTERS[Math.floor((n - 44) / 4)]; }
+  function sizeLabel(g, size) { return g === 'cl' ? size + ' · ' + band(Number(size)) : size; }
+  function empById(id) { for (var i = 0; i < EMPS.length; i++) if (EMPS[i].id === id) return EMPS[i]; return null; }
+  function fromHeight(h) { for (var i = 0; i < BANDS.length; i++) if (h >= BANDS[i][1] && h <= BANDS[i][2]) return BANDS[i][0]; return null; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  function mobile() { return S.device === 'phone' || S.device === 'native'; }
+
+  function resolve(id, e) {
+    var it = ITEMS[id];
+    if (!it.g) return { size: null, src: 'na' };
+    if (!e) return { size: null, src: 'none' };
+    if (it.g === 'shoe') return e.sh ? { size: e.sh, src: 'saved' } : { size: null, src: 'none' };
+    if (e.cl) return { size: String(e.cl), src: 'saved' };
+    var b = fromHeight(e.h);
+    return b ? { size: String(b), src: 'suggested' } : { size: null, src: 'none' };
+  }
+  function addLine(id, qty) {
+    for (var i = 0; i < S.lines.length; i++) if (S.lines[i].id === id) { S.lines[i].qty += qty; return; }
+    var r = resolve(id, S.emp);
+    S.lines.push({ id: id, qty: qty, size: r.size, src: r.src });
+  }
+  function problem(l) {
+    var it = ITEMS[l.id];
+    if (it.p == null) return 'No price or service period in the Item Catalogue. An authorised user must complete it.';
+    if (it.g && !l.size) return 'Select a size.';
+    return null;
+  }
+  function orderProblem() {
+    if (!S.emp) return 'Select an employee in Assigned to.';
+    if (!S.lines.length) return 'Add at least one item.';
+    for (var i = 0; i < S.lines.length; i++) if (problem(S.lines[i])) return 'Resolve the highlighted lines.';
+    return null;
+  }
+  function total() { return S.lines.reduce(function (s, l) { var p = ITEMS[l.id].p; return s + (p == null ? 0 : p * l.qty); }, 0); }
+  function onOrder(id) { for (var i = 0; i < S.lines.length; i++) if (S.lines[i].id === id) return S.lines[i]; return null; }
+
+  /* ---------- Actions ---------- */
+  var toastTimer;
+  function toast(msg) { S.toast = msg; clearTimeout(toastTimer); toastTimer = setTimeout(function () { S.toast = null; render(); }, 2600); }
+  function open(sheet) { S.sheet = sheet; S.q = ''; S.enter = true; }
+  function chooseEmp(id) {
+    S.emp = empById(id);
+    S.lines.forEach(function (l) { if (l.src !== 'manual') { var r = resolve(l.id, S.emp); l.size = r.size; l.src = r.src; } });
+    S.askSave = null;
+  }
+  function applySet(id) {
+    var set = SETS.filter(function (s) { return s.id === id; })[0];
+    if (S.applied.indexOf(id) >= 0) { toast(set.name + ' is on this order already. The app asks before adding it again.'); return; }
+    set.items.forEach(function (p) { addLine(p[0], p[1]); });
+    S.applied.push(id);
+  }
+  function reset() { S.emp = null; S.lines = []; S.applied = []; S.sheet = null; S.done = false; S.askSave = null; S.link = true; S.toast = null; }
+
+  function act(a, v) {
+    var i = Number(v), l = S.lines[i];
+    switch (a) {
+      case 'pick-emp': open('emp'); break;
+      case 'choose-emp': chooseEmp(v); S.sheet = null; break;
+      case 'pick-item': open('item'); break;
+      case 'add-item':
+        addLine(v, 1);
+        if (S.sheet === 'item') S.sheet = null;
+        toast(ITEMS[v].name + ' added.');
+        break;
+      case 'apply-set': if (!S.emp) { toast('Choose who the order is for first: sizes come from their saved sizes.'); break; } applySet(v); break;
+      case 'due-add': var d = S.emp.due[0]; addLine(d.item, d.qty); break;
+      case 'line': S.lineI = i; open('line'); break;
+      case 'set-size':
+        l = S.lines[S.lineI];
+        var it = ITEMS[l.id];
+        l.size = v; l.src = 'manual';
+        var savedSize = it.g === 'shoe' ? S.emp && S.emp.sh : S.emp && S.emp.cl && String(S.emp.cl);
+        S.askSave = (S.emp && savedSize !== v) ? { i: S.lineI, size: v, g: it.g } : null;
+        S.sheet = null;
+        break;
+      case 'save-size':
+        if (S.askSave) {
+          if (S.askSave.g === 'shoe') S.emp.sh = S.askSave.size; else S.emp.cl = Number(S.askSave.size);
+          toast('Saved to ' + S.emp.first + '’s sizes.');
+          S.lines.forEach(function (x) { if (ITEMS[x.id].g === S.askSave.g && x.src !== 'manual') { x.size = S.askSave.size; x.src = 'saved'; } });
+        }
+        S.askSave = null; break;
+      case 'skip-size': S.askSave = null; break;
+      case 'dec': if (l && l.qty > 1) l.qty--; break;
+      case 'inc': if (l) l.qty++; break;
+      case 'remove':
+        if (v === 'sheet') i = S.lineI;
+        S.lines.splice(i, 1); S.askSave = null; S.sheet = null;
+        S.applied = S.applied.filter(function (sid) { return SETS.filter(function (s) { return s.id === sid; })[0].items.some(function (p) { return onOrder(p[0]); }); });
+        break;
+      case 'review':
+        var p = orderProblem();
+        if (p) { toast(p); break; }
+        open('review'); break;
+      case 'link': S.link = !S.link; break;
+      case 'wa': toast('Copied. Open the supplier’s WhatsApp group and paste it there.'); break;
+      case 'mark': S.sheet = null; S.done = true; break;
+      case 'send-link': toast('A text message with the link would go to ' + S.emp.first + '.'); break;
+      case 'make-link': S.link = true; break;
+      case 'print': toast('The one-page record would open for printing.'); break;
+      case 'new': reset(); break;
+      case 'clear': if (S.done) { reset(); break; } reset(); toast('Order cleared. The app asks first when lines would be lost.'); break;
+      case 'close': S.sheet = null; break;
+      case 'cat': S.cat = v; break;
+      case 'nav': toast('Only Create Order is part of this mockup.'); break;
+      case 'new-emp': toast('Add New Employee opens the employee form. Not part of this mockup.'); break;
+    }
+    render();
+  }
+
+  /* ---------- App pieces ---------- */
+  function statusBar() {
+    return '<div class="sbar"><span>9:41</span><span class="isl"></span><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i><span class="bat"></span></span></div>';
+  }
+  function tabBar() {
+    var t = [['home', 'Home'], ['order', 'Order'], ['orders', 'Orders'], ['people', 'Employees'], ['more', 'More']];
+    return '<nav class="tabs">' + t.map(function (x) {
+      var on = x[0] === 'order';
+      return '<button ' + (on ? 'class="on" aria-current="page"' : 'data-act="nav"') + '>' + icon(x[0]) + '<span>' + x[1] + '</span></button>';
+    }).join('') + '</nav>';
+  }
+  function topBar() {
+    var tab = S.device === 'tablet';
+    return '<header class="tbar">' + (tab ? '<button class="menu" data-act="nav" aria-label="Menu">' + icon('menu') + '</button>' : '') +
+      '<span class="h tb-t">' + (S.done ? 'Order placed' : 'New order') + '</span>' +
+      (S.done ? '' : '<button class="tb-a" data-act="clear">Clear</button>') + '</header>';
+  }
+  function sizesLine(e) {
+    var parts = [e.h + ' cm'];
+    if (e.cl) parts.push('Clothing ' + e.cl + ' (' + band(e.cl) + ')');
+    else { var b = fromHeight(e.h); parts.push(b ? '<span class="bad">No clothing size</span> · from height ' + b : '<span class="bad">No clothing size</span>'); }
+    parts.push(e.sh ? 'Shoes ' + e.sh : '<span class="bad">No shoe size</span>');
+    return parts.join(' · ');
+  }
+  function initials(e) { return e.first[0] + e.last[0]; }
+  function whoHTML() {
+    var e = S.emp;
+    if (!e) return '<button class="who card pick" data-act="pick-emp"><span class="av empty">?</span><span class="wm"><span class="wn">Choose employee</span><span class="ws mut">Sizes come from their saved sizes</span></span><span class="chg">›</span></button>';
+    return '<button class="who card" data-act="pick-emp"><span class="av">' + esc(initials(e)) + '</span><span class="wm"><span class="wn">' + esc(e.first + ' ' + e.last) + (e.code ? ' <span class="mut num" style="font-weight:400">' + esc(e.code) + '</span>' : '') + '</span><span class="ws mut">' + sizesLine(e) + '</span></span><span class="chg">Change</span></button>' +
+      (e.note ? '<div class="note-e">' + esc(e.note) + '</div>' : '');
+  }
+  function dueHTML() {
+    var e = S.emp;
+    if (!e || !e.due.length) return '';
+    var d = e.due[0], it = ITEMS[d.item], got = onOrder(d.item);
+    var text = '<b>' + esc(it.name) + '</b> ' + (d.over ? 'overdue since ' + d.date : 'due ' + d.date) + ' · last given ' + d.lastGiven;
+    if (got) return '<div class="due got"><span class="okc">✓</span><span class="dm">' + text + ' · on this order</span></div>';
+    return '<div class="due"><span aria-hidden="true">!</span><span class="dm">' + text + '</span><button class="btn sm" data-act="due-add">+ Add ' + d.qty + '</button></div>';
+  }
+  function chipsHTML() {
+    return '<div class="chips">' + SETS.map(function (s) {
+      var on = S.applied.indexOf(s.id) >= 0;
+      return '<button class="' + (on ? 'on' : '') + '" data-act="apply-set" data-v="' + s.id + '"' + (S.emp ? '' : ' aria-disabled="true"') + '>' + (on ? '✓ ' : '+ ') + esc(s.name) + ' <span class="n">' + s.items.length + '</span></button>';
+    }).join('') + '</div>' + (S.emp ? '' : '<div class="hint">Choose who the order is for first: sizes come from their saved sizes.</div>');
+  }
+  function addHTML() {
+    var desk = S.device === 'desktop' || S.device === 'ultra';
+    return '<button class="add" data-act="pick-item">' + icon('search') + '<span>Add an item…</span>' + (desk ? '<kbd>/</kbd>' : '') + '</button>';
+  }
+  function stepper(l, i) {
+    var n = ITEMS[l.id].name;
+    return '<div class="stp"><button data-act="dec" data-v="' + i + '" aria-label="One fewer ' + esc(n) + '"' + (l.qty <= 1 ? ' disabled' : '') + '>−</button><span class="num">' + l.qty + '</span><button data-act="inc" data-v="' + i + '" aria-label="One more ' + esc(n) + '">+</button></div>';
+  }
+  function lineHTML(l, i) {
+    var it = ITEMS[l.id], pr = S.emp ? problem(l) : (it.p == null ? problem(l) : null);
+    var chip = it.g
+      ? '<button class="szc' + (l.size ? '' : ' miss') + (l.src === 'suggested' ? ' sug' : '') + (l.src === 'manual' ? ' man' : '') + '" data-act="line" data-v="' + i + '" aria-label="Size of ' + esc(it.name) + '"' + (l.src === 'suggested' ? ' title="Suggested from height"' : '') + '>' + (l.size ? sizeLabel(it.g, l.size) : 'Size') + '</button>'
+      : '<button class="szc none" data-act="line" data-v="' + i + '" aria-label="Options for ' + esc(it.name) + '">—</button>';
+    var pp = (it.p == null ? 'No price' : eur(it.p)) + ' · ' + (it.m ? it.m + ' mo' : 'no service period');
+    var ask = '';
+    if (S.askSave && S.askSave.i === i) {
+      ask = '<div class="ask"><span>' + esc(it.name) + ': ' + sizeLabel(it.g, S.askSave.size) + ' selected. Different size selected. Save it to the employee’s sizes?</span><button class="btn sm" data-act="skip-size">Skip size update</button><button class="btn sm pri" data-act="save-size">Save</button></div>';
+    }
+    return '<div class="ln' + (pr ? ' err' : '') + '"><span class="ic">' + icon(it.ic) + '</span>' +
+      '<div class="ln-m"><div class="ln-n">' + esc(it.name) + '</div><div class="ln-s mut"><span class="ln-pp">' + pp + '</span><span class="ln-d">' + (S.device === 'tablet' ? ' · ' : '') + esc(it.det) + '</span></div></div>' +
+      '<div class="ln-u num">' + (it.p == null ? '—' : eur(it.p)) + '</div><div class="ln-sp mut">' + (it.m ? it.m + ' mo' : '—') + '</div>' +
+      chip + stepper(l, i) +
+      '<div class="ln-t num">' + (it.p == null ? '—' : eur(it.p * l.qty)) + '</div>' +
+      '<button class="ln-x" data-act="remove" data-v="' + i + '" aria-label="Remove ' + esc(it.name) + '">×</button>' +
+      (pr ? '<div class="ln-e">' + esc(pr) + '</div>' : '') + ask + '</div>';
+  }
+  function linesHTML() {
+    if (!S.lines.length) return '<div class="card empty-l">No items yet. Use Add an item, or choose an item set.</div>';
+    return '<div class="card lines"><div class="lh"><span></span><span>Item</span><span style="text-align:right">Price</span><span>Service</span><span>Size</span><span>Quantity</span><span style="text-align:right">Total</span><span></span></div>' +
+      S.lines.map(lineHTML).join('') + '</div>';
+  }
+  function composerHTML() {
+    var n = S.lines.length;
+    return '<div class="sec"><div class="sec-l">Assigned to</div>' + whoHTML() + dueHTML() + '</div>' +
+      '<div class="sec"><div class="sec-l">Item sets</div>' + chipsHTML() + '</div>' +
+      '<div class="sec"><div class="sec-l">Items' + (n ? ' <span class="cnt num">' + n + '</span>' : '') + '</div>' + addHTML() + linesHTML() + '</div>';
+  }
+  function statusText() {
+    var p = orderProblem(), n = S.lines.length;
+    return '<span class="' + (p ? 'bad' : 'okc') + '">' + plural(n, 'line', 'lines') + ' · ' + (p ? 'not ready' : 'complete') + '</span>';
+  }
+  function reviewBar() {
+    var n = S.lines.length;
+    return '<div class="rbar"><span class="rb-s">' + statusText() + '</span><span class="rb-t num">' + eur(total()) + '</span>' +
+      '<button class="btn pri' + (S.device === 'phone' ? ' blk' : '') + '" data-act="review"><span>Review · ' + plural(n, 'line', 'lines') + '</span>' + (S.device === 'phone' ? '<span class="num">' + eur(total()) + '</span>' : '') + '</button></div>';
+  }
+  function fabHTML() {
+    var n = S.lines.length;
+    return '<div class="fab"><button class="btn pri" data-act="review"><span>Review · ' + plural(n, 'item', 'items') + '</span><span class="num">' + eur(total()) + '</span></button></div>';
+  }
+  function summaryHTML() {
+    var e = S.emp;
+    var dues = '';
+    if (e && e.due.length) {
+      dues = '<div class="sec-l">Due for replacement</div><div class="dues">' + e.due.map(function (d) {
+        var got = onOrder(d.item);
+        return '<div><span class="' + (got ? 'okc' : 'bad') + '">' + (got ? '✓' : '!') + '</span><span>' + esc(ITEMS[d.item].name) + ' ' + (d.over ? 'overdue since ' + d.date : 'due ' + d.date) + (got ? ' · on this order' : '') + '</span></div>';
+      }).join('') + '</div>';
+    }
+    var ls = S.lines.map(function (l) {
+      var it = ITEMS[l.id];
+      return '<div><span>' + esc(it.name) + (l.size ? ' · ' + sizeLabel(it.g, l.size) : '') + '</span><span class="num mut">' + l.qty + ' × ' + (it.p == null ? '—' : eur(it.p)) + '</span></div>';
+    }).join('');
+    return '<aside class="sum card"><div class="h">Order summary</div>' +
+      '<div class="kv"><span class="mut">For</span><span>' + (e ? esc(e.first + ' ' + e.last) : '<span class="mut">Choose who the order is for.</span>') + '</span></div>' +
+      '<div class="kv"><span class="mut">Last order</span><span class="num">' + (e && e.lastOrder ? esc(e.lastOrder) : 'No earlier orders') + '</span></div>' +
+      dues + '<hr>' + (ls ? '<div class="sum-ls">' + ls + '</div><hr>' : '') +
+      '<div class="kv"><span>' + statusText() + '</span></div>' +
+      '<div class="sum-tot"><span class="mut">Total value</span><span class="num">' + eur(total()) + '</span></div>' +
+      '<button class="btn pri blk" data-act="review">Review and mark as ordered</button>' +
+      '<div class="keys mut"><span><kbd>/</kbd> add item</span><span><kbd>⌘ ↵</kbd> review</span><span><kbd>↑↓</kbd> quantity</span></div></aside>';
+  }
+  function contextHTML() {
+    var e = S.emp;
+    var body = !e ? '<div class="mut">Choose an employee to see what they hold.</div>'
+      : e.held.length ? '<div class="held">' + e.held.map(function (h) {
+        var over = /^Overdue/.test(h[3]);
+        return '<div><span><b>' + esc(h[0]) + '</b></span><span class="num mut">' + esc(h[1]) + '</span><span class="hs mut">' + esc(h[2]) + ' · <span class="' + (over ? 'bad' : '') + '">' + esc(h[3]) + '</span></span></div>';
+      }).join('') + '</div>' : '<div class="mut">No items given yet.</div>';
+    return '<section class="ctx card"><div class="pane-h"><span class="h">' + (e ? 'Items given to ' + esc(e.first) : 'Items given') + '</span>' + (e ? '<span class="mut">' + plural(e.held.length, 'item', 'items') + '</span>' : '') + '</div>' + body + '</section>';
+  }
+  function catalogueHTML() {
+    var f = [['all', 'All'], ['cl', 'Clothing'], ['shoe', 'Shoes'], ['', 'No size']];
+    var ids = ITEM_ORDER.filter(function (id) { return S.cat === 'all' || ITEMS[id].g === S.cat; });
+    return '<div class="sec"><div class="pane-h"><span class="h">Item Catalogue</span><span class="mut">' + plural(ITEM_ORDER.length, 'item', 'items') + '</span></div>' +
+      '<div class="fchips">' + f.map(function (x) { return '<button class="' + (S.cat === x[0] ? 'on' : '') + '" data-act="cat" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="cat">' + ids.map(function (id) {
+        var it = ITEMS[id], got = onOrder(id);
+        return '<div class="tile card"><span class="ic">' + icon(it.ic) + '</span><span class="tn">' + esc(it.name) + '</span><span class="ts mut">' + esc(it.det) + '</span><span class="ts num">' + (it.p == null ? '<span class="bad">No price</span>' : eur(it.p) + ' · ' + it.m + ' mo') + '</span>' +
+          '<button class="btn sm' + (got ? '' : ' pri') + '" data-act="add-item" data-v="' + id + '">' + (got ? '✓ ' + got.qty + ' on order · +1' : '+ Add') + '</button></div>';
+      }).join('') + '</div></div>';
+  }
+  function doneHTML() {
+    var e = S.emp, n = S.lines.length;
+    var ls = S.lines.map(function (l) { var it = ITEMS[l.id]; return '<div><span>' + esc(it.name) + (l.size ? ' · ' + sizeLabel(it.g, l.size) : '') + '</span><span class="num">' + l.qty + ' × ' + eur(it.p) + '</span></div>'; }).join('');
+    return '<div class="done"><div class="done-ic" aria-hidden="true">✓</div>' +
+      '<h2 class="h done-t">Order ' + S.record + ' is ordered</h2>' +
+      '<div class="mut">For ' + esc(e.first + ' ' + e.last) + ' · prepared by Laura M. · 15 Oct 2026</div>' +
+      '<p>' + (S.link ? 'This record can no longer be edited. Next, send ' + esc(e.first) + ' the confirmation link below, or print the record for signing. It changes to Given when they confirm.'
+        : 'This record can no longer be edited. Next, ' + esc(e.first) + ' confirms receipt: send a secure link, or print the record for signing. It changes to Given when they confirm.') + '</p>' +
+      (S.link ? '<div class="card linkbox"><div class="sec-l">Employee confirmation</div><div class="url num">workwear.gavort.nl/confirm/k7Q2wX…f9Xa</div><button class="btn pri blk" data-act="send-link">Send confirmation link</button></div>'
+        : '<button class="btn pri blk" data-act="make-link">Create a confirmation link</button>') +
+      '<div class="done-acts"><button class="btn" data-act="print">Print record</button><button class="btn" data-act="new">Start a new order</button></div>' +
+      '<div class="card linkbox"><div class="sec-l">' + plural(n, 'line', 'lines') + '</div><div class="rv">' + ls + '<div class="tot"><span>Total value</span><span class="num">' + eur(total()) + '</span></div></div></div></div>';
+  }
+
+  /* ---------- Overlays ---------- */
+  function sheetHead(title, right) {
+    if (S.device === 'native') return '<div class="grab"></div><div class="shd"><button data-act="close">Cancel</button><span class="h">' + title + '</span><span style="min-width:64px;text-align:right">' + (right || '') + '</span></div>';
+    return (mobile() ? '<div class="grab"></div>' : '') + '<div class="shd"><span class="h">' + title + '</span><button class="x" data-act="close" aria-label="Close">×</button></div>';
+  }
+  function empList() {
+    var q = S.q.trim().toLowerCase();
+    var rows = EMPS.filter(function (e) { return !q || (e.first + ' ' + e.last + ' ' + e.code).toLowerCase().indexOf(q) >= 0; });
+    if (!rows.length) return '<div class="mut" style="padding:12px 4px">No matching employees.</div>';
+    return rows.map(function (e) {
+      return '<button class="prow" data-act="choose-emp" data-v="' + e.id + '"><span class="ic" style="border-radius:50%">' + esc(initials(e)) + '</span><span class="pm"><span class="pn">' + esc(e.first + ' ' + e.last) + (e.code ? ' <span class="mut num" style="font-weight:400">' + esc(e.code) + '</span>' : '') + '</span><span class="ps mut">' + sizesLine(e) + '</span></span>' + (S.emp && S.emp.id === e.id ? '<span class="tag">Selected</span>' : '') + '</button>';
+    }).join('') + '<button class="prow addnew" data-act="new-emp"><span class="pm"><span class="pn">+ Add New Employee</span></span></button>';
+  }
+  function itemList() {
+    var q = S.q.trim().toLowerCase();
+    var rows = ITEM_ORDER.filter(function (id) { var it = ITEMS[id]; return !q || (it.name + ' ' + it.det).toLowerCase().indexOf(q) >= 0; });
+    if (!rows.length) return '<div class="mut" style="padding:12px 4px">No item matches “' + esc(S.q) + '”.</div>';
+    return rows.map(function (id) {
+      var it = ITEMS[id], got = onOrder(id);
+      return '<button class="prow" data-act="add-item" data-v="' + id + '"><span class="ic">' + icon(it.ic) + '</span><span class="pm"><span class="pn">' + esc(it.name) + '</span><span class="ps mut">' + esc(it.det) + ' · ' + (it.p == null ? '<span class="bad">No price</span>' : eur(it.p) + ' · ' + it.m + ' mo') + '</span></span>' + (got ? '<span class="tag num">' + got.qty + ' on order</span>' : '') + '</button>';
+    }).join('');
+  }
+  function overlayHTML() {
+    if (!S.sheet) return '';
+    var kind = mobile() ? 'sheet' : 'dlg', inner = '', en = S.enter ? ' enter' : '';
+    if (S.sheet === 'emp') {
+      inner = sheetHead('Assigned to') + '<div class="shb" data-k="sh"><label class="srch">' + icon('search') + '<input id="pk-q" type="search" placeholder="Search employees…" autocomplete="off" aria-label="Search employees"></label><div class="plist" id="pk-list">' + empList() + '</div></div>';
+    } else if (S.sheet === 'item') {
+      inner = sheetHead('Add an item') + '<div class="shb" data-k="sh"><label class="srch">' + icon('search') + '<input id="pk-q" type="search" placeholder="Add an item…" autocomplete="off" aria-label="Search items"></label><div class="plist" id="pk-list">' + itemList() + '</div></div>';
+    } else if (S.sheet === 'line') {
+      var l = S.lines[S.lineI], it = ITEMS[l.id], grid = '';
+      if (it.g === 'cl') {
+        var savedCl = S.emp && S.emp.cl, sug = S.emp && !S.emp.cl ? fromHeight(S.emp.h) : null, codes = [];
+        for (var n = 44; n <= 66; n += 2) codes.push(n);
+        grid = '<div class="sec-l">Clothing size</div><div class="szgrid">' + codes.map(function (c) {
+          var b = BANDS.filter(function (x) { return x[0] === c; })[0];
+          var tag = c === savedCl ? 'Saved' : c === sug ? 'From height' : b ? b[1] + '–' + b[2] + ' cm' : '';
+          return '<button class="' + (String(c) === l.size ? 'on ' : '') + (c === savedCl ? 'saved' : '') + '" data-act="set-size" data-v="' + c + '"><b>' + c + '</b><small>' + band(c) + (tag ? ' · ' + tag : '') + '</small></button>';
+        }).join('') + '</div>';
+      } else if (it.g === 'shoe') {
+        var savedSh = S.emp && S.emp.sh;
+        grid = '<div class="sec-l">Shoe size</div><div class="szgrid">' + ['39', '40', '41', '42', '43', '44', '45', '46'].map(function (c) {
+          return '<button class="' + (c === l.size ? 'on ' : '') + (c === savedSh ? 'saved' : '') + '" data-act="set-size" data-v="' + c + '"><b>' + c + '</b><small>' + (c === savedSh ? 'Saved' : 'EU') + '</small></button>';
+        }).join('') + '</div>';
+      } else {
+        grid = '<div class="mut">This item has no size.</div>';
+      }
+      inner = sheetHead(esc(it.name)) + '<div class="shb" data-k="sh"><div class="mut">' + esc(it.det) + ' · ' + (it.p == null ? 'No price' : eur(it.p) + ' · ' + it.m + ' months service') + '</div>' + grid +
+        '<button class="btn dng blk" data-act="remove" data-v="sheet">Remove line</button></div>';
+    } else if (S.sheet === 'review') {
+      var e = S.emp;
+      var rv = S.lines.map(function (l) { var it = ITEMS[l.id]; return '<div><span>' + esc(it.name) + (l.size ? ' · ' + sizeLabel(it.g, l.size) : '') + '</span><span class="num">' + l.qty + ' × ' + eur(it.p) + '</span></div>'; }).join('');
+      inner = sheetHead('Review order', S.device === 'native' ? '' : '') + '<div class="shb" data-k="sh"><div class="mut">For ' + esc(e.first + ' ' + e.last) + '.</div>' +
+        '<div class="rv">' + rv + '<div class="tot"><span>Total value</span><span class="num">' + eur(total()) + '</span></div></div>' +
+        '<button class="chk' + (S.link ? ' on' : '') + '" data-act="link" role="checkbox" aria-checked="' + S.link + '"><span class="box">' + (S.link ? '✓' : '') + '</span><span>Create the confirmation link as well</span></button>' +
+        '<div class="warnline">After Mark as Ordered this record cannot be changed.</div></div>' +
+        '<div class="shf"><div class="row2"><button class="btn" data-act="wa">Copy for WhatsApp</button><button class="btn pri" data-act="mark">Mark as Ordered</button></div></div>';
+    }
+    return '<div class="ov' + en + '" data-act="close"></div><div class="' + kind + en + '" role="dialog" aria-modal="true">' + inner + '</div>';
+  }
+
+  /* ---------- Layouts ---------- */
+  function appHTML() {
+    var cls = 'app L-' + S.device + ' st-' + S.style + (S.hints ? ' hints' : '');
+    var body = S.done ? doneHTML() : composerHTML();
+    var extras = overlayHTML() + (S.toast ? '<div class="toast" role="status">' + esc(S.toast) + '</div>' : '');
+    switch (S.device) {
+      case 'phone':
+        return '<div class="' + cls + ' col">' + statusBar() + topBar() + '<div class="scroll" data-k="m">' + body + '</div>' + (S.done ? '' : reviewBar()) + tabBar() + '<div class="safari"><span>workwear.gavort.nl</span></div>' + extras + '</div>';
+      case 'native':
+        return '<div class="' + cls + ' col">' + statusBar() + '<div class="scroll" data-k="m"><div class="ntitle"><span class="h">' + (S.done ? 'Ordered' : 'New Order') + '</span>' + (S.done ? '' : '<button data-act="clear">Clear</button>') + '</div>' + body + '<div style="height:90px;flex:none"></div></div>' + (S.done ? '' : fabHTML()) + tabBar() + '<div class="home-ind"></div>' + extras + '</div>';
+      case 'tablet':
+        return '<div class="' + cls + ' col">' + statusBar() + topBar() + '<div class="scroll" data-k="m" style="padding:24px 28px">' + body + '</div>' + (S.done ? '' : reviewBar()) + '<div class="home-ind" style="bottom:6px"></div>' + extras + '</div>';
+      default:
+        var head = '<div class="phead"><div><h1 class="h">Create Order</h1><p class="mut">Prepare a supplier order for one employee. Nothing is final until Mark as Ordered.</p></div>' + (S.done ? '' : '<button class="btn" data-act="clear">Clear</button>') + '</div>';
+        var grid = S.done ? body : S.device === 'ultra'
+          ? '<div class="ugrid"><div>' + catalogueHTML() + '</div><div class="dcol">' + composerHTML() + '</div><div>' + summaryHTML() + contextHTML() + '</div></div>'
+          : '<div class="dgrid"><div class="dcol">' + composerHTML() + '</div>' + summaryHTML() + '</div>';
+        return '<div class="' + cls + '">' + sideHTML() + '<main class="dmain"><div class="scroll" data-k="m"><div class="dwrap">' + head + grid + '</div></div>' + extras + '</main></div>';
+    }
+  }
+  function sideHTML() {
+    var nav = [['home', 'Dashboard'], ['order', 'Create Order'], ['orders', 'Orders'], ['people', 'Employees'], ['box', 'Item Catalogue'], ['sets', 'Item Sets'], ['sim', 'Company Assets'], ['help', 'Help']];
+    return '<nav class="side"><div class="brand"><span class="brand-m">G</span>Workwear</div>' + nav.map(function (n) {
+      var on = n[1] === 'Create Order';
+      return '<button ' + (on ? 'class="on" aria-current="page"' : 'data-act="nav"') + '>' + icon(n[0]) + n[1] + '</button>';
+    }).join('') + '<div class="me">Laura M. · Manager</div></nav>';
+  }
+
+  /* ---------- Review chrome ---------- */
+  var frame = document.getElementById('frame'), fw = document.getElementById('fw'), stage = document.getElementById('stage');
+  function segButtons(el, items, current, attr) {
+    el.innerHTML = items.map(function (it) {
+      return '<button type="button" role="radio" aria-checked="' + (it[0] === current) + '" ' + attr + '="' + it[0] + '">' + (it[2] || '') + esc(it[1]) + '</button>';
+    }).join('');
+  }
+  function chrome() {
+    segButtons(document.getElementById('seg-device'), Object.keys(DEVICES).map(function (k) { return [k, DEVICES[k].label]; }), S.device, 'data-device');
+    segButtons(document.getElementById('seg-style'), Object.keys(STYLES).map(function (k) { var s = STYLES[k]; return [k, s.label, '<span class="sw" style="background:' + s.sw[0] + ';border-color:' + s.sw[1] + '"></span>']; }), S.style, 'data-style');
+    segButtons(document.getElementById('seg-fit'), [['fit', 'Fit'], ['actual', '100%']], S.fit, 'data-fit');
+    document.getElementById('hints').checked = S.hints;
+    var d = DEVICES[S.device], st = STYLES[S.style];
+    document.getElementById('note-dev').innerHTML = '<h2>' + esc(d.label) + ' screen</h2><dl><dt>Who uses it</dt><dd>' + esc(d.who) + '</dd><dt>Layout</dt><dd>' + esc(d.layout) + '</dd><dt>Navigation</dt><dd>' + esc(d.nav) + '</dd></dl>';
+    document.getElementById('note-sty').innerHTML = '<h2>' + esc(st.label) + ' style</h2><dl><dt>Character</dt><dd>' + esc(st.mood) + '</dd><dt>Best for</dt><dd>' + esc(st.best) + '</dd><dt>Trade-off</dt><dd>' + esc(st.trade) + '</dd><dt>Type</dt><dd>' + esc(st.font) + '</dd></dl>';
+  }
+  function stepNow() {
+    if (S.done) return 5;
+    if (S.sheet === 'review') return 4;
+    if (!S.emp) return 1;
+    if (!S.lines.length) return 2;
+    if (orderProblem()) return 3;
+    return 4;
+  }
+  function journey() {
+    var now = stepNow();
+    document.getElementById('jlist').innerHTML = STEPS.map(function (s, i) {
+      var n = i + 1, cls = n < now ? 'done' : n === now ? 'now' : '';
+      return '<li class="jstep ' + cls + '"' + (n === now ? ' aria-current="step"' : '') + '><span class="jn">' + (n < now ? '✓' : n) + '</span>' +
+        '<div class="jt"><span>' + esc(s.t) + '</span><button type="button" data-jump="' + n + '">Jump here</button></div>' +
+        '<p class="jtry">' + esc(s.try) + '</p><p class="jq"><b>Question:</b> ' + esc(s.q) + '</p></li>';
+    }).join('');
+  }
+  var PRESETS = {
+    1: function () { reset(); },
+    2: function () { reset(); chooseEmp('ona'); },
+    3: function () { reset(); chooseEmp('rasa'); applySet('starter'); },
+    4: function () { reset(); chooseEmp('ona'); applySet('starter'); open('review'); },
+    5: function () { reset(); chooseEmp('ona'); applySet('starter'); S.done = true; }
+  };
+
+  function fit() {
+    var bz = frame.firstElementChild;
+    if (!bz) return;
+    var w = bz.offsetWidth, h = bz.offsetHeight;
+    var availW = stage.clientWidth - 24;
+    var availH = Math.max(520, window.innerHeight - 150);
+    var s = S.fit === 'fit' ? Math.min(1, availW / w, S.device === 'ultra' || S.device === 'desktop' ? 1 : availH / h) : 1;
+    frame.style.transform = 'scale(' + s + ')';
+    fw.style.width = Math.round(w * s) + 'px';
+    fw.style.height = Math.round(h * s) + 'px';
+    stage.classList.toggle('actual', S.fit === 'actual');
+    var d = DEVICES[S.device];
+    document.getElementById('meta').textContent = d.label + ' · ' + d.w + ' × ' + d.h + ' CSS px · shown at ' + Math.round(s * 100) + '%';
+  }
+
+  function render() {
+    var scrolls = {};
+    frame.querySelectorAll('[data-k]').forEach(function (el) { scrolls[el.dataset.k] = el.scrollTop; });
+    var d = DEVICES[S.device], browser = S.device === 'desktop' || S.device === 'ultra';
+    frame.innerHTML = '<div class="bz bz-' + S.device + '"><div class="screen" style="width:' + d.w + 'px;height:' + d.h + 'px">' +
+      (browser ? '<div class="browser"><i></i><i></i><i></i><span class="url">workwear.gavort.nl/order</span></div>' : '') +
+      '<div class="vp" style="height:' + (d.h - (browser ? 40 : 0)) + 'px">' + appHTML() + '</div></div></div>';
+    frame.querySelectorAll('[data-k]').forEach(function (el) { if (scrolls[el.dataset.k] != null) el.scrollTop = scrolls[el.dataset.k]; });
+    var q = document.getElementById('pk-q');
+    if (q) {
+      q.value = S.q;
+      if (S.enter && !mobile()) q.focus({ preventScroll: true });
+      q.addEventListener('input', function () { S.q = q.value; document.getElementById('pk-list').innerHTML = S.sheet === 'emp' ? empList() : itemList(); });
+    }
+    S.enter = false;
+    chrome();
+    journey();
+    fit();
+  }
+
+  frame.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-act]');
+    if (!t || !frame.contains(t) || t.disabled) return;
+    act(t.dataset.act, t.dataset.v);
+  });
+  document.querySelector('.controls').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.device) { S.device = b.dataset.device; S.toast = null; }
+    else if (b.dataset.style) S.style = b.dataset.style;
+    else if (b.dataset.fit) S.fit = b.dataset.fit;
+    else return;
+    remember(); render();
+  });
+  document.getElementById('hints').addEventListener('change', function (ev) { S.hints = ev.target.checked; render(); });
+  document.getElementById('jlist').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-jump]');
+    if (!b) return;
+    PRESETS[b.dataset.jump]();
+    render();
+    var sc = frame.querySelector('[data-k="m"]');
+    if (sc) sc.scrollTop = 0;
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (S.device !== 'desktop' && S.device !== 'ultra') return;
+    var tag = (ev.target.tagName || '').toLowerCase();
+    if (ev.key === 'Escape' && S.sheet) { S.sheet = null; render(); return; }
+    if (tag === 'input' || tag === 'textarea' || S.done) return;
+    if (ev.key === '/' && !S.sheet) { ev.preventDefault(); open('item'); render(); }
+    else if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey) && !S.sheet) { ev.preventDefault(); act('review'); }
+  });
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(stage); else window.addEventListener('resize', fit);
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+  render();
+})();
+</script>
