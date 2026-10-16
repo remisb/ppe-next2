@@ -15,7 +15,8 @@ import { deviceText, sourceLabel } from '@ppe/audit'
 import { Alert } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { Input, Select } from '@ppe/ui/components/field'
+import { DateInput } from '@ppe/ui/components/date-input'
+import { Select } from '@ppe/ui/components/field'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -85,7 +86,9 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
   const people = useLoad(() => (seesUsers ? client.users.list() : Promise.resolve([])), [seesUsers])
   const [showFilters, setShowFilters] = useState(false)
 
-  const dateError = filter.from && filter.to && filter.from > filter.to ? t.security.fromAfterTo : undefined
+  // A From or To left with something that is not a date (DateInput): it filters nothing, and says so.
+  const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
+  const dateError = notDate.from ?? notDate.to ?? (filter.from && filter.to && filter.from > filter.to ? t.security.fromAfterTo : undefined)
   const filterKey = JSON.stringify(filter)
   const first = useLoad<SecurityPageData>(
     () => (dateError ? Promise.resolve({ events: [], next: null }) : client.security.events(filter)),
@@ -116,7 +119,7 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
     const nextFilter: SecurityFilter = { ...filter, [key]: value || undefined }
     navigate({ name: 'security', tab: 'sign-ins', filter: clean(nextFilter) }, { replace: true, scroll: false })
   }
-  const activeFilters = [filter.kind, filter.user, filter.from, filter.to].filter(Boolean).length
+  const activeFilters = [filter.kind, filter.user, filter.from || notDate.from, filter.to || notDate.to].filter(Boolean).length
 
   return (
     <>
@@ -159,21 +162,48 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
           </label>
         ) : null}
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-sm font-medium">
-            {t.security.from}
-            <Input type="date" className="mt-1.5" value={filter.from ?? ''} max={filter.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
-          </label>
-          <label className="text-sm font-medium">
-            {t.security.to}
-            <Input type="date" className="mt-1.5" value={filter.to ?? ''} min={filter.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
-          </label>
+          <div>
+            <label htmlFor="security-from" className="text-sm font-medium">
+              {t.security.from}
+            </label>
+            <DateInput
+              id="security-from"
+              className="mt-1.5"
+              value={filter.from ?? ''}
+              max={filter.to || undefined}
+              invalid={Boolean(notDate.from) || dateError === t.security.fromAfterTo}
+              onChange={(v, problem) => {
+                setFilter('from', v)
+                setNotDate((n) => ({ ...n, from: problem }))
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor="security-to" className="text-sm font-medium">
+              {t.security.to}
+            </label>
+            <DateInput
+              id="security-to"
+              className="mt-1.5"
+              value={filter.to ?? ''}
+              min={filter.from || undefined}
+              invalid={Boolean(notDate.to) || dateError === t.security.fromAfterTo}
+              onChange={(v, problem) => {
+                setFilter('to', v)
+                setNotDate((n) => ({ ...n, to: problem }))
+              }}
+            />
+          </div>
         </div>
         <div className="flex items-end">
           <Button
             variant="ghost"
             className="w-full sm:w-auto"
             disabled={activeFilters === 0}
-            onClick={() => navigate({ name: 'security', tab: 'sign-ins', filter: {} }, { replace: true, scroll: false })}
+            onClick={() => {
+              setNotDate({})
+              navigate({ name: 'security', tab: 'sign-ins', filter: {} }, { replace: true, scroll: false })
+            }}
           >
             {t.security.clearFilters}
           </Button>

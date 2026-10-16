@@ -13,7 +13,7 @@ import { AssetsCard } from '@/components/assets-card'
 import { BarList, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
 
@@ -38,7 +38,7 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `${t.dashboard.managerIntro} ${t.dashboard.updated(formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            ? `${t.dashboard.managerIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.managerIntro
         }
         actions={

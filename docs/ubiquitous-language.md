@@ -670,6 +670,15 @@ Rules for using it:
 - **Brief:** the one timezone all dates are shown and filtered in.
 - **Code:** `API_ORG_TIMEZONE` (Europe/Vilnius). **UI:** "Dates are shown in Europe/Vilnius."
 
+### Date form
+- **Brief:** the one way each language writes a date, shown and typed: **2026-10-15** in
+  English, **2026.10.15** in Lithuanian, **15.10.2026** in Russian.
+- **Detail:** every date field takes it (`DateInput`) and every date is shown in it, whatever
+  the browser's own settings; something that is not a real day is refused ("Not a date. Type
+  it as 2026-10-16."). Compact rows keep day and month ("24 Sept"). The Items Given Record and
+  the confirmation page keep their own English / Russian dates.
+- **Code:** `formatDay`, `parseDay` (`@ppe/ui/lib/dates`).
+
 ### Developer Logic Manual (the manual)
 - **Brief:** the product contract. Section (§) and algorithm (A, C, D, E) references point to it.
 - **Detail:** `../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx`;

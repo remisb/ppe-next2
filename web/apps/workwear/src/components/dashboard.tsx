@@ -2,7 +2,6 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { BarChart, type Series } from '@ppe/ui/components/charts'
 import { Panel } from '@ppe/ui/components/panel'
-import { formatDateTime } from '@ppe/ui/lib/dates'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -16,7 +15,7 @@ import type { Route } from '@/lib/router'
  */
 
 /** A date without the time, in the organisation's timezone. */
-export const formatDate = (iso: string, tz: string) => formatDateTime(iso, tz).slice(0, 10)
+export { formatDate } from '@ppe/ui/lib/dates'
 
 export const inlineLink = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 

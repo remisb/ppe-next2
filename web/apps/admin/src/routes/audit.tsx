@@ -3,20 +3,21 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { type DescribeOptions, ChangeDetail, areaLabel, auditText, auditTitle, changedBy, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
 import { Button } from '@ppe/ui/components/button'
-import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
+import { DateInput } from '@ppe/ui/components/date-input'
+import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatDateTime, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
-import { intlLocale, t } from '@/i18n'
+import { t } from '@/i18n'
 import { type AuditFilter, type Route, linkTo } from '@/lib/router'
 import { roleName } from '@/lib/users'
 
@@ -57,7 +58,9 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
   const [exporting, setExporting] = useState(false)
   const tz = settings.data?.timezone
 
-  const dateError = filter.from && filter.to && filter.from > filter.to ? t.audit.fromAfterTo : undefined
+  // A From or To left with something that is not a date (DateInput): it filters nothing, and says so.
+  const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
+  const dateError = notDate.from ?? notDate.to ?? (filter.from && filter.to && filter.from > filter.to ? t.audit.fromAfterTo : undefined)
   const filterKey = JSON.stringify(filter)
   const first = useLoad<AuditPageData>(
     () => (dateError ? Promise.resolve({ events: [], next: null }) : client.audit.list(filter)),
@@ -108,7 +111,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
 
   const recordFiltered = filter.entity_type && filter.entity_id
   const recordLabel = recordFiltered ? (events.find((e) => e.entity_id === filter.entity_id)?.entity_label ?? t.audit.unnamed) : null
-  const activeFilters = [filter.area, filter.event, filter.actor, filter.from, filter.to].filter(Boolean).length
+  const activeFilters = [filter.area, filter.event, filter.actor, filter.from || notDate.from, filter.to || notDate.to].filter(Boolean).length
   const beside = selected !== undefined
 
   return (
@@ -176,21 +179,48 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
             </label>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
-            <label className="text-sm font-medium">
-              {t.audit.from}
-              <Input type="date" className="mt-1.5" value={filter.from ?? ''} max={filter.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
-            </label>
-            <label className="text-sm font-medium">
-              {t.audit.to}
-              <Input type="date" className="mt-1.5" value={filter.to ?? ''} min={filter.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
-            </label>
+            <div>
+              <label htmlFor="audit-from" className="text-sm font-medium">
+                {t.audit.from}
+              </label>
+              <DateInput
+                id="audit-from"
+                className="mt-1.5"
+                value={filter.from ?? ''}
+                max={filter.to || undefined}
+                invalid={Boolean(notDate.from) || dateError === t.audit.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('from', v)
+                  setNotDate((n) => ({ ...n, from: problem }))
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="audit-to" className="text-sm font-medium">
+                {t.audit.to}
+              </label>
+              <DateInput
+                id="audit-to"
+                className="mt-1.5"
+                value={filter.to ?? ''}
+                min={filter.from || undefined}
+                invalid={Boolean(notDate.to) || dateError === t.audit.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('to', v)
+                  setNotDate((n) => ({ ...n, to: problem }))
+                }}
+              />
+            </div>
           </div>
           <div className={cn('flex items-end', !beside && 'xl:col-span-4 xl:justify-end')}>
             <Button
               variant="ghost"
               className="w-full sm:w-auto"
               disabled={activeFilters === 0}
-              onClick={() => go(recordOnly(filter), selected)}
+              onClick={() => {
+                setNotDate({})
+                go(recordOnly(filter), selected)
+              }}
             >
               {t.audit.clearFilters}
             </Button>
@@ -415,7 +445,7 @@ function ChangePane({
 
 /** A day as the seals name it: a calendar date, not a moment, so no timezone shifts it. */
 function dayText(iso: string): string {
-  return new Date(iso).toLocaleDateString(intlLocale(), { dateStyle: 'medium', timeZone: 'UTC' })
+  return formatDay(iso.slice(0, 10))
 }
 
 /**
@@ -540,9 +570,10 @@ function ExportSheet({ open, onClose, filter }: { open: boolean; onClose: () => 
   const [format, setFormat] = useState<'csv' | 'jsonl'>('csv')
   const [from, setFrom] = useState(filter.from ?? isoDay(new Date(today.getTime() - 29 * 86_400_000)))
   const [to, setTo] = useState(filter.to ?? isoDay(today))
+  const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
-  const problem = !from || !to ? t.audit.exportNeedsDays : from > to ? t.audit.fromAfterTo : Date.parse(to) - Date.parse(from) > 365 * 86_400_000 ? t.audit.exportTooLong : undefined
+  const problem = notDate.from ?? notDate.to ?? (!from || !to ? t.audit.exportNeedsDays : from > to ? t.audit.fromAfterTo : Date.parse(to) - Date.parse(from) > 365 * 86_400_000 ? t.audit.exportTooLong : undefined)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -580,14 +611,38 @@ function ExportSheet({ open, onClose, filter }: { open: boolean; onClose: () => 
     >
       <form id="audit-export" onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm font-medium">
-            {t.audit.from}
-            <Input type="date" className="mt-1.5" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label className="text-sm font-medium">
-            {t.audit.to}
-            <Input type="date" className="mt-1.5" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
-          </label>
+          <div>
+            <label htmlFor="audit-export-from" className="text-sm font-medium">
+              {t.audit.from}
+            </label>
+            <DateInput
+              id="audit-export-from"
+              className="mt-1.5"
+              value={from}
+              max={to || undefined}
+              invalid={Boolean(notDate.from)}
+              onChange={(v, problem) => {
+                setFrom(v)
+                setNotDate((n) => ({ ...n, from: problem }))
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor="audit-export-to" className="text-sm font-medium">
+              {t.audit.to}
+            </label>
+            <DateInput
+              id="audit-export-to"
+              className="mt-1.5"
+              value={to}
+              min={from || undefined}
+              invalid={Boolean(notDate.to)}
+              onChange={(v, problem) => {
+                setTo(v)
+                setNotDate((n) => ({ ...n, to: problem }))
+              }}
+            />
+          </div>
         </div>
         <Field label={t.audit.format}>
           {(props) => (

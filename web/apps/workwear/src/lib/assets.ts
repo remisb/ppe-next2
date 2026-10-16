@@ -4,9 +4,9 @@
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
 import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { isoDay } from '@ppe/ui/lib/dates'
 
-import { intlLocale, t } from '@/i18n'
+import { t } from '@/i18n'
 import { parseEuro } from '@/lib/utils'
 
 export const ASSET_PAGE_SIZE = 50
@@ -101,7 +101,7 @@ export function holderText(a: Pick<Asset, 'location' | 'open_assignment'>): { ma
 
 /** Today in timeZone, YYYY-MM-DD: the latest date a card can have been received or given. */
 export function todayIn(timeZone: string | undefined, now = new Date()): string {
-  return formatDateTime(now.toISOString(), timeZone).slice(0, 10)
+  return isoDay(now, timeZone)
 }
 
 /** Add SIM's and Edit's fields, as typed. */
@@ -186,12 +186,8 @@ export function newSimInput(input: AssetInput, status: SimDraft['status']): Crea
   return { ...input, kind: 'SIM', connection_status: status }
 }
 
-/** A calendar date (YYYY-MM-DD) as people read it, "2 Mar 2026", in the language in use. */
-export function formatDay(date: string): string {
-  const d = new Date(`${date}T00:00:00Z`)
-  if (Number.isNaN(d.getTime())) return date
-  return new Intl.DateTimeFormat(intlLocale(), { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' }).format(d)
-}
+/** A calendar date (YYYY-MM-DD) as every date is written in the language in use (2026.03.02 in Lithuanian). */
+export { formatDay } from '@ppe/ui/lib/dates'
 
 /**
  * The one action a card's state calls for (§3: "situacijai tinkami

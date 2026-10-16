@@ -190,6 +190,21 @@ The workwear app is the reference.
 - **Dates in lists** are relative (`RelativeDate`: "Today 14:03", "3 days ago", "in 5
   days", then the date), in the organisation timezone, with the exact time in the
   `title`. Records, receipts and the order pane keep absolute dates.
+- **One date form per language** (`@ppe/ui/lib/dates`): 2026-10-15 in English, 2026.10.15
+  in Lithuanian, 15.10.2026 in Russian. Show a date with `formatDay` (a YYYY-MM-DD day),
+  `formatDate` / `formatDateTime` (a timestamp, in the organisation timezone), never
+  `toLocaleDateString` or a sliced string; compare and send `isoDay`. Only a day and month
+  in a compact row ("24 Sept", `formatShortDate`, `RelativeDate`) and month headings are
+  written out. The Items Given Record keeps `isoDateTime`, and the confirmation page its own
+  English / Russian dates.
+- **Date fields** are `DateInput` (`@ppe/ui/components/date-input`), never `<input
+  type="date">`, whose form follows the browser, not the app. It takes the language's form
+  (separators added as the parts are typed, so a phone needs only its number pad; a date
+  pasted in another order is read), has a calendar button, and passes on YYYY-MM-DD, or ''
+  with a problem when it is left with something that is not a real day: show that problem
+  as the field's error, and filter or save nothing with it. A range checks From after To
+  itself. Label it with `htmlFor` or `Field`, never a wrapping `<label>`: the calendar
+  button inside would join the field's name.
 - **Record previews**: a record number that links away from a list is a `RecordPreview`,
   which shows the order's status, lines and total on hover or focus and stays a link;
   a tap on a touch screen follows it. Not where the row already opens the order beside

@@ -2,7 +2,7 @@ import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { Input } from '@ppe/ui/components/field'
+import { DateInput } from '@ppe/ui/components/date-input'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
@@ -84,6 +84,8 @@ export function History({
   const [sort, setSort] = useState<SortState<HistorySort>>(newestFirst)
   // Phone only: the filters fold away so the orders start at the top of the screen.
   const [showFilters, setShowFilters] = useState(false)
+  // A From or To left with something that is not a date (DateInput): it filters nothing, and says so.
+  const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
   const settings = useLoad(() => client.settings())
 
   const scope: HistoryQuery = {
@@ -122,6 +124,12 @@ export function History({
 
   const setFilter = <K extends keyof Filters>(k: K, v: Filters[K]) => {
     setFilters((f) => ({ ...f, [k]: v }))
+    setPage(1)
+  }
+
+  const clearFilters = () => {
+    setFilters((f) => ({ ...noFilters, status: f.status }))
+    setNotDate({})
     setPage(1)
   }
 
@@ -166,12 +174,12 @@ export function History({
   const shownColumns = beside ? columns.filter((c) => c.key !== 'usage') : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
-  const activeFilters = [filters.employee, filters.from, filters.to].filter(Boolean).length
-  const dateError = filters.from && filters.to && filters.from > filters.to ? t.history.fromAfterTo : undefined
+  const activeFilters = [filters.employee, filters.from || notDate.from, filters.to || notDate.to].filter(Boolean).length
+  const dateError = notDate.from ?? notDate.to ?? (filters.from && filters.to && filters.from > filters.to ? t.history.fromAfterTo : undefined)
 
   // What Filters folds away on a phone, and so counts there: the employee search stays in view.
   const folded = !showFilters && 'max-md:hidden'
-  const foldedFilters = [filters.from, filters.to].filter(Boolean).length
+  const foldedFilters = [filters.from || notDate.from, filters.to || notDate.to].filter(Boolean).length
 
   return (
     <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
@@ -228,24 +236,47 @@ export function History({
             />
           </div>
           <div className={cn('grid grid-cols-2 gap-2', folded)}>
-            <label className="text-sm font-medium">
-              {t.history.from}
-              <Input type="date" className="mt-1.5" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
-            </label>
-            <label className="text-sm font-medium">
-              {t.history.to}
-              <Input type="date" className="mt-1.5" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
-            </label>
+            <div>
+              <label htmlFor="history-from" className="text-sm font-medium">
+                {t.history.from}
+              </label>
+              <DateInput
+                id="history-from"
+                aria-describedby={dateError ? 'history-date-error' : undefined}
+                className="mt-1.5"
+                value={filters.from}
+                max={filters.to || undefined}
+                invalid={Boolean(notDate.from) || dateError === t.history.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('from', v)
+                  setNotDate((n) => ({ ...n, from: problem }))
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="history-to" className="text-sm font-medium">
+                {t.history.to}
+              </label>
+              <DateInput
+                id="history-to"
+                aria-describedby={dateError ? 'history-date-error' : undefined}
+                className="mt-1.5"
+                value={filters.to}
+                min={filters.from || undefined}
+                invalid={Boolean(notDate.to) || dateError === t.history.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('to', v)
+                  setNotDate((n) => ({ ...n, to: problem }))
+                }}
+              />
+            </div>
           </div>
           <div className={cn('flex items-end', folded)}>
             <Button
               variant="ghost"
               className="w-full sm:w-auto"
               disabled={activeFilters === 0}
-              onClick={() => {
-                setFilters((f) => ({ ...noFilters, status: f.status }))
-                setPage(1)
-              }}
+              onClick={clearFilters}
             >
               {t.history.clearFilters}
             </Button>
@@ -255,9 +286,14 @@ export function History({
             <SortControl columns={columns} {...sortProps} />
           </div>
         </section>
-        {dateError ? <p role="alert" className="mb-4 text-sm text-destructive">{dateError}</p> : null}
+        {dateError ? (
+          <p id="history-date-error" role="alert" className="mb-4 text-sm text-destructive">
+            {dateError}
+          </p>
+        ) : null}
 
-        {orders.error && !dateError ? (
+        {/* Wrong dates filter nothing: no orders until they are put right, rather than the last ones found. */}
+        {dateError ? null : orders.error ? (
           <ErrorState error={orders.error} onRetry={orders.reload} />
         ) : !orders.data ? (
           <Loading />
@@ -265,7 +301,7 @@ export function History({
           <EmptyState
             action={
               activeFilters > 0 ? (
-                <Button variant="outline" size="sm" onClick={() => { setFilters((f) => ({ ...noFilters, status: f.status })); setPage(1) }}>
+                <Button variant="outline" size="sm" onClick={clearFilters}>
                   {t.history.clearFilters}
                 </Button>
               ) : undefined

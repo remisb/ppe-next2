@@ -3,14 +3,14 @@ import { useApi } from '@ppe/app-shell'
 import { formatBytes } from '@ppe/backups'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatDate } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { FileDown, Upload } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { SIGNED_COPY_ACCEPT, formatDay, signedCopyProblem, uploadRefusal } from '@/lib/assets'
+import { SIGNED_COPY_ACCEPT, signedCopyProblem, uploadRefusal } from '@/lib/assets'
 
 const link = 'inline-flex min-h-11 items-center gap-1 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0'
 
@@ -73,7 +73,7 @@ export function SignedCopies({
         <FileDown aria-hidden className="size-3.5" /> {c.file_name}
       </button>
       <span className="text-xs text-muted-foreground">
-        {t.assets.copyDetails(formatBytes(c.size_bytes), formatDay(formatDateTime(c.uploaded_at, timeZone).slice(0, 10)), c.uploaded_by_name)}
+        {t.assets.copyDetails(formatBytes(c.size_bytes), formatDate(c.uploaded_at, timeZone), c.uploaded_by_name)}
       </span>
     </span>
   )

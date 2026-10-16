@@ -12,7 +12,7 @@ import { BarList, MonthChart, MoreLink, NeedsYouPanel, formatDate } from '@/comp
 import { t } from '@/i18n'
 import { backupHealth, formatBytes, healthText } from '@ppe/backups'
 import { type Need, changeText, formatDays, monthLabel, share } from '@/lib/dashboard'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
 
@@ -39,7 +39,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `${t.dashboard.adminIntro} ${t.dashboard.updated(formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            ? `${t.dashboard.adminIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.adminIntro
         }
         actions={

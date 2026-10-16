@@ -9,7 +9,7 @@ import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { MonthChart, MoreLink, NeedsYouPanel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel } from '@/lib/dashboard'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatTime } from '@ppe/ui/lib/dates'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
 
@@ -35,7 +35,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
         descriptionClassName="max-md:hidden"
         description={
           d
-            ? `${t.dashboard.employeeIntro} ${t.dashboard.updated(formatDateTime(d.generated_at, d.timezone).slice(11))}`
+            ? `${t.dashboard.employeeIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.employeeIntro
         }
         actions={

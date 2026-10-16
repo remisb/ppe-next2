@@ -2,6 +2,7 @@ import type { Asset } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
+import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
@@ -206,7 +207,17 @@ export function SimCardForm({
           {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder="0.00" value={draft.value} onChange={(e) => set('value', e.target.value)} />}
         </Field>
         <Field label={t.assets.receivedDate} required hint={t.assets.receivedDateHint} error={errors.receivedDate}>
-          {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.receivedDate} onChange={(e) => set('receivedDate', e.target.value)} />}
+          {(p) => (
+            <DateInput
+              {...controlProps(p)}
+              max={today}
+              value={draft.receivedDate}
+              onChange={(v, problem) => {
+                set('receivedDate', v)
+                if (problem) setErrors((e) => ({ ...e, receivedDate: problem }))
+              }}
+            />
+          )}
         </Field>
         <div className="flex flex-col gap-1.5">
           <Field label={t.assets.inventoryNo} required hint={t.assets.inventoryNoHint} error={errors.inventoryNo}>

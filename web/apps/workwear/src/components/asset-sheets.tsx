@@ -2,6 +2,7 @@ import type { Asset, AssetKind, AssignmentFormResult, Whereabouts } from '@ppe/a
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
+import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { saveFile } from '@ppe/ui/lib/save-file'
@@ -125,6 +126,8 @@ function GiveSheet({
   const { client } = useApi()
   const { userId } = useSession()
   const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
+  // The given date's text when it is not a date (DateInput), for its error.
+  const [givenProblem, setGivenProblem] = useState<string>()
   // The form printed: its data's key, and its hash once known (null while it is fetched).
   const [printed, setPrinted] = useState<{ key: string; hash: string | null } | null>(null)
   // The form as the data is now, fetched ahead of Print Form and Download PDF.
@@ -161,6 +164,7 @@ function GiveSheet({
     setPreview(null)
     setShowPreview(false)
     setFailure(undefined)
+    setGivenProblem(undefined)
     setEditingDetails(false)
     if (fixed) restorePrinted(fixed.id, base)
   }, [open, fixed?.id, employee?.id])
@@ -388,8 +392,18 @@ function GiveSheet({
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={draft.givenDate > today ? t.assets.dateInFuture : undefined}>
-                  {(p) => <Input {...controlProps(p)} type="date" max={today} value={draft.givenDate} onChange={(e) => set('givenDate', e.target.value)} />}
+                <Field label={t.assets.givenDate} required hint={t.assets.givenDateHint} error={givenProblem ?? (draft.givenDate > today ? t.assets.dateInFuture : undefined)}>
+                  {(p) => (
+                    <DateInput
+                      {...controlProps(p)}
+                      max={today}
+                      value={draft.givenDate}
+                      onChange={(v, problem) => {
+                        set('givenDate', v)
+                        setGivenProblem(problem)
+                      }}
+                    />
+                  )}
                 </Field>
                 {asset?.kind === 'SIM' && asset.plan === null ? (
                   <Field label={t.assets.plan} hint={t.assets.planGiveHint}>
@@ -616,17 +630,19 @@ function CardLine({ asset }: { asset: Asset }) {
 function ReturnSheet({ asset, today, onClose, onReturned }: { asset: Asset | null; today: string; onClose: () => void; onReturned: (message: string) => void }) {
   const { client } = useApi()
   const [date, setDate] = useState(today)
+  const [dateProblem, setDateProblem] = useState<string>()
   const [comment, setComment] = useState('')
   const [failure, setFailure] = useState<string>()
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     setDate(today)
+    setDateProblem(undefined)
     setComment('')
     setFailure(undefined)
   }, [asset?.id])
 
   const open = asset?.open_assignment
-  const tooEarly = open !== undefined && open !== null && date < open.given_date
+  const tooEarly = open !== undefined && open !== null && date !== '' && date < open.given_date
   const submit = async () => {
     if (!asset || !date || date > today || tooEarly) return
     setBusy(true)
@@ -659,9 +675,20 @@ function ReturnSheet({ asset, today, onClose, onReturned }: { asset: Asset | nul
           <Field
             label={t.assets.returnDate}
             required
-            error={date > today ? t.assets.dateInFuture : tooEarly ? t.assets.returnBeforeGiven : undefined}
+            error={dateProblem ?? (date > today ? t.assets.dateInFuture : tooEarly ? t.assets.returnBeforeGiven : undefined)}
           >
-            {(p) => <Input {...controlProps(p)} type="date" min={open?.given_date} max={today} value={date} onChange={(e) => setDate(e.target.value)} />}
+            {(p) => (
+              <DateInput
+                {...controlProps(p)}
+                min={open?.given_date}
+                max={today}
+                value={date}
+                onChange={(v, problem) => {
+                  setDate(v)
+                  setDateProblem(problem)
+                }}
+              />
+            )}
           </Field>
           <Field label={t.assets.comment} hint={t.assets.optional}>
             {(p) => <Textarea {...controlProps(p)} rows={2} value={comment} onChange={(e) => setComment(e.target.value)} />}

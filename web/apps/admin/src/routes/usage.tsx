@@ -4,6 +4,7 @@ import { areaLabel, sourceLabel } from '@ppe/audit'
 import { BarChart, type Column, HeatStrip, Sparkline } from '@ppe/ui/components/charts'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { formatDay } from '@ppe/ui/lib/dates'
 import { deviceName } from '@ppe/ui/lib/devices'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
@@ -13,14 +14,10 @@ import { roleName } from '@/lib/users'
 const number = (n: number) => new Intl.NumberFormat(intlLocale()).format(n)
 const percent = (part: number, whole: number) => (whole > 0 ? Math.round((100 * part) / whole) : 0)
 
-/** A calendar day (YYYY-MM-DD) as people read it: "7 Oct" short, "7 Oct 2026" long. */
+/** A calendar day (YYYY-MM-DD) as people read it: "7 Oct" short, for an axis; long, as every date is written (formatDay). */
 function dayText(day: string, long = false): string {
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString(intlLocale(), {
-    day: 'numeric',
-    month: 'short',
-    ...(long ? { year: 'numeric' } : {}),
-    timeZone: 'UTC',
-  })
+  if (long) return formatDay(day)
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
 const dayColumns = (days: string[]): Column[] => days.map((d) => ({ key: d, short: dayText(d), long: dayText(d, true) }))

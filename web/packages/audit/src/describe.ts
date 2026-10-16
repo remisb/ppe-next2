@@ -4,6 +4,7 @@
  */
 import { type AuditEntry, type AuditSource, isAuditEvent } from '@ppe/api-client'
 import { formatEuro, intlLocale } from '@ppe/i18n'
+import { formatDateTime, formatDay } from '@ppe/ui/lib/dates'
 import { deviceName } from '@ppe/ui/lib/devices'
 
 import { type AuditText, auditText } from './text.ts'
@@ -199,7 +200,9 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
     case 'lines':
       return Array.isArray(value) ? t.items(value.length) : String(value)
     case 'date':
-      return typeof value === 'string' ? new Date(value).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' }) : String(value)
+      // A calendar date as it is (no timezone moves it); a moment in this browser's time.
+      if (typeof value !== 'string') return String(value)
+      return /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDay(value) : formatDateTime(value, undefined)
     case 'text':
       return value === '' ? null : typeof value === 'object' ? JSON.stringify(value) : String(value)
   }

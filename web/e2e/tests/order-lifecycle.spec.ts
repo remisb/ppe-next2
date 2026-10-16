@@ -658,6 +658,35 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await expect(order.getByText('Marked as ordered')).toBeVisible()
 })
 
+test('Orders: the date filters take only real dates, written in the language\'s one form', async () => {
+  const filters = page.getByRole('region', { name: 'Filters' })
+  const from = filters.getByRole('textbox', { name: 'From' })
+  const to = filters.getByRole('textbox', { name: 'To' })
+  const row = page.getByRole('row', { name: new RegExp(recordNumber) })
+  await expect(from).toHaveAttribute('placeholder', 'YYYY-MM-DD')
+  // Not a day: refused with the form to type, and no orders rather than the last ones found.
+  await from.fill('2026.02.30')
+  await from.blur()
+  await expect(page.getByRole('alert').filter({ hasText: /^Not a date\. Type it as \d{4}-\d{2}-\d{2}\.$/ })).toBeVisible()
+  await expect(from).toHaveAttribute('aria-invalid', 'true')
+  await expect(row).toHaveCount(0)
+  // A date in another order, or eight digits, is read and written in English's form.
+  await from.fill('01.01.2000')
+  await from.blur()
+  await expect(from).toHaveValue('2000-01-01')
+  await expect(page.getByText(/^Not a date/)).toHaveCount(0)
+  await expect(row).toBeVisible()
+  await to.fill('19991231')
+  await to.blur()
+  await expect(to).toHaveValue('1999-12-31')
+  await expect(page.getByRole('alert').filter({ hasText: 'From must not be after To.' })).toBeVisible()
+  await expect(row).toHaveCount(0)
+  await filters.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(from).toHaveValue('')
+  await expect(to).toHaveValue('')
+  await expect(row).toBeVisible()
+})
+
 test('a later price change does not alter the stored record', async () => {
   await openTab('Item Catalogue')
   await page.getByRole('row', { name: /Safety shoes/ }).getByRole('button', { name: 'Edit' }).click()

@@ -95,7 +95,7 @@ describe('today', () => {
 
 describe('dates', () => {
   it('reads a calendar date without moving it to another day', () => {
-    expect(formatDay('2026-03-02')).toMatch(/2 Mar 2026|Mar 2, 2026/)
+    expect(formatDay('2026-03-02')).toBe('2026-03-02')
   })
 })
 

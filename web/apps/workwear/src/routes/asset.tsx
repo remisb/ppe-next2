@@ -4,7 +4,7 @@ import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
-import { formatDateTime } from '@ppe/ui/lib/dates'
+import { formatDate } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { formatEuro } from '@ppe/i18n'
@@ -307,7 +307,7 @@ function AssignmentItem({
         <p className="mt-2 flex flex-wrap items-center gap-2">
           <Badge variant="destructive">{t.assets.notReturned}</Badge>
           <span>
-            {t.assets.markedNotReturned(formatDay(formatDateTime(s.not_returned_at, timeZone).slice(0, 10)))}
+            {t.assets.markedNotReturned(formatDate(s.not_returned_at, timeZone))}
             {s.whereabouts ? ` · ${t.assets.whereaboutsLabel[s.whereabouts]}` : ''}
           </span>
           {s.not_returned_comment ? <span className="basis-full whitespace-pre-line text-muted-foreground">{s.not_returned_comment}</span> : null}
