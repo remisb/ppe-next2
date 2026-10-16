@@ -32,6 +32,8 @@ export default function DateCalendar({
       required
       autoFocus
       locale={dayPickerLocales[currentLang()]}
+      // The month list's names: short ("Oct", "окт."), but Lithuanian's short form is a number ("10"), so its long one ("spalis").
+      formatters={{ formatMonthDropdown: (d) => d.toLocaleString(dayPickerLocales[currentLang()].code, { month: currentLang() === 'lt' ? 'long' : 'short' }) }}
       captionLayout="dropdown"
       selected={selected}
       defaultMonth={month}

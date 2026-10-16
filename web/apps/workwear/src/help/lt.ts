@@ -136,6 +136,10 @@ export const lt: Guide = {
         },
         { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
         { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – filtrai pagal datą ir rikiavimas. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
+        {
+          p: 'Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir Užsakymai nieko nerodo, kol ji neištaisyta.',
+        },
+        { shots: [{ name: 'date-picker', alt: 'Filtras „Nuo“ su atidarytu kalendoriumi' }] },
         { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
         {
           ul: [
@@ -155,6 +159,7 @@ export const lt: Guide = {
       blocks: [
         { p: 'Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.' },
         { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
+        { p: 'Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.' },
         { shots: [{ name: 'record', alt: 'Dvikalbis išdavimo įrašas' }] },
       ],
     },
@@ -455,7 +460,7 @@ export const lt: Guide = {
       blocks: [
         {
           ul: [
-            '**Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.',
+            '**Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.',
             '**Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.',
             '**Keisti slaptažodį**: kiti jūsų įrenginiai atjungiami, o šis lieka prisijungęs.',
             '**Prisijungę įrenginiai**: visos naršyklės, kuriose esate prisijungę, ir kada jos naudotos paskutinį kartą. **Šis įrenginys** – pirmas. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate, arba pasirinkite **Atjungti visus kitus įrenginius**.',

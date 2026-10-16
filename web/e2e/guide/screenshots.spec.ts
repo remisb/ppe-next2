@@ -133,6 +133,14 @@ test('orders, an order and its record', async () => {
   await order().getByRole('button', { name: T.history.viewOrder }).click()
   await expect(page.getByText(/Items Given Record/i).first()).toBeVisible()
   await shot('record')
+
+  // A date field's calendar, on the Orders From filter (on a phone, under Filters).
+  await page.goto('/orders')
+  if (device === 'phone') await page.getByRole('button', { name: new RegExp(`^${T.history.filters}`) }).click()
+  await page.getByRole('region', { name: T.history.filters }).locator('[data-slot=popover-trigger]').first().click()
+  await expect(page.locator('[data-slot=calendar]')).toBeVisible()
+  await shot('date-picker')
+  await page.keyboard.press('Escape')
 })
 
 test('employees, catalogue, item sets, users, roles, settings, backups', async () => {

@@ -90,6 +90,10 @@ If the employee will sign on paper, choose **Print record** instead.
 
 **All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
 
+Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and Orders lists nothing until it is put right.
+
+![The From filter with its calendar open](../../web/apps/workwear/public/help-img/en/desktop/date-picker.png)
+
 An **Ordered** order has these actions:
 
 - **Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.
@@ -110,6 +114,8 @@ A **Given** order has a locked record in English and Russian. Open it with **Vie
 
 - **Print Record** prints it on one A4 page; **Print Order** on the order does the same.
 - **Share via WhatsApp** sends it.
+
+Dates on the record, and on the printed and PDF assignment forms of Company Assets, are written **2026 10 15**, the same in every language.
 
 ![The bilingual Items Given Record](../../web/apps/workwear/public/help-img/en/desktop/record.png)
 
@@ -357,7 +363,7 @@ A card already registered keeps its provider, even one you remove from the list.
 
 ## 21. Your account
 
-- **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian.
+- **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
 - **Change password**: your other devices are signed out, and this one stays signed in.
 - **Signed-in devices**: every browser you are signed in on, with when it was last used. **This device** comes first. Sign out a device you no longer use or do not recognise, or choose **Sign out all other devices**.

@@ -102,6 +102,7 @@ export type ShotName =
   | 'ordered'
   | 'confirm-phone'
   | 'history'
+  | 'date-picker'
   | 'record'
   | 'employees'
   | 'employee'

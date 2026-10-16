@@ -90,6 +90,10 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 
 **Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.
 
+Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir Užsakymai nieko nerodo, kol ji neištaisyta.
+
+![Filtras „Nuo“ su atidarytu kalendoriumi](../../web/apps/workwear/public/help-img/lt/desktop/date-picker.png)
+
 Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 
 - **Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.
@@ -110,6 +114,8 @@ Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rus�
 
 - **Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.
 - **Siųsti per WhatsApp** jį išsiunčia.
+
+Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.
 
 ![Dvikalbis išdavimo įrašas](../../web/apps/workwear/public/help-img/lt/desktop/record.png)
 
@@ -357,7 +363,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 ## 21. Jūsų paskyra
 
-- **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis.
+- **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
 - **Keisti slaptažodį**: kiti jūsų įrenginiai atjungiami, o šis lieka prisijungęs.
 - **Prisijungę įrenginiai**: visos naršyklės, kuriose esate prisijungę, ir kada jos naudotos paskutinį kartą. **Šis įrenginys** – pirmas. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate, arba pasirinkite **Atjungti visus kitus įrenginius**.
