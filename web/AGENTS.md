@@ -207,7 +207,12 @@ The workwear app is the reference.
   pasted in another order is read), has a calendar button, and passes on YYYY-MM-DD, or ''
   with a problem when it is left with something that is not a real day: show that problem
   as the field's error, and filter or save nothing with it. A range checks From after To
-  itself. Label it with `htmlFor` or `Field`, never a wrapping `<label>`: the calendar
+  itself. Its calendar button opens shadcn's Calendar (`components/calendar.tsx`, React
+  DayPicker) in a `Popover` (`components/popover.tsx`, Base UI): month and weekday names in
+  the language, Monday first, month and year lists, days outside `min`/`max` not offered.
+  It is loaded on first use (`date-calendar.tsx`, its own chunk). Inside a `FormSheet` the
+  popover is portalled into the sheet's `<dialog>` (outside a modal dialog is inert), and
+  Escape in it closes the calendar only. Label it with `htmlFor` or `Field`, never a wrapping `<label>`: the calendar
   button inside would join the field's name.
 - **Record previews**: a record number that links away from a list is a `RecordPreview`,
   which shows the order's status, lines and total on hover or focus and stays a link;

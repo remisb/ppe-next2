@@ -693,6 +693,23 @@ test('Orders: the date filters take only real dates, written in the language\'s 
   await expect(to).toHaveValue('2099-12-31')
   await filters.getByRole('button', { name: 'Clear filters' }).click()
   await expect(from).toHaveValue('')
+  // Or picked from the calendar, in the language's month and weekday names; days past a limit are not offered.
+  const first = new Date(year, new Date().getMonth(), 1)
+  const firstName = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(first)
+  await from.fill(`${year}-${String(first.getMonth() + 1).padStart(2, '0')}-02`)
+  await filters.getByRole('button', { name: 'Choose from a calendar' }).nth(1).click()
+  const calendar = page.locator('[data-slot=calendar]')
+  await expect(calendar.locator('th').first()).toHaveText('Mo')
+  await expect(calendar.getByRole('button', { name: new RegExp(`\\b${firstName}\\b`) })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(calendar).toHaveCount(0)
+  await from.fill('')
+  await filters.getByRole('button', { name: 'Choose from a calendar' }).first().click()
+  await calendar.getByRole('button', { name: new RegExp(`\\b${firstName}\\b`) }).click()
+  await expect(calendar).toHaveCount(0)
+  await expect(from).toHaveValue(`${year}-${String(first.getMonth() + 1).padStart(2, '0')}-01`)
+  await filters.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(from).toHaveValue('')
 })
 
 test('a later price change does not alter the stored record', async () => {
