@@ -1,7 +1,7 @@
 import { applyLanguage } from '@ppe/i18n'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { capitalize, formatDate, formatDateTime, formatDay, formatRelative, formatShortDate, formatTime, isoDateTime, isoDay, parseDay, typeDate } from './dates.ts'
+import { capitalize, formatDate, formatDateTime, formatDay, formatRelative, formatShortDate, formatTime, isoDay, parseDay, parseDayInYear, printDateTime, printDay, typeDate } from './dates.ts'
 
 afterEach(() => applyLanguage('en'))
 
@@ -21,8 +21,10 @@ describe('the one date form per language', () => {
     expect(formatTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('01:30')
     applyLanguage('ru')
     expect(formatDateTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('24.09.2026 01:30')
-    // The receipt's and the API's forms do not follow the language.
-    expect(isoDateTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026-09-24 01:30')
+    // Printed documents' and the API's forms do not follow the language.
+    expect(printDateTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026 09 24 01:30')
+    expect(printDay('2026-10-15')).toBe('2026 10 15')
+    expect(printDay('—')).toBe('—')
     expect(isoDay('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026-09-24')
     expect(isoDay('garbage', 'UTC')).toBe('')
   })
@@ -63,6 +65,37 @@ describe('typed dates', () => {
     expect(typeDate('1', '15')).toBe('15.')
     expect(typeDate('15.1', '15.10')).toBe('15.10.')
     expect(typeDate('15.10.202', '15.10.2026')).toBe('15.10.2026')
+  })
+  it('starts a field typed from empty in the current year, which can be typed over', () => {
+    applyLanguage('lt')
+    expect(typeDate('', '1', '2026')).toBe('2026.1')
+    expect(typeDate('2026.1', '2026.10', '2026')).toBe('2026.10.')
+    expect(typeDate('2026.10.1', '2026.10.15', '2026')).toBe('2026.10.15')
+    // Another year: two digits no month has.
+    expect(typeDate('2026.2', '2026.20', '2026')).toBe('20')
+    expect(typeDate('2026.1', '2026.19', '2026')).toBe('19')
+    expect(typeDate('20', '202', '2026')).toBe('202')
+    expect(typeDate('202', '2025', '2026')).toBe('2025.')
+    // Only from empty: a field with text keeps it; a pasted date is read as it is.
+    expect(typeDate('2025.', '2025.1', '2026')).toBe('2025.1')
+    expect(typeDate('', '15.10.2025', '2026')).toBe('15.10.2025')
+    applyLanguage('en')
+    expect(typeDate('', '3', '2026')).toBe('2026-3')
+    applyLanguage('ru')
+    expect(typeDate('', '1', '2026')).toBe('1')
+    expect(typeDate('15.1', '15.10', '2026')).toBe('15.10.2026')
+    expect(typeDate('15.10.2026', '15.10.20262', '2026')).toBe('15.10.2')
+    expect(typeDate('15.10.202', '15.10.2025', '2026')).toBe('15.10.2025')
+  })
+  it('reads a day and month without a year in the current one', () => {
+    applyLanguage('lt')
+    expect(parseDayInYear('10.15', '2026')).toBe('2026-10-15')
+    expect(parseDayInYear('2.3.', '2026')).toBe('2026-02-03')
+    expect(parseDayInYear('2026.10', '2026')).toBeNull()
+    expect(parseDayInYear('13.01', '2026')).toBeNull()
+    applyLanguage('ru')
+    expect(parseDayInYear('15.10', '2026')).toBe('2026-10-15')
+    expect(parseDayInYear('5.1.', '2026')).toBe('2026-01-05')
   })
 })
 

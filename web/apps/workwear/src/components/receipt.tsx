@@ -3,7 +3,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { cn } from '@ppe/ui/lib/utils'
 
-import { isoDateTime } from '@ppe/ui/lib/dates'
+import { printDateTime } from '@ppe/ui/lib/dates'
 import { methodText } from '@/lib/history'
 import { formatSize } from '@/lib/utils'
 
@@ -48,7 +48,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
           {r.employee_code ? ` (${r.employee_code})` : ''}
         </Info>
         <Info label={given ? 'Date given / Дата выдачи' : 'Date ordered / Дата заказа'}>
-          {isoDateTime(given && record.given_at ? record.given_at : r.ordered_at, timeZone)}
+          {printDateTime(given && record.given_at ? record.given_at : r.ordered_at, timeZone)}
         </Info>
         <Info label="Given by / Выдал">{record.given_by_name ?? '—'}</Info>
         <Info label="Prepared by / Подготовил">{r.prepared_by_name}</Info>
@@ -108,7 +108,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
       {record.confirmation?.confirmed_at ? (
         <p className="mb-4 text-sm">
           Confirmed {methodText[record.confirmation.method]} by{' '}
-          <strong>{record.confirmation.confirmed_name}</strong> on {isoDateTime(record.confirmation.confirmed_at, timeZone)}.
+          <strong>{record.confirmation.confirmed_name}</strong> on {printDateTime(record.confirmation.confirmed_at, timeZone)}.
         </p>
       ) : null}
 

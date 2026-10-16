@@ -195,11 +195,15 @@ The workwear app is the reference.
   `formatDate` / `formatDateTime` (a timestamp, in the organisation timezone), never
   `toLocaleDateString` or a sliced string; compare and send `isoDay`. Only a day and month
   in a compact row ("24 Sept", `formatShortDate`, `RelativeDate`) and month headings are
-  written out. The Items Given Record keeps `isoDateTime`, and the confirmation page its own
-  English / Russian dates.
+  written out. The confirmation page keeps its own English / Russian dates.
+- **Printed documents** (the Items Given Record, the assignment form and its PDF, drawn by
+  `internal/formpdf`) write every date one way in all languages: "2026 10 15", with the
+  time "2026 10 15 14:03" (`printDay`, `printDateTime`; Go `formpdf.Day`). File names keep
+  YYYY-MM-DD.
 - **Date fields** are `DateInput` (`@ppe/ui/components/date-input`), never `<input
   type="date">`, whose form follows the browser, not the app. It takes the language's form
-  (separators added as the parts are typed, so a phone needs only its number pad; a date
+  (separators added as the parts are typed, so a phone needs only its number pad; typed
+  into an empty field it starts in the current year, which can be typed over; a date
   pasted in another order is read), has a calendar button, and passes on YYYY-MM-DD, or ''
   with a problem when it is left with something that is not a real day: show that problem
   as the field's error, and filter or save nothing with it. A range checks From after To

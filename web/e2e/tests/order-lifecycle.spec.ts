@@ -685,6 +685,14 @@ test('Orders: the date filters take only real dates, written in the language\'s 
   await expect(from).toHaveValue('')
   await expect(to).toHaveValue('')
   await expect(row).toBeVisible()
+  // Typed into an empty field, a date starts in the current year; another year can be typed over it.
+  const year = new Date().getFullYear()
+  await from.pressSequentially('0101')
+  await expect(from).toHaveValue(`${year}-01-01`)
+  await to.pressSequentially('20991231')
+  await expect(to).toHaveValue('2099-12-31')
+  await filters.getByRole('button', { name: 'Clear filters' }).click()
+  await expect(from).toHaveValue('')
 })
 
 test('a later price change does not alter the stored record', async () => {
@@ -705,6 +713,8 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByText('€59.99')).toHaveCount(0)
   await expect(page.getByText('€41.00')).toHaveCount(0)
   await expect(page.getByText(/Confirmed electronically by/)).toBeVisible()
+  // A printed document writes its dates one way in every language.
+  await expect(page.getByText(/Confirmed electronically by/)).toContainText(/ on \d{4} \d{2} \d{2} \d{2}:\d{2}\.$/)
 })
 
 test('Print Record opens the print dialog; the record prints on one A4 page', async () => {

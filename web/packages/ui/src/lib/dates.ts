@@ -78,14 +78,19 @@ export function formatDateTime(iso: string, timeZone: string | undefined): strin
 }
 
 /**
- * A timestamp as "YYYY-MM-DD HH:mm" in timeZone, whatever the language: for
- * documents that are not in the reader's language, such as the receipt.
+ * A calendar date (YYYY-MM-DD) as every printed document writes it, whatever
+ * the language: "2026 10 15". Anything else is returned as it came.
  */
-export function isoDateTime(iso: string, timeZone: string | undefined): string {
+export function printDay(day: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day.replaceAll('-', ' ') : day
+}
+
+/** A timestamp as a printed document writes it, its date (printDay) and HH:mm in timeZone: "2026 10 15 14:03". */
+export function printDateTime(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   const { day, time } = partsOf(d, timeZone)
-  return `${day} ${time}`
+  return `${printDay(day)} ${time}`
 }
 
 /**
@@ -122,8 +127,15 @@ export function parseDay(text: string): string | null {
  * A date field's text as it is typed at its end: the separator added once a
  * part is complete, and a typed . - / or space made the language's separator,
  * never doubled. Edits elsewhere in the text are left as they are.
+ *
+ * With year (the current one), a field typed from empty starts in that year:
+ * where the year comes first, the first digit follows it ("1" is "2026.1");
+ * where it comes last, it follows the day and month ("15.10" is "15.10.2026").
+ * Typing another year over it still works: two digits that cannot be a month
+ * but start a year ("2026.2" then "0") begin the year instead, and a digit
+ * after the filled-in year replaces it.
  */
-export function typeDate(prev: string, next: string): string {
+export function typeDate(prev: string, next: string, year?: string): string {
   if (next.length !== prev.length + 1 || !next.startsWith(prev)) return next
   const { order, sep } = dateForm()
   const typed = next.slice(-1)
@@ -132,11 +144,31 @@ export function typeDate(prev: string, next: string): string {
     return prev + sep
   }
   if (!/\d/.test(typed)) return next
+  if (year && order === 'ymd') {
+    if (prev === '') return `${year}${sep}${typed}`
+    const month = new RegExp(`^${year}\\${sep}(\\d\\d)$`).exec(next)
+    if (month && /^(19|20|21)$/.test(month[1] ?? '')) return month[1] ?? next
+  }
+  if (year && order === 'dmy' && new RegExp(`^\\d{1,2}\\${sep}\\d{1,2}\\${sep}${year}$`).test(prev)) {
+    return prev.slice(0, prev.length - year.length) + typed
+  }
   const groups = order === 'ymd' ? [4, 2] : [2, 2]
   const done = next.split(sep)
   const last = done[done.length - 1] ?? ''
   const at = done.length - 1
-  return at < groups.length && last.length === groups[at] ? next + sep : next
+  if (at >= groups.length || last.length !== groups[at]) return next
+  return year && order === 'dmy' && at === 1 ? `${next}${sep}${year}` : next + sep
+}
+
+/**
+ * A typed date without its year read in year (the current one): "10.15" in
+ * Lithuanian, "15.10" in Russian. Null when that is not a real day either.
+ */
+export function parseDayInYear(text: string, year: string): string | null {
+  const s = text.trim().replace(/[./\- ]$/, '')
+  if (!/^\d{1,2}[./\- ]\d{1,2}$/.test(s)) return null
+  const { order, sep } = dateForm()
+  return parseDay(order === 'ymd' ? `${year}${sep}${s}` : `${s}${sep}${year}`)
 }
 
 /**

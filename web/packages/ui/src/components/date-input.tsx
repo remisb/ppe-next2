@@ -1,10 +1,13 @@
 import { CalendarDays } from 'lucide-react'
 import { type ComponentProps, useEffect, useRef, useState } from 'react'
 
-import { formatDay, parseDay, typeDate } from '../lib/dates.ts'
+import { formatDay, parseDay, parseDayInYear, typeDate } from '../lib/dates.ts'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
 import { Input } from './field.tsx'
+
+/** The current year, as a date field starts in it. */
+const thisYear = () => String(new Date().getFullYear())
 
 type DateInputProps = Omit<ComponentProps<'input'>, 'value' | 'defaultValue' | 'onChange' | 'type' | 'min' | 'max'> & {
   /** The date, YYYY-MM-DD, or '' for none. */
@@ -27,7 +30,8 @@ type DateInputProps = Omit<ComponentProps<'input'>, 'value' | 'defaultValue' | '
  * (formatDay: 2026.10.15 in Lithuanian), whatever the browser's own date
  * field would show. It is typed, the separators coming by themselves, so a
  * phone needs only its number pad; a pasted date in another order is read too
- * (parseDay). A date is passed on as soon as it is a real one; left as
+ * (parseDay). Typed into an empty field, it starts in the current year, which
+ * can be typed over (typeDate). A date is passed on as soon as it is a real one; left as
  * anything else it is refused, with the form to type. The button beside it
  * opens the browser's calendar.
  */
@@ -51,10 +55,11 @@ export function DateInput({ value, onChange, min, max, invalid, className, onBlu
     onChange(next, problem)
   }
 
-  // Leaving the field, or Enter: a date is written in the language's form; anything else is refused.
+  // Leaving the field, or Enter: a date is written in the language's form, in this year when
+  // typed without one; anything else is refused.
   const commit = () => {
     if (text.trim() === '') return
-    const day = parseDay(text)
+    const day = parseDay(text) ?? parseDayInYear(text, thisYear())
     if (day) {
       setText(formatDay(day))
       if (day !== sent.current || bad) send(day)
@@ -78,7 +83,7 @@ export function DateInput({ value, onChange, min, max, invalid, className, onBlu
         invalid={invalid || bad}
         className="pr-11 tabular-nums"
         onChange={(e) => {
-          const next = typeDate(text, e.target.value)
+          const next = typeDate(text, e.target.value, thisYear())
           setText(next)
           if (next.trim() === '') send('')
           else {

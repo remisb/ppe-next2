@@ -49,3 +49,11 @@ func TestFilename(t *testing.T) {
 		t.Errorf("Filename = %q", got)
 	}
 }
+
+func TestDay(t *testing.T) {
+	for in, want := range map[string]string{"2026-10-15": "2026 10 15", "2026-02-30": "2026-02-30", "": "", "—": "—"} {
+		if got := Day(in); got != want {
+			t.Errorf("Day(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

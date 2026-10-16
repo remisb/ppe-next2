@@ -1,4 +1,5 @@
 import type { AssignmentForm } from '@ppe/api-client'
+import { printDay } from '@ppe/ui/lib/dates'
 
 // The form reads the same whatever the staff member's interface language, as
 // the Items Given Record does: English / Russian words, the amount as printed.
@@ -26,7 +27,7 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
           {e.first_name} {e.last_name}
           {e.code ? ` (${e.code})` : ''}
         </Info>
-        <Info label="Given date / Дата выдачи">{form.given_date}</Info>
+        <Info label="Given date / Дата выдачи">{printDay(form.given_date)}</Info>
         {sim ? (
           <>
             <Info label="SIM No. / № SIM">{form.sim_no}</Info>
@@ -46,7 +47,7 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
         <div className="hidden grid-cols-3 gap-8 pt-10 text-sm print:grid">
           <SignatureLine label="Employee signature / Подпись работника" />
           <SignatureLine label="Given by / Выдал" />
-          <SignatureLine label="Date / Дата" value={form.given_date} />
+          <SignatureLine label="Date / Дата" value={printDay(form.given_date)} />
         </div>
       </div>
       <p className="mt-6 break-all text-[0.625rem] text-muted-foreground print:text-black/60">

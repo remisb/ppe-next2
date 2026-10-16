@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	pdf "github.com/remisb/pdf-mini"
 	"github.com/remisb/pdf-mini/layout"
@@ -58,7 +59,7 @@ func Render(f asset.Form, documentHash string) ([]byte, error) {
 	}
 	fields := [][2]string{
 		{"Employee / Работник", employee},
-		{"Given date / Дата выдачи", f.GivenDate},
+		{"Given date / Дата выдачи", Day(f.GivenDate)},
 	}
 	if sim {
 		fields = append(fields,
@@ -104,7 +105,7 @@ func Render(f asset.Form, documentHash string) ([]byte, error) {
 		&layout.Row{Gap: 24, Children: []layout.Element{
 			signature("Employee signature / Подпись работника", ""),
 			signature("Given by / Выдал", ""),
-			signature("Date / Дата", f.GivenDate),
+			signature("Date / Дата", Day(f.GivenDate)),
 		}},
 		layout.Spacer{H: 28},
 		layout.Text("Document "+f.TemplateVersion+" · SHA-256 "+documentHash, layout.TextStyle{Size: 6.5, Color: faint}),
@@ -128,6 +129,16 @@ func Render(f asset.Form, documentHash string) ([]byte, error) {
 // Filename is the download's name: the inventory number and the given date.
 func Filename(f asset.Form) string {
 	return "assignment-form-" + f.InventoryNo + "-" + f.GivenDate + ".pdf"
+}
+
+// Day writes a calendar date (YYYY-MM-DD) as every printed document does,
+// whatever the language: "2026 10 15", as the web app's printDay. Anything
+// else is returned as it came.
+func Day(date string) string {
+	if _, err := time.Parse(time.DateOnly, date); err != nil {
+		return date
+	}
+	return strings.ReplaceAll(date, "-", " ")
 }
 
 func text(s *string) string {
