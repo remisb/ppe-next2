@@ -1309,7 +1309,9 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card).toContainText('0089370011')
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
-  await expect(page.getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
+  // No tiles here: the tabs count instead.
+  await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
   // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
   await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
   await expect(page.getByText(/Email your provider to activate this SIM/)).toBeVisible()
@@ -1326,9 +1328,18 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await form.getByRole('button', { name: 'Open the existing SIM' }).click()
   await expect(page.getByLabel('Search SIMs')).toHaveValue('SIM-000001')
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
-  // A tile keeps the other filters: In Office with Blocked is the blocked cards in the office (§3).
-  await page.getByRole('button', { name: /^In Office/ }).click()
-  await page.getByRole('button', { name: 'Blocked', exact: true }).click()
+  // Each tab counts what choosing it would list, under the search: the one card, Active and in the office.
+  const tabs = page.getByRole('group', { name: 'Status and location' })
+  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1', 'Blocked0', 'In Office1', 'With Employees0', 'Not Returned0'])
+  // A tab sets the status or the place and clears the other.
+  await tabs.getByRole('button', { name: /^In Office/ }).click()
+  await tabs.getByRole('button', { name: /^Active/ }).click()
+  await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'false')
+  // Location keeps the status: Office with Blocked is the blocked cards in the office (§3).
+  await tabs.getByRole('button', { name: /^Blocked/ }).click()
+  await page.getByRole('combobox', { name: 'Location' }).selectOption({ label: 'Office' })
+  await expect(tabs.getByRole('button', { name: /^Blocked/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No SIMs match these filters.')).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters' }).first().click()
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
@@ -1516,13 +1527,13 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
 
-  // The Dashboard's Company Assets card opens the register on a tile.
+  // The Dashboard's Company Assets card opens the register on the figure's tab.
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs\s*1/ })).toBeVisible()
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=in-office$/)
-  await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {

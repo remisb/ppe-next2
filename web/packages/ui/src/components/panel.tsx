@@ -3,6 +3,7 @@ import { type ReactNode, useId } from 'react'
 
 import { Button } from './button.tsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card.tsx'
+import { type Help, HelpTooltip } from './tooltip.tsx'
 import { uiText } from '../text.ts'
 import { cn } from '../lib/utils.ts'
 
@@ -77,6 +78,10 @@ export function KeyFigures({ children }: { children: ReactNode }) {
  *
  * On a phone a tile is one fact beside the figure: `brief`, or else the
  * comparison. The full detail then stays for screen readers and shows from md.
+ *
+ * `help` explains the figure in a tooltip while the pointer rests on the tile
+ * or focus is on it: what it counts, and a note such as how it overlaps the
+ * others. Screen readers get the same words as the tile's description.
  */
 export function Kpi({
   label,
@@ -88,6 +93,7 @@ export function Kpi({
   onOpen,
   openHint,
   pressed,
+  help,
 }: {
   label: string
   value: string
@@ -101,6 +107,8 @@ export function Kpi({
   openHint?: string
   /** The tile filters the list below and is chosen (true) or not (false). */
   pressed?: boolean | undefined
+  /** What the figure counts (body) and, set apart below it, a note: the tooltip. */
+  help?: Help | undefined
 }) {
   const filter = pressed !== undefined
   const note = brief ?? (change || undefined)
@@ -132,20 +140,19 @@ export function Kpi({
       </CardContent>
     </Card>
   )
-  return (
-    <li>
-      {onOpen ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-pressed={pressed}
-          className="group block h-full w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {body}
-        </button>
-      ) : (
-        body
-      )}
-    </li>
+  const tile = onOpen ? (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-pressed={pressed}
+      className="group block h-full w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="h-full">
+      {body}
+    </div>
   )
+  return <li>{help ? <HelpTooltip title={label} help={help}>{tile}</HelpTooltip> : tile}</li>
 }

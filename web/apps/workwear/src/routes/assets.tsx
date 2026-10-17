@@ -5,6 +5,7 @@ import { Button } from '@ppe/ui/components/button'
 import { Input, Select } from '@ppe/ui/components/field'
 import { KeyFigures, Kpi } from '@ppe/ui/components/panel'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
@@ -32,7 +33,14 @@ import {
   formatDay,
   holderText,
   noAssetFilters,
+  type SimTab,
+  chooseSimTab,
+  countedSimTabs,
   primaryAction,
+  simTabCountQuery,
+  simTabCounts,
+  simTabPressed,
+  simTabs,
   statusLabel,
   tilePressed,
   todayIn,
@@ -95,6 +103,17 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   const query = assetQuery(kind, filters, sort.key, sort.dir, page)
   const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
   const summary = useLoad(() => client.assets.summary(kind), [reloads])
+  // SIM Cards' tabs each show how many SIMs choosing them would list; they set the status and place, so only the rest counts.
+  const counted = chooseSimTab(filters, 'all')
+  const counts = useLoad(
+    () =>
+      sim
+        ? Promise.all(countedSimTabs.map((tab) => client.assets.list(simTabCountQuery(filters, tab)).then((r) => [tab, r.total] as const))).then((pairs) =>
+            simTabCounts(Object.fromEntries(pairs) as Parameters<typeof simTabCounts>[0]),
+          )
+        : Promise.resolve(null),
+    [sim, JSON.stringify(counted), reloads],
+  )
   const reload = () => setReloads((n) => n + 1)
 
   const update = (next: AssetFilters) => {
@@ -153,12 +172,21 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
     { value: 'held', label: t.assets.withAnEmployee },
     { value: 'unknown', label: t.assets.unknown },
   ]
-  const statuses: { value: ConnectionStatus | ''; label: string }[] = [
-    { value: '', label: t.assets.allStatuses },
-    { value: 'NOT_ACTIVATED', label: t.assets.statuses.NOT_ACTIVATED },
-    { value: 'ACTIVE', label: t.assets.statuses.ACTIVE },
-    { value: 'BLOCKED', label: t.assets.statuses.BLOCKED },
-  ]
+  const tabLabels: Record<SimTab, string> = {
+    all: t.assets.all,
+    ...t.assets.statuses,
+    inOffice: t.assets.inOffice,
+    withEmployees: t.assets.withEmployees,
+    notReturned: t.assets.notReturned,
+  }
+  // The tabs' tooltips: the statuses' own, and the tiles' words for All (Total) and the places.
+  const tabHelp: Record<SimTab, Help> = {
+    all: t.assets.tileHelp.SIM.total,
+    ...t.assets.statusHelp,
+    inOffice: t.assets.tileHelp.SIM.inOffice,
+    withEmployees: t.assets.tileHelp.SIM.withEmployees,
+    notReturned: t.assets.tileHelp.SIM.notReturned,
+  }
   const filtered = search.trim() !== '' || JSON.stringify(filters) !== JSON.stringify({ ...noAssetFilters, q: filters.q })
   const pages = list.data ? Math.max(1, Math.ceil(list.data.total / ASSET_PAGE_SIZE)) : 1
   const sortProps = {
@@ -174,8 +202,6 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
     <>
       <PageHeader
         title={sim ? t.assets.simCards : t.assets.equipment}
-        description={sim ? t.assets.description : t.assets.equipmentDescription}
-        descriptionClassName="max-md:hidden"
         actions={
           <>
             {canManage ? (
@@ -206,21 +232,25 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
         </nav>
       ) : null}
 
-      <KeyFigures>
-        {tiles.map((k) => (
-          <Kpi
-            key={k.tile}
-            label={k.label}
-            value={k.value === undefined ? '—' : String(k.value)}
-            detail={k.detail}
-            pressed={tilePressed(filters, k.tile)}
-            onOpen={() => update(chooseTile(filters, k.tile))}
-          />
-        ))}
-      </KeyFigures>
-      <p className="mt-2 mb-4 text-xs text-muted-foreground">{t.assets.tilesOverlap}</p>
+      {/* SIM Cards counts the same in its tabs, so only Equipment has the tiles. */}
+      {sim ? null : (
+        <KeyFigures>
+          {tiles.map((k) => (
+            <Kpi
+              key={k.tile}
+              label={k.label}
+              value={k.value === undefined ? '—' : String(k.value)}
+              detail={k.detail}
+              pressed={tilePressed(filters, k.tile)}
+              onOpen={() => update(chooseTile(filters, k.tile))}
+              // What the figure counts and how the figures overlap, on hover and focus.
+              help={t.assets.tileHelp[kind][k.tile]}
+            />
+          ))}
+        </KeyFigures>
+      )}
 
-      <div className="mb-4 flex flex-col gap-3">
+      <div className={cn('mb-4 flex flex-col gap-3', !sim && 'mt-4')}>
         <Input
           type="search"
           data-shortcut="search"
@@ -230,16 +260,29 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           onChange={(e) => setSearch(e.target.value)}
           className="md:max-w-md"
         />
-        <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-center', !showFilters && 'max-md:hidden')}>
-          {sim ? (
-            <div role="group" aria-label={t.assets.status} className="grid grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 max-md:overflow-x-auto sm:inline-grid sm:w-auto">
-              {statuses.map((o) => (
-                <button key={o.label} type="button" aria-pressed={filters.status === o.value} onClick={() => update({ ...filters, status: o.value })} className={segment}>
-                  {o.label}
+        {sim ? (
+          // Seven tabs with their counts, always in sight (the tiles' place on a phone): two to a row on a phone, three up to the sidebar's width, then one row, each as wide as its words (Russian needs it).
+          <div
+            role="group"
+            aria-label={t.assets.statusAndLocation}
+            className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-3 xl:inline-grid xl:grid-flow-col xl:auto-cols-auto xl:grid-cols-none xl:self-start"
+          >
+            {simTabs.map((tab) => (
+              <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
+                <button type="button" aria-pressed={simTabPressed(filters, tab)} onClick={() => update(chooseSimTab(filters, tab))} className={segment}>
+                  {tabLabels[tab]}
+                  {counts.data ? (
+                    <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
+                      {counts.data[tab]}
+                    </span>
+                  ) : null}
                 </button>
-              ))}
-            </div>
-          ) : (
+              </HelpTooltip>
+            ))}
+          </div>
+        ) : null}
+        <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-center', !showFilters && 'max-md:hidden')}>
+          {sim ? null : (
             <Select aria-label={t.assets.category} value={filters.category} onChange={(e) => update({ ...filters, category: e.target.value as AssetCategory | '' })} className="md:w-auto">
               <option value="">{t.assets.allCategories}</option>
               {categories.map((c) => (

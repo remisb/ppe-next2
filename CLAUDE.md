@@ -85,7 +85,7 @@ assignment form as a hashed snapshot, `assets.manage` for writes; Delete employe
 employee who holds assets. Company Assets is two screens, listed under it in the sidebar: SIM Cards
 (`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
 opens them). The SIM card register is on screen (`routes/assets.tsx`,
-`lib/assets.ts`: tiles that filter, Add SIM, Change Status) and the asset page (`/assets/<id>`:
+`lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status) and the asset page (`/assets/<id>`:
 Give SIM against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
 Company Assets card on the dashboards, and Equipment & Furniture on the same engine (the Equipment screen,

@@ -324,12 +324,23 @@ Company Assets in the sidebar; on the rail and a phone the screen switches betwe
 itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
 their own address:
 
-- **Tiles** Total SIMs, In Office, With Employees, Not Returned: one is chosen at a time
-  and filters the list, keeping the status, provider and search, so In Office with Blocked is
-  the blocked cards in the office (§3). A note says the figures overlap.
-- **Filters**: the search (numbers with spaces ignored, or a holder's name), the status
-  (All, Not Activated, Active, Blocked), the location (any, Office, with an employee,
-  Unknown) and the provider. On a phone the last three fold under Filters.
+- **Tabs**, in place of tiles (§3's figures): All, Not Activated, Active, Blocked, In
+  Office, With Employees and Not Returned, below the search and always in sight, a phone
+  included. One is chosen at a time: a tab sets the status or the place (In Office, With
+  Employees whereabouts known or not, Not Returned) and clears the other, keeping the
+  search, provider and documents (`chooseSimTab`). Each shows how many SIMs choosing it
+  would list (`simTabCountQuery`: one list request, one row, for each status, In Office and
+  Not Returned; All is the statuses added up, as every SIM has a status, and With Employees
+  is All less In Office). Each has a tooltip on hover or keyboard focus (`HelpTooltip`, also
+  its description for screen readers): a status's meaning and what to do about it, and for
+  the others what they count and how they overlap (In Office and With Employees make up
+  All; Not Returned is also With Employees). Two to a row on a phone, three up to `xl`,
+  then one row, each as wide as its words. A dashboard's figure link (`?show=…`) opens the
+  screen on its tab. The dashboards' Company Assets card keeps the overlap as its description.
+- **Filters**: the search (numbers with spaces ignored, or a holder's name), the location
+  (any, Office, with an employee, Unknown), the provider and the documents. On a phone all
+  but the search fold under Filters, whose count leaves out the tabs. The location keeps the
+  status, so Office with Blocked is the blocked cards in the office (§3).
 - **Rows**: inventory number; SIM and phone numbers, each with a copy button; provider and
   plan; status; holder or location, with Not Returned and the last holder when Unknown;
   given date and Days Held; Paper form signed; comment. Sorted by inventory number, status,
@@ -424,7 +435,8 @@ their own address:
 
 The same engine, screens and rules, with what differs by kind:
 
-- **Register**: Company Assets' second screen, **Equipment** (`/assets/equipment`): Total items, In
+- **Register**: Company Assets' second screen, **Equipment** (`/assets/equipment`), which
+  keeps the tiles that SIM Cards shows as tabs, each with its tooltip (`Kpi`'s `help`): Total items, In
   Office, With Employees, Not Returned; search by inventory or serial number, name or
   holder; filters by category and location; columns Item / Category and Serial No. instead
   of the numbers, provider and status. A row's action is Give Asset in the Office and

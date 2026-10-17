@@ -3,7 +3,6 @@ import { plural } from '@ppe/i18n'
 /** Company Assets: the SIM register, Add SIM and Change Status (docs/specs/asset-service.md). */
 export const assets = {
   title: 'Company Assets',
-  description: 'The SIMs the company owns: where each one is, who holds it and its status.',
   // Company Assets' two screens, in the Main navigation's sidebar and as their titles.
   simCards: 'SIM Cards',
   addSimCard: 'Add SIM',
@@ -18,13 +17,48 @@ export const assets = {
   notReturned: 'Not Returned',
   notReturnedDetail: 'Marked as not returned',
   tilesOverlap: 'The figures overlap: a card not returned is also with an employee.',
+  // The tiles' tooltips: what each figure counts and how the figures overlap (§3), per register.
+  tileHelp: {
+    SIM: {
+      total: {
+        body: 'Every SIM the company still accounts for, in the office or with an employee. Written-off and deleted SIMs are left out.',
+        note: 'In Office and With Employees always add up to this total.',
+      },
+      inOffice: { body: 'SIMs nobody holds: never given yet, or given and returned to the office.' },
+      withEmployees: {
+        body: 'SIMs given to an employee and not returned yet.',
+        note: 'Includes the SIMs marked Not Returned, even those whose whereabouts are unknown.',
+      },
+      notReturned: {
+        body: 'SIMs marked Not Returned: the employee was due to give them back and has not, for example on leaving.',
+        note: 'These SIMs are also counted in With Employees, so the counts are never added up.',
+      },
+    },
+    EQUIPMENT: {
+      total: {
+        body: 'Every item the company still accounts for, in the office or with an employee. Written-off and deleted items are left out.',
+        note: 'In Office and With Employees always add up to this total.',
+      },
+      inOffice: { body: 'Items nobody holds: never given yet, or given and returned to the office.' },
+      withEmployees: {
+        body: 'Items given to an employee and not returned yet.',
+        note: 'Includes the items marked Not Returned, even those whose whereabouts are unknown.',
+      },
+      notReturned: {
+        body: 'Items marked Not Returned: the employee was due to give them back and has not, for example on leaving.',
+        note: 'These items are also counted in With Employees, so the four figures are never added up.',
+      },
+    },
+  },
   // Filters.
   searchLabel: 'Search SIMs',
   searchPlaceholder: 'SIM, phone or inventory number, or employee',
   filters: 'Filters',
   filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
-  allStatuses: 'All statuses',
+  // SIM Cards' row of tabs: All, the statuses, In Office and With Employees.
+  statusAndLocation: 'Status and location',
+  all: 'All',
   location: 'Location',
   anyLocation: 'Any location',
   office: 'Office',
@@ -45,6 +79,21 @@ export const assets = {
   colComment: 'Comment',
   actions: 'Actions',
   statuses: { NOT_ACTIVATED: 'Not Activated', ACTIVE: 'Active', BLOCKED: 'Blocked' },
+  // The status tabs' tooltips on SIM Cards: what the provider's status means for the SIM.
+  statusHelp: {
+    NOT_ACTIVATED: {
+      body: 'SIMs the provider has not switched on yet: they cannot be used.',
+      note: 'Email the provider to activate one, then change its status to Active: only an Active SIM can be given.',
+    },
+    ACTIVE: {
+      body: 'SIMs the provider has switched on, which work.',
+      note: 'An Active SIM in the office is ready to give.',
+    },
+    BLOCKED: {
+      body: 'SIMs the provider has blocked, for example after one was lost or not returned.',
+      note: 'Blocking returns nothing: a blocked SIM stays where it is until its return is registered.',
+    },
+  },
   lastHeldBy: (name: string) => `Last held by ${name}`,
   noPhoneNo: 'No phone number yet',
   daysHeld: (n: number) => plural(n, { one: '# day', other: '# days' }),
@@ -192,7 +241,6 @@ export const assets = {
   holdsAssets: (numbers: string) => `This employee still holds ${numbers}. Register the return or resolve it first: leaving never returns them.`,
   // Equipment & Furniture (§15–§17).
   equipment: 'Equipment',
-  equipmentDescription: 'The company’s computers, phones, drives, furniture and other items, one record each: where each one is and who holds it.',
   addAsset: 'Add Asset',
   editAsset: 'Edit Asset',
   saveAsset: 'Save Asset',

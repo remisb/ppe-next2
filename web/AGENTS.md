@@ -219,6 +219,11 @@ The workwear app is the reference.
   popover is portalled into the sheet's `<dialog>` (outside a modal dialog is inert), and
   Escape in it closes the calendar only. Label it with `htmlFor` or `Field`, never a wrapping `<label>`: the calendar
   button inside would join the field's name.
+- **Tooltips** (`components/tooltip.tsx`, Base UI) explain on hover and keyboard focus,
+  never on touch, so they only add to what the screen says. Base UI leaves the tooltip out
+  of the accessibility tree: the trigger names the same words with `aria-describedby`.
+  `HelpTooltip` does both, set as a small card (a heading, a sentence, a note below a rule),
+  not a dark label: use it, as `Kpi`'s `help` and SIM Cards' tabs do.
 - **Record previews**: a record number that links away from a list is a `RecordPreview`,
   which shows the order's status, lines and total on hover or focus and stays a link;
   a tap on a touch screen follows it. Not where the row already opens the order beside

@@ -4,7 +4,6 @@ import type { AssetsText } from '../en/assets'
 
 export const assets: AssetsText = {
   title: 'Įmonės turtas',
-  description: 'Įmonės SIM: kur kiekviena yra, kas ją turi ir kokia jos būsena.',
   simCards: 'SIM kortelės',
   addSimCard: 'Pridėti SIM',
   editSimCard: 'Keisti SIM',
@@ -17,12 +16,45 @@ export const assets: AssetsText = {
   notReturned: 'Negrąžinta',
   notReturnedDetail: 'Pažymėtos kaip negrąžintos',
   tilesOverlap: 'Rodikliai persidengia: negrąžinta kortelė taip pat yra pas darbuotoją.',
+  tileHelp: {
+    SIM: {
+      total: {
+        body: 'Visos SIM, kurias įmonė dar apskaito: biure ar pas darbuotoją. Nurašytos ir ištrintos SIM neskaičiuojamos.',
+        note: '„Biure“ ir „Pas darbuotojus“ kartu visada sudaro šį skaičių.',
+      },
+      inOffice: { body: 'SIM, kurių niekas neturi: dar neišduotos arba išduotos ir grąžintos į biurą.' },
+      withEmployees: {
+        body: 'SIM, išduotos darbuotojui ir dar negrąžintos.',
+        note: 'Įskaičiuotos ir SIM, pažymėtos „Negrąžinta“, net jei nežinoma, kur jos yra.',
+      },
+      notReturned: {
+        body: 'SIM, pažymėtos „Negrąžinta“: darbuotojas turėjo jas grąžinti, bet negrąžino, pavyzdžiui, išeidamas.',
+        note: 'Šios SIM įskaičiuotos ir į „Pas darbuotojus“, todėl skaičiai niekada nesumuojami.',
+      },
+    },
+    EQUIPMENT: {
+      total: {
+        body: 'Visi daiktai, kuriuos įmonė dar apskaito: biure ar pas darbuotoją. Nurašyti ir ištrinti daiktai neskaičiuojami.',
+        note: '„Biure“ ir „Pas darbuotojus“ kartu visada sudaro šį skaičių.',
+      },
+      inOffice: { body: 'Daiktai, kurių niekas neturi: dar neišduoti arba išduoti ir grąžinti į biurą.' },
+      withEmployees: {
+        body: 'Daiktai, išduoti darbuotojui ir dar negrąžinti.',
+        note: 'Įskaičiuoti ir daiktai, pažymėti „Negrąžinta“, net jei nežinoma, kur jie yra.',
+      },
+      notReturned: {
+        body: 'Daiktai, pažymėti „Negrąžinta“: darbuotojas turėjo juos grąžinti, bet negrąžino, pavyzdžiui, išeidamas.',
+        note: 'Šie daiktai įskaičiuoti ir į „Pas darbuotojus“, todėl keturi rodikliai niekada nesumuojami.',
+      },
+    },
+  },
   searchLabel: 'Ieškoti SIM',
   searchPlaceholder: 'SIM, telefono ar inventoriaus Nr., darbuotojas',
   filters: 'Filtrai',
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
-  allStatuses: 'Visos būsenos',
+  statusAndLocation: 'Būsena ir vieta',
+  all: 'Visos',
   location: 'Vieta',
   anyLocation: 'Bet kuri vieta',
   office: 'Biure',
@@ -42,6 +74,20 @@ export const assets: AssetsText = {
   colComment: 'Pastaba',
   actions: 'Veiksmai',
   statuses: { NOT_ACTIVATED: 'Neaktyvuota', ACTIVE: 'Aktyvi', BLOCKED: 'Užblokuota' },
+  statusHelp: {
+    NOT_ACTIVATED: {
+      body: 'SIM, kurių tiekėjas dar neįjungė: jomis naudotis negalima.',
+      note: 'Paprašykite tiekėjo el. paštu ją aktyvuoti, tada pakeiskite būseną į „Aktyvi“: išduoti galima tik aktyvią SIM.',
+    },
+    ACTIVE: {
+      body: 'SIM, kurias tiekėjas įjungė ir kurios veikia.',
+      note: 'Aktyvi SIM biure paruošta išduoti.',
+    },
+    BLOCKED: {
+      body: 'SIM, kurias tiekėjas užblokavo, pavyzdžiui, pametus ar negrąžinus.',
+      note: 'Užblokavus niekas negrąžinama: užblokuota SIM lieka ten, kur yra, kol užregistruojamas jos grąžinimas.',
+    },
+  },
   lastHeldBy: (name: string) => `Paskutinis turėjo ${name}`,
   noPhoneNo: 'Telefono numerio dar nėra',
   daysHeld: (n: number) => plural(n, { one: '# diena', few: '# dienos', many: '# dienos', other: '# dienų' }),
@@ -178,7 +224,6 @@ export const assets: AssetsText = {
   noGivenSim: (name: string) => `${name} SIM neišduota.`,
   holdsAssets: (numbers: string) => `Šis darbuotojas vis dar turi ${numbers}. Pirmiausia užregistruokite grąžinimą arba išspręskite tai: išėjimas jų negrąžina.`,
   equipment: 'Įranga',
-  equipmentDescription: 'Įmonės kompiuteriai, telefonai, diskai, baldai ir kiti daiktai, kiekvienas atskiru įrašu: kur jis yra ir kas jį turi.',
   addAsset: 'Pridėti turtą',
   editAsset: 'Keisti turtą',
   saveAsset: 'Išsaugoti turtą',

@@ -52,9 +52,9 @@ export function tilePressed(f: AssetFilters, tile: Tile): boolean {
   return f.place === p.place && f.notReturned === p.notReturned
 }
 
-/** How many filters besides the tiles and the search are set, for the phone's Filters button. */
+/** How many filters under the phone's Filters button are set: not the tiles, SIM Cards' tabs or the search, which are in sight. */
 export function filterCount(f: AssetFilters): number {
-  return [f.status, f.provider, f.category, f.signedCopyMissing].filter(Boolean).length
+  return [f.provider, f.category, f.signedCopyMissing].filter(Boolean).length
 }
 
 /** The register's query: kind's assets matching f, sorted, one page. Unset filters are left out. */
@@ -76,6 +76,52 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
     page,
     page_size: ASSET_PAGE_SIZE,
   }
+}
+
+/**
+ * SIM Cards' row of tabs, in place of the Equipment screen's tiles: All, each
+ * status, then In Office, With Employees (whereabouts known or not) and Not
+ * Returned, as the tiles count them. A tab sets the status or the place and
+ * clears the other, so one is chosen at a time; the search, provider and
+ * documents stay. The Location filter still keeps the status (Office +
+ * Blocked, §3), and a dashboard's tile link opens the screen on its tab.
+ */
+export type SimTab = 'all' | ConnectionStatus | 'inOffice' | 'withEmployees' | 'notReturned'
+export const simTabs: SimTab[] = ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned']
+
+export function chooseSimTab(f: AssetFilters, tab: SimTab): AssetFilters {
+  const cleared: AssetFilters = { ...f, status: '', place: 'all', notReturned: false }
+  if (tab === 'all') return cleared
+  if (tab === 'inOffice') return { ...cleared, place: 'office' }
+  if (tab === 'withEmployees') return { ...cleared, place: 'held' }
+  if (tab === 'notReturned') return { ...cleared, notReturned: true }
+  return { ...cleared, status: tab }
+}
+
+export function simTabPressed(f: AssetFilters, tab: SimTab): boolean {
+  if (tab === 'all') return f.status === '' && f.place === 'all' && !f.notReturned
+  if (tab === 'inOffice') return f.place === 'office' && !f.notReturned
+  if (tab === 'withEmployees') return f.place === 'held' && !f.notReturned
+  if (tab === 'notReturned') return f.notReturned
+  return f.status === tab
+}
+
+/** The tabs a count is asked for; All and With Employees follow from them (simTabCounts). */
+export const countedSimTabs = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] as const satisfies readonly SimTab[]
+
+/** The query counting what tab would list: choosing it, then one row, as only the total is read. */
+export function simTabCountQuery(f: AssetFilters, tab: SimTab): AssetQuery {
+  return { ...assetQuery('SIM', chooseSimTab(f, tab), 'inventory', 'asc', 1), page_size: 1 }
+}
+
+/**
+ * Every tab's count from the five asked: every SIM has a status, so All is the
+ * three added up; a SIM is either in the office or held, so With Employees is
+ * All less In Office.
+ */
+export function simTabCounts(n: Record<(typeof countedSimTabs)[number], number>): Record<SimTab, number> {
+  const all = n.NOT_ACTIVATED + n.ACTIVE + n.BLOCKED
+  return { all, ...n, withEmployees: all - n.inOffice }
 }
 
 /** A connection status in the language in use. */

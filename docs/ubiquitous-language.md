@@ -931,8 +931,10 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** derived from open assignments, never counted by hand.
 
 ### Summary tiles
-- **Brief:** Total SIMs, In Office, With Employees, Not Returned at the top of the
-  register; tapping one filters the list.
+- **Brief:** Total items, In Office, With Employees, Not Returned at the top of the
+  Equipment register; tapping one filters the list. SIM Cards shows the same figures as
+  tabs instead (All, the three statuses, In Office, With Employees, Not Returned), each with
+  its count.
 - **Detail:** they overlap (a Not Returned card is also With Employees), so they are never
   added up (§3). Total excludes written-off cards.
 
