@@ -231,10 +231,10 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           </>
         }
       />
-      {/* The section's other screen, where the Main navigation has no room to list its screens (the
-          sidebar does): Equipment is only the Equipment Assignments role's; without it there is none. */}
+      {/* The section's other screen on the rail, which has no room to list its screens (the sidebar
+          and a phone's More panel do): Equipment is only the Equipment Assignments role's; without it there is none. */}
       {seesEquipment ? (
-        <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto xl:hidden">
+        <nav aria-label={t.assets.title} className="mb-4 hidden grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 md:inline-grid xl:hidden">
           {([['SIM', 'simCards', t.assets.simCards], ['EQUIPMENT', 'equipment', t.assets.equipment]] as const).map(([k, name, label]) => (
             <a
               key={k}

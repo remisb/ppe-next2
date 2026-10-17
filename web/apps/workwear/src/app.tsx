@@ -2,7 +2,7 @@ import type { Permission } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
 import { adminHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { Brand, moreIcon, moreItem, navIcon, navItem, navSubItem, navSubList } from '@ppe/ui/components/main-nav'
+import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList } from '@ppe/ui/components/main-nav'
 import { Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -41,7 +41,7 @@ interface Tab {
   label: string
   short: string
   icon: typeof Users
-  /** The section's own screens, listed under it in the sidebar; its link opens the first. */
+  /** The section's own screens, listed under it in the sidebar and the phone's More panel; its link opens the first. */
   screens?: { route: Route; label: string }[]
 }
 
@@ -200,15 +200,15 @@ export function App() {
   let placed = 0
 
   const link = (to: Route) => linkTo(to, navigate)
-  /** A section's link, and in the sidebar the screens listed under it. */
-  const section = (tab: Tab, props: Omit<Parameters<typeof NavLink>[0], 'tab' | 'current' | 'link'> = {}) => {
+  /** A section's link, and in the sidebar (and under More, the phone's More panel) the screens listed under it. */
+  const section = (tab: Tab, props: Omit<Parameters<typeof NavLink>[0], 'tab' | 'current' | 'link'> = {}, subList = navSubList) => {
     const current = isCurrent(route.name, tab.route.name)
     const screen = tab.screens?.find((s) => s.route.name === route.name)
     return (
       <Fragment key={tab.route.name}>
         <NavLink tab={tab} current={screen ? 'section' : current} link={link} {...props} />
         {tab.screens ? (
-          <div className={navSubList}>
+          <div className={subList}>
             {tab.screens.map((s) => (
               <a key={s.route.name} {...link(s.route)} aria-current={s === screen ? 'page' : undefined} className={navSubItem}>
                 {s.label}
@@ -316,7 +316,7 @@ export function App() {
               </span>
               {t.common.search}
             </button>
-            {more.map((tab) => section(tab, { item: moreItem, icon: moreIcon }))}
+            {more.map((tab) => section(tab, { item: moreItem, icon: moreIcon }, moreSubList))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
               {administration ? (

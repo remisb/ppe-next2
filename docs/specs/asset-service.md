@@ -320,8 +320,8 @@ for any client.
 The staff app's Company Assets, after Employees in the sidebar and rail and under More on a
 phone (G then A), opens its first screen, **SIM Cards** (`/assets/sim-cards`,
 `routes/assets.tsx`, rules in `lib/assets.ts`). With **Equipment** it is listed under
-Company Assets in the sidebar; on the rail and a phone the screen switches between the two
-itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
+Company Assets in the sidebar and in a phone's More panel; on the rail, which has no room
+for them, the screen switches between the two itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
 their own address:
 
 - **Tabs**, in place of tiles (§3's figures): All, Not Activated, Active, Blocked, In

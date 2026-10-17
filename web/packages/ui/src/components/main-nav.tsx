@@ -15,7 +15,8 @@ import { cn } from '../lib/utils.ts'
  * lookups such as a field's "Item Set".
  * The current section's link is aria-current="page", or "true" when its
  * screens are listed under it (navSubItem), one of which is the page: it
- * looks current in the bar and rail, and the sidebar highlights the screen.
+ * looks current in the bar and rail, and the sidebar and the phone's More
+ * panel highlight the screen.
  */
 export const navItem = cn(
   'group relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
@@ -33,18 +34,21 @@ export const navIcon = cn(
 export const moreItem = cn(
   navItem,
   'max-md:h-12 max-md:flex-row max-md:justify-start max-md:gap-3 max-md:rounded-lg max-md:px-3 max-md:text-sm',
-  'max-md:hover:bg-accent max-md:aria-[current=page]:bg-accent max-md:aria-[current=true]:bg-accent',
+  // A section whose screen is the page (aria-current=true) is not filled: the screen listed under it is.
+  'max-md:hover:bg-accent max-md:aria-[current=page]:bg-accent',
 )
 export const moreIcon = cn(
   navIcon,
   'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-aria-[current=true]:bg-transparent max-md:group-hover:bg-transparent',
 )
 /**
- * A section's own screens, listed under it in the desktop sidebar only, on a
- * line from the section's icon; the bar and rail have no room, so the
- * section's screen offers them itself there.
+ * A section's own screens, listed under it in the desktop sidebar, on a line
+ * from the section's icon; the rail has no room, so the section's screen
+ * offers them itself there.
  */
 export const navSubList = 'ml-5 hidden flex-col gap-0.5 border-l border-border pl-2 xl:flex'
+/** The same under a section in the phone's More panel, which has the room; the rail still has none. */
+export const moreSubList = cn(navSubList, 'max-md:ml-[1.375rem] max-md:flex')
 export const navSubItem = cn(
   'flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none transition-colors pointer-coarse:min-h-11',
   'hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-foreground',

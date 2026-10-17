@@ -1756,6 +1756,18 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     const bar = await page.getByRole('navigation', { name: 'Main' }).boundingBox()
     expect(bar!.height, `${tab}: the tab bar is more than one row`).toBeLessThan(100)
   }
+  // More lists Company Assets' two screens under it, the current one marked; a tap opens one and closes the panel.
+  await openTab('Equipment')
+  await expect(page).toHaveURL(/\/assets\/equipment$/)
+  await phoneNav.getByRole('button', { name: 'More' }).click()
+  await expect(phoneNav.getByRole('link', { name: 'Equipment', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(phoneNav.getByRole('link', { name: 'Company Assets' })).toHaveAttribute('aria-current', 'true')
+  await phoneNav.getByRole('link', { name: 'SIM Cards' }).click()
+  await expect(page).toHaveURL(/\/assets\/sim-cards$/)
+  await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
+  await expect(phoneNav.getByRole('link', { name: 'SIM Cards' })).toBeHidden()
+  // The screen has no switcher of its own on a phone: More is the way between the two.
+  await expect(page.getByRole('navigation', { name: 'Company Assets' })).toBeHidden()
   // The dashboard on a phone: compact figure tiles, one fact beside each figure, then Needs you.
   await openTab('Dashboard')
   const figures = page.getByRole('list', { name: 'Key figures' })

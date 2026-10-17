@@ -130,10 +130,11 @@ The workwear app is the reference.
   section while Create Order is open, and ⌘K or G then O. From
   `md` those links flow on in the rail (`md:contents`), never a second list. A section
   with screens of its own (`screens` on its tab: Company Assets' SIM Cards and Equipment,
-  when the user may open both) lists them under it in the sidebar only (`navSubList`,
-  `navSubItem`); the section's link opens the first and is `aria-current="true"` while one
-  of them is the page. The bar and rail have no room for them, so the screen offers the
-  others itself there (a switcher hidden from `xl`). An
+  when the user may open both) lists them under it in the sidebar (`navSubList`,
+  `navSubItem`) and in the phone's More panel (`moreSubList`); the section's link opens the
+  first and is `aria-current="true"` while one of them is the page, which is the row
+  highlighted. The rail has no room for them, so the screen offers the others itself
+  there (a switcher shown from `md` to `xl` only). An
   administrator, a manager or the employee role has six sections on a phone (their
   Dashboard first); the rail and sidebar show one fewer, without Create Order. Whoever may
   open a screen in Administration also has its link, under More on a phone and at the foot

@@ -82,7 +82,7 @@ data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashb
 the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
 assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
-employee who holds assets. Company Assets is two screens, listed under it in the sidebar: SIM Cards
+employee who holds assets. Company Assets is two screens, listed under it in the sidebar and a phone's More panel: SIM Cards
 (`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
 opens them). The SIM card register is on screen (`routes/assets.tsx`,
 `lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status) and the asset page (`/assets/<id>`:
