@@ -52,7 +52,8 @@ const segment =
   'flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11'
 
 /**
- * Company Assets: the SIM card register (assets brief §3–§5). The tiles
+ * Company Assets' two screens, SIM Cards (assets brief §3–§5) and Equipment
+ * (§15–§17), each a register at its own address. The tiles
  * filter the list and keep the other filters, so In Office with Blocked is
  * the blocked cards in the office. A row opens the card's page; on a wide
  * screen it also offers the one action the card's state calls for (Give SIM
@@ -172,7 +173,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   return (
     <>
       <PageHeader
-        title={t.assets.title}
+        title={sim ? t.assets.simCards : t.assets.equipment}
         description={sim ? t.assets.description : t.assets.equipmentDescription}
         descriptionClassName="max-md:hidden"
         actions={
@@ -188,14 +189,14 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           </>
         }
       />
-      {/* The two registers, each at its own address: SIM cards, and equipment and furniture,
-          which only the Equipment Assignments role sees; without it there is nothing to switch to. */}
+      {/* The section's other screen, where the Main navigation has no room to list its screens (the
+          sidebar does): Equipment is only the Equipment Assignments role's; without it there is none. */}
       {seesEquipment ? (
-        <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-          {([['SIM', t.assets.simCards], ['EQUIPMENT', t.assets.equipmentTab]] as const).map(([k, label]) => (
+        <nav aria-label={t.assets.title} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto xl:hidden">
+          {([['SIM', 'simCards', t.assets.simCards], ['EQUIPMENT', 'equipment', t.assets.equipment]] as const).map(([k, name, label]) => (
             <a
               key={k}
-              {...linkTo({ name: 'assets', ...(k === 'EQUIPMENT' ? { equipment: true } : {}) }, navigate)}
+              {...linkTo({ name }, navigate)}
               aria-current={kind === k ? 'page' : undefined}
               className={cn(segment, 'aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm')}
             >

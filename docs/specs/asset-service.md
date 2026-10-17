@@ -121,9 +121,9 @@ computer or phone is for the people given that role. Without it (`asset.Sight`, 
 - every route on one equipment item, reads and writes, its form, PDF, signed copies and
   Changes, is 404, as for an asset that does not exist (`Service.Seen`, checked first);
 - ⌘K Search (`by-number`) and the employee's assets (`by-employee`) leave equipment out;
-- the apps show no Equipment & Furniture tab, no Equipment section on the employee page and
-  no equipment figures on the dashboards' Company Assets card; `/assets?kind=equipment`
-  shows the SIMs.
+- the apps show no Equipment screen under Company Assets, no Equipment section on the
+  employee page and no equipment figures on the dashboards' Company Assets card;
+  `/assets/equipment` (and the old `/assets?kind=equipment`) shows the SIM cards.
 
 Giving, returning and editing equipment needs both `assets.manage` and `equipment.read`.
 SIMs stay as they were. Delete employee still refuses an employee who holds any asset, and
@@ -317,8 +317,12 @@ for any client.
 
 ## The SIM card register (slice 3)
 
-The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
-`lib/assets.ts`; after Employees in the sidebar and rail, under More on a phone; G then A):
+The staff app's Company Assets, after Employees in the sidebar and rail and under More on a
+phone (G then A), opens its first screen, **SIM Cards** (`/assets/sim-cards`,
+`routes/assets.tsx`, rules in `lib/assets.ts`). With **Equipment** it is listed under
+Company Assets in the sidebar; on the rail and a phone the screen switches between the two
+itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
+their own address:
 
 - **Tiles** Total SIMs, In Office, With Employees, Not Returned: one is chosen at a time
   and filters the list, keeping the status, provider and search, so In Office with Blocked is
@@ -413,14 +417,14 @@ The staff app's Company Assets (`/assets`, `routes/assets.tsx`, rules in
   orders; a result opens the card's page.
 - **The Dashboard and the Manager Dashboard** have a Company Assets card
   (`components/assets-card.tsx`): the four figures, each opening the register on its tile
-  (`/assets?show=in-office|with-employees|not-returned`). The register is under More on a
+  (`/assets/sim-cards?show=in-office|with-employees|not-returned`). The register is under More on a
   phone, so this is the way there from Home.
 
 ## Equipment & Furniture (slice 7)
 
 The same engine, screens and rules, with what differs by kind:
 
-- **Register**: the second tab of Company Assets (`/assets?kind=equipment`): Total items, In
+- **Register**: Company Assets' second screen, **Equipment** (`/assets/equipment`): Total items, In
   Office, With Employees, Not Returned; search by inventory or serial number, name or
   holder; filters by category and location; columns Item / Category and Serial No. instead
   of the numbers, provider and status. A row's action is Give Asset in the Office and

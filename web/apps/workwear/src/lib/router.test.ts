@@ -11,7 +11,8 @@ describe('router', () => {
       'employeeDashboard',
       'createOrder',
       'employees',
-      'assets',
+      'simCards',
+      'equipment',
       'catalogue',
       'itemSets',
       'history',
@@ -20,12 +21,15 @@ describe('router', () => {
     ] as const) {
       expect(parsePath(pathOf({ name }))).toEqual({ name })
     }
-    expect(pathOf({ name: 'assets' })).toBe('/assets')
-    expect(pathOf({ name: 'assets', tile: 'notReturned' })).toBe('/assets?show=not-returned')
-    expect(parsePath('/assets', '?show=in-office')).toEqual({ name: 'assets', tile: 'inOffice' })
-    expect(parsePath('/assets', '?show=everything')).toEqual({ name: 'assets' })
-    expect(pathOf({ name: 'assets', equipment: true, tile: 'inOffice' })).toBe('/assets?kind=equipment&show=in-office')
-    expect(parsePath('/assets', '?kind=equipment')).toEqual({ name: 'assets', equipment: true })
+    expect(pathOf({ name: 'simCards' })).toBe('/assets/sim-cards')
+    expect(pathOf({ name: 'simCards', tile: 'notReturned' })).toBe('/assets/sim-cards?show=not-returned')
+    expect(parsePath('/assets/sim-cards', '?show=in-office')).toEqual({ name: 'simCards', tile: 'inOffice' })
+    expect(parsePath('/assets/sim-cards', '?show=everything')).toEqual({ name: 'simCards' })
+    expect(pathOf({ name: 'equipment', tile: 'inOffice' })).toBe('/assets/equipment?show=in-office')
+    expect(parsePath('/assets/equipment', '?show=in-office')).toEqual({ name: 'equipment', tile: 'inOffice' })
+    // The old address of the two registers, when they were tabs of one screen: bookmarks and links already sent.
+    expect(parsePath('/assets', '?show=in-office')).toEqual({ name: 'simCards', tile: 'inOffice' })
+    expect(parsePath('/assets', '?kind=equipment&show=not-returned')).toEqual({ name: 'equipment', tile: 'notReturned' })
     expect(parsePath(pathOf({ name: 'asset', id: 'a/1' }))).toEqual({ name: 'asset', id: 'a/1' })
     const draft = { name: 'assetForm', id: 'a1', draft: { employeeId: 'e1', givenDate: '2026-10-09', plan: 'Biz 10 GB', valueCents: 2500 }, print: true } as const
     expect(pathOf(draft)).toBe('/assets/a1/form?employee=e1&date=2026-10-09&plan=Biz+10+GB&value=2500&print=1')
@@ -110,5 +114,12 @@ describe('router', () => {
     expect(startRoute({ name: 'employeeDashboard' }, manager)).toEqual({ name: 'managerDashboard' })
     expect(startRoute({ name: 'employeeDashboard' }, managerEmployee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'history' }, employee)).toEqual({ name: 'history' })
+  })
+  it('keeps Equipment to the Equipment Assignments role: anyone else gets the SIM cards, on the same tile', () => {
+    const admin = (p: string) => p !== 'equipment.read'
+    const assignments = (p: string) => p === 'equipment.read'
+    expect(startRoute({ name: 'equipment', tile: 'inOffice' }, admin)).toEqual({ name: 'simCards', tile: 'inOffice' })
+    expect(startRoute({ name: 'equipment' }, admin)).toEqual({ name: 'simCards' })
+    expect(startRoute({ name: 'equipment' }, assignments)).toEqual({ name: 'equipment' })
   })
 })

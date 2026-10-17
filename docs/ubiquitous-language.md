@@ -817,9 +817,10 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** a register (list) per kind with summary tiles, an item's page, and the
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
-- **Code:** `internal/domain/asset`, `routes/assets.tsx` (`/assets`, G then A). **UI:**
-  Company Assets (short label Assets), tabs **SIMs** and **Equipment & Furniture**
-  (`/assets?kind=equipment`).
+- **Code:** `internal/domain/asset`, `routes/assets.tsx` (G then A). **UI:**
+  Company Assets (short label Assets), with two screens listed under it in the sidebar:
+  **SIM Cards** (`/assets/sim-cards`) and **Equipment** (`/assets/equipment`), also the
+  screens' titles. Equipment holds equipment and furniture alike.
 
 ### Asset
 - **Brief:** one physical item the company owns and tracks on its own: a SIM card, a
@@ -836,7 +837,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   different facts: a card has one SIM No. for life, and its phone number may be unknown when
   it arrives (§2, §4). The SIM No. is kept exactly as typed, leading zeros included.
 - **UI:** "SIM" (plural "SIMs"), never "SIM card": **Add SIM**, **Edit SIM**, SIM No., Phone No.
-  Lithuanian and Russian also say "SIM" (not "SIM kortelė", "SIM-карта").
+  Lithuanian and Russian also say "SIM" (not "SIM kortelė", "SIM-карта"). The one exception
+  is the screen's name, **SIM Cards** (SIM kortelės, SIM-карты), since 2026-10-17.
 
 ### Equipment & Furniture
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
@@ -1055,6 +1057,8 @@ screens are built):
 |---|---|---|
 | Company Assets | Įmonės turtas | Имущество компании |
 | SIMs / SIM | SIM | SIM |
+| SIM Cards (the screen) | SIM kortelės | SIM-карты |
+| Equipment (the screen) | Įranga | Оборудование |
 | Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
 | Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |

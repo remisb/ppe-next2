@@ -1,12 +1,13 @@
+import type { Permission } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
 import { adminHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
+import { Brand, moreIcon, moreItem, navIcon, navItem, navSubItem, navSubList } from '@ppe/ui/components/main-nav'
 import { Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { BookOpen, Boxes, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Fragment, Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
 import { t } from '@/i18n'
@@ -40,14 +41,30 @@ interface Tab {
   label: string
   short: string
   icon: typeof Users
+  /** The section's own screens, listed under it in the sidebar; its link opens the first. */
+  screens?: { route: Route; label: string }[]
 }
 
 /** The everyday sections, in the language in use (so built on each render, never at import). */
-const tabs = (): Tab[] => [
+const tabs = (can: (p: Permission) => boolean): Tab[] => [
   { route: { name: 'createOrder' }, label: t.shell.createOrder, short: t.shell.shortOrder, icon: ClipboardList },
   { route: { name: 'history' }, label: t.shell.history, short: t.shell.shortHistory, icon: HistoryIcon },
   { route: { name: 'employees' }, label: t.shell.employees, short: t.shell.shortEmployees, icon: Users },
-  { route: { name: 'assets' }, label: t.shell.companyAssets, short: t.shell.shortAssets, icon: Boxes },
+  {
+    route: { name: 'simCards' },
+    label: t.shell.companyAssets,
+    short: t.shell.shortAssets,
+    icon: Boxes,
+    // Equipment is the Equipment Assignments role's alone (equipment.read); without it the section is the SIM cards, with nothing to list.
+    ...(can('equipment.read')
+      ? {
+          screens: [
+            { route: { name: 'simCards' }, label: t.assets.simCards },
+            { route: { name: 'equipment' }, label: t.assets.equipment },
+          ],
+        }
+      : {}),
+  },
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   { route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package },
 ]
@@ -70,7 +87,8 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
     (current === 'record' && tab === 'history') ||
     (current === 'createOrder' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
-    ((current === 'asset' || current === 'assetForm') && tab === 'assets') ||
+    // Company Assets' link is the SIM cards'; Equipment and an asset's page are in the section too.
+    ((current === 'equipment' || current === 'asset' || current === 'assetForm') && tab === 'simCards') ||
     (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
     (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard')) ||
@@ -108,7 +126,7 @@ export function App() {
     o: { name: 'createOrder' },
     h: { name: 'history' },
     e: { name: 'employees' },
-    a: { name: 'assets' },
+    a: { name: 'simCards' },
     c: { name: 'catalogue' },
     s: { name: 'itemSets' },
     u: { name: 'administration', path: '/users' },
@@ -163,11 +181,12 @@ export function App() {
   const home = startRoute({ name: 'home' }, session.can)
   const shownTabs = [
     ...(home.name === 'dashboard' || home.name === 'managerDashboard' || home.name === 'employeeDashboard' ? [homeTab(home.name)] : []),
-    ...tabs(),
+    ...tabs(session.can),
   ]
 
   const sections: PaletteSection[] = [
-    ...shownTabs.map((tab) => ({ route: tab.route, label: tab.label, icon: tab.icon })),
+    // A section with screens of its own is each of them in the palette.
+    ...shownTabs.flatMap((tab) => (tab.screens ?? [tab]).map((s) => ({ route: s.route, label: s.label, icon: tab.icon }))),
     { route: { name: 'replacements' }, label: t.shell.replacements, icon: RotateCcw },
     { route: { name: 'account' }, label: t.shell.accountAndPassword, icon: UserRound },
     { route: { name: 'help' }, label: t.shell.userGuide, icon: BookOpen },
@@ -181,6 +200,25 @@ export function App() {
   let placed = 0
 
   const link = (to: Route) => linkTo(to, navigate)
+  /** A section's link, and in the sidebar the screens listed under it. */
+  const section = (tab: Tab, props: Omit<Parameters<typeof NavLink>[0], 'tab' | 'current' | 'link'> = {}) => {
+    const current = isCurrent(route.name, tab.route.name)
+    const screen = tab.screens?.find((s) => s.route.name === route.name)
+    return (
+      <Fragment key={tab.route.name}>
+        <NavLink tab={tab} current={screen ? 'section' : current} link={link} {...props} />
+        {tab.screens ? (
+          <div className={navSubList}>
+            {tab.screens.map((s) => (
+              <a key={s.route.name} {...link(s.route)} aria-current={s === screen ? 'page' : undefined} className={navSubItem}>
+                {s.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
+      </Fragment>
+    )
+  }
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
   const back = (fallback: Route) => () => (canGoBack() ? window.history.back() : navigate(fallback))
 
@@ -235,14 +273,7 @@ export function App() {
             tab.route.name === 'createOrder' ? (
               <NewOrderLink key={tab.route.name} tab={tab} current={isCurrent(route.name, tab.route.name)} link={link} draftLines={draftLines} />
             ) : (
-              <NavLink
-                key={tab.route.name}
-                tab={tab}
-                current={isCurrent(route.name, tab.route.name)}
-                link={link}
-                badge={tab.route.name === 'history' ? waiting : 0}
-                className={phoneOrder[placed++]}
-              />
+              section(tab, { badge: tab.route.name === 'history' ? waiting : 0, className: phoneOrder[placed++] })
             ),
           )}
           <button
@@ -285,9 +316,7 @@ export function App() {
               </span>
               {t.common.search}
             </button>
-            {more.map((tab) => (
-              <NavLink key={tab.route.name} tab={tab} current={isCurrent(route.name, tab.route.name)} link={link} item={moreItem} icon={moreIcon} />
-            ))}
+            {more.map((tab) => section(tab, { item: moreItem, icon: moreIcon }))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
               {administration ? (
@@ -382,16 +411,18 @@ export function App() {
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
         {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
         {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
-        {route.name === 'assets' ? (
-          // Equipment & Furniture is for the Equipment Assignments role (equipment.read); others get the SIMs.
+        {route.name === 'simCards' || route.name === 'equipment' ? (
+          // startRoute has already sent anyone without equipment.read from Equipment to the SIM cards.
           <Assets
-            key={`${route.equipment ? 'equipment' : 'sim'}-${route.tile ?? 'all'}`}
-            kind={route.equipment && session.can('equipment.read') ? 'EQUIPMENT' : 'SIM'}
+            key={`${route.name}-${route.tile ?? 'all'}`}
+            kind={route.name === 'equipment' ? 'EQUIPMENT' : 'SIM'}
             tile={route.tile}
             navigate={navigate}
           />
         ) : null}
-        {route.name === 'asset' ? <AssetPage key={route.id} id={route.id} navigate={navigate} onBack={back({ name: 'assets' })} /> : null}
+        {route.name === 'asset' ? (
+          <AssetPage key={route.id} id={route.id} navigate={navigate} onBack={(kind) => back({ name: kind === 'EQUIPMENT' ? 'equipment' : 'simCards' })()} />
+        ) : null}
         {route.name === 'assetForm' ? (
           <AssetFormPage
             id={route.id}
@@ -472,7 +503,8 @@ function NavLink({
   className,
 }: {
   tab: Tab
-  current: boolean
+  /** section: the page is one of the screens listed under it. */
+  current: boolean | 'section'
   link: (to: Route) => ReturnType<typeof linkTo>
   /** A count beside the icon, such as orders waiting; 0 shows none. */
   badge?: number
@@ -482,7 +514,7 @@ function NavLink({
   className?: string | undefined
 }) {
   return (
-    <a {...link(r)} aria-current={current ? 'page' : undefined} className={cn(item, className)}>
+    <a {...link(r)} aria-current={current === 'section' ? 'true' : current ? 'page' : undefined} className={cn(item, className)}>
       <span className={cn(icon, 'relative')}>
         <Icon aria-hidden className="size-5 xl:size-4" />
         {/* On the icon in the tab bar and rail; at the end of the row in the sidebar. */}

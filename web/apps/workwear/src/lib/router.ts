@@ -24,10 +24,11 @@ export type Route =
   /** One employee: details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
   /**
-   * Company Assets: the SIM card register, or with equipment the Equipment &
-   * Furniture one; tile opens it on a tile (a dashboard's Company Assets card).
+   * Company Assets' two screens: the SIM card register and the Equipment
+   * one; tile opens it on a tile (a dashboard's Company Assets card).
    */
-  | { name: 'assets'; equipment?: boolean; tile?: AssetTile }
+  | { name: 'simCards'; tile?: AssetTile }
+  | { name: 'equipment'; tile?: AssetTile }
   /** One asset: where it is, who holds it, its assignments and Changes, and its actions. */
   | { name: 'asset'; id: string }
   /**
@@ -84,7 +85,8 @@ const fixed = {
   createOrder: '/orders/new',
   history: '/orders',
   employees: '/employees',
-  assets: '/assets',
+  simCards: '/assets/sim-cards',
+  equipment: '/assets/equipment',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
   replacements: '/replacements',
@@ -108,9 +110,11 @@ export function parsePath(pathname: string, search = ''): Route {
     const status = query.get('status')
     return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
   }
-  if (path === fixed.assets) {
+  // /assets and /assets?kind=equipment are the registers' old address, when they were one screen's two tabs.
+  if (path === fixed.simCards || path === fixed.equipment || path === '/assets') {
     const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
-    return { name: 'assets', ...(query.get('kind') === 'equipment' ? { equipment: true } : {}), ...(tile ? { tile } : {}) }
+    const equipment = path === fixed.equipment || (path === '/assets' && query.get('kind') === 'equipment')
+    return { name: equipment ? 'equipment' : 'simCards', ...(tile ? { tile } : {}) }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
   if (movedToAdministration.includes(path)) return { name: 'administration', path }
@@ -186,12 +190,9 @@ export function pathOf(route: Route): string {
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogueItem':
       return `/catalogue/${encodeURIComponent(route.id)}`
-    case 'assets': {
-      const q = new URLSearchParams()
-      if (route.equipment) q.set('kind', 'equipment')
-      if (route.tile) q.set('show', assetTiles[route.tile])
-      return q.toString() ? `${fixed.assets}?${q}` : fixed.assets
-    }
+    case 'simCards':
+    case 'equipment':
+      return route.tile ? `${fixed[route.name]}?show=${assetTiles[route.tile]}` : fixed[route.name]
     case 'asset':
       return `/assets/${encodeURIComponent(route.id)}`
     case 'assetForm': {
@@ -227,8 +228,8 @@ export function useRouter(): Router<Route> {
   const router = useAddressRouter(addresses)
 
   useEffect(() => {
-    // An old /history address shows as the screen's own, /orders; once, for the address the page opened at.
-    if (/^\/history(\/|$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(router.route))
+    // An old /history or /assets address shows as the screen's own, /orders or /assets/…; once, for the address the page opened at.
+    if (/^\/(history(\/|$)|assets\/?$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(router.route))
   }, [])
 
   return router
@@ -262,5 +263,7 @@ export function startRoute(route: Route, can: (p: Permission) => boolean): Route
   if (route.name === 'dashboard' && !can('dashboard.overview')) return home
   if (route.name === 'managerDashboard' && !can('dashboard.manager')) return home
   if (route.name === 'employeeDashboard' && !can('dashboard.employee')) return home
+  // Equipment is for the Equipment Assignments role (equipment.read); others get the SIM cards.
+  if (route.name === 'equipment' && !can('equipment.read')) return { name: 'simCards', ...(route.tile ? { tile: route.tile } : {}) }
   return route
 }

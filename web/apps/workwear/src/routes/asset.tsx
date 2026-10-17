@@ -1,4 +1,4 @@
-import type { AssetAssignment, ConnectionStatus } from '@ppe/api-client'
+import type { AssetAssignment, AssetKind, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
@@ -32,7 +32,7 @@ const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:under
  * for, every assignment with its form, and its Changes. A phone works here:
  * the register's rows open this page.
  */
-export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
+export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: (kind: AssetKind) => void }) {
   const { client } = useApi()
   const canManage = useSession().can('assets.manage')
   const changesKey = useOpenKey('asset.changes')
@@ -66,8 +66,9 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
 
   return (
     <>
-      <Button variant="ghost" className="-ml-3 mb-2" onClick={onBack}>
-        <ArrowLeft aria-hidden /> {t.assets.title}
+      {/* Back to its register: SIM Cards or Equipment, once the asset says which. */}
+      <Button variant="ghost" className="-ml-3 mb-2" onClick={() => onBack(sim ? 'SIM' : 'EQUIPMENT')}>
+        <ArrowLeft aria-hidden /> {!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}
       </Button>
       {asset.error ? (
         <ErrorState error={asset.error} onRetry={asset.reload} />

@@ -1289,8 +1289,10 @@ test('desktop power layer: relative dates, a record previewed on hover, Compact 
 })
 
 test('Company Assets: Add SIM, Change Status saved at once, a duplicate names the card', async () => {
+  // The section opens on its SIM Cards screen.
   await openTab('Company Assets')
-  await expect(page.getByRole('heading', { name: 'Company Assets', exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/assets\/sim-cards$/)
+  await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   await expect(page.getByText(/No SIMs yet/)).toBeVisible()
   // One card, in the Office and Not Activated, with the next number suggested (§4).
   await page.getByRole('button', { name: 'Add SIM' }).click()
@@ -1519,17 +1521,20 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs\s*1/ })).toBeVisible()
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
-  await expect(page).toHaveURL(/\/assets\?show=in-office$/)
+  await expect(page).toHaveURL(/\/assets\/sim-cards\?show=in-office$/)
   await expect(page.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {
-  // Without it: no tab, no figures on the Dashboard, and its address shows the SIMs.
+  // Without it: Company Assets lists no screens, no figures on the Dashboard, and its addresses show the SIM cards.
   await openTab('Company Assets')
-  await expect(page.getByRole('heading', { name: 'Company Assets' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Equipment & Furniture' })).toHaveCount(0)
-  await page.goto('/assets?kind=equipment')
-  await expect(page.getByRole('button', { name: 'Add SIM' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Equipment', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'SIM Cards' })).toHaveCount(0)
+  for (const address of ['/assets/equipment', '/assets?kind=equipment']) {
+    await page.goto(address)
+    await expect(page.getByRole('button', { name: 'Add SIM' })).toBeVisible()
+  }
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs/ })).toBeVisible()
@@ -1550,13 +1555,17 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   await expect(page.getByRole('row', { name: new RegExp(admin.name) })).toContainText('Equipment Assignments')
   await openTab('Company Assets')
   await page.reload()
-  await expect(page.getByRole('link', { name: 'Equipment & Furniture' })).toBeVisible()
+  // The sidebar lists the section's two screens under it, the current one marked.
+  const nav = page.getByRole('navigation', { name: 'Main' })
+  await expect(nav.getByRole('link', { name: 'SIM Cards' })).toHaveAttribute('aria-current', 'page')
+  await expect(nav.getByRole('link', { name: 'Equipment', exact: true })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Company Assets' })).toHaveAttribute('aria-current', 'true')
 })
 
 test('Equipment & Furniture: one record per item, numbered by category; a computer is given against its form, a desk without one', async () => {
-  await openTab('Company Assets')
-  await page.getByRole('link', { name: 'Equipment & Furniture' }).click()
-  await expect(page).toHaveURL(/\/assets\?kind=equipment$/)
+  await openTab('Equipment')
+  await expect(page).toHaveURL(/\/assets\/equipment$/)
+  await expect(page.getByRole('heading', { name: 'Equipment', exact: true })).toBeVisible()
   await expect(page.getByText(/No equipment or furniture yet/)).toBeVisible()
   // Add Asset: the category suggests its number (§15, §16).
   const addAsset = async (name: string, category: string, number: string, value?: string) => {
@@ -1714,7 +1723,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
-    await expect(page.getByRole('heading', { name: tab, exact: true })).toBeVisible()
+    // Company Assets opens on its first screen.
+    await expect(page.getByRole('heading', { name: tab === 'Company Assets' ? 'SIM Cards' : tab, exact: true })).toBeVisible()
     // In the screen itself: the navigation's foot names the signed-in user too.
     await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)

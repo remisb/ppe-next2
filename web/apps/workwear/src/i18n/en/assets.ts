@@ -4,7 +4,8 @@ import { plural } from '@ppe/i18n'
 export const assets = {
   title: 'Company Assets',
   description: 'The SIMs the company owns: where each one is, who holds it and its status.',
-  simCards: 'SIMs',
+  // Company Assets' two screens, in the Main navigation's sidebar and as their titles.
+  simCards: 'SIM Cards',
   addSimCard: 'Add SIM',
   editSimCard: 'Edit SIM',
   // The tiles. They overlap, so they are never added up.
@@ -190,7 +191,7 @@ export const assets = {
   noGivenSim: (name: string) => `${name} has not been given a SIM.`,
   holdsAssets: (numbers: string) => `This employee still holds ${numbers}. Register the return or resolve it first: leaving never returns them.`,
   // Equipment & Furniture (§15–§17).
-  equipmentTab: 'Equipment & Furniture',
+  equipment: 'Equipment',
   equipmentDescription: 'The company’s computers, phones, drives, furniture and other items, one record each: where each one is and who holds it.',
   addAsset: 'Add Asset',
   editAsset: 'Edit Asset',

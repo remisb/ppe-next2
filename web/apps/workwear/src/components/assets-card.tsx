@@ -25,7 +25,7 @@ export function AssetsCard({ navigate, className }: { navigate: (to: Route) => v
   return (
     <Panel title={t.assets.title} description={t.assets.tilesOverlap} className={className}>
       <Figures heading={t.assets.simCards} s={sims.data} total={t.assets.totalSimCards} equipment={false} navigate={navigate} />
-      {equipment.data ? <Figures heading={t.assets.equipmentTab} s={equipment.data} total={t.assets.totalItems} equipment navigate={navigate} /> : null}
+      {equipment.data ? <Figures heading={t.assets.equipment} s={equipment.data} total={t.assets.totalItems} equipment navigate={navigate} /> : null}
     </Panel>
   )
 }
@@ -57,7 +57,7 @@ function Figures({
         {rows.map((r) => (
           <li key={r.label}>
             <a
-              {...linkTo({ name: 'assets', ...(equipment ? { equipment: true } : {}), ...(r.tile ? { tile: r.tile } : {}) }, navigate)}
+              {...linkTo({ name: equipment ? 'equipment' : 'simCards', ...(r.tile ? { tile: r.tile } : {}) }, navigate)}
               className="flex min-h-11 items-center gap-3 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring md:min-h-9"
             >
               <span className="min-w-0 flex-1">{r.label}</span>

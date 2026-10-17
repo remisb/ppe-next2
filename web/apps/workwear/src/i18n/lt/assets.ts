@@ -5,7 +5,7 @@ import type { AssetsText } from '../en/assets'
 export const assets: AssetsText = {
   title: 'Įmonės turtas',
   description: 'Įmonės SIM: kur kiekviena yra, kas ją turi ir kokia jos būsena.',
-  simCards: 'SIM',
+  simCards: 'SIM kortelės',
   addSimCard: 'Pridėti SIM',
   editSimCard: 'Keisti SIM',
   totalSimCards: 'Iš viso SIM',
@@ -177,7 +177,7 @@ export const assets: AssetsText = {
   givenSimIntro: 'SIM, kurias darbuotojas turi, o po jų – turėtos anksčiau.',
   noGivenSim: (name: string) => `${name} SIM neišduota.`,
   holdsAssets: (numbers: string) => `Šis darbuotojas vis dar turi ${numbers}. Pirmiausia užregistruokite grąžinimą arba išspręskite tai: išėjimas jų negrąžina.`,
-  equipmentTab: 'Įranga ir baldai',
+  equipment: 'Įranga',
   equipmentDescription: 'Įmonės kompiuteriai, telefonai, diskai, baldai ir kiti daiktai, kiekvienas atskiru įrašu: kur jis yra ir kas jį turi.',
   addAsset: 'Pridėti turtą',
   editAsset: 'Keisti turtą',

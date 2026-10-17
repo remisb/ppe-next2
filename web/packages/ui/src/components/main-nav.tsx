@@ -13,25 +13,42 @@ import { cn } from '../lib/utils.ts'
  * The link's accessible name is always the full label, from its (visually
  * hidden) text rather than aria-label, which would also turn up in label
  * lookups such as a field's "Item Set".
+ * The current section's link is aria-current="page", or "true" when its
+ * screens are listed under it (navSubItem), one of which is the page: it
+ * looks current in the bar and rail, and the sidebar highlights the screen.
  */
 export const navItem = cn(
   'group relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
   'h-16 focus-visible:ring-2 focus-visible:ring-ring md:h-auto md:rounded-lg md:py-2',
   'xl:flex-row xl:justify-start xl:gap-3 xl:px-3 xl:py-2.5 xl:text-sm',
-  'hover:text-foreground aria-[current=page]:text-foreground data-[active=true]:text-foreground xl:hover:bg-accent xl:aria-[current=page]:bg-accent',
+  'hover:text-foreground aria-[current=page]:text-foreground aria-[current=true]:text-foreground data-[active=true]:text-foreground xl:hover:bg-accent xl:aria-[current=page]:bg-accent',
 )
 /** The icon's pill is the phone and rail's active marker; the sidebar highlights the whole row. */
 export const navIcon = cn(
   'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-colors xl:h-auto xl:w-auto xl:max-w-none',
-  'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent group-data-[active=true]:bg-accent xl:group-hover:bg-transparent xl:group-aria-[current=page]:bg-transparent',
+  'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent group-aria-[current=true]:bg-accent group-data-[active=true]:bg-accent',
+  'xl:group-hover:bg-transparent xl:group-aria-[current=page]:bg-transparent xl:group-aria-[current=true]:bg-transparent',
 )
 /** A section under More: a full-width row in the phone's panel, a normal item in the rail and sidebar. */
 export const moreItem = cn(
   navItem,
   'max-md:h-12 max-md:flex-row max-md:justify-start max-md:gap-3 max-md:rounded-lg max-md:px-3 max-md:text-sm',
-  'max-md:hover:bg-accent max-md:aria-[current=page]:bg-accent',
+  'max-md:hover:bg-accent max-md:aria-[current=page]:bg-accent max-md:aria-[current=true]:bg-accent',
 )
-export const moreIcon = cn(navIcon, 'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-hover:bg-transparent')
+export const moreIcon = cn(
+  navIcon,
+  'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-aria-[current=true]:bg-transparent max-md:group-hover:bg-transparent',
+)
+/**
+ * A section's own screens, listed under it in the desktop sidebar only, on a
+ * line from the section's icon; the bar and rail have no room, so the
+ * section's screen offers them itself there.
+ */
+export const navSubList = 'ml-5 hidden flex-col gap-0.5 border-l border-border pl-2 xl:flex'
+export const navSubItem = cn(
+  'flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none transition-colors pointer-coarse:min-h-11',
+  'hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-foreground',
+)
 
 /** The app mark, Gavort's emblem; the app's name shows where there is room for it (phone bar, desktop sidebar). */
 export function Brand({ name }: { name: string }) {

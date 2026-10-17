@@ -5,7 +5,7 @@ import type { AssetsText } from '../en/assets'
 export const assets: AssetsText = {
   title: 'Имущество компании',
   description: 'SIM компании: где каждая находится, у кого она и в каком статусе.',
-  simCards: 'SIM',
+  simCards: 'SIM-карты',
   addSimCard: 'Добавить SIM',
   editSimCard: 'Изменить SIM',
   totalSimCards: 'Всего SIM',
@@ -177,7 +177,7 @@ export const assets: AssetsText = {
   givenSimIntro: 'SIM, которые у сотрудника сейчас, затем те, что были раньше.',
   noGivenSim: (name: string) => `${name}: SIM не выдавались.`,
   holdsAssets: (numbers: string) => `У этого сотрудника всё ещё ${numbers}. Сначала зарегистрируйте возврат или решите вопрос: увольнение их не возвращает.`,
-  equipmentTab: 'Оборудование и мебель',
+  equipment: 'Оборудование',
   equipmentDescription: 'Компьютеры, телефоны, диски, мебель и другие предметы компании, каждый отдельной записью: где он и у кого.',
   addAsset: 'Добавить имущество',
   editAsset: 'Изменить имущество',
