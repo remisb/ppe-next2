@@ -1310,6 +1310,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // One copy button for both numbers (SIM: … | Phone: …), named for the card.
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
   await expect(card.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
+  // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then the Inventory No.
+  await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone No\. \/ SIM No\./)
+  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Inventory No\./)
+  await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
   // No tiles here: the tabs count instead.
@@ -1350,7 +1354,7 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
 
 test('Company Assets: give a SIM against its printed form, mark it not returned, then register its return', async () => {
   await openTab('Company Assets')
-  await page.getByRole('link', { name: 'SIM-000001', exact: true }).click()
+  await page.getByRole('link', { name: /0089370011/ }).click()
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
   // The card's Changes are closed at first; open them (they stay open on its page).
@@ -1367,6 +1371,11 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await edit.getByLabel('Phone No.').fill('+370 612 40118')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
+  // As in the register: the phone number over the SIM No., one copy button for both.
+  await expect(main.getByRole('definition').first()).toHaveText('+370 612 40118')
+  await expect(main.getByRole('definition').nth(1)).toHaveText('0089370011')
+  await expect(main.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
+  await expect(main.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
 
   // Give SIM: three steps, what is left always beside the button (§6).
   await main.getByRole('button', { name: 'Give SIM' }).click()
@@ -1725,7 +1734,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['Employees', 'Ona Kazlauskienė'],
     ['Item Catalogue', 'Protective gloves'],
     ['Item Sets', 'Starter kit'],
-    ['Company Assets', 'SIM-000001'],
+    // A phone's SIM row leads with the phone number.
+    ['Company Assets', '+370 612 40118'],
     ['Users', admin.email],
     ['Roles & permissions', 'Built-in'],
     ['Audit log', admin.name],
@@ -1836,6 +1846,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Orders', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
+      // Nine columns beside the rail or sidebar: the headers wrap, the comment waits for 2xl.
+      ['Company Assets', '+370 612 40118'],
       ['Users', admin.email],
       ['Roles & permissions', 'Built-in'],
       ['Audit log', admin.name],

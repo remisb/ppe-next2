@@ -15,7 +15,8 @@ const (
 	SortStatus    SortKey = "status"
 	SortHolder    SortKey = "holder"
 	SortGiven     SortKey = "given"
-	SortName      SortKey = "name" // equipment
+	SortName      SortKey = "name"  // equipment
+	SortPhone     SortKey = "phone" // SIMs: the phone number, spaces ignored, then the SIM No.
 )
 
 const (
@@ -131,10 +132,10 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 	switch SortKey(p.Sort) {
 	case "", SortInventory:
 		f.Sort = SortInventory
-	case SortStatus, SortHolder, SortGiven, SortName:
+	case SortStatus, SortHolder, SortGiven, SortName, SortPhone:
 		f.Sort = SortKey(p.Sort)
 	default:
-		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, name, status, holder or given")
+		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, name, phone, status, holder or given")
 	}
 	switch p.Dir {
 	case "", "asc":

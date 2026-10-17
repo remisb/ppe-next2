@@ -1241,7 +1241,7 @@ export interface CreateAssetInput extends AssetInput {
 }
 
 /** The register's sorts. */
-export type AssetSort = 'inventory' | 'name' | 'status' | 'holder' | 'given'
+export type AssetSort = 'inventory' | 'name' | 'phone' | 'status' | 'holder' | 'given'
 
 /** The register's filters (GET /api/v1/assets); empty ones are left out. */
 export interface AssetQuery {

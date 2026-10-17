@@ -282,8 +282,8 @@ ServeMux.
 /api/v1/orders`: `kind` (required), `q` (SIM No., Phone No. or Inventory No. with spaces
 ignored, or the name, serial number or holder's name), `location`, `held=true` (someone holds
 it, whereabouts known or not: the With Employees tile), `employee_id`, `provider`,
-`status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, `name`, `status`, `holder`,
-`given`), `dir`,
+`status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, `name`, `phone`, `status`, `holder`,
+`given`; `phone` is the phone number with spaces ignored, a card without one last either way, then the SIM No.), `dir`,
 `signed_copy=missing` (held on a form with no signed copy yet), `page`, `page_size` (default
 50, at most 100, `page` at most 1,000,000). An unknown or
 repeated parameter is 400, and no match is an empty page: `{assets, page, page_size,
@@ -341,13 +341,17 @@ their own address:
   (any, Office, with an employee, Unknown), the provider and the documents. On a phone all
   but the search fold under Filters, whose count leaves out the tabs. The location keeps the
   status, so Office with Blocked is the blocked cards in the office (§3).
-- **Rows**: inventory number; the phone number (or that there is none yet) with the SIM No.
-  under it and one copy button for both, which copies `SIM: <SIM No.> | Phone: <Phone No.>`
-  (`simCopyText`; the phone part left out until known; the card's page keeps a button for
-  each number); provider and
-  plan; status; holder or location, with Not Returned and the last holder when Unknown;
-  given date and Days Held; Paper form signed; comment. Sorted by inventory number, status,
-  holder or given date, on the server; 50 a page.
+- **Rows**: first the phone number (or that there is none yet) with the SIM No. under it,
+  the link to the card's page, and one copy button for both, which copies
+  `SIM: <SIM No.> | Phone: <Phone No.>` (`simCopyText`; the phone part left out until known;
+  the card's page shows the same, labelled Phone No. and SIM No.); then the Inventory No.;
+  provider and plan; status; holder or location, with Not Returned and the last holder when
+  Unknown; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
+  wrap and the comment waits so that the columns fit beside the rail or sidebar; it is on
+  the card's page). Sorted on the server, 50 a page, by phone number (`phone`: spaces
+  ignored, a card without one last, then the SIM No.), Inventory No. (the default), status,
+  holder or given date. On a phone a row is the phone number (the SIM No. until there is
+  one) and the status, then the SIM No., provider and where the card is.
 - **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
   statuses with the brief's note, and for a Not Activated card the activation text. The
   choice is saved at once and announced. Edit is under ⋯.

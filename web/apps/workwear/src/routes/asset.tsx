@@ -12,7 +12,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu } from '@/components/asset-controls'
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -20,7 +20,7 @@ import { usePrintInPlace } from '@/components/print-in-place'
 import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, primaryAction, statusLabel, todayIn } from '@/lib/assets'
+import { categoryLabel, formatDay, primaryAction, simCopyText, statusLabel, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
@@ -100,18 +100,16 @@ export function AssetPage({ id, navigate, onBack }: { id: string; navigate: (to:
             }
           />
           {sim ? (
-          <p className="mb-4 flex flex-wrap gap-x-6 gap-y-1">
-            {a.sim_no ? (
-              <span className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">{t.assets.simNo}</span>
-                <CopyNumber value={a.sim_no} label={t.assets.copySimNo(a.sim_no)} onCopied={copied(a.sim_no)} />
-              </span>
-            ) : null}
-            <span className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">{t.assets.phoneNo}</span>
-              {a.phone_no ? <CopyNumber value={a.phone_no} label={t.assets.copyPhoneNo(a.phone_no)} onCopied={copied(a.phone_no)} /> : <span>{t.assets.noPhoneNo}</span>}
-            </span>
-          </p>
+            // As in the register: the phone number over the SIM No., and one button copying both for the provider's e-mail.
+            <div className="mb-4 flex items-center gap-2">
+              <dl className="grid grid-cols-[auto_auto] items-baseline gap-x-3 gap-y-0.5 text-sm">
+                <dt className="text-muted-foreground">{t.assets.phoneNo}</dt>
+                <dd className={cn(a.phone_no && 'font-mono tabular-nums')}>{a.phone_no ?? t.assets.noPhoneNo}</dd>
+                <dt className="text-muted-foreground">{t.assets.simNo}</dt>
+                <dd className="font-mono text-muted-foreground tabular-nums">{a.sim_no}</dd>
+              </dl>
+              {a.sim_no ? <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} /> : null}
+            </div>
           ) : null}
           <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
             {message}

@@ -49,12 +49,26 @@ import {
 import { type Route, linkTo } from '@/lib/router'
 
 /** The sortable columns: a SIM card's status, an item's name, in the second place. */
-const columns = (kind: AssetKind): SortColumn<AssetSort>[] => [
-  { key: 'inventory', label: t.assets.colInventoryNo },
-  kind === 'SIM' ? { key: 'status', label: t.assets.colStatus } : { key: 'name', label: t.assets.colItem },
-  { key: 'holder', label: t.assets.colHeldBy },
-  { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
-]
+/**
+ * The sortable columns. A SIM is known by its numbers, so SIM Cards starts
+ * with the phone number over the SIM No., then the Inventory No.; Equipment
+ * starts with the Inventory No. Both open in inventory order.
+ */
+const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
+  kind === 'SIM'
+    ? [
+        { key: 'phone', label: t.assets.colNumbers },
+        { key: 'inventory', label: t.assets.colInventoryNo },
+        { key: 'status', label: t.assets.colStatus },
+        { key: 'holder', label: t.assets.colHeldBy },
+        { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
+      ]
+    : [
+        { key: 'inventory', label: t.assets.colInventoryNo },
+        { key: 'name', label: t.assets.colItem },
+        { key: 'holder', label: t.assets.colHeldBy },
+        { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
+      ]
 const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
 
 const segment =
@@ -198,6 +212,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
     },
   }
   const extra = filterCount(filters)
+  const column = (key: AssetSort) => columns(kind).find((c) => c.key === key)!
 
   return (
     <>
@@ -347,21 +362,28 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
       ) : (
         <>
           <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
-            <TableHeader>
+            {/* Two-word headers wrap, so the nine columns fit beside the sidebar or rail (from 1100px, where the table starts). */}
+            <TableHeader className="[&_th]:whitespace-normal">
               <TableRow>
-                <SortableHead column={columns(kind)[0]!} {...sortProps} />
                 {sim ? (
                   <>
-                    <TableHead>{t.assets.colNumbers}</TableHead>
+                    <SortableHead column={column('phone')} {...sortProps} />
+                    <SortableHead column={column('inventory')} {...sortProps} />
                     <TableHead>{t.assets.colProvider}</TableHead>
+                    <SortableHead column={column('status')} {...sortProps} />
                   </>
-                ) : null}
-                <SortableHead column={columns(kind)[1]!} {...sortProps} />
-                {sim ? null : <TableHead>{t.assets.colSerialNo}</TableHead>}
-                <SortableHead column={columns(kind)[2]!} {...sortProps} />
-                <SortableHead column={columns(kind)[3]!} {...sortProps} />
+                ) : (
+                  <>
+                    <SortableHead column={column('inventory')} {...sortProps} />
+                    <SortableHead column={column('name')} {...sortProps} />
+                    <TableHead>{t.assets.colSerialNo}</TableHead>
+                  </>
+                )}
+                <SortableHead column={column('holder')} {...sortProps} />
+                <SortableHead column={column('given')} {...sortProps} />
                 <TableHead>{t.assets.colDocuments}</TableHead>
-                <TableHead>{t.assets.colComment}</TableHead>
+                {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
+                <TableHead className={cn(sim && 'hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
                 {canManage ? <TableHead className="text-right">{t.assets.actions}</TableHead> : null}
               </TableRow>
             </TableHeader>
@@ -380,32 +402,46 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                       navigate({ name: 'asset', id: a.id })
                     }}
                   >
-                    <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
-                      <a {...linkTo({ name: 'asset', id: a.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                        {a.inventory_no}
-                      </a>
-                    </TableCell>
-                    {/* The stacked row's second line: phone, provider and where the card is. */}
+                    {sim ? (
+                      <TableCell className="stacked:col-start-1 stacked:row-start-1">
+                        {/* The phone number over the SIM No., the card's link, and one button copying both for the provider's e-mail. */}
+                        <span className="flex items-center gap-1">
+                          <a
+                            {...linkTo({ name: 'asset', id: a.id }, navigate)}
+                            className="flex flex-col items-start rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
+                              {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
+                            </span>
+                            <span className="font-mono text-xs text-muted-foreground tabular-nums stacked:hidden">{a.sim_no}</span>
+                            {/* A phone's row is one number: the phone's, or the SIM No. until there is one. */}
+                            <span className="hidden font-mono font-medium tabular-nums stacked:inline">{a.phone_no ?? a.sim_no}</span>
+                          </a>
+                          {a.sim_no ? (
+                            <span className="stacked:hidden">
+                              <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} />
+                            </span>
+                          ) : null}
+                        </span>
+                      </TableCell>
+                    ) : (
+                      <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
+                        <a {...linkTo({ name: 'asset', id: a.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                          {a.inventory_no}
+                        </a>
+                      </TableCell>
+                    )}
+                    {sim ? <TableCell className="font-mono text-xs tabular-nums stacked:hidden">{a.inventory_no}</TableCell> : null}
+                    {/* The stacked row's second line: the SIM No. (when the phone number is the first), provider and where the card is. */}
                     <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                      {(sim ? [a.phone_no ?? a.sim_no, a.provider, holder.main] : [a.name, a.category ? categoryLabel(a.category) : null, holder.main]).filter(Boolean).join(' · ')}
+                      {(sim
+                        ? [a.phone_no ? a.sim_no : null, a.provider, holder.main]
+                        : [a.name, a.category ? categoryLabel(a.category) : null, holder.main]
+                      )
+                        .filter(Boolean)
+                        .join(' · ')}
                       {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
                     </TableCell>
-                    {sim ? (
-                    <TableCell className="stacked:hidden">
-                      {/* The phone number, the SIM No. under it, and one button copying both for the provider's e-mail. */}
-                      <span className="flex items-center gap-1">
-                        <span className="flex flex-col items-start">
-                          {a.phone_no ? (
-                            <span className="font-mono text-xs tabular-nums">{a.phone_no}</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span>
-                          )}
-                          {a.sim_no ? <span className="font-mono text-xs text-muted-foreground tabular-nums">{a.sim_no}</span> : null}
-                        </span>
-                        {a.sim_no ? <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} /> : null}
-                      </span>
-                    </TableCell>
-                    ) : null}
                     {sim ? (
                     <TableCell className="stacked:hidden">
                       {a.provider}
@@ -441,7 +477,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                       )}
                     </TableCell>
                     <TableCell className="stacked:hidden">{documentsText(open) ?? '—'}</TableCell>
-                    <TableCell className="max-w-48 truncate stacked:hidden" title={a.comment || undefined}>
+                    <TableCell className={cn('max-w-48 truncate stacked:hidden', sim && 'hidden 2xl:table-cell')} title={a.comment || undefined}>
                       {a.comment || '—'}
                     </TableCell>
                     <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2] stacked:items-center">

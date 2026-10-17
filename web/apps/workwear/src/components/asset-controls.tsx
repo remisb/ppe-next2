@@ -73,20 +73,10 @@ export function StatusMenu({
 }
 
 /**
- * A number with a button that copies it (§5: numbers are easy to copy, for
- * the e-mail to the provider). onCopied reports what happened, for the
- * screen's announcement.
+ * A button copying text (§5: numbers are easy to copy, for the e-mail to the
+ * provider): a SIM's two numbers as one line (simCopyText). label is its name
+ * and tooltip; onCopied reports what happened, for the screen's announcement.
  */
-export function CopyNumber({ value, label, onCopied }: { value: string; label: string; onCopied: (ok: boolean) => void }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className="font-mono text-xs tabular-nums">{value}</span>
-      <CopyButton text={value} label={label} onCopied={onCopied} />
-    </span>
-  )
-}
-
-/** The copy button alone: text is what goes to the clipboard, label its name and tooltip. */
 export function CopyButton({ text, label, onCopied }: { text: string; label: string; onCopied: (ok: boolean) => void }) {
   return (
     <Button

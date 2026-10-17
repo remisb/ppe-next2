@@ -103,8 +103,6 @@ export const assets: AssetsText = {
   statusNote: 'Pasirinkite dabartinę būseną, kurią patvirtino tiekėjas. Tai tik įrašas: kortelė nuo to neaktyvuojama ir neužblokuojama.',
   activateNote: 'Parašykite tiekėjui, kad aktyvuotų šią SIM. Kai aktyvavimas patvirtintas, pakeiskite būseną į „Aktyvi“.',
   statusChanged: (number: string, status: string) => `${number}: būsena pakeista į „${status}“.`,
-  copySimNo: (number: string) => `Kopijuoti SIM Nr. ${number}`,
-  copyPhoneNo: (number: string) => `Kopijuoti telefono numerį ${number}`,
   copyNumbers: (inventoryNo: string) => `Kopijuoti ${inventoryNo} numerius`,
   simCopyText: (simNo: string, phoneNo: string | null) => (phoneNo ? `SIM: ${simNo} | Telefonas: ${phoneNo}` : `SIM: ${simNo}`),
   copied: (number: string) => `Nukopijuota: ${number}.`,

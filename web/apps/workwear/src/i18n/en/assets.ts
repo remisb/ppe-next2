@@ -111,8 +111,6 @@ export const assets = {
   activateNote: 'Email your provider to activate this SIM. Once activation is confirmed, change the status to Active.',
   statusChanged: (number: string, status: string) => `${number}: status changed to ${status}.`,
   // Numbers are easy to copy (§5).
-  copySimNo: (number: string) => `Copy SIM No. ${number}`,
-  copyPhoneNo: (number: string) => `Copy phone number ${number}`,
   // The register's one copy button per SIM: both numbers, for the provider's e-mail.
   copyNumbers: (inventoryNo: string) => `Copy the numbers of ${inventoryNo}`,
   simCopyText: (simNo: string, phoneNo: string | null) => (phoneNo ? `SIM: ${simNo} | Phone: ${phoneNo}` : `SIM: ${simNo}`),

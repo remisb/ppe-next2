@@ -286,6 +286,40 @@ func TestPostgresConcurrentReturnAndMarkAnswerConflict(t *testing.T) {
 	}
 }
 
+// The register sorted by phone number: spaces ignored, a card without one last
+// either way, then by SIM No.
+func TestPostgresSortByPhone(t *testing.T) {
+	app, _, actor, _ := newTestPool(t)
+	svc := newPostgresService(app)
+	ctx := context.Background()
+	for _, c := range []struct {
+		inv, sim string
+		phone    *string
+	}{
+		{"SIM-000001", "3", sp("+370 699 00000")},
+		{"SIM-000002", "2", nil},
+		{"SIM-000003", "1", sp("+370612 40118")},
+		{"SIM-000004", "4", nil},
+	} {
+		if _, err := svc.Create(ctx, CreateParams{Kind: KindSIM, Params: Params{InventoryNo: c.inv, SimNo: sp(c.sim), PhoneNo: c.phone, Provider: sp("Telia")}}, actor); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for dir, want := range map[string]string{"asc": "SIM-000003 SIM-000001 SIM-000002 SIM-000004", "desc": "SIM-000001 SIM-000003 SIM-000004 SIM-000002"} {
+		res, err := svc.List(ctx, ListParams{Kind: "SIM", Sort: "phone", Dir: dir}, all)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, len(res.Assets))
+		for i, v := range res.Assets {
+			got[i] = v.Asset.InventoryNo
+		}
+		if strings.Join(got, " ") != want {
+			t.Errorf("%s: %v; want %s", dir, got, want)
+		}
+	}
+}
+
 // SIM numbers compare without spaces and in either case: an ICCID may end in
 // a hex digit typed in capitals or not.
 func TestPostgresSIMNumbersIgnoreCase(t *testing.T) {

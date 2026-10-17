@@ -37,7 +37,8 @@ export function SortableHead<K extends string>({
         type="button"
         onClick={() => onSort(nextSort(sort, column, allowNone))}
         className={cn(
-          'group -mx-1.5 inline-flex h-8 cursor-pointer items-center gap-1 rounded-md px-1.5 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
+          // min-h-8, not h-8: a header allowed to wrap (whitespace-normal) grows to its lines.
+          'group -mx-1.5 inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
           right && 'flex-row-reverse',
         )}
       >

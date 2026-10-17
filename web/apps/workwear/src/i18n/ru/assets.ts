@@ -103,8 +103,6 @@ export const assets: AssetsText = {
   statusNote: 'Выберите текущий статус, подтверждённый оператором. Это только запись: карта от этого не активируется и не блокируется.',
   activateNote: 'Напишите оператору, чтобы он активировал эту SIM. Когда активация подтверждена, измените статус на «Активна».',
   statusChanged: (number: string, status: string) => `${number}: статус изменён на «${status}».`,
-  copySimNo: (number: string) => `Копировать № SIM ${number}`,
-  copyPhoneNo: (number: string) => `Копировать номер телефона ${number}`,
   copyNumbers: (inventoryNo: string) => `Копировать номера ${inventoryNo}`,
   simCopyText: (simNo: string, phoneNo: string | null) => (phoneNo ? `SIM: ${simNo} | Телефон: ${phoneNo}` : `SIM: ${simNo}`),
   copied: (number: string) => `Скопировано: ${number}.`,

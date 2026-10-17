@@ -349,6 +349,9 @@ func orderBy(f ListFilter) string {
 		return `o.given_date ` + dir + ` NULLS LAST, ` + tie
 	case SortName:
 		return `lower(a.name) ` + dir + ` NULLS LAST, ` + tie
+	case SortPhone:
+		// A card without a phone number yet comes last either way, then by its SIM No.
+		return `replace(a.phone_no, ' ', '') ` + dir + ` NULLS LAST, upper(replace(a.sim_no, ' ', '')) ` + dir + `, ` + tie
 	}
 	return tie
 }
