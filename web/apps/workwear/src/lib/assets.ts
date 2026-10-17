@@ -124,6 +124,11 @@ export function simTabCounts(n: Record<(typeof countedSimTabs)[number], number>)
   return { all, ...n, withEmployees: all - n.inOffice }
 }
 
+/** What a SIM's copy button in the register puts on the clipboard: SIM: <SIM No.> | Phone: <Phone No.>, the phone left out until known. */
+export function simCopyText(a: Pick<Asset, 'sim_no' | 'phone_no'>): string {
+  return t.assets.simCopyText(a.sim_no ?? '', a.phone_no)
+}
+
 /** A connection status in the language in use. */
 export function statusLabel(s: ConnectionStatus): string {
   return t.assets.statuses[s]

@@ -81,22 +81,29 @@ export function CopyNumber({ value, label, onCopied }: { value: string; label: s
   return (
     <span className="inline-flex items-center gap-1">
       <span className="font-mono text-xs tabular-nums">{value}</span>
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        aria-label={label}
-        title={label}
-        onClick={() => {
-          // No clipboard outside a secure context (http on another host): say so instead.
-          ;(navigator.clipboard?.writeText(value) ?? Promise.reject(new Error('no clipboard'))).then(
-            () => onCopied(true),
-            () => onCopied(false),
-          )
-        }}
-      >
-        <Copy aria-hidden />
-      </Button>
+      <CopyButton text={value} label={label} onCopied={onCopied} />
     </span>
+  )
+}
+
+/** The copy button alone: text is what goes to the clipboard, label its name and tooltip. */
+export function CopyButton({ text, label, onCopied }: { text: string; label: string; onCopied: (ok: boolean) => void }) {
+  return (
+    <Button
+      size="icon-sm"
+      variant="ghost"
+      aria-label={label}
+      title={label}
+      onClick={() => {
+        // No clipboard outside a secure context (http on another host): say so instead.
+        ;(navigator.clipboard?.writeText(text) ?? Promise.reject(new Error('no clipboard'))).then(
+          () => onCopied(true),
+          () => onCopied(false),
+        )
+      }}
+    >
+      <Copy aria-hidden />
+    </Button>
   )
 }
 

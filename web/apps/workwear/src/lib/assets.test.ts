@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simTabCountQuery, simTabCounts, chooseSimTab, simTabPressed, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, simTabCountQuery, simTabCounts, chooseSimTab, simTabPressed, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, newSimInput, noAssetFilters, simDraftOf, tilePressed, todayIn } from './assets'
 
 describe('tiles and filters', () => {
   it('a tile sets the place and keeps the status: In Office + Blocked (§3)', () => {
@@ -60,6 +60,13 @@ const card = (over: Partial<Asset>): Asset => ({
   id: 'a', kind: 'SIM', category: null, inventory_no: 'SIM-000001', name: null, serial_no: null, sim_no: '0089370011', phone_no: null,
   provider: 'Telia', plan: null, non_return_value_cents: null, currency: 'EUR', connection_status: 'NOT_ACTIVATED', received_date: '2026-10-01',
   comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, ...over,
+})
+
+describe('copying a SIM\'s numbers', () => {
+  it('puts both numbers on the clipboard as SIM: … | Phone: …, the phone left out until known', () => {
+    expect(simCopyText({ sim_no: '0089370011', phone_no: '+370 612 40118' })).toBe('SIM: 0089370011 | Phone: +370 612 40118')
+    expect(simCopyText({ sim_no: '0089370011', phone_no: null })).toBe('SIM: 0089370011')
+  })
 })
 
 describe('held by / location', () => {

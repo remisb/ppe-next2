@@ -14,7 +14,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { AssetMoreActions, CopyNumber, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
@@ -37,6 +37,7 @@ import {
   chooseSimTab,
   countedSimTabs,
   primaryAction,
+  simCopyText,
   simTabCountQuery,
   simTabCounts,
   simTabPressed,
@@ -391,13 +392,17 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                     </TableCell>
                     {sim ? (
                     <TableCell className="stacked:hidden">
-                      <span className="flex flex-col items-start">
-                        {a.sim_no ? <CopyNumber value={a.sim_no} label={t.assets.copySimNo(a.sim_no)} onCopied={copied(a.sim_no)} /> : null}
-                        {a.phone_no ? (
-                          <CopyNumber value={a.phone_no} label={t.assets.copyPhoneNo(a.phone_no)} onCopied={copied(a.phone_no)} />
-                        ) : (
-                          <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span>
-                        )}
+                      {/* The phone number, the SIM No. under it, and one button copying both for the provider's e-mail. */}
+                      <span className="flex items-center gap-1">
+                        <span className="flex flex-col items-start">
+                          {a.phone_no ? (
+                            <span className="font-mono text-xs tabular-nums">{a.phone_no}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span>
+                          )}
+                          {a.sim_no ? <span className="font-mono text-xs text-muted-foreground tabular-nums">{a.sim_no}</span> : null}
+                        </span>
+                        {a.sim_no ? <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} /> : null}
                       </span>
                     </TableCell>
                     ) : null}

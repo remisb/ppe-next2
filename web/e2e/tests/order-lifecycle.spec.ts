@@ -1307,6 +1307,9 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()
   const card = page.getByRole('row', { name: /SIM-000001/ })
   await expect(card).toContainText('0089370011')
+  // One copy button for both numbers (SIM: … | Phone: …), named for the card.
+  await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
+  await expect(card.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
   // No tiles here: the tabs count instead.

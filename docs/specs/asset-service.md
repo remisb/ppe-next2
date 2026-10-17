@@ -341,7 +341,10 @@ their own address:
   (any, Office, with an employee, Unknown), the provider and the documents. On a phone all
   but the search fold under Filters, whose count leaves out the tabs. The location keeps the
   status, so Office with Blocked is the blocked cards in the office (§3).
-- **Rows**: inventory number; SIM and phone numbers, each with a copy button; provider and
+- **Rows**: inventory number; the phone number (or that there is none yet) with the SIM No.
+  under it and one copy button for both, which copies `SIM: <SIM No.> | Phone: <Phone No.>`
+  (`simCopyText`; the phone part left out until known; the card's page keeps a button for
+  each number); provider and
   plan; status; holder or location, with Not Returned and the last holder when Unknown;
   given date and Days Held; Paper form signed; comment. Sorted by inventory number, status,
   holder or given date, on the server; 50 a page.
