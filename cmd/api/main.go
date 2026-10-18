@@ -291,7 +291,8 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 		cors.AllowedHeaders = append(cors.AllowedHeaders, appHeader)
 		global = append(global, middleware.CORS(cors))
 	}
-	// capturePanics inside Timeout, whose goroutine runs the handler.
+	// capturePanics inside Timeout, on the goroutine that runs the handler: Timeout
+	// re-raises a panic to Recoverer, but with its own stack and no JSON reference.
 	global = append(global, middleware.Timeout(cfg.RequestTimeout), capturePanics(logger))
 	return middleware.Chain(mux, global...)
 }

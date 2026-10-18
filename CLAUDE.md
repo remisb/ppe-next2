@@ -258,7 +258,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - **Request pipeline** (`routes()`): `Recoverer`, `ClientIP`, `requestContext` (the request
   ID and `audit.Request`), `Logger`, `observe` (metrics, the 24-hour window, 5xx on the error
   list), CORS, `Timeout`, then `capturePanics`, which must stay inside `Timeout`: muxstack
-  runs the handler on a goroutine of its own, out of `Recoverer`'s reach. `router` wraps
+  runs the handler on a goroutine of its own (with its own header map, so the handler never
+  shares `w.Header()` with the 503); a panic re-raised to `Recoverer` has lost the handler's
+  stack and the JSON 500 with its `reference`. `observe` counts a request whose client went
+  away as 499, whatever Timeout wrote. `router` wraps
   every handler in `named`, which tells `observe` the route pattern.
 - **Client address**: the global muxstack `ClientIP` middleware resolves the client,
   believing `X-Forwarded-For` only from `API_TRUSTED_PROXIES`; rate limits key on
