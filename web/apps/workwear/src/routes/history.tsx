@@ -49,12 +49,12 @@ const statusTabs = (): { value: OrderStatus | ''; label: string; help: Help }[] 
 
 // History is paged, so the API sorts it (the whole history, not one page).
 const historyColumns = (): SortColumn<HistorySort>[] => [
-  { key: 'record', label: t.history.colRecord },
-  { key: 'employee', label: t.history.colEmployee },
-  { key: 'date', label: t.history.colDate, firstDir: 'desc' },
+  { key: 'record', label: t.history.colRecord, kind: 'number' },
+  { key: 'employee', label: t.history.colEmployee, kind: 'text' },
+  { key: 'date', label: t.history.colDate, firstDir: 'desc', kind: 'date' },
   { key: 'status', label: t.history.colStatus },
-  { key: 'usage', label: t.history.colUsage },
-  { key: 'total', label: t.history.colTotal },
+  { key: 'usage', label: t.history.colUsage, kind: 'duration' },
+  { key: 'total', label: t.history.colTotal, kind: 'number' },
 ]
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
 

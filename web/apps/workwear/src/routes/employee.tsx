@@ -386,14 +386,14 @@ function ItemsTable({
   const [sort, setSort] = useState<SortState<ItemSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
   const columns: SortColumn<ItemSort>[] = [
-    { key: 'item', label: t.employees.item },
-    { key: 'size', label: t.employees.size },
-    { key: 'quantity', label: t.employees.quantity },
-    { key: 'date', label: dateLabel, firstDir: 'desc' },
-    ...(given ? [{ key: 'usage' as const, label: t.employees.usageTime }] : []),
-    { key: 'period', label: t.employees.servicePeriod },
-    ...(due ? [{ key: 'due' as const, label: t.employees.replacement }] : []),
-    { key: 'record', label: given ? t.employees.receipt : t.employees.record },
+    { key: 'item', label: t.employees.item, kind: 'text' },
+    { key: 'size', label: t.employees.size, kind: 'size' },
+    { key: 'quantity', label: t.employees.quantity, kind: 'number' },
+    { key: 'date', label: dateLabel, firstDir: 'desc', kind: 'date' },
+    ...(given ? [{ key: 'usage' as const, label: t.employees.usageTime, kind: 'duration' as const }] : []),
+    { key: 'period', label: t.employees.servicePeriod, kind: 'duration' },
+    ...(due ? [{ key: 'due' as const, label: t.employees.replacement, kind: 'date' as const }] : []),
+    { key: 'record', label: given ? t.employees.receipt : t.employees.record, kind: 'number' },
   ]
   const shown = useMemo(
     () =>

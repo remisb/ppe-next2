@@ -1883,7 +1883,32 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(filters.getByRole('combobox', { name: 'Date' })).toBeHidden()
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(filters.getByRole('combobox', { name: 'Date' })).toBeVisible()
+  // Without its heading, as the employee search: its choice says what it is, and Date stays its name.
+  await expect(page.locator('#history-period-label')).toBeHidden()
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
+  // Sort by is shadcn's Select in the Date filter's look: its own list over the field, the choice ticked; choosing re-sorts.
+  // On a phone its label is inside the field, and the order is said in words; Sort by is still its name.
+  const sortBy = filters.getByRole('combobox', { name: 'Sort by' })
+  await expect(sortBy).toHaveText('Sort by: Date, newest first')
+  // The label above is for screen readers only on a phone: it takes no room.
+  expect((await filters.getByText('Sort by', { exact: true }).boundingBox())!.width, 'the Sort by label above the field').toBeLessThanOrEqual(1)
+  await filters.getByRole('button', { name: /^Descending/ }).click()
+  await expect(sortBy).toHaveText('Sort by: Date, oldest first')
+  await filters.getByRole('button', { name: /^Ascending/ }).click()
+  await expect(sortBy).toHaveText('Sort by: Date, newest first')
+  await sortBy.click()
+  const sortList = page.locator('[data-slot=select-content]').filter({ visible: true })
+  await expect(sortList.getByRole('option', { selected: true })).toHaveText('Date')
+  const [onField, onList] = [await sortBy.boundingBox(), await sortList.boundingBox()]
+  expect(Math.round(onList!.x), 'the list starts where the field does').toBe(Math.round(onField!.x))
+  expect(Math.round(onList!.y)).toBe(Math.round(onField!.y))
+  expect(Math.round(onList!.width), 'the list is as wide as the field').toBe(Math.round(onField!.width))
+  await expect(sortList.locator(':scope > div').first(), 'the list\'s head row').toHaveText('Sort by: Date, newest first')
+  await sortList.getByRole('option', { name: 'Employee', exact: true }).click()
+  await expect(sortBy).toHaveText('Sort by: Employee, A–Z')
+  await sortBy.click()
+  await sortList.getByRole('option', { name: 'Date', exact: true }).click()
+  await expect(sortBy).toHaveText('Sort by: Date, newest first')
   // No time zone note on Orders.
   await expect(page.getByText(/Dates and times are shown in/)).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()

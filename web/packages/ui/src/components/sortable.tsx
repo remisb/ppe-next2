@@ -1,11 +1,10 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
-import { useId } from 'react'
 
 import { type SortColumn, type SortState, nextSort } from '../lib/sort.ts'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
 import { Button } from './button.tsx'
-import { Select } from './field.tsx'
+import { Select, SelectContent, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './select.tsx'
 import { TableHead } from './table.tsx'
 
 export interface SortProps<K extends string> {
@@ -64,32 +63,44 @@ export function SortControl<K extends string>({
   noneLabel,
 }: SortProps<K> & { columns: readonly SortColumn<K>[]; noneLabel?: string }) {
   const dir = sort?.dir ?? 'asc'
-  const id = useId()
-  // A separate label (htmlFor), not one wrapping the select: a wrapping label's
-  // text would include every option ("Sort by Record Employee Status …").
+  // The choices, also the labels the field shows for its value ('' is the list's own order).
+  const items = [...(allowNone ? [{ value: '', label: noneLabel ?? uiText().defaultOrder }] : []), ...columns.map((c) => ({ value: c.key as string, label: c.label }))]
+  // On a phone the label is inside the field, and the order is said in words: "Sort by: Date, newest first".
+  const column = columns.find((c) => c.key === sort?.key)
+  const words = column?.kind && sort ? uiText().sortWords[column.kind][sort.dir] : null
+  const shown = (
+    <>
+      <span className="text-muted-foreground md:hidden">{uiText().sortByPrefix} </span>
+      {column?.label ?? items[0]?.label}
+      {words ? <span className="md:hidden">, {words}</span> : null}
+    </>
+  )
   return (
     <div className="flex items-end gap-2">
-      <div className="min-w-0 flex-1">
-        <label htmlFor={id} className="text-sm font-medium">
-          {uiText().sortBy}
-        </label>
-        <Select
-          id={id}
-          className="mt-1.5"
-          value={sort?.key ?? ''}
-          onChange={(e) => {
-            const column = columns.find((c) => c.key === e.target.value)
-            onSort(column ? { key: column.key, dir: column.firstDir ?? 'asc' } : null)
-          }}
-        >
-          {allowNone ? <option value="">{noneLabel ?? uiText().defaultOrder}</option> : null}
-          {columns.map((c) => (
-            <option key={c.key} value={c.key}>
-              {c.label}
-            </option>
+      {/* shadcn's Select, in the Orders Date filter's look: its list opens over the field. */}
+      <Select
+        items={items}
+        value={sort?.key ?? ''}
+        onValueChange={(v) => {
+          const column = columns.find((c) => c.key === v)
+          onSort(column ? { key: column.key, dir: column.firstDir ?? 'asc' } : null)
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          {/* Its name still: shown above from md, inside the field on a phone. */}
+          <SelectLabel className="max-md:sr-only">{uiText().sortBy}</SelectLabel>
+          <SelectTrigger className="md:mt-1.5">
+            <SelectValue>{shown}</SelectValue>
+          </SelectTrigger>
+        </div>
+        <SelectContent head={shown}>
+          {items.map((i) => (
+            <SelectItem key={i.value} value={i.value}>
+              {i.label}
+            </SelectItem>
           ))}
-        </Select>
-      </div>
+        </SelectContent>
+      </Select>
       <Button
         type="button"
         variant="outline"

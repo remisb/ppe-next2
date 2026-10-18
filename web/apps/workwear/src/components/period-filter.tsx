@@ -132,7 +132,8 @@ export function PeriodFilter({
 
   return (
     <div className={className}>
-      <label id={labelId} htmlFor={id} className="text-sm font-medium">
+      {/* On a phone without its heading, as the employee search: its choice ("All dates") says what it is. Still its name. */}
+      <label id={labelId} htmlFor={id} className="text-sm font-medium max-md:hidden">
         {t.history.period}
       </label>
       <button
@@ -150,7 +151,7 @@ export function PeriodFilter({
             openList()
           }
         }}
-        className={cn(control, 'mt-1.5')}
+        className={cn(control, 'md:mt-1.5')}
       >
         <span className="truncate">{currentLabel}</span>
         <ChevronDown aria-hidden className="size-4 shrink-0 opacity-60" />

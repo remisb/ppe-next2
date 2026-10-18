@@ -39,11 +39,11 @@ export const sizeGroupLabel: Record<SizeGroup, string> = {
 type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status'
 
 const columns = (): SortColumn<CatalogueSort>[] => [
-  { key: 'name', label: t.catalogue.colItem },
-  { key: 'details', label: t.catalogue.colDetails },
-  { key: 'group', label: t.catalogue.sizeGroup },
-  { key: 'price', label: t.catalogue.accountingPrice },
-  { key: 'period', label: t.catalogue.servicePeriod },
+  { key: 'name', label: t.catalogue.colItem, kind: 'text' },
+  { key: 'details', label: t.catalogue.colDetails, kind: 'text' },
+  { key: 'group', label: t.catalogue.sizeGroup, kind: 'text' },
+  { key: 'price', label: t.catalogue.accountingPrice, kind: 'number' },
+  { key: 'period', label: t.catalogue.servicePeriod, kind: 'duration' },
   { key: 'status', label: t.catalogue.colStatus },
 ]
 
