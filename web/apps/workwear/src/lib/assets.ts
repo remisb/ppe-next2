@@ -151,6 +151,11 @@ export function holderText(a: Pick<Asset, 'location' | 'open_assignment'>): { ma
   return { main: open.employee_name }
 }
 
+/** Where the card is, without who holds it (SIM Cards' Location column, beside its Employee). */
+export function locationText(a: Pick<Asset, 'location'>): string {
+  return a.location === 'OFFICE' ? t.assets.office : a.location === 'UNKNOWN' ? t.assets.unknown : t.assets.withAnEmployee
+}
+
 /** Today in timeZone, YYYY-MM-DD: the latest date a card can have been received or given. */
 export function todayIn(timeZone: string | undefined, now = new Date()): string {
   return isoDay(now, timeZone)

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, newSimInput, noAssetFilters, simDraftOf, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simDraftOf, todayIn } from './assets'
 
 describe('tabs and filters', () => {
   it("a dashboard's tile sets the place and keeps the status: In Office + Blocked (§3)", () => {
@@ -85,6 +85,10 @@ describe('held by / location', () => {
     expect(holderText(card({}))).toEqual({ main: 'Office' })
     expect(holderText(card({ location: 'WITH_EMPLOYEE', open_assignment: open }))).toEqual({ main: 'Jonas Petraitis' })
     expect(holderText(card({ location: 'UNKNOWN', open_assignment: open }))).toEqual({ main: 'Unknown', sub: 'Last held by Jonas Petraitis' })
+    // SIM Cards' Location column says only where; its Employee column says who.
+    expect(locationText(card({}))).toBe('Office')
+    expect(locationText(card({ location: 'WITH_EMPLOYEE', open_assignment: open }))).toBe('With an employee')
+    expect(locationText(card({ location: 'UNKNOWN', open_assignment: open }))).toBe('Unknown')
   })
 })
 

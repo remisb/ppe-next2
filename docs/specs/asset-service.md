@@ -345,13 +345,14 @@ their own address:
 - **Rows**: first the phone number (or that there is none yet) with the SIM No. under it,
   the link to the card's page, and one copy button for both, which copies
   `SIM: <SIM No.> | Phone: <Phone No.>` (`simCopyText`; the phone part left out until known;
-  the card's page shows the same, labelled Phone No. and SIM No.); then the Inventory No.;
-  provider and plan; status; holder or location, with Not Returned and the last holder when
-  Unknown; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
+  the card's page shows the same, labelled Phone No. and SIM No.); then the Employee who
+  holds it (linked to the employee's page; the last holder when Unknown; the Inventory No. is
+  on the card's page); provider and plan; status; Location (Office, With an employee or
+  Unknown, nothing of who) with Not Returned; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
   wrap and the comment waits so that the columns fit beside the rail or sidebar; it is on
   the card's page). Sorted on the server, 50 a page, by phone number (`phone`: spaces
-  ignored, a card without one last, then the SIM No.), Inventory No. (the default), status,
-  holder or given date. On a phone a row is the phone number (the SIM No. until there is
+  ignored, a card without one last, then the SIM No.), Inventory No. (the default, and on a
+  phone's Sort by), status, employee or given date. On a phone a row is the phone number (the SIM No. until there is
   one) and the status, then the SIM No., provider and where the card is.
 - **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
   statuses with the brief's note, and for a Not Activated card the activation text. The

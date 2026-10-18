@@ -1401,9 +1401,11 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // One copy button for both numbers (SIM: … | Phone: …), named for the card.
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
   await expect(card.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
-  // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then the Inventory No.
+  // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it; Location says only where.
   await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone No\. \/ SIM No\./)
-  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Inventory No\./)
+  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Employee/)
+  await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
@@ -1566,6 +1568,12 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(main.getByText('Unknown', { exact: true }).first()).toBeVisible()
   await expect(main.getByText('Not Returned').first()).toBeVisible()
   await expect(main.getByText('Active', { exact: true }).first()).toBeVisible()
+  // In the list: the Employee column names the last holder, the Location column says only where.
+  await openTab('Company Assets')
+  const heldRow = page.getByRole('row', { name: /SIM-000001/ })
+  await expect(heldRow.getByRole('link', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  await expect(heldRow.getByRole('cell').filter({ hasText: /^Unknown/ })).toHaveText(/^Unknown\s*Not Returned$/)
+  await heldRow.getByRole('link', { name: /0089370011/ }).click()
 
   // Register SIM Return: back in the office, the status and the mark kept (§11).
   await main.getByRole('button', { name: 'Register SIM Return' }).click()

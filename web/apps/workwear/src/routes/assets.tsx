@@ -32,6 +32,7 @@ import {
   filterCount,
   formatDay,
   holderText,
+  locationText,
   noAssetFilters,
   type AssetTab,
   assetTabs,
@@ -47,19 +48,19 @@ import {
 } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 
-/** The sortable columns: a SIM card's status, an item's name, in the second place. */
 /**
  * The sortable columns. A SIM is known by its numbers, so SIM Cards starts
- * with the phone number over the SIM No., then the Inventory No.; Equipment
+ * with the phone number over the SIM No., then the employee who holds it
+ * (its Inventory No. is on the card's page, and still a sort); Equipment
  * starts with the Inventory No. Both open in inventory order.
  */
 const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
   kind === 'SIM'
     ? [
         { key: 'phone', label: t.assets.colNumbers },
+        { key: 'holder', label: t.assets.employee },
         { key: 'inventory', label: t.assets.colInventoryNo },
         { key: 'status', label: t.assets.colStatus },
-        { key: 'holder', label: t.assets.colHeldBy },
         { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
       ]
     : [
@@ -341,18 +342,19 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                 {sim ? (
                   <>
                     <SortableHead column={column('phone')} {...sortProps} />
-                    <SortableHead column={column('inventory')} {...sortProps} />
+                    <SortableHead column={column('holder')} {...sortProps} />
                     <TableHead>{t.assets.colProvider}</TableHead>
                     <SortableHead column={column('status')} {...sortProps} />
+                    <TableHead>{t.assets.location}</TableHead>
                   </>
                 ) : (
                   <>
                     <SortableHead column={column('inventory')} {...sortProps} />
                     <SortableHead column={column('name')} {...sortProps} />
                     <TableHead>{t.assets.colSerialNo}</TableHead>
+                    <SortableHead column={column('holder')} {...sortProps} />
                   </>
                 )}
-                <SortableHead column={column('holder')} {...sortProps} />
                 <SortableHead column={column('given')} {...sortProps} />
                 <TableHead>{t.assets.colDocuments}</TableHead>
                 {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
@@ -404,7 +406,21 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                         </a>
                       </TableCell>
                     )}
-                    {sim ? <TableCell className="font-mono text-xs tabular-nums stacked:hidden">{a.inventory_no}</TableCell> : null}
+                    {/* Who holds the card, also when it is Unknown (its last holder); where it is has a column of its own. */}
+                    {sim ? (
+                      <TableCell className="stacked:hidden">
+                        {open ? (
+                          <a
+                            {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
+                            className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {open.employee_name}
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    ) : null}
                     {/* The stacked row's second line: the SIM No. (when the phone number is the first), provider and where the card is. */}
                     <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
                       {(sim
@@ -422,7 +438,15 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                     </TableCell>
                     ) : null}
                     {sim ? (
-                      <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                      <>
+                        <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                        <TableCell className="stacked:hidden">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{locationText(a)}</span>
+                            {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                          </span>
+                        </TableCell>
+                      </>
                     ) : (
                       <>
                         <TableCell className="stacked:hidden">
@@ -430,15 +454,15 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
                           {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
                         </TableCell>
                         <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '—'}</TableCell>
+                        <TableCell className="stacked:hidden">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
+                            {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                          </span>
+                          {holder.sub ? <span className="block text-xs text-muted-foreground">{holder.sub}</span> : null}
+                        </TableCell>
                       </>
                     )}
-                    <TableCell className="stacked:hidden">
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
-                        {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
-                      </span>
-                      {holder.sub ? <span className="block text-xs text-muted-foreground">{holder.sub}</span> : null}
-                    </TableCell>
                     <TableCell className="stacked:hidden">
                       {open ? (
                         <>
