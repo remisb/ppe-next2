@@ -168,13 +168,13 @@ export function AssetDetail({
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
           {/*
-            The three facts the brief keeps apart: changing one never changes another (§2). Where and
-            Held by are short, so they share a row even beside the register or on a phone; with room, all three do.
-            On a phone they are boxes no more, only lines between them, so the room goes to the content.
+            The three facts the brief keeps apart: changing one never changes another (§2). Connection
+            is one line of its own at every width; Where and Held by are short, so they share the row below it.
+            They and the details are not boxes, only lines between them, so the room goes to the content.
           */}
-          <div className={cn('mb-4 grid grid-cols-2 gap-3 max-md:mb-0 max-md:gap-0 max-md:border-b max-md:border-border', sim && '@lg:grid-cols-3')}>
+          <div className="grid grid-cols-2 border-b border-border">
             {sim ? (
-              <Fact title={t.assets.connection} className="col-span-2 @lg:col-span-1">
+              <Fact title={t.assets.connection} inline className="col-span-2">
                 <span className="flex flex-wrap items-center gap-2">
                   {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
                   {canManage && a.connection_status ? (
@@ -189,7 +189,7 @@ export function AssetDetail({
                 {a.open_assignment?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
               </span>
             </Fact>
-            <Fact title={t.assets.heldBy} className="max-md:pl-4">
+            <Fact title={t.assets.heldBy} className="pl-4">
               {a.open_assignment ? (
                 <>
                   <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
@@ -205,12 +205,12 @@ export function AssetDetail({
             </Fact>
           </div>
           {a.connection_status === 'NOT_ACTIVATED' ? (
-            <p role="note" className="mb-4 rounded-md bg-muted px-3 py-2 text-sm max-md:my-3">
+            <p role="note" className="my-3 rounded-md bg-muted px-3 py-2 text-sm">
               {t.assets.activateNote}
             </p>
           ) : null}
 
-          <dl aria-label={t.assets.details} className="mb-8 grid max-w-2xl grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm @lg:grid-cols-3 max-md:mb-4 max-md:rounded-none max-md:border-x-0 max-md:border-t-0 max-md:px-0 max-md:py-3">
+          <dl aria-label={t.assets.details} className="mb-4 grid grid-cols-2 gap-4 border-b border-border py-3 text-sm @lg:grid-cols-3">
             {sim ? (
               <>
                 <Detail label={t.assets.provider}>{a.provider ?? '—'}</Detail>
@@ -316,12 +316,24 @@ export function AssetDetail({
   )
 }
 
-function Fact({ title, className, children }: { title: string; className?: string; children: ReactNode }) {
+/**
+ * One of the three facts: its title over its value, or, inline, both on one
+ * line, the value at its end where the line is short (beside the register, on a
+ * phone) and after the title where it is long. Where a long word leaves no room
+ * (Russian on a phone), the value moves under the title in one piece.
+ */
+function Fact({ title, inline = false, className, children }: { title: string; inline?: boolean; className?: string; children: ReactNode }) {
   return (
-    // On a phone a line above each, none around it (see the facts' grid).
-    <div className={cn('min-w-0 rounded-lg border border-border p-3 max-md:rounded-none max-md:border-x-0 max-md:border-b-0 max-md:px-0 max-md:py-2.5', className)}>
-      <div className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</div>
-      <div className="text-sm">{children}</div>
+    // A line above each, none around it (see the facts' grid).
+    <div
+      className={cn(
+        'min-w-0 border-t border-border py-2.5',
+        inline && 'flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-2 @lg:justify-start @lg:gap-x-6',
+        className,
+      )}
+    >
+      <div className={cn('mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase', inline && 'mb-0')}>{title}</div>
+      <div className={cn('text-sm', inline && 'max-w-full shrink-0')}>{children}</div>
     </div>
   )
 }
