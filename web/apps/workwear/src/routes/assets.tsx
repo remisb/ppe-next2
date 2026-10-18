@@ -1,8 +1,9 @@
-import type { Asset, AssetCategory, AssetKind, AssetSort, ConnectionStatus } from '@ppe/api-client'
+import type { Asset, AssetKind, AssetSort, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
-import { Input, Select } from '@ppe/ui/components/field'
+import { Input } from '@ppe/ui/components/field'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -203,6 +204,8 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   }
   const extra = filterCount(filters)
   const column = (key: AssetSort) => columns(kind).find((c) => c.key === key)!
+  // Phone only: what Filters folds away.
+  const folded = cn(!showFilters && 'max-md:hidden')
 
   return (
     <>
@@ -239,15 +242,6 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
       ) : null}
 
       <div className="mb-4 flex flex-col gap-3">
-        <Input
-          type="search"
-          data-shortcut="search"
-          aria-label={sim ? t.assets.searchLabel : t.assets.equipmentSearchLabel}
-          placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="md:max-w-md"
-        />
         {/*
           The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' seven
           three to a row and Equipment's four in one, and from the sidebar's width one row, each as wide as its words (Russian needs it).
@@ -273,45 +267,48 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
             </HelpTooltip>
           ))}
         </div>
-        <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-center', !showFilters && 'max-md:hidden')}>
+        {/* The search and the filters on one line, as wide as it lets them; on a phone the search stays in view and Filters folds away the rest. */}
+        <div id="asset-filters" role="region" aria-label={t.assets.filters} className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+          <Input
+            type="search"
+            data-shortcut="search"
+            aria-label={sim ? t.assets.searchLabel : t.assets.equipmentSearchLabel}
+            placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="md:max-w-md md:min-w-72 md:flex-1"
+          />
           {sim ? null : (
-            <Select aria-label={t.assets.category} value={filters.category} onChange={(e) => update({ ...filters, category: e.target.value as AssetCategory | '' })} className="md:w-auto">
-              <option value="">{t.assets.allCategories}</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {categoryLabel(c)}
-                </option>
-              ))}
-            </Select>
+            <FilterSelect
+              label={t.assets.category}
+              value={filters.category}
+              items={[{ value: '', label: t.assets.allCategories }, ...categories.map((c) => ({ value: c, label: categoryLabel(c) }))]}
+              onChange={(category) => update({ ...filters, category })}
+              className={folded}
+            />
           )}
-          <Select aria-label={t.assets.location} value={filters.place} onChange={(e) => update({ ...filters, place: e.target.value as Place })} className="md:w-auto">
-            {places.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
+          <FilterSelect label={t.assets.location} value={filters.place} items={places} onChange={(place) => update({ ...filters, place })} className={folded} />
           {sim ? (
-            <Select aria-label={t.assets.provider} value={filters.provider} onChange={(e) => update({ ...filters, provider: e.target.value })} className="md:w-auto">
-              <option value="">{t.assets.allProviders}</option>
-              {(s?.providers ?? []).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </Select>
+            <FilterSelect
+              label={t.assets.provider}
+              value={filters.provider}
+              items={[{ value: '', label: t.assets.allProviders }, ...(s?.providers ?? []).map((p) => ({ value: p, label: p }))]}
+              onChange={(provider) => update({ ...filters, provider })}
+              className={folded}
+            />
           ) : null}
-          <Select
-            aria-label={t.assets.documents}
+          <FilterSelect
+            label={t.assets.documents}
             value={filters.signedCopyMissing ? 'missing' : ''}
-            onChange={(e) => update({ ...filters, signedCopyMissing: e.target.value === 'missing' })}
-            className="md:w-auto"
-          >
-            <option value="">{t.assets.anyDocuments}</option>
-            <option value="missing">{t.assets.signedCopyMissing}</option>
-          </Select>
+            items={[
+              { value: '', label: t.assets.anyDocuments },
+              { value: 'missing', label: t.assets.signedCopyMissing },
+            ]}
+            onChange={(v) => update({ ...filters, signedCopyMissing: v === 'missing' })}
+            className={folded}
+          />
           {filtered ? (
-            <Button variant="ghost" onClick={clear}>
+            <Button variant="ghost" className={folded} onClick={clear}>
               {t.assets.clearFilters}
             </Button>
           ) : null}
@@ -541,5 +538,38 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
         />
       )}
     </>
+  )
+}
+
+/**
+ * One of the register's filters: shadcn's Select in the Orders Date filter's look, as Sort by. It has no
+ * heading, as the search has none: its choice says what it filters ("All categories"), and its label is its name.
+ */
+function FilterSelect<V extends string>({
+  label,
+  value,
+  items,
+  onChange,
+  className,
+}: {
+  label: string
+  value: V
+  items: { value: V; label: string }[]
+  onChange: (next: V) => void
+  className?: string | undefined
+}) {
+  return (
+    <Select items={items} value={value} onValueChange={(v) => v !== null && onChange(v)}>
+      <SelectTrigger aria-label={label} className={cn('md:w-48', className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((i) => (
+          <SelectItem key={i.value} value={i.value}>
+            {i.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

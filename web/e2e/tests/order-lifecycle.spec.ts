@@ -1435,7 +1435,9 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'false')
   // Location keeps the status: Office with Blocked is the blocked cards in the office (§3).
   await tabs.getByRole('button', { name: /^Blocked/ }).click()
-  await page.getByRole('combobox', { name: 'Location' }).selectOption({ label: 'Office' })
+  // The register's filters are shadcn's Select, as Sort by: their own list, opened by a click.
+  await page.getByRole('combobox', { name: 'Location' }).click()
+  await page.getByRole('option', { name: 'Office', exact: true }).click()
   await expect(tabs.getByRole('button', { name: /^Blocked/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No SIMs match these filters.')).toBeVisible()
@@ -1694,20 +1696,23 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   }
   await addAsset('Laptop', 'Computer', 'PC-000001', '900.00')
   await addAsset('Desk', 'Furniture', 'FUR-000001')
-  await page.getByRole('main').getByLabel('Category', { exact: true }).selectOption({ label: 'Furniture' })
+  await page.getByRole('main').getByRole('combobox', { name: 'Category', exact: true }).click()
+  await page.getByRole('option', { name: 'Furniture', exact: true }).click()
   await expect(page.getByRole('row', { name: /FUR-000001/ })).toBeVisible()
   await expect(page.getByRole('row', { name: /PC-000001/ })).toHaveCount(0)
   // No tiles here either: four tabs count what each would list, the category kept.
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
   const equipmentTabs = page.getByRole('group', { name: 'Location and return' }).getByRole('button')
   await expect(equipmentTabs).toHaveText(['All1', 'In Office1', 'With Employees0', 'Not Returned0'])
-  await page.getByRole('main').getByLabel('Category', { exact: true }).selectOption({ label: 'All categories' })
+  await page.getByRole('main').getByRole('combobox', { name: 'Category', exact: true }).click()
+  await page.getByRole('option', { name: 'All categories', exact: true }).click()
   await expect(equipmentTabs).toHaveText(['All2', 'In Office2', 'With Employees0', 'Not Returned0'])
   await equipmentTabs.filter({ hasText: /^With Employees/ }).click()
   await expect(equipmentTabs.filter({ hasText: /^With Employees/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No items match these filters.')).toBeVisible()
   await equipmentTabs.filter({ hasText: /^All/ }).click()
-  await page.getByRole('main').getByLabel('Category', { exact: true }).selectOption({ label: 'Furniture' })
+  await page.getByRole('main').getByRole('combobox', { name: 'Category', exact: true }).click()
+  await page.getByRole('option', { name: 'Furniture', exact: true }).click()
 
   // A desk is given without a signed form (open decision 6).
   await page.getByRole('row', { name: /FUR-000001/ }).getByRole('button', { name: 'Give Asset' }).click()

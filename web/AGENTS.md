@@ -210,7 +210,8 @@ The workwear app is the reference.
   YYYY-MM-DD.
 - **Two selects.** Forms use the native `Select` (`components/field.tsx`): the platform's own
   picker, one-handed on a phone. A list's sort (`SortControl`, shown while a table is
-  stacked) uses shadcn's `Select` (`components/select.tsx`, Base UI), set to look like
+  stacked) and a register's filters (SIM Cards' and Equipment's, beside their search on one
+  line) use shadcn's `Select` (`components/select.tsx`, Base UI), set to look like
   Orders' Date filter (`period-filter.tsx`): its list opens over the field, as wide and in
   its place, its head the field's row (which closes it), the choice ticked on the left.
   On a phone its label goes inside the field and the order is said in words ("Sort by:

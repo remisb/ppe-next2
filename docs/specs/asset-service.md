@@ -338,8 +338,9 @@ their own address:
   then one row, each as wide as its words. A dashboard's figure link (`?show=…`) opens the
   screen on its tab. The dashboards' Company Assets card keeps the overlap as its description.
 - **Filters**: the search (numbers with spaces ignored, or a holder's name), the location
-  (any, Office, with an employee, Unknown), the provider and the documents. On a phone all
-  but the search fold under Filters, whose count leaves out the tabs. The location keeps the
+  (any, Office, with an employee, Unknown), the provider and the documents, on one line
+  under the tabs, the choices shadcn's Select (Equipment has the category in place of the
+  provider). On a phone all but the search fold under Filters, whose count leaves out the tabs. The location keeps the
   status, so Office with Blocked is the blocked cards in the office (§3).
 - **Rows**: first the phone number (or that there is none yet) with the SIM No. under it,
   the link to the card's page, and one copy button for both, which copies
