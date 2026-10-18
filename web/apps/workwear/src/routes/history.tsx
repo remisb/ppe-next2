@@ -4,6 +4,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -36,11 +37,14 @@ interface Filters {
 
 const noFilters: Filters = { employee: null, status: '', period: 'all', from: '', to: '' }
 
-/** The status tabs, All first as the screen opens on it, then Ordered and Given, in the order's own sequence. */
-const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
-  { value: '', label: t.common.all },
-  { value: 'ORDERED', label: t.common.ordered },
-  { value: 'GIVEN', label: t.common.given },
+/**
+ * The status tabs, All first as the screen opens on it, then Ordered and Given, in the order's own sequence,
+ * each with its tooltip, as SIM Cards' tabs have.
+ */
+const statusTabs = (): { value: OrderStatus | ''; label: string; help: Help }[] => [
+  { value: '', label: t.common.all, help: t.history.tabHelp.all },
+  { value: 'ORDERED', label: t.common.ordered, help: { ...t.history.tabHelp.ORDERED, note: t.history.tabHelp.ORDERED.note(LONG_WAIT_DAYS) } },
+  { value: 'GIVEN', label: t.common.given, help: t.history.tabHelp.GIVEN },
 ]
 
 // History is paged, so the API sorts it (the whole history, not one page).
@@ -204,16 +208,17 @@ export function History({
 
         <div role="group" aria-label={t.history.status} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
           {statusTabs().map((tab) => (
-            <button
-              key={tab.label}
-              type="button"
-              aria-pressed={filters.status === tab.value}
-              onClick={() => setFilter('status', tab.value)}
-              className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-            >
-              {tab.label}
-              {counts.data ? <span className="tabular-nums text-muted-foreground">{counts.data[tab.value]}</span> : null}
-            </button>
+            <HelpTooltip key={tab.label} title={tab.label} help={tab.help}>
+              <button
+                type="button"
+                aria-pressed={filters.status === tab.value}
+                onClick={() => setFilter('status', tab.value)}
+                className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
+              >
+                {tab.label}
+                {counts.data ? <span className="tabular-nums text-muted-foreground">{counts.data[tab.value]}</span> : null}
+              </button>
+            </HelpTooltip>
           ))}
         </div>
 

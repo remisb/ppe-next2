@@ -16,6 +16,21 @@ export const history = {
   rangeFrom: (date: string) => `From ${date}`,
   rangeTo: (date: string) => `To ${date}`,
   periods: { all: 'All dates', last7: 'Last 7 days', thisMonth: 'This month', prevMonth: 'Previous month', custom: 'Custom range…' },
+  // The status tabs' tooltips: what each counts; Ordered's note says when a wait is marked.
+  tabHelp: {
+    all: {
+      body: 'Every order placed, waiting for confirmation or given. Deleted orders are left out.',
+      note: 'Ordered and Given always add up to this. Each tab counts within the employee and date filters.',
+    },
+    ORDERED: {
+      body: 'Orders marked as ordered that the employee has not confirmed receiving yet.',
+      note: (days: number) => `Confirm one by its link, in person or on the signed paper. A wait of more than ${days} days is marked in red.`,
+    },
+    GIVEN: {
+      body: 'Orders the employee has confirmed receiving: by the link, in person or on signed paper. Each keeps its locked record.',
+      note: 'Usage time counts from the day given.',
+    },
+  },
   clearFilters: 'Clear filters',
   fromAfterTo: 'From must not be after To.',
   noMatch: 'No orders match these filters.',

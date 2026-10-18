@@ -684,6 +684,13 @@ test('Orders: the Date filter\'s periods; Custom range opens From and To over it
     await pick('Custom range…')
     await expect(from).toBeFocused()
   }
+  // The status tabs say what each counts, as SIM Cards' tabs do: a tooltip, and the same words as the tab's description.
+  const orderedTab = page.getByRole('group', { name: 'Status' }).getByRole('button', { name: /^Ordered/ })
+  await expect(orderedTab).toHaveAccessibleDescription(/has not confirmed receiving yet\..*more than 14 days is marked in red\./)
+  await orderedTab.hover()
+  await expect(page.locator('[data-slot=tooltip-content]')).toContainText('A wait of more than 14 days is marked in red.')
+  await page.mouse.move(0, 0)
+  await expect(page.locator('[data-slot=tooltip-content]')).toHaveCount(0)
   // All dates at first; the order, placed today, is in the last 7 days and this month, not the previous one.
   await expect(period).toHaveText('All dates')
   await listed(['All dates', 'Last 7 days', 'This month', 'Previous month', 'Custom range…'], 'All dates')

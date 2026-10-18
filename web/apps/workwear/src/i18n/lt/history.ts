@@ -16,6 +16,20 @@ export const history: HistoryText = {
   rangeFrom: (date: string) => `Nuo ${date}`,
   rangeTo: (date: string) => `Iki ${date}`,
   periods: { all: 'Visos datos', last7: 'Paskutinės 7 dienos', thisMonth: 'Šis mėnuo', prevMonth: 'Praėjęs mėnuo', custom: 'Pasirinktas laikotarpis…' },
+  tabHelp: {
+    all: {
+      body: 'Visi pateikti užsakymai: laukiantys patvirtinimo ir išduoti. Ištrinti užsakymai neįtraukiami.',
+      note: 'Užsakyta ir Išduota visada sudaro šį skaičių. Kiekviena kortelė skaičiuoja pagal darbuotojo ir datos filtrus.',
+    },
+    ORDERED: {
+      body: 'Užsakymai, pažymėti kaip užsakyti, kurių gavimo darbuotojas dar nepatvirtino.',
+      note: (days: number) => `Patvirtinkite nuoroda, vietoje arba pasirašytu popieriniu įrašu. Laukiantys ilgiau nei ${days} d. pažymimi raudonai.`,
+    },
+    GIVEN: {
+      body: 'Užsakymai, kurių gavimą darbuotojas patvirtino: nuoroda, vietoje arba pasirašytu popieriniu įrašu. Kiekvienas turi užrakintą įrašą.',
+      note: 'Naudojimo trukmė skaičiuojama nuo išdavimo dienos.',
+    },
+  },
   clearFilters: 'Išvalyti filtrus',
   fromAfterTo: 'Data „Nuo“ negali būti vėlesnė nei „Iki“.',
   noMatch: 'Pagal šiuos filtrus užsakymų nėra.',
