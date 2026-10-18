@@ -86,7 +86,7 @@ employee who holds assets. Company Assets is two screens, listed under it in the
 (`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
 opens them). The SIM card register is on screen (`routes/assets.tsx`,
 `lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status; a row opens the card
-beside the register at `/assets/sim-cards/<id>`, as Orders opens an order) and the asset page (`/assets/<id>`, its detail
+beside the register at `/assets/sim-cards/<id>`, as Orders opens an order, and Equipment's at `/assets/equipment/<id>`) and the asset page (`/assets/<id>`, its detail
 `components/asset-detail.tsx` shared with that pane:
 Give SIM against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a

@@ -277,4 +277,6 @@ export const assets: AssetsText = {
   noStorage: 'Подписанные копии пока нельзя сохранить: на сервере не настроено хранилище файлов. Сообщите тому, кто его обслуживает.',
   closeCard: 'Закрыть SIM',
   nextOrPreviousCard: 'следующая или предыдущая SIM',
+  closeItem: 'Закрыть предмет',
+  nextOrPreviousItem: 'следующий или предыдущий предмет',
 }

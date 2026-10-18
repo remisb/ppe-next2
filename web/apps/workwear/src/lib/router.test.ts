@@ -26,9 +26,12 @@ describe('router', () => {
     expect(parsePath('/assets/sim-cards', '?show=in-office')).toEqual({ name: 'simCards', tile: 'inOffice' })
     expect(parsePath('/assets/sim-cards', '?show=everything')).toEqual({ name: 'simCards' })
     // A SIM open beside the register keeps the tile the register was opened on.
-    expect(pathOf({ name: 'simCards', card: 'a/1' })).toBe('/assets/sim-cards/a%2F1')
-    expect(parsePath(pathOf({ name: 'simCards', card: 'a/1' }))).toEqual({ name: 'simCards', card: 'a/1' })
-    expect(parsePath('/assets/sim-cards/a1', '?show=in-office')).toEqual({ name: 'simCards', card: 'a1', tile: 'inOffice' })
+    expect(pathOf({ name: 'simCards', asset: 'a/1' })).toBe('/assets/sim-cards/a%2F1')
+    expect(parsePath(pathOf({ name: 'simCards', asset: 'a/1' }))).toEqual({ name: 'simCards', asset: 'a/1' })
+    expect(parsePath('/assets/sim-cards/a1', '?show=in-office')).toEqual({ name: 'simCards', asset: 'a1', tile: 'inOffice' })
+    // An item open beside Equipment, likewise.
+    expect(pathOf({ name: 'equipment', asset: 'e1', tile: 'withEmployees' })).toBe('/assets/equipment/e1?show=with-employees')
+    expect(parsePath(pathOf({ name: 'equipment', asset: 'e/1' }))).toEqual({ name: 'equipment', asset: 'e/1' })
     expect(pathOf({ name: 'equipment', tile: 'inOffice' })).toBe('/assets/equipment?show=in-office')
     expect(parsePath('/assets/equipment', '?show=in-office')).toEqual({ name: 'equipment', tile: 'inOffice' })
     // The old address of the two registers, when they were tabs of one screen: bookmarks and links already sent.

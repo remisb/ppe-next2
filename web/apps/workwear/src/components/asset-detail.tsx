@@ -30,11 +30,11 @@ const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:under
 
 /**
  * Where the asset is shown: on its own page (/assets/<id>), whose way out is
- * Back to its register; or beside the SIM register (from lg), where it closes,
- * and instead of it on a narrow screen, where it goes Back to the list (as an
- * order beside Orders).
+ * Back to its register; or beside its register, SIM Cards or Equipment (from
+ * lg), where it closes, and instead of it on a narrow screen, where it goes
+ * Back to the list (as an order beside Orders).
  */
-export type AssetPlace = { page: true; onBack: (kind: AssetKind) => void } | { page: false; onClose: () => void }
+export type AssetPlace = { page: true; onBack: (kind: AssetKind) => void } | { page: false; kind: AssetKind; onClose: () => void }
 
 /**
  * One asset: its numbers to copy, the three facts the brief keeps apart (§2:
@@ -101,7 +101,7 @@ export function AssetDetail({
   const Title = place.page ? 'h1' : 'h2'
 
   return (
-    <article aria-label={a ? a.inventory_no : t.assets.simCard} className="@container">
+    <article aria-label={a ? a.inventory_no : sim ? t.assets.simCard : t.assets.item} className="@container">
       {place.page ? (
         // Back to its register: SIM Cards or Equipment, once the asset says which.
         <Button variant="ghost" className="-ml-3 mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>
@@ -111,10 +111,10 @@ export function AssetDetail({
         <>
           {/* Narrow: the card is the whole screen, so the way out is Back to the list, on its own row. */}
           <Button variant="ghost" className="-ml-3 mb-2 lg:hidden" onClick={place.onClose}>
-            <ArrowLeft aria-hidden /> {t.assets.simCards}
+            <ArrowLeft aria-hidden /> {place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}
           </Button>
           {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
-          <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.assets.closeCard} onClick={place.onClose}>
+          <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={place.kind === 'SIM' ? t.assets.closeCard : t.assets.closeItem} onClick={place.onClose}>
             <X aria-hidden />
           </Button>
         </>

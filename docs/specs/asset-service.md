@@ -371,7 +371,7 @@ their own address:
   Escape closes it; below `lg` the card replaces the register, with Back to SIM Cards. The
   card beside the register is the asset page's own detail (`components/asset-detail.tsx`),
   with the same actions; a change in either loads the other again. The asset page
-  (`/assets/<id>`) stays for the employee page, ⌘K and Equipment's rows. With no card open
+  (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
   a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
   Register SIM Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
   as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
@@ -470,6 +470,9 @@ The same engine, screens and rules, with what differs by kind:
   which is the API's `needs_form`, so the screens never repeat the rule.
 - **The asset page** has no Connection block and shows the category and serial number; Mark
   as Not Returned offers no blocking email.
+- **A row** opens its item as SIM Cards opens a card, at `/assets/equipment/<id>`: beside the
+  register from `lg`, which keeps Inventory No., Item and Held By and its tabs two to a row,
+  with J / K and Escape; in place of it below.
 - **The employee page** has **Equipment** beside Given SIM, with Give Asset; the item picker
   lists the items in the Office.
 - **The dashboards' card** shows both registers' figures.

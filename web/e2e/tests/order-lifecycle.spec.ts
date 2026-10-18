@@ -1731,6 +1731,17 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await expect(equipmentTabs.filter({ hasText: /^With Employees/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('No items match these filters.')).toBeVisible()
   await equipmentTabs.filter({ hasText: /^All/ }).click()
+  // A row opens its item beside the register, as a SIM beside SIM Cards: the list keeps its filters; Escape closes it.
+  await page.getByRole('link', { name: 'PC-000001', exact: true }).click()
+  await expect(page).toHaveURL(/\/assets\/equipment\/[0-9a-f-]{36}$/)
+  const itemPane = page.getByRole('complementary', { name: 'Item', exact: true })
+  await expect(itemPane.getByRole('heading', { name: 'PC-000001' })).toBeVisible()
+  await expect(itemPane.getByText('Laptop · Computer')).toBeVisible()
+  await expect(page.getByRole('row', { name: /PC-000001/ })).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByRole('columnheader', { name: 'Serial No.' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(itemPane).toHaveCount(0)
+  await expect(page).toHaveURL(/\/assets\/equipment$/)
   await page.getByRole('main').getByRole('combobox', { name: 'Category', exact: true }).click()
   await page.getByRole('option', { name: 'Furniture', exact: true }).click()
 

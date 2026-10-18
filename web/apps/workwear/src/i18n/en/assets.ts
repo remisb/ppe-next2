@@ -296,6 +296,8 @@ export const assets = {
   // A SIM open beside the register (from a wide screen), as an order beside Orders.
   closeCard: 'Close SIM',
   nextOrPreviousCard: 'next or previous SIM',
+  closeItem: 'Close item',
+  nextOrPreviousItem: 'next or previous item',
 }
 
 export type AssetsText = typeof assets

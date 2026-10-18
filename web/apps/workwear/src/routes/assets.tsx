@@ -72,7 +72,7 @@ const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
       ]
 const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
 
-/** From lg a SIM opens beside the register; below it, instead of the register. */
+/** From lg a SIM or item opens beside the register; below it, instead of the register. */
 const wide = () => window.matchMedia('(min-width: 64rem)').matches
 
 function Kbd({ children }: { children: string }) {
@@ -90,26 +90,27 @@ const segment =
  * screen a row offers the one action the card's state calls for (Give SIM
  * Card, Register SIM Return or Change Status), the rest under ⋯. On a phone a
  * row is two short lines and its actions are on the card's page. Writes need
- * assets.manage. A SIM's row opens the card as Orders opens an order
- * (/assets/sim-cards/<id>): beside the register from lg, with J and K for the
- * next or previous card and Escape to close it, and on its own on a narrow
- * screen; the register keeps its filters and page behind it. An equipment
- * row opens the item's page.
+ * assets.manage. A row opens its SIM or item as Orders opens an order
+ * (/assets/sim-cards/<id>, /assets/equipment/<id>): beside the register from
+ * lg, with J and K for the next or previous one and Escape to close it, and on
+ * its own on a narrow screen; the register keeps its filters and page behind it.
  */
 export function Assets({
   kind,
   tile,
-  card,
+  asset,
   navigate,
 }: {
   kind: AssetKind
   tile?: AssetTile | undefined
-  /** The SIM open beside the register (SIM Cards only). */
-  card?: string | undefined
+  /** The SIM or item open beside the register. */
+  asset?: string | undefined
   navigate: (to: Route, options?: NavigateOptions) => void
 }) {
   const sim = kind === 'SIM'
-  const selected = sim ? card : undefined
+  const selected = asset
+  // The register's own route, which an open SIM or item keeps.
+  const register = sim ? 'simCards' : 'equipment'
   const { client } = useApi()
   const session = useSession()
   const canManage = session.can('assets.manage')
@@ -196,12 +197,12 @@ export function Assets({
 
   const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
 
-  // The register's address keeps the tile it was opened on, so opening a card keeps the register as it is.
+  // The register's address keeps the tile it was opened on, so opening a SIM or item keeps the register as it is.
   const at = tile ? { tile } : {}
-  const openCard = (id: string) => (sim ? navigate({ name: 'simCards', ...at, card: id }, { scroll: !wide() }) : navigate({ name: 'asset', id }))
-  const close = () => navigate({ name: 'simCards', ...at }, { scroll: false })
+  const openAsset = (id: string) => navigate({ name: register, ...at, asset: id }, { scroll: !wide() })
+  const close = () => navigate({ name: register, ...at }, { scroll: false })
 
-  // J and K: the next or previous card on this page, while one is open; Escape closes it beside the register.
+  // J and K: the next or previous SIM or item on this page, while one is open; Escape closes it beside the register.
   const shown = list.data?.assets
   useEffect(() => {
     if (!selected || !shown) return
@@ -218,19 +219,19 @@ export function Assets({
       const next = shown[i + (key === 'j' ? 1 : -1)]
       if (next) {
         e.preventDefault()
-        navigate({ name: 'simCards', ...at, card: next.id }, { scroll: false })
+        navigate({ name: register, ...at, asset: next.id }, { scroll: false })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selected, shown, navigate, tile])
+  }, [selected, shown, navigate, tile, register])
 
-  // The open card's row stays in view as J and K move through the register.
+  // The open SIM's or item's row stays in view as J and K move through the register.
   useEffect(() => {
     if (selected && wide()) document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' })
   }, [selected, shown])
 
-  // Beside an open card the register keeps the columns that find the next one: one line a row; the rest is in the card.
+  // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
 
   const s = summary.data
@@ -316,9 +317,9 @@ export function Assets({
               aria-label={sim ? t.assets.statusAndLocation : t.assets.locationAndReturn}
               className={cn(
                 'grid grid-cols-2 gap-1 rounded-lg bg-muted p-1',
-                // Beside an open card the register is narrow: the tabs stay three to a row there.
+                // Beside an open SIM or item the register is narrow: the tabs stay three (Equipment's two) to a row there.
                 !beside && 'xl:inline-grid xl:grid-flow-col xl:auto-cols-auto xl:grid-cols-none xl:self-start',
-                sim ? 'sm:grid-cols-3' : 'sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
+                sim ? 'sm:grid-cols-3' : beside ? 'sm:grid-cols-2' : 'sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
               )}
             >
               {assetTabs(kind).map((tab) => (
@@ -417,7 +418,7 @@ export function Assets({
                       <>
                         <SortableHead column={column('inventory')} {...sortProps} />
                         <SortableHead column={column('name')} {...sortProps} />
-                        <TableHead>{t.assets.colSerialNo}</TableHead>
+                        {beside ? null : <TableHead>{t.assets.colSerialNo}</TableHead>}
                         <SortableHead column={column('holder')} {...sortProps} />
                       </>
                     )}
@@ -446,7 +447,7 @@ export function Assets({
                         // The whole row opens the card; its number is the real link, for keyboards and new tabs.
                         onClick={(ev) => {
                           if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                          openCard(a.id)
+                          openAsset(a.id)
                         }}
                       >
                         {sim ? (
@@ -454,7 +455,7 @@ export function Assets({
                             {/* The phone number over the SIM No., the card's link, and one button copying both for the provider's e-mail. */}
                             <span className="flex items-center gap-1">
                               <a
-                                {...linkTo({ name: 'simCards', ...at, card: a.id }, () => openCard(a.id))}
+                                {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
                                 className="flex flex-col items-start rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                               >
                                 <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
@@ -473,7 +474,7 @@ export function Assets({
                           </TableCell>
                         ) : (
                           <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
-                            <a {...linkTo({ name: 'asset', id: a.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                            <a {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
                               {a.inventory_no}
                             </a>
                           </TableCell>
@@ -525,7 +526,7 @@ export function Assets({
                               {a.name}
                               {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
                             </TableCell>
-                            <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '—'}</TableCell>
+                            {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '—'}</TableCell>}
                             <TableCell className="stacked:hidden">
                               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
@@ -604,13 +605,13 @@ export function Assets({
 
         {selected ? (
           <aside
-            aria-label={t.assets.simCard}
+            aria-label={sim ? t.assets.simCard : t.assets.item}
             className="lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
           >
             <AssetDetail
               key={selected}
               id={selected}
-              place={{ page: false, onClose: close }}
+              place={{ page: false, kind, onClose: close }}
               navigate={navigate}
               onOpen={(id) => navigate({ name: 'asset', id })}
               onChanged={reload}
@@ -618,7 +619,7 @@ export function Assets({
             />
             {/* Beside the register only, and only where there is a keyboard. */}
             <p className="mt-3 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
-              <Kbd>J</Kbd> / <Kbd>K</Kbd> {t.assets.nextOrPreviousCard} · <Kbd>Esc</Kbd> {t.history.closeHint}
+              <Kbd>J</Kbd> / <Kbd>K</Kbd> {sim ? t.assets.nextOrPreviousCard : t.assets.nextOrPreviousItem} · <Kbd>Esc</Kbd> {t.history.closeHint}
             </p>
           </aside>
         ) : null}

@@ -25,12 +25,12 @@ export type Route =
   | { name: 'employee'; id: string }
   /**
    * Company Assets' two screens: the SIM card register and the Equipment
-   * one; tile opens it on a tile (a dashboard's Company Assets card). card
-   * opens one SIM beside the register, or on its own on a narrow screen, as
-   * Orders opens an order.
+   * one; tile opens it on a tile (a dashboard's Company Assets card). asset
+   * opens one SIM or item beside its register, or on its own on a narrow
+   * screen, as Orders opens an order.
    */
-  | { name: 'simCards'; tile?: AssetTile; card?: string }
-  | { name: 'equipment'; tile?: AssetTile }
+  | { name: 'simCards'; tile?: AssetTile; asset?: string }
+  | { name: 'equipment'; tile?: AssetTile; asset?: string }
   /** One asset: where it is, who holds it, its assignments and Changes, and its actions. */
   | { name: 'asset'; id: string }
   /**
@@ -129,10 +129,10 @@ export function parsePath(pathname: string, search = ''): Route {
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
   if (item?.[1]) return { name: 'catalogueItem', id: decodeURIComponent(item[1]) }
-  const card = /^\/assets\/sim-cards\/([^/]+)$/.exec(path)
-  if (card?.[1]) {
+  const opened = /^\/assets\/(sim-cards|equipment)\/([^/]+)$/.exec(path)
+  if (opened?.[1] && opened[2]) {
     const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
-    return { name: 'simCards', card: decodeURIComponent(card[1]), ...(tile ? { tile } : {}) }
+    return { name: opened[1] === 'equipment' ? 'equipment' : 'simCards', asset: decodeURIComponent(opened[2]), ...(tile ? { tile } : {}) }
   }
   const asset = /^\/assets\/([^/]+)$/.exec(path)
   if (asset?.[1]) return { name: 'asset', id: decodeURIComponent(asset[1]) }
@@ -199,7 +199,7 @@ export function pathOf(route: Route): string {
       return `/catalogue/${encodeURIComponent(route.id)}`
     case 'simCards':
     case 'equipment': {
-      const base = route.name === 'simCards' && route.card ? `${fixed.simCards}/${encodeURIComponent(route.card)}` : fixed[route.name]
+      const base = route.asset ? `${fixed[route.name]}/${encodeURIComponent(route.asset)}` : fixed[route.name]
       return route.tile ? `${base}?show=${assetTiles[route.tile]}` : base
     }
     case 'asset':
