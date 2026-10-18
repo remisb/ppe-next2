@@ -377,3 +377,16 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/*
+ * Base UI's Select hides its list's scrollbar with this class and, by default,
+ * a <style> element of its own, which the Content-Security-Policy refuses
+ * (style-src 'self'). select.tsx turns that element off (CSPProvider
+ * disableStyleElements); the rule is here instead, as Base UI writes it.
+ */
+.base-ui-disable-scrollbar {
+  scrollbar-width: none;
+}
+.base-ui-disable-scrollbar::-webkit-scrollbar {
+  display: none;
+}

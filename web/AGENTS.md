@@ -313,6 +313,9 @@ images and requests come from the app's own origin only. So:
   Do not add another inline script.
 - React's `style` props are fine (they go through the DOM, which `style-src` does not
   restrict); a `<style>` element or a `style` attribute written as HTML is not.
+  Base UI renders `<style>` elements of its own (Select, ScrollArea): wrap such a part in
+  `CSPProvider disableStyleElements` and put its rule in `@ppe/ui`'s `styles.css`, as
+  `components/select.tsx` does (`select.test.tsx` checks it).
 - Links to other sites (WhatsApp) are navigation and are not affected.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 
