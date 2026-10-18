@@ -1450,30 +1450,37 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
 test('Company Assets: give a SIM against its printed form, mark it not returned, then register its return', async () => {
   await openTab('Company Assets')
   await page.getByRole('link', { name: /0089370011/ }).click()
-  const main = page.getByRole('main')
-  await expect(main.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+  // The card opens beside the register, as an order beside Orders, at an address of its own; its row stays marked.
+  const pane = page.getByRole('complementary', { name: 'SIM', exact: true })
+  await expect(page).toHaveURL(/\/assets\/sim-cards\/[0-9a-f-]{36}$/)
+  await expect(pane.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+  await expect(page.getByRole('row', { name: /0089370011/ })).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   // The card's Changes are closed at first; open them (they stay open on its page).
   const openChanges = async () => {
-    const toggle = main.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
+    const toggle = pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
     if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
   }
-  await expect(main.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })).toHaveAttribute('aria-expanded', 'false')
-  await expect(main.getByText('No one')).toBeVisible()
+  await expect(pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })).toHaveAttribute('aria-expanded', 'false')
+  // So are its Assignments, with their count; giving opens them, so the new one shows.
+  await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveAttribute('aria-expanded', 'false')
+  await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveText(/^Assignments\s*0$/)
+  await expect(pane.getByText('No one')).toBeVisible()
   // Giving needs a phone number on the card: Edit adds it.
-  await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
   await page.getByRole('menuitem', { name: 'Edit' }).click()
   const edit = page.getByRole('dialog')
   await edit.getByLabel('Phone No.').fill('+370 612 40118')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
   // As in the register: the phone number over the SIM No., one copy button for both.
-  await expect(main.getByRole('definition').first()).toHaveText('+370 612 40118')
-  await expect(main.getByRole('definition').nth(1)).toHaveText('0089370011')
-  await expect(main.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
-  await expect(main.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
+  await expect(pane.getByRole('definition').first()).toHaveText('+370 612 40118')
+  await expect(pane.getByRole('definition').nth(1)).toHaveText('0089370011')
+  await expect(pane.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
+  await expect(pane.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
 
   // Give SIM: three steps, what is left always beside the button (§6).
-  await main.getByRole('button', { name: 'Give SIM' }).click()
+  await pane.getByRole('button', { name: 'Give SIM' }).click()
   const give = page.getByRole('dialog')
   await expect(give.getByText('Choose the employee.')).toBeVisible()
   await give.getByRole('combobox', { name: 'Employee' }).fill('Ona')
@@ -1505,7 +1512,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   // Safari may reload the page while the print tab is in front: Give SIM again
   // brings back the details and the printed mark, so the paper can be ticked.
   await page.reload()
-  await main.getByRole('button', { name: 'Give SIM' }).click()
+  await pane.getByRole('button', { name: 'Give SIM' }).click()
   // Printed, the details fold to one line.
   await expect(give.getByText(/Ona Kazlauskienė · .* · €25\.00/)).toBeVisible()
   await expect(give.getByText('Printed. Once the employee has signed it, tick below.')).toBeVisible()
@@ -1525,15 +1532,15 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(page.getByText('SIM given to Ona Kazlauskienė.')).toBeVisible()
   // Printing changed nothing but is the user's activity: in the card's Changes.
   await openChanges()
-  await expect(main.getByRole('region', { name: 'Changes' }).getByText('Form printed').first()).toBeVisible()
+  await expect(pane.getByRole('region', { name: 'Changes' }).getByText('Form printed').first()).toBeVisible()
   // One action changed the holder, the location, the form and the history (§7).
-  await expect(main.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
-  await expect(main.getByText('With an employee')).toBeVisible()
-  const assignments = main.getByRole('region', { name: 'Assignments' })
+  await expect(pane.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
+  await expect(pane.getByText('With an employee')).toBeVisible()
+  const assignments = pane.getByRole('region', { name: 'Assignments' })
   await expect(assignments.getByText('Paper form signed')).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Download PDF' })).toBeVisible()
-  await expect(main.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
 
   // Upload Signed Form (§9): Signed Copy Missing until a scan is in. A file that is
   // not what its name says is refused; the copy downloads as it was sent.
@@ -1553,7 +1560,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   expect((await readFile(await download.path())).equals(scan)).toBe(true)
 
   // Mark as Not Returned, and the blocking email offered next (§13, §14).
-  await main.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
   await page.getByRole('menuitem', { name: 'Mark as Not Returned' }).click()
   const mark = page.getByRole('dialog')
   await mark.getByLabel('Whereabouts unknown').check()
@@ -1565,9 +1572,9 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(email.getByLabel('Message')).toHaveValue(/SIM number: 0089370011/)
   await email.getByRole('button', { name: 'Close' }).last().click()
   // Unknown, the last holder kept; still Active: preparing the email changes nothing.
-  await expect(main.getByText('Unknown', { exact: true }).first()).toBeVisible()
-  await expect(main.getByText('Not Returned').first()).toBeVisible()
-  await expect(main.getByText('Active', { exact: true }).first()).toBeVisible()
+  await expect(pane.getByText('Unknown', { exact: true }).first()).toBeVisible()
+  await expect(pane.getByText('Not Returned').first()).toBeVisible()
+  await expect(pane.getByText('Active', { exact: true }).first()).toBeVisible()
   // In the list: the Employee column names the last holder, the Location column says only where.
   await openTab('Company Assets')
   const heldRow = page.getByRole('row', { name: /SIM-000001/ })
@@ -1576,18 +1583,23 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await heldRow.getByRole('link', { name: /0089370011/ }).click()
 
   // Register SIM Return: back in the office, the status and the mark kept (§11).
-  await main.getByRole('button', { name: 'Register SIM Return' }).click()
+  await pane.getByRole('button', { name: 'Register SIM Return' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
-  await expect(main.getByText('No one')).toBeVisible()
+  await expect(pane.getByText('No one')).toBeVisible()
   await expect(assignments.getByText(/· Returned /)).toBeVisible()
   await expect(assignments.getByText('Not Returned', { exact: true })).toBeVisible()
-  await expect(main.getByRole('button', { name: 'Give SIM' })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Give SIM' })).toBeVisible()
   // Its Changes tell the story.
   await openChanges()
   for (const change of ['Given to an employee', 'Signed copy uploaded', 'Marked as Not Returned', 'Returned to the office']) {
-    await expect(main.getByText(change, { exact: true }).first()).toBeVisible()
+    await expect(pane.getByText(change, { exact: true }).first()).toBeVisible()
   }
+  // Escape closes it; the register stays as it was.
+  await page.keyboard.press('Escape')
+  await expect(pane).toHaveCount(0)
+  await expect(page).toHaveURL(/\/assets\/sim-cards$/)
+  await expect(page.getByRole('row', { name: /0089370011/ })).not.toHaveAttribute('aria-current', 'true')
 })
 
 test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holder is not deleted', async () => {
@@ -2023,6 +2035,11 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     await page.getByRole('link', { name: 'Safety shoes' }).click()
     await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
     expect(await fits(), `the item page scrolls sideways at ${width}px`).toBe(true)
+    // A SIM open beside the register (from 1024px; on its own below): the register drops to its short columns.
+    await openTab('Company Assets')
+    await page.getByRole('main').getByRole('link', { name: /612 40118/ }).click()
+    await expect(page.getByRole('complementary', { name: 'SIM', exact: true }).getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+    expect(await fits(), `a SIM beside the register scrolls sideways at ${width}px`).toBe(true)
   }
 
   await page.setViewportSize(desktop)

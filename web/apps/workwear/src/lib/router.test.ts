@@ -25,6 +25,10 @@ describe('router', () => {
     expect(pathOf({ name: 'simCards', tile: 'notReturned' })).toBe('/assets/sim-cards?show=not-returned')
     expect(parsePath('/assets/sim-cards', '?show=in-office')).toEqual({ name: 'simCards', tile: 'inOffice' })
     expect(parsePath('/assets/sim-cards', '?show=everything')).toEqual({ name: 'simCards' })
+    // A SIM open beside the register keeps the tile the register was opened on.
+    expect(pathOf({ name: 'simCards', card: 'a/1' })).toBe('/assets/sim-cards/a%2F1')
+    expect(parsePath(pathOf({ name: 'simCards', card: 'a/1' }))).toEqual({ name: 'simCards', card: 'a/1' })
+    expect(parsePath('/assets/sim-cards/a1', '?show=in-office')).toEqual({ name: 'simCards', card: 'a1', tile: 'inOffice' })
     expect(pathOf({ name: 'equipment', tile: 'inOffice' })).toBe('/assets/equipment?show=in-office')
     expect(parsePath('/assets/equipment', '?show=in-office')).toEqual({ name: 'equipment', tile: 'inOffice' })
     // The old address of the two registers, when they were tabs of one screen: bookmarks and links already sent.

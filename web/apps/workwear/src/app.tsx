@@ -417,6 +417,7 @@ export function App() {
             key={`${route.name}-${route.tile ?? 'all'}`}
             kind={route.name === 'equipment' ? 'EQUIPMENT' : 'SIM'}
             tile={route.tile}
+            card={route.name === 'simCards' ? route.card : undefined}
             navigate={navigate}
           />
         ) : null}

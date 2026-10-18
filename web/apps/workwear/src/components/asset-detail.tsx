@@ -1,0 +1,441 @@
+import type { AssetAssignment, AssetKind, ConnectionStatus } from '@ppe/api-client'
+import { useApi, useSession } from '@ppe/app-shell'
+import { RecordChanges } from '@ppe/audit'
+import { Badge } from '@ppe/ui/components/badge'
+import { Button } from '@ppe/ui/components/button'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { formatDate } from '@ppe/ui/lib/dates'
+import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
+import { saveFile } from '@ppe/ui/lib/save-file'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { formatEuro } from '@ppe/i18n'
+import { cn } from '@ppe/ui/lib/utils'
+import { ArrowLeft, FileDown, Printer, X } from 'lucide-react'
+import { type ReactNode, useState } from 'react'
+
+import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssignmentFormDocument } from '@/components/assignment-form'
+import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
+import { EquipmentForm } from '@/components/equipment-form'
+import { usePrintInPlace } from '@/components/print-in-place'
+import { SignedCopies } from '@/components/signed-copies'
+import { SimCardForm } from '@/components/sim-card-form'
+import { t } from '@/i18n'
+import { categoryLabel, formatDay, locationText, primaryAction, simCopyText, statusLabel, todayIn } from '@/lib/assets'
+import { type Route, linkTo } from '@/lib/router'
+import { useOpenKey } from '@/lib/open-sections'
+
+const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+
+/**
+ * Where the asset is shown: on its own page (/assets/<id>), whose way out is
+ * Back to its register; or beside the SIM register (from lg), where it closes,
+ * and instead of it on a narrow screen, where it goes Back to the list (as an
+ * order beside Orders).
+ */
+export type AssetPlace = { page: true; onBack: (kind: AssetKind) => void } | { page: false; onClose: () => void }
+
+/**
+ * One asset: its numbers to copy, the three facts the brief keeps apart (§2:
+ * Connection, Where, Held by), the one action its state calls for, every
+ * assignment with its form, and its Changes. A phone works here. Its parts
+ * lay out by the room they have (a container), so the same detail fits the
+ * page and the pane beside the register.
+ */
+export function AssetDetail({
+  id,
+  place,
+  navigate,
+  onOpen,
+  onChanged,
+  refresh = 0,
+}: {
+  id: string
+  place: AssetPlace
+  navigate: (to: Route) => void
+  /** Open another asset: the one that already has a number typed on Edit. */
+  onOpen: (id: string) => void
+  /** Something here changed the asset: the register beside it loads again. */
+  onChanged?: (() => void) | undefined
+  /** Changes when the register beside it changed the asset, which loads it again. */
+  refresh?: number
+}) {
+  const { client } = useApi()
+  const canManage = useSession().can('assets.manage')
+  const changesKey = useOpenKey('asset.changes')
+  // Assignments are closed at first, as Changes are, then as the user left them. An action
+  // here (Give, Register Return, …) opens them, so its result shows, without changing what is remembered.
+  const [assignmentsRemembered, rememberAssignments] = useRememberedOpen(useOpenKey('asset.assignments'), false)
+  const [assignmentsOpened, setAssignmentsOpened] = useState(false)
+  const settings = useLoad(() => client.settings())
+  const tz = settings.data?.timezone
+  const today = todayIn(tz)
+  const asset = useLoad(() => client.assets.get(id), [id, refresh])
+  const [sheet, setSheet] = useState<AssetSheet>(null)
+  const [editing, setEditing] = useState(false)
+  const [message, setMessage] = useState('')
+  const [actionError, setActionError] = useState<unknown>()
+  const [saving, setSaving] = useState(false)
+
+  const a = asset.data
+  const sim = a?.kind !== 'EQUIPMENT'
+  // Beside the register, the register loads both again (refresh); on its own, the page loads the asset.
+  const changed = () => (onChanged ? onChanged() : asset.reload())
+  const changeStatus = async (next: ConnectionStatus) => {
+    if (!a) return
+    setSaving(true)
+    setActionError(undefined)
+    try {
+      await client.assets.setStatus(a.id, next)
+      setMessage(t.assets.statusChanged(a.inventory_no, statusLabel(next)))
+      changed()
+    } catch (err) {
+      setActionError(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+  const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
+  // The page's title is its h1; beside the register, the register's title is, as an order's beside Orders.
+  const Title = place.page ? 'h1' : 'h2'
+
+  return (
+    <article aria-label={a ? a.inventory_no : t.assets.simCard} className="@container">
+      {place.page ? (
+        // Back to its register: SIM Cards or Equipment, once the asset says which.
+        <Button variant="ghost" className="-ml-3 mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>
+          <ArrowLeft aria-hidden /> {!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}
+        </Button>
+      ) : (
+        <>
+          {/* Narrow: the card is the whole screen, so the way out is Back to the list, on its own row. */}
+          <Button variant="ghost" className="-ml-3 mb-2 lg:hidden" onClick={place.onClose}>
+            <ArrowLeft aria-hidden /> {t.assets.simCards}
+          </Button>
+          {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
+          <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.assets.closeCard} onClick={place.onClose}>
+            <X aria-hidden />
+          </Button>
+        </>
+      )}
+      {asset.error ? (
+        <ErrorState error={asset.error} onRetry={asset.reload} />
+      ) : !a ? (
+        <Loading />
+      ) : (
+        <>
+          <header className={cn('mb-5 md:mb-6', !place.page && 'mb-4 md:mb-4 lg:pr-10')}>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <Title className={cn('text-xl font-semibold tracking-tight', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
+              {canManage ? (
+                <div className="flex flex-wrap gap-2">
+                  {primaryAction(a) === 'give' ? (
+                    <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
+                  ) : null}
+                  {primaryAction(a) === 'return' ? (
+                    <Button onClick={() => setSheet({ kind: 'return', asset: a })}>{sim ? t.assets.registerReturn : t.assets.registerAssetReturn}</Button>
+                  ) : null}
+                  <AssetMoreActions
+                    asset={a}
+                    onStatus={(next) => void changeStatus(next)}
+                    onEdit={() => setEditing(true)}
+                    onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
+                    onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                  />
+                </div>
+              ) : null}
+            </div>
+            <p className="mt-1 max-w-prose text-sm text-muted-foreground empty:hidden">
+              {(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
+            </p>
+          </header>
+          {sim ? (
+            // As in the register: the phone number over the SIM No., and one button copying both for the provider's e-mail.
+            <div className="mb-4 flex items-center gap-2">
+              <dl className="grid grid-cols-[auto_auto] items-baseline gap-x-3 gap-y-0.5 text-sm">
+                <dt className="text-muted-foreground">{t.assets.phoneNo}</dt>
+                <dd className={cn(a.phone_no && 'font-mono tabular-nums')}>{a.phone_no ?? t.assets.noPhoneNo}</dd>
+                <dt className="text-muted-foreground">{t.assets.simNo}</dt>
+                <dd className="font-mono text-muted-foreground tabular-nums">{a.sim_no}</dd>
+              </dl>
+              {a.sim_no ? <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} /> : null}
+            </div>
+          ) : null}
+          <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
+            {message}
+          </p>
+          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+
+          {/*
+            The three facts the brief keeps apart: changing one never changes another (§2). Where and
+            Held by are short, so they share a row even beside the register or on a phone; with room, all three do.
+            On a phone they are boxes no more, only lines between them, so the room goes to the content.
+          */}
+          <div className={cn('mb-4 grid grid-cols-2 gap-3 max-md:mb-0 max-md:gap-0 max-md:border-b max-md:border-border', sim && '@lg:grid-cols-3')}>
+            {sim ? (
+              <Fact title={t.assets.connection} className="col-span-2 @lg:col-span-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
+                  {canManage && a.connection_status ? (
+                    <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving} onChange={(next) => void changeStatus(next)} />
+                  ) : null}
+                </span>
+              </Fact>
+            ) : null}
+            <Fact title={t.assets.where}>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{locationText(a)}</span>
+                {a.open_assignment?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+              </span>
+            </Fact>
+            <Fact title={t.assets.heldBy} className="max-md:pl-4">
+              {a.open_assignment ? (
+                <>
+                  <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
+                    {a.open_assignment.employee_name}
+                  </a>
+                  <span className="block text-xs text-muted-foreground">
+                    {t.assets.heldSince(formatDay(a.open_assignment.given_date), t.assets.daysHeld(a.open_assignment.days_held))}
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">{t.assets.nobody}</span>
+              )}
+            </Fact>
+          </div>
+          {a.connection_status === 'NOT_ACTIVATED' ? (
+            <p role="note" className="mb-4 rounded-md bg-muted px-3 py-2 text-sm max-md:my-3">
+              {t.assets.activateNote}
+            </p>
+          ) : null}
+
+          <dl aria-label={t.assets.details} className="mb-8 grid max-w-2xl grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm @lg:grid-cols-3 max-md:mb-4 max-md:rounded-none max-md:border-x-0 max-md:border-t-0 max-md:px-0 max-md:py-3">
+            {sim ? (
+              <>
+                <Detail label={t.assets.provider}>{a.provider ?? '—'}</Detail>
+                <Detail label={t.assets.plan}>{a.plan ?? '—'}</Detail>
+              </>
+            ) : (
+              <>
+                <Detail label={t.assets.category}>{a.category ? categoryLabel(a.category) : '—'}</Detail>
+                <Detail label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '—'}</Detail>
+              </>
+            )}
+            <Detail label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '—' : formatEuro(a.non_return_value_cents)}</Detail>
+            {sim ? <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '—'}</Detail> : null}
+            {a.comment ? (
+              <div className="col-span-2 @lg:col-span-3">
+                <Detail label={t.assets.comment}>
+                  <span className="whitespace-pre-line">{a.comment}</span>
+                </Detail>
+              </div>
+            ) : null}
+          </dl>
+
+          <DisclosureSection
+            id={`assignments-${a.id}`}
+            title={t.assets.assignmentsTitle}
+            count={a.assignments.length}
+            description={t.assets.assignmentsIntro}
+            open={assignmentsRemembered || assignmentsOpened}
+            onOpenChange={(next) => {
+              setAssignmentsOpened(false)
+              rememberAssignments(next)
+            }}
+          >
+            {a.assignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t.assets.noAssignments}</p>
+            ) : (
+              <ol className="grid gap-3">
+                {a.assignments.map((s) => (
+                  <AssignmentItem
+                    key={s.id}
+                    assetId={a.id}
+                    inventoryNo={a.inventory_no}
+                    assignment={s}
+                    canManage={canManage}
+                    timeZone={tz}
+                    navigate={navigate}
+                    onUploaded={(m) => {
+                      setMessage(m)
+                      changed()
+                    }}
+                  />
+                ))}
+              </ol>
+            )}
+          </DisclosureSection>
+
+          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
+
+          <AssetSheets
+            sheet={sheet}
+            today={today}
+            onChange={setSheet}
+            onDone={(m) => {
+              setMessage(m)
+              setAssignmentsOpened(true)
+              changed()
+            }}
+          />
+          {sim ? (
+            <SimCardForm
+              card={editing ? a : null}
+              today={today}
+              providers={settings.data?.sim_providers ?? []}
+              onClose={() => setEditing(false)}
+              onSaved={(saved) => {
+                setEditing(false)
+                setMessage(t.assets.saved(saved.inventory_no))
+                changed()
+              }}
+              onOpenExisting={(other) => {
+                setEditing(false)
+                onOpen(other)
+              }}
+            />
+          ) : (
+            <EquipmentForm
+              item={editing ? a : null}
+              onClose={() => setEditing(false)}
+              onSaved={(saved) => {
+                setEditing(false)
+                setMessage(t.assets.saved(saved.inventory_no))
+                changed()
+              }}
+              onOpenExisting={(other) => {
+                setEditing(false)
+                onOpen(other)
+              }}
+            />
+          )}
+        </>
+      )}
+    </article>
+  )
+}
+
+function Fact({ title, className, children }: { title: string; className?: string; children: ReactNode }) {
+  return (
+    // On a phone a line above each, none around it (see the facts' grid).
+    <div className={cn('min-w-0 rounded-lg border border-border p-3 max-md:rounded-none max-md:border-x-0 max-md:border-b-0 max-md:px-0 max-md:py-2.5', className)}>
+      <div className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</div>
+      <div className="text-sm">{children}</div>
+    </div>
+  )
+}
+
+function Detail({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-medium">{children}</dd>
+    </div>
+  )
+}
+
+/** One giving: who, from when to when, its form and what happened to it. */
+function AssignmentItem({
+  assetId,
+  inventoryNo,
+  assignment: s,
+  canManage,
+  timeZone,
+  navigate,
+  onUploaded,
+}: {
+  assetId: string
+  inventoryNo: string
+  assignment: AssetAssignment
+  canManage: boolean
+  timeZone: string | undefined
+  navigate: (to: Route) => void
+  onUploaded: (message: string) => void
+}) {
+  return (
+    <li className="rounded-lg border border-border p-3 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <a {...linkTo({ name: 'employee', id: s.employee_id }, navigate)} className={link}>
+          {s.employee_name}
+        </a>
+        <span className="text-muted-foreground tabular-nums">{t.assets.daysHeld(s.days_held)}</span>
+      </div>
+      <p className="text-muted-foreground">
+        {t.assets.givenOnDate(formatDay(s.given_date))} · {s.returned_date ? t.assets.returnedOnDate(formatDay(s.returned_date)) : t.assets.stillHeld}
+      </p>
+      {s.comment ? <p className="mt-1 whitespace-pre-line">{s.comment}</p> : null}
+      {s.not_returned_at ? (
+        <p className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge variant="destructive">{t.assets.notReturned}</Badge>
+          <span>
+            {t.assets.markedNotReturned(formatDate(s.not_returned_at, timeZone))}
+            {s.whereabouts ? ` · ${t.assets.whereaboutsLabel[s.whereabouts]}` : ''}
+          </span>
+          {s.not_returned_comment ? <span className="basis-full whitespace-pre-line text-muted-foreground">{s.not_returned_comment}</span> : null}
+        </p>
+      ) : null}
+      {s.return_comment ? <p className="mt-1 whitespace-pre-line text-muted-foreground">{s.return_comment}</p> : null}
+      {s.paper_form_signed ? (
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span>{t.assets.formSigned}</span>
+          <StoredFormActions assetId={assetId} assignmentId={s.id} />
+        </p>
+      ) : null}
+      {s.paper_form_signed ? (
+        <SignedCopies assetId={assetId} inventoryNo={inventoryNo} assignment={s} canManage={canManage} timeZone={timeZone} onUploaded={onUploaded} />
+      ) : null}
+    </li>
+  )
+}
+
+/**
+ * Print form again and Download PDF for an assignment's stored form: printed
+ * from this page with no tab of its own, or saved as a PDF. Each is recorded
+ * as the user's activity (asset.form_printed).
+ */
+function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignmentId: string }) {
+  const { client } = useApi()
+  const { print, printing } = usePrintInPlace()
+  const [busy, setBusy] = useState(false)
+  const [failure, setFailure] = useState<string>()
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true)
+    setFailure(undefined)
+    try {
+      await action()
+    } catch (err) {
+      setFailure(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const reprint = () =>
+    run(async () => {
+      const f = await client.assets.form(assetId, assignmentId)
+      await client.assets.recordFormReprinted(assetId, assignmentId).catch(() => {})
+      print(<AssignmentFormDocument form={f.form} documentHash={f.document_hash} />)
+    })
+  const download = () =>
+    run(async () => {
+      const { blob, filename } = await client.assets.storedFormPDF(assetId, assignmentId)
+      saveFile(blob, filename)
+    })
+  const action = `${link} inline-flex min-h-11 cursor-pointer items-center gap-1 disabled:opacity-50 md:min-h-0`
+  return (
+    <>
+      <button type="button" className={action} disabled={busy} onClick={() => void reprint()}>
+        <Printer aria-hidden className="size-3.5" /> {t.assets.printFormAgain}
+      </button>
+      <button type="button" className={action} disabled={busy} onClick={() => void download()}>
+        <FileDown aria-hidden className="size-3.5" /> {t.assets.downloadPdf}
+      </button>
+      {failure ? (
+        <span role="alert" className="basis-full text-destructive">
+          {failure}
+        </span>
+      ) : null}
+      {printing}
+    </>
+  )
+}

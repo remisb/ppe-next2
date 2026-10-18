@@ -275,4 +275,6 @@ export const assets: AssetsText = {
   documents: 'Dokumentai',
   anyDocuments: 'Bet kokie dokumentai',
   noStorage: 'Pasirašytų kopijų kol kas negalima išsaugoti: serveryje nenustatyta failų saugykla. Praneškite ją prižiūrinčiam asmeniui.',
+  closeCard: 'Uždaryti SIM',
+  nextOrPreviousCard: 'kita arba ankstesnė SIM',
 }

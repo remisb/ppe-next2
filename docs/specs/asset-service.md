@@ -364,8 +364,15 @@ their own address:
   can wait; a new card is Not Activated or Active. A number in use shows *This
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
-- A row opens the card's page (`/assets/<id>`); its number is the link. On a wide screen it
-  also offers the one action its state calls for (Give SIM when Active in the Office,
+- A row opens the card as Orders opens an order, at `/assets/sim-cards/<id>` (`?show=` kept
+  when the register was opened on a tile); its number is the link. From `lg` the card sits
+  beside the register, which keeps only Numbers, Employee, Status and Location (stacked
+  under 30rem), marks the open row, and J / K open the next or previous card on the page,
+  Escape closes it; below `lg` the card replaces the register, with Back to SIM Cards. The
+  card beside the register is the asset page's own detail (`components/asset-detail.tsx`),
+  with the same actions; a change in either loads the other again. The asset page
+  (`/assets/<id>`) stays for the employee page, ⌘K and Equipment's rows. With no card open
+  a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
   Register SIM Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
   as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
   buttons.
@@ -381,7 +388,10 @@ their own address:
   Status), Where (Office, With an employee or Unknown, with Not Returned) and Held by (the
   holder, linked, since when and Days Held); the activation text on a Not Activated card;
   the details; **Assignments**, newest first, each with its dates, comments, Not Returned
-  mark and **Print form again**; and **Changes**.
+  mark and **Print form again** (closed at first, then as the user left them on this
+  device, the heading counting them, its explanation a tooltip; an action from a sheet,
+  such as Give or Register Return, opens them without changing what is remembered); and
+  **Changes**.
 - **Give SIM** is three numbered steps, the current one outlined and later ones greyed with
   only their title until reached: **Who and when** (the card when chosen here, the employee,
   the given date, the plan and value the card lacks, a comment), **Print the form and have it

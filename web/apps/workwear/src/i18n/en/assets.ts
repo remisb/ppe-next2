@@ -293,6 +293,9 @@ export const assets = {
   documents: 'Documents',
   anyDocuments: 'Any documents',
   noStorage: 'Signed copies cannot be kept yet: file storage is not set up on the server. Tell whoever runs it.',
+  // A SIM open beside the register (from a wide screen), as an order beside Orders.
+  closeCard: 'Close SIM',
+  nextOrPreviousCard: 'next or previous SIM',
 }
 
 export type AssetsText = typeof assets

@@ -275,4 +275,6 @@ export const assets: AssetsText = {
   documents: 'Документы',
   anyDocuments: 'Любые документы',
   noStorage: 'Подписанные копии пока нельзя сохранить: на сервере не настроено хранилище файлов. Сообщите тому, кто его обслуживает.',
+  closeCard: 'Закрыть SIM',
+  nextOrPreviousCard: 'следующая или предыдущая SIM',
 }
