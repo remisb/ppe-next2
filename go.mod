@@ -12,9 +12,11 @@ require (
 	github.com/prometheus/client_golang v1.24.1
 	github.com/remisb/dbbackup v0.1.0
 	github.com/remisb/dbbackup/postgres v0.1.0
-	github.com/remisb/muxstack v0.0.0-20260925104553-e61b35f6e625
+	github.com/remisb/muxstack v0.1.1
+	github.com/remisb/pdf-mini v0.7.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20261005185213-c3db4df58582
+	golang.org/x/image v0.47.0
 )
 
 require (
@@ -35,12 +37,10 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/remisb/go-error-trace v0.0.0-20260607132049-e609dc64ad9a // indirect
-	github.com/remisb/pdf-mini v0.7.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/image v0.47.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
