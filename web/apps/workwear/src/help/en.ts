@@ -128,15 +128,18 @@ export const en: Guide = {
       blocks: [
         { p: '**Orders** lists every order placed. **Create Order**, at the top, starts a new one.' },
         {
-          p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
+          p: '**All**, **Ordered** and **Given** filter the orders by status; point at one to see what it counts. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
           devices: ['desktop'],
         },
         { p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['tablet'] },
-        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds the date filters and the sort order. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds **Date** and **Sort by**. **Sort by** says the order in words, such as **Sort by: Date, newest first**; the arrow beside it reverses it. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
         {
-          p: 'Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and Orders lists nothing until it is put right.',
+          p: '**Date** shows **All dates** at first; choose **Last 7 days**, **This month** or **Previous month** instead. **Custom range…** opens **From** and **To** in its place: **Apply** makes that range the choice shown, such as **2026-09-01 – 2026-09-30**, and **Cancel** leaves the filter as it was. Choose **Custom range…** again to change it.',
         },
-        { shots: [{ name: 'date-picker', alt: 'The From filter with its calendar open' }] },
+        {
+          p: 'Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and **Apply** waits until it is put right.',
+        },
+        { shots: [{ name: 'date-picker', alt: 'Custom range open over the Date filter, with the From calendar' }] },
         { p: 'An **Ordered** order has these actions:' },
         {
           ul: [
@@ -164,8 +167,8 @@ export const en: Guide = {
       id: 'employees',
       title: 'Employees',
       blocks: [
-        { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all.', devices: ['phone', 'tablet'] },
-        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.", devices: ['desktop'] },
+        { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown.', devices: ['phone', 'tablet'] },
+        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.", devices: ['desktop'] },
         { p: "Each employee's page shows:" },
         { ul: ['**Sizes** and **Preferred language**, each with its own **Edit**;', '**Items given**: every item given, with its usage time and replacement date;', '**Ordered, not yet given**: orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**: who changed their details or sizes, and when.'] },
         { p: 'The sections below the sizes are closed at first, each title counting what it holds; choose a title to open or close it.' },

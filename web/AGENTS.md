@@ -206,6 +206,14 @@ The workwear app is the reference.
   `internal/formpdf`) write every date one way in all languages: "2026 10 15", with the
   time "2026 10 15 14:03" (`printDay`, `printDateTime`; Go `formpdf.Day`). File names keep
   YYYY-MM-DD.
+- **Two selects.** Forms use the native `Select` (`components/field.tsx`): the platform's own
+  picker, one-handed on a phone. A list's sort (`SortControl`, shown while a table is
+  stacked) uses shadcn's `Select` (`components/select.tsx`, Base UI), set to look like
+  Orders' Date filter (`period-filter.tsx`): its list opens over the field, as wide and in
+  its place, its head the field's row (which closes it), the choice ticked on the left.
+  On a phone its label goes inside the field and the order is said in words ("Sort by:
+  Date, newest first"): give each `SortColumn` a `kind` (`text`, `date`, `number`,
+  `duration`, `size`); a column without one (a status) shows its name alone.
 - **Date fields** are `DateInput` (`@ppe/ui/components/date-input`), never `<input
   type="date">`, whose form follows the browser, not the app. It takes the language's form
   (separators added as the parts are typed, so a phone needs only its number pad; typed

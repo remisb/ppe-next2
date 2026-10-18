@@ -12,11 +12,19 @@ export interface SortState<K extends string = string> {
 /** What a column sorts by. Empty values (null, undefined, '') always go last. */
 export type SortValue = string | number | null | undefined
 
+/**
+ * What a column's values are, for saying its order in words on a phone's Sort
+ * by ("Date, newest first", "Employee, A–Z"); a column without one (a status)
+ * shows its name alone.
+ */
+export type SortKind = 'text' | 'date' | 'number' | 'duration' | 'size'
+
 export interface SortColumn<K extends string = string> {
   key: K
   label: string
   /** The first click's direction: 'desc' for dates, where newest first is the useful start. */
   firstDir?: SortDir
+  kind?: SortKind
 }
 
 /**

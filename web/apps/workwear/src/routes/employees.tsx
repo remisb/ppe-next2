@@ -26,11 +26,11 @@ type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
 // A function, so the labels are read in the language in use.
 const employeeColumns = (): SortColumn<EmployeeSort>[] => [
-  { key: 'name', label: t.employees.name },
-  { key: 'code', label: t.employees.code },
-  { key: 'height', label: t.employees.height },
-  { key: 'clothing', label: t.employees.clothing },
-  { key: 'shoes', label: t.employees.shoes },
+  { key: 'name', label: t.employees.name, kind: 'text' },
+  { key: 'code', label: t.employees.code, kind: 'text' },
+  { key: 'height', label: t.employees.height, kind: 'number' },
+  { key: 'clothing', label: t.employees.clothing, kind: 'size' },
+  { key: 'shoes', label: t.employees.shoes, kind: 'size' },
 ]
 
 export function Employees({ missing = false, navigate }: { missing?: boolean; navigate: (to: Route) => void }) {

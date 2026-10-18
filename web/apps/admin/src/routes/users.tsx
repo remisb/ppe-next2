@@ -23,9 +23,9 @@ import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleGrants, 
 type UserSort = 'name' | 'email' | 'roles' | 'status'
 
 const columns = (): SortColumn<UserSort>[] => [
-  { key: 'name', label: t.users.name },
-  { key: 'email', label: t.users.email },
-  { key: 'roles', label: t.users.roles },
+  { key: 'name', label: t.users.name, kind: 'text' },
+  { key: 'email', label: t.users.email, kind: 'text' },
+  { key: 'roles', label: t.users.roles, kind: 'text' },
   { key: 'status', label: t.users.status },
 ]
 
