@@ -11,6 +11,16 @@ export const employees: EmployeesText = {
   show: 'Rodyti',
   allTab: 'Visi',
   missingTab: 'Trūksta dydžio',
+  tabHelp: {
+    all: {
+      body: 'Visi darbuotojai su dydžiais, išsaugotais kitiems užsakymams.',
+      note: 'Ištrinti darbuotojai neįtraukiami; jų ankstesni užsakymai išsaugomi.',
+    },
+    missing: {
+      body: 'Darbuotojai, kurių dydžio paklaus „Kurti užsakymą“: nėra avalynės dydžio arba nėra nei drabužių dydžio, nei ūgio, pagal kurį jį pasiūlyti.',
+      note: 'Įrašykite dydžius per „Keisti dydžius“, arba „Kurti užsakymą“ jų paklaus ir galės išsaugoti darbuotojui.',
+    },
+  },
   everyoneHasSizes: 'Visi darbuotojai turi dydžius, kurių reikia kuriant užsakymą.',
   noMatch: (q: string) => `Pagal „${q}“ darbuotojų nerasta.`,
   noneYet: 'Darbuotojų dar nėra. Pirmąjį pridėkite mygtuku „Pridėti darbuotoją“.',

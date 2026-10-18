@@ -10,6 +10,17 @@ export const employees = {
   show: 'Show',
   allTab: 'All',
   missingTab: 'Missing a size',
+  // The tabs' tooltips, as SIM Cards' tabs have: what each lists.
+  tabHelp: {
+    all: {
+      body: 'Every employee, with the sizes saved for their next orders.',
+      note: 'Deleted employees are left out; their past orders are kept.',
+    },
+    missing: {
+      body: 'Employees Create Order would ask a size for: no shoe size, or no clothing size and no height to suggest one from.',
+      note: 'Add the sizes with Edit Sizes, or Create Order asks for them and can save them to the employee.',
+    },
+  },
   everyoneHasSizes: 'Every employee has the sizes Create Order needs.',
   noMatch: (q: string) => `No employees match “${q}”.`,
   noneYet: 'No employees yet. Use Add New Employee to add the first.',

@@ -1174,6 +1174,13 @@ test('Employees: the Missing sizes tile\'s address opens the list filtered', asy
   await page.goto('/employees?missing=1')
   await expect(page.getByRole('button', { name: /^Missing a size/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText('Every employee has the sizes Create Order needs.')).toBeVisible()
+  // Each tab says what it lists, as SIM Cards' tabs do: a tooltip, and the same words as the tab's description.
+  const missingTab = page.getByRole('button', { name: /^Missing a size/ })
+  await expect(missingTab).toHaveAccessibleDescription(/^Employees Create Order would ask a size for: no shoe size, or no clothing size and no height/)
+  await missingTab.hover()
+  await expect(page.locator('[data-slot=tooltip-content]')).toContainText('Add the sizes with Edit Sizes')
+  await page.mouse.move(0, 0)
+  await expect(page.getByRole('button', { name: /^All/ })).toHaveAccessibleDescription(/^Every employee, with the sizes saved/)
   await page.getByRole('button', { name: /^Missing a size/ }).click()
   await expect(page.getByRole('row', { name: /Ona Kazlauskienė/ })).toBeVisible()
 })
