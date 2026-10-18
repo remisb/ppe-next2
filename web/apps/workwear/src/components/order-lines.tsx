@@ -6,15 +6,16 @@ import { t } from '@/i18n'
 import { formatEuro, formatMonths, formatSize } from '@/lib/utils'
 
 /**
- * Stacked (a narrow table), a line is a compact card: item and line total, then size,
- * quantity, unit price and service period in one wrapped row.
+ * Stacked (a narrow table), the lines are a list with a rule between them, no
+ * boxes: item and line total, then size, quantity, unit price and service
+ * period in one wrapped row; the total value below the last rule.
  */
 const fact = 'stacked:order-3 stacked:w-auto stacked:justify-start stacked:gap-1 stacked:text-[0.8125rem]'
 
-/** A stored order's snapshot lines, as cards where the table is narrow. Never reads live catalogue data. */
+/** A stored order's snapshot lines, as a ruled list where the table is narrow. Never reads live catalogue data. */
 export function OrderLinesTable({ order }: { order: Order }) {
   return (
-    <Table stack="grid">
+    <Table stack="list">
       <TableHeader>
         <TableRow>
           <TableHead>{t.order.item}</TableHead>
@@ -25,9 +26,10 @@ export function OrderLinesTable({ order }: { order: Order }) {
           <TableHead className="text-right">{t.common.total}</TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      {/* No box around the list: a rule above the first line and below each. */}
+      <TableBody className="stacked:overflow-visible stacked:rounded-none stacked:border-x-0 stacked:border-b-0 stacked:bg-transparent stacked:[&_tr:last-child]:border-b">
         {order.lines.map((l) => (
-          <TableRow key={l.id} className={stackedBreak}>
+          <TableRow key={l.id} className={cn(stackedBreak, 'stacked:gap-x-4 stacked:gap-y-1 stacked:bg-transparent stacked:px-0 stacked:hover:bg-transparent')}>
             <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:flex-1">
               <div className="font-medium">{l.item_name}</div>
               {l.item_details ? <div className="text-xs text-muted-foreground">{l.item_details}</div> : null}
@@ -42,8 +44,8 @@ export function OrderLinesTable({ order }: { order: Order }) {
           </TableRow>
         ))}
       </TableBody>
-      <TableFooter>
-        <TableRow className="stacked:flex-nowrap stacked:justify-between stacked:bg-muted/50">
+      <TableFooter className="stacked:mt-0">
+        <TableRow className="stacked:flex-nowrap stacked:justify-between stacked:border-0 stacked:px-0">
           <TableCell colSpan={5} className="text-right font-medium stacked:w-auto">
             {t.order.totalValue}
           </TableCell>
