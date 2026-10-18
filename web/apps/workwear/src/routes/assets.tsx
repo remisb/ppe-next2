@@ -3,7 +3,6 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Input, Select } from '@ppe/ui/components/field'
-import { KeyFigures, Kpi } from '@ppe/ui/components/panel'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -33,17 +32,16 @@ import {
   formatDay,
   holderText,
   noAssetFilters,
-  type SimTab,
-  chooseSimTab,
-  countedSimTabs,
+  type AssetTab,
+  assetTabs,
+  chooseTab,
+  countedTabs,
   primaryAction,
   simCopyText,
-  simTabCountQuery,
-  simTabCounts,
-  simTabPressed,
-  simTabs,
   statusLabel,
-  tilePressed,
+  tabCountQuery,
+  tabCounts,
+  tabPressed,
   todayIn,
 } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
@@ -76,9 +74,9 @@ const segment =
 
 /**
  * Company Assets' two screens, SIM Cards (assets brief §3–§5) and Equipment
- * (§15–§17), each a register at its own address. The tiles
- * filter the list and keep the other filters, so In Office with Blocked is
- * the blocked cards in the office. A row opens the card's page; on a wide
+ * (§15–§17), each a register at its own address. The tabs, with their
+ * counts, filter the list one choice at a time; the Location filter keeps
+ * the status, so In Office with Blocked is the blocked cards in the office. A row opens the card's page; on a wide
  * screen it also offers the one action the card's state calls for (Give SIM
  * Card, Register SIM Return or Change Status), the rest under ⋯. On a phone a
  * row is two short lines and its actions are on the card's page. Writes need
@@ -92,7 +90,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   const seesEquipment = session.can('equipment.read')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
-  // A dashboard's Company Assets card opens the register on one of its tiles.
+  // A dashboard's Company Assets card opens the register on the tab of one of its tiles.
   const [filters, setFilters] = useState<AssetFilters>(() => (tile ? chooseTile(noAssetFilters, tile) : noAssetFilters))
   // The search as typed; it filters a moment after typing stops.
   const [search, setSearch] = useState('')
@@ -118,16 +116,14 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   const query = assetQuery(kind, filters, sort.key, sort.dir, page)
   const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
   const summary = useLoad(() => client.assets.summary(kind), [reloads])
-  // SIM Cards' tabs each show how many SIMs choosing them would list; they set the status and place, so only the rest counts.
-  const counted = chooseSimTab(filters, 'all')
+  // The tabs each show how many choosing them would list; they set the status and place, so only the rest counts.
+  const counted = chooseTab(filters, 'all')
   const counts = useLoad(
     () =>
-      sim
-        ? Promise.all(countedSimTabs.map((tab) => client.assets.list(simTabCountQuery(filters, tab)).then((r) => [tab, r.total] as const))).then((pairs) =>
-            simTabCounts(Object.fromEntries(pairs) as Parameters<typeof simTabCounts>[0]),
-          )
-        : Promise.resolve(null),
-    [sim, JSON.stringify(counted), reloads],
+      Promise.all(countedTabs(kind).map((tab) => client.assets.list(tabCountQuery(kind, filters, tab)).then((r) => [tab, r.total] as const))).then((pairs) =>
+        tabCounts(Object.fromEntries(pairs)),
+      ),
+    [kind, JSON.stringify(counted), reloads],
   )
   const reload = () => setReloads((n) => n + 1)
 
@@ -175,32 +171,26 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
   const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
 
   const s = summary.data
-  const tiles: { tile: Tile; label: string; value: number | undefined; detail: string }[] = [
-    { tile: 'total', label: sim ? t.assets.totalSimCards : t.assets.totalItems, value: s?.total, detail: t.assets.totalDetail },
-    { tile: 'inOffice', label: t.assets.inOffice, value: s?.in_office, detail: t.assets.inOfficeDetail },
-    { tile: 'withEmployees', label: t.assets.withEmployees, value: s?.with_employees, detail: t.assets.withEmployeesDetail },
-    { tile: 'notReturned', label: t.assets.notReturned, value: s?.not_returned, detail: t.assets.notReturnedDetail },
-  ]
   const places: { value: Place; label: string }[] = [
     { value: 'all', label: t.assets.anyLocation },
     { value: 'office', label: t.assets.office },
     { value: 'held', label: t.assets.withAnEmployee },
     { value: 'unknown', label: t.assets.unknown },
   ]
-  const tabLabels: Record<SimTab, string> = {
+  const tabLabels: Record<AssetTab, string> = {
     all: t.assets.all,
     ...t.assets.statuses,
     inOffice: t.assets.inOffice,
     withEmployees: t.assets.withEmployees,
     notReturned: t.assets.notReturned,
   }
-  // The tabs' tooltips: the statuses' own, and the tiles' words for All (Total) and the places.
-  const tabHelp: Record<SimTab, Help> = {
-    all: t.assets.tileHelp.SIM.total,
+  // The tabs' tooltips: the statuses' own, and the register's words for All (Total) and the places.
+  const tabHelp: Record<AssetTab, Help> = {
+    all: t.assets.tileHelp[kind].total,
     ...t.assets.statusHelp,
-    inOffice: t.assets.tileHelp.SIM.inOffice,
-    withEmployees: t.assets.tileHelp.SIM.withEmployees,
-    notReturned: t.assets.tileHelp.SIM.notReturned,
+    inOffice: t.assets.tileHelp[kind].inOffice,
+    withEmployees: t.assets.tileHelp[kind].withEmployees,
+    notReturned: t.assets.tileHelp[kind].notReturned,
   }
   const filtered = search.trim() !== '' || JSON.stringify(filters) !== JSON.stringify({ ...noAssetFilters, q: filters.q })
   const pages = list.data ? Math.max(1, Math.ceil(list.data.total / ASSET_PAGE_SIZE)) : 1
@@ -248,25 +238,7 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
         </nav>
       ) : null}
 
-      {/* SIM Cards counts the same in its tabs, so only Equipment has the tiles. */}
-      {sim ? null : (
-        <KeyFigures>
-          {tiles.map((k) => (
-            <Kpi
-              key={k.tile}
-              label={k.label}
-              value={k.value === undefined ? '—' : String(k.value)}
-              detail={k.detail}
-              pressed={tilePressed(filters, k.tile)}
-              onOpen={() => update(chooseTile(filters, k.tile))}
-              // What the figure counts and how the figures overlap, on hover and focus.
-              help={t.assets.tileHelp[kind][k.tile]}
-            />
-          ))}
-        </KeyFigures>
-      )}
-
-      <div className={cn('mb-4 flex flex-col gap-3', !sim && 'mt-4')}>
+      <div className="mb-4 flex flex-col gap-3">
         <Input
           type="search"
           data-shortcut="search"
@@ -276,27 +248,31 @@ export function Assets({ kind, tile, navigate }: { kind: AssetKind; tile?: Tile 
           onChange={(e) => setSearch(e.target.value)}
           className="md:max-w-md"
         />
-        {sim ? (
-          // Seven tabs with their counts, always in sight (the tiles' place on a phone): two to a row on a phone, three up to the sidebar's width, then one row, each as wide as its words (Russian needs it).
-          <div
-            role="group"
-            aria-label={t.assets.statusAndLocation}
-            className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-3 xl:inline-grid xl:grid-flow-col xl:auto-cols-auto xl:grid-cols-none xl:self-start"
-          >
-            {simTabs.map((tab) => (
-              <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
-                <button type="button" aria-pressed={simTabPressed(filters, tab)} onClick={() => update(chooseSimTab(filters, tab))} className={segment}>
-                  {tabLabels[tab]}
-                  {counts.data ? (
-                    <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
-                      {counts.data[tab]}
-                    </span>
-                  ) : null}
-                </button>
-              </HelpTooltip>
-            ))}
-          </div>
-        ) : null}
+        {/*
+          The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' seven
+          three to a row and Equipment's four in one, and from the sidebar's width one row, each as wide as its words (Russian needs it).
+        */}
+        <div
+          role="group"
+          aria-label={sim ? t.assets.statusAndLocation : t.assets.locationAndReturn}
+          className={cn(
+            'grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 xl:inline-grid xl:grid-flow-col xl:auto-cols-auto xl:grid-cols-none xl:self-start',
+            sim ? 'sm:grid-cols-3' : 'sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
+          )}
+        >
+          {assetTabs(kind).map((tab) => (
+            <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
+              <button type="button" aria-pressed={tabPressed(filters, tab)} onClick={() => update(chooseTab(filters, tab))} className={segment}>
+                {tabLabels[tab]}
+                {counts.data ? (
+                  <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
+                    {counts.data[tab]}
+                  </span>
+                ) : null}
+              </button>
+            </HelpTooltip>
+          ))}
+        </div>
         <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex md:flex-row md:flex-wrap md:items-center', !showFilters && 'max-md:hidden')}>
           {sim ? null : (
             <Select aria-label={t.assets.category} value={filters.category} onChange={(e) => update({ ...filters, category: e.target.value as AssetCategory | '' })} className="md:w-auto">

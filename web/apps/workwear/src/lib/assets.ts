@@ -1,6 +1,6 @@
 /**
  * Company Assets' rules for the SIM card register, as pure functions: the
- * tiles and filters as one query, where a card is, and Add SIM's and
+ * tabs and filters as one query, where a card is, and Add SIM's and
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
 import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
@@ -13,7 +13,7 @@ export const ASSET_PAGE_SIZE = 50
 
 /**
  * Where the register looks: every card, those in the office, those someone
- * holds (whereabouts known or not: the With Employees tile) or those whose
+ * holds (whereabouts known or not: the With Employees tab) or those whose
  * whereabouts are unknown.
  */
 export type Place = 'all' | 'office' | 'held' | 'unknown'
@@ -32,7 +32,7 @@ export interface AssetFilters {
 
 export const noAssetFilters: AssetFilters = { place: 'all', notReturned: false, status: '', provider: '', category: '', signedCopyMissing: false, q: '' }
 
-/** A summary tile: the filters it sets; it is pressed while they are the place and Not Returned chosen. */
+/** A dashboard's summary tile: the filters it sets, which open the register on its tab. */
 export type Tile = 'total' | 'inOffice' | 'withEmployees' | 'notReturned'
 
 const tilePlaces: Record<Tile, Pick<AssetFilters, 'place' | 'notReturned'>> = {
@@ -47,12 +47,7 @@ export function chooseTile(f: AssetFilters, tile: Tile): AssetFilters {
   return { ...f, ...tilePlaces[tile] }
 }
 
-export function tilePressed(f: AssetFilters, tile: Tile): boolean {
-  const p = tilePlaces[tile]
-  return f.place === p.place && f.notReturned === p.notReturned
-}
-
-/** How many filters under the phone's Filters button are set: not the tiles, SIM Cards' tabs or the search, which are in sight. */
+/** How many filters under the phone's Filters button are set: not the tabs or the search, which are in sight. */
 export function filterCount(f: AssetFilters): number {
   return [f.provider, f.category, f.signedCopyMissing].filter(Boolean).length
 }
@@ -79,17 +74,21 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
 }
 
 /**
- * SIM Cards' row of tabs, in place of the Equipment screen's tiles: All, each
- * status, then In Office, With Employees (whereabouts known or not) and Not
- * Returned, as the tiles count them. A tab sets the status or the place and
- * clears the other, so one is chosen at a time; the search, provider and
+ * Each register's row of tabs, with counts, in place of tiles: All, on SIM
+ * Cards each status, then In Office, With Employees (whereabouts known or
+ * not) and Not Returned. A tab sets the status or the place and clears the
+ * other, so one is chosen at a time; the search, provider, category and
  * documents stay. The Location filter still keeps the status (Office +
  * Blocked, §3), and a dashboard's tile link opens the screen on its tab.
  */
-export type SimTab = 'all' | ConnectionStatus | 'inOffice' | 'withEmployees' | 'notReturned'
-export const simTabs: SimTab[] = ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned']
+export type AssetTab = 'all' | ConnectionStatus | 'inOffice' | 'withEmployees' | 'notReturned'
 
-export function chooseSimTab(f: AssetFilters, tab: SimTab): AssetFilters {
+/** Equipment has no connection status, so its tabs are All and the places. */
+export function assetTabs(kind: AssetKind): AssetTab[] {
+  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned'] : ['all', 'inOffice', 'withEmployees', 'notReturned']
+}
+
+export function chooseTab(f: AssetFilters, tab: AssetTab): AssetFilters {
   const cleared: AssetFilters = { ...f, status: '', place: 'all', notReturned: false }
   if (tab === 'all') return cleared
   if (tab === 'inOffice') return { ...cleared, place: 'office' }
@@ -98,7 +97,7 @@ export function chooseSimTab(f: AssetFilters, tab: SimTab): AssetFilters {
   return { ...cleared, status: tab }
 }
 
-export function simTabPressed(f: AssetFilters, tab: SimTab): boolean {
+export function tabPressed(f: AssetFilters, tab: AssetTab): boolean {
   if (tab === 'all') return f.status === '' && f.place === 'all' && !f.notReturned
   if (tab === 'inOffice') return f.place === 'office' && !f.notReturned
   if (tab === 'withEmployees') return f.place === 'held' && !f.notReturned
@@ -106,22 +105,24 @@ export function simTabPressed(f: AssetFilters, tab: SimTab): boolean {
   return f.status === tab
 }
 
-/** The tabs a count is asked for; All and With Employees follow from them (simTabCounts). */
-export const countedSimTabs = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] as const satisfies readonly SimTab[]
+/** The tabs a count is asked for; the rest follow from them (tabCounts). */
+export function countedTabs(kind: AssetKind): AssetTab[] {
+  return kind === 'SIM' ? ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] : ['all', 'inOffice', 'notReturned']
+}
 
 /** The query counting what tab would list: choosing it, then one row, as only the total is read. */
-export function simTabCountQuery(f: AssetFilters, tab: SimTab): AssetQuery {
-  return { ...assetQuery('SIM', chooseSimTab(f, tab), 'inventory', 'asc', 1), page_size: 1 }
+export function tabCountQuery(kind: AssetKind, f: AssetFilters, tab: AssetTab): AssetQuery {
+  return { ...assetQuery(kind, chooseTab(f, tab), 'inventory', 'asc', 1), page_size: 1 }
 }
 
 /**
- * Every tab's count from the five asked: every SIM has a status, so All is the
- * three added up; a SIM is either in the office or held, so With Employees is
- * All less In Office.
+ * Every tab's count from those asked: every SIM has a status, so its All is
+ * the three added up; an asset is either in the office or held, so With
+ * Employees is All less In Office.
  */
-export function simTabCounts(n: Record<(typeof countedSimTabs)[number], number>): Record<SimTab, number> {
-  const all = n.NOT_ACTIVATED + n.ACTIVE + n.BLOCKED
-  return { all, ...n, withEmployees: all - n.inOffice }
+export function tabCounts(n: Partial<Record<AssetTab, number>>): Partial<Record<AssetTab, number>> {
+  const all = n.all ?? (n.NOT_ACTIVATED ?? 0) + (n.ACTIVE ?? 0) + (n.BLOCKED ?? 0)
+  return { ...n, all, withEmployees: all - (n.inOffice ?? 0) }
 }
 
 /** What a SIM's copy button in the register puts on the clipboard: SIM: <SIM No.> | Phone: <Phone No.>, the phone left out until known. */

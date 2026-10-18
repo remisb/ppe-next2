@@ -8,13 +8,9 @@ export const assets: AssetsText = {
   addSimCard: 'Добавить SIM',
   editSimCard: 'Изменить SIM',
   totalSimCards: 'Всего SIM',
-  totalDetail: 'В текущем учёте',
   inOffice: 'В офисе',
-  inOfficeDetail: 'Физически в офисе',
   withEmployees: 'У сотрудников',
-  withEmployeesDetail: 'Выданы и ещё не возвращены',
   notReturned: 'Не возвращено',
-  notReturnedDetail: 'Отмечены как не возвращённые',
   tilesOverlap: 'Показатели пересекаются: не возвращённая карта тоже числится у сотрудника.',
   tileHelp: {
     SIM: {
@@ -54,6 +50,8 @@ export const assets: AssetsText = {
   filtersCount: (n: number) => `Фильтры (${n})`,
   status: 'Статус',
   statusAndLocation: 'Статус и место',
+  // Equipment's row of tabs (it has no status).
+  locationAndReturn: 'Место и возврат',
   all: 'Все',
   location: 'Местонахождение',
   anyLocation: 'Любое местонахождение',

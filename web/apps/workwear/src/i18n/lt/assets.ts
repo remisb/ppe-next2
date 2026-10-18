@@ -8,13 +8,9 @@ export const assets: AssetsText = {
   addSimCard: 'Pridėti SIM',
   editSimCard: 'Keisti SIM',
   totalSimCards: 'Iš viso SIM',
-  totalDetail: 'Einamojoje apskaitoje',
   inOffice: 'Biure',
-  inOfficeDetail: 'Fiziškai biure',
   withEmployees: 'Pas darbuotojus',
-  withEmployeesDetail: 'Išduotos ir dar negrąžintos',
   notReturned: 'Negrąžinta',
-  notReturnedDetail: 'Pažymėtos kaip negrąžintos',
   tilesOverlap: 'Rodikliai persidengia: negrąžinta kortelė taip pat yra pas darbuotoją.',
   tileHelp: {
     SIM: {
@@ -54,6 +50,8 @@ export const assets: AssetsText = {
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
   statusAndLocation: 'Būsena ir vieta',
+  // Equipment's row of tabs (it has no status).
+  locationAndReturn: 'Vieta ir grąžinimas',
   all: 'Visos',
   location: 'Vieta',
   anyLocation: 'Bet kuri vieta',

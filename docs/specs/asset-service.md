@@ -328,8 +328,8 @@ their own address:
   Office, With Employees and Not Returned, below the search and always in sight, a phone
   included. One is chosen at a time: a tab sets the status or the place (In Office, With
   Employees whereabouts known or not, Not Returned) and clears the other, keeping the
-  search, provider and documents (`chooseSimTab`). Each shows how many SIMs choosing it
-  would list (`simTabCountQuery`: one list request, one row, for each status, In Office and
+  search, provider and documents (`chooseTab`). Each shows how many SIMs choosing it
+  would list (`tabCountQuery`: one list request, one row, for each status, In Office and
   Not Returned; All is the statuses added up, as every SIM has a status, and With Employees
   is All less In Office). Each has a tooltip on hover or keyboard focus (`HelpTooltip`, also
   its description for screen readers): a status's meaning and what to do about it, and for
@@ -443,8 +443,9 @@ their own address:
 The same engine, screens and rules, with what differs by kind:
 
 - **Register**: Company Assets' second screen, **Equipment** (`/assets/equipment`), which
-  keeps the tiles that SIM Cards shows as tabs, each with its tooltip (`Kpi`'s `help`): Total items, In
-  Office, With Employees, Not Returned; search by inventory or serial number, name or
+  has the same row of tabs with counts and tooltips, without the statuses: All, In Office,
+  With Employees, Not Returned (`assetTabs`, group "Location and return"; All is counted,
+  With Employees is All less In Office), the category kept; search by inventory or serial number, name or
   holder; filters by category and location; columns Item / Category and Serial No. instead
   of the numbers, provider and status. A row's action is Give Asset in the Office and
   Register Asset Return while held: there is no connection status (§17).

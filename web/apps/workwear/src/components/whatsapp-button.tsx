@@ -46,7 +46,8 @@ export function WhatsAppButton({
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <Button variant="outline" className="w-full" disabled={disabled} onClick={() => void copy()}>
-        {state === 'copied' && !disabled ? <Check aria-hidden /> : <MessageCircle aria-hidden />}
+        {/* WhatsApp's green, copied or not. */}
+        {state === 'copied' && !disabled ? <Check aria-hidden className="text-whatsapp" /> : <MessageCircle aria-hidden className="text-whatsapp" />}
         <span className="truncate">{label ?? t.order.copyForWhatsApp}</span>
       </Button>
       {state === 'copied' && !disabled && chat ? (

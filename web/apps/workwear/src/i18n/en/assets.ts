@@ -7,15 +7,11 @@ export const assets = {
   simCards: 'SIM Cards',
   addSimCard: 'Add SIM',
   editSimCard: 'Edit SIM',
-  // The tiles. They overlap, so they are never added up.
+  // The tabs and the dashboard's figures. They overlap, so they are never added up.
   totalSimCards: 'Total SIMs',
-  totalDetail: 'In current accounting',
   inOffice: 'In Office',
-  inOfficeDetail: 'Physically in the office',
   withEmployees: 'With Employees',
-  withEmployeesDetail: 'Given and not returned yet',
   notReturned: 'Not Returned',
-  notReturnedDetail: 'Marked as not returned',
   tilesOverlap: 'The figures overlap: a card not returned is also with an employee.',
   // The tiles' tooltips: what each figure counts and how the figures overlap (§3), per register.
   tileHelp: {
@@ -58,6 +54,8 @@ export const assets = {
   status: 'Status',
   // SIM Cards' row of tabs: All, the statuses, In Office and With Employees.
   statusAndLocation: 'Status and location',
+  // Equipment's row of tabs (it has no status).
+  locationAndReturn: 'Location and return',
   all: 'All',
   location: 'Location',
   anyLocation: 'Any location',

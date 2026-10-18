@@ -84,7 +84,9 @@ The apps' colours are tokens in `packages/ui/src/styles.css`, defined once for l
 palette. Gavort's navy is the `brand` tokens (`bg-brand` and its foreground for the
 button, `text-brand-mark` for the logo and the app's name, white in dark mode), used only
 by the sign-in page, which sets them on the page's own background, never a panel colour
-of its own. A new colour gets a token in all three places, never a literal.
+of its own. WhatsApp's icon is WhatsApp green, `text-whatsapp` (its darker #1DAA61 in
+light mode, its #25D366 in dark), on every button that copies or shares for WhatsApp. A
+new colour gets a token in all three places, never a literal.
 The logo is `@ppe/ui/components/gavort-logo`, traced from the brand book: it takes the text
 colour: navy, and white in dark mode (the book's variation 3, without its navy background).
 Keep the book's clear space around it, an eighth of its width. `GavortEmblem` is its emblem alone, the

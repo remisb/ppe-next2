@@ -820,7 +820,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 ### Company Assets
 - **Brief:** the staff app's section for the company's individually tracked items: SIM
   Cards, and Equipment & Furniture.
-- **Detail:** a register (list) per kind with summary tiles, an item's page, and the
+- **Detail:** a register (list) per kind with tabs that count, an item's page, and the
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
 - **Code:** `internal/domain/asset`, `routes/assets.tsx` (G then A). **UI:**
@@ -937,10 +937,10 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** derived from open assignments, never counted by hand.
 
 ### Summary tiles
-- **Brief:** Total items, In Office, With Employees, Not Returned at the top of the
-  Equipment register; tapping one filters the list. SIM Cards shows the same figures as
-  tabs instead (All, the three statuses, In Office, With Employees, Not Returned), each with
-  its count.
+- **Brief:** Total, In Office, With Employees, Not Returned on the dashboards' Company
+  Assets card; tapping one opens the register on its tab. The registers show the same
+  figures as tabs instead, each with its count: SIM Cards All, the three statuses, In
+  Office, With Employees, Not Returned; Equipment the same without the statuses.
 - **Detail:** they overlap (a Not Returned card is also With Employees), so they are never
   added up (§3). Total excludes written-off cards.
 
