@@ -2330,7 +2330,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await page.setViewportSize({ width: 375, height: 812 })
   await expect(devices.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
-  await expect(page.locator('#orders')).toContainText('Filters holds the date filters and the sort order')
+  await expect(page.locator('#orders')).toContainText('Filters holds Date and Sort by')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
   await devices.getByRole('button', { name: 'Tablet' }).click()
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)
