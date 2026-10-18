@@ -1,3 +1,4 @@
+import { CSPProvider } from '@base-ui/react/csp-provider'
 import { Select as SelectPrimitive } from '@base-ui/react/select'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { type ReactNode, createContext, use, useState } from 'react'
@@ -12,6 +13,8 @@ import { cn } from '../lib/utils.ts'
  * list opens over it, as wide and in its place, never flipped above, its head
  * the field's row with the arrow turned up (choosing it closes), the choice
  * ticked on the left. The native `Select` in field.tsx stays for forms.
+ * Base UI's own <style> element would break the Content-Security-Policy, so
+ * CSPProvider turns it off and styles.css carries its one rule.
  */
 
 /** Lets the list's head row close the list it heads. */
@@ -25,9 +28,11 @@ function Select<Value>({ open: openProp, onOpenChange, ...props }: SelectPrimiti
     onOpenChange?.(next, details)
   }
   return (
-    <CloseContext value={() => setOpenState(false)}>
-      <SelectPrimitive.Root data-slot="select" open={open} onOpenChange={setOpen} {...props} />
-    </CloseContext>
+    <CSPProvider disableStyleElements>
+      <CloseContext value={() => setOpenState(false)}>
+        <SelectPrimitive.Root data-slot="select" open={open} onOpenChange={setOpen} {...props} />
+      </CloseContext>
+    </CSPProvider>
   )
 }
 
