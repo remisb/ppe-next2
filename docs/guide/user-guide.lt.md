@@ -88,11 +88,13 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 
 **Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.
 
-**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.
+**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną; užvedę žymeklį ant vieno, matysite, ką jis skaičiuoja. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.
 
-Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir Užsakymai nieko nerodo, kol ji neištaisyta.
+**Data** iš pradžių rodo **Visos datos**; vietoj to galite pasirinkti **Paskutinės 7 dienos**, **Šis mėnuo** arba **Praėjęs mėnuo**. **Pasirinktas laikotarpis…** jo vietoje atveria **Nuo** ir **Iki**: **Taikyti** padaro tą laikotarpį rodomu pasirinkimu, pavyzdžiui, **2026.09.01 – 2026.09.30**, o **Atšaukti** palieka filtrą kaip buvo. Norėdami jį pakeisti, vėl pasirinkite **Pasirinktas laikotarpis…**.
 
-![Filtras „Nuo“ su atidarytu kalendoriumi](../../web/apps/workwear/public/help-img/lt/desktop/date-picker.png)
+Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir **Taikyti** laukia, kol ji bus ištaisyta.
+
+![Pasirinktas laikotarpis, atvertas virš filtro „Data“, su kalendoriumi „Nuo“](../../web/apps/workwear/public/help-img/lt/desktop/date-picker.png)
 
 Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
 
@@ -121,7 +123,7 @@ Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašom
 
 ## 8. Darbuotojai
 
-Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.
+Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.
 
 Darbuotojo puslapyje rodoma:
 

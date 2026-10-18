@@ -200,18 +200,21 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
 
 test('company assets: the SIMs, a card, giving one', async () => {
   // The demo's cards (cmd/api/seed-demo.go): SIM-000003 is not returned, SIM-000005 is Active in the office.
+  // A SIM's row links from its phone number, which leads its link on every device.
+  const sim = (phone: string) => page.getByRole('link', { name: new RegExp(`^${phone.replace('+', '\\+')}`) }).filter({ visible: true }).first()
+  const [sim1, sim3, sim5] = ['+370 612 40118', '+370 655 21987', '+370 612 40120']
   await page.goto('/assets')
-  await expect(page.getByRole('link', { name: 'SIM-000003' }).filter({ visible: true }).first()).toBeVisible()
+  await expect(sim(sim3)).toBeVisible()
   await shot('assets')
 
-  await page.getByRole('link', { name: 'SIM-000003' }).filter({ visible: true }).first().click()
+  await sim(sim3).click()
   await expect(page.getByRole('heading', { name: 'SIM-000003' })).toBeVisible()
   await expect(page.getByRole('heading', { name: T.assets.assignmentsTitle })).toBeVisible()
   await shot('asset')
 
   // A signed copy uploaded: SIM-000001's, scanned the day after it was given (cmd/api/seed-demo.go).
   await page.goto('/assets')
-  await page.getByRole('link', { name: 'SIM-000001' }).filter({ visible: true }).first().click()
+  await sim(sim1).click()
   const assignments = page.getByRole('region', { name: T.assets.assignmentsTitle })
   await expect(assignments.getByText(T.assets.signedCopyUploaded)).toBeVisible()
   await assignments.evaluate((e) => e.scrollIntoView({ block: 'start' }))
@@ -219,7 +222,7 @@ test('company assets: the SIMs, a card, giving one', async () => {
 
   // Give SIM up to the signed paper, and no further: the demo keeps the card in the office.
   await page.goto('/assets')
-  await page.getByRole('link', { name: 'SIM-000005' }).filter({ visible: true }).first().click()
+  await sim(sim5).click()
   await page.getByRole('main').getByRole('button', { name: T.assets.giveSimCard }).click()
   const give = page.getByRole('dialog')
   await give.getByRole('combobox', { name: T.assets.employee }).fill('Kazlausk')

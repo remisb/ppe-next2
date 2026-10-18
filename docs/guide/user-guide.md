@@ -88,11 +88,13 @@ If the employee will sign on paper, choose **Print record** instead.
 
 **Orders** lists every order placed. **Create Order**, at the top, starts a new one.
 
-**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
+**All**, **Ordered** and **Given** filter the orders by status; point at one to see what it counts. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
 
-Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and Orders lists nothing until it is put right.
+**Date** shows **All dates** at first; choose **Last 7 days**, **This month** or **Previous month** instead. **Custom range…** opens **From** and **To** in its place: **Apply** makes that range the choice shown, such as **2026-09-01 – 2026-09-30**, and **Cancel** leaves the filter as it was. Choose **Custom range…** again to change it.
 
-![The From filter with its calendar open](../../web/apps/workwear/public/help-img/en/desktop/date-picker.png)
+Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and **Apply** waits until it is put right.
+
+![Custom range open over the Date filter, with the From calendar](../../web/apps/workwear/public/help-img/en/desktop/date-picker.png)
 
 An **Ordered** order has these actions:
 
@@ -121,7 +123,7 @@ Dates on the record, and on the printed and PDF assignment forms of Company Asse
 
 ## 8. Employees
 
-The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee.
+The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.
 
 Each employee's page shows:
 

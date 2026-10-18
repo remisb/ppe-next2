@@ -131,15 +131,18 @@ export const lt: Guide = {
       blocks: [
         { p: '**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.' },
         {
-          p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
+          p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną; užvedę žymeklį ant vieno, matysite, ką jis skaičiuoja. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
           devices: ['desktop'],
         },
         { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
-        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – filtrai pagal datą ir rikiavimas. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – **Data** ir rikiavimas. Rikiavimas nurodomas žodžiais, pavyzdžiui, **Rikiavimas: Data, naujausi pirmi**; rodyklė šalia jį apverčia. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
         {
-          p: 'Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir Užsakymai nieko nerodo, kol ji neištaisyta.',
+          p: '**Data** iš pradžių rodo **Visos datos**; vietoj to galite pasirinkti **Paskutinės 7 dienos**, **Šis mėnuo** arba **Praėjęs mėnuo**. **Pasirinktas laikotarpis…** jo vietoje atveria **Nuo** ir **Iki**: **Taikyti** padaro tą laikotarpį rodomu pasirinkimu, pavyzdžiui, **2026.09.01 – 2026.09.30**, o **Atšaukti** palieka filtrą kaip buvo. Norėdami jį pakeisti, vėl pasirinkite **Pasirinktas laikotarpis…**.',
         },
-        { shots: [{ name: 'date-picker', alt: 'Filtras „Nuo“ su atidarytu kalendoriumi' }] },
+        {
+          p: 'Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir **Taikyti** laukia, kol ji bus ištaisyta.',
+        },
+        { shots: [{ name: 'date-picker', alt: 'Pasirinktas laikotarpis, atvertas virš filtro „Data“, su kalendoriumi „Nuo“' }] },
         { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
         {
           ul: [
@@ -167,8 +170,8 @@ export const lt: Guide = {
       id: 'employees',
       title: 'Darbuotojai',
       blocks: [
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją.', devices: ['phone', 'tablet'] },
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją.', devices: ['desktop'] },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma.', devices: ['phone', 'tablet'] },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.', devices: ['desktop'] },
         { p: 'Darbuotojo puslapyje rodoma:' },
         { ul: ['**Dydžiai** ir **Pageidaujama kalba**, kiekvienas su savo mygtuku **Redaguoti**;', '**Išduotos prekės**: visos išduotos prekės su naudojimo trukme ir pakeitimo data;', '**Užsakyta, dar neišduota**: dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
         { p: 'Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, kiek jose įrašų; pasirinkite pavadinimą, kad skiltį atidarytumėte ar suskleistumėte.' },
