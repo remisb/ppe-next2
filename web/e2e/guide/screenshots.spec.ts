@@ -134,10 +134,13 @@ test('orders, an order and its record', async () => {
   await expect(page.getByText(/Items Given Record/i).first()).toBeVisible()
   await shot('record')
 
-  // A date field's calendar, on the Orders From filter (on a phone, under Filters).
+  // A date field's calendar, on From in the Orders Custom range panel (on a phone, under Filters).
   await page.goto('/orders')
   if (device === 'phone') await page.getByRole('button', { name: new RegExp(`^${T.history.filters}`) }).click()
-  await page.getByRole('region', { name: T.history.filters }).locator('[data-slot=popover-trigger]').first().click()
+  const filters = page.getByRole('region', { name: T.history.filters })
+  await filters.getByRole('combobox', { name: T.history.period }).click()
+  await page.getByRole('listbox', { name: T.history.period }).getByRole('option', { name: T.history.periods.custom }).click()
+  await page.getByRole('dialog', { name: T.history.customRange }).locator('[data-slot=popover-trigger]').first().click()
   await expect(page.locator('[data-slot=calendar]')).toBeVisible()
   await shot('date-picker')
   await page.keyboard.press('Escape')

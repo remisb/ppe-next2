@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { HAND_OVER_NOW, activityAt, deleteQuestion, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, waitingDays } from './history'
+import { HAND_OVER_NOW, activityAt, deleteQuestion, formatUsage, formatWaiting, historyActions, looksLikeRecord, monthOf, periodRange, waitingDays } from './history'
 
 describe('historyActions', () => {
   it('follows the action visibility table', () => {
@@ -63,5 +63,23 @@ describe('deleteQuestion', () => {
   })
   it('warns that a given order takes its signed record with it', () => {
     expect(deleteQuestion({ ...o, status: 'GIVEN' })).toContain('given and confirmed')
+  })
+})
+
+describe('date periods', () => {
+  it('count the days from today, both ends included', () => {
+    expect(periodRange('last7', '2026-10-18')).toEqual({ from: '2026-10-12', to: '2026-10-18' })
+    expect(periodRange('thisMonth', '2026-10-18')).toEqual({ from: '2026-10-01', to: '2026-10-18' })
+    expect(periodRange('prevMonth', '2026-10-18')).toEqual({ from: '2026-09-01', to: '2026-09-30' })
+  })
+  it('cross month and year ends, and know February', () => {
+    expect(periodRange('last7', '2026-03-03')).toEqual({ from: '2026-02-25', to: '2026-03-03' })
+    expect(periodRange('prevMonth', '2026-01-15')).toEqual({ from: '2025-12-01', to: '2025-12-31' })
+    expect(periodRange('prevMonth', '2028-03-01')).toEqual({ from: '2028-02-01', to: '2028-02-29' })
+    expect(periodRange('thisMonth', '2026-10-01')).toEqual({ from: '2026-10-01', to: '2026-10-01' })
+  })
+  it('set no days for All dates or Custom range', () => {
+    expect(periodRange('all', '2026-10-18')).toBeNull()
+    expect(periodRange('custom', '2026-10-18')).toBeNull()
   })
 })

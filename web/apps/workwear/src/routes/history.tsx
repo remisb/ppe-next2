@@ -2,7 +2,6 @@ import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { DateInput } from '@ppe/ui/components/date-input'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
@@ -14,10 +13,12 @@ import { Fragment, useEffect, useState } from 'react'
 
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderDetail } from '@/components/order-detail'
+import { PeriodFilter } from '@/components/period-filter'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
+import { isoDay } from '@ppe/ui/lib/dates'
 import { t } from '@/i18n'
-import { LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, monthOf, statusLabel, waitingDays } from '@/lib/history'
+import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, monthOf, periodRange, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { isTyping } from '@/lib/shortcuts'
 import { formatEuro } from '@/lib/utils'
@@ -27,11 +28,13 @@ const PAGE_SIZE = 20
 interface Filters {
   employee: PickedEmployee | null
   status: OrderStatus | ''
+  /** All dates at first; From and To filter only under Custom range. */
+  period: DatePeriod
   from: string
   to: string
 }
 
-const noFilters: Filters = { employee: null, status: '', from: '', to: '' }
+const noFilters: Filters = { employee: null, status: '', period: 'all', from: '', to: '' }
 
 /** The status tabs, All first as the screen opens on it, then Ordered and Given, in the order's own sequence. */
 const statusTabs = (): { value: OrderStatus | ''; label: string }[] => [
@@ -84,14 +87,15 @@ export function History({
   const [sort, setSort] = useState<SortState<HistorySort>>(newestFirst)
   // Phone only: the filters fold away so the orders start at the top of the screen.
   const [showFilters, setShowFilters] = useState(false)
-  // A From or To left with something that is not a date (DateInput): it filters nothing, and says so.
-  const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
   const settings = useLoad(() => client.settings())
 
+  // A period's days count from today in the organisation timezone; Custom range takes From and To as typed.
+  const today = isoDay(new Date(), settings.data?.timezone)
+  const range = periodRange(filters.period, today) ?? (filters.period === 'custom' ? filters : { from: '', to: '' })
   const scope: HistoryQuery = {
     ...(filters.employee ? { employee_id: filters.employee.id } : {}),
-    ...(filters.from ? { from: filters.from } : {}),
-    ...(filters.to ? { to: filters.to } : {}),
+    ...(range.from ? { from: range.from } : {}),
+    ...(range.to ? { to: range.to } : {}),
   }
   const query: HistoryQuery = {
     ...scope,
@@ -129,7 +133,6 @@ export function History({
 
   const clearFilters = () => {
     setFilters((f) => ({ ...noFilters, status: f.status }))
-    setNotDate({})
     setPage(1)
   }
 
@@ -174,12 +177,11 @@ export function History({
   const shownColumns = beside ? columns.filter((c) => c.key !== 'usage') : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
-  const activeFilters = [filters.employee, filters.from || notDate.from, filters.to || notDate.to].filter(Boolean).length
-  const dateError = notDate.from ?? notDate.to ?? (filters.from && filters.to && filters.from > filters.to ? t.history.fromAfterTo : undefined)
+  const activeFilters = [filters.employee, filters.period !== 'all'].filter(Boolean).length
 
   // What Filters folds away on a phone, and so counts there: the employee search stays in view.
   const folded = !showFilters && 'max-md:hidden'
-  const foldedFilters = [filters.from || notDate.from, filters.to || notDate.to].filter(Boolean).length
+  const foldedFilters = filters.period !== 'all' ? 1 : 0
 
   return (
     <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
@@ -235,42 +237,17 @@ export function History({
               onClear={() => setFilter('employee', null)}
             />
           </div>
-          <div className={cn('grid grid-cols-2 gap-2', folded)}>
-            <div>
-              <label htmlFor="history-from" className="text-sm font-medium">
-                {t.history.from}
-              </label>
-              <DateInput
-                id="history-from"
-                aria-describedby={dateError ? 'history-date-error' : undefined}
-                className="mt-1.5"
-                value={filters.from}
-                max={filters.to || undefined}
-                invalid={Boolean(notDate.from) || dateError === t.history.fromAfterTo}
-                onChange={(v, problem) => {
-                  setFilter('from', v)
-                  setNotDate((n) => ({ ...n, from: problem }))
-                }}
-              />
-            </div>
-            <div>
-              <label htmlFor="history-to" className="text-sm font-medium">
-                {t.history.to}
-              </label>
-              <DateInput
-                id="history-to"
-                aria-describedby={dateError ? 'history-date-error' : undefined}
-                className="mt-1.5"
-                value={filters.to}
-                min={filters.from || undefined}
-                invalid={Boolean(notDate.to) || dateError === t.history.fromAfterTo}
-                onChange={(v, problem) => {
-                  setFilter('to', v)
-                  setNotDate((n) => ({ ...n, to: problem }))
-                }}
-              />
-            </div>
-          </div>
+          {/* The date filter: a period, or Custom range, whose From and To open over it. */}
+          <PeriodFilter
+            id="history-period"
+            className={cn(folded)}
+            value={filters}
+            today={today}
+            onChange={(choice) => {
+              setFilters((f) => ({ ...f, ...choice }))
+              setPage(1)
+            }}
+          />
           <div className={cn('flex items-end', folded)}>
             <Button
               variant="ghost"
@@ -286,14 +263,7 @@ export function History({
             <SortControl columns={columns} {...sortProps} />
           </div>
         </section>
-        {dateError ? (
-          <p id="history-date-error" role="alert" className="mb-4 text-sm text-destructive">
-            {dateError}
-          </p>
-        ) : null}
-
-        {/* Wrong dates filter nothing: no orders until they are put right, rather than the last ones found. */}
-        {dateError ? null : orders.error ? (
+        {orders.error ? (
           <ErrorState error={orders.error} onRetry={orders.reload} />
         ) : !orders.data ? (
           <Loading />

@@ -112,3 +112,30 @@ export function activityAt(o: { given_at: string | null; ordered_at: string }): 
 export function looksLikeRecord(q: string): boolean {
   return /^(we[-\s]*)?\d{1,12}$/i.test(q.trim())
 }
+
+/** Orders' date filter: a period, or Custom range with its own From and To. */
+export type DatePeriod = 'all' | 'last7' | 'thisMonth' | 'prevMonth' | 'custom'
+
+export const DATE_PERIODS: readonly DatePeriod[] = ['all', 'last7', 'thisMonth', 'prevMonth', 'custom']
+
+/**
+ * The days a period covers, YYYY-MM-DD, both included, counted from today
+ * (YYYY-MM-DD, in the organisation timezone): Last 7 days is today and the six
+ * before it, This month from its 1st to today, Previous month the whole of it.
+ * Null for All dates (no limit) and Custom range (the user's own From and To).
+ */
+export function periodRange(period: DatePeriod, today: string): { from: string; to: string } | null {
+  const [y = 1970, m = 1, d = 1] = today.split('-').map(Number)
+  const day = (year: number, month: number, date: number) => new Date(Date.UTC(year, month - 1, date)).toISOString().slice(0, 10)
+  switch (period) {
+    case 'last7':
+      return { from: day(y, m, d - 6), to: today }
+    case 'thisMonth':
+      return { from: day(y, m, 1), to: today }
+    case 'prevMonth':
+      // Day 0 of this month is the last of the previous one.
+      return { from: day(y, m - 1, 1), to: day(y, m, 0) }
+    default:
+      return null
+  }
+}

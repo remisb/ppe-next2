@@ -658,58 +658,135 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await expect(order.getByText('Marked as ordered')).toBeVisible()
 })
 
-test('Orders: the date filters take only real dates, written in the language\'s one form', async () => {
+test('Orders: the Date filter\'s periods; Custom range opens From and To over it, taking only real dates in the language\'s one form', async () => {
   const filters = page.getByRole('region', { name: 'Filters' })
-  const from = filters.getByRole('textbox', { name: 'From' })
-  const to = filters.getByRole('textbox', { name: 'To' })
+  const period = filters.getByRole('combobox', { name: 'Date' })
+  const panel = page.getByRole('dialog', { name: 'Custom range' })
+  const from = panel.getByRole('textbox', { name: 'From' })
+  const to = panel.getByRole('textbox', { name: 'To' })
+  const apply = panel.getByRole('button', { name: 'Apply' })
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
+  const list = page.getByRole('listbox', { name: 'Date' })
+  // The field opens its own list (no native select), over itself, the choice ticked and in focus.
+  const pick = async (label: string) => {
+    await period.click()
+    await list.getByRole('option', { name: label, exact: true }).click()
+  }
+  const listed = async (labels: string[], chosen: string) => {
+    await period.click()
+    await expect(list.getByRole('option')).toHaveText(labels)
+    await expect(list.getByRole('option', { selected: true })).toHaveText(chosen)
+    await expect(list.getByRole('option', { selected: true })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(list).toHaveCount(0)
+  }
+  const custom = async () => {
+    await pick('Custom range…')
+    await expect(from).toBeFocused()
+  }
+  // All dates at first; the order, placed today, is in the last 7 days and this month, not the previous one.
+  await expect(period).toHaveText('All dates')
+  await listed(['All dates', 'Last 7 days', 'This month', 'Previous month', 'Custom range…'], 'All dates')
+  for (const [choice, shown] of [['Last 7 days', 1], ['This month', 1], ['Previous month', 0]] as const) {
+    await pick(choice)
+    await expect(period).toHaveText(choice)
+    await expect(row).toHaveCount(shown)
+  }
+  // By keyboard too: an arrow opens the list, the arrows move, Enter chooses.
+  await period.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(list.getByRole('option', { name: 'Previous month' })).toBeFocused()
+  await page.keyboard.press('ArrowUp')
+  await page.keyboard.press('Enter')
+  await expect(period).toHaveText('This month')
+  await expect(period).toBeFocused()
+  await pick('Previous month')
+  // Custom range opens From and To over the select, in its place and as wide, as one control opened,
+  // starting from the period shown; its head row closes it, and Cancel changes nothing.
+  await custom()
+  const [onSelect, onPanel] = [await period.boundingBox(), await panel.boundingBox()]
+  expect(Math.round(onPanel!.x), 'the panel starts where the select does').toBe(Math.round(onSelect!.x))
+  expect(Math.round(onPanel!.y)).toBe(Math.round(onSelect!.y))
+  expect(Math.round(onPanel!.width), 'the panel is as wide as the select').toBe(Math.round(onSelect!.width))
+  await panel.getByRole('button', { name: 'Custom range…' }).click()
+  await expect(panel).toHaveCount(0)
+  await expect(period).toBeFocused()
+  await custom()
+  const [prevFrom, prevTo] = [await from.inputValue(), await to.inputValue()]
+  expect(prevFrom).toMatch(/^\d{4}-\d{2}-01$/)
+  await panel.getByRole('button', { name: 'Cancel' }).click()
+  await expect(panel).toHaveCount(0)
+  await expect(period).toHaveText('Previous month')
+  // Apply: the range becomes the select's choice, before Custom range…, and filters the list.
+  await custom()
+  await from.fill('2000-01-01')
+  await apply.click()
+  await expect(panel).toHaveCount(0)
+  await expect(period).toHaveText(`2000-01-01 – ${prevTo}`)
+  await listed(['All dates', 'Last 7 days', 'This month', 'Previous month', `2000-01-01 – ${prevTo}`, 'Custom range…'], `2000-01-01 – ${prevTo}`)
+  await expect(row).toHaveCount(0)
+  // Choosing it again opens the range applied; one day alone is a range too, and Enter applies.
+  await custom()
+  await expect(from).toHaveValue('2000-01-01')
+  await to.fill('')
+  await to.press('Enter')
+  await expect(panel).toHaveCount(0)
+  await expect(period).toHaveText('From 2000-01-01')
+  await expect(row).toBeVisible()
+  // Not a day: refused with the form to type, and Apply waits until it is put right; Escape leaves the filter.
+  await custom()
   await expect(from).toHaveAttribute('placeholder', 'YYYY-MM-DD')
-  // Not a day: refused with the form to type, and no orders rather than the last ones found.
   await from.fill('2026.02.30')
   await from.blur()
-  await expect(page.getByRole('alert').filter({ hasText: /^Not a date\. Type it as \d{4}-\d{2}-\d{2}\.$/ })).toBeVisible()
+  await expect(panel.getByRole('alert').filter({ hasText: /^Not a date\. Type it as \d{4}-\d{2}-\d{2}\.$/ })).toBeVisible()
   await expect(from).toHaveAttribute('aria-invalid', 'true')
-  await expect(row).toHaveCount(0)
+  await expect(apply).toBeDisabled()
   // A date in another order, or eight digits, is read and written in English's form.
   await from.fill('01.01.2000')
   await from.blur()
   await expect(from).toHaveValue('2000-01-01')
-  await expect(page.getByText(/^Not a date/)).toHaveCount(0)
-  await expect(row).toBeVisible()
+  await expect(panel.getByText(/^Not a date/)).toHaveCount(0)
   await to.fill('19991231')
   await to.blur()
   await expect(to).toHaveValue('1999-12-31')
-  await expect(page.getByRole('alert').filter({ hasText: 'From must not be after To.' })).toBeVisible()
-  await expect(row).toHaveCount(0)
-  await filters.getByRole('button', { name: 'Clear filters' }).click()
-  await expect(from).toHaveValue('')
-  await expect(to).toHaveValue('')
-  await expect(row).toBeVisible()
+  await expect(panel.getByRole('alert').filter({ hasText: 'From must not be after To.' })).toBeVisible()
+  await expect(apply).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  await expect(period).toHaveText('From 2000-01-01')
   // Typed into an empty field, a date starts in the current year; another year can be typed over it.
   const year = new Date().getFullYear()
+  await custom()
+  await from.fill('')
   await from.pressSequentially('0101')
   await expect(from).toHaveValue(`${year}-01-01`)
   await to.pressSequentially('20991231')
   await expect(to).toHaveValue('2099-12-31')
-  await filters.getByRole('button', { name: 'Clear filters' }).click()
-  await expect(from).toHaveValue('')
-  // Or picked from the calendar, in the language's month and weekday names; days past a limit are not offered.
+  // Or picked from the calendar, in the language's month and weekday names; days past a limit are not offered,
+  // and the calendar closes on its own, leaving the range open.
   const first = new Date(year, new Date().getMonth(), 1)
+  const month = String(first.getMonth() + 1).padStart(2, '0')
   const firstName = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(first)
-  await from.fill(`${year}-${String(first.getMonth() + 1).padStart(2, '0')}-02`)
-  await filters.getByRole('button', { name: 'Choose from a calendar' }).nth(1).click()
+  await from.fill(`${year}-${month}-02`)
+  await to.fill('')
+  await panel.getByRole('button', { name: 'Choose from a calendar' }).nth(1).click()
   const calendar = page.locator('[data-slot=calendar]')
   await expect(calendar.locator('th').first()).toHaveText('Mo')
   await expect(calendar.getByRole('button', { name: new RegExp(`\\b${firstName}\\b`) })).toBeDisabled()
   await page.keyboard.press('Escape')
   await expect(calendar).toHaveCount(0)
+  await expect(panel).toBeVisible()
   await from.fill('')
-  await filters.getByRole('button', { name: 'Choose from a calendar' }).first().click()
+  await panel.getByRole('button', { name: 'Choose from a calendar' }).first().click()
   await calendar.getByRole('button', { name: new RegExp(`\\b${firstName}\\b`) }).click()
   await expect(calendar).toHaveCount(0)
-  await expect(from).toHaveValue(`${year}-${String(first.getMonth() + 1).padStart(2, '0')}-01`)
+  await expect(from).toHaveValue(`${year}-${month}-01`)
+  await apply.click()
+  await expect(period).toHaveText(`From ${year}-${month}-01`)
+  // Clear filters returns to All dates.
   await filters.getByRole('button', { name: 'Clear filters' }).click()
-  await expect(from).toHaveValue('')
+  await expect(period).toHaveText('All dates')
+  await expect(row).toBeVisible()
 })
 
 test('a later price change does not alter the stored record', async () => {
@@ -1789,8 +1866,9 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const filters = page.getByRole('region', { name: 'Filters' })
   await expect(filters.getByRole('combobox', { name: 'Employee' })).toBeVisible()
   await expect(filters.locator('p').getByText('Employee', { exact: true })).toBeHidden()
-  await expect(filters.getByText('From', { exact: true })).toBeHidden()
+  await expect(filters.getByRole('combobox', { name: 'Date' })).toBeHidden()
   await page.getByRole('button', { name: /^Filters/ }).click()
+  await expect(filters.getByRole('combobox', { name: 'Date' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
   // No time zone note on Orders.
   await expect(page.getByText(/Dates and times are shown in/)).toHaveCount(0)

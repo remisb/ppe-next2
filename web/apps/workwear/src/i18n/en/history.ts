@@ -9,6 +9,13 @@ export const history = {
   employee: 'Employee',
   from: 'From',
   to: 'To',
+  // Orders' date filter: the periods it offers; Custom range opens From and To over it, and the range applied becomes its choice.
+  period: 'Date',
+  apply: 'Apply',
+  customRange: 'Custom range',
+  rangeFrom: (date: string) => `From ${date}`,
+  rangeTo: (date: string) => `To ${date}`,
+  periods: { all: 'All dates', last7: 'Last 7 days', thisMonth: 'This month', prevMonth: 'Previous month', custom: 'Custom range…' },
   clearFilters: 'Clear filters',
   fromAfterTo: 'From must not be after To.',
   noMatch: 'No orders match these filters.',

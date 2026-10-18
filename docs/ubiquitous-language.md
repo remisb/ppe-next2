@@ -377,8 +377,14 @@ Rules for using it:
 
 ### Orders (History)
 - **Brief:** the screen listing every order, newest activity first.
-- **Detail:** filters by status, employee and dates (in the organisation timezone), and
-  sorts by date or usage time. Opening an order shows it beside the list on a desktop and
+- **Detail:** filters by status, employee and the **Date** filter (in the organisation
+  timezone): **All dates** (the default), **Last 7 days** (today and the six before),
+  **This month** (its 1st to today), **Previous month**, or **Custom range…**. It is one
+  control in a select's look, not a native select: it opens over itself with its own list
+  of these, and **Custom range…** turns that panel into **From** above **To**, starting
+  from the days shown; **Apply** makes the range the field's choice ("2026.09.01 –
+  2026.09.30", or "Nuo 2026.09.01" with one day), **Cancel** or Escape leaves the filter.
+  Sorts by date or usage time. Opening an order shows it beside the list on a desktop and
   full screen below that.
 - **Code:** route `history`, i18n `history`, `order/history.go`, `GET /api/v1/orders`.
   **UI:** Orders.

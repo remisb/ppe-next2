@@ -6,9 +6,10 @@ import { cn } from '../lib/utils.ts'
 /**
  * A panel opened from a button, on Base UI's Popover: focus moves in and back,
  * Escape and a click outside close it. The shadcn registry's Popover, trimmed to
- * the parts this app uses, with container: inside a FormSheet (a modal
- * <dialog>, in the top layer, everything outside it inert) it must be portalled
- * into that dialog, or it would open beneath it and take no clicks.
+ * the parts this app uses, with anchor (an element other than a trigger to sit
+ * on) and container: inside a FormSheet (a modal <dialog>, in the top layer,
+ * everything outside it inert) it must be portalled into that dialog, or it
+ * would open beneath it and take no clicks.
  */
 function Popover(props: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />
@@ -24,14 +25,16 @@ function PopoverContent({
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
+  anchor,
+  collisionAvoidance,
   container,
   ...props
 }: PopoverPrimitive.Popup.Props &
-  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset'> &
+  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset' | 'anchor' | 'collisionAvoidance'> &
   Pick<ComponentProps<typeof PopoverPrimitive.Portal>, 'container'>) {
   return (
     <PopoverPrimitive.Portal container={container}>
-      <PopoverPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset} className="isolate z-50">
+      <PopoverPrimitive.Positioner anchor={anchor} collisionAvoidance={collisionAvoidance} align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset} className="isolate z-50">
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(

@@ -3,7 +3,6 @@ import type {
   ComponentProps,
   InputHTMLAttributes,
   ReactNode,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -142,7 +141,7 @@ export function Select({
   className,
   invalid,
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+}: ComponentProps<'select'> & { invalid?: boolean }) {
   return (
     <select
       // A native select, deliberately: it gets the platform's own picker, which
