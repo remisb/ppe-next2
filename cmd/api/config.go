@@ -98,6 +98,12 @@ type config struct {
 	// Upkeep runs the hourly upkeep once (purges, samples, audit seals and
 	// their check) and exits; non-zero when a part failed.
 	Upkeep bool
+
+	// ImportSIMs is the SIM card list (CSV) to import as the
+	// API_SEED_USER_EMAIL user; the import checks it and writes nothing
+	// unless ImportCommit is set.
+	ImportSIMs   string
+	ImportCommit bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -163,6 +169,8 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.Healthcheck, "healthcheck", false, "check that the API at -addr is ready (GET /ready) and exit")
 	fs.BoolVar(&c.VerifyAudit, "verify-audit", false, "verify the Audit log against its seals, print the result as JSON and exit")
 	fs.BoolVar(&c.Upkeep, "upkeep", false, "run the hourly upkeep once (purges, samples, audit seals) and exit")
+	fs.StringVar(&c.ImportSIMs, "import-sims", "", "check the SIM card list at this CSV path (- for standard input), print what it would import and exit")
+	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -188,6 +196,15 @@ func (c config) validate() error {
 		return errors.Join(errs...)
 	}
 	if c.VerifyAudit || c.Upkeep {
+		return errors.Join(errs...)
+	}
+	if c.ImportCommit && c.ImportSIMs == "" {
+		errs = append(errs, errors.New("-commit is for -import-sims"))
+	}
+	if c.ImportSIMs != "" {
+		if c.SeedUserEmail == "" {
+			errs = append(errs, errors.New("-import-sims needs API_SEED_USER_EMAIL (the user the import is recorded as)"))
+		}
 		return errors.Join(errs...)
 	}
 	if c.SeedDemo {

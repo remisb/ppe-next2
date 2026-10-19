@@ -554,7 +554,8 @@ func (stubAssets) ByEmployee(context.Context, uuid.UUID) ([]asset.Held, error) {
 func (stubAssets) Employee(context.Context, uuid.UUID) (asset.EmployeeView, error) {
 	return asset.EmployeeView{}, asset.ErrEmployeeNotFound
 }
-func (stubAssets) LastNumber(context.Context, string) (int64, error) { return 0, nil }
+func (stubAssets) LastNumber(context.Context, string) (int64, error)        { return 0, nil }
+func (stubAssets) ImportSIMs(context.Context, []asset.Imported, bool) error { return nil }
 func (stubAssets) NumberOwner(context.Context, string) (uuid.UUID, error) {
 	return uuid.Nil, asset.ErrNotFound
 }

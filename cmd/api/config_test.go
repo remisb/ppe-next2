@@ -69,6 +69,17 @@ func TestConfigValidate(t *testing.T) {
 	if err := (config{DBDSN: "postgres://x", DBMaxConns: 1, Upkeep: true}).validate(); err != nil {
 		t.Errorf("-upkeep needs only the database: %v", err)
 	}
+	imp := config{DBDSN: "postgres://x", DBMaxConns: 1, ImportSIMs: "sims.csv", ImportCommit: true}
+	if imp.validate() == nil {
+		t.Error("-import-sims without API_SEED_USER_EMAIL should fail")
+	}
+	imp.SeedUserEmail = "a@example.com"
+	if err := imp.validate(); err != nil {
+		t.Errorf("-import-sims needs only the database and the email: %v", err)
+	}
+	if (config{DBDSN: "postgres://x", DBMaxConns: 1, ImportCommit: true, SeedUserEmail: "a@example.com"}).validate() == nil {
+		t.Error("-commit without -import-sims should fail")
+	}
 	if (config{DBMaxConns: 1, VerifyAudit: true}).validate() == nil {
 		t.Error("-verify-audit without API_DB_DSN should fail")
 	}

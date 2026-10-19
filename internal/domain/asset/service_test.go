@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -310,6 +311,39 @@ func (f *fakeRepo) Give(_ context.Context, assetID, employeeID uuid.UUID, fn Giv
 	f.assignments = append(f.assignments, a)
 	f.events = append(f.events, evs...)
 	return a, nil
+}
+
+// ImportSIMs writes into a copy and keeps it only on commit with no failure,
+// as the transaction does.
+func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	next := &fakeRepo{assets: maps.Clone(f.assets), numbers: maps.Clone(f.numbers), counters: maps.Clone(f.counters),
+		assignments: slices.Clone(f.assignments), employees: f.employees, copies: f.copies, events: slices.Clone(f.events)}
+	for i, it := range items {
+		if next.simTaken(it.Asset) {
+			return &ImportRowError{Index: i, Err: ErrSIMNoTaken}
+		}
+		if err := next.useNumber(it.Asset.ID, it.Asset.InventoryNo); err != nil {
+			return &ImportRowError{Index: i, Err: err}
+		}
+		if it.Bump != nil && it.Bump.N > next.counters[it.Bump.Prefix] {
+			next.counters[it.Bump.Prefix] = it.Bump.N
+		}
+		next.assets[it.Asset.ID] = it.Asset
+		next.events = append(next.events, it.Registered)
+		if it.Assignment != nil {
+			if _, ok := next.employees[it.Assignment.EmployeeID]; !ok {
+				return &ImportRowError{Index: i, Err: ErrEmployeeNotFound}
+			}
+			next.assignments = append(next.assignments, *it.Assignment)
+			next.events = append(next.events, *it.Given)
+		}
+	}
+	if commit {
+		f.assets, f.numbers, f.counters, f.assignments, f.events = next.assets, next.numbers, next.counters, next.assignments, next.events
+	}
+	return nil
 }
 
 func (f *fakeRepo) UpdateOpen(_ context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error) {

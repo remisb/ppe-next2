@@ -14,8 +14,8 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo \
-	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo \
+.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
+	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims \
 	prod-backup prod-backups prod-restore prod-drill backup-once
 
 help: ## List targets
@@ -90,6 +90,11 @@ seed-admin: ## Create the first admin from API_SEED_USER_* and exit
 seed-demo: ## Fill an empty database with demo data as the seed admin (run seed-admin first)
 	go run ./cmd/api -seed-demo
 
+# Without COMMIT=yes it only checks the file and prints what it would import.
+import-sims: ## Import SIM cards from a CSV list as the seed admin: FILE=<csv> COMMIT=yes
+	@test -n "$(FILE)" || { echo "FILE=<the SIM card list, CSV> is required" >&2; exit 2; }
+	go run ./cmd/api -import-sims - $(if $(filter yes,$(COMMIT)),-commit) < "$(FILE)"
+
 # The deployment stack (docker-compose.prod.yml, .env.prod). `env -i` because
 # compose reads ${VAR} from the environment before --env-file, and this Makefile
 # exports every development value from .env.
@@ -144,6 +149,12 @@ prod-seed-admin: ## Create the first admin from API_SEED_USER_* in .env.prod and
 
 prod-seed-demo: ## Fill an empty deployment database with demo data as that admin
 	$(PROD) run --rm --no-deps api -seed-demo
+
+# The list goes in on standard input, so the API's image (scratch, a non-root
+# user) needs no mount. Without COMMIT=yes it only checks the file.
+prod-import-sims: ## Import SIM cards from a CSV list as the API_SEED_USER_EMAIL user: FILE=<csv> COMMIT=yes
+	@test -n "$(FILE)" || { echo "FILE=<the SIM card list, CSV> is required" >&2; exit 2; }
+	$(PROD) run --rm --no-deps -T api -import-sims - $(if $(filter yes,$(COMMIT)),-commit) < "$(FILE)"
 
 prod-backup: ## Back up the deployment database now (it also backs up on DBBACKUP_SCHEDULE)
 	$(PROD) run --rm --no-deps backup once

@@ -198,8 +198,24 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 	if actor == uuid.Nil {
 		return View{}, fieldError("actor", "is required")
 	}
-	if err := p.Validate(); err != nil {
+	a, err := s.newAsset(p, actor)
+	if err != nil {
 		return View{}, err
+	}
+	ev, err := s.event(actor, EventRegistered, a.ID, a.CreatedAt, nil, facts(a))
+	if err != nil {
+		return View{}, err
+	}
+	if err := s.repo.Create(ctx, a, BumpOf(a), ev); err != nil {
+		return View{}, s.duplicate(ctx, err, a)
+	}
+	return s.view(Record{Asset: a}), nil
+}
+
+// newAsset validates p and builds the asset Create and ImportSIMs register.
+func (s *Service) newAsset(p CreateParams, actor uuid.UUID) (Asset, error) {
+	if err := p.Validate(); err != nil {
+		return Asset{}, err
 	}
 	now := s.now()
 	a := Asset{
@@ -218,19 +234,11 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 			received = *p.ReceivedDate
 		}
 		if err := s.checkDate("received_date", received); err != nil {
-			return View{}, err
+			return Asset{}, err
 		}
 		a.ConnectionStatus, a.ReceivedDate = &status, &received
 	}
-	bump := BumpOf(a)
-	ev, err := s.event(actor, EventRegistered, a.ID, now, nil, facts(a))
-	if err != nil {
-		return View{}, err
-	}
-	if err := s.repo.Create(ctx, a, bump, ev); err != nil {
-		return View{}, s.duplicate(ctx, err, a)
-	}
-	return s.view(Record{Asset: a}), nil
+	return a, nil
 }
 
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Detail, error) {

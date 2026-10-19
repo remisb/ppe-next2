@@ -126,26 +126,73 @@ func scanAssignment(row pgx.Row) (Assignment, error) {
 
 func (r *PostgresRepository) Create(ctx context.Context, a Asset, bump *Bump, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO assets (id, kind, category, inventory_no, name, serial_no, sim_no, phone_no, provider, plan,
-				non_return_value_cents, currency, connection_status, received_date, comment,
-				created_at, updated_at, created_by_user_id, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::date, $15, $16, $17, $18, $19)`,
-			a.ID, a.Kind, a.Category, a.InventoryNo, a.Name, a.SerialNo, a.SimNo, a.PhoneNo, a.Provider, a.Plan,
-			a.NonReturnValueCents, a.Currency, a.ConnectionStatus, a.ReceivedDate, a.Comment,
-			a.CreatedAt, a.UpdatedAt, a.CreatedByUserID, a.UpdatedByUserID); err != nil {
+		return insertAsset(ctx, tx, a, bump, ev)
+	}))
+}
+
+// insertAsset writes a new asset, its number as used, the counter and ev.
+func insertAsset(ctx context.Context, tx pgx.Tx, a Asset, bump *Bump, ev audit.Event) error {
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO assets (id, kind, category, inventory_no, name, serial_no, sim_no, phone_no, provider, plan,
+			non_return_value_cents, currency, connection_status, received_date, comment,
+			created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::date, $15, $16, $17, $18, $19)`,
+		a.ID, a.Kind, a.Category, a.InventoryNo, a.Name, a.SerialNo, a.SimNo, a.PhoneNo, a.Provider, a.Plan,
+		a.NonReturnValueCents, a.Currency, a.ConnectionStatus, a.ReceivedDate, a.Comment,
+		a.CreatedAt, a.UpdatedAt, a.CreatedByUserID, a.UpdatedByUserID); err != nil {
+		return err
+	}
+	if err := useNumber(ctx, tx, a.ID, a.InventoryNo, a.CreatedAt); err != nil {
+		return err
+	}
+	if bump != nil {
+		if err := raiseCounter(ctx, tx, *bump); err != nil {
 			return err
 		}
-		if err := useNumber(ctx, tx, a.ID, a.InventoryNo, a.CreatedAt); err != nil {
-			return err
-		}
-		if bump != nil {
-			if err := raiseCounter(ctx, tx, *bump); err != nil {
-				return err
+	}
+	return audit.Insert(ctx, tx, ev)
+}
+
+// errDryRun rolls back an import that was only checked.
+var errDryRun = errors.New("asset: import checked, not kept")
+
+func (r *PostgresRepository) ImportSIMs(ctx context.Context, items []Imported, commit bool) error {
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		for i, it := range items {
+			if err := importOne(ctx, tx, it); err != nil {
+				return &ImportRowError{Index: i, Err: translate(err)}
 			}
 		}
-		return audit.Insert(ctx, tx, ev)
-	}))
+		if !commit {
+			return errDryRun
+		}
+		return nil
+	})
+	var row *ImportRowError
+	switch {
+	case errors.Is(err, errDryRun):
+		return nil
+	case errors.As(err, &row):
+		return row
+	}
+	return translate(err)
+}
+
+func importOne(ctx context.Context, tx pgx.Tx, it Imported) error {
+	if err := insertAsset(ctx, tx, it.Asset, it.Bump, it.Registered); err != nil {
+		return err
+	}
+	if it.Assignment == nil {
+		return nil
+	}
+	// FOR SHARE, as Give: the holder cannot be deleted under the assignment.
+	if _, err := readEmployee(ctx, tx, it.Assignment.EmployeeID, "FOR SHARE"); err != nil {
+		return err
+	}
+	if err := insertAssignment(ctx, tx, *it.Assignment); err != nil {
+		return err
+	}
+	return audit.Insert(ctx, tx, *it.Given)
 }
 
 // raiseCounter raises the prefix's counter to at least b.N.
@@ -570,12 +617,7 @@ func (r *PostgresRepository) Give(ctx context.Context, assetID, employeeID uuid.
 				return err
 			}
 		}
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO asset_assignments (id, asset_id, employee_id, given_date, given_by_user_id, created_at, comment,
-				form, form_template_version, document_hash, paper_form_signed)
-			VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10, $11)`,
-			a.ID, a.AssetID, a.EmployeeID, a.GivenDate, a.GivenByUserID, a.CreatedAt, a.Comment,
-			nullJSON(a.Form), a.FormTemplateVersion, a.DocumentHash, a.PaperFormSigned); err != nil {
+		if err := insertAssignment(ctx, tx, a); err != nil {
 			return err
 		}
 		if err := audit.InsertAll(ctx, tx, evs); err != nil {
@@ -585,6 +627,16 @@ func (r *PostgresRepository) Give(ctx context.Context, assetID, employeeID uuid.
 		return nil
 	})
 	return out, translate(err)
+}
+
+func insertAssignment(ctx context.Context, tx pgx.Tx, a Assignment) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO asset_assignments (id, asset_id, employee_id, given_date, given_by_user_id, created_at, comment,
+			form, form_template_version, document_hash, paper_form_signed)
+		VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10, $11)`,
+		a.ID, a.AssetID, a.EmployeeID, a.GivenDate, a.GivenByUserID, a.CreatedAt, a.Comment,
+		nullJSON(a.Form), a.FormTemplateVersion, a.DocumentHash, a.PaperFormSigned)
+	return err
 }
 
 func (r *PostgresRepository) UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error) {

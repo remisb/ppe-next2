@@ -84,6 +84,10 @@ type Repository interface {
 	// employee (ErrEmployeeNotFound), calls fn, and writes the asset, the new
 	// assignment and the events. A second open assignment is ErrAlreadyGiven.
 	Give(ctx context.Context, assetID, employeeID uuid.UUID, fn GiveFunc) (Assignment, error)
+	// ImportSIMs writes each item as Create does and its assignment, the
+	// holder share-locked as Give does, in one transaction, kept only when
+	// commit is set. An item's failure is an *ImportRowError with its index.
+	ImportSIMs(ctx context.Context, items []Imported, commit bool) error
 	// UpdateOpen locks the asset and its open assignment, calls fn and writes
 	// the assignment's return and Not Returned fields and the events.
 	UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error)

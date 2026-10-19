@@ -92,6 +92,8 @@ Give SIM against a printed form, Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
 Company Assets card on the dashboards, and Equipment & Furniture on the same engine (the Equipment screen,
 `components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`), and
+the go-live import of the SIM card list (`api -import-sims`, `make prod-import-sims FILE=… COMMIT=yes`:
+a CSV checked in full, then written all or none, held cards given without a form; spec "Import SIM cards"), and
 signed copies (slice 5, migration 0030: Upload Signed Form on an assignment, a PDF, JPEG or PNG up to
 10 MB kept in object storage by `internal/files`, `API_FILES_TARGET`: a private Spaces bucket in
 production, the folder `.files` in development; `components/signed-copies.tsx`). Slice 8 (go-live
@@ -144,6 +146,7 @@ make migrate          # apply pending internal/db/migrations/*.up.sql via psql i
 make migrate-down     # revert all; make migrate-status lists applied files
 make seed-admin       # create the first admin from API_SEED_USER_*
 make seed-demo        # demo data via the services (cmd/api/seed-demo.go); refuses a non-empty DB
+make import-sims FILE=sims.csv   # check the SIM card list; COMMIT=yes imports it (prod: make prod-import-sims)
 make backup-once      # back up the dev DB now (docker-compose.yml backup profile; volume ppe-next2-backups)
 make run              # go run ./cmd/api
 make vet
@@ -180,7 +183,7 @@ Caddy also sends the security headers, including a Content-Security-Policy that 
 `index.html`'s inline theme script, the same in both apps, by its hash
 (`web/apps/{workwear,admin}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`).
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
-`prod-seed-demo`, `prod-backup`, `prod-backups`, `prod-restore`, `prod-drill` (the monthly restore drill into a throwaway database, `deploy/restore-drill.sh`); they run compose under `env -i` so `.env` values cannot leak in.
+`prod-seed-demo`, `prod-import-sims` (the list on standard input), `prod-backup`, `prod-backups`, `prod-restore`, `prod-drill` (the monthly restore drill into a throwaway database, `deploy/restore-drill.sh`); they run compose under `env -i` so `.env` values cannot leak in.
 The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
 (`go install` of dbbackup `DBBACKUP_VERSION`) on `POSTGRES_IMAGE`, the image `db` and
 `migrate` also use, so `pg_dump` always matches the server; it backs up to `DBBACKUP_TARGET` (default the `backups`

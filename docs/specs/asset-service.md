@@ -138,7 +138,31 @@ SIM requires SIM No., Provider, Received Date and Inventory No.; Phone No., Plan
 be unknown yet. EQUIPMENT requires Name, Category and Inventory No. Event `asset.registered`.
 
 Registering an asset an employee already holds goes through Register Existing Assignment
-(open decision), never by adding it to the Office.
+(open decision 9), never by adding it to the Office; for SIM cards that is the import below.
+
+### Import SIM cards (go-live, open decision 9)
+
+The SIM cards the company had before the app come from its SIM card list, a CSV file, by the
+command `api -import-sims <file>` (`-` reads standard input), run as the `API_SEED_USER_EMAIL`
+user (`make import-sims`, `make prod-import-sims FILE=… COMMIT=yes`; `cmd/api/import-sims.go`,
+`asset.Service.ImportSIMs`). Without `-commit` it checks everything, the database's own checks
+included, prints each card's number, status and holder, and writes nothing.
+
+- Columns `sim_no, phone_no, provider, employee_name, connection_status`, in any order, no
+  others; commas or semicolons; UTF-8, an Excel byte order mark ignored; blank lines skipped.
+- Status: Active and Available are **Active**, Blocked **Blocked**, Not Activated **Not
+  Activated**; Available means nobody holds it, so Available with a name is refused.
+- A Lithuanian phone number is written as the app writes it (`37060327629` → `+370 603 27629`);
+  the SIM number is kept as written; a provider not among Settings' SIM providers is noted.
+- The holder is the one live employee whose first and last names are the name's words, in
+  either order, case and accents aside; none, or more than one, is refused with the line.
+- Every problem in the file is listed before anything is written; then the cards are written
+  in one transaction, all or none, so a SIM number already registered refuses the whole file
+  and running it twice imports nothing the second time.
+- Each card is numbered on from the SIM counter, received today, in the Office or, held, given
+  to its employee today with **no form** (the comment says it was held before the app), Blocked
+  ones too; it records `asset.registered` and, held, `asset.given` with no document hash.
+  A form for such a card is printed by Return and Give SIM.
 
 ### Edit
 
@@ -492,6 +516,6 @@ The same engine, screens and rules, with what differs by kind:
 | 6 | Which equipment categories need a form; whether furniture does | §17 | Computer, Phone, External Drive need one; Furniture and Other do not |
 | 7 | Correcting a wrong Not Returned mark, status or whereabouts | none | Status: Change Status again. The Not Returned mark cannot be removed; Register Return ends it |
 | 8 | Write-off and loss | §18, §20 | Not built; `written_off_*` reserved |
-| 9 | Register Existing Assignment for assets already held at go-live, with an unknown date and no form | §20 | Needed before go-live; specified when decided |
+| 9 | Register Existing Assignment for assets already held at go-live, with an unknown date and no form | §20 | **Decided for SIM cards** (2026-10-19): the import (Import SIM cards); the given date is the import's day, as the list has none, and there is no form. Equipment still open |
 | 10 | Office stock reconciliation | §20 | Not built |
 | 11 | Exact form templates | §8, §17 | The plain layout above |

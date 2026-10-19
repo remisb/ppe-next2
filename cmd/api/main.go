@@ -123,6 +123,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.VerifyAudit {
 		return verifyAudit(ctx, svc.audit, os.Stdout)
 	}
+	if cfg.ImportSIMs != "" {
+		return importSIMs(ctx, svc, cfg, os.Stdout)
+	}
 	if cfg.Upkeep {
 		run := upkeep(ctx, svc, logger)
 		if run.Failed {

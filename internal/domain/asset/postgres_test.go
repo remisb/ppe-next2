@@ -449,3 +449,58 @@ func TestPostgresSignedCopies(t *testing.T) {
 		}
 	}
 }
+
+func TestPostgresImportSIMs(t *testing.T) {
+	app, owner, actor, emps := newTestPool(t)
+	svc := newPostgresService(app)
+	ctx := context.Background()
+	addSIM(t, svc, actor, "SIM-000001", "0089370011", StatusActive)
+	count := func() (assets, assignments, events int) {
+		t.Helper()
+		if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM assets), (SELECT count(*) FROM asset_assignments),
+			(SELECT count(*) FROM audit_events WHERE entity_type = 'asset')`).Scan(&assets, &assignments, &events); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	p := ImportParams{Comment: "Imported", SIMs: []ImportSIM{
+		{Params: Params{SimNo: sp("1237002240500235267F"), PhoneNo: sp("+370 603 27629"), Provider: sp("Bitė")}, Status: StatusBlocked, HolderID: &emps[0].ID},
+		{Params: Params{SimNo: sp("1237002250201583196"), Provider: sp("Bitė")}, Status: StatusActive},
+	}}
+
+	if _, err := svc.ImportSIMs(ctx, p, actor); err != nil {
+		t.Fatalf("dry run: %v", err)
+	}
+	if a, o, e := count(); a != 1 || o != 0 || e != 1 {
+		t.Fatalf("dry run kept rows: %d assets, %d assignments, %d events", a, o, e)
+	}
+
+	p.Commit = true
+	res, err := svc.ImportSIMs(ctx, p, actor)
+	if err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	if a, o, e := count(); a != 3 || o != 1 || e != 4 {
+		t.Errorf("after the import: %d assets, %d assignments, %d events; want 3, 1, 4", a, o, e)
+	}
+	got, err := svc.Get(ctx, res.SIMs[0].ID)
+	if err != nil || got.InventoryNo != "SIM-000002" || got.Open == nil || got.Open.EmployeeName != "Jonas Petraitis" ||
+		got.Open.Form != nil || *got.ConnectionStatus != StatusBlocked {
+		t.Errorf("held card: %+v, %v", got.View, err)
+	}
+	if next, _ := svc.NextNumber(ctx, PrefixSIM); next != "SIM-000004" {
+		t.Errorf("next number = %s", next)
+	}
+
+	// The second card is already registered: the first, new, is not kept either.
+	p.SIMs[0].SimNo = sp("8937 9999")
+	_, err = svc.ImportSIMs(ctx, p, actor)
+	var row *ImportRowError
+	var dup *DuplicateError
+	if !errors.As(err, &row) || row.Index != 1 || !errors.As(err, &dup) || dup.Existing != res.SIMs[1].ID {
+		t.Fatalf("second import = %v, want row 1 naming the registered card", err)
+	}
+	if a, o, e := count(); a != 3 || o != 1 || e != 4 {
+		t.Errorf("a refused import kept rows: %d assets, %d assignments, %d events", a, o, e)
+	}
+}
