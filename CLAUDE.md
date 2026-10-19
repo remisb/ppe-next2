@@ -82,13 +82,13 @@ data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashb
 the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
 assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
-employee who holds assets. Company Assets is two screens, listed under it in the sidebar and a phone's More panel: SIM Cards
+employee who holds assets. Company Assets is two screens, listed under it in the rail, the sidebar and a phone's More panel: SIM Cards
 (`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
 opens them). The SIM card register is on screen (`routes/assets.tsx`,
 `lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status; a row opens the card
 beside the register at `/assets/sim-cards/<id>`, as Orders opens an order, and Equipment's at `/assets/equipment/<id>`) and the asset page (`/assets/<id>`, its detail
 `components/asset-detail.tsx` shared with that pane:
-Give SIM against a printed form, Register SIM Return, Mark as Not Returned, Prepare Blocking
+Give SIM against a printed form, Return, Mark as Not Returned, Prepare Blocking
 Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
 Company Assets card on the dashboards, and Equipment & Furniture on the same engine (the Equipment screen,
 `components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`), and

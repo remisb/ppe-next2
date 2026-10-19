@@ -68,7 +68,7 @@ export const assets = {
   sortBy: 'Sort by',
   // The register.
   colInventoryNo: 'Inventory No.',
-  colNumbers: 'Phone No. / SIM No.',
+  colNumbers: 'Phone / SIM',
   colProvider: 'Provider / Plan',
   colStatus: 'Status',
   colHeldBy: 'Held By / Location',
@@ -162,7 +162,12 @@ export const assets = {
   whereaboutsLabel: { WITH_EMPLOYEE: 'Still with the employee', UNKNOWN: 'Whereabouts unknown' },
   // The actions a card's state calls for.
   giveSimCard: 'Give SIM',
-  registerReturn: 'Register SIM Return',
+  // One word for SIMs and items; what it does is its tooltip.
+  takeBack: 'Return',
+  takeBackHelp: {
+    SIM: { body: 'Register that the SIM card is physically back in the office.', note: 'Its connection status does not change.' },
+    EQUIPMENT: { body: 'Register that the item is physically back in the office.' },
+  },
   markNotReturned: 'Mark as Not Returned',
   prepareBlockingEmail: 'Prepare Blocking Email',
   // Give SIM (§6–§8).
@@ -208,7 +213,7 @@ export const assets = {
   alreadyGivenError: 'This SIM has already been given to another employee. Select another SIM.',
   formChangedError: 'The form changed after it was printed. Print it again and have it signed.',
   formLayoutNote: 'A plain layout until the company’s own form is added.',
-  // Register SIM Return (§11).
+  // Return (§11).
   returnDescription: 'Only once the card is physically back in the office. Its status stays as it is.',
   returnDate: 'Return Date',
   returnButton: 'Register Return to Office',
@@ -264,7 +269,6 @@ export const assets = {
   openExistingItem: 'Open the item that has it',
   giveAsset: 'Give Asset',
   giveAssetDescription: 'Only an item in the office, with no holder, can be given.',
-  registerAssetReturn: 'Register Asset Return',
   returnAssetDescription: 'Only once the item is physically back in the office.',
   assetGivenTo: (name: string) => `Asset given to ${name}.`,
   noFormNeeded: 'Furniture and other items are given without a signed form.',

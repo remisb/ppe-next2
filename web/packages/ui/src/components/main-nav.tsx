@@ -15,8 +15,8 @@ import { cn } from '../lib/utils.ts'
  * lookups such as a field's "Item Set".
  * The current section's link is aria-current="page", or "true" when its
  * screens are listed under it (navSubItem), one of which is the page: it
- * looks current in the bar and rail, and the sidebar and the phone's More
- * panel highlight the screen.
+ * looks current in the bar and rail, and the rail, the sidebar and the
+ * phone's More panel highlight the screen.
  */
 export const navItem = cn(
   'group relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
@@ -42,16 +42,21 @@ export const moreIcon = cn(
   'max-md:h-auto max-md:w-auto max-md:group-aria-[current=page]:bg-transparent max-md:group-aria-[current=true]:bg-transparent max-md:group-hover:bg-transparent',
 )
 /**
- * A section's own screens, listed under it in the desktop sidebar, on a line
- * from the section's icon; the rail has no room, so the section's screen
- * offers them itself there.
+ * A section's own screens, listed under it: in the desktop sidebar on a line
+ * from the section's icon; in the rail as short centred links under the
+ * section's icon, so the rail reaches each screen too.
  */
-export const navSubList = 'ml-5 hidden flex-col gap-0.5 border-l border-border pl-2 xl:flex'
-/** The same under a section in the phone's More panel, which has the room; the rail still has none. */
+export const navSubList = cn(
+  'ml-5 hidden flex-col gap-0.5 border-l border-border pl-2 md:flex',
+  'md:max-xl:ml-0 md:max-xl:border-l-0 md:max-xl:pl-0',
+)
+/** The same under a section in the phone's More panel, which has the room. */
 export const moreSubList = cn(navSubList, 'max-md:ml-[1.375rem] max-md:flex')
 export const navSubItem = cn(
   'flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none transition-colors pointer-coarse:min-h-11',
   'hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-accent aria-[current=page]:text-foreground',
+  // The rail's: the size of its labels, centred, a long word broken where the language allows (Оборудование).
+  'md:max-xl:justify-center md:max-xl:px-1 md:max-xl:py-1.5 md:max-xl:text-center md:max-xl:text-[0.6875rem] md:max-xl:leading-tight md:max-xl:hyphens-auto md:max-xl:[overflow-wrap:anywhere]',
 )
 
 /** The app mark, Gavort's emblem; the app's name shows where there is room for it (phone bar, desktop sidebar). */

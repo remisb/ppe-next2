@@ -217,7 +217,7 @@ test('company assets: the SIMs, a card, giving one', async () => {
   await shot('assets')
 
   await sim(sim3).click()
-  await expect(page.getByRole('heading', { name: 'SIM-000003' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: sim3 })).toBeVisible()
   await openAssignments()
   await shot('asset')
 

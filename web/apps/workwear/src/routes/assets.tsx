@@ -15,7 +15,7 @@ import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
-import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssetMoreActions, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
@@ -39,7 +39,6 @@ import {
   chooseTab,
   countedTabs,
   primaryAction,
-  simCopyText,
   statusLabel,
   tabCountQuery,
   tabCounts,
@@ -88,7 +87,7 @@ const segment =
  * counts, filter the list one choice at a time; the Location filter keeps
  * the status, so In Office with Blocked is the blocked cards in the office. On a wide
  * screen a row offers the one action the card's state calls for (Give SIM
- * Card, Register SIM Return or Change Status), the rest under ⋯. On a phone a
+ * Card, Return or Change Status), the rest under ⋯. On a phone a
  * row is two short lines and its actions are on the card's page. Writes need
  * assets.manage. A row opens its SIM or item as Orders opens an order
  * (/assets/sim-cards/<id>, /assets/equipment/<id>): beside the register from
@@ -114,7 +113,6 @@ export function Assets({
   const { client } = useApi()
   const session = useSession()
   const canManage = session.can('assets.manage')
-  const seesEquipment = session.can('equipment.read')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
   // A dashboard's Company Assets card opens the register on the tab of one of its tiles.
@@ -194,8 +192,6 @@ export function Assets({
       setActionError(err)
     }
   }
-
-  const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
 
   // The register's address keeps the tile it was opened on, so opening a SIM or item keeps the register as it is.
   const at = tile ? { tile } : {}
@@ -290,23 +286,6 @@ export function Assets({
               </>
             }
           />
-          {/* The section's other screen on the rail, which has no room to list its screens (the sidebar
-              and a phone's More panel do): Equipment is only the Equipment Assignments role's; without it there is none. */}
-          {seesEquipment ? (
-            <nav aria-label={t.assets.title} className="mb-4 hidden grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 md:inline-grid xl:hidden">
-              {([['SIM', 'simCards', t.assets.simCards], ['EQUIPMENT', 'equipment', t.assets.equipment]] as const).map(([k, name, label]) => (
-                <a
-                  key={k}
-                  {...linkTo({ name }, navigate)}
-                  aria-current={kind === k ? 'page' : undefined}
-                  className={cn(segment, 'aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm')}
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
-          ) : null}
-
           <div className="mb-4 flex flex-col gap-3">
             {/*
               The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' seven
@@ -452,25 +431,18 @@ export function Assets({
                       >
                         {sim ? (
                           <TableCell className="stacked:col-start-1 stacked:row-start-1">
-                            {/* The phone number over the SIM No., the card's link, and one button copying both for the provider's e-mail. */}
-                            <span className="flex items-center gap-1">
-                              <a
-                                {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
-                                className="flex flex-col items-start rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
-                                  {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
-                                </span>
-                                <span className="font-mono text-xs text-muted-foreground tabular-nums stacked:hidden">{a.sim_no}</span>
-                                {/* A phone's row is one number: the phone's, or the SIM No. until there is one. */}
-                                <span className="hidden font-mono font-medium tabular-nums stacked:inline">{a.phone_no ?? a.sim_no}</span>
-                              </a>
-                              {a.sim_no ? (
-                                <span className="stacked:hidden">
-                                  <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} />
-                                </span>
-                              ) : null}
-                            </span>
+                            {/* The phone number over the SIM No., the card's link; the card copies both (the Copy button there). */}
+                            <a
+                              {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
+                              className="flex flex-col items-start rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
+                                {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
+                              </span>
+                              <span className="font-mono text-xs text-muted-foreground tabular-nums stacked:hidden">{a.sim_no}</span>
+                              {/* A phone's row is one number: the phone's, or the SIM No. until there is one. */}
+                              <span className="hidden font-mono font-medium tabular-nums stacked:inline">{a.phone_no ?? a.sim_no}</span>
+                            </a>
                           </TableCell>
                         ) : (
                           <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
@@ -564,9 +536,7 @@ export function Assets({
                                 {sim ? t.assets.giveSimCard : t.assets.giveAsset}
                               </Button>
                             ) : action === 'return' ? (
-                              <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })}>
-                                {sim ? t.assets.registerReturn : t.assets.registerAssetReturn}
-                              </Button>
+                              <ReturnButton kind={a.kind} size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })} />
                             ) : a.connection_status ? (
                               <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
                             ) : null}{' '}

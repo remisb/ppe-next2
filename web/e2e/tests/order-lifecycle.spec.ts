@@ -1398,11 +1398,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()
   const card = page.getByRole('row', { name: /SIM-000001/ })
   await expect(card).toContainText('0089370011')
-  // One copy button for both numbers (SIM: … | Phone: …), named for the card.
-  await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
-  await expect(card.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
+  // The register copies nothing: the numbers are copied on the card.
+  await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(0)
   // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it; Location says only where.
-  await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone No\. \/ SIM No\./)
+  await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone \/ SIM/)
   await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Employee/)
   await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toBeVisible()
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
@@ -1453,7 +1452,9 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   // The card opens beside the register, as an order beside Orders, at an address of its own; its row stays marked.
   const pane = page.getByRole('complementary', { name: 'SIM', exact: true })
   await expect(page).toHaveURL(/\/assets\/sim-cards\/[0-9a-f-]{36}$/)
-  await expect(pane.getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+  // Its numbers lead, large: with no phone number yet, the SIM No. is the heading; the inventory number follows.
+  await expect(pane.getByRole('heading', { name: '0089370011' })).toBeVisible()
+  await expect(pane.getByText('Inventory No. SIM-000001')).toBeVisible()
   await expect(page.getByRole('row', { name: /0089370011/ })).toHaveAttribute('aria-current', 'true')
   await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   // The card's Changes are closed at first; open them (they stay open on its page).
@@ -1473,9 +1474,14 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await edit.getByLabel('Phone No.').fill('+370 612 40118')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
-  // As in the register: the phone number over the SIM No., one copy button for both.
-  await expect(pane.getByRole('definition').first()).toHaveText('+370 612 40118')
-  await expect(pane.getByRole('definition').nth(1)).toHaveText('0089370011')
+  // The phone number (now the heading) over the SIM No., one copy button for both (the register has none).
+  // No labels beside them: each says what it is in a tooltip, and to a screen reader first.
+  await expect(pane.getByRole('heading', { name: 'Phone No. +370 612 40118' })).toBeVisible()
+  // The SIM No. was the heading until the phone number came; its tooltip still opens.
+  await pane.getByText('SIM No. 0089370011').hover()
+  await expect(page.locator('[data-slot=tooltip-content]')).toHaveText('SIM No.')
+  await page.mouse.move(0, 0)
+  await expect(page.locator('[data-slot=tooltip-content]')).toHaveCount(0)
   await expect(pane.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
   await expect(pane.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
 
@@ -1582,8 +1588,12 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(heldRow.getByRole('cell').filter({ hasText: /^Unknown/ })).toHaveText(/^Unknown\s*Not Returned$/)
   await heldRow.getByRole('link', { name: /0089370011/ }).click()
 
-  // Register SIM Return: back in the office, the status and the mark kept (§11).
-  await pane.getByRole('button', { name: 'Register SIM Return' }).click()
+  // Return: back in the office, the status and the mark kept (§11). One word; its tooltip says what it does.
+  await page.mouse.move(0, 0)
+  await pane.getByRole('button', { name: 'Return', exact: true }).hover()
+  await expect(page.locator('[data-slot=tooltip-content]')).toContainText('Register that the SIM card is physically back in the office.')
+  await page.mouse.move(0, 0)
+  await pane.getByRole('button', { name: 'Return', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
   await expect(pane.getByText('No one')).toBeVisible()
@@ -1648,7 +1658,7 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await found.click()
   await expect(page).toHaveURL(/\/assets\/[0-9a-f-]{36}$/)
   // Back in the office, for the steps after this one.
-  await page.getByRole('main').getByRole('button', { name: 'Register SIM Return' }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Return', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
 
@@ -1691,7 +1701,7 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   await expect(page.getByRole('row', { name: new RegExp(admin.name) })).toContainText('Equipment Assignments')
   await openTab('Company Assets')
   await page.reload()
-  // The sidebar lists the section's two screens under it, the current one marked.
+  // The sidebar (and the rail) lists the section's two screens under it, the current one marked.
   const nav = page.getByRole('navigation', { name: 'Main' })
   await expect(nav.getByRole('link', { name: 'SIM Cards' })).toHaveAttribute('aria-current', 'page')
   await expect(nav.getByRole('link', { name: 'Equipment', exact: true })).toBeVisible()
@@ -1785,11 +1795,11 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
   await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'SIM-000001' }).first()).toBeVisible()
   await expect(page.getByRole('region', { name: /^Given SIM/ }).getByRole('link', { name: 'PC-000001' })).toHaveCount(0)
 
-  // The desk comes back: Register Asset Return on its page; no connection status anywhere.
+  // The desk comes back: Return on its page; no connection status anywhere.
   await equipment.getByRole('link', { name: 'FUR-000001' }).click()
   const main = page.getByRole('main')
   await expect(main.getByText('Connection')).toHaveCount(0)
-  await main.getByRole('button', { name: 'Register Asset Return' }).click()
+  await main.getByRole('button', { name: 'Return', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('FUR-000001 is back in the office.')).toBeVisible()
   await expect(main.getByRole('button', { name: 'Give Asset' })).toBeVisible()
@@ -1904,8 +1914,8 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page).toHaveURL(/\/assets\/sim-cards$/)
   await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   await expect(phoneNav.getByRole('link', { name: 'SIM Cards' })).toBeHidden()
-  // The screen has no switcher of its own on a phone: More is the way between the two.
-  await expect(page.getByRole('navigation', { name: 'Company Assets' })).toBeHidden()
+  // The screen has no switcher of its own: More is the way between the two.
+  await expect(page.getByRole('navigation', { name: 'Company Assets' })).toHaveCount(0)
   // The dashboard on a phone: compact figure tiles, one fact beside each figure, then Needs you.
   await openTab('Dashboard')
   const figures = page.getByRole('list', { name: 'Key figures' })
@@ -2049,8 +2059,13 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     // A SIM open beside the register (from 1024px; on its own below): the register drops to its short columns.
     await openTab('Company Assets')
     await page.getByRole('main').getByRole('link', { name: /612 40118/ }).click()
-    await expect(page.getByRole('complementary', { name: 'SIM', exact: true }).getByRole('heading', { name: 'SIM-000001' })).toBeVisible()
+    await expect(page.getByRole('complementary', { name: 'SIM', exact: true }).getByRole('heading', { name: '+370 612 40118' })).toBeVisible()
     expect(await fits(), `a SIM beside the register scrolls sideways at ${width}px`).toBe(true)
+    // The rail (and the sidebar) lists Company Assets' two screens itself; the register has no switcher of its own.
+    const mainNav = page.getByRole('navigation', { name: 'Main' })
+    await expect(mainNav.getByRole('link', { name: 'SIM Cards' })).toHaveAttribute('aria-current', 'page')
+    await expect(mainNav.getByRole('link', { name: 'Equipment', exact: true })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Company Assets' })).toHaveCount(0)
   }
 
   await page.setViewportSize(desktop)

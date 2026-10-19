@@ -2,7 +2,7 @@
 
 **Status: the API is built (slice 2 of [ADR 0004](../architecture/adr/0004-company-assets.md)):
 migration `0029_company_assets`, `internal/domain/asset`, every route below. The SIM card register (slice 3) and the asset page with Give SIM,
-Register SIM Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
+Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
 screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
 dashboards' Company Assets card (slice 6), Equipment & Furniture (slice 7) and Upload Signed
 Form (slice 5: migration `0030_asset_signed_copies`, `internal/files`); see below.** The product contract is the assets
@@ -187,7 +187,7 @@ The form is stored as JSONB, which reorders keys. Reading it back decodes it int
 form's struct and encodes it again, which gives the hashed bytes, and checks them against
 `document_hash`.
 
-### Register SIM Return, Register Asset Return (§11)
+### Return (§11)
 
 Request: return date (default today, not before the given date, not in the future) and an
 optional comment. Sets the return fields on the open assignment; the asset is in the Office
@@ -343,9 +343,7 @@ their own address:
   provider). On a phone all but the search fold under Filters, whose count leaves out the tabs. The location keeps the
   status, so Office with Blocked is the blocked cards in the office (§3).
 - **Rows**: first the phone number (or that there is none yet) with the SIM No. under it,
-  the link to the card's page, and one copy button for both, which copies
-  `SIM: <SIM No.> | Phone: <Phone No.>` (`simCopyText`; the phone part left out until known;
-  the card's page shows the same, labelled Phone No. and SIM No.); then the Employee who
+  the link to the card's page (no copy button: the card copies them); then the Employee who
   holds it (linked to the employee's page; the last holder when Unknown; the Inventory No. is
   on the card's page); provider and plan; status; Location (Office, With an employee or
   Unknown, nothing of who) with Not Returned; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
@@ -373,7 +371,7 @@ their own address:
   with the same actions; a change in either loads the other again. The asset page
   (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
   a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
-  Register SIM Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
+  Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
   as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
   buttons.
 - Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
@@ -384,7 +382,12 @@ their own address:
 `routes/asset.tsx`, the sheets in `components/asset-sheets.tsx`, the rules in
 `lib/assets.ts` (`primaryAction`, `giveBlock`, `formKey`, `blockingEmail`):
 
-- **The page**: the numbers with copy buttons; three blocks, Connection (status, Change
+- **The page**: first the phone number over the SIM No., both large and unlabelled (each
+  named by a tooltip on hover and to a screen reader; the first of them the heading), with
+  one copy button for both, which copies `SIM: <SIM No.> | Phone: <Phone No.>`
+  (`simCopyText`; the phone part left out until known); the Inventory No. below them in
+  regular size; the action (Give SIM, or Return, one word whose help tooltip says what it does) and More stay in the top right
+  corner, beside the phone number, which moves under them where both do not fit; three blocks, Connection (status, Change
   Status), Where (Office, With an employee or Unknown, with Not Returned) and Held by (the
   holder, linked, since when and Days Held); the activation text on a Not Activated card;
   the details; **Assignments**, newest first, each with its dates, comments, Not Returned
@@ -423,7 +426,7 @@ their own address:
   stored form in place and **Download PDF** saves it, each recorded. The page
   `/assets/<id>/assignments/<assignmentId>/form` (and `/assets/<id>/form?…` for a new one),
   which printed in a tab of its own before, still answers old links; nothing opens it now.
-- **Register SIM Return**: the return date (today, not before the given date, not later)
+- **Return**: the return date (today, not before the given date, not later)
   and a comment; **Register Return to Office**.
 - **Mark as Not Returned**: where it is (still with the employee, or unknown) and a
   comment; then **Prepare Blocking Email** opens at once unless the card is already Blocked.
@@ -460,7 +463,7 @@ The same engine, screens and rules, with what differs by kind:
   With Employees is All less In Office), the category kept; search by inventory or serial number, name or
   holder; filters by category and location; columns Item / Category and Serial No. instead
   of the numbers, provider and status. A row's action is Give Asset in the Office and
-  Register Asset Return while held: there is no connection status (§17).
+  Return while held: there is no connection status (§17).
 - **Add Asset** (`components/equipment-form.tsx`): Name, Category, Inventory No. (the
   category's next number suggested: PC, PH, DRV, FUR, AST), Serial No., Non-return Value,
   Comment. It starts in the Office.

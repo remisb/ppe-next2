@@ -720,7 +720,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   employee page's Given SIM and Equipment sections. Not workwear: workwear is ordered by
   catalogue item and quantity, and never comes back.
 - **Code:** `internal/domain/asset`, `routes/assets.tsx` (G then A). **UI:**
-  Company Assets (short label Assets), with two screens listed under it in the sidebar:
+  Company Assets (short label Assets), with two screens listed under it in the rail, the sidebar and More:
   **SIM Cards** (`/assets/sim-cards`) and **Equipment** (`/assets/equipment`), also the
   screens' titles. Equipment holds equipment and furniture alike.
 
@@ -816,10 +816,13 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   future, and kept apart from when the assignment was typed in. Days Held is how long it was
   held, not how long the service was active (§10).
 
-### Register SIM Return, Register Asset Return
+### Return
 - **Brief:** recording that an asset is physically back in the office.
 - **Detail:** ends the open assignment; the asset is in the Office again. The connection
   status does not change (§11).
+- **UI:** **Return** (LT Priimti, RU Принять: the counterpart of Give), one word for a SIM and
+  an item, short enough to sit beside the card's numbers; a help tooltip says what it does.
+  Formerly Register SIM Return / Register Asset Return.
 
 ### Not Returned
 - **Brief:** a mark on an open assignment: the employee has not returned the asset and is
@@ -979,7 +982,7 @@ screens are built):
 | Give SIM / Give Asset | Išduoti SIM / Išduoti turtą | Выдать SIM / Выдать имущество |
 | Given SIM | Išduotos SIM | Выданные SIM |
 | Given Date / Days Held | Išdavimo data / Turima dienų | Дата выдачи / Дней на руках |
-| Register SIM Return / Register Asset Return | Registruoti SIM grąžinimą / Registruoti turto grąžinimą | Зарегистрировать возврат SIM / Зарегистрировать возврат имущества |
+| Return | Priimti | Принять |
 | Not Returned / Mark as Not Returned | Negrąžinta / Pažymėti kaip negrąžintą | Не возвращено / Отметить как не возвращённое |
 | Total SIMs / In Office / With Employees | Iš viso SIM / Biure / Pas darbuotojus | Всего SIM / В офисе / У сотрудников |
 | Preview Form / Print Form / Paper Form Signed | Peržiūrėti aktą / Spausdinti aktą / Aktas pasirašytas | Просмотреть акт / Печать акта / Акт подписан |
@@ -1001,7 +1004,7 @@ screens are built):
 | delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. A SIM card's **Received Date** (from the provider) is the one exception. |
 | hand-over, issue, allocation (for an asset) | **assignment**; **Give SIM** / **Give Asset** | Hand-over mode is workwear's in-person confirmation. |
 | act, receipt, record, hand-over form (for an asset) | **assignment form** (UI: Form) | Record and receipt are the order's Items Given Record. |
-| returned (for a blocked card), deactivated, disconnected | **Blocked** | Blocking is a connection status; only Register SIM Return makes a card returned. |
+| returned (for a blocked card), deactivated, disconnected | **Blocked** | Blocking is a connection status; only Return makes a card returned. |
 | lost, missing, stolen (for an asset) | **Not Returned**; location **Unknown** | Loss and write-off are not defined yet (assets brief §20). |
 | stock, warehouse, free (for assets) | **In Office** (office stock) | One word for the tile, the filter and the location. |
 | item, product (for an asset) | **asset**, **SIM card** | An item is a catalogue item, ordered by quantity. |

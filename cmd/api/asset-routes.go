@@ -329,7 +329,7 @@ func (h *assetHandler) give(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, a)
 }
 
-// giveBack is Register SIM Return and Register Asset Return.
+// giveBack is Return (SIM and item).
 func (h *assetHandler) giveBack(w http.ResponseWriter, r *http.Request) {
 	actor, id, req, ok := withAsset[returnRequest](w, r)
 	if !ok {

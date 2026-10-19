@@ -5,6 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { formatDate } from '@ppe/ui/lib/dates'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { saveFile } from '@ppe/ui/lib/save-file'
@@ -14,7 +15,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, FileDown, Printer, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu } from '@/components/asset-controls'
+import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -99,6 +100,8 @@ export function AssetDetail({
   const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
   // The page's title is its h1; beside the register, the register's title is, as an order's beside Orders.
   const Title = place.page ? 'h1' : 'h2'
+  // A SIM's phone number and SIM No.: as large as a title, by the room the detail has (a SIM No. is 20 digits).
+  const simNumber = cn('font-mono text-lg font-semibold whitespace-nowrap tracking-tight tabular-nums @sm:text-xl', place.page && '@2xl:text-2xl')
 
   return (
     <article aria-label={a ? a.inventory_no : sim ? t.assets.simCard : t.assets.item} className="@container">
@@ -126,15 +129,29 @@ export function AssetDetail({
       ) : (
         <>
           <header className={cn('mb-5 md:mb-6', !place.page && 'mb-4 md:mb-4 lg:pr-10')}>
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <Title className={cn('text-xl font-semibold tracking-tight', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
+            {/*
+              What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
+              tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
+              The action stays in the top right corner: the phone number (or the title) shares its row, and where the
+              two do not fit (a long action on a phone) the number moves under it, never the action down (wrap-reverse).
+            */}
+            <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-1">
+              {!sim ? (
+                <Title className={cn('min-w-0 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
+              ) : a.phone_no ? (
+                <SimNumber as={Title} label={t.assets.phoneNo} className={simNumber}>
+                  {a.phone_no}
+                </SimNumber>
+              ) : (
+                <p className="text-muted-foreground">{t.assets.noPhoneNo}</p>
+              )}
               {canManage ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="ml-auto flex shrink-0 gap-2">
                   {primaryAction(a) === 'give' ? (
                     <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
                   ) : null}
                   {primaryAction(a) === 'return' ? (
-                    <Button onClick={() => setSheet({ kind: 'return', asset: a })}>{sim ? t.assets.registerReturn : t.assets.registerAssetReturn}</Button>
+                    <ReturnButton kind={a.kind} onClick={() => setSheet({ kind: 'return', asset: a })} />
                   ) : null}
                   <AssetMoreActions
                     asset={a}
@@ -146,22 +163,27 @@ export function AssetDetail({
                 </div>
               ) : null}
             </div>
+            {sim && a.sim_no ? (
+              // One button copying both numbers, beside the second of them; it takes no more height than the number,
+              // so the two numbers stay close.
+              <div className="flex items-center gap-1">
+                <SimNumber as={a.phone_no ? 'p' : Title} label={t.assets.simNo} className={simNumber}>
+                  {a.sim_no}
+                </SimNumber>
+                <span className="-my-2">
+                  <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} />
+                </span>
+              </div>
+            ) : null}
+            {sim ? (
+              <p className="mt-2 text-sm">
+                <span className="text-muted-foreground">{t.assets.inventoryNo}</span> <span className="font-mono">{a.inventory_no}</span>
+              </p>
+            ) : null}
             <p className="mt-1 max-w-prose text-sm text-muted-foreground empty:hidden">
               {(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
             </p>
           </header>
-          {sim ? (
-            // As in the register: the phone number over the SIM No., and one button copying both for the provider's e-mail.
-            <div className="mb-4 flex items-center gap-2">
-              <dl className="grid grid-cols-[auto_auto] items-baseline gap-x-3 gap-y-0.5 text-sm">
-                <dt className="text-muted-foreground">{t.assets.phoneNo}</dt>
-                <dd className={cn(a.phone_no && 'font-mono tabular-nums')}>{a.phone_no ?? t.assets.noPhoneNo}</dd>
-                <dt className="text-muted-foreground">{t.assets.simNo}</dt>
-                <dd className="font-mono text-muted-foreground tabular-nums">{a.sim_no}</dd>
-              </dl>
-              {a.sim_no ? <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} /> : null}
-            </div>
-          ) : null}
           <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
             {message}
           </p>
@@ -449,5 +471,25 @@ function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignm
       ) : null}
       {printing}
     </>
+  )
+}
+
+/**
+ * A SIM's phone number or SIM No., large and without a label beside it: the
+ * label is a tooltip on hover, and screen readers hear it before the number.
+ */
+function SimNumber({ as: As, label, className, children }: { as: 'h1' | 'h2' | 'p'; label: string; className: string; children: ReactNode }) {
+  // Keyed by its element: the SIM No. turns from heading to line when a phone number is added, and Base UI keeps
+  // listening for hover on the element it first had.
+  return (
+    <Tooltip key={As}>
+      <TooltipTrigger render={<As className={cn('w-fit', className)} />}>
+        <span className="sr-only">{label} </span>
+        {children}
+      </TooltipTrigger>
+      <TooltipContent aria-hidden side="top" align="start">
+        {label}
+      </TooltipContent>
+    </Tooltip>
   )
 }

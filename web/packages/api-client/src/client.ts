@@ -390,7 +390,7 @@ export function createClient(options: ClientOptions) {
       previewForm: (id: string, input: AssignmentFormInput) =>
         request<AssignmentFormResult>('POST', `/api/v1/assets/${seg(id)}/assignments/preview`, input),
       give: (id: string, input: GiveAssetInput) => request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/assignments`, input),
-      /** Register SIM Return / Register Asset Return; an empty date is today. */
+      /** Return; an empty date is today. */
       registerReturn: (id: string, input: { returned_date?: string; comment: string }) =>
         request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/return`, input),
       markNotReturned: (id: string, input: { whereabouts: Whereabouts; comment: string }) =>

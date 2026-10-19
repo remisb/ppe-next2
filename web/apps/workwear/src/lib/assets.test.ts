@@ -147,7 +147,7 @@ describe('dates', () => {
 
 describe('the action a card calls for', () => {
   const held = { not_returned_at: null } as Asset['open_assignment']
-  it('Register SIM Return while held; Give SIM when Active in the office; else Change Status', () => {
+  it('Return while held; Give SIM when Active in the office; else Change Status', () => {
     expect(primaryAction(card({ open_assignment: held, connection_status: 'BLOCKED' }))).toBe('return')
     expect(primaryAction(card({ connection_status: 'ACTIVE' }))).toBe('give')
     expect(primaryAction(card({ connection_status: 'NOT_ACTIVATED' }))).toBe('status')

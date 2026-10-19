@@ -248,7 +248,7 @@ export { formatDay } from '@ppe/ui/lib/dates'
 
 /**
  * The one action a card's state calls for (§3: "situacijai tinkami
- * veiksmai"): Register SIM Return while someone holds it, Give SIM when
+ * veiksmai"): Return while someone holds it, Give SIM when
  * it is in the office and Active, else Change Status (to get it Active).
  */
 export type PrimaryAction = 'return' | 'give' | 'status'

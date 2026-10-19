@@ -12,7 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { ChevronDown, Copy } from 'lucide-react'
+import type { ComponentProps } from 'react'
 
 import { t } from '@/i18n'
 import { canMarkNotReturned, statusLabel, statusVariant } from '@/lib/assets'
@@ -69,6 +71,25 @@ export function StatusMenu({
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+/**
+ * Return: one short word for a SIM and an item, so it
+ * fits beside the card's numbers; what it does is its help tooltip, on hover and
+ * to screen readers.
+ */
+export function ReturnButton({
+  kind,
+  onClick,
+  ...props
+}: { kind: Asset['kind']; onClick: () => void } & Pick<ComponentProps<typeof Button>, 'size' | 'variant'>) {
+  return (
+    <HelpTooltip title={t.assets.takeBack} help={t.assets.takeBackHelp[kind === 'EQUIPMENT' ? 'EQUIPMENT' : 'SIM']}>
+      <Button {...props} onClick={onClick}>
+        {t.assets.takeBack}
+      </Button>
+    </HelpTooltip>
   )
 }
 

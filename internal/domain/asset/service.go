@@ -581,7 +581,7 @@ func (s *Service) Give(ctx context.Context, id uuid.UUID, p GiveParams, actor uu
 	return s.assignmentView(a), nil
 }
 
-// ReturnParams are Register SIM Return's and Register Asset Return's form.
+// ReturnParams are Return's form.
 // An empty date is today.
 type ReturnParams struct {
 	ReturnedDate string

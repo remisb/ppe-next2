@@ -105,8 +105,8 @@ Rules:
 - **Detail:**
   - **Bottom bar** (phone): the first sections, the raised **New order** button in the
     middle of the staff app's bar, and **More**. Reader word: "the bar at the bottom".
-  - **Rail** (tablet, `md` to `xl`): icons over short labels. Has no room for a section's own
-    screens, so those screens show a **screen switcher** (SIM Cards | Equipment) themselves.
+  - **Rail** (tablet, `md` to `xl`): icons over short labels; a section's own screens are
+    short centred links under its icon (SIM Cards, Equipment), a long word hyphenated.
   - **Sidebar** (desktop, from `xl`): icons beside full labels, a section's screens listed
     under it, **Search…** at the top.
   - **Foot links**: at the foot of the rail and sidebar, and in More: Help, Keyboard
@@ -359,8 +359,6 @@ Lithuanian or Russian label wraps rather than overflow.
 - **Section tabs**: links under a screen's header that move between its parts, each at its
   own address (Security: Sign-ins, Signed-in devices, Access review; System: Status, Errors,
   Backups). Shown only when the user may open more than one.
-- **Screen switcher**: the rail-width switch between a section's screens (SIM Cards |
-  Equipment).
 - **Choice tabs**: a segmented control on a settings card or Help (Theme, Language, Device).
 
 ### Chips
@@ -655,7 +653,7 @@ height (0 from `md`), which sticky bars sit above.
 ### 9.2 Casing
 - **A glossary term keeps the glossary's casing**: screen names (Create Order, Item
   Catalogue, SIM Cards, Audit log, Roles & permissions, Replacements due), named actions
-  (Mark as Ordered, Give SIM, Register SIM Return, Change Status, Edit Sizes, Add Item,
+  (Mark as Ordered, Give SIM, Return, Change Status, Edit Sizes, Add Item,
   Upload Signed Form, Copy for WhatsApp), states (Ordered, Given, Not Activated, In Office,
   With Employees, Not Returned, Signed Copy Missing) and named fields (Inventory No., Given
   Date, Held By).
@@ -687,7 +685,7 @@ height (0 from `md`), which sticky bars sit above.
 | **Remove …** | take a part out of what is being edited (Remove line, Remove the group) |
 | **Deactivate …**, **Activate …** | take out of, or put back into, everyday use |
 | **Mark as …** | record a fact staff saw (Mark as Ordered, Mark as Signed & Given, Mark as Not Returned, Mark as reviewed) |
-| **Register …** | record a physical event of an asset (Register SIM Return) |
+| **Return** | close an assignment: the asset is physically back (one word for a SIM and an item; its help tooltip says what it does) |
 | **Give …** | open an assignment (Give SIM, Give Asset) |
 | **Change …** | choose another of a fixed set of states (Change Status) |
 | **Print …**, **View …**, **Preview …**, **Download PDF** | the document printed, on screen, shown before it is final, as a file |

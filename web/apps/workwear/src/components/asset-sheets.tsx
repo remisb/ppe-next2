@@ -624,7 +624,7 @@ function CardLine({ asset }: { asset: Asset }) {
 }
 
 /**
- * Register SIM Return (§11): only once the card is physically back. The
+ * Return (§11): only once the card is physically back. The
  * assignment ends and the card is in the Office; its status does not change.
  */
 function ReturnSheet({ asset, today, onClose, onReturned }: { asset: Asset | null; today: string; onClose: () => void; onReturned: (message: string) => void }) {
@@ -659,7 +659,7 @@ function ReturnSheet({ asset, today, onClose, onReturned }: { asset: Asset | nul
     <FormSheet
       open={asset !== null}
       onClose={onClose}
-      title={asset?.kind === 'EQUIPMENT' ? t.assets.registerAssetReturn : t.assets.registerReturn}
+      title={t.assets.takeBack}
       description={asset?.kind === 'EQUIPMENT' ? t.assets.returnAssetDescription : t.assets.returnDescription}
       footer={footerButtons(
         onClose,
