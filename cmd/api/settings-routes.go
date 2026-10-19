@@ -14,7 +14,7 @@ type settingsHandler struct {
 
 // registerSettingsRoutes mounts /api/v1/settings. Every signed-in user reads
 // them (dates in the zone Orders filters use; the supplier's WhatsApp group
-// for Copy for WhatsApp; the SIM card providers for Add SIM); only
+// for Copy for WhatsApp; the SIM providers for Add SIM); only
 // administrators change them.
 func registerSettingsRoutes(rt *router, svc *settings.Service, timezone string) {
 	h := &settingsHandler{settings: svc, timezone: timezone}

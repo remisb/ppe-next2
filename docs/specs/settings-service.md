@@ -37,9 +37,9 @@ GIVEN order's Share via WhatsApp still let the user pick the chat.
   an invite link lets whoever holds it join the group, so it is never put in the code or
   the client bundle.
 
-## The SIM card providers
+## The SIM providers
 
-An administrator lists the SIM card providers on Settings and marks one as the default
+An administrator lists the SIM providers on Settings and marks one as the default
 (or none). Add SIM (Company Assets, [asset-service.md](asset-service.md)) offers them in
 a select, the default one chosen; Edit offers them too, with the card's own provider added
 when it is no longer listed. With none listed, the provider is typed, as before the list
@@ -70,6 +70,6 @@ The first save inserts the row (`ON CONFLICT (singleton) DO UPDATE` for two at o
 later ones lock it `FOR UPDATE`. A save that changes the group records
 `settings.supplier_chat_changed` with the old and new `{name, link}`, entity type
 `settings` and a fixed entity id (`settings.AuditEntityID`); one that changes the default
-SIM card providers records `settings.sim_providers_changed` with the old and new
+SIM providers records `settings.sim_providers_changed` with the old and new
 `{providers, default_provider}` (older events, `settings.default_sim_provider_changed`,
 hold `{provider}`). An unchanged save writes nothing, and each save keeps the other setting.

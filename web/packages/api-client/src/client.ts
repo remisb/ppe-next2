@@ -226,7 +226,7 @@ export function createClient(options: ClientOptions) {
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** Set or clear the supplier's WhatsApp group; administrators only. Returns the settings. */
     updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
-    /** Replace the SIM card providers and the default one; administrators only. Returns the settings. */
+    /** Replace the SIM providers and the default one; administrators only. Returns the settings. */
     updateSimProviders: (input: SimProvidersInput) => request<Settings>('PUT', '/api/v1/settings/sim-providers', input),
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),

@@ -759,11 +759,11 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** the provider's e-mail address is shown where staff must write to it
   (activation, blocking). Nothing is sent from the app.
 
-### SIM card providers and the default provider
+### SIM providers and the default provider
 - **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
   and the one of them Add SIM chooses first.
 - **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
-  `default_sim_provider`. **UI:** **SIM card providers** on Settings in Administration, with
+  `default_sim_provider`. **UI:** **SIM providers** on Settings in Administration, with
   **Default provider** and **No default**.
 - **Detail:** changing them changes no card already registered; a card whose provider is no
   longer listed keeps it.
@@ -969,7 +969,7 @@ screens are built):
 | Equipment & Furniture | Įranga ir baldai | Оборудование и мебель |
 | Inventory No. / SIM No. / Phone No. / Serial No. | Inventoriaus Nr. / SIM Nr. / Telefono Nr. / Serijos Nr. | Инвентарный № / № SIM / № телефона / Серийный № |
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
-| SIM card providers | SIM kortelių tiekėjai | Операторы SIM-карт |
+| SIM providers | SIM tiekėjai | Операторы SIM |
 | Default provider / No default | Numatytasis tiekėjas / Be numatytojo | Оператор по умолчанию / Без оператора по умолчанию |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |

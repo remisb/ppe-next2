@@ -16,7 +16,7 @@ import { type SupplierChatErrors, checkSupplierChat } from '@/lib/supplier-chat'
 /**
  * Settings (/settings, administrators only): the organisation's settings. The
  * supplier's WhatsApp group, which Copy for WhatsApp opens for an order
- * message, and the SIM card providers, which Add SIM offers.
+ * message, and the SIM providers, which Add SIM offers.
  */
 export function SettingsPage() {
   const { client } = useApi()
@@ -135,7 +135,7 @@ function SupplierChatCard({ settings, onSaved }: { settings: Settings; onSaved: 
 }
 
 /**
- * The SIM card providers Add SIM offers, and the default one it chooses
+ * The SIM providers Add SIM offers, and the default one it chooses
  * first. Added, removed and the default chosen as a draft, saved together;
  * cards already registered keep their provider.
  */

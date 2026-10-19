@@ -32,7 +32,7 @@ describe('auditChanges', () => {
     ])
   })
 
-  it('lists the SIM card providers, and says when there are none', () => {
+  it('lists the SIM providers, and says when there are none', () => {
     expect(
       auditChanges({
         before: { providers: [], default_provider: '' },

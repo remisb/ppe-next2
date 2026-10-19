@@ -251,9 +251,9 @@ test("Settings: an administrator sets the supplier's WhatsApp group", async () =
   await expect(card.getByRole('link', { name: 'Open the group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
 })
 
-test('Settings: an administrator lists the SIM card providers and the default one', async () => {
+test('Settings: an administrator lists the SIM providers and the default one', async () => {
   await openTab('Settings')
-  const card = page.getByRole('region', { name: 'SIM card providers' })
+  const card = page.getByRole('region', { name: 'SIM providers' })
   await expect(card.getByRole('status')).toContainText('None listed')
   const name = card.getByLabel('Provider name')
   // The first one added is the default; one listed twice, in any case, is refused.

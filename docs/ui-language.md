@@ -87,7 +87,7 @@ Rules:
 
 ### Settings
 - **Brief:** Administration's screen of the organisation's settings: the supplier's WhatsApp
-  group and the SIM card providers.
+  group and the SIM providers.
 - **Detail:** not Account, and not the read-only **Settings** panel on Backups.
 
 ### Public page
@@ -535,7 +535,7 @@ Lithuanian or Russian label wraps rather than overflow.
 
 ### Unsaved changes
 - **Brief:** a draft on a screen that keeps its edits until saved says so: "Changes not
-  saved yet." with **Discard changes** (Settings' SIM card providers).
+  saved yet." with **Discard changes** (Settings' SIM providers).
 - **Detail:** the working order is the other draft: kept on the device and shown as
   **Draft**, not as unsaved.
 
@@ -830,9 +830,5 @@ The dictionaries (`web/apps/*/src/i18n`, `@ppe/ui`'s `text.ts`, `@ppe/app-shell`
 
 ## 12. Known deviations
 
-Where the apps do not follow this file yet (found 2026-10-19). Each is small; fix it with its
-screen or together. Paths are under `web/apps/`.
-
-| Where | Now | Should be |
-|---|---|---|
-| glossary §12 vs its Words to avoid | Settings' **SIM card providers** while the screens say SIM | decide in the glossary: keep it as the one exception, or "SIM providers" |
+Where the apps do not follow this file. None are known: the ones found on 2026-10-19 are
+fixed. Add a row here (where, now, should be) when one is found and not fixed at once.

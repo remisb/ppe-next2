@@ -1,4 +1,4 @@
-/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group, the SIM card providers). */
+/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group, the SIM providers). */
 export const settings = {
   title: 'Settings',
   description: 'For the whole organisation. Only administrators change them.',
@@ -19,7 +19,7 @@ export const settings = {
   tryIt: 'Open the group',
   nameRequired: 'Give the group a name: staff see it on Copy for WhatsApp.',
   invalidLink: 'Paste the group invite link from WhatsApp: it starts with https://chat.whatsapp.com/',
-  simProviders: 'SIM card providers',
+  simProviders: 'SIM providers',
   simProvidersIntro: 'Add SIM offers these providers, the default one chosen first. A card already registered keeps its provider.',
   noProviders: 'None listed: Add SIM asks for the provider to be typed.',
   defaultProviderIs: (name: string) => `Add SIM chooses ${name} first.`,

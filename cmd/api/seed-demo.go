@@ -157,7 +157,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	clock.daysAgo(start, loc, 100)
 	prefs := settings.NewService(settings.NewPostgresRepository(pool), settings.WithClock(clock.now))
 	if _, err := prefs.UpdateSIMProviders(ctx, settings.SIMProvidersParams{Providers: []string{"Telia", "Bitė", "Tele2"}, Default: "Telia"}, admin.ID); err != nil {
-		return fmt.Errorf("SIM card providers: %w", err)
+		return fmt.Errorf("SIM providers: %w", err)
 	}
 	sim1 := s.sim("SIM-000001", "8937 0011 2233 4455 667", "+370 612 40118", "Telia", "Biz 10 GB", asset.StatusActive)
 	sim2 := s.sim("SIM-000002", "8937 0011 2233 4455 668", "+370 612 40119", "Telia", "Biz 10 GB", asset.StatusActive)

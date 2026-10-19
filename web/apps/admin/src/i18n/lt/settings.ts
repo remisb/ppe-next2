@@ -20,7 +20,7 @@ export const settings: SettingsText = {
   tryIt: 'Atidaryti grupę',
   nameRequired: 'Įrašykite grupės pavadinimą: darbuotojai jį mato prie Kopijuoti į WhatsApp.',
   invalidLink: 'Įklijuokite grupės pakvietimo nuorodą iš WhatsApp: ji prasideda https://chat.whatsapp.com/',
-  simProviders: 'SIM kortelių tiekėjai',
+  simProviders: 'SIM tiekėjai',
   simProvidersIntro: '„Pridėti SIM“ siūlo šiuos tiekėjus, numatytasis pasirinktas iš anksto. Jau užregistruota kortelė savo tiekėjo nekeičia.',
   noProviders: 'Sąrašas tuščias: „Pridėti SIM“ prašo įrašyti tiekėją.',
   defaultProviderIs: (name: string) => `„Pridėti SIM“ iš anksto pasirenka „${name}“.`,

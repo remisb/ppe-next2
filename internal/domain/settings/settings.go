@@ -1,7 +1,7 @@
 // Package settings holds the organisation's settings that administrators
 // change in the app, one set for the whole organisation: the supplier's
 // WhatsApp group, which Copy for WhatsApp opens for the order message, and the
-// SIM card providers, which Add SIM offers, the default one chosen. Settings
+// SIM providers, which Add SIM offers, the default one chosen. Settings
 // fixed at deployment (timezone, currency) stay in config.
 package settings
 
@@ -101,7 +101,7 @@ func parseInvite(link string) (string, bool) {
 	return code, true
 }
 
-// SIMProvidersParams replace the SIM card providers: the list, and the one of
+// SIMProvidersParams replace the SIM providers: the list, and the one of
 // them Add SIM chooses first, or empty for none.
 type SIMProvidersParams struct {
 	Providers []string

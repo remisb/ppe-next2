@@ -70,7 +70,7 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 	})
 }
 
-// UpdateSIMProviders replaces the SIM card providers and the default one,
+// UpdateSIMProviders replaces the SIM providers and the default one,
 // recording settings.sim_providers_changed when either differs. Cards already
 // registered keep their provider, listed or not.
 func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, actor uuid.UUID) (Settings, error) {

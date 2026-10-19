@@ -20,7 +20,7 @@ export const settings: SettingsText = {
   tryIt: 'Открыть группу',
   nameRequired: 'Укажите название группы: сотрудники видят его у кнопки «Копировать для WhatsApp».',
   invalidLink: 'Вставьте ссылку-приглашение в группу из WhatsApp: она начинается с https://chat.whatsapp.com/',
-  simProviders: 'Операторы SIM-карт',
+  simProviders: 'Операторы SIM',
   simProvidersIntro: '«Добавить SIM» предлагает этих операторов, оператор по умолчанию выбран заранее. У уже зарегистрированной карты оператор не меняется.',
   noProviders: 'Список пуст: «Добавить SIM» просит ввести оператора.',
   defaultProviderIs: (name: string) => `«Добавить SIM» заранее выбирает «${name}».`,

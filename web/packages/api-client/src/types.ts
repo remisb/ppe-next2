@@ -358,13 +358,13 @@ export interface Settings {
   currency: 'EUR'
   /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
   supplier_chat: SupplierChat | null
-  /** The SIM card providers Add SIM offers, in the administrator's order; empty when none are listed. */
+  /** The SIM providers Add SIM offers, in the administrator's order; empty when none are listed. */
   sim_providers: string[]
   /** The one of sim_providers Add SIM chooses for a new card; null when there is none. */
   default_sim_provider: string | null
 }
 
-/** Replaces the SIM card providers; default is one of them, or '' for none. */
+/** Replaces the SIM providers; default is one of them, or '' for none. */
 export interface SimProvidersInput {
   providers: string[]
   default: string

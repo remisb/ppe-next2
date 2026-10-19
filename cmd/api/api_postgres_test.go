@@ -954,7 +954,7 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil {
 		t.Errorf("settings = %s", rec.Body)
 	}
-	// An administrator lists the SIM card providers (as ppe_app); everyone reads them for Add SIM.
+	// An administrator lists the SIM providers (as ppe_app); everyone reads them for Add SIM.
 	_, settingsAdmin := api.userWith(t, role.KeyAdmin)
 	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia"}
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, providers); rec.Code != http.StatusOK {

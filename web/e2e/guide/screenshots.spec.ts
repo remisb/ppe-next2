@@ -187,7 +187,7 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   const chat = page.getByRole('region', { name: A.settings.supplierChat })
   await expect(chat.getByRole('status')).toContainText('Superman Rubai Group')
   await shot('settings')
-  // The SIM card providers the demo lists (cmd/api/seed-demo.go), Telia the default.
+  // The SIM providers the demo lists (cmd/api/seed-demo.go), Telia the default.
   const providers = page.getByRole('region', { name: A.settings.simProviders })
   await providers.evaluate((el) => el.scrollIntoView({ block: 'start' }))
   await expect(providers.getByRole('radio', { name: 'Telia' })).toBeChecked()

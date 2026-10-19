@@ -1,5 +1,5 @@
 /**
- * The Settings list of SIM card providers, kept as a draft until saved: the
+ * The Settings list of SIM providers, kept as a draft until saved: the
  * same rules the server applies (internal/domain/settings). Names are trimmed,
  * each listed once whatever its case, at most 100 characters and 50 names; the
  * default is one of them or none. The server has the last word.
