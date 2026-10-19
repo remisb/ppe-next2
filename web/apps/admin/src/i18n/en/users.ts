@@ -23,7 +23,7 @@ export const users = {
   admin: 'Administrator',
   adminGrants: 'Manages users, plus everything a manager can do.',
   manager: 'Manager',
-  managerGrants: 'Manages Item Catalogue prices and Item Sets, plus everything an employee can do.',
+  managerGrants: 'Manages Item Catalogue prices and Item Sets, plus everything the employee role can do.',
   employee: 'Employee',
   employeeGrants: 'Prepares orders and follows them in Orders, manages employees and sizes.',
   equipment: 'Equipment Assignments',

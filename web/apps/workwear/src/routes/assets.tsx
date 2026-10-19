@@ -490,7 +490,7 @@ export function Assets({
                                 {open.employee_name}
                               </a>
                             ) : (
-                              '—'
+                              '–'
                             )}
                           </TableCell>
                         ) : null}
@@ -526,7 +526,7 @@ export function Assets({
                               {a.name}
                               {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
                             </TableCell>
-                            {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '—'}</TableCell>}
+                            {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '–'}</TableCell>}
                             <TableCell className="stacked:hidden">
                               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
@@ -545,12 +545,12 @@ export function Assets({
                                   <span className="block text-xs text-muted-foreground">{t.assets.daysHeld(open.days_held)}</span>
                                 </>
                               ) : (
-                                '—'
+                                '–'
                               )}
                             </TableCell>
-                            <TableCell className="stacked:hidden">{documentsText(open) ?? '—'}</TableCell>
+                            <TableCell className="stacked:hidden">{documentsText(open) ?? '–'}</TableCell>
                             <TableCell className={cn('max-w-48 truncate stacked:hidden', sim && 'hidden 2xl:table-cell')} title={a.comment || undefined}>
-                              {a.comment || '—'}
+                              {a.comment || '–'}
                             </TableCell>
                           </>
                         )}

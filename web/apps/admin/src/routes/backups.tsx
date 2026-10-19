@@ -142,12 +142,12 @@ function RecentRuns({ s, className }: { s: BackupStatus; className?: string }) {
                   {r.pruned ? <span className="mt-1 block text-xs">{t.backups.deleted}</span> : null}
                 </TableCell>
                 <TableCell label={t.backups.size} className="text-right tabular-nums">
-                  {r.status === 'succeeded' ? formatBytes(r.size_bytes) : '—'}
+                  {r.status === 'succeeded' ? formatBytes(r.size_bytes) : '–'}
                 </TableCell>
                 <TableCell label={t.backups.took} className="text-right tabular-nums">
                   {formatDuration(r.duration_ms)}
                 </TableCell>
-                <TableCell label={t.backups.dbVersion}>{r.server_version || '—'}</TableCell>
+                <TableCell label={t.backups.dbVersion}>{r.server_version || '–'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

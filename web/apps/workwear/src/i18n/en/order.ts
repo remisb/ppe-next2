@@ -10,7 +10,7 @@ export const order = {
   // Create Order screen
   title: 'Create Order',
   description: 'Prepare a supplier order for one employee. Nothing is final until Mark as Ordered.',
-  newOrder: 'New order',
+  clearOrder: 'Clear order',
   replaceConfirm: (name: string) => `Replace the order in progress for ${name} with this reorder?`,
   noOneYet: 'no one yet',
   setOnOrderConfirm: (set: string) => `${set} is on this order already. Add its items again?`,
@@ -18,7 +18,6 @@ export const order = {
   cannotMarkAsOrdered: 'Cannot mark as ordered',
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. An authorised user must complete or reactivate it in the Item Catalogue, or remove the line.`,
-  thatDidNotWork: 'That did not work',
   assignedTo: 'Assigned to',
   savedSizesOf: (name: string) => `Saved sizes of ${name}`,
   addItem: 'Add Item',
@@ -94,7 +93,7 @@ export const order = {
   employeeConfirmation: 'Employee confirmation',
   linkNotCreated: 'The confirmation link was not created',
   sendConfirmationLink: 'Send confirmation link',
-  printRecord: 'Print record',
+  printRecord: 'Print Record',
   startNewOrder: 'Start a new order',
 
   // Lines
@@ -110,7 +109,7 @@ export const order = {
   removeItem: (item: string) => `Remove ${item}`,
   noSize: 'No size',
   sizeOf: (item: string) => `Size of ${item}`,
-  selectSizeOption: 'Select size…',
+  selectSizeOption: 'Choose a size…',
   suggestedFromHeight: 'Suggested from height',
   /** Stacked-card labels of a stored order's lines. */
   cardSize: 'Size',
@@ -119,11 +118,11 @@ export const order = {
   cardService: 'Service',
 
   // Validation
-  selectEmployee: 'Select an employee in Assigned to.',
+  selectEmployee: 'Choose an employee in Assigned to.',
   addAtLeastOne: 'Add at least one item.',
   itemUnavailable: 'This item is no longer available. Remove it from the order.',
   quantityInvalid: 'Quantity must be a whole number of at least 1.',
-  selectSize: 'Select a size.',
+  selectSize: 'Choose a size.',
   priceMissing: 'No price or service period in the Item Catalogue. An authorised user must complete it.',
 
   // The employee's saved sizes

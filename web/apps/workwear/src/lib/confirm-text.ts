@@ -45,7 +45,7 @@ export function saveLang(lang: ConfirmLang): void {
 /** A date as "30 Jul 2026" (en) or "30 июл. 2026 г." (ru), in timeZone. */
 export function formatDay(iso: string, lang: ConfirmLang, timeZone?: string): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' }).format(d)
 }
 
@@ -59,7 +59,7 @@ export function formatMoney(cents: number, lang: ConfirmLang): string {
 /** A time of day as "14:02", in timeZone. */
 export function formatTime(iso: string, timeZone?: string): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   return new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
 }
 

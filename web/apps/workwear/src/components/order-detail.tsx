@@ -273,7 +273,7 @@ function Actions({
           </MoreActions>
         ) : null}
       </div>
-      {error ? <ErrorState title={t.history.didNotWork} error={error} /> : null}
+      {error ? <ErrorState title={t.common.actionFailed} error={error} /> : null}
     </div>
   )
 }

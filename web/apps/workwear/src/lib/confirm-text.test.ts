@@ -36,11 +36,11 @@ describe('dates', () => {
     expect(formatDay('2026-07-30T22:30:00Z', 'en', 'Europe/Vilnius')).toBe('31 Jul 2026')
     expect(formatDay('2026-07-30T22:30:00Z', 'en', 'UTC')).toBe('30 Jul 2026')
     expect(formatDay('2026-07-30T12:00:00Z', 'ru', 'UTC')).toMatch(/^30 июл/)
-    expect(formatDay('garbage', 'en')).toBe('—')
+    expect(formatDay('garbage', 'en')).toBe('–')
   })
   it('formats the time on a 24-hour clock', () => {
     expect(formatTime('2026-08-01T11:02:00Z', 'Europe/Vilnius')).toBe('14:02')
-    expect(formatTime('garbage')).toBe('—')
+    expect(formatTime('garbage')).toBe('–')
   })
 })
 

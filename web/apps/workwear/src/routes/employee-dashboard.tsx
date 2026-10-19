@@ -127,7 +127,7 @@ function Kpis({ d, navigate }: { d: Data; navigate: Navigate }) {
 function linkText(w: EmployeeDashboardWaiting, timezone: string): string {
   switch (w.link) {
     case 'ACTIVE':
-      return t.dashboard.linkValidUntil(w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '—')
+      return t.dashboard.linkValidUntil(w.link_expires_at ? formatDate(w.link_expires_at, timezone) : '–')
     case 'EXPIRED':
       return t.dashboard.linkExpired
     default:

@@ -50,7 +50,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
         <Info label={given ? 'Date given / Дата выдачи' : 'Date ordered / Дата заказа'}>
           {printDateTime(given && record.given_at ? record.given_at : r.ordered_at, timeZone)}
         </Info>
-        <Info label="Given by / Выдал">{record.given_by_name ?? '—'}</Info>
+        <Info label="Given by / Выдал">{record.given_by_name ?? '–'}</Info>
         <Info label="Prepared by / Подготовил">{r.prepared_by_name}</Info>
       </dl>
 

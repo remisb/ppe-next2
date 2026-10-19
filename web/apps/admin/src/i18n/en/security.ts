@@ -25,7 +25,7 @@ export const security = {
   when: 'When',
   what: 'Event',
   who: 'Account',
-  where: 'From',
+  where: 'Address',
   kinds: {
     sign_in: 'Signed in',
     sign_in_failed: 'Sign-in failed',

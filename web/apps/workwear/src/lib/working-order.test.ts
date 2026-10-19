@@ -181,7 +181,7 @@ describe('validate', () => {
     const v = validate(o)
     expect(v.valid).toBe(false)
     expect([...v.lineProblems.keys()]).toEqual(['ok', 'shoes', 'draft', 'gone'])
-    expect(v.lineProblems.get('shoes')).toEqual(['Select a size.'])
+    expect(v.lineProblems.get('shoes')).toEqual(['Choose a size.'])
     expect(o.lines).toHaveLength(4)
   })
 

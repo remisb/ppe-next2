@@ -76,7 +76,6 @@ export const history: HistoryText = {
 
   confirmationDescription: (record: string, name: string) =>
     `${record} · ${name}. Darbuotojas patvirtina gavimą saugiame puslapyje arba pasirašo atspausdintą įrašą.`,
-  didNotWork: 'Nepavyko',
   electronicConfirmation: 'Elektroninis patvirtinimas',
   createLink: 'Sukurti patvirtinimo nuorodą',
   paperConfirmation: 'Patvirtinimas popieriuje',

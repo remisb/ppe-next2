@@ -44,7 +44,7 @@ export const history = {
   colUsage: 'Usage time',
   colTotal: 'Total value',
   pages: 'Pages',
-  pageOf: (page: number, pages: number) => `page ${page} of ${pages}`,
+  pageOf: (page: number, pages: number) => `Page ${page} of ${pages}`,
   previous: 'Previous',
   next: 'Next',
   order: 'Order',
@@ -80,7 +80,6 @@ export const history = {
   // The staff side of confirmation.
   confirmationDescription: (record: string, name: string) =>
     `${record} · ${name}. The employee confirms receipt on a secure page, or signs the printed record.`,
-  didNotWork: 'That did not work',
   electronicConfirmation: 'Electronic confirmation',
   createLink: 'Create confirmation link',
   paperConfirmation: 'Paper confirmation',

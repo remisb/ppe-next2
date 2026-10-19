@@ -29,7 +29,7 @@ const resolveAt: Record<AttentionKey, Route> = {
 
 const severityStyle = {
   critical: { icon: AlertOctagon, className: 'border-destructive/40 bg-destructive/10', iconClass: 'text-destructive' },
-  warning: { icon: AlertTriangle, className: 'border-amber-500/40 bg-amber-500/10', iconClass: 'text-amber-600 dark:text-amber-400' },
+  warning: { icon: AlertTriangle, className: 'border-warning/40 bg-warning/10', iconClass: 'text-warning' },
   info: { icon: Info, className: 'border-border bg-card', iconClass: 'text-muted-foreground' },
 } as const
 
@@ -58,7 +58,7 @@ export function OverviewPage({ navigate }: { navigate: (to: Route) => void }) {
             </h2>
             {o.attention.length === 0 ? (
               <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm">
-                <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
                 <span>
                   <span className="block font-medium">{t.overview.allClear}</span>
                   <span className="text-muted-foreground">{t.overview.allClearHint}</span>

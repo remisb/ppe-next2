@@ -302,7 +302,7 @@ export function CreateOrder({
         description={t.order.description}
         actions={
           <Button variant="outline" onClick={reset}>
-            <RotateCcw aria-hidden /> {t.order.newOrder}
+            <RotateCcw aria-hidden /> {t.order.clearOrder}
           </Button>
         }
       />
@@ -317,7 +317,7 @@ export function CreateOrder({
             error={new Error(t.order.conflictHelp(failure.error.message))}
           />
         ) : (
-          <ErrorState title={t.order.thatDidNotWork} error={failure.error} onRetry={failure.retry} />
+          <ErrorState title={t.common.actionFailed} error={failure.error} onRetry={failure.retry} />
         )
       ) : null}
 
@@ -672,10 +672,13 @@ function ReviewSheet({
       open={open}
       onClose={onClose}
       title={t.order.reviewOrder}
-      description={t.order.reviewDescription(`${order.employee?.full_name ?? '—'}${order.employee?.code ? ` · ${order.employee.code}` : ''}`)}
+      description={t.order.reviewDescription(`${order.employee?.full_name ?? '–'}${order.employee?.code ? ` · ${order.employee.code}` : ''}`)}
       footer={
         <>
           <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} chat={supplierChat} />
+          <Button variant="outline" onClick={onClose}>
+            {t.common.cancel}
+          </Button>
           <Button disabled={busy} onClick={onConfirm}>
             {t.order.markAsOrdered}
           </Button>
@@ -918,7 +921,7 @@ function LinesTable({
               <TableCell className="align-top stacked:hidden">{formatMonths(l.servicePeriodMonths)}</TableCell>
               {/* In a narrow row the total sits beside the item, leaving the second line to the controls. */}
               <TableCell className="text-right align-top font-medium tabular-nums stacked:order-1 stacked:w-auto stacked:self-start stacked-wide:order-3 stacked-wide:self-center">
-                {l.accountingPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.accountingPriceCents * l.quantity) : '—'}
+                {l.accountingPriceCents !== null && Number.isInteger(l.quantity) ? formatEuro(l.accountingPriceCents * l.quantity) : '–'}
               </TableCell>
               <TableCell className="align-top stacked:order-1 stacked:w-auto stacked:-my-1.5 stacked:-mr-2 stacked-wide:order-4 stacked-wide:my-0">
                 <Button size="icon-sm" variant="ghost" aria-label={t.order.removeItem(l.itemName)} onClick={() => onChange((o) => removeLine(o, l.catalogueItemId))}>

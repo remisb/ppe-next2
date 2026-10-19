@@ -100,7 +100,7 @@ export function RolesPage() {
                   {roleGrants(r) ? <span className="block text-xs text-muted-foreground">{roleGrants(r)}</span> : null}
                 </TableCell>
                 <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">
-                  <span className="stacked:hidden">{r.permissions.map(permissionLabel).join(', ') || '—'}</span>
+                  <span className="stacked:hidden">{r.permissions.map(permissionLabel).join(', ') || '–'}</span>
                   <span className="hidden stacked:inline">{t.roles.permissionsCount(r.permissions.length)}</span>
                 </TableCell>
                 <TableCell className="tabular-nums stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">

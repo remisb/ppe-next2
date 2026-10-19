@@ -6,7 +6,7 @@ describe('money and display helpers', () => {
   it('formats euros with the € symbol', () => {
     expect(formatEuro(4999)).toBe('€49.99')
     expect(formatEuro(0)).toBe('€0.00')
-    expect(formatEuro(null)).toBe('—')
+    expect(formatEuro(null)).toBe('–')
   })
   it('parses euro input', () => {
     expect(parseEuro('49.99')).toBe(4999)

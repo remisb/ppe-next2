@@ -24,7 +24,7 @@ export const security: SecurityText = {
   when: 'Kada',
   what: 'Įvykis',
   who: 'Paskyra',
-  where: 'Iš kur',
+  where: 'Adresas',
   kinds: {
     sign_in: 'Prisijungė',
     sign_in_failed: 'Prisijungti nepavyko',

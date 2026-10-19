@@ -392,7 +392,7 @@ export function History({
                             o.usage_months === null && 'stacked:hidden',
                           )}
                         >
-                          {formatUsage(o.usage_months) || '—'}
+                          {formatUsage(o.usage_months) || '–'}
                         </TableCell>
                       )}
                       <TableCell className="text-right font-medium tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">

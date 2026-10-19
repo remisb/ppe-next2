@@ -213,17 +213,17 @@ export function AssetDetail({
           <dl aria-label={t.assets.details} className="mb-4 grid grid-cols-2 gap-4 border-b border-border py-3 text-sm @lg:grid-cols-3">
             {sim ? (
               <>
-                <Detail label={t.assets.provider}>{a.provider ?? '—'}</Detail>
-                <Detail label={t.assets.plan}>{a.plan ?? '—'}</Detail>
+                <Detail label={t.assets.provider}>{a.provider ?? '–'}</Detail>
+                <Detail label={t.assets.plan}>{a.plan ?? '–'}</Detail>
               </>
             ) : (
               <>
-                <Detail label={t.assets.category}>{a.category ? categoryLabel(a.category) : '—'}</Detail>
-                <Detail label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '—'}</Detail>
+                <Detail label={t.assets.category}>{a.category ? categoryLabel(a.category) : '–'}</Detail>
+                <Detail label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '–'}</Detail>
               </>
             )}
-            <Detail label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '—' : formatEuro(a.non_return_value_cents)}</Detail>
-            {sim ? <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '—'}</Detail> : null}
+            <Detail label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '–' : formatEuro(a.non_return_value_cents)}</Detail>
+            {sim ? <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '–'}</Detail> : null}
             {a.comment ? (
               <div className="col-span-2 @lg:col-span-3">
                 <Detail label={t.assets.comment}>

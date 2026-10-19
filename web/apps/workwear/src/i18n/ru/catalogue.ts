@@ -118,7 +118,7 @@ export const catalogue: CatalogueText = {
 
   setsTitle: 'Наборы предметов',
   setsDescription: 'Шаблоны для применения при создании заказа. Размеры и цены определяются заново при каждом применении набора.',
-  newItemSet: 'Новый набор',
+  addItemSet: 'Добавить набор',
   noSets: 'Наборов предметов пока нет.',
   confirmDeleteSet: (name: string) => `Удалить набор предметов «${name}»?`,
   deletedItem: 'Удалённый предмет',

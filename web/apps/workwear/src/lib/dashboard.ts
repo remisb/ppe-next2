@@ -60,7 +60,7 @@ export { barPercent, niceCeiling } from '@ppe/ui/lib/charts'
 
 /** Days for people: "today", "1 day", "5 days", "1.5 days". */
 export function formatDays(days: number | null): string {
-  if (days === null) return '—'
+  if (days === null) return '–'
   if (days === 0) return t.dashboard.today
   return t.common.days(days)
 }

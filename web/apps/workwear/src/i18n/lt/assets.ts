@@ -224,7 +224,6 @@ export const assets: AssetsText = {
   equipment: 'Įranga',
   addAsset: 'Pridėti turtą',
   editAsset: 'Keisti turtą',
-  saveAsset: 'Išsaugoti turtą',
   name: 'Pavadinimas',
   category: 'Kategorija',
   allCategories: 'Visos kategorijos',

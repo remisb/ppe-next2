@@ -257,7 +257,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                 <div className="flex items-start justify-between gap-3">
                   <dl>
                     <Fact label={t.employees.preferredLanguage}>
-                      <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '—'}</span>
+                      <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '–'}</span>
                     </Fact>
                   </dl>
                   <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
@@ -441,7 +441,7 @@ function ItemsTable({
               <RelativeDate iso={i.at} timeZone={tz} time />
             </TableCell>
             {given ? (
-              <TableCell label={t.employees.usageTime} className="stacked:order-2">{formatUsage(i.usageMonths) || '—'}</TableCell>
+              <TableCell label={t.employees.usageTime} className="stacked:order-2">{formatUsage(i.usageMonths) || '–'}</TableCell>
             ) : null}
             <TableCell label={t.employees.servicePeriod} className="stacked:order-2">{formatMonths(i.servicePeriodMonths)}</TableCell>
             {due ? (

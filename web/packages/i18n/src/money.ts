@@ -6,7 +6,7 @@ const euros = new Map<Lang, Intl.NumberFormat>()
 
 /** Integer cents as a euro amount in the language in use, e.g. €49.99 or 49,99 €. Every displayed price carries €. */
 export function formatEuro(cents: number | null | undefined): string {
-  if (cents === null || cents === undefined) return '—'
+  if (cents === null || cents === undefined) return '–'
   const lang = currentLang()
   let f = euros.get(lang)
   if (!f) euros.set(lang, (f = new Intl.NumberFormat(euroLocales[lang], { style: 'currency', currency: 'EUR' })))

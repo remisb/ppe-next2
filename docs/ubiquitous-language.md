@@ -300,7 +300,7 @@ Rules for using it:
 - **Detail:** stores no sizes, prices or service periods. Applying it resolves those fresh
   from the employee and the catalogue (manual §3.4). Lines holding incomplete or inactive
   items are flagged when applied.
-- **Code:** `internal/domain/itemset`. **UI:** Item Sets; **Item Set** buttons on Create Order.
+- **Code:** `internal/domain/itemset`. **UI:** Item Sets, **Add Item Set**; **Item Set** buttons on Create Order.
 
 ---
 
@@ -349,7 +349,8 @@ Rules for using it:
 - **Detail:** pick the employee in **Assigned to**, add lines with **Add Item** or an
   **Item Set**, resolve sizes, then **Review**. Reached from Orders' **Create Order** button,
   the phone's **New order** button, or "New order for …" in Search.
-- **Code:** route `createOrder`, `routes/create-order.tsx`. **UI:** Create Order, New order.
+- **Code:** route `createOrder`, `routes/create-order.tsx`. **UI:** Create Order, New order;
+  **Clear order** in its header empties the order in progress (asking first).
 
 ### Review (Review order)
 - **Brief:** the sheet that shows the whole order before it is marked as ordered.
@@ -745,7 +746,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
   Drive, Furniture or Other.
 - **Detail:** has a Name and an optional Serial No.; has no connection status (§17).
-- **UI:** **Add Asset**, **Save Asset**.
+- **UI:** **Add Asset**; its form's **Save**.
 
 ### Inventory No.
 - **Brief:** the company's unique number of an asset, `SIM-000001`, `PC-000001`, ….
@@ -890,10 +891,12 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Manager Dashboard | Vadovo suvestinė | Сводка менеджера |
 | Employee Dashboard | Darbuotojo suvestinė | Сводка сотрудника |
 | Create Order | Kurti užsakymą | Создать заказ |
+| Clear order | Išvalyti užsakymą | Очистить заказ |
 | Orders | Užsakymai | Заказы |
 | Employees | Darbuotojai | Сотрудники |
 | Item Catalogue | Prekių katalogas | Каталог предметов |
 | Item Set / Item Sets | Prekių rinkinys / Prekių rinkiniai | Набор предметов / Наборы предметов |
+| Add Item Set | Pridėti rinkinį | Добавить набор |
 | Users | Naudotojai | Пользователи |
 | Administration | Administravimas | Администрирование |
 | Roles & permissions | Rolės ir teisės | Роли и права |
@@ -984,7 +987,7 @@ screens are built):
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |
-| Add SIM / Add Asset / Save Asset | Pridėti SIM / Pridėti turtą / Išsaugoti turtą | Добавить SIM / Добавить имущество / Сохранить имущество |
+| Add SIM / Add Asset | Pridėti SIM / Pridėti turtą | Добавить SIM / Добавить имущество |
 
 ---
 

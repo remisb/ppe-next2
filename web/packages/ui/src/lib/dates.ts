@@ -58,21 +58,21 @@ export function isoDay(iso: string | Date, timeZone: string | undefined): string
 /** A timestamp's date in timeZone, as the language writes it (formatDay). */
 export function formatDate(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   return formatDay(partsOf(d, timeZone).day)
 }
 
 /** A timestamp's time of day in timeZone, HH:mm. */
 export function formatTime(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   return partsOf(d, timeZone).time
 }
 
 /** A timestamp as its date (formatDay) and HH:mm in timeZone (the organisation's). */
 export function formatDateTime(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   const { day, time } = partsOf(d, timeZone)
   return `${formatDay(day)} ${time}`
 }
@@ -88,7 +88,7 @@ export function printDay(day: string): string {
 /** A timestamp as a printed document writes it, its date (printDay) and HH:mm in timeZone: "2026 10 15 14:03". */
 export function printDateTime(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   const { day, time } = partsOf(d, timeZone)
   return `${printDay(day)} ${time}`
 }
@@ -183,7 +183,7 @@ function shortMonth(): 'short' | 'long' {
 /** A date as "24 Sep" in timeZone, for a compact row. */
 export function formatShortDate(iso: string, timeZone: string | undefined): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   return new Intl.DateTimeFormat(intlLocale(), { timeZone, day: 'numeric', month: shortMonth() }).format(d)
 }
 
@@ -207,7 +207,7 @@ export function localDay(iso: string | Date, timeZone: string | undefined): numb
  */
 export function formatRelative(iso: string, now: Date, timeZone: string | undefined, { time = false } = {}): string {
   const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
+  if (Number.isNaN(d.getTime())) return '–'
   const text = uiText()
   const days = localDay(d, timeZone) - localDay(now, timeZone)
   const at = time ? formatTime(iso, timeZone) : ''

@@ -12,7 +12,6 @@ export const common: CommonText = {
   delete: 'Удалить',
   add: 'Добавить',
   search: 'Поиск',
-  retry: 'Повторить',
   actionFailed: 'Действие не выполнено',
   moreActions: (name: string) => `Другие действия: ${name}`,
   ordered: 'Заказано',

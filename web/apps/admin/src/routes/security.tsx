@@ -359,7 +359,7 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
                     <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
                       <span className="font-medium">{s.user_name}</span>
                       {s.id === current ? (
-                        <Badge variant="secondary" className="ml-2 align-middle">
+                        <Badge variant="outline" className="ml-2 align-middle">
                           {t.security.thisDevice}
                         </Badge>
                       ) : null}

@@ -116,7 +116,7 @@ export const catalogue: CatalogueText = {
 
   setsTitle: 'Prekių rinkiniai',
   setsDescription: 'Šablonai, taikomi kuriant užsakymą. Dydžiai ir kainos nustatomi iš naujo kiekvieną kartą pritaikius rinkinį.',
-  newItemSet: 'Naujas rinkinys',
+  addItemSet: 'Pridėti rinkinį',
   noSets: 'Prekių rinkinių dar nėra.',
   confirmDeleteSet: (name: string) => `Ištrinti prekių rinkinį „${name}“?`,
   deletedItem: 'Ištrinta prekė',

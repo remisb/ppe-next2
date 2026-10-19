@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
-import { Field, Input, controlProps } from '@ppe/ui/components/field'
+import { Field, PasswordInput, controlProps } from '@ppe/ui/components/field'
 import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { CheckCircle2, LogOut } from 'lucide-react'
@@ -141,13 +141,13 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             {/* Tells a password manager whose password changes, so it updates that saved sign-in. */}
             <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
             <Field label={t.account.currentPassword} required error={errors.current}>
-              {(p) => <Input {...controlProps(p)} type="password" name="current-password" autoComplete="current-password" value={form.current} onChange={set('current')} />}
+              {(p) => <PasswordInput {...controlProps(p)} name="current-password" autoComplete="current-password" value={form.current} onChange={set('current')} />}
             </Field>
             <Field label={t.account.newPassword} required error={errors.next} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
-              {(p) => <Input {...controlProps(p)} type="password" name="new-password" autoComplete="new-password" value={form.next} onChange={set('next')} />}
+              {(p) => <PasswordInput {...controlProps(p)} name="new-password" autoComplete="new-password" value={form.next} onChange={set('next')} />}
             </Field>
             <Field label={t.account.confirmNewPassword} required error={errors.confirm}>
-              {(p) => <Input {...controlProps(p)} type="password" name="confirm-password" autoComplete="new-password" value={form.confirm} onChange={set('confirm')} />}
+              {(p) => <PasswordInput {...controlProps(p)} name="confirm-password" autoComplete="new-password" value={form.confirm} onChange={set('confirm')} />}
             </Field>
             {serverError ? (
               <p role="alert" className="text-sm text-destructive">
@@ -231,7 +231,7 @@ function Devices() {
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 font-medium">
                       {label}
-                      {d.current ? <Badge variant="secondary">{t.account.thisDevice}</Badge> : null}
+                      {d.current ? <Badge variant="outline">{t.account.thisDevice}</Badge> : null}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {t.account.lastUsed} <RelativeDate iso={d.last_used_at} timeZone={undefined} time sentence />

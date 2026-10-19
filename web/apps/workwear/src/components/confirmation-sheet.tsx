@@ -60,7 +60,7 @@ export function ConfirmationSheet({
       description={t.history.confirmationDescription(order.record_number, name)}
     >
       <div className="flex flex-col gap-6">
-        {error ? <ErrorState title={t.history.didNotWork} error={error} /> : null}
+        {error ? <ErrorState title={t.common.actionFailed} error={error} /> : null}
 
         <section className="flex flex-col gap-2">
           <h3 className="font-medium">{t.history.electronicConfirmation}</h3>

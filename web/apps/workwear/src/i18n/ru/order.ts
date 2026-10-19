@@ -6,7 +6,7 @@ export const order: OrderText = {
   // Create Order screen
   title: 'Создать заказ',
   description: 'Подготовьте заказ поставщику для одного сотрудника. Ничего не сохраняется, пока вы не отметите заказ как заказанный.',
-  newOrder: 'Новый заказ',
+  clearOrder: 'Очистить заказ',
   replaceConfirm: (name: string) => `Заменить текущий заказ (${name}) этим повторным заказом?`,
   noOneYet: 'сотрудник ещё не выбран',
   setOnOrderConfirm: (set: string) => `Набор «${set}» уже есть в этом заказе. Добавить его предметы ещё раз?`,
@@ -14,7 +14,6 @@ export const order: OrderText = {
   cannotMarkAsOrdered: 'Нельзя отметить как заказанный',
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. Уполномоченный пользователь должен дополнить или снова активировать его в каталоге предметов, либо удалите строку.`,
-  thatDidNotWork: 'Не получилось',
   assignedTo: 'Для кого',
   savedSizesOf: (name: string) => `Сохранённые размеры: ${name}`,
   addItem: 'Добавить предмет',

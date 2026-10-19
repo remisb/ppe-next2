@@ -14,7 +14,7 @@ export function parseEuro(input: string): number | null {
 }
 
 export function formatMonths(months: number | null | undefined): string {
-  if (months === null || months === undefined) return '—'
+  if (months === null || months === undefined) return '–'
   return t.common.months(months)
 }
 

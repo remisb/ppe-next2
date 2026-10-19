@@ -207,7 +207,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
                       <ItemTile icon={i.icon} className="size-9" />
                     </TableCell>
-                    <TableCell className="whitespace-normal stacked:hidden">{i.details || '—'}</TableCell>
+                    <TableCell className="whitespace-normal stacked:hidden">{i.details || '–'}</TableCell>
                     <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
                       {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
                     </TableCell>

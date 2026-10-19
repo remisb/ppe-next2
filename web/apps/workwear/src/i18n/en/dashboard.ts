@@ -98,7 +98,7 @@ export const dashboard = {
   setupDescription: 'Active records, and anything that holds up ordering.',
   employees: 'Employees',
   catalogueItems: 'Catalogue items',
-  itemSets: 'Item sets',
+  itemSets: 'Item Sets',
   users: 'Users',
   missingASize: (n: number) => `${n} missing a size`,
   withoutPriceOrPeriod: (n: number) => `${n} without a price or service period`,

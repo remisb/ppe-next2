@@ -24,7 +24,7 @@ describe('the one date form per language', () => {
     // Printed documents' and the API's forms do not follow the language.
     expect(printDateTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026 09 24 01:30')
     expect(printDay('2026-10-15')).toBe('2026 10 15')
-    expect(printDay('—')).toBe('—')
+    expect(printDay('–')).toBe('–')
     expect(isoDay('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026-09-24')
     expect(isoDay('garbage', 'UTC')).toBe('')
   })
@@ -103,12 +103,12 @@ describe('absolute dates', () => {
   it('formats timestamps in the organisation timezone', () => {
     expect(formatDateTime('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('2026-09-24 01:30')
     expect(formatDateTime('2026-09-23T22:30:00Z', 'UTC')).toBe('2026-09-23 22:30')
-    expect(formatDateTime('garbage', 'UTC')).toBe('—')
+    expect(formatDateTime('garbage', 'UTC')).toBe('–')
   })
   it('shows a short date in the organisation timezone', () => {
     expect(formatShortDate('2026-09-23T22:30:00Z', 'Europe/Vilnius')).toBe('24 Sept')
     expect(formatShortDate('2026-09-23T22:30:00Z', 'UTC')).toBe('23 Sept')
-    expect(formatShortDate('garbage', 'UTC')).toBe('—')
+    expect(formatShortDate('garbage', 'UTC')).toBe('–')
   })
 })
 
@@ -130,7 +130,7 @@ describe('relative dates', () => {
     expect(formatRelative('2026-09-22T12:00:00Z', now, tz)).toBe('22 Sept')
     expect(formatRelative('2026-10-06T12:00:00Z', now, tz)).toBe('6 Oct')
     expect(formatRelative('2025-12-30T12:00:00Z', now, tz)).toBe('2025-12-30')
-    expect(formatRelative('nonsense', now, tz)).toBe('—')
+    expect(formatRelative('nonsense', now, tz)).toBe('–')
   })
   it('capitalizes for a table cell', () => {
     expect(capitalize('today 08:30')).toBe('Today 08:30')

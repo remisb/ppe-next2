@@ -105,7 +105,7 @@ export const catalogue = {
   colSize: 'Size',
   colQuantity: 'Quantity',
   receipt: (record: string) => `Receipt ${record}`,
-  itemSets: 'Item sets',
+  itemSets: 'Item Sets',
   itemSetsIntro: 'Sets that add this item when applied in Create Order, with their default quantity.',
   noSetHolds: 'No item set holds this item.',
   openItemSets: 'Open Item Sets',
@@ -113,9 +113,9 @@ export const catalogue = {
   // Item Sets
   setsTitle: 'Item Sets',
   setsDescription: 'Presets for Apply Item Set. Sizes and prices are resolved fresh each time a set is applied.',
-  newItemSet: 'New Item Set',
+  addItemSet: 'Add Item Set',
   noSets: 'No item sets yet.',
-  confirmDeleteSet: (name: string) => `Delete item set "${name}"?`,
+  confirmDeleteSet: (name: string) => `Delete item set “${name}”?`,
   deletedItem: 'Deleted item',
   /** After an item's name in a set. */
   inactiveSuffix: ' (inactive)',

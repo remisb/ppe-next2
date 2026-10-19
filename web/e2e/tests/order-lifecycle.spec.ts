@@ -308,7 +308,7 @@ test('Item Catalogue: items with and without a price', async () => {
 
 test('Item Sets: a set of item references and default quantities', async () => {
   await openTab('Item Sets')
-  await page.getByRole('button', { name: 'New Item Set' }).click()
+  await page.getByRole('button', { name: 'Add Item Set' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Name').fill('Starter kit')
   for (const item of ['Work jacket', 'Safety shoes', 'Protective gloves']) {
@@ -325,7 +325,7 @@ test('Item Sets: a set of item references and default quantities', async () => {
   await expect(page.getByRole('button', { name: 'Apply Starter kit (on this order)' })).toBeDisabled()
   await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(3)
   page.once('dialog', (d) => void d.accept())
-  await page.getByRole('button', { name: 'New order' }).click()
+  await page.getByRole('button', { name: 'Clear order' }).click()
   await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(0)
 })
 
@@ -386,7 +386,7 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   // Clothing sizes are picked by letter band; a pick stores the band's larger EU size.
   await expect(page.getByLabel('Size of Work jacket').locator('option:checked')).toHaveText('M (48–50)')
   await expect(page.getByLabel('Size of Work jacket').locator('option')).toHaveText([
-    'Select size…',
+    'Choose a size…',
     'S (44–46)',
     'M (48–50)',
     'L (52–54)',
@@ -396,7 +396,7 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   ])
   await expect(page.getByText('Suggested from height')).toBeVisible()
   await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('')
-  await expect(page.getByRole('alert').filter({ hasText: 'Select a size.' })).toBeVisible()
+  await expect(page.getByRole('alert').filter({ hasText: 'Choose a size.' })).toBeVisible()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
   // §7: a missing size keeps the work and blocks the order.
   await expect(reviewButton()).toBeDisabled()
@@ -454,7 +454,7 @@ test('quantity below 1 or not an integer is rejected at the field', async () => 
 test('network error keeps the form and offers Retry', async () => {
   await page.route('**/api/v1/orders/resolve', (route) => route.abort('failed'))
   await addItem('nitrile', /^Protective gloves/)
-  await expect(page.getByText('That did not work')).toBeVisible()
+  await expect(page.getByText('Action failed')).toBeVisible()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
   await page.unroute('**/api/v1/orders/resolve')
   await page.getByRole('button', { name: 'Retry' }).click()
@@ -516,7 +516,7 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // The supplier message was the review's: the ordered screen has no Copy for WhatsApp.
   await expect(page.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Send confirmation link' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Print record' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Print Record' })).toBeVisible()
   await page.getByRole('button', { name: 'Start a new order' }).click()
   await expect(reviewButton()).toBeDisabled()
 })
@@ -1320,7 +1320,7 @@ test('a reorder link starts the order with the item at the quantity given; the s
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 
   page.once('dialog', (d) => void d.accept())
-  await page.getByRole('button', { name: 'New order' }).click()
+  await page.getByRole('button', { name: 'Clear order' }).click()
   await expect(page.getByText('No items yet.')).toBeVisible()
 })
 
@@ -1535,7 +1535,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(pane.getByRole('region', { name: 'Changes' }).getByText('Form printed').first()).toBeVisible()
   // One action changed the holder, the location, the form and the history (§7).
   await expect(pane.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
-  await expect(pane.getByText('With an employee')).toBeVisible()
+  await expect(pane.getByText('With Employee')).toBeVisible()
   const assignments = pane.getByRole('region', { name: 'Assignments' })
   await expect(assignments.getByText('Paper form signed')).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
@@ -1711,7 +1711,7 @@ test('Equipment & Furniture: one record per item, numbered by category; a comput
     await form.getByLabel('Category').selectOption({ label: category })
     await expect(form.getByLabel('Inventory No.')).toHaveValue(number)
     if (value) await form.getByLabel('Non-return Value').fill(value)
-    await form.getByRole('button', { name: 'Save Asset' }).click()
+    await form.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(page.getByText(`${number} added.`)).toBeVisible()
   }
   await addAsset('Laptop', 'Computer', 'PC-000001', '900.00')
@@ -1842,7 +1842,7 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
 
   // Leave Create Order empty for the steps after.
   await openTab('Create Order')
-  await page.getByRole('button', { name: 'New order' }).click()
+  await page.getByRole('button', { name: 'Clear order' }).click()
   await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Search employees…')
 })
 
@@ -2230,7 +2230,7 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await page.getByRole('button', { name: 'Edit Manager' }).click()
   dialog = page.getByRole('dialog')
   await expect(dialog.getByLabel('Name')).toBeDisabled()
-  await expect(dialog.getByLabel('Description')).toHaveValue('Manages Item Catalogue prices and Item Sets, plus everything an employee can do.')
+  await expect(dialog.getByLabel('Description')).toHaveValue('Manages Item Catalogue prices and Item Sets, plus everything the employee role can do.')
   await expect(dialog.getByLabel('Description')).toBeDisabled()
   await expect(dialog.getByText('A built-in role keeps its name and description.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Save' }).click()

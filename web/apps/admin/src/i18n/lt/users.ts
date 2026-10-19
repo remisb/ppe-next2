@@ -22,7 +22,7 @@ export const users: UsersText = {
   admin: 'Administratorius',
   adminGrants: 'Tvarko naudotojus ir gali viską, ką gali vadovas.',
   manager: 'Vadovas',
-  managerGrants: 'Tvarko prekių katalogo kainas ir prekių rinkinius, taip pat gali viską, ką gali darbuotojas.',
+  managerGrants: 'Tvarko prekių katalogo kainas ir prekių rinkinius, taip pat gali viską, ką gali rolė „Darbuotojas“.',
   employee: 'Darbuotojas',
   employeeGrants: 'Rengia užsakymus ir seka juos Užsakymuose, tvarko darbuotojus ir jų dydžius.',
   equipment: 'Įrangos išdavimai',

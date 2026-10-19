@@ -6,7 +6,7 @@ export const order: OrderText = {
   // Create Order screen
   title: 'Kurti užsakymą',
   description: 'Paruoškite vieno darbuotojo užsakymą tiekėjui. Niekas neįrašoma, kol nepažymėsite kaip užsakyto.',
-  newOrder: 'Naujas užsakymas',
+  clearOrder: 'Išvalyti užsakymą',
   replaceConfirm: (name: string) => `Pakeisti vykdomą užsakymą (${name}) šiuo pakartotiniu užsakymu?`,
   noOneYet: 'darbuotojas dar nepasirinktas',
   setOnOrderConfirm: (set: string) => `Rinkinys „${set}“ jau yra šiame užsakyme. Pridėti jo prekes dar kartą?`,
@@ -14,7 +14,6 @@ export const order: OrderText = {
   cannotMarkAsOrdered: 'Negalima pažymėti kaip užsakyto',
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. Įgaliotas naudotojas turi ją papildyti arba vėl aktyvuoti Prekių kataloge; kitaip pašalinkite eilutę.`,
-  thatDidNotWork: 'Nepavyko',
   assignedTo: 'Kam skirta',
   savedSizesOf: (name: string) => `Išsaugoti dydžiai: ${name}`,
   addItem: 'Pridėti prekę',

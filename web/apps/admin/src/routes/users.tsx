@@ -4,7 +4,7 @@ import { MIN_PASSWORD_LENGTH, useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
-import { Field, Input, controlProps } from '@ppe/ui/components/field'
+import { Field, Input, PasswordInput, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
@@ -142,7 +142,7 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
                   </span>
                 </TableCell>
                 <TableCell className="stacked:hidden">
-                  <Badge variant={u.is_active ? 'outline' : 'secondary'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
+                  <Badge variant={u.is_active ? 'secondary' : 'outline'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
                   <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
@@ -305,10 +305,10 @@ function UserForm({
         {isNew ? (
           <>
             <Field label={t.users.password} required error={errors.password} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
-              {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={d.password} onChange={set('password')} />}
+              {(p) => <PasswordInput {...controlProps(p)} autoComplete="new-password" value={d.password} onChange={set('password')} />}
             </Field>
             <Field label={t.users.confirmPassword} required error={errors.confirm}>
-              {(p) => <Input {...controlProps(p)} type="password" autoComplete="new-password" value={d.confirm} onChange={set('confirm')} />}
+              {(p) => <PasswordInput {...controlProps(p)} autoComplete="new-password" value={d.confirm} onChange={set('confirm')} />}
             </Field>
           </>
         ) : (
@@ -406,9 +406,8 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
         <form id="reset-password-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
           <Field label={t.account.newPassword} required error={errors.password} hint={t.account.atLeast(MIN_PASSWORD_LENGTH)}>
             {(p) => (
-              <Input
+              <PasswordInput
                 {...controlProps(p)}
-                type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => {
@@ -421,9 +420,8 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
           </Field>
           <Field label={t.account.confirmNewPassword} required error={errors.confirm}>
             {(p) => (
-              <Input
+              <PasswordInput
                 {...controlProps(p)}
-                type="password"
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => {

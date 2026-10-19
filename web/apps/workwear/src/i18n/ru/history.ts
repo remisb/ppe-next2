@@ -43,7 +43,7 @@ export const history: HistoryText = {
   colUsage: 'Срок использования',
   colTotal: 'Общая сумма',
   pages: 'Страницы',
-  pageOf: (page: number, pages: number) => `страница ${page} из ${pages}`,
+  pageOf: (page: number, pages: number) => `Страница ${page} из ${pages}`,
   previous: 'Предыдущая',
   next: 'Следующая',
   order: 'Заказ',
@@ -77,7 +77,6 @@ export const history: HistoryText = {
 
   confirmationDescription: (record: string, name: string) =>
     `${record} · ${name}. Сотрудник подтверждает получение на защищённой странице или подписывает распечатанную запись.`,
-  didNotWork: 'Не получилось',
   electronicConfirmation: 'Электронное подтверждение',
   createLink: 'Создать ссылку для подтверждения',
   paperConfirmation: 'Подтверждение на бумаге',

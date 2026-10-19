@@ -404,8 +404,9 @@ Lithuanian or Russian label wraps rather than overflow.
   - `destructive`: needs action (Missing, Incomplete, Overdue, Not Returned, Failed, Not
     ready, "Not used for 90 days");
   - `secondary`: a state in progress or neutral (Ordered, Active, Due soon, Succeeded, a
-    role, This device);
-  - `outline`: out of use, or a marker about the row (Inactive, You, Built-in, No price).
+    role);
+  - `outline`: out of use, or a marker about the row (Inactive, You, This device, Built-in,
+    No price).
 - **Code:** `Badge`; a connection status's variant is `statusVariant` in
   `components/asset-controls.tsx`. A **count pill** is the count on a filter tab.
 
@@ -518,7 +519,7 @@ Lithuanian or Russian label wraps rather than overflow.
 ### Result card
 - **Brief:** a card that replaces a composer after its action, saying what now exists and
   offering what comes next: Create Order's "Order WE-000123 is ordered" with the link ready,
-  Print record and Start a new order.
+  Print Record and Start a new order.
 
 ### Next step
 - **Brief:** after an action that usually leads to another, the app offers that one at once:
@@ -696,7 +697,7 @@ height (0 from `md`), which sticky bars sit above.
 | **Create confirmation link**, **Send link** | make the link; offer the ways to give it |
 | **Open …**, **… →** | go to another screen or app |
 | **Apply** | make a popover's choice the filter |
-| **Clear filters** | set every filter back |
+| **Clear filters**, **Clear order** | set every filter back; empty the order in progress (asks first) |
 | **Refresh** | read the screen's data again |
 | **Retry** | repeat what failed |
 | **Show older …**, **Previous**, **Next** | page through a list |
@@ -834,23 +835,4 @@ screen or together. Paths are under `web/apps/`.
 
 | Where | Now | Should be |
 |---|---|---|
-| `workwear/src/i18n/en/order.ts:97` | "Print record" on Create Order's result card | **Print Record**, the glossary's casing (§9.2) |
-| `workwear/src/i18n/en/order.ts:13` | Create Order's header **New order** clears the order (and asks "Clear this order?") | a label that says it clears, e.g. **Clear order**: New order means start one (§9.3) |
-| `workwear/src/i18n/en/catalogue.ts:116` | **New Item Set** | **Add Item Set**, as every other created record (§9.3); the glossary entry with it |
-| `workwear/src/i18n/en/assets.ts:245` | **Save Asset** on the Equipment form only | **Save** (§9.3) |
-| `workwear/src/i18n/en/common.ts:14–15`, `history.ts:83`, `order.ts:21` | two generic action-error titles, "Action failed" and "That did not work"; `common.retry` "Try again" unused | one generic title, and a specific one where the action is known (§9.6); Retry only |
-| `workwear/src/i18n/en/history.ts:47` vs `assets.ts:101` | "page 2 of 6" and "Page 2 of 6" | one form, "Page 2 of 6" |
-| `workwear/src/i18n/ru/assets.ts:96–97` vs `ru/history.ts:47–48` | Назад / Вперёд and Предыдущая / Следующая for the same pager | one pair |
-| `workwear/src/i18n/en/catalogue.ts:118` | straight quotes in "Delete item set "…"?" | the language's quotation marks (§9.4) |
-| `workwear/src/i18n/en/assets.ts:63` | the Location filter's "With an employee" | **With Employee**, the location's name (§9.2) |
-| `workwear/src/i18n/en/catalogue.ts:108`, `dashboard.ts:101` | section heading "Item sets" | **Item Sets** (§9.2) |
-| `workwear/src/i18n/en/order.ts:113, 126` | "Select size…", "Select a size." | "Choose a size…", "Choose a size." (§11) |
-| `admin/src/i18n/en/users.ts:26` | "everything an employee can do" | "everything the employee role can do" (glossary) |
-| `admin/src/routes/security.tsx` (Sign-ins) | "From" is both the date filter and the address column | the column **Address**, or the filter's From / To kept and the column renamed |
-| `admin/src/routes/users.tsx:308–311, 409–433`, `workwear/src/routes/account.tsx:144–150` | password fields without Show password | `PasswordInput` wherever a password is typed (§4) |
-| `admin/src/routes/overview.tsx:32, 61` | literal amber and emerald | the `warning` and `success` tokens (§4) |
-| `admin/src/routes/users.tsx` (Status) vs `workwear/src/routes/catalogue-item.tsx` | Users: Active `outline`, Inactive `secondary`; the Catalogue the other way round | Active `secondary`, Inactive `outline` (§4) |
-| `admin/src/routes/users.tsx` vs `security.tsx`, `workwear/src/routes/account.tsx` | "You" `outline`, "This device" `secondary`, both markers about the reader | one variant for both |
-| `@ppe/i18n` `formatEuro` vs `workwear/src/lib/utils.ts` `formatSize` | no price is an em dash "—", no size an en dash "–" | one dash for "none" (§9.4) |
-| Create Order's Review order sheet | no Cancel in its footer | Cancel beside Mark as Ordered, as every form sheet (§3) |
 | glossary §12 vs its Words to avoid | Settings' **SIM card providers** while the screens say SIM | decide in the glossary: keep it as the one exception, or "SIM providers" |

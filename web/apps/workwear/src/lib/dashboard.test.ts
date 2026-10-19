@@ -48,7 +48,7 @@ describe('dashboard display rules', () => {
   })
 
   it('formats days, shares and counts', () => {
-    expect(formatDays(null)).toBe('—')
+    expect(formatDays(null)).toBe('–')
     expect(formatDays(0)).toBe('today')
     expect(formatDays(1)).toBe('1 day')
     expect(formatDays(2.5)).toBe('2.5 days')

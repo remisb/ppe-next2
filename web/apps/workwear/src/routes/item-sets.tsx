@@ -54,7 +54,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
-              <Plus aria-hidden /> {t.catalogue.newItemSet}
+              <Plus aria-hidden /> {t.catalogue.addItemSet}
             </Button>
           ) : undefined
         }
@@ -65,7 +65,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       ) : !sets.data || !catalogue.data ? (
         <Loading />
       ) : sets.data.length === 0 ? (
-        // The header's New Item Set is the next step; a second button would only repeat it.
+        // The header's Add Item Set is the next step; a second button would only repeat it.
         <EmptyState>{t.catalogue.noSets}</EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -214,7 +214,7 @@ function SetForm({
     <FormSheet
       open={set !== null}
       onClose={onClose}
-      title={existing ? t.catalogue.editItemSet : t.catalogue.newItemSet}
+      title={existing ? t.catalogue.editItemSet : t.catalogue.addItemSet}
       footer={
         <>
           <Button variant="outline" onClick={onClose}>

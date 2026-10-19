@@ -24,7 +24,7 @@ export const security: SecurityText = {
   when: 'Когда',
   what: 'Событие',
   who: 'Учётная запись',
-  where: 'Откуда',
+  where: 'Адрес',
   kinds: {
     sign_in: 'Вход',
     sign_in_failed: 'Неудачный вход',

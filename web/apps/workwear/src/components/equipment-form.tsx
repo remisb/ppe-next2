@@ -104,7 +104,7 @@ export function EquipmentForm({
             {t.common.cancel}
           </Button>
           <Button type="submit" form="equipment-form" disabled={saving}>
-            {saving ? t.common.saving : t.assets.saveAsset}
+            {saving ? t.common.saving : t.common.save}
           </Button>
         </>
       }
@@ -127,7 +127,7 @@ export function EquipmentForm({
               }}
             >
               <option value="" disabled>
-                —
+                –
               </option>
               {categories.map((c) => (
                 <option key={c} value={c}>

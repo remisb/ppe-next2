@@ -201,7 +201,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                       {e.notes}
                     </TableCell>
                   ) : null}
-                  <TableCell className="stacked:hidden">{e.code ?? '—'}</TableCell>
+                  <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell>
                   {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
                   <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
                   <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
