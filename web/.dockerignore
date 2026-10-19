@@ -1,0 +1,12 @@
+# The context of web/Dockerfile. Anything left out here cannot invalidate the
+# image's build layer.
+**/node_modules
+**/dist
+**/.vite
+**/*.tsbuildinfo
+**/*.test.ts
+**/*.test.tsx
+AGENTS.md
+# The lockfile names e2e as a workspace package, so its manifest stays.
+e2e/*
+!e2e/package.json

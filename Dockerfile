@@ -28,8 +28,13 @@ COPY internal/ internal/
 # API_COMMIT (`make prod-build` passes `git describe`) names the build in
 # GET /ready and the startup log. Declared here, after the module download, so a
 # new commit does not invalidate that layer.
+# Go's build cache is a BuildKit cache mount, kept between builds, so a deploy
+# recompiles only the packages that changed. The modules stay in the layer
+# above, not in a mount: an emptied cache must never leave the build to fetch
+# the private ones without the token.
 ARG API_COMMIT=
-RUN CGO_ENABLED=0 GOOS=linux go build -tags timetzdata -trimpath -ldflags="-s -w -X main.commit=${API_COMMIT}" -o /out/api ./cmd/api
+RUN --mount=type=cache,id=ppe-go-build,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -tags timetzdata -trimpath -ldflags="-s -w -X main.commit=${API_COMMIT}" -o /out/api ./cmd/api
 
 FROM scratch
 # Root certificates for a managed (TLS) database.

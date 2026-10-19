@@ -172,6 +172,10 @@ because Postgres tests truncate tables.
 → api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes both
 built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/` and
 Administration at `ADMIN_ROOT` served at `/admin/`; `deploy/Caddyfile`). Only Caddy publishes ports.
+Both builds keep their cache between deploys: the API's Go build cache is a BuildKit cache
+mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
+image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
+keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in both apps, by its hash
 (`web/apps/{workwear,admin}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`).
