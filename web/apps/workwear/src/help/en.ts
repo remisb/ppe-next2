@@ -83,7 +83,7 @@ export const en: Guide = {
             { text: 'Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier\'s message, is in the review.' },
+        { p: 'This device keeps a draft of the order while you work; **Clear order** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier\'s message, is in the review.' },
         { shots: [{ name: 'create-order', alt: 'Create Order with an employee, a kit applied and sizes chosen' }] },
       ],
     },
@@ -98,7 +98,7 @@ export const en: Guide = {
             'Send the employee the link with **Share link via WhatsApp** or **Copy link**. The link is valid for 7 days, and the app shows it only once.',
           ],
         },
-        { p: 'If the employee will sign on paper, choose **Print record** instead.' },
+        { p: 'If the employee will sign on paper, choose **Print Record** instead.' },
         { p: "**Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Administration**, on **Settings**, it then offers to open that group: paste the message there." },
         {
           shots: [
@@ -205,26 +205,26 @@ export const en: Guide = {
       title: 'Company Assets',
       blocks: [
         {
-          p: '**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIMs** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.',
+          p: '**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.',
         },
-        { p: 'Open it from **More**.', devices: ['phone'] },
-        { p: 'Open it from the rail.', devices: ['tablet'] },
-        { p: 'Open it from the sidebar, or press `G` then `A`.', devices: ['desktop'] },
-        { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open the list on it.', roles: ['admin', 'manager'] },
+        { p: 'Open it from **More**. If you also see **Equipment**, it and **SIM Cards** are listed under it.', devices: ['phone'] },
+        { p: 'Open it from the rail. If you also see **Equipment**, the switch at the top of the screen moves between it and **SIM Cards**.', devices: ['tablet'] },
+        { p: 'Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under it.', devices: ['desktop'] },
+        { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.', roles: ['admin', 'manager'] },
         {
-          p: 'The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.',
+          p: 'The tabs above the list count the SIMs: **All**, each status (**Not Activated**, **Active**, **Blocked**), **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.',
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Tap a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee; **Filters** holds status, location and provider, or category for equipment.',
+          p: 'The tabs above the list count the SIMs: **All**, each status, **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; **SIM Cards** or **Equipment** at its top takes you back.',
           devices: ['phone'],
         },
         {
           p: "A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.",
         },
-        { shots: [{ name: 'assets', alt: 'The SIMs: the tiles, the filters and each card with its holder' }] },
+        { shots: [{ name: 'assets', alt: 'SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder' }] },
         {
-          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
+          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
@@ -484,10 +484,10 @@ export const en: Guide = {
         },
         { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
         {
-          p: '**SIM card providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.',
+          p: '**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.',
         },
         { p: 'A card already registered keeps its provider, even one you remove from the list.' },
-        { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM card providers, one of them the default' }] },
+        { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM providers, one of them the default' }] },
       ],
     },
     {

@@ -59,7 +59,7 @@ Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkit
    - Jei pasirinksite kitą dydį nei išsaugotas darbuotojo, programa paklaus **Pasirinktas kitas dydis. Išsaugoti jį darbuotojo profilyje?** **Išsaugoti** – dydis bus naudojamas ir būsimiems užsakymams; **Praleisti dydžio atnaujinimą** – tik šiam užsakymui.
 5. Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.
 
-Kol dirbate, šis įrenginys saugo užsakymo juodraštį. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.
+Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **Išvalyti užsakymą** viršuje jį ištrina, prieš tai paklausęs. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.
 
 ![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](../../web/apps/workwear/public/help-img/lt/desktop/create-order.png)
 
@@ -161,23 +161,23 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 ## 10. Įmonės turtas
 
-Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du skirtukai: **SIM** ir **Įranga ir baldai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
+Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: **SIM kortelės** ir **Įranga**, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė **Įrangos išdavimai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
-Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`.
+Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, po juo išvardyti ji ir **SIM kortelės**.
 
 *Tik administratoriams ir vadovams:*
 
-Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte sąrašą pagal jį.
+Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.
 
-Plytelės viršuje skaičiuoja, kas yra **Biure**, **Pas darbuotojus** ir **Negrąžinta**. Pasirinkite plytelę, kad matytumėte tik juos; skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal būseną, vietą ir tiekėją, o įrangą – pagal kategoriją.
+Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, kiekviena būsena (**Neaktyvuota**, **Aktyvi**, **Užblokuota**), **Biure**, **Pas darbuotojus** ir **Negrąžinta**; ekranas **Įranga** savo daiktus skaičiuoja skirtukais **Visos** ir paskutiniais trimis. Skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.
 
 SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.
 
-![SIM: plytelės, filtrai ir kiekviena kortelė su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
+![SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
 
 *Tik administratoriams ir vadovams:*
 
-**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Skirtuke **Įranga ir baldai** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
+**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
 
 **Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.
 
@@ -357,11 +357,11 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
 
-**SIM kortelių tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.
+**SIM tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.
 
 Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo.
 
-![Nustatymai: SIM kortelių tiekėjai, vienas iš jų numatytasis](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
+![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
 ## 21. Jūsų paskyra
 

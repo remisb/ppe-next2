@@ -203,19 +203,28 @@ test('company assets: the SIMs, a card, giving one', async () => {
   // A SIM's row links from its phone number, which leads its link on every device.
   const sim = (phone: string) => page.getByRole('link', { name: new RegExp(`^${phone.replace('+', '\\+')}`) }).filter({ visible: true }).first()
   const [sim1, sim3, sim5] = ['+370 612 40118', '+370 655 21987', '+370 612 40120']
+  // Assignments is closed at first (and then as this device left it); the shots show it open.
+  const openAssignments = async () => {
+    const section = page.getByRole('region', { name: T.assets.assignmentsTitle })
+    const toggle = section.getByRole('button', { name: new RegExp(`^${T.assets.assignmentsTitle}`) })
+    await expect(toggle).toBeVisible()
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    return section
+  }
   await page.goto('/assets')
   await expect(sim(sim3)).toBeVisible()
   await shot('assets')
 
   await sim(sim3).click()
   await expect(page.getByRole('heading', { name: 'SIM-000003' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: T.assets.assignmentsTitle })).toBeVisible()
+  await openAssignments()
   await shot('asset')
 
   // A signed copy uploaded: SIM-000001's, scanned the day after it was given (cmd/api/seed-demo.go).
   await page.goto('/assets')
   await sim(sim1).click()
-  const assignments = page.getByRole('region', { name: T.assets.assignmentsTitle })
+  const assignments = await openAssignments()
   await expect(assignments.getByText(T.assets.signedCopyUploaded)).toBeVisible()
   await assignments.evaluate((e) => e.scrollIntoView({ block: 'start' }))
   await shot('signed-copy')

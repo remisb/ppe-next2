@@ -59,7 +59,7 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
    - If you choose a size other than the employee's saved one, you're asked **Different size selected. Save it to employee profile?** **Save** keeps it for their future orders; **Skip size update** uses it on this order only.
 5. Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.
 
-This device keeps a draft of the order while you work. **Copy for WhatsApp**, for the supplier's message, is in the review.
+This device keeps a draft of the order while you work; **Clear order** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier's message, is in the review.
 
 ![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/desktop/create-order.png)
 
@@ -69,7 +69,7 @@ This device keeps a draft of the order while you work. **Copy for WhatsApp**, fo
 2. Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it. The app also creates the employee's confirmation link.
 3. Send the employee the link with **Share link via WhatsApp** or **Copy link**. The link is valid for 7 days, and the app shows it only once.
 
-If the employee will sign on paper, choose **Print record** instead.
+If the employee will sign on paper, choose **Print Record** instead.
 
 **Copy for WhatsApp**, in the review, copies the message for the supplier. When an administrator has set the supplier's WhatsApp group in **Administration**, on **Settings**, it then offers to open that group: paste the message there.
 
@@ -161,23 +161,23 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 ## 10. Company Assets
 
-**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two tabs, **SIMs** and **Equipment & Furniture**. Each item is one record with its own inventory number, so three identical laptops are three assets.
+**Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
-Open it from the sidebar, or press `G` then `A`.
+Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under it.
 
 *Administrators and managers only:*
 
-The **Company Assets** card on the Dashboard shows the same figures. Choose one to open the list on it.
+The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.
 
-The tiles at the top count what is **In Office**, **With Employees** and **Not Returned**. Choose a tile to show only those; the figures overlap, since a card not returned is still with an employee. Search by number or employee, and filter by status, location and provider, or by category for equipment.
+The tabs above the list count the SIMs: **All**, each status (**Not Activated**, **Active**, **Blocked**), **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.
 
 A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
 
-![The SIMs: the tiles, the filters and each card with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
+![SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
 
 *Administrators and managers only:*
 
-**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment & Furniture**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
+**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
 
 **Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.
 
@@ -357,11 +357,11 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
 
-**SIM card providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.
+**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.
 
 A card already registered keeps its provider, even one you remove from the list.
 
-![Settings: the SIM card providers, one of them the default](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
+![Settings: the SIM providers, one of them the default](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
 ## 21. Your account
 
