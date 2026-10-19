@@ -104,14 +104,23 @@ PROD_COMMIT = $(shell git describe --always --dirty --abbrev=12 2>/dev/null)
 prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
 	$(PROD_ENV) API_COMMIT="$(PROD_COMMIT)" $(PROD_COMPOSE) build
 
-# Compose has kept api or caddy on the previous image after a rebuild, so both
-# are always recreated (about a second of downtime). db is recreated only when
-# its config changes; the first `up` runs migrate before the API starts. It
-# ends when GET /ready answers (the database is reachable and migrated), or
+# `up` runs migrate before the API starts and recreates what changed. Compose
+# has kept api or caddy on the previous image after a rebuild, so each built
+# service whose container still runs another image than its tag names is then
+# recreated, once; one already on its image is left running (each restart is
+# about a second of downtime). db is recreated only when its config changes.
+# It ends when GET /ready answers (the database is reachable and migrated), or
 # fails with the API's last log lines.
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
 	$(PROD) up -d
-	$(PROD) up -d --force-recreate --no-deps api caddy backup
+	@for svc in api caddy backup; do \
+		set -- $$(docker inspect -f '{{.Config.Image}} {{.Image}}' "$$($(PROD) ps -aq $$svc)") && \
+		want=$$(docker image inspect -f '{{.Id}}' "$$1") || exit 1; \
+		if [ "$$want" != "$$2" ]; then \
+			echo "$$svc still runs the previous image: recreating it"; \
+			$(PROD) up -d --force-recreate --no-deps $$svc || exit 1; \
+		fi; \
+	done
 	@for i in $$(seq 1 60); do \
 		if out=$$($(PROD) exec -T api /api -healthcheck 2>/dev/null); then echo "api ready: $$out"; exit 0; fi; \
 		sleep 1; \

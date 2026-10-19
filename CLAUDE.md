@@ -204,9 +204,10 @@ before the move still work. Deploy a pushed commit on the droplet:
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 ```
 
-`prod-up` runs migrations before the API starts and then always recreates `api`, `caddy` and `backup`
-(about a second of downtime; certificates live in the `caddy-data` volume), because compose
-has left either running the previous image after a rebuild. `db` is recreated only when its
+`prod-up` runs migrations before the API starts and recreates what changed; then, because compose
+has left `api` or `caddy` running the previous image after a rebuild, it recreates each of `api`,
+`caddy` and `backup` whose container still runs another image than its tag names, once (about a
+second of downtime each; certificates live in the `caddy-data` volume). `db` is recreated only when its
 config changes. It ends when the API's `GET /ready` answers (database reachable, every
 migration the build embeds applied; `internal/db.Migrations`), else it fails with the API's
 log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
