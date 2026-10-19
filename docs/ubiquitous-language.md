@@ -20,6 +20,8 @@ Rules for using it:
 3. Where code and UI names differ (History / Orders, Receipt / Items Given Record), both
    are listed. Do not rename one to match the other unless you rename both.
 4. [Words to avoid](#words-to-avoid) lists the synonyms that cause confusion.
+5. How screens are built and worded (regions, overlays, states, casing, verbs) is
+   [ui-language.md](ui-language.md), the UI and UX companion of this file.
 
 ---
 
@@ -694,117 +696,10 @@ Rules for using it:
 
 ## 11. UI elements
 
-### Device classes
-- **Brief:** phone (below 768 px), tablet (768–1279 px) and desktop (1280 px and wider).
-- **Detail:** one Main navigation reshaped per class. Touch targets are at least 44 px.
-  No screen may scroll sideways at 375, 768, 920, 1100 or 1280 px.
-
-### Main navigation
-- **Brief:** the app's sections, shaped by device.
-- **Detail:** **bottom bar** on a phone (Home, Orders, the raised **New order** button,
-  Employees, **More**). **Rail** on a tablet (icons with short labels, Search at the top).
-  **Sidebar** on a desktop (full labels, **Search…**, Help, Keyboard shortcuts, the account
-  and Sign out at its foot).
-- **UI:** landmark "Main"; short labels Home, Order, Orders, Assets, Catalogue, Sets, Keys, Account.
-  Company Assets follows Employees, so on a phone it is under More.
-
-### More
-- **Brief:** the phone's menu holding the sections that do not fit the bottom bar, plus
-  Search, Help, the account and Sign out.
-
-### New order button
-- **Brief:** the phone's raised Create Order button in the bottom bar; shows **Draft** while a
-  working order is saved.
-
-### Search (⌘K palette)
-- **Brief:** finds record numbers, employees, items and screens, and runs actions such as
-  "New order for …".
-- **Detail:** `⌘K` / `Ctrl K` on a desktop; Search in the rail or under More elsewhere. It
-  also switches theme and table-row density.
-- **Code:** `components/command-palette.tsx`. **UI:** "Search or jump to".
-
-### Keyboard shortcuts
-- **Brief:** desktop keys: `/` search field, `G` then a letter to go to a screen, `J`/`K`
-  through Orders, `Esc` close, `⌘/Ctrl Enter` review, `?` list them.
-- **Code:** `lib/shortcuts.ts`.
-
-### Help (user guide)
-- **Brief:** the in-app guide at `/help`, limited to the reader's roles and device, with that
-  device's screenshots.
-- **Detail:** text in `src/help/{en,lt,ru}.ts`; `pnpm guide` regenerates the screenshots and
-  `docs/guide`.
-
-### Account
-- **Brief:** the signed-in user's own page: Language, Theme, Change password, Table rows.
-- **Detail:** **Language** is saved on the account. **Theme** (Light, Dark, System) and
-  **Table rows** (Comfortable, Compact) are kept on this device.
-
-### Settings (organisation)
-- **Brief:** the administrator's screen for organisation-wide settings; today, the supplier's
-  WhatsApp group.
-- **Detail:** not the same as Account, and not the read-only **Settings** panel on Backups.
-
-### Page header
-- **Brief:** a screen's title with its main action beside it, and the description below.
-- **Code:** `PageHeader`.
-
-### Panel
-- **Brief:** a titled card that is a region of a dashboard or Backups.
-- **Code:** `Panel`.
-
-### Table and stacked cards
-- **Brief:** lists are tables on wide screens and stack into one labelled card per row when narrow.
-- **Code:** `<Table stack>`, the `stacked:` container-query variant.
-
-### Order pane
-- **Brief:** an order opened from Orders: beside the list on a desktop, full screen below that.
-- **Detail:** holds the order's actions by status. Ordered: Create confirmation link on its
-  own row (once pressed the link shows right below it and the button becomes **Confirmation
-  link**, a disclosure with a chevron that collapses and expands that same link), Print Order, Mark as Signed & Given (and Hand over now, hidden for now);
-  no Open Employee Confirmation button, which only Create Order's Send confirmation link
-  still opens. Given: View Order, Print Order (both the Items Given Record); **Signed**, a green badge with a tick, beside the
-  status at the top.
-  Manager role: ⋯ → Delete order…
-
-### Record number preview
-- **Brief:** the hover card on a record number showing the order's status, dates and first lines.
-
-### Assigned to (employee picker)
-- **Brief:** the combobox on Create Order that chooses who the order is for; offers
-  **+ Add New Employee**.
-
-### Add Item (item picker)
-- **Brief:** the search field on Create Order that adds one catalogue item (`/` jumps to it).
-- **Detail:** not the same as the Item Catalogue's **Add Item** button, which creates a
-  catalogue item.
-
-### Quantity stepper
-- **Brief:** a line's quantity with one-fewer / one-more buttons.
-
-### Order summary
-- **Brief:** Create Order's panel (desktop) or bottom bar (phone, tablet) with the employee,
-  line count, total and the review button.
-
-### Badge
-- **Brief:** a short status label: Ordered, Given, Active, Inactive, Incomplete, Overdue,
-  Succeeded, Failed.
-
-### More actions (⋯)
-- **Brief:** a row's or order's menu of less common actions (Edit, Reset password…,
-  Delete…).
-
-### Empty state, Error state, Loading
-- **Brief:** a dashed box saying a list is empty (with a next step); an error with
-  **Try again**; a loading indicator.
-- **Code:** `EmptyState`, `ErrorState`, `Loading`.
-
-### Refresh
-- **Brief:** reloads a dashboard or Backups (an icon only on a phone).
-
-### Form sheet
-- **Brief:** the modal holding an add or edit form (Add New Employee, Edit Item, Add User): a
-  bottom sheet on a phone, a centred dialog from tablet width.
-- **Code:** `components/ui/form-sheet.tsx`.
+The parts of the screens (navigation, page header, panels, lists and how they stack, the
+order pane, form sheets, menus, states), the patterns people move through and the rules for
+the words on screen are in [ui-language.md](ui-language.md). This file keeps the domain and
+the labels of the domain's own controls.
 
 ---
 

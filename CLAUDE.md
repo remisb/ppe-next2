@@ -238,8 +238,11 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/ux/company-assets-ux-review.md` (and `.html`) — the assets brief
   (`../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf`) against the app,
   the UI options and the chosen one; the rules are `docs/specs/asset-service.md` (planned).
-- `docs/ubiquitous-language.md` — the project's terms and UI element names (EN/LT/RU), and the
-  words to avoid; add a term there before using it.
+- `docs/ubiquitous-language.md` — the project's terms and the labels of the domain's controls
+  (EN/LT/RU), and the words to avoid; add a term there before using it.
+- `docs/ui-language.md` — the UI and UX language of both apps: the parts of a screen, overlays,
+  controls, list shapes, states and feedback, the named patterns (list and detail, ask first,
+  review first…), casing, verbs and punctuation on screen, and its known deviations.
 - `web/AGENTS.md` — binding rules for frontend apps.
 - `../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx` — the product
   contract (ORDERED/GIVEN orders, immutable line snapshots, bilingual receipts).

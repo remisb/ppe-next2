@@ -4,6 +4,9 @@ This file — rules binding on every frontend app
 Frontend apps are built with pnpm reactjs and the latest typescript ver 7. 
 UI component are `ui.shadcn.com` based.
 
+What the parts, patterns and states are called, and how the words on screen are written
+(casing, verbs, ellipsis, messages), is `docs/ui-language.md`; follow it for every new label.
+
 
 ## Layout
 
