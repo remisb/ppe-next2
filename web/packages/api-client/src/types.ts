@@ -362,12 +362,18 @@ export interface Settings {
   sim_providers: string[]
   /** The one of sim_providers Add SIM chooses for a new card; null when there is none. */
   default_sim_provider: string | null
+  /** The Non-return Value Add SIM fills in for a new card, in cents; null when there is none. */
+  default_sim_non_return_value_cents: number | null
 }
 
-/** Replaces the SIM providers; default is one of them, or '' for none. */
+/**
+ * Replaces the SIM providers; default is one of them, or '' for none; the
+ * default Non-return Value is in cents, or null for none.
+ */
 export interface SimProvidersInput {
   providers: string[]
   default: string
+  default_non_return_value_cents: number | null
 }
 
 /** A WhatsApp group: its name as staff know it and its invite link (https://chat.whatsapp.com/<code>). */

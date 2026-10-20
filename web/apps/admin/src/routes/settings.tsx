@@ -1,5 +1,6 @@
 import type { Settings } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
+import { parseEuro } from '@ppe/i18n'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ppe/ui/components/card'
@@ -10,13 +11,25 @@ import { ExternalLink, X } from 'lucide-react'
 import { type FormEvent, useEffect, useId, useState } from 'react'
 
 import { t } from '@/i18n'
-import { type ProviderProblem, type SimProviders, providerProblem, sameProviders, withProvider, withoutProvider } from '@/lib/sim-providers'
+import {
+  type ProviderProblem,
+  type SimProviders,
+  type ValueProblem,
+  providerProblem,
+  sameProviders,
+  sameValue,
+  valueProblem,
+  valueText,
+  withProvider,
+  withoutProvider,
+} from '@/lib/sim-providers'
 import { type SupplierChatErrors, checkSupplierChat } from '@/lib/supplier-chat'
 
 /**
  * Settings (/settings, administrators only): the organisation's settings. The
  * supplier's WhatsApp group, which Copy for WhatsApp opens for an order
- * message, and the SIM providers, which Add SIM offers.
+ * message, and the SIM providers, which Add SIM offers, with the Non-return
+ * Value it fills in.
  */
 export function SettingsPage() {
   const { client } = useApi()
@@ -135,25 +148,31 @@ function SupplierChatCard({ settings, onSaved }: { settings: Settings; onSaved: 
 }
 
 /**
- * The SIM providers Add SIM offers, and the default one it chooses
- * first. Added, removed and the default chosen as a draft, saved together;
- * cards already registered keep their provider.
+ * The SIM providers Add SIM offers, the default one it chooses first, and
+ * the default Non-return Value it fills in. Added, removed, the default
+ * chosen and the value typed as a draft, saved together; cards already
+ * registered keep their provider and value.
  */
 function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: () => void }) {
   const { client } = useApi()
   const titleId = useId()
   const saved: SimProviders = { providers: settings.sim_providers, default: settings.default_sim_provider ?? '' }
   const [draft, setDraft] = useState<SimProviders>(saved)
+  const savedValue = valueText(settings.default_sim_non_return_value_cents)
+  // The value as typed; it is checked on Save.
+  const [value, setValue] = useState(savedValue)
+  const [badValue, setBadValue] = useState<ValueProblem>()
   const [name, setName] = useState('')
   const [problem, setProblem] = useState<ProviderProblem>()
   const [serverError, setServerError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
-  const dirty = !sameProviders(draft, saved)
+  const dirty = !sameProviders(draft, saved) || !sameValue(value, savedValue)
 
   // The draft starts from what is saved, and again after each save.
   const savedKey = JSON.stringify(saved)
   useEffect(() => setDraft(saved), [savedKey])
+  useEffect(() => setValue(savedValue), [savedValue])
 
   const change = (next: SimProviders) => {
     setDraft(next)
@@ -171,10 +190,13 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
   }
 
   const save = async () => {
+    const problem = valueProblem(value)
+    setBadValue(problem)
+    if (problem) return
     setBusy(true)
     setServerError(undefined)
     try {
-      await client.updateSimProviders(draft)
+      await client.updateSimProviders({ ...draft, default_non_return_value_cents: parseEuro(value) })
       setDone(true)
       onSaved()
     } catch (err) {
@@ -261,6 +283,24 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
             {t.settings.addProvider}
           </Button>
         </form>
+        <Field label={t.settings.defaultValue} hint={t.settings.defaultValueHint} error={badValue ? t.settings.valueProblems[badValue] : undefined}>
+          {(p) => (
+            <Input
+              {...controlProps(p)}
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0.00"
+              className="sm:max-w-40"
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value)
+                setBadValue(undefined)
+                setDone(false)
+                setServerError(undefined)
+              }}
+            />
+          )}
+        </Field>
         {serverError ? (
           <p role="alert" className="text-sm text-destructive">
             {serverError}
@@ -271,7 +311,16 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
             {busy ? t.settings.saving : t.settings.saveProviders}
           </Button>
           {dirty ? (
-            <Button type="button" variant="outline" disabled={busy} onClick={() => change(saved)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                change(saved)
+                setValue(savedValue)
+                setBadValue(undefined)
+              }}
+            >
               {t.settings.discard}
             </Button>
           ) : null}

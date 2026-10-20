@@ -174,9 +174,10 @@ export interface SimDraft {
   comment: string
 }
 
-/** Add SIM starts with the default provider (Settings), when there is one. */
-export function emptySimDraft(today: string, provider = ''): SimDraft {
-  return { simNo: '', phoneNo: '', provider, plan: '', value: '', receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
+/** Add SIM starts with the default provider and Non-return Value (Settings), when there are. */
+export function emptySimDraft(today: string, provider = '', valueCents: number | null = null): SimDraft {
+  const value = valueCents === null ? '' : (valueCents / 100).toFixed(2)
+  return { simNo: '', phoneNo: '', provider, plan: '', value, receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
 }
 
 /**

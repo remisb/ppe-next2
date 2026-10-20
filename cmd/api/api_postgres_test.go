@@ -949,22 +949,27 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 		Timezone           string   `json:"timezone"`
 		SIMProviders       []string `json:"sim_providers"`
 		DefaultSIMProvider *string  `json:"default_sim_provider"`
+		DefaultValueCents  *int64   `json:"default_sim_non_return_value_cents"`
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil {
 		t.Errorf("settings = %s", rec.Body)
 	}
 	// An administrator lists the SIM providers (as ppe_app); everyone reads them for Add SIM.
 	_, settingsAdmin := api.userWith(t, role.KeyAdmin)
-	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia"}
+	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia", "default_non_return_value_cents": 2500}
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, providers); rec.Code != http.StatusOK {
 		t.Fatalf("sim providers = %d %s", rec.Code, rec.Body)
 	}
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []string{"Telia"}, "default": "Tele2"}); rec.Code != http.StatusBadRequest {
 		t.Errorf("an unlisted default = %d, want 400", rec.Code)
 	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []string{"Telia"}, "default_non_return_value_cents": -1}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a negative default value = %d, want 400", rec.Code)
+	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" ||
+		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 {
 		t.Errorf("settings = %s", rec.Body)
 	}
 }

@@ -153,10 +153,10 @@ func TestUpdateSIMProviders(t *testing.T) {
 	if len(repo.events) != 1 || repo.events[0].Event != EventSIMProvidersChanged || repo.events[0].EntityID != AuditEntityID {
 		t.Fatalf("events = %+v", repo.events)
 	}
-	if got := string(repo.events[0].Before); got != `{"providers":[],"default_provider":""}` {
+	if got := string(repo.events[0].Before); got != `{"providers":[],"default_provider":"","default_non_return_value_cents":null}` {
 		t.Fatalf("before = %s", got)
 	}
-	if got := string(repo.events[0].After); got != `{"providers":["Telia","Bitė"],"default_provider":"Telia"}` {
+	if got := string(repo.events[0].After); got != `{"providers":["Telia","Bitė"],"default_provider":"Telia","default_non_return_value_cents":null}` {
 		t.Fatalf("after = %s", got)
 	}
 	// The same again records nothing; the supplier's group is left alone.
@@ -172,8 +172,27 @@ func TestUpdateSIMProviders(t *testing.T) {
 	if s, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Bitė", "Telia"}}, actor); err != nil || s.DefaultSIMProvider != "" || len(repo.events) != 3 {
 		t.Fatalf("no default: %+v, %v, %d events", s, err, len(repo.events))
 	}
+	// A default Non-return Value is a change; the same value again is not; none is one more.
+	value := int64(2500)
+	if s, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Bitė", "Telia"}, DefaultNonReturnValueCents: &value}, actor); err != nil ||
+		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 || len(repo.events) != 4 {
+		t.Fatalf("value: %+v, %v, %d events", s, err, len(repo.events))
+	}
+	if got := string(repo.events[3].After); got != `{"providers":["Bitė","Telia"],"default_provider":"","default_non_return_value_cents":2500}` {
+		t.Fatalf("after = %s", got)
+	}
+	same := int64(2500)
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Bitė", "Telia"}, DefaultNonReturnValueCents: &same}, actor); err != nil || len(repo.events) != 4 {
+		t.Fatalf("same value: %v, %d events", err, len(repo.events))
+	}
+	zero := int64(0)
+	if s, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Bitė", "Telia"}, DefaultNonReturnValueCents: &zero}, actor); err != nil ||
+		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 0 || len(repo.events) != 5 {
+		t.Fatalf("zero: %+v, %v, %d events", s, err, len(repo.events))
+	}
 	// None at all.
-	if s, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{}, actor); err != nil || len(s.SIMProviders) != 0 || len(repo.events) != 4 {
+	if s, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{}, actor); err != nil || len(s.SIMProviders) != 0 ||
+		s.DefaultSIMNonReturnValueCents != nil || len(repo.events) != 6 {
 		t.Fatalf("none: %+v, %v, %d events", s, err, len(repo.events))
 	}
 }
@@ -182,6 +201,7 @@ func TestUpdateSIMProvidersRejects(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	long := strings.Repeat("a", maxProviderLen+1)
+	negative, tooMuch := int64(-1), int64(maxValueCents+1)
 	many := make([]string, maxProviders+1)
 	for i := range many {
 		many[i] = fmt.Sprintf("Provider %d", i)
@@ -196,6 +216,8 @@ func TestUpdateSIMProvidersRejects(t *testing.T) {
 		"too many":           {SIMProvidersParams{Providers: many}, uuid.New()},
 		"a default unlisted": {SIMProvidersParams{Providers: []string{"Telia"}, Default: "Bitė"}, uuid.New()},
 		"a default, no list": {SIMProvidersParams{Default: "Telia"}, uuid.New()},
+		"a negative value":   {SIMProvidersParams{DefaultNonReturnValueCents: &negative}, uuid.New()},
+		"a value too large":  {SIMProvidersParams{DefaultNonReturnValueCents: &tooMuch}, uuid.New()},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := svc.UpdateSIMProviders(ctx, c.p, c.actor); !errors.Is(err, ErrInvalid) {

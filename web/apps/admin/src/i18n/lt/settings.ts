@@ -21,7 +21,8 @@ export const settings: SettingsText = {
   nameRequired: 'Įrašykite grupės pavadinimą: darbuotojai jį mato prie Kopijuoti į WhatsApp.',
   invalidLink: 'Įklijuokite grupės pakvietimo nuorodą iš WhatsApp: ji prasideda https://chat.whatsapp.com/',
   simProviders: 'SIM tiekėjai',
-  simProvidersIntro: '„Pridėti SIM“ siūlo šiuos tiekėjus, numatytasis pasirinktas iš anksto. Jau užregistruota kortelė savo tiekėjo nekeičia.',
+  simProvidersIntro:
+    '„Pridėti SIM“ siūlo šiuos tiekėjus, numatytasis pasirinktas iš anksto, ir įrašo numatytąją negrąžinimo vertę. Jau užregistruota kortelė savo tiekėjo ir vertės nekeičia.',
   noProviders: 'Sąrašas tuščias: „Pridėti SIM“ prašo įrašyti tiekėją.',
   defaultProviderIs: (name: string) => `„Pridėti SIM“ iš anksto pasirenka „${name}“.`,
   noDefaultProvider: 'Numatytojo nėra: „Pridėti SIM“ klausia, kurį pasirinkti.',
@@ -38,6 +39,12 @@ export const settings: SettingsText = {
     tooLong: 'Ne daugiau kaip 100 simbolių.',
     tooMany: 'Ne daugiau kaip 50 tiekėjų.',
   },
-  saveProviders: 'Išsaugoti tiekėjus',
+  defaultValue: 'Numatytoji negrąžinimo vertė (€)',
+  defaultValueHint: '„Pridėti SIM“ ją įrašo naujai kortelei. Palikite tuščią, jei jos nėra.',
+  valueProblems: {
+    invalid: 'Įrašykite sumą eurais, pvz., 25,00.',
+    tooLarge: 'Ne daugiau kaip 100 000 000 €.',
+  },
+  saveProviders: 'Išsaugoti',
   discard: 'Atmesti pakeitimus',
 }

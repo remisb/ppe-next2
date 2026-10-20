@@ -12,3 +12,11 @@ export function formatEuro(cents: number | null | undefined): string {
   if (!f) euros.set(lang, (f = new Intl.NumberFormat(euroLocales[lang], { style: 'currency', currency: 'EUR' })))
   return f.format(cents / 100)
 }
+
+/** A euro amount typed by a user ("49.99", "49,99", "€49") in cents; null when empty, NaN when not an amount. */
+export function parseEuro(input: string): number | null {
+  const cleaned = input.replace(/[€\s]/g, '').replace(',', '.')
+  if (cleaned === '') return null
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return Number.NaN
+  return Math.round(Number(cleaned) * 100)
+}

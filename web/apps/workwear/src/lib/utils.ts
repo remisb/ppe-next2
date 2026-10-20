@@ -2,16 +2,8 @@ import type { ClothingSize } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 
-/** Integer cents as a euro amount in the language in use (@ppe/i18n). */
-export { formatEuro } from '@ppe/i18n'
-
-/** Parse a euro amount typed by a user ("49.99", "49,99", "€49") into cents. */
-export function parseEuro(input: string): number | null {
-  const cleaned = input.replace(/[€\s]/g, '').replace(',', '.')
-  if (cleaned === '') return null
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return Number.NaN
-  return Math.round(Number(cleaned) * 100)
-}
+/** Integer cents as a euro amount in the language in use, and a typed amount in cents (@ppe/i18n). */
+export { formatEuro, parseEuro } from '@ppe/i18n'
 
 export function formatMonths(months: number | null | undefined): string {
   if (months === null || months === undefined) return '–'

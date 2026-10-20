@@ -1,3 +1,5 @@
+import { parseEuro } from '@ppe/i18n'
+
 /**
  * The Settings list of SIM providers, kept as a draft until saved: the
  * same rules the server applies (internal/domain/settings). Names are trimmed,
@@ -38,4 +40,29 @@ export function withoutProvider(s: SimProviders, name: string): SimProviders {
 
 export function sameProviders(a: SimProviders, b: SimProviders): boolean {
   return a.default === b.default && a.providers.length === b.providers.length && a.providers.every((p, i) => p === b.providers[i])
+}
+
+/** The default Non-return Value's limit, an asset's own (internal/domain/asset). */
+export const MAX_VALUE_CENTS = 100_000_000_00
+
+export type ValueProblem = 'invalid' | 'tooLarge'
+
+/** A saved default Non-return Value as the field shows it: 25.00, or empty for none. */
+export function valueText(cents: number | null | undefined): string {
+  return cents === null || cents === undefined ? '' : (cents / 100).toFixed(2)
+}
+
+/** Why the typed default Non-return Value cannot be saved, or undefined when it can (empty is none). */
+export function valueProblem(text: string): ValueProblem | undefined {
+  const cents = parseEuro(text)
+  if (cents === null) return undefined
+  if (Number.isNaN(cents)) return 'invalid'
+  return cents > MAX_VALUE_CENTS ? 'tooLarge' : undefined
+}
+
+/** Whether two typed values are the same amount ("25", "25,00"), or the same text when one is not an amount. */
+export function sameValue(a: string, b: string): boolean {
+  const x = parseEuro(a)
+  const y = parseEuro(b)
+  return Number.isNaN(x) || Number.isNaN(y) ? a.trim() === b.trim() : x === y
 }

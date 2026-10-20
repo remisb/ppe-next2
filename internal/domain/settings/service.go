@@ -70,9 +70,9 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 	})
 }
 
-// UpdateSIMProviders replaces the SIM providers and the default one,
-// recording settings.sim_providers_changed when either differs. Cards already
-// registered keep their provider, listed or not.
+// UpdateSIMProviders replaces the SIM providers, the default one and the
+// default Non-return Value, recording settings.sim_providers_changed when any
+// differs. Cards already registered keep their provider and value.
 func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, actor uuid.UUID) (Settings, error) {
 	if actor == uuid.Nil {
 		return Settings{}, fieldError("actor", "is required")
@@ -81,23 +81,32 @@ func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, 
 		return Settings{}, err
 	}
 	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
-		if slices.Equal(p.Providers, cur.SIMProviders) && p.Default == cur.DefaultSIMProvider {
+		if slices.Equal(p.Providers, cur.SIMProviders) && p.Default == cur.DefaultSIMProvider &&
+			sameCents(p.DefaultNonReturnValueCents, cur.DefaultSIMNonReturnValueCents) {
 			return cur, nil, nil
 		}
 		now := s.now()
 		next := cur
-		next.SIMProviders, next.DefaultSIMProvider, next.UpdatedAt, next.UpdatedByUserID = p.Providers, p.Default, now, actor
+		next.SIMProviders, next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents = p.Providers, p.Default, p.DefaultNonReturnValueCents
+		next.UpdatedAt, next.UpdatedByUserID = now, actor
 		type value struct {
 			Providers []string `json:"providers"`
 			Default   string   `json:"default_provider"`
+			Value     *int64   `json:"default_non_return_value_cents"`
 		}
 		ev, err := audit.New(s.newID(), &actor, EventSIMProvidersChanged, auditEntity, AuditEntityID, now,
-			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider}, value{p.Providers, p.Default})
+			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider, cur.DefaultSIMNonReturnValueCents},
+			value{p.Providers, p.Default, p.DefaultNonReturnValueCents})
 		if err != nil {
 			return Settings{}, nil, err
 		}
 		return next, &ev, nil
 	})
+}
+
+// sameCents tells whether two optional amounts are equal, both none included.
+func sameCents(a, b *int64) bool {
+	return (a == nil) == (b == nil) && (a == nil || *a == *b)
 }
 
 // orEmpty keeps a list that was never set from reading as null in the event.

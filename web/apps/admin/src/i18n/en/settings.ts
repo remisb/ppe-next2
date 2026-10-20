@@ -20,7 +20,8 @@ export const settings = {
   nameRequired: 'Give the group a name: staff see it on Copy for WhatsApp.',
   invalidLink: 'Paste the group invite link from WhatsApp: it starts with https://chat.whatsapp.com/',
   simProviders: 'SIM providers',
-  simProvidersIntro: 'Add SIM offers these providers, the default one chosen first. A card already registered keeps its provider.',
+  simProvidersIntro:
+    'Add SIM offers these providers, the default one chosen first, and fills in the default Non-return Value. A card already registered keeps its provider and value.',
   noProviders: 'None listed: Add SIM asks for the provider to be typed.',
   defaultProviderIs: (name: string) => `Add SIM chooses ${name} first.`,
   noDefaultProvider: 'No default: Add SIM asks which one.',
@@ -37,7 +38,13 @@ export const settings = {
     tooLong: 'At most 100 characters.',
     tooMany: 'At most 50 providers.',
   },
-  saveProviders: 'Save providers',
+  defaultValue: 'Default Non-return Value (€)',
+  defaultValueHint: 'Add SIM fills it in for a new card. Leave it empty for none.',
+  valueProblems: {
+    invalid: 'Type an amount in euros, such as 25.00.',
+    tooLarge: 'At most €100,000,000.',
+  },
+  saveProviders: 'Save',
   discard: 'Discard changes',
 }
 

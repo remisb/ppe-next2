@@ -611,6 +611,7 @@ export function Assets({
           providers={settings.data?.sim_providers ?? []}
           inUse={s?.providers ?? []}
           defaultProvider={settings.data?.default_sim_provider}
+          defaultValueCents={settings.data?.default_sim_non_return_value_cents}
           onClose={() => setEditing(null)}
           onSaved={(saved, added) => {
             setEditing(null)

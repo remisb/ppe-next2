@@ -251,7 +251,7 @@ test("Settings: an administrator sets the supplier's WhatsApp group", async () =
   await expect(card.getByRole('link', { name: 'Open the group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
 })
 
-test('Settings: an administrator lists the SIM providers and the default one', async () => {
+test('Settings: an administrator lists the SIM providers, the default one and the default value', async () => {
   await openTab('Settings')
   const card = page.getByRole('region', { name: 'SIM providers' })
   await expect(card.getByRole('status')).toContainText('None listed')
@@ -270,10 +270,18 @@ test('Settings: an administrator lists the SIM providers and the default one', a
   await card.getByRole('radio', { name: 'Telia' }).check()
   await card.getByRole('button', { name: 'Remove Tele2' }).click()
   await expect(card.getByRole('status')).toContainText('Changes not saved yet.')
-  await card.getByRole('button', { name: 'Save providers' }).click()
+  // The Non-return Value Add SIM fills in, beside the default provider: an amount in euros, saved with them.
+  const value = card.getByLabel('Default Non-return Value')
+  await expect(value).toHaveValue('')
+  await value.fill('twenty')
+  await card.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(card.getByText('Type an amount in euros, such as 25.00.')).toBeVisible()
+  await value.fill('25')
+  await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByRole('status')).toHaveText('Saved. Add SIM chooses Telia first.')
   await expect(card.getByRole('radio')).toHaveCount(3)
-  await expect(card.getByRole('button', { name: 'Save providers' })).toBeDisabled()
+  await expect(value).toHaveValue('25.00')
+  await expect(card.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
 test('Item Catalogue: items with and without a price', async () => {
@@ -1405,6 +1413,9 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // The providers listed on Settings, the default one chosen.
   await expect(form.getByLabel('Provider')).toHaveValue('Telia')
   await expect(form.getByLabel('Provider').getByRole('option')).toHaveText(['Choose a provider', 'Bitė', 'Telia'])
+  // And the default Non-return Value set there; this card goes without one, which Give SIM then asks for.
+  await expect(form.getByLabel('Non-return Value')).toHaveValue('25.00')
+  await form.getByLabel('Non-return Value').fill('')
   await form.getByLabel('Plan').fill('Biz 10 GB')
   await form.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()

@@ -122,6 +122,10 @@ describe('default provider', () => {
   it('fills in a new card', () => {
     expect(emptySimDraft('2026-10-09', 'Telia').provider).toBe('Telia')
     expect(emptySimDraft('2026-10-09').provider).toBe('')
+    // And the default Non-return Value, in euros as the field takes it.
+    expect(emptySimDraft('2026-10-09', 'Telia', 2500).value).toBe('25.00')
+    expect(emptySimDraft('2026-10-09', 'Telia', 0).value).toBe('0.00')
+    expect(emptySimDraft('2026-10-09').value).toBe('')
   })
 
   it('offers the providers listed on Settings, and a card’s own when it is not listed', () => {

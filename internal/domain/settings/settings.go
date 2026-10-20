@@ -1,7 +1,8 @@
 // Package settings holds the organisation's settings that administrators
 // change in the app, one set for the whole organisation: the supplier's
 // WhatsApp group, which Copy for WhatsApp opens for the order message, and the
-// SIM providers, which Add SIM offers, the default one chosen. Settings
+// SIM providers, which Add SIM offers, the default one chosen, with the
+// Non-return Value it fills in. Settings
 // fixed at deployment (timezone, currency) stay in config.
 package settings
 
@@ -20,6 +21,8 @@ const (
 	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
 	maxProviderLen = 100
 	maxProviders   = 50
+	// maxValueCents is an asset's Non-return Value's limit (asset.maxValueCents).
+	maxValueCents = 100_000_000_00
 )
 
 // chatHost is where WhatsApp group invite links live.
@@ -38,8 +41,11 @@ type Settings struct {
 	// DefaultSIMProvider is the one of them Add SIM chooses for a new card;
 	// empty when there is none.
 	DefaultSIMProvider string
-	UpdatedAt          time.Time
-	UpdatedByUserID    uuid.UUID
+	// DefaultSIMNonReturnValueCents is the Non-return Value Add SIM fills in
+	// for a new card; nil when there is none.
+	DefaultSIMNonReturnValueCents *int64
+	UpdatedAt                     time.Time
+	UpdatedByUserID               uuid.UUID
 }
 
 // SupplierChat is the supplier's WhatsApp group. WhatsApp has no link that
@@ -101,11 +107,13 @@ func parseInvite(link string) (string, bool) {
 	return code, true
 }
 
-// SIMProvidersParams replace the SIM providers: the list, and the one of
-// them Add SIM chooses first, or empty for none.
+// SIMProvidersParams replace the SIM providers: the list, the one of them
+// Add SIM chooses first, or empty for none, and the Non-return Value it fills
+// in, or nil for none.
 type SIMProvidersParams struct {
-	Providers []string
-	Default   string
+	Providers                  []string
+	Default                    string
+	DefaultNonReturnValueCents *int64
 }
 
 // Normalize trims each provider, as an asset's provider is trimmed so the
@@ -146,6 +154,9 @@ func (p *SIMProvidersParams) Validate() error {
 	}
 	if p.Default != "" && !seen[strings.ToLower(p.Default)] {
 		return fieldError("default", "must be one of the providers")
+	}
+	if v := p.DefaultNonReturnValueCents; v != nil && (*v < 0 || *v > maxValueCents) {
+		return fieldError("default_non_return_value_cents", "must be between 0 and 10000000000")
 	}
 	return nil
 }

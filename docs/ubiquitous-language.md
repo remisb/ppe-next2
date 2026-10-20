@@ -759,12 +759,13 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** the provider's e-mail address is shown where staff must write to it
   (activation, blocking). Nothing is sent from the app.
 
-### SIM providers and the default provider
+### SIM providers, the default provider and the default Non-return Value
 - **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
-  and the one of them Add SIM chooses first.
+  the one of them Add SIM chooses first, and the Non-return Value it fills in.
 - **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
-  `default_sim_provider`. **UI:** **SIM providers** on Settings in Administration, with
-  **Default provider** and **No default**.
+  `default_sim_provider`; `settings.DefaultSIMNonReturnValueCents`,
+  `default_sim_non_return_value_cents`. **UI:** **SIM providers** on Settings in
+  Administration, with **Default provider**, **No default** and **Default Non-return Value (€)**.
 - **Detail:** changing them changes no card already registered; a card whose provider is no
   longer listed keeps it.
 
@@ -974,6 +975,7 @@ screens are built):
 | Provider / Plan | Tiekėjas / Planas | Оператор / Тариф |
 | SIM providers | SIM tiekėjai | Операторы SIM |
 | Default provider / No default | Numatytasis tiekėjas / Be numatytojo | Оператор по умолчанию / Без оператора по умолчанию |
+| Default Non-return Value | Numatytoji negrąžinimo vertė | Стоимость при невозврате по умолчанию |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |
