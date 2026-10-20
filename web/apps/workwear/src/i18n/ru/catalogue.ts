@@ -31,6 +31,8 @@ export const catalogue: CatalogueText = {
   active: 'Активен',
   inactive: 'Неактивен',
   incomplete: 'Не заполнен',
+  incompleteReason: (noPrice: boolean, noPeriod: boolean) =>
+    noPrice && noPeriod ? 'Не указаны цена и срок службы.' : noPrice ? 'Не указана цена.' : 'Не указан срок службы.',
   deactivateItem: 'Деактивировать предмет…',
   activateItem: 'Активировать предмет',
   confirmDeactivate: (name: string) =>

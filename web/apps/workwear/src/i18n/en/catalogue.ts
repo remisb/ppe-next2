@@ -33,6 +33,9 @@ export const catalogue = {
   active: 'Active',
   inactive: 'Inactive',
   incomplete: 'Incomplete',
+  // Why an item is Incomplete: the badge's tooltip in the list.
+  incompleteReason: (noPrice: boolean, noPeriod: boolean): string =>
+    noPrice && noPeriod ? 'The price and the service period are missing.' : noPrice ? 'The price is missing.' : 'The service period is missing.',
   deactivateItem: 'Deactivate item…',
   activateItem: 'Activate item',
   confirmDeactivate: (name: string) => `Deactivate ${name}? It will no longer be offered in Add Item. Orders that hold it keep it.`,

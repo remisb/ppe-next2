@@ -105,10 +105,10 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
 
           <div className="mb-3 flex flex-wrap gap-1">
             {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <Badge variant="outline">{t.catalogue.inactive}</Badge>}
-            {incomplete ? <Badge variant="destructive">{t.catalogue.incomplete}</Badge> : null}
+            {incomplete ? <Badge variant="warning">{t.catalogue.incomplete}</Badge> : null}
           </div>
           {incomplete ? (
-            <p role="note" className="mb-4 text-sm text-destructive">
+            <p role="note" className="mb-4 text-sm text-warning">
               {t.catalogue.incompleteNote}
             </p>
           ) : null}

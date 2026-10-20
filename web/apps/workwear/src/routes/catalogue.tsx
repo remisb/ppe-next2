@@ -10,6 +10,7 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -227,7 +228,17 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
                       ) : (
                         <Badge variant="outline">{t.catalogue.inactive}</Badge>
                       )}
-                      {incomplete ? <Badge variant="destructive">{t.catalogue.incomplete}</Badge> : null}
+                      {incomplete ? (
+                        <HelpTooltip
+                          title={t.catalogue.incomplete}
+                          help={{
+                            body: t.catalogue.incompleteReason(i.accounting_price_cents === null, i.service_period_months === null),
+                            note: t.catalogue.incompleteNote,
+                          }}
+                        >
+                          <Badge variant="warning">{t.catalogue.incomplete}</Badge>
+                        </HelpTooltip>
+                      ) : null}
                     </TableCell>
                     <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
                       <ChevronRight className="size-4 text-muted-foreground" />

@@ -31,6 +31,8 @@ export const catalogue: CatalogueText = {
   active: 'Aktyvi',
   inactive: 'Neaktyvi',
   incomplete: 'Neužpildyta',
+  incompleteReason: (noPrice: boolean, noPeriod: boolean) =>
+    noPrice && noPeriod ? 'Trūksta kainos ir naudojimo laikotarpio.' : noPrice ? 'Trūksta kainos.' : 'Trūksta naudojimo laikotarpio.',
   deactivateItem: 'Deaktyvuoti prekę…',
   activateItem: 'Aktyvuoti prekę',
   confirmDeactivate: (name: string) =>

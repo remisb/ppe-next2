@@ -399,8 +399,10 @@ Lithuanian or Russian label wraps rather than overflow.
   - `default` (filled): the final state of a record's lifecycle (Given) and the
     Administrator role;
   - `success` (green, with a tick): evidence that something was completed (Signed);
-  - `destructive`: needs action (Missing, Incomplete, Overdue, Not Returned, Failed, Not
-    ready, "Not used for 90 days");
+  - `warning` (amber): usable but not finished (Incomplete, whose tooltip in the list says
+    what is missing);
+  - `destructive`: needs action (Missing, Overdue, Not Returned, Failed, Not ready, "Not
+    used for 90 days");
   - `secondary`: a state in progress or neutral (Ordered, Active, Due soon, Succeeded, a
     role);
   - `outline`: out of use, or a marker about the row (Inactive, You, This device, Built-in,
