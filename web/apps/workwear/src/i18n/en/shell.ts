@@ -7,6 +7,8 @@ export const shell = {
   history: 'Orders',
   employees: 'Employees',
   companyAssets: 'Company Assets',
+  /** The desktop sidebar's section over Orders, Item Catalogue and Item Sets. */
+  workwear: 'Workwear',
   catalogue: 'Item Catalogue',
   itemSets: 'Item Sets',
   dashboard: 'Dashboard',

@@ -138,7 +138,16 @@ The workwear app is the reference.
   when the user may open both) lists them under it in the rail, as short centred links under its icon, and in the
   sidebar (`navSubList`, `navSubItem`) and the phone's More panel (`moreSubList`); the
   section's link opens the first and is `aria-current="true"` while one of them is the
-  page, which is the link highlighted. The screens offer no switcher of their own. An
+  page, which is the link highlighted. The screens offer no switcher of their own. The
+  sidebar alone groups Orders, Item Catalogue and Item Sets under **Workwear**
+  (`workwearSections` in `app.tsx`), in Orders' place: the three are listed under it as
+  `navSubItem`s (Orders with its count), and their own links are `xl:hidden`; the bar,
+  More and the rail keep them as sections. In the sidebar, Workwear and a section with
+  screens are a `SidebarGroup`: its row is a button (`aria-expanded`, a chevron) that shows
+  or hides the list and opens no screen, open at first and remembered per user on the
+  device (`useOpenKey('nav.<id>')`); it is `aria-current="true"` while it is the current
+  section, and highlighted so while closed, when it also shows its screens' count
+  (Orders' waiting, under Workwear). An
   administrator, a manager or the employee role has six sections on a phone (their
   Dashboard first); the rail and sidebar show one fewer, without Create Order. Whoever may
   open a screen in Administration also has its link, under More on a phone and at the foot

@@ -4,13 +4,15 @@ import { adminHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList } from '@ppe/ui/components/main-nav'
 import { Loading } from '@ppe/ui/components/states'
+import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { BookOpen, Boxes, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
-import { Fragment, Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
+import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteSection } from '@/components/command-palette'
 import { t } from '@/i18n'
+import { useOpenKey } from '@/lib/open-sections'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
 import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { draftLineCount } from '@/lib/working-order'
@@ -67,6 +69,11 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   { route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package },
 ]
+/**
+ * The sections the desktop sidebar lists under Workwear, which shows or hides them;
+ * the bar, More and the rail keep them as sections of their own.
+ */
+const workwearSections: Route['name'][] = ['history', 'catalogue', 'itemSets']
 /** A start screen's tab: the Dashboard for administrators, managers and the employee role alike. */
 const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): Tab => ({
   route: { name },
@@ -198,15 +205,51 @@ export function App() {
   let placed = 0
 
   const link = (to: Route) => linkTo(to, navigate)
-  /** A section's link, and in the sidebar (and under More, the phone's More panel) the screens listed under it. */
+  const workwear = shownTabs.filter((tab) => workwearSections.includes(tab.route.name))
+  const workwearCurrent = workwear.find((tab) => isCurrent(route.name, tab.route.name))
+  /**
+   * A section's link, and in the rail (and under More, the phone's More panel) the screens listed under it.
+   * The sidebar shows a section with screens, and Workwear in the place of its first section, as a SidebarGroup instead (xl:hidden).
+   */
   const section = (tab: Tab, props: Omit<Parameters<typeof NavLink>[0], 'tab' | 'current' | 'link'> = {}, subList = navSubList) => {
     const current = isCurrent(route.name, tab.route.name)
     const screen = tab.screens?.find((s) => s.route.name === route.name)
     return (
       <Fragment key={tab.route.name}>
-        <NavLink tab={tab} current={screen ? 'section' : current} link={link} {...props} />
+        {tab === workwear[0] ? (
+          <SidebarGroup
+            id="workwear"
+            label={t.shell.workwear}
+            icon={Shirt}
+            current={workwearCurrent !== undefined}
+            screens={workwear.map((w) => ({
+              route: w.route,
+              label: w.label,
+              current: w === workwearCurrent,
+              badge: w.route.name === 'history' ? waiting : 0,
+            }))}
+            link={link}
+          />
+        ) : null}
         {tab.screens ? (
-          <div className={subList}>
+          <SidebarGroup
+            id={tab.route.name}
+            label={tab.label}
+            icon={tab.icon}
+            current={current}
+            screens={tab.screens.map((s) => ({ route: s.route, label: s.label, current: s === screen }))}
+            link={link}
+          />
+        ) : null}
+        <NavLink
+          tab={tab}
+          current={screen ? 'section' : current}
+          link={link}
+          {...props}
+          className={cn(props.className, (workwear.includes(tab) || tab.screens) && 'xl:hidden')}
+        />
+        {tab.screens ? (
+          <div className={cn(subList, 'xl:hidden')}>
             {tab.screens.map((s) => (
               <a key={s.route.name} {...link(s.route)} aria-current={s === screen ? 'page' : undefined} className={navSubItem}>
                 {s.label}
@@ -527,6 +570,72 @@ function NavLink({
         </>
       ) : null}
     </a>
+  )
+}
+
+/**
+ * A section in the desktop sidebar with its screens listed under it (Workwear,
+ * Company Assets): a click on its row shows or hides the list, remembered per
+ * user on this device; open at first. It opens no screen itself: the screens
+ * listed under it do. Closed, its row is highlighted while it is the current
+ * section, and shows the count its screens show (Orders' waiting, under Workwear). Below xl it is not shown: the bar, More and the rail list the screens themselves.
+ */
+function SidebarGroup({
+  id,
+  label,
+  icon: Icon,
+  current,
+  screens,
+  link,
+}: {
+  /** Part of the storage key. */
+  id: string
+  label: string
+  icon: typeof Users
+  current: boolean
+  screens: { route: Route; label: string; current: boolean; badge?: number }[]
+  link: (to: Route) => ReturnType<typeof linkTo>
+}) {
+  const [open, setOpen] = useRememberedOpen(useOpenKey(`nav.${id}`), true)
+  const listId = useId()
+  const hiddenBadge = screens.reduce((n, s) => n + (s.badge ?? 0), 0)
+  return (
+    <div className="hidden xl:contents">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-current={current ? 'true' : undefined}
+        onClick={() => setOpen(!open)}
+        className={cn(navItem, 'w-full cursor-pointer', !open && 'xl:aria-[current=true]:bg-accent')}
+      >
+        <span className={navIcon}>
+          <Icon aria-hidden className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        {/* Closed, it shows its screens' count, such as Orders' waiting, which the list would. */}
+        {!open && hiddenBadge > 0 ? (
+          <>
+            <Count n={hiddenBadge} />
+            <span className="sr-only"> {t.shell.waiting(hiddenBadge)}</span>
+          </>
+        ) : null}
+        <ChevronDown aria-hidden className={cn('size-4 shrink-0 transition-transform motion-reduce:transition-none', !open && '-rotate-90')} />
+      </button>
+      <div id={listId} hidden={!open} className={navSubList}>
+        {screens.map((s) => (
+          <a key={s.route.name} {...link(s.route)} aria-current={s.current ? 'page' : undefined} className={navSubItem}>
+            {s.label}
+            {s.badge ? (
+              <>
+                <Count n={s.badge} className="ml-auto" />
+                <span className="sr-only"> {t.shell.waiting(s.badge)}</span>
+              </>
+            ) : null}
+          </a>
+        ))}
+      </div>
+    </div>
   )
 }
 

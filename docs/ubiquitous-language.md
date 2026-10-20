@@ -243,6 +243,16 @@ Rules for using it:
 
 ## 3. Catalogue and item sets
 
+### Workwear (sidebar section)
+- **Brief:** the desktop sidebar's section over **Orders**, **Item Catalogue** and **Item
+  Sets**, listed under it.
+- **Detail:** the sidebar's alone: the phone's bar, More and the tablet's rail keep the
+  three as sections of their own. Not a screen, and no permission of its own. A click on
+  it, as on Company Assets in the sidebar, shows or hides the list; closed, it shows Orders'
+  count of orders waiting for confirmation.
+- **Code:** `workwearSections` in `apps/workwear/src/app.tsx`, i18n `shell.workwear`.
+  **UI:** Workwear / Darbo drabužiai / Спецодежда.
+
 ### Item Catalogue
 - **Brief:** the list of orderable items with their current names, prices and service periods.
 - **Detail:** the only normal source of item values. They are copied into order lines at

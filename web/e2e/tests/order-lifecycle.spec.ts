@@ -75,6 +75,13 @@ async function openTab(name: string) {
     await page.getByRole('main').getByRole('link', { name: 'Create Order' }).click()
     return
   }
+  // In the sidebar a section with screens of its own shows or hides them: open it, then its first screen.
+  const group = nav.getByRole('button', { name, exact: true })
+  if (!(await link.isVisible()) && (await group.isVisible())) {
+    if ((await group.getAttribute('aria-expanded')) === 'false') await group.click()
+    await nav.locator(`[id="${await group.getAttribute('aria-controls')}"]`).getByRole('link').first().click()
+    return
+  }
   if (!(await link.isVisible())) await nav.getByRole('button', { name: 'More' }).click()
   await link.click()
 }
@@ -550,7 +557,15 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(page).toHaveURL(/\/orders\/new$/)
   await page.goBack()
   // The navigation counts the orders waiting for confirmation.
-  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Orders (1 waiting for confirmation)' })).toBeVisible()
+  const mainNav = page.getByRole('navigation', { name: 'Main' })
+  await expect(mainNav.getByRole('link', { name: 'Orders (1 waiting for confirmation)' })).toBeVisible()
+  // In the sidebar, Workwear closed shows the count Orders shows under it.
+  const workwear = mainNav.getByRole('button', { name: /^Workwear/ })
+  await expect(workwear).toHaveAccessibleName('Workwear')
+  await workwear.click()
+  await expect(workwear).toHaveAccessibleName('Workwear (1 waiting for confirmation)')
+  await workwear.click()
+  await expect(workwear).toHaveAccessibleName('Workwear')
   // The status tabs count what is waiting and what was given.
   await expect(page.getByRole('button', { name: 'Ordered 1' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()
@@ -1728,7 +1743,15 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   const nav = page.getByRole('navigation', { name: 'Main' })
   await expect(nav.getByRole('link', { name: 'SIM Cards' })).toHaveAttribute('aria-current', 'page')
   await expect(nav.getByRole('link', { name: 'Equipment', exact: true })).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Company Assets' })).toHaveAttribute('aria-current', 'true')
+  // In the sidebar the section itself shows or hides them, and stays marked as current while hidden.
+  const assets = nav.getByRole('button', { name: 'Company Assets', exact: true })
+  await expect(assets).toHaveAttribute('aria-current', 'true')
+  await expect(assets).toHaveAttribute('aria-expanded', 'true')
+  await assets.click()
+  await expect(assets).toHaveAttribute('aria-expanded', 'false')
+  await expect(nav.getByRole('link', { name: 'Equipment', exact: true })).toBeHidden()
+  await assets.click()
+  await expect(nav.getByRole('link', { name: 'Equipment', exact: true })).toBeVisible()
 })
 
 test('Equipment & Furniture: one record per item, numbered by category; a computer is given against its form, a desk without one', async () => {

@@ -107,7 +107,10 @@ Rules:
   - **Rail** (tablet, `md` to `xl`): icons over short labels; a section's own screens are
     short centred links under its icon (SIM Cards, Equipment), a long word hyphenated.
   - **Sidebar** (desktop, from `xl`): icons beside full labels, a section's screens listed
-    under it, **Search…** at the top.
+    under it, **Search…** at the top. In the staff app, Orders, Item Catalogue and Item Sets
+    are listed under **Workwear** there. A click on Workwear or Company Assets shows or
+    hides its list (a chevron says which), remembered per user on the device; closed,
+    Workwear shows Orders' count of orders waiting for confirmation.
   - **Foot links**: at the foot of the rail and sidebar, and in More: Help, Keyboard
     shortcuts, the other app, Account, Sign out.
 - **Code:** `@ppe/ui/components/main-nav` (`navItem`, `navSubList`, `moreSubList`…).

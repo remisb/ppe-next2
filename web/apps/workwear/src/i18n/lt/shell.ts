@@ -7,6 +7,7 @@ export const shell: ShellText = {
   history: 'Užsakymai',
   employees: 'Darbuotojai',
   companyAssets: 'Įmonės turtas',
+  workwear: 'Darbo drabužiai',
   catalogue: 'Prekių katalogas',
   itemSets: 'Prekių rinkiniai',
   dashboard: 'Suvestinė',
