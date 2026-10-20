@@ -5,11 +5,11 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { ItemTile } from '@/components/item-icon'
@@ -29,13 +29,25 @@ import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
 const ORDERS_SHOWN = 100
 
 /**
- * One catalogue item (/catalogue/<id>): its current values, which new orders
- * take, its price history, the orders that hold it, the item sets that hold
- * it, and its Changes (who changed what, and when). Managers edit and
- * (de)activate it here as in the list. Orders keep the values they were
- * placed with, so their prices come from the snapshots.
+ * One catalogue item (/catalogue/<id>), opened from the Item Catalogue: beside
+ * the list from lg, in its place below, as Orders opens an order. Its current
+ * values, which new orders take, its price history, the orders that hold it,
+ * the item sets that hold it, and its Changes (who changed what, and when).
+ * Managers edit and (de)activate it here as in the list; onChanged tells the
+ * list. Orders keep the values they were placed with, so their prices come
+ * from the snapshots.
  */
-export function CatalogueItemPage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
+export function CatalogueItemDetail({
+  id,
+  navigate,
+  onClose,
+  onChanged,
+}: {
+  id: string
+  navigate: (to: Route) => void
+  onClose: () => void
+  onChanged: () => void
+}) {
   const { client } = useApi()
   const canManageItems = useSession().can('catalogue.manage')
   const changesKey = useOpenKey('item.changes')
@@ -66,15 +78,21 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
       await client.catalogue.setActive(i.id, !i.active)
       item.reload()
       prices.reload()
+      onChanged()
     } catch (err) {
       setActionError(err)
     }
   }
 
   return (
-    <>
-      <Button variant="ghost" className="-ml-3 mb-2" onClick={onBack}>
+    <article aria-label={i ? i.name : t.catalogue.item} className="@container">
+      {/* Narrow: the item is the whole screen, so the way out is Back to the list, on its own row. */}
+      <Button variant="ghost" className="-ml-3 mb-2 lg:hidden" onClick={onClose}>
         <ArrowLeft aria-hidden /> {t.catalogue.title}
+      </Button>
+      {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
+      <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.catalogue.closeItem} onClick={onClose}>
+        <X aria-hidden />
       </Button>
       {item.error ? (
         <ErrorState error={item.error} onRetry={item.reload} />
@@ -82,13 +100,15 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
         <Loading />
       ) : (
         <>
-          <PageHeader
-            title={i.name}
-            icon={<ItemTile icon={i.icon} className="size-10" />}
-            {...(i.details ? { description: i.details } : {})}
-            actions={
-              canManageItems ? (
-                <>
+          {/* The list's title is the screen's h1; the item's is the pane's heading, as an order's beside Orders. */}
+          <header className="mb-4 lg:pr-10">
+            <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-2">
+              <h2 className="flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]">
+                <ItemTile icon={i.icon} className="size-10 shrink-0" />
+                {i.name}
+              </h2>
+              {canManageItems ? (
+                <div className="ml-auto flex shrink-0 gap-2">
                   <Button variant="outline" onClick={() => setEditing(true)}>
                     {t.common.edit}
                   </Button>
@@ -97,10 +117,11 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
                       {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
                     </DropdownMenuItem>
                   </MoreActions>
-                </>
-              ) : undefined
-            }
-          />
+                </div>
+              ) : null}
+            </div>
+            {i.details ? <p className="mt-1 text-sm text-muted-foreground">{i.details}</p> : null}
+          </header>
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
           <div className="mb-3 flex flex-wrap gap-1">
@@ -114,7 +135,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
           ) : null}
           {!i.active ? <p className="mb-4 text-sm text-muted-foreground">{t.catalogue.inactiveNote}</p> : null}
 
-          <dl aria-label={t.catalogue.itemDetails} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm sm:max-w-2xl sm:grid-cols-3">
+          <dl aria-label={t.catalogue.itemDetails} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm @lg:grid-cols-3">
             <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
             <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
             <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
@@ -138,7 +159,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
             ) : prices.data.length === 0 ? (
               <EmptyState>{t.catalogue.noPriceHistory}</EmptyState>
             ) : (
-              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
+              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border rounded-lg border border-border">
                 {prices.data.map((p, n) => (
                   <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
                 ))}
@@ -176,7 +197,7 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
             ) : holding.length === 0 ? (
               <EmptyState>{t.catalogue.noSetHolds}</EmptyState>
             ) : (
-              <ul className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
+              <ul className="divide-y divide-border rounded-lg border border-border">
                 {holding.map(({ set, quantity }) => (
                   <li key={set.id} className={cn('flex items-center justify-between gap-3 px-4 py-2.5', !set.active && 'text-muted-foreground')}>
                     <span className="min-w-0">
@@ -208,11 +229,12 @@ export function CatalogueItemPage({ id, navigate, onBack }: { id: string; naviga
               setEditing(false)
               item.reload()
               prices.reload()
+              onChanged()
             }}
           />
         </>
       )}
-    </>
+    </article>
   )
 }
 

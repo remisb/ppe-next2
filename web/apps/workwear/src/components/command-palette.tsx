@@ -212,7 +212,7 @@ export function CommandPalette({
     }
     if (term) {
       for (const i of matchItems(items ?? [], term).slice(0, PER_GROUP)) {
-        out.push({ key: `item-${i.id}`, group: 'items', label: i.name, hint: i.details, icon: <ItemIcon icon={i.icon} />, to: { name: 'catalogueItem', id: i.id } })
+        out.push({ key: `item-${i.id}`, group: 'items', label: i.name, hint: i.details, icon: <ItemIcon icon={i.icon} />, to: { name: 'catalogue', item: i.id } })
       }
     }
     return out

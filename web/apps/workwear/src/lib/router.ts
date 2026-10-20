@@ -38,9 +38,12 @@ export type Route =
    * Card is open, the form it would store (draft); print opens the print dialog once loaded.
    */
   | { name: 'assetForm'; id: string; assignment?: string; draft?: FormDraft; print?: boolean }
-  | { name: 'catalogue' }
-  /** One catalogue item: its current values and the item sets that hold it. */
-  | { name: 'catalogueItem'; id: string }
+  /**
+   * Item Catalogue; item opens one item (its values, price history, orders,
+   * item sets and Changes) beside the list, or on its own on a narrow screen,
+   * as Orders opens an order.
+   */
+  | { name: 'catalogue'; item?: string }
   | { name: 'itemSets' }
   /**
    * An old address of a screen that moved to Administration (/users,
@@ -128,7 +131,7 @@ export function parsePath(pathname: string, search = ''): Route {
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
-  if (item?.[1]) return { name: 'catalogueItem', id: decodeURIComponent(item[1]) }
+  if (item?.[1]) return { name: 'catalogue', item: decodeURIComponent(item[1]) }
   const opened = /^\/assets\/(sim-cards|equipment)\/([^/]+)$/.exec(path)
   if (opened?.[1] && opened[2]) {
     const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
@@ -195,8 +198,8 @@ export function pathOf(route: Route): string {
       return route.missing ? `${fixed.employees}?missing=1` : fixed.employees
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
-    case 'catalogueItem':
-      return `/catalogue/${encodeURIComponent(route.id)}`
+    case 'catalogue':
+      return route.item ? `${fixed.catalogue}/${encodeURIComponent(route.item)}` : fixed.catalogue
     case 'simCards':
     case 'equipment': {
       const base = route.asset ? `${fixed[route.name]}/${encodeURIComponent(route.asset)}` : fixed[route.name]

@@ -20,7 +20,6 @@ import { AssetPage } from './routes/asset'
 import { AssetFormPage } from './routes/asset-form'
 import { Assets } from './routes/assets'
 import { Catalogue } from './routes/catalogue'
-import { CatalogueItemPage } from './routes/catalogue-item'
 import { ConfirmPage } from './routes/confirm'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
@@ -89,7 +88,6 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
     (current === 'employee' && tab === 'employees') ||
     // Company Assets' link is the SIM cards'; Equipment and an asset's page are in the section too.
     ((current === 'equipment' || current === 'asset' || current === 'assetForm') && tab === 'simCards') ||
-    (current === 'catalogueItem' && tab === 'catalogue') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
     (current === 'employeeDashboard' && (tab === 'dashboard' || tab === 'managerDashboard')) ||
     // Replacements due is opened from a dashboard: the user's one Dashboard tab stays current.
@@ -433,10 +431,7 @@ export function App() {
             onBack={back({ name: 'asset', id: route.id })}
           />
         ) : null}
-        {route.name === 'catalogue' ? <Catalogue navigate={navigate} /> : null}
-        {route.name === 'catalogueItem' ? (
-          <CatalogueItemPage id={route.id} navigate={navigate} onBack={back({ name: 'catalogue' })} />
-        ) : null}
+        {route.name === 'catalogue' ? <Catalogue item={route.item} navigate={navigate} /> : null}
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}

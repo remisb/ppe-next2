@@ -21,8 +21,11 @@ import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { t } from '@/i18n'
 import { guessIcon } from '@/lib/items'
 import { type ItemStatus, itemStatus } from '@/lib/records'
-import { type Route, linkTo } from '@/lib/router'
+import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
+import { isTyping } from '@/lib/shortcuts'
 import { formatEuro, formatMonths, parseEuro } from '@/lib/utils'
+
+import { CatalogueItemDetail } from './catalogue-item'
 
 /** Each size group's name in the current language; the getters read the text in use at each lookup. */
 export const sizeGroupLabel: Record<SizeGroup, string> = {
@@ -38,6 +41,9 @@ export const sizeGroupLabel: Record<SizeGroup, string> = {
 }
 
 type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status'
+
+/** Beside an open item the list keeps the columns that find the next one; the rest is in the pane. */
+const besideColumns: CatalogueSort[] = ['name', 'price', 'status']
 
 const columns = (): SortColumn<CatalogueSort>[] => [
   { key: 'name', label: t.catalogue.colItem, kind: 'text' },
@@ -68,7 +74,27 @@ function statusRank(i: CatalogueItem): number {
   return (i.active ? 0 : 2) + (i.accounting_price_cents === null || i.service_period_months === null ? 1 : 0)
 }
 
-export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
+/** From lg an item opens beside the list; below it, instead of the list. */
+const wide = () => window.matchMedia('(min-width: 64rem)').matches
+
+function Kbd({ children }: { children: string }) {
+  return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
+}
+
+/**
+ * The Item Catalogue. A row opens its item as Orders opens an order
+ * (/catalogue/<id>): beside the list from lg, with J and K for the next or
+ * previous one and Escape to close it, and on its own on a narrow screen; the
+ * list keeps its tab and sort behind it.
+ */
+export function Catalogue({
+  item: selected,
+  navigate,
+}: {
+  /** The item open beside the list. */
+  item?: string | undefined
+  navigate: (to: Route, options?: NavigateOptions) => void
+}) {
   const { client } = useApi()
   const canManageItems = useSession().can('catalogue.manage')
   const items = useLoad(() => client.catalogue.list())
@@ -107,6 +133,42 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
     [items.data, sort, status],
   )
 
+  const openItem = (id: string) => navigate({ name: 'catalogue', item: id }, { scroll: !wide() })
+  const close = () => navigate({ name: 'catalogue' }, { scroll: false })
+
+  // J and K: the next or previous item in the list as shown, while one is open; Escape closes it beside the list.
+  useEffect(() => {
+    if (!selected) return
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || document.querySelector('dialog[open]')) return
+      if (e.key === 'Escape' && wide()) {
+        e.preventDefault()
+        close()
+        return
+      }
+      if (key !== 'j' && key !== 'k') return
+      const n = shown.findIndex((i) => i.id === selected)
+      const next = shown[n + (key === 'j' ? 1 : -1)]
+      if (next) {
+        e.preventDefault()
+        navigate({ name: 'catalogue', item: next.id }, { scroll: false })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, shown, navigate])
+
+  // The open item's row stays in view as J and K move through the list.
+  useEffect(() => {
+    if (selected && wide()) document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' })
+  }, [selected, shown])
+
+  const beside = selected !== undefined
+  const shownColumns = beside ? columns().filter((c) => besideColumns.includes(c.key)) : columns()
+  // Its actions are in the pane beside the list.
+  const rowActions = canManageItems && !beside
+
   const toggle = async (i: CatalogueItem) => {
     if (!confirmActiveChange(i)) return
     try {
@@ -119,149 +181,169 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
 
   return (
     <>
-      <PageHeader
-        title={t.catalogue.title}
-        description={t.catalogue.description}
-        descriptionClassName="max-md:hidden"
-        actions={
-          canManageItems ? (
-            <Button onClick={() => setEditing('new')}>
-              <Plus aria-hidden /> {t.catalogue.addItem}
-            </Button>
-          ) : undefined
-        }
-      />
-      {counts.all > 0 ? (
-        // One status per item; a tab with nothing in it is left out unless it is the one chosen.
-        // The same tabs as Orders, equal where they fit; on a phone each narrows to its words, and four that still do not fit scroll sideways.
-        <div className="mb-4 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]">
-          <div role="group" aria-label={t.catalogue.show} className="flex w-max min-w-full gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto sm:min-w-0 sm:grid-flow-col sm:auto-cols-fr">
-            {statusChips()
-              .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
-              .map((c) => (
-                <button
-                  key={c.status}
-                  type="button"
-                  aria-pressed={status === c.status}
-                  onClick={() => setStatus(c.status)}
-                  className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-                >
-                  {c.label}
-                  <span className="tabular-nums text-muted-foreground">{counts[c.status]}</span>
-                </button>
-              ))}
-          </div>
-        </div>
-      ) : null}
-      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
-      {items.error ? (
-        <ErrorState error={items.error} onRetry={items.reload} />
-      ) : items.loading && !items.data ? (
-        <Loading />
-      ) : shown.length === 0 ? (
-        <EmptyState>{statusChips().find((c) => c.status === status)!.empty}</EmptyState>
-      ) : (
-        /*
-          Where the table is narrow the items are one list of two-line rows:
-          name and price, then details, size group and service period, with
-          Incomplete or Inactive flagged. A row opens the item, whose page holds
-          Edit and Deactivate; the table keeps Edit and ⋯ on each row.
-        */
-        <Table stack="list" stackBelow="lg" sortControl={<SortControl columns={columns()} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
-          <TableHeader>
-            <TableRow>
-              {columns().map((c) => (
-                <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
-              ))}
-              {canManageItems ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shown.map((i, n, list) => {
-              const incomplete = i.accounting_price_cents === null || i.service_period_months === null
-              // Sorted by size group, a heading starts each group: the way sizes are resolved.
-              const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
-              return (
-                <Fragment key={i.id}>
-                  {newGroup ? <TableGroupRow colSpan={columns().length + (canManageItems ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
-                  <TableRow
-                    className={cn(
-                      'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50',
-                      !i.active && 'text-muted-foreground',
-                    )}
-                    // The whole row opens the item; the name is the real link, for keyboards,
-                    // screen readers and "open in new tab". The row's own buttons keep their action.
-                    onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                      navigate({ name: 'catalogueItem', id: i.id })
-                    }}
-                  >
-                    <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
-                      <span className="flex items-center gap-3">
-                        <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
-                        <a {...linkTo({ name: 'catalogueItem', id: i.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                          {i.name}
-                        </a>
-                      </span>
-                    </TableCell>
-                    {/* The stacked row's picture spans both lines; in the table it sits beside the name. */}
-                    <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
-                      <ItemTile icon={i.icon} className="size-9" />
-                    </TableCell>
-                    <TableCell className="whitespace-normal stacked:hidden">{i.details || '–'}</TableCell>
-                    <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                      {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
-                    </TableCell>
-                    <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>
-                    <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.accounting_price_cents)}</TableCell>
-                    <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>
-                    <TableCell
-                      className={cn(
-                        'space-x-1 stacked:[grid-column:2/span_2] stacked:row-start-3 stacked:flex stacked:gap-1 stacked:space-x-0 stacked:pt-1',
-                        i.active && !incomplete && 'stacked:hidden',
-                      )}
+      <div className={cn(beside && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-start lg:gap-6')}>
+        {/* Narrow, an open item takes the screen; the list keeps its tab and sort behind it. */}
+        <div className={cn('min-w-0', beside && 'max-lg:hidden')}>
+          <PageHeader
+            title={t.catalogue.title}
+            description={t.catalogue.description}
+            descriptionClassName="max-md:hidden"
+            actions={
+              canManageItems ? (
+                <Button onClick={() => setEditing('new')}>
+                  <Plus aria-hidden /> {t.catalogue.addItem}
+                </Button>
+              ) : undefined
+            }
+          />
+          {counts.all > 0 ? (
+            // One status per item; a tab with nothing in it is left out unless it is the one chosen.
+            // The same tabs as Orders, equal where they fit; on a phone each narrows to its words, and four that still do not fit scroll sideways.
+            <div className="mb-4 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]">
+              <div role="group" aria-label={t.catalogue.show} className="flex w-max min-w-full gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto sm:min-w-0 sm:grid-flow-col sm:auto-cols-fr">
+                {statusChips()
+                  .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
+                  .map((c) => (
+                    <button
+                      key={c.status}
+                      type="button"
+                      aria-pressed={status === c.status}
+                      onClick={() => setStatus(c.status)}
+                      className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
                     >
-                      {i.active ? (
-                        <Badge variant="secondary" className="stacked:hidden">
-                          {t.catalogue.active}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">{t.catalogue.inactive}</Badge>
-                      )}
-                      {incomplete ? (
-                        <HelpTooltip
-                          title={t.catalogue.incomplete}
-                          help={{
-                            body: t.catalogue.incompleteReason(i.accounting_price_cents === null, i.service_period_months === null),
-                            note: t.catalogue.incompleteNote,
-                          }}
+                      {c.label}
+                      <span className="tabular-nums text-muted-foreground">{counts[c.status]}</span>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ) : null}
+          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+          {items.error ? (
+            <ErrorState error={items.error} onRetry={items.reload} />
+          ) : items.loading && !items.data ? (
+            <Loading />
+          ) : shown.length === 0 ? (
+            <EmptyState>{statusChips().find((c) => c.status === status)!.empty}</EmptyState>
+          ) : (
+            /*
+              Where the table is narrow the items are one list of two-line rows:
+              name and price, then details, size group and service period, with
+              Incomplete or Inactive flagged. A row opens the item, whose page holds
+              Edit and Deactivate; the table keeps Edit and ⋯ on each row.
+            */
+            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
+              <TableHeader>
+                <TableRow>
+                  {shownColumns.map((c) => (
+                    <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
+                  ))}
+                  {rowActions ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shown.map((i, n, list) => {
+                  const incomplete = i.accounting_price_cents === null || i.service_period_months === null
+                  // Sorted by size group, a heading starts each group: the way sizes are resolved.
+                  const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
+                  return (
+                    <Fragment key={i.id}>
+                      {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
+                      <TableRow
+                        data-state={selected === i.id ? 'selected' : undefined}
+                        aria-current={selected === i.id ? 'true' : undefined}
+                        className={cn(
+                          'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                          !i.active && 'text-muted-foreground',
+                        )}
+                        // The whole row opens the item; the name is the real link, for keyboards,
+                        // screen readers and "open in new tab". The row's own buttons keep their action.
+                        onClick={(ev) => {
+                          if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                          openItem(i.id)
+                        }}
+                      >
+                        <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
+                          <span className="flex items-center gap-3">
+                            <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
+                            <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                              {i.name}
+                            </a>
+                          </span>
+                        </TableCell>
+                        {/* The stacked row's picture spans both lines; in the table it sits beside the name. */}
+                        <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
+                          <ItemTile icon={i.icon} className="size-9" />
+                        </TableCell>
+                        {beside ? null : <TableCell className="whitespace-normal stacked:hidden">{i.details || '–'}</TableCell>}
+                        <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                          {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
+                        </TableCell>
+                        {beside ? null : <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>}
+                        <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.accounting_price_cents)}</TableCell>
+                        {beside ? null : <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>}
+                        <TableCell
+                          className={cn(
+                            'space-x-1 stacked:[grid-column:2/span_2] stacked:row-start-3 stacked:flex stacked:gap-1 stacked:space-x-0 stacked:pt-1',
+                            i.active && !incomplete && 'stacked:hidden',
+                          )}
                         >
-                          <Badge variant="warning">{t.catalogue.incomplete}</Badge>
-                        </HelpTooltip>
-                      ) : null}
-                    </TableCell>
-                    <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
-                      <ChevronRight className="size-4 text-muted-foreground" />
-                    </TableCell>
-                    {canManageItems ? (
-                      <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                        <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
-                          {t.common.edit}
-                        </Button>{' '}
-                        <MoreActions label={t.common.moreActions(i.name)}>
-                          <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                            {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                          </DropdownMenuItem>
-                        </MoreActions>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                </Fragment>
-              )
-            })}
-          </TableBody>
-        </Table>
-      )}
+                          {i.active ? (
+                            <Badge variant="secondary" className="stacked:hidden">
+                              {t.catalogue.active}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">{t.catalogue.inactive}</Badge>
+                          )}
+                          {incomplete ? (
+                            <HelpTooltip
+                              title={t.catalogue.incomplete}
+                              help={{
+                                body: t.catalogue.incompleteReason(i.accounting_price_cents === null, i.service_period_months === null),
+                                note: t.catalogue.incompleteNote,
+                              }}
+                            >
+                              <Badge variant="warning">{t.catalogue.incomplete}</Badge>
+                            </HelpTooltip>
+                          ) : null}
+                        </TableCell>
+                        <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </TableCell>
+                        {rowActions ? (
+                          <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                            <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
+                              {t.common.edit}
+                            </Button>{' '}
+                            <MoreActions label={t.common.moreActions(i.name)}>
+                              <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
+                                {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
+                              </DropdownMenuItem>
+                            </MoreActions>
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    </Fragment>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        {selected ? (
+          <aside
+            aria-label={t.catalogue.item}
+            className="relative lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
+          >
+            <CatalogueItemDetail key={selected} id={selected} navigate={navigate} onClose={close} onChanged={items.reload} />
+            {/* Beside the list only, and only where there is a keyboard. */}
+            <p className="mt-3 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
+              <Kbd>J</Kbd> / <Kbd>K</Kbd> {t.catalogue.nextOrPreviousItem} · <Kbd>Esc</Kbd> {t.history.closeHint}
+            </p>
+          </aside>
+        ) : null}
+      </div>
       <ItemForm
         item={editing}
         onClose={() => setEditing(null)}
@@ -274,7 +356,7 @@ export function Catalogue({ navigate }: { navigate: (to: Route) => void }) {
   )
 }
 
-/** Add Item and Edit Item; also used on the item's own page. */
+/** Add Item and Edit Item; also used in the item's pane. */
 export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'new' | null; onClose: () => void; onSaved: () => void }) {
   const { client } = useApi()
   const existing = item !== 'new' && item !== null ? item : undefined

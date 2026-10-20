@@ -44,7 +44,9 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'assetForm', id: 'a1', assignment: 's1' }))).toEqual({ name: 'assetForm', id: 'a1', assignment: 's1' })
     expect(parsePath('/assets/a1/form', '?employee=e1&date=9.10.2026')).toEqual({ name: 'assetForm', id: 'a1' })
     expect(parsePath(pathOf({ name: 'employee', id: 'a/b' }))).toEqual({ name: 'employee', id: 'a/b' })
-    expect(parsePath(pathOf({ name: 'catalogueItem', id: 'x/y' }))).toEqual({ name: 'catalogueItem', id: 'x/y' })
+    // An item open beside the Item Catalogue, at the address its own page had.
+    expect(pathOf({ name: 'catalogue', item: 'x/y' })).toBe('/catalogue/x%2Fy')
+    expect(parsePath(pathOf({ name: 'catalogue', item: 'x/y' }))).toEqual({ name: 'catalogue', item: 'x/y' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })

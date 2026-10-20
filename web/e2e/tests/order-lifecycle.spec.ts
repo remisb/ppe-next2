@@ -329,12 +329,18 @@ test('Item Sets: a set of item references and default quantities', async () => {
   await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(0)
 })
 
-test('Item Catalogue: a row opens the item at its own address', async () => {
+test('Item Catalogue: a row opens the item beside the list, at its own address', async () => {
   await openTab('Item Catalogue')
   // Anywhere on the row opens it, not only the name's link.
   await page.getByRole('row', { name: /Protective gloves/ }).getByRole('cell', { name: 'Nitrile' }).click()
   await expect(page).toHaveURL(/\/catalogue\/[^/]+$/)
-  await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
+  const pane = page.getByRole('complementary', { name: 'Item' })
+  await expect(pane.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
+  // Beside the list, which keeps the columns that find the next item; the row's actions are in the pane.
+  await expect(page.getByRole('heading', { name: 'Item Catalogue', level: 1 })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Protective gloves/ })).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByRole('columnheader', { name: /Details/ })).toHaveCount(0)
+  await expect(page.getByRole('row', { name: /Protective gloves/ }).getByRole('button', { name: 'Edit' })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Item Catalogue' })).toHaveAttribute('aria-current', 'page')
   // The item's facts, not its Changes below, which hold the same values.
   const details = page.getByLabel('Item details').getByRole('definition')
@@ -345,13 +351,19 @@ test('Item Catalogue: a row opens the item at its own address', async () => {
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
 
-  // An item missing its price says why it cannot be ordered.
-  await page.getByRole('button', { name: 'Item Catalogue' }).click()
+  // Another row opens its item in the same pane; an item missing its price says why it cannot be ordered.
   await page.getByRole('link', { name: 'Safety helmet' }).click()
-  await expect(page.getByRole('note')).toContainText('cannot be ordered')
-  await expect(page.getByText('No item set holds this item.')).toBeVisible()
-  await page.getByRole('button', { name: 'Item Catalogue' }).click()
-  await expect(page.getByRole('heading', { name: 'Item Catalogue' })).toBeVisible()
+  await expect(pane.getByRole('heading', { name: 'Safety helmet' })).toBeVisible()
+  await expect(pane.getByRole('note')).toContainText('cannot be ordered')
+  await expect(pane.getByText('No item set holds this item.')).toBeVisible()
+  // Escape closes it, as Close does, and the list has its columns again.
+  await page.keyboard.press('Escape')
+  await expect(page).toHaveURL(/\/catalogue$/)
+  await expect(pane).toHaveCount(0)
+  await expect(page.getByRole('columnheader', { name: /Details/ })).toBeVisible()
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  await page.getByRole('button', { name: 'Close item' }).click()
+  await expect(pane).toHaveCount(0)
 })
 
 test('Create Order: add a new employee from Assigned to and apply the set', async () => {

@@ -79,6 +79,10 @@ export const catalogue = {
   incompleteNote: 'Without a price and a service period this item cannot be ordered: Mark as Ordered refuses it.',
   inactiveNote: 'Inactive: not offered in Add Item. Orders that hold it keep it.',
   itemDetails: 'Item details',
+  // The item open beside the list
+  item: 'Item',
+  closeItem: 'Close item',
+  nextOrPreviousItem: 'next or previous item',
   added: 'Added',
   lastChanged: 'Last changed',
   priceHistory: 'Price history',
