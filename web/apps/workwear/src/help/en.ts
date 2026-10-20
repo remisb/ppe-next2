@@ -32,7 +32,7 @@ export const en: Guide = {
         },
         { p: 'The bar at the bottom holds **Home**, **Orders**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
         { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
-        { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
+        { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Orders**, **Item Catalogue** and **Item Sets** are listed under **Workwear**. Choose **Workwear** to hide or show them; while they are hidden, it shows the number of orders waiting for confirmation. **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
         { p: 'With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.' },
         { p: '**Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.' },
         {
@@ -217,7 +217,7 @@ export const en: Guide = {
         },
         { p: 'Open it from **More**. If you also see **Equipment**, it and **SIM Cards** are listed under it.', devices: ['phone'] },
         { p: 'Open it from the rail. If you also see **Equipment**, the switch at the top of the screen moves between it and **SIM Cards**.', devices: ['tablet'] },
-        { p: 'Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under it.', devices: ['desktop'] },
+        { p: 'Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under **Company Assets**: choose one to open it. Choosing **Company Assets** hides or shows them.', devices: ['desktop'] },
         { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.', roles: ['admin', 'manager'] },
         {
           p: 'The tabs above the list count the SIMs: **All**, each status (**Not Activated**, **Active**, **Blocked**), **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.',

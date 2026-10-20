@@ -12,7 +12,7 @@ The app records workwear and safety equipment given to employees. You prepare an
    - Managers start on the **Manager Dashboard**.
    - The employee role starts on the **Employee Dashboard**.
 
-The sidebar holds every section and **Search…** (`⌘K`). **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
+The sidebar holds every section and **Search…** (`⌘K`). **Orders**, **Item Catalogue** and **Item Sets** are listed under **Workwear**. Choose **Workwear** to hide or show them; while they are hidden, it shows the number of orders waiting for confirmation. **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
 
 With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.
 
@@ -148,7 +148,9 @@ An employee who still holds a company asset cannot be deleted: leaving never ret
 
 Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.
 
-An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when.
+An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. An open item shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when.
+
+Click an item to open it beside the list. `J` and `K` move between items, and `Esc` closes it. An item without a price or service period is marked **Incomplete**; point at the mark to see which is missing.
 
 An item set is a kit of items with default quantities. You apply it on Create Order in one tap.
 
@@ -163,7 +165,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
 **Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
-Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under it.
+Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under **Company Assets**: choose one to open it. Choosing **Company Assets** hides or shows them.
 
 *Administrators and managers only:*
 
@@ -177,7 +179,7 @@ A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** 
 
 *Administrators and managers only:*
 
-**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
+**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. The non-return value set there is filled in, and you can change or clear it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
 
 **Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.
 
@@ -357,11 +359,11 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Settings: the supplier's WhatsApp group](../../web/apps/workwear/public/help-img/en/desktop/settings.png)
 
-**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.
+**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. **Default Non-return Value (€)** is the amount Add SIM fills in for a new card, such as `25.00`; leave it empty for none. Nothing changes until you choose **Save**.
 
-A card already registered keeps its provider, even one you remove from the list.
+A card already registered keeps its provider, even one you remove from the list, and its non-return value.
 
-![Settings: the SIM providers, one of them the default](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
+![Settings: the SIM providers, one of them the default, and the default non-return value](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
 ## 21. Your account
 
@@ -381,7 +383,7 @@ A card already registered keeps its provider, even one you remove from the list.
 | `⌘K` / `Ctrl K` | Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
 | `G` then `D` `O` `H` `E` `A` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration). |
-| `J` / `K`, `Esc` | Move through Orders, or close the open order. |
+| `J` / `K`, `Esc` | Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. |
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |
 

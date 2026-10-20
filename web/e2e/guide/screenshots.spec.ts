@@ -183,8 +183,9 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await page.goto('/admin/settings')
   await page.getByLabel(A.settings.groupName).fill('Superman Rubai Group')
   await page.getByLabel(A.settings.inviteLink).fill('https://chat.whatsapp.com/DemoSupplierGroup01')
-  await page.getByRole('button', { name: A.settings.save, exact: true }).click()
+  // Its own Save: the default Non-return Value has another.
   const chat = page.getByRole('region', { name: A.settings.supplierChat })
+  await chat.getByRole('button', { name: A.settings.save, exact: true }).click()
   await expect(chat.getByRole('status')).toContainText('Superman Rubai Group')
   await shot('settings')
   // The SIM providers the demo lists (cmd/api/seed-demo.go), Telia the default.

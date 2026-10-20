@@ -32,7 +32,7 @@ export const lt: Guide = {
         },
         { p: 'Apatinėje juostoje yra **Pradžia**, **Užsakymai**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
-        { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
+        { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Užsakymai**, **Prekių katalogas** ir **Prekių rinkiniai** išvardyti po **Darbo drabužiai**. Pasirinkę **Darbo drabužiai**, juos paslėpsite arba parodysite; kol jie paslėpti, rodomas patvirtinimo laukiančių užsakymų skaičius. **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
         { p: 'Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.' },
         { p: '**Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.' },
         {
@@ -220,7 +220,7 @@ export const lt: Guide = {
         },
         { p: 'Jį atidarysite per **Daugiau**. Jei matote ir **Įranga**, po juo išvardyti ji ir **SIM kortelės**.', devices: ['phone'] },
         { p: 'Jį atidarysite juostoje kairėje. Jei matote ir **Įranga**, jungiklis ekrano viršuje perjungia ją ir **SIM kortelės**.', devices: ['tablet'] },
-        { p: 'Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, po juo išvardyti ji ir **SIM kortelės**.', devices: ['desktop'] },
+        { p: 'Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, ji ir **SIM kortelės** išvardytos po **Įmonės turtas**: pasirinkite vieną, kad atidarytumėte. Pasirinkę **Įmonės turtas**, jas paslėpsite arba parodysite.', devices: ['desktop'] },
         { p: 'Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.', roles: ['admin', 'manager'] },
         {
           p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, kiekviena būsena (**Neaktyvuota**, **Aktyvi**, **Užblokuota**), **Biure**, **Pas darbuotojus** ir **Negrąžinta**; ekranas **Įranga** savo daiktus skaičiuoja skirtukais **Visos** ir paskutiniais trimis. Skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.',

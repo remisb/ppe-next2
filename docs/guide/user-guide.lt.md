@@ -12,7 +12,7 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
    - vadovai – ekrane **Vadovo suvestinė**;
    - darbuotojo rolė – ekrane **Darbuotojo suvestinė**.
 
-Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
+Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Užsakymai**, **Prekių katalogas** ir **Prekių rinkiniai** išvardyti po **Darbo drabužiai**. Pasirinkę **Darbo drabužiai**, juos paslėpsite arba parodysite; kol jie paslėpti, rodomas patvirtinimo laukiančių užsakymų skaičius. **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
 
 Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.
 
@@ -148,7 +148,9 @@ Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darb
 
 Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.
 
-Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.
+Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Atidarytoje prekėje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.
+
+Spustelėjus prekę, ji atsidaro šalia sąrašo. `J` ir `K` pereina tarp prekių, o `Esc` prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; užvedę žymeklį ant žymos, matysite, ko trūksta.
 
 Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.
 
@@ -163,7 +165,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 
 Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: **SIM kortelės** ir **Įranga**, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė **Įrangos išdavimai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
-Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, po juo išvardyti ji ir **SIM kortelės**.
+Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, ji ir **SIM kortelės** išvardytos po **Įmonės turtas**: pasirinkite vieną, kad atidarytumėte. Pasirinkę **Įmonės turtas**, jas paslėpsite arba parodysite.
 
 *Tik administratoriams ir vadovams:*
 
@@ -177,7 +179,7 @@ SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** a
 
 *Tik administratoriams ir vadovams:*
 
-**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
+**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ten nustatyta negrąžinimo vertė įrašoma iš anksto; ją galite pakeisti arba ištrinti. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
 
 **Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.
 
@@ -357,11 +359,11 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Nustatymai: tiekėjo WhatsApp grupė](../../web/apps/workwear/public/help-img/lt/desktop/settings.png)
 
-**SIM tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.
+**SIM tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. **Numatytoji negrąžinimo vertė (€)** – suma, kurią „Pridėti SIM“ įrašo naujai kortelei, pavyzdžiui, `25,00`; palikite tuščią, jei jos nėra. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti**.
 
-Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo.
+Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo, kaip ir savo negrąžinimo vertės.
 
-![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
+![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
 ## 21. Jūsų paskyra
 
@@ -381,7 +383,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 | `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
 | `/` | Pereina į paieškos arba „Pridėti prekę“ lauką. |
 | `G`, tada `D` `O` `H` `E` `A` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime). |
-| `J` / `K`, `Esc` | Pereina per Užsakymus arba uždaro atidarytą užsakymą. |
+| `J` / `K`, `Esc` | Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. |
 | `⌘/Ctrl` `Enter` | Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą. |
 | `?` | Rodo visus sparčiuosius klavišus. |
 
