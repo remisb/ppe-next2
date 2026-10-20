@@ -386,7 +386,7 @@ export function createClient(options: ClientOptions) {
       /** Change Status: saved at once; never moves the card or changes its holder. */
       setStatus: (id: string, status: ConnectionStatus) =>
         request<Asset>('PUT', `/api/v1/assets/${seg(id)}/status`, { connection_status: status }),
-      /** Preview Form / Print Form: the form Give would store, and its hash. Writes nothing. */
+      /** Print Form: the form Give would store, and its hash. Writes nothing. */
       previewForm: (id: string, input: AssignmentFormInput) =>
         request<AssignmentFormResult>('POST', `/api/v1/assets/${seg(id)}/assignments/preview`, input),
       give: (id: string, input: GiveAssetInput) => request<AssetAssignment>('POST', `/api/v1/assets/${seg(id)}/assignments`, input),

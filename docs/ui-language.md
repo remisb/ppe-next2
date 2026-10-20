@@ -334,7 +334,7 @@ Everything that opens over a screen. Reader words in brackets.
 |---|---|---|
 | **Primary** (`default`) | filled | the one main action of a header, pane, sheet or bar |
 | **Outline** | bordered | a row's visible action, a second action beside the primary, a task button |
-| **Ghost** | text only | back links, Clear filters, Change, Preview Form, more links |
+| **Ghost** | text only | back links, Clear filters, Change, more links |
 | **Destructive** | red | a destructive item in a ⋯ menu; never a header action |
 | **Link** | underlined text | an action inside a sentence ("Copied. Open Superman Rubai Group…") |
 | **Icon button** | an icon with an accessible name | ✕, ⋯, copy, Refresh on a phone, quantity steppers |

@@ -102,7 +102,7 @@ func formOf(a Asset, e EmployeeView, givenDate string) Form {
 	return f
 }
 
-// FormResult is a form with its document hash, for Preview Form, Print Form
+// FormResult is a form with its document hash, for Print Form
 // and reprinting a stored one.
 type FormResult struct {
 	Form         json.RawMessage `json:"form"`

@@ -1295,7 +1295,7 @@ export interface GiveAssetInput extends AssignmentFormInput {
   form_hash: string
 }
 
-/** Preview Form, Print Form, and a stored form for reprinting. */
+/** Print Form, and a stored form for reprinting. */
 export interface AssignmentFormResult {
   form: AssignmentForm
   document_hash: string

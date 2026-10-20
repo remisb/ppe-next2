@@ -135,15 +135,13 @@ function GiveSheet({
   const [downloading, setDownloading] = useState(false)
   const { print, printing } = usePrintInPlace()
   const [signed, setSigned] = useState(false)
-  const [preview, setPreview] = useState<AssignmentFormResult | null>(null)
-  const [showPreview, setShowPreview] = useState(false)
   const [failure, setFailure] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [picked, setPicked] = useState<Asset | null>(null)
   // A finished first step folds to one line; Change opens it again.
   const [editingDetails, setEditingDetails] = useState(false)
   const asset = fixed ?? picked
-  // Which opening of the sheet and which form a preview answers: one that
+  // Which opening of the sheet and which form a fetched form answers: one that
   // arrives after the sheet closed or the form changed is dropped.
   const session = useRef(0)
   const currentKey = useRef('')
@@ -161,8 +159,6 @@ function GiveSheet({
     setPrinted(null)
     setFetched(null)
     setSigned(false)
-    setPreview(null)
-    setShowPreview(false)
     setFailure(undefined)
     setGivenProblem(undefined)
     setEditingDetails(false)
@@ -196,9 +192,6 @@ function GiveSheet({
   useEffect(() => {
     if (changedAfterPrint) setSigned(false)
   }, [changedAfterPrint])
-  // A preview shown is of the form as it is now; a change hides it until asked again.
-  useEffect(() => setPreview(null), [key])
-
   const block = giveBlock(asset, draft, today, printed, signed, assetKind)
   // Furniture and other items are given without a signed form (spec, open decision 6).
   const paper = asset === null || asset.needs_form
@@ -212,7 +205,7 @@ function GiveSheet({
   const prefetch = open && paper && ready && asset !== null
   useEffect(() => {
     if (!prefetch) return
-    const id = window.setTimeout(() => void loadPreview(true), 300)
+    const id = window.setTimeout(() => void loadForm(true), 300)
     return () => window.clearTimeout(id)
   }, [prefetch, key, asset?.id])
 
@@ -222,7 +215,7 @@ function GiveSheet({
   const sim = assetKind === 'SIM'
   const cents = parseEuro(draft.value)
   /** The form for the data as it is now: the one fetched ahead, else asked for. */
-  const formNow = (): Promise<AssignmentFormResult | null> => (fetched?.key === key ? Promise.resolve(fetched.result) : loadPreview())
+  const formNow = (): Promise<AssignmentFormResult | null> => (fetched?.key === key ? Promise.resolve(fetched.result) : loadForm())
 
   /**
    * Print Form: the browser's print dialog over this sheet, the form the only
@@ -259,7 +252,7 @@ function GiveSheet({
   }
 
   /** The form as the data is now; quiet (fetched ahead) leaves a failure unsaid. */
-  function loadPreview(quiet = false): Promise<AssignmentFormResult | null> {
+  function loadForm(quiet = false): Promise<AssignmentFormResult | null> {
     if (!asset || !input) return Promise.resolve(null)
     if (!quiet) setFailure(undefined)
     const asked = { session: session.current, key }
@@ -267,7 +260,6 @@ function GiveSheet({
     return client.assets.previewForm(asset.id, input).then(
       (r) => {
         if (!current()) return null
-        setPreview(r)
         setFetched({ key: asked.key, result: r })
         // Printed before the hash came: it is this form's.
         setPrinted((p) => (p && p.key === asked.key && p.hash === null ? { ...p, hash: r.document_hash } : p))
@@ -442,26 +434,7 @@ function GiveSheet({
               <Button variant="outline" disabled={!ready || downloading} onClick={() => void downloadPDF()}>
                 <FileDown aria-hidden /> {downloading ? t.assets.downloadingPdf : t.assets.downloadPdf}
               </Button>
-              <Button
-                variant="ghost"
-                disabled={!ready}
-                onClick={() => {
-                  if (showPreview) setShowPreview(false)
-                  else {
-                    setShowPreview(true)
-                    void loadPreview()
-                  }
-                }}
-              >
-                {showPreview ? t.assets.hidePreview : t.assets.previewForm}
-              </Button>
             </div>
-            {showPreview && preview ? (
-              <div className="max-h-96 overflow-auto rounded-lg border border-border">
-                <p className="px-4 pt-3 text-xs text-muted-foreground">{t.assets.formLayoutNote}</p>
-                <AssignmentFormDocument form={preview.form} documentHash={preview.document_hash} />
-              </div>
-            ) : null}
             {changedAfterPrint ? (
               <p role="alert" className="text-sm text-destructive">
                 {t.assets.changedAfterPrint}

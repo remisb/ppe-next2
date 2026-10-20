@@ -298,7 +298,7 @@ func (h *assetHandler) changeStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
-// preview is Preview Form and Print Form: the form Give would store, and its
+// preview is Print Form: the form Give would store, and its
 // hash, without writing anything.
 func (h *assetHandler) preview(w http.ResponseWriter, r *http.Request) {
 	_, id, req, ok := withAsset[formRequest](w, r)

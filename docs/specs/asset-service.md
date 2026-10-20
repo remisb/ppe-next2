@@ -204,8 +204,8 @@ click or a second user meets the unique index or the lock and gets the 409; noth
 remains (§7).
 
 `POST /api/v1/assets/{id}/assignments/preview` builds the form and its hash from the
-employee, date, plan and value without writing, for Preview Form and Print Form; an asset
-that needs no form is 404 `ErrNoForm`. Printing or previewing is not giving (§8).
+employee, date, plan and value without writing, for Print Form (fetched ahead) and the asset's form page; an asset
+that needs no form is 404 `ErrNoForm`. Printing is not giving (§8).
 
 The form is stored as JSONB, which reorders keys. Reading it back decodes it into the
 form's struct and encodes it again, which gives the hashed bytes, and checks them against
@@ -428,8 +428,8 @@ their own address:
   Give Asset is the same; an item needing no form has two steps. The checkbox reads "The
   employee has signed the printed form" (Paper Form Signed in records); Print Form becomes
   Print again once printed. The fields: the employee (search), the given date (today, not later),
-  the plan (optional) and value only when the card lacks them, a comment. **Preview Form** shows the
-  form the API builds. **Print Form** prints it from the page itself, with no tab of its own
+  the plan (optional) and value only when the card lacks them, a comment. **Print Form** prints the form the API
+  builds from the page itself, with no tab of its own
   (`components/print-in-place.tsx`): the form is drawn into a container only print shows,
   `index.css` hides the page and the sheet while it prints, and the browser's print dialog
   opens over the sheet. **Download PDF** saves the same form as a PDF the API draws

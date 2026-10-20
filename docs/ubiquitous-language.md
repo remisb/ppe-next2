@@ -847,11 +847,11 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 ### Assignment form (form)
 - **Brief:** the paper document an employee signs for an assignment of a SIM card or a
   computer, separate from workwear's Items Given Record.
-- **Detail:** printed from the Give form (**Preview Form**, **Print Form**), dated with the
+- **Detail:** printed from the Give form (**Print Form**, **Download PDF**), dated with the
   given date. Once the asset is given, the form's data is kept with the assignment and
   never changes, like a record's snapshot, with its own document hash. **Paper Form Signed**
   is ticked when the employee has signed; changing the form after printing clears it (§8).
-- **UI:** Preview Form, Print Form (Print again once printed; prints from the page, no tab),
+- **UI:** Print Form (Print again once printed; prints from the page, no tab),
   Download PDF, and the checkbox "The employee has signed the printed form", recorded as
   Paper Form Signed. On an assignment: Print form again, Download PDF. Give's steps: **Who and when**,
   **Print the form and have it signed**, **Hand over the SIM** (the item). A print and a copied
@@ -985,7 +985,7 @@ screens are built):
 | Return | Priimti | Принять |
 | Not Returned / Mark as Not Returned | Negrąžinta / Pažymėti kaip negrąžintą | Не возвращено / Отметить как не возвращённое |
 | Total SIMs / In Office / With Employees | Iš viso SIM / Biure / Pas darbuotojus | Всего SIM / В офисе / У сотрудников |
-| Preview Form / Print Form / Paper Form Signed | Peržiūrėti aktą / Spausdinti aktą / Aktas pasirašytas | Просмотреть акт / Печать акта / Акт подписан |
+| Print Form / Paper Form Signed | Spausdinti aktą / Aktas pasirašytas | Печать акта / Акт подписан |
 | Download PDF / Print again | Atsisiųsti PDF / Spausdinti dar kartą | Скачать PDF / Напечатать ещё раз |
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |

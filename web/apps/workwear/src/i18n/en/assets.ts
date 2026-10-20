@@ -177,8 +177,6 @@ export const assets = {
   givenDateHint: 'The day the card is handed over: today, or earlier.',
   planGiveHint: 'Optional; saved to the card when it is given.',
   missingHint: 'Missing on the card; saved to it when it is given.',
-  previewForm: 'Preview Form',
-  hidePreview: 'Hide preview',
   printForm: 'Print Form',
   // Give, step by step.
   stepDetails: 'Who and when',

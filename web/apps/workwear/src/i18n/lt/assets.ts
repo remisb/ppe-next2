@@ -164,8 +164,6 @@ export const assets: AssetsText = {
   givenDateHint: 'Diena, kai kortelė perduodama: šiandien arba anksčiau.',
   planGiveHint: 'Neprivaloma; išdavus bus išsaugota kortelėje.',
   missingHint: 'Kortelėje nenurodyta; išdavus bus išsaugota joje.',
-  previewForm: 'Peržiūrėti aktą',
-  hidePreview: 'Slėpti peržiūrą',
   printForm: 'Spausdinti aktą',
   stepDetails: 'Kam ir kada',
   stepPaper: 'Atspausdinkite aktą ir duokite pasirašyti',

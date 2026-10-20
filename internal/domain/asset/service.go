@@ -483,7 +483,7 @@ func fill(a Asset, p FormParams) (Asset, error) {
 }
 
 // Preview builds the form Give would store, and its hash, without writing:
-// Preview Form and Print Form. Printing is not giving (§8).
+// Print Form. Printing is not giving (§8).
 func (s *Service) Preview(ctx context.Context, id uuid.UUID, p FormParams) (FormResult, error) {
 	if err := s.checkForm(&p); err != nil {
 		return FormResult{}, err

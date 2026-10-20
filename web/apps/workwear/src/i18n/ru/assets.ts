@@ -164,8 +164,6 @@ export const assets: AssetsText = {
   givenDateHint: 'День, когда карта передаётся: сегодня или раньше.',
   planGiveHint: 'Необязательно; при выдаче сохранится в карте.',
   missingHint: 'На карте не указано; при выдаче сохранится в ней.',
-  previewForm: 'Просмотреть акт',
-  hidePreview: 'Скрыть просмотр',
   printForm: 'Печать акта',
   stepDetails: 'Кому и когда',
   stepPaper: 'Напечатайте акт и дайте подписать',
