@@ -189,7 +189,15 @@ export const en: Guide = {
         {
           p: "Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.",
         },
-        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. The item's page shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when." },
+        { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. An open item shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when." },
+        {
+          p: 'Click an item to open it beside the list. `J` and `K` move between items, and `Esc` closes it. An item without a price or service period is marked **Incomplete**; point at the mark to see which is missing.',
+          devices: ['desktop'],
+        },
+        {
+          p: 'Tap an item to open it; **Item Catalogue** at its top takes you back. An item without a price or service period is marked **Incomplete**; open it to see which is missing.',
+          devices: ['phone', 'tablet'],
+        },
         { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
         { p: 'You add and change items in **Item Catalogue**, and kits in **Item Sets**.', roles: ['admin', 'manager'] },
         {
@@ -224,7 +232,7 @@ export const en: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder' }] },
         {
-          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
+          p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. The non-return value set there is filled in, and you can change or clear it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
@@ -484,10 +492,10 @@ export const en: Guide = {
         },
         { shots: [{ name: 'settings', alt: 'Settings: the supplier\'s WhatsApp group' }] },
         {
-          p: '**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. Nothing changes until you choose **Save providers**.',
+          p: '**SIM providers**: the providers **Add SIM** offers. Type a name and choose **Add**. Mark one as the **Default provider**, which Add SIM chooses first, or choose **No default**; the cross beside a name removes it. **Default Non-return Value (€)** is the amount Add SIM fills in for a new card, such as `25.00`; leave it empty for none. Nothing changes until you choose **Save**.',
         },
-        { p: 'A card already registered keeps its provider, even one you remove from the list.' },
-        { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM providers, one of them the default' }] },
+        { p: 'A card already registered keeps its provider, even one you remove from the list, and its non-return value.' },
+        { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM providers, one of them the default, and the default non-return value' }] },
       ],
     },
     {
@@ -518,7 +526,7 @@ export const en: Guide = {
             ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**.'],
             ['`/`', 'Go to the search or Add Item field.'],
             ['`G` then `D` `O` `H` `E` `A` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration).'],
-            ['`J` / `K`, `Esc`', 'Move through Orders, or close the open order.'],
+            ['`J` / `K`, `Esc`', 'Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open.'],
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],
           ],

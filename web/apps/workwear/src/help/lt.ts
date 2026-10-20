@@ -192,7 +192,15 @@ export const lt: Guide = {
         {
           p: 'Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.',
         },
-        { p: 'Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Prekės puslapyje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.' },
+        { p: 'Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Atidarytoje prekėje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.' },
+        {
+          p: 'Spustelėjus prekę, ji atsidaro šalia sąrašo. `J` ir `K` pereina tarp prekių, o `Esc` prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; užvedę žymeklį ant žymos, matysite, ko trūksta.',
+          devices: ['desktop'],
+        },
+        {
+          p: 'Palieskite prekę, kad ją atidarytumėte; **Prekių katalogas** viršuje grąžina atgal. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; atidarę ją matysite, ko trūksta.',
+          devices: ['phone', 'tablet'],
+        },
         { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.' },
         { p: 'Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.', roles: ['admin', 'manager'] },
         {
@@ -227,7 +235,7 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju' }] },
         {
-          p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
+          p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ten nustatyta negrąžinimo vertė įrašoma iš anksto; ją galite pakeisti arba ištrinti. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
           roles: ['admin', 'manager'],
         },
         { p: '**Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.', roles: ['admin', 'manager'] },
@@ -451,10 +459,10 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'settings', alt: 'Nustatymai: tiekėjo WhatsApp grupė' }] },
         {
-          p: '**SIM tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti tiekėjus**.',
+          p: '**SIM tiekėjai**: tiekėjai, kuriuos siūlo **Pridėti SIM**. Įrašykite pavadinimą ir pasirinkite **Pridėti**. Vieną pažymėkite kaip **Numatytasis tiekėjas** (jį „Pridėti SIM“ pasirenka iš anksto) arba pasirinkite **Be numatytojo**; kryželis šalia pavadinimo jį pašalina. **Numatytoji negrąžinimo vertė (€)** – suma, kurią „Pridėti SIM“ įrašo naujai kortelei, pavyzdžiui, `25,00`; palikite tuščią, jei jos nėra. Niekas nepasikeičia, kol nepasirenkate **Išsaugoti**.',
         },
-        { p: 'Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo.' },
-        { shots: [{ name: 'sim-providers', alt: 'Nustatymai: SIM tiekėjai, vienas iš jų numatytasis' }] },
+        { p: 'Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo, kaip ir savo negrąžinimo vertės.' },
+        { shots: [{ name: 'sim-providers', alt: 'Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė' }] },
       ],
     },
     {
@@ -485,7 +493,7 @@ export const lt: Guide = {
             ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
             ['`G`, tada `D` `O` `H` `E` `A` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
-            ['`J` / `K`, `Esc`', 'Pereina per Užsakymus arba uždaro atidarytą užsakymą.'],
+            ['`J` / `K`, `Esc`', 'Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą.'],
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],
           ],
