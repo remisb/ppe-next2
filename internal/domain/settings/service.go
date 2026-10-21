@@ -70,9 +70,10 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 	})
 }
 
-// UpdateSIMProviders replaces the SIM providers, the default one and the
-// default Non-return Value, recording settings.sim_providers_changed when any
-// differs. Cards already registered keep their provider and value.
+// UpdateSIMProviders replaces the SIM providers, the default one, the
+// default Non-return Value and the default plan, recording
+// settings.sim_providers_changed when any differs. Cards already registered
+// keep their provider, value and plan.
 func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, actor uuid.UUID) (Settings, error) {
 	if actor == uuid.Nil {
 		return Settings{}, fieldError("actor", "is required")
@@ -82,21 +83,23 @@ func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, 
 	}
 	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
 		if slices.Equal(p.Providers, cur.SIMProviders) && p.Default == cur.DefaultSIMProvider &&
-			sameCents(p.DefaultNonReturnValueCents, cur.DefaultSIMNonReturnValueCents) {
+			sameCents(p.DefaultNonReturnValueCents, cur.DefaultSIMNonReturnValueCents) && p.DefaultPlan == cur.DefaultSIMPlan {
 			return cur, nil, nil
 		}
 		now := s.now()
 		next := cur
 		next.SIMProviders, next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents = p.Providers, p.Default, p.DefaultNonReturnValueCents
+		next.DefaultSIMPlan = p.DefaultPlan
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
 		type value struct {
 			Providers []string `json:"providers"`
 			Default   string   `json:"default_provider"`
 			Value     *int64   `json:"default_non_return_value_cents"`
+			Plan      string   `json:"default_plan"`
 		}
 		ev, err := audit.New(s.newID(), &actor, EventSIMProvidersChanged, auditEntity, AuditEntityID, now,
-			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider, cur.DefaultSIMNonReturnValueCents},
-			value{p.Providers, p.Default, p.DefaultNonReturnValueCents})
+			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider, cur.DefaultSIMNonReturnValueCents, cur.DefaultSIMPlan},
+			value{p.Providers, p.Default, p.DefaultNonReturnValueCents, p.DefaultPlan})
 		if err != nil {
 			return Settings{}, nil, err
 		}

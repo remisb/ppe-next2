@@ -258,7 +258,7 @@ test("Settings: an administrator sets the supplier's WhatsApp group", async () =
   await expect(card.getByRole('link', { name: 'Open the group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
 })
 
-test('Settings: an administrator lists the SIM providers, the default one and the default value', async () => {
+test('Settings: an administrator lists the SIM providers, the default one, the default value and plan', async () => {
   await openTab('Settings')
   const card = page.getByRole('region', { name: 'SIM providers' })
   await expect(card.getByRole('status')).toContainText('None listed')
@@ -284,10 +284,15 @@ test('Settings: an administrator lists the SIM providers, the default one and th
   await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByText('Type an amount in euros, such as 25.00.')).toBeVisible()
   await value.fill('25')
+  // And the plan Give SIM fills in for a card without one, trimmed.
+  const plan = card.getByLabel('Default plan')
+  await expect(plan).toHaveValue('')
+  await plan.fill(' Biz 5 GB ')
   await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByRole('status')).toHaveText('Saved. Add SIM chooses Telia first.')
   await expect(card.getByRole('radio')).toHaveCount(3)
   await expect(value).toHaveValue('25.00')
+  await expect(plan).toHaveValue('Biz 5 GB')
   await expect(card.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 

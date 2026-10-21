@@ -428,7 +428,8 @@ their own address:
   Give Asset is the same; an item needing no form has two steps. The checkbox reads "The
   employee has signed the printed form" (Paper Form Signed in records); Print Form becomes
   Print again once printed. The fields: the employee (search), the given date (today, not later),
-  the plan (optional) and value only when the card lacks them, a comment. **Print Form** prints the form the API
+  the plan (optional, starting as Settings' default plan) and value only when the card lacks
+  them, a comment. **Print Form** prints the form the API
   builds from the page itself, with no tab of its own
   (`components/print-in-place.tsx`): the form is drawn into a container only print shows,
   `index.css` hides the page and the sheet while it prints, and the browser's print dialog

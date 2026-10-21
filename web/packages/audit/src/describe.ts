@@ -109,6 +109,7 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['providers', 'list'],
   ['default_provider', 'text'],
   ['default_non_return_value_cents', 'money'],
+  ['default_plan', 'text'],
   ['plan', 'text'],
   ['non_return_value_cents', 'money'],
   ['connection_status', 'status'],

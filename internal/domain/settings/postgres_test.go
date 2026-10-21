@@ -86,7 +86,7 @@ func TestPostgresSIMProviders(t *testing.T) {
 		t.Fatalf("Get on an empty table = %#v, %v", s.SIMProviders, err)
 	}
 	value := int64(2500)
-	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Telia", "Bitė"}, Default: "Telia", DefaultNonReturnValueCents: &value}, actor); err != nil {
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Telia", "Bitė"}, Default: "Telia", DefaultNonReturnValueCents: &value, DefaultPlan: "Biz 10 GB"}, actor); err != nil {
 		t.Fatal(err)
 	}
 	link := "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
@@ -96,14 +96,14 @@ func TestPostgresSIMProviders(t *testing.T) {
 	// Each save keeps the other setting.
 	s, err = svc.Get(ctx)
 	if err != nil || !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link ||
-		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 {
+		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 || s.DefaultSIMPlan != "Biz 10 GB" {
 		t.Fatalf("Get = %+v, %v", s, err)
 	}
 	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{}, actor); err != nil {
 		t.Fatal(err)
 	}
 	s, err = svc.Get(ctx)
-	if err != nil || len(s.SIMProviders) != 0 || s.DefaultSIMProvider != "" || s.DefaultSIMNonReturnValueCents != nil || s.SupplierChat.Link != link {
+	if err != nil || len(s.SIMProviders) != 0 || s.DefaultSIMProvider != "" || s.DefaultSIMNonReturnValueCents != nil || s.DefaultSIMPlan != "" || s.SupplierChat.Link != link {
 		t.Fatalf("after clearing: %+v, %v", s, err)
 	}
 	var events int
@@ -117,5 +117,9 @@ func TestPostgresSIMProviders(t *testing.T) {
 	// And the default Non-return Value within an asset's limit.
 	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_non_return_value_cents = -1`); err == nil {
 		t.Fatal("a negative default value was stored")
+	}
+	// And the default plan within an asset's limit.
+	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_plan = repeat('a', 101)`); err == nil {
+		t.Fatal("a default plan too long was stored")
 	}
 }

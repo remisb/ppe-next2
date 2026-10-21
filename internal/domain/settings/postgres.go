@@ -23,13 +23,13 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const columns = `supplier_chat_name, supplier_chat_link, sim_providers, default_sim_provider, default_sim_non_return_value_cents,
-	updated_at, updated_by_user_id`
+	default_sim_plan, updated_at, updated_by_user_id`
 
 // scan reads the row; no row is the defaults.
 func scan(row pgx.Row) (Settings, error) {
 	var s Settings
 	err := row.Scan(&s.SupplierChat.Name, &s.SupplierChat.Link, &s.SIMProviders, &s.DefaultSIMProvider, &s.DefaultSIMNonReturnValueCents,
-		&s.UpdatedAt, &s.UpdatedByUserID)
+		&s.DefaultSIMPlan, &s.UpdatedAt, &s.UpdatedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Settings{SIMProviders: []string{}}, nil
 	}
@@ -61,14 +61,15 @@ func (r *PostgresRepository) Update(ctx context.Context, m Mutation) (Settings, 
 		}
 		// The first write inserts the row; two at once meet in the conflict clause.
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO app_settings (`+columns+`) VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO app_settings (`+columns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT (singleton) DO UPDATE SET supplier_chat_name = EXCLUDED.supplier_chat_name,
 				supplier_chat_link = EXCLUDED.supplier_chat_link, sim_providers = EXCLUDED.sim_providers,
 				default_sim_provider = EXCLUDED.default_sim_provider,
 				default_sim_non_return_value_cents = EXCLUDED.default_sim_non_return_value_cents,
+				default_sim_plan = EXCLUDED.default_sim_plan,
 				updated_at = EXCLUDED.updated_at, updated_by_user_id = EXCLUDED.updated_by_user_id`,
 			next.SupplierChat.Name, next.SupplierChat.Link, orEmpty(next.SIMProviders), next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents,
-			next.UpdatedAt, next.UpdatedByUserID); err != nil {
+			next.DefaultSIMPlan, next.UpdatedAt, next.UpdatedByUserID); err != nil {
 			return err
 		}
 		if err := audit.Insert(ctx, tx, *ev); err != nil {

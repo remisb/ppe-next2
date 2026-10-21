@@ -277,8 +277,9 @@ export interface GiveDraft {
   comment: string
 }
 
-export function emptyGiveDraft(today: string): GiveDraft {
-  return { assetId: '', employeeId: '', employeeName: '', givenDate: today, plan: '', value: '', comment: '' }
+/** Give SIM starts with the default plan (Settings), when there is one; formInput sends it only for a card without a plan. */
+export function emptyGiveDraft(today: string, plan = ''): GiveDraft {
+  return { assetId: '', employeeId: '', employeeName: '', givenDate: today, plan, value: '', comment: '' }
 }
 
 /** What the form prints: the fields that change its content, as one comparable key. */

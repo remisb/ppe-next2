@@ -364,16 +364,20 @@ export interface Settings {
   default_sim_provider: string | null
   /** The Non-return Value Add SIM fills in for a new card, in cents; null when there is none. */
   default_sim_non_return_value_cents: number | null
+  /** The plan Give SIM fills in for a card that has none of its own; null when there is none. */
+  default_sim_plan: string | null
 }
 
 /**
  * Replaces the SIM providers; default is one of them, or '' for none; the
- * default Non-return Value is in cents, or null for none.
+ * default Non-return Value is in cents, or null for none; the default plan is
+ * '' for none.
  */
 export interface SimProvidersInput {
   providers: string[]
   default: string
   default_non_return_value_cents: number | null
+  default_plan: string
 }
 
 /** A WhatsApp group: its name as staff know it and its invite link (https://chat.whatsapp.com/<code>). */

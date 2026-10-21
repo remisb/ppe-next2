@@ -769,15 +769,17 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** the provider's e-mail address is shown where staff must write to it
   (activation, blocking). Nothing is sent from the app.
 
-### SIM providers, the default provider and the default Non-return Value
+### SIM providers, the default provider, the default Non-return Value and the default plan
 - **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
-  the one of them Add SIM chooses first, and the Non-return Value it fills in.
+  the one of them Add SIM chooses first, the Non-return Value it fills in, and the plan Give
+  SIM fills in for a card that has none.
 - **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
   `default_sim_provider`; `settings.DefaultSIMNonReturnValueCents`,
-  `default_sim_non_return_value_cents`. **UI:** **SIM providers** on Settings in
-  Administration, with **Default provider**, **No default** and **Default Non-return Value (€)**.
+  `default_sim_non_return_value_cents`; `settings.DefaultSIMPlan`, `default_sim_plan`.
+  **UI:** **SIM providers** on Settings in Administration, with **Default provider**,
+  **No default**, **Default Non-return Value (€)** and **Default plan**.
 - **Detail:** changing them changes no card already registered; a card whose provider is no
-  longer listed keeps it.
+  longer listed keeps it, and a card's own plan is never replaced.
 
 ### Connection status
 - **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
@@ -986,6 +988,7 @@ screens are built):
 | SIM providers | SIM tiekėjai | Операторы SIM |
 | Default provider / No default | Numatytasis tiekėjas / Be numatytojo | Оператор по умолчанию / Без оператора по умолчанию |
 | Default Non-return Value | Numatytoji negrąžinimo vertė | Стоимость при невозврате по умолчанию |
+| Default plan | Numatytasis planas | Тариф по умолчанию |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |

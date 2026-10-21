@@ -200,6 +200,14 @@ describe('Give SIM', () => {
     // Equipment has no plan (it is always null), so a typed one is never sent.
     expect(formInput({ kind: 'EQUIPMENT', plan: null, non_return_value_cents: null }, d)).toEqual({ employee_id: 'e1', given_date: today, non_return_value_cents: 1500 })
   })
+  it('starts with the default plan, sent only for a card without one', () => {
+    expect(emptyGiveDraft(today).plan).toBe('')
+    const d = { ...emptyGiveDraft(today, 'Biz 10 GB'), employeeId: 'e1' }
+    expect(d.plan).toBe('Biz 10 GB')
+    expect(formInput({ kind: 'SIM', plan: null, non_return_value_cents: 2500 }, d)).toEqual({ employee_id: 'e1', given_date: today, plan: 'Biz 10 GB' })
+    // A card's own plan stays its own.
+    expect(formInput({ kind: 'SIM', plan: 'Biz 5 GB', non_return_value_cents: 2500 }, d)).toEqual({ employee_id: 'e1', given_date: today })
+  })
 })
 
 describe('a printed form survives a reload', () => {

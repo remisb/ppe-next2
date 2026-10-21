@@ -29,7 +29,7 @@ Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/test
 which maps every manual §7 rule and status transition to its tests. Administrators set the
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
 at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
-the same row holds the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in (migrations 0031, 0033, 0034), listed on Settings.
+the same row holds the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in, and the default plan Give SIM fills in (migrations 0031, 0033, 0034, 0035), listed on Settings.
 Database backups: the `backup` compose service is the agent from the separate library
 `github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
 Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`

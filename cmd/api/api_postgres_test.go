@@ -950,14 +950,15 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 		SIMProviders       []string `json:"sim_providers"`
 		DefaultSIMProvider *string  `json:"default_sim_provider"`
 		DefaultValueCents  *int64   `json:"default_sim_non_return_value_cents"`
+		DefaultPlan        *string  `json:"default_sim_plan"`
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil || s.DefaultPlan != nil {
 		t.Errorf("settings = %s", rec.Body)
 	}
 	// An administrator lists the SIM providers (as ppe_app); everyone reads them for Add SIM.
 	_, settingsAdmin := api.userWith(t, role.KeyAdmin)
-	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia", "default_non_return_value_cents": 2500}
+	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia", "default_non_return_value_cents": 2500, "default_plan": "Biz 10 GB"}
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, providers); rec.Code != http.StatusOK {
 		t.Fatalf("sim providers = %d %s", rec.Code, rec.Body)
 	}
@@ -969,7 +970,7 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
 	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" ||
-		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 {
+		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 || s.DefaultPlan == nil || *s.DefaultPlan != "Biz 10 GB" {
 		t.Errorf("settings = %s", rec.Body)
 	}
 }

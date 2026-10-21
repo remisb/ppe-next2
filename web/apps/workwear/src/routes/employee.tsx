@@ -327,7 +327,13 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             </DisclosureSection>
           ) : null}
 
-          <HeldAssets kind="SIM" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+          <HeldAssets
+            kind="SIM"
+            employee={{ id: e.id, full_name: e.full_name, code: e.code }}
+            timeZone={tz}
+            defaultPlan={settings.data?.default_sim_plan}
+            navigate={navigate}
+          />
           {session.can('equipment.read') ? (
             <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
           ) : null}

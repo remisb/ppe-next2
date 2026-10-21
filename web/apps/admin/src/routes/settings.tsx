@@ -15,6 +15,7 @@ import {
   type ProviderProblem,
   type SimProviders,
   type ValueProblem,
+  MAX_PLAN_LENGTH,
   providerProblem,
   sameProviders,
   sameValue,
@@ -148,10 +149,11 @@ function SupplierChatCard({ settings, onSaved }: { settings: Settings; onSaved: 
 }
 
 /**
- * The SIM providers Add SIM offers, the default one it chooses first, and
- * the default Non-return Value it fills in. Added, removed, the default
- * chosen and the value typed as a draft, saved together; cards already
- * registered keep their provider and value.
+ * The SIM providers Add SIM offers, the default one it chooses first, the
+ * default Non-return Value it fills in, and the default plan Give SIM fills in
+ * for a card without one. Added, removed, the default chosen, the value and
+ * the plan typed as a draft, saved together; cards already registered keep
+ * their provider, value and plan.
  */
 function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: () => void }) {
   const { client } = useApi()
@@ -162,17 +164,20 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
   // The value as typed; it is checked on Save.
   const [value, setValue] = useState(savedValue)
   const [badValue, setBadValue] = useState<ValueProblem>()
+  const savedPlan = settings.default_sim_plan ?? ''
+  const [plan, setPlan] = useState(savedPlan)
   const [name, setName] = useState('')
   const [problem, setProblem] = useState<ProviderProblem>()
   const [serverError, setServerError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
-  const dirty = !sameProviders(draft, saved) || !sameValue(value, savedValue)
+  const dirty = !sameProviders(draft, saved) || !sameValue(value, savedValue) || plan.trim() !== savedPlan
 
   // The draft starts from what is saved, and again after each save.
   const savedKey = JSON.stringify(saved)
   useEffect(() => setDraft(saved), [savedKey])
   useEffect(() => setValue(savedValue), [savedValue])
+  useEffect(() => setPlan(savedPlan), [savedPlan])
 
   const change = (next: SimProviders) => {
     setDraft(next)
@@ -196,7 +201,7 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
     setBusy(true)
     setServerError(undefined)
     try {
-      await client.updateSimProviders({ ...draft, default_non_return_value_cents: parseEuro(value) })
+      await client.updateSimProviders({ ...draft, default_non_return_value_cents: parseEuro(value), default_plan: plan.trim() })
       setDone(true)
       onSaved()
     } catch (err) {
@@ -301,6 +306,22 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
             />
           )}
         </Field>
+        <Field label={t.settings.defaultPlan} hint={t.settings.defaultPlanHint}>
+          {(p) => (
+            <Input
+              {...controlProps(p)}
+              autoComplete="off"
+              maxLength={MAX_PLAN_LENGTH}
+              className="sm:max-w-xs"
+              value={plan}
+              onChange={(e) => {
+                setPlan(e.target.value)
+                setDone(false)
+                setServerError(undefined)
+              }}
+            />
+          )}
+        </Field>
         {serverError ? (
           <p role="alert" className="text-sm text-destructive">
             {serverError}
@@ -319,6 +340,7 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
                 change(saved)
                 setValue(savedValue)
                 setBadValue(undefined)
+                setPlan(savedPlan)
               }}
             >
               {t.settings.discard}

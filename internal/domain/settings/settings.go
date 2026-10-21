@@ -2,7 +2,7 @@
 // change in the app, one set for the whole organisation: the supplier's
 // WhatsApp group, which Copy for WhatsApp opens for the order message, and the
 // SIM providers, which Add SIM offers, the default one chosen, with the
-// Non-return Value it fills in. Settings
+// Non-return Value it fills in and the plan Give SIM fills in. Settings
 // fixed at deployment (timezone, currency) stay in config.
 package settings
 
@@ -21,6 +21,8 @@ const (
 	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
 	maxProviderLen = 100
 	maxProviders   = 50
+	// maxPlanLen is a SIM card's plan's limit (asset.maxTextLen).
+	maxPlanLen = 100
 	// maxValueCents is an asset's Non-return Value's limit (asset.maxValueCents).
 	maxValueCents = 100_000_000_00
 )
@@ -44,8 +46,11 @@ type Settings struct {
 	// DefaultSIMNonReturnValueCents is the Non-return Value Add SIM fills in
 	// for a new card; nil when there is none.
 	DefaultSIMNonReturnValueCents *int64
-	UpdatedAt                     time.Time
-	UpdatedByUserID               uuid.UUID
+	// DefaultSIMPlan is the plan Give SIM fills in for a card that has none
+	// of its own; empty when there is none.
+	DefaultSIMPlan  string
+	UpdatedAt       time.Time
+	UpdatedByUserID uuid.UUID
 }
 
 // SupplierChat is the supplier's WhatsApp group. WhatsApp has no link that
@@ -108,12 +113,13 @@ func parseInvite(link string) (string, bool) {
 }
 
 // SIMProvidersParams replace the SIM providers: the list, the one of them
-// Add SIM chooses first, or empty for none, and the Non-return Value it fills
-// in, or nil for none.
+// Add SIM chooses first, or empty for none, the Non-return Value it fills in,
+// or nil for none, and the plan Give SIM fills in, or empty for none.
 type SIMProvidersParams struct {
 	Providers                  []string
 	Default                    string
 	DefaultNonReturnValueCents *int64
+	DefaultPlan                string
 }
 
 // Normalize trims each provider, as an asset's provider is trimmed so the
@@ -128,6 +134,7 @@ func (p *SIMProvidersParams) Normalize() {
 	}
 	p.Providers = list
 	p.Default = strings.TrimSpace(p.Default)
+	p.DefaultPlan = strings.TrimSpace(p.DefaultPlan)
 	for _, name := range list {
 		if strings.EqualFold(name, p.Default) {
 			p.Default = name
@@ -157,6 +164,9 @@ func (p *SIMProvidersParams) Validate() error {
 	}
 	if v := p.DefaultNonReturnValueCents; v != nil && (*v < 0 || *v > maxValueCents) {
 		return fieldError("default_non_return_value_cents", "must be between 0 and 10000000000")
+	}
+	if len(p.DefaultPlan) > maxPlanLen {
+		return fieldError("default_plan", "is too long")
 	}
 	return nil
 }

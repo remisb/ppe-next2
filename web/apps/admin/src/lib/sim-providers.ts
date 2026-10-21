@@ -42,6 +42,9 @@ export function sameProviders(a: SimProviders, b: SimProviders): boolean {
   return a.default === b.default && a.providers.length === b.providers.length && a.providers.every((p, i) => p === b.providers[i])
 }
 
+/** The default plan's limit, a SIM card's plan's own (internal/domain/asset). */
+export const MAX_PLAN_LENGTH = 100
+
 /** The default Non-return Value's limit, an asset's own (internal/domain/asset). */
 export const MAX_VALUE_CENTS = 100_000_000_00
 

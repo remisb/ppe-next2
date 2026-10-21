@@ -31,12 +31,15 @@ export function HeldAssets({
   kind,
   employee,
   timeZone,
+  defaultPlan,
   navigate,
   onChanged,
 }: {
   kind: AssetKind
   employee: PickedEmployee
   timeZone: string | undefined
+  /** The plan Give SIM fills in for a card without one (Settings' default_sim_plan). */
+  defaultPlan?: string | null | undefined
   navigate: (to: Route) => void
   /** A card was given: the page's Changes may want reloading. */
   onChanged?: () => void
@@ -100,6 +103,7 @@ export function HeldAssets({
       <AssetSheets
         sheet={sheet}
         today={todayIn(timeZone)}
+        defaultPlan={defaultPlan}
         onChange={setSheet}
         onDone={(m) => {
           setMessage(m)

@@ -294,6 +294,7 @@ export function AssetDetail({
           <AssetSheets
             sheet={sheet}
             today={today}
+            defaultPlan={settings.data?.default_sim_plan}
             onChange={setSheet}
             onDone={(m) => {
               setMessage(m)

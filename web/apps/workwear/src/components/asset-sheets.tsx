@@ -50,12 +50,15 @@ export type AssetSheet =
 export function AssetSheets({
   sheet,
   today,
+  defaultPlan,
   onChange,
   onDone,
 }: {
   sheet: AssetSheet
   /** The organisation's day: the default and latest date. */
   today: string
+  /** The plan Give SIM fills in for a card without one (Settings' default_sim_plan). */
+  defaultPlan?: string | null | undefined
   onChange: (next: AssetSheet) => void
   onDone: (message: string) => void
 }) {
@@ -68,6 +71,7 @@ export function AssetSheets({
         employee={sheet?.kind === 'giveTo' ? sheet.employee : null}
         assetKind={sheet?.kind === 'giveTo' ? sheet.assetKind : sheet?.kind === 'give' ? sheet.asset.kind : 'SIM'}
         today={today}
+        defaultPlan={defaultPlan ?? ''}
         onClose={close}
         onGiven={(m) => (close(), onDone(m))}
       />
@@ -98,7 +102,7 @@ const footerButtons = (onClose: () => void, children: ReactNode) => (
 
 /**
  * Give SIM (§6–§8). The employee, the given date and any plan or value
- * the card lacks; Print Form prints the form the API would store, in a tab of
+ * the card lacks, the plan starting as the default one on Settings; Print Form prints the form the API would store, in a tab of
  * its own; the employee signs it; Paper Form Signed; Give SIM. A change
  * to the form after printing clears the tick and asks for a reprint, and the
  * API refuses a form that no longer matches what was printed.
@@ -109,6 +113,7 @@ function GiveSheet({
   employee,
   assetKind,
   today,
+  defaultPlan,
   onClose,
   onGiven,
 }: {
@@ -120,12 +125,14 @@ function GiveSheet({
   /** SIM cards or equipment: which to choose from, and the words. */
   assetKind: AssetKind
   today: string
+  /** The plan a card without one starts with; '' for none. */
+  defaultPlan: string
   onClose: () => void
   onGiven: (message: string) => void
 }) {
   const { client } = useApi()
   const { userId } = useSession()
-  const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today))
+  const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today, defaultPlan))
   // The given date's text when it is not a date (DateInput), for its error.
   const [givenProblem, setGivenProblem] = useState<string>()
   // The form printed: its data's key, and its hash once known (null while it is fetched).
@@ -151,7 +158,7 @@ function GiveSheet({
     if (!open) return
     setPicked(null)
     const base = {
-      ...emptyGiveDraft(today),
+      ...emptyGiveDraft(today, defaultPlan),
       assetId: fixed?.id ?? '',
       ...(employee ? { employeeId: employee.id, employeeName: employee.full_name } : {}),
     }
@@ -164,6 +171,12 @@ function GiveSheet({
     setEditingDetails(false)
     if (fixed) restorePrinted(fixed.id, base)
   }, [open, fixed?.id, employee?.id])
+
+  // The settings may arrive after the sheet opened: the default plan is then
+  // filled in while the plan is still empty and nothing is printed.
+  useEffect(() => {
+    if (open && defaultPlan && printed === null) setDraft((d) => (d.plan === '' ? { ...d, plan: defaultPlan } : d))
+  }, [defaultPlan])
 
   /**
    * Back on a card whose form was printed here before the page reloaded (as
