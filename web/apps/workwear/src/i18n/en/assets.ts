@@ -119,7 +119,7 @@ export const assets = {
   simNo: 'SIM No.',
   simNoHint: 'As printed on the card, leading zeros included.',
   phoneNo: 'Phone No.',
-  laterHint: 'Can be added later; needed to give the card.',
+  laterHint: 'Can be added later; the card can be given without it.',
   plan: 'Plan',
   chooseProvider: 'Choose a provider',
   providersNotListed: 'An administrator can list the providers to choose from on Settings, in Administration.',

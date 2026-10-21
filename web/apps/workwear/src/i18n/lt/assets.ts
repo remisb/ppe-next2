@@ -109,7 +109,7 @@ export const assets: AssetsText = {
   simNo: 'SIM Nr.',
   simNoHint: 'Kaip atspausdinta ant kortelės, su pradiniais nuliais.',
   phoneNo: 'Telefono Nr.',
-  laterHint: 'Galima įrašyti vėliau; reikia kortelei išduoti.',
+  laterHint: 'Galima įrašyti vėliau; kortelę galima išduoti ir be jo.',
   plan: 'Planas',
   chooseProvider: 'Pasirinkite tiekėją',
   providersNotListed: 'Administratorius gali sudaryti tiekėjų sąrašą Administravimo skiltyje „Nustatymai“.',
