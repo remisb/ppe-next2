@@ -201,7 +201,6 @@ export const assets = {
   alreadyGivenReason: 'Someone already holds it. Register its return first.',
   notActivatedReason: 'This card is not activated. Email your provider, then change its status to Active.',
   blockedReason: 'This card is blocked. Have the provider unblock it, then change its status to Active.',
-  phoneMissingReason: 'The card has no phone number yet. Add it with Edit first.',
   chooseEmployeeReason: 'Choose the employee.',
   givenDateReason: 'Enter the given date.',
   valueReason: 'Fill in the non-return value: the form needs it.',

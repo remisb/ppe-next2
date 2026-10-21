@@ -172,7 +172,8 @@ describe('Give SIM', () => {
     expect(giveBlock(card({ connection_status: 'NOT_ACTIVATED' }), chosen, today, null, false)).toMatch(/not activated/)
     expect(giveBlock(card({ connection_status: 'BLOCKED' }), chosen, today, null, false)).toMatch(/blocked/)
     expect(giveBlock({ ...ready, open_assignment: { not_returned_at: null } as Asset['open_assignment'] }, chosen, today, null, false)).toMatch(/already holds it/)
-    expect(giveBlock({ ...ready, phone_no: null }, chosen, today, null, false)).toMatch(/phone number/)
+    // A card without a phone number yet is given all the same: the form leaves it blank.
+    expect(giveBlock(card({ connection_status: 'ACTIVE', phone_no: null, non_return_value_cents: 2500 }), chosen, today, null, false)).toMatch(/Print the form/)
     expect(giveBlock(ready, emptyGiveDraft(today), today, null, false)).toBe('Choose the employee.')
     expect(giveBlock(ready, { ...chosen, givenDate: '2026-10-10' }, today, null, false)).toMatch(/later than today/)
     // The plan is optional: a card without one goes on to the value and the paper.

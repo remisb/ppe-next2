@@ -46,7 +46,7 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `name` | EQUIPMENT: required. SIM: null (a card is named by its numbers) |
 | `serial_no` | EQUIPMENT, optional. Not unique (§15 does not ask for it) |
 | `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4). Unique among assets not soft-deleted, compared with spaces removed and letters in either case |
-| `phone_no` | SIM, optional at registration (§4); needed to give |
+| `phone_no` | SIM, optional at registration (§4) and to give: a card may be given before the provider assigns its number, the form's number blank |
 | `provider` | SIM: required |
 | `plan` | SIM, optional; a card without one is given with the form's plan left blank |
 | `non_return_value_cents`, `currency` | Optional at registration; needed to give when the asset needs a form. Currency is the organisation's (`EUR`, as for the catalogue) |
@@ -191,7 +191,7 @@ SHARE`, and the service checks, in this order, answering the first that fails:
 | Employee live (read with the lock) | 404 `ErrEmployeeNotFound` |
 | No open assignment | 409 `ErrAlreadyGiven`: *This SIM card has already been given to another employee. Select another SIM card.* (§7) |
 | SIM: status Active | 409 `ErrNotActive`, saying Not Activated or Blocked; a returned blocked card must be unblocked with the provider and set Active first (§12) |
-| Form data complete (SIM: Phone No., value; EQUIPMENT needing a form: value; a plan is optional) | 400, naming the field |
+| Form data complete (a value, for a SIM and for EQUIPMENT needing a form; a SIM's phone number and plan are optional) | 400, naming the field |
 | Given date not in the future | 400 |
 | Form needed: `paper_form_signed` true | 400 |
 | Form needed: `form_hash` equals the hash of the form built now | 409 `ErrFormChanged`: print the updated form |
@@ -464,8 +464,9 @@ their own address:
   `GET /api/v1/assets/by-employee/{id}`): the cards they hold, then those held before, each
   linking to the card, with its dates, Days Held, Not Returned and Paper form signed.
 - **Give SIM** there starts with the employee chosen; the sheet lists the cards in the
-  Office (search by number), each with its status; one Not Activated, Blocked or without a
-  phone number is shown but cannot be chosen (§6). Changing the card after Print Form clears
+  Office (search by number), each with its status; one Not Activated or Blocked is shown but
+  cannot be chosen (§6). One without a phone number yet can be chosen, marked so; its form
+  leaves the number blank. Changing the card after Print Form clears
   Paper Form Signed, as any other change does.
 - **Delete employee** refused while they hold a card (open decision 1) says so in the user's
   language and names the cards.

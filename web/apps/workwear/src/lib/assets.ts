@@ -357,11 +357,12 @@ export function formInput(a: Pick<Asset, 'kind' | 'plan' | 'non_return_value_cen
 /**
  * Why Give SIM cannot be done yet, the first reason only, shown by the
  * button (§6: the reason at the field or button), or null when it can. A
- * card someone holds, one not Active or without a phone number cannot be
- * given from this form at all; the rest the form itself fixes.
+ * card someone holds or one not Active cannot be given from this form at
+ * all; the rest the form itself fixes. A card without a phone number yet can
+ * be given: the form leaves the number blank.
  */
 export function giveBlock(
-  a: Pick<Asset, 'kind' | 'needs_form' | 'open_assignment' | 'connection_status' | 'phone_no' | 'plan' | 'non_return_value_cents'> | null,
+  a: Pick<Asset, 'kind' | 'needs_form' | 'open_assignment' | 'connection_status' | 'plan' | 'non_return_value_cents'> | null,
   d: GiveDraft,
   today: string,
   printed: { key: string } | null,
@@ -372,7 +373,6 @@ export function giveBlock(
   if (a.open_assignment) return t.assets.alreadyGivenReason
   if (a.kind === 'SIM') {
     if (a.connection_status !== 'ACTIVE') return a.connection_status === 'BLOCKED' ? t.assets.blockedReason : t.assets.notActivatedReason
-    if (!a.phone_no) return t.assets.phoneMissingReason
   }
   if (!d.employeeId) return t.assets.chooseEmployeeReason
   if (!d.givenDate) return t.assets.givenDateReason
@@ -391,11 +391,10 @@ export function giveBlock(
  * employee's page, or null: the picker shows every office card with its
  * status, and greys out these (§6).
  */
-export function cardBlock(a: Pick<Asset, 'kind' | 'connection_status' | 'phone_no'>): string | null {
+export function cardBlock(a: Pick<Asset, 'kind' | 'connection_status'>): string | null {
   if (a.kind === 'EQUIPMENT') return null
   if (a.connection_status === 'NOT_ACTIVATED') return t.assets.statuses.NOT_ACTIVATED
   if (a.connection_status === 'BLOCKED') return t.assets.statuses.BLOCKED
-  if (!a.phone_no) return t.assets.noPhoneNo
   return null
 }
 

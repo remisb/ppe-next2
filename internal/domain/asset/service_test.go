@@ -588,8 +588,8 @@ func TestGiveRefusesWhatCannotBeGiven(t *testing.T) {
 			t.Errorf("%s: %v, want ErrNotActive", name, err)
 		}
 	}
-	if _, err := f.give(t, incomplete.ID, f.emp, "2026-10-09"); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "phone_no") {
-		t.Errorf("no phone number: %v", err)
+	if _, err := f.give(t, incomplete.ID, f.emp, "2026-10-09"); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "non_return_value_cents") {
+		t.Errorf("no value: %v", err)
 	}
 	fp := FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09"}
 	prev, err := f.svc.Preview(f.ctx, ok.ID, fp)
@@ -692,6 +692,25 @@ func TestGiveWithoutAPlan(t *testing.T) {
 	// The form keeps the plan's place, empty.
 	if !strings.Contains(string(a.Form), `"plan":null`) {
 		t.Errorf("form = %s", a.Form)
+	}
+}
+
+func TestGiveWithoutAPhoneNumber(t *testing.T) {
+	f := newFixture(t)
+	v := f.sim(t, "SIM-000001", StatusActive, false)
+	// The value comes with the form, as on Give SIM; the provider has not assigned a number yet.
+	fp := FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09", NonReturnValueCents: ip(2500)}
+	prev, err := f.svc.Preview(f.ctx, v.ID, fp)
+	if err != nil {
+		t.Fatalf("print a card without a phone number: %v", err)
+	}
+	a, err := f.svc.Give(f.ctx, v.ID, GiveParams{FormParams: fp, PaperFormSigned: true, FormHash: prev.DocumentHash}, testActor)
+	if err != nil {
+		t.Fatalf("give a card without a phone number: %v", err)
+	}
+	// The form keeps the number's place, empty; adding it later never changes the stored form.
+	if !strings.Contains(string(a.Form), `"phone_no":null`) || string(a.Form) != string(prev.Form) {
+		t.Errorf("form = %s, printed %s", a.Form, prev.Form)
 	}
 }
 

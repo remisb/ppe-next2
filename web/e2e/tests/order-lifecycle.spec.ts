@@ -1505,7 +1505,7 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveAttribute('aria-expanded', 'false')
   await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveText(/^Assignments\s*0$/)
   await expect(pane.getByText('No one')).toBeVisible()
-  // Giving needs a phone number on the card: Edit adds it.
+  // Edit adds the phone number (a card without one could be given all the same).
   await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
   await page.getByRole('menuitem', { name: 'Edit' }).click()
   const edit = page.getByRole('dialog')

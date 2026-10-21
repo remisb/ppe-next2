@@ -187,7 +187,6 @@ export const assets: AssetsText = {
   alreadyGivenReason: 'Tai jau kažkas turi. Pirmiausia užregistruokite grąžinimą.',
   notActivatedReason: 'Ši kortelė neaktyvuota. Parašykite tiekėjui, tada pakeiskite būseną į „Aktyvi“.',
   blockedReason: 'Ši kortelė užblokuota. Paprašykite tiekėjo ją atblokuoti, tada pakeiskite būseną į „Aktyvi“.',
-  phoneMissingReason: 'Kortelė dar neturi telefono numerio. Pirmiausia įrašykite jį per „Keisti“.',
   chooseEmployeeReason: 'Pasirinkite darbuotoją.',
   givenDateReason: 'Įveskite išdavimo datą.',
   valueReason: 'Įrašykite negrąžinimo vertę: jos reikia aktui.',

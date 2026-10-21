@@ -31,7 +31,7 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
         {sim ? (
           <>
             <Info label="SIM No. / № SIM">{form.sim_no}</Info>
-            <Info label="Phone No. / № телефона">{form.phone_no}</Info>
+            <Info label="Phone No. / № телефона">{form.phone_no ?? '–'}</Info>
             <Info label="Provider / Оператор">{form.provider}</Info>
             <Info label="Plan / Тариф">{form.plan ?? '–'}</Info>
           </>

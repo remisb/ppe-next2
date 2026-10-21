@@ -572,7 +572,7 @@ function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: A
                 </span>
               </span>
               {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
-              {why === t.assets.noPhoneNo ? <span className="text-xs">{why}</span> : null}
+              {sim && !a.phone_no ? <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span> : null}
             </button>
           )
         })}

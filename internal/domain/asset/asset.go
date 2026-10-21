@@ -162,13 +162,12 @@ func (a Asset) NeedsForm() bool {
 }
 
 // missingFormData names the first field the assignment form needs that the
-// asset lacks, or "". A SIM card's plan is optional: the form leaves it blank.
+// asset lacks, or "". A SIM card's phone number and plan are optional: a card
+// is given before the provider assigns its number, and the form leaves them
+// blank.
 func (a Asset) missingFormData() string {
 	if !a.NeedsForm() {
 		return ""
-	}
-	if a.Kind == KindSIM && a.PhoneNo == nil {
-		return "phone_no"
 	}
 	if a.NonReturnValueCents == nil {
 		return "non_return_value_cents"
