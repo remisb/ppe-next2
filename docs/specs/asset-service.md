@@ -383,7 +383,7 @@ their own address:
   administrator lists on Settings, the default one chosen; typed when none are listed;
   [settings-service.md](settings-service.md)) and inventory number (the next one
   suggested) and the received date (today) are required; the phone number, plan and value
-  can wait; a new card is Not Activated or Active. A number in use shows *This
+  can wait (Add SIM fills in Settings' default Non-return Value and default plan); a new card is Not Activated or Active. A number in use shows *This
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
 - A row opens the card as Orders opens an order, at `/assets/sim-cards/<id>` (`?show=` kept

@@ -284,7 +284,7 @@ test('Settings: an administrator lists the SIM providers, the default one, the d
   await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByText('Type an amount in euros, such as 25.00.')).toBeVisible()
   await value.fill('25')
-  // And the plan Give SIM fills in for a card without one, trimmed.
+  // And the plan Add SIM fills in, and Give SIM for a card without one, trimmed.
   const plan = card.getByLabel('Default plan')
   await expect(plan).toHaveValue('')
   await plan.fill(' Biz 5 GB ')
@@ -1440,6 +1440,8 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // And the default Non-return Value set there; this card goes without one, which Give SIM then asks for.
   await expect(form.getByLabel('Non-return Value')).toHaveValue('25.00')
   await form.getByLabel('Non-return Value').fill('')
+  // The default plan too, which this card changes.
+  await expect(form.getByLabel('Plan')).toHaveValue('Biz 5 GB')
   await form.getByLabel('Plan').fill('Biz 10 GB')
   await form.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()

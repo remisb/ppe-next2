@@ -54,8 +54,9 @@ existed, and the field says an administrator can list them.
   asset's own limit, or none; out of range is `ErrInvalid` (400), and a CHECK keeps it so.
   Typed in euros on Settings (`25`, `25,00`, `€25`), shown with two decimals. Changing it
   changes no card already registered.
-- The default plan is what Give SIM fills in for the plan of a card that has none of its
-  own (the field stays editable, and may be emptied; a card's own plan is never replaced).
+- The default plan is what Add SIM fills in for a new card's plan, and Give SIM for the
+  plan of a card that has none of its own (the field stays editable, and may be emptied; a
+  card's own plan is never replaced).
   Trimmed, at most 100 characters, a SIM card's plan's own limit, or `''` for none; longer
   is `ErrInvalid` (400), and a CHECK keeps it so. Changing it changes no card.
 - Each provider is trimmed, as an asset's provider is, empty ones dropped, at most 100

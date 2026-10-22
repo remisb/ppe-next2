@@ -771,8 +771,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
 ### SIM providers, the default provider, the default Non-return Value and the default plan
 - **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
-  the one of them Add SIM chooses first, the Non-return Value it fills in, and the plan Give
-  SIM fills in for a card that has none.
+  the one of them Add SIM chooses first, the Non-return Value and plan it fills in, and the
+  plan Give SIM fills in for a card that has none.
 - **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
   `default_sim_provider`; `settings.DefaultSIMNonReturnValueCents`,
   `default_sim_non_return_value_cents`; `settings.DefaultSIMPlan`, `default_sim_plan`.

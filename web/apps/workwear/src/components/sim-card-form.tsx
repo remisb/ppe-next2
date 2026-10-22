@@ -20,8 +20,8 @@ interface Taken {
 /**
  * Add SIM and Edit (§4): one card at a time, in one sheet. A new card
  * starts in the Office, Not Activated (or Active, chosen here), received
- * today, with the default provider chosen, the default Non-return Value filled
- * in and the next free inventory number suggested. The provider is picked from those listed on Settings
+ * today, with the default provider chosen, the default Non-return Value and plan
+ * filled in and the next free inventory number suggested. The provider is picked from those listed on Settings
  * (Administration); with none listed it is typed. The phone number, plan and
  * value may wait until the card is given.
  */
@@ -32,6 +32,7 @@ export function SimCardForm({
   inUse = [],
   defaultProvider,
   defaultValueCents,
+  defaultPlan,
   onClose,
   onSaved,
   onOpenExisting,
@@ -48,6 +49,8 @@ export function SimCardForm({
   defaultProvider?: string | null | undefined
   /** The Non-return Value a new card starts with (Settings' default_sim_non_return_value_cents); Add SIM only. */
   defaultValueCents?: number | null | undefined
+  /** The plan a new card starts with (Settings' default_sim_plan); Add SIM only. */
+  defaultPlan?: string | null | undefined
   onClose: () => void
   onSaved: (saved: Asset, added: boolean) => void
   /** Show the card that already has the number. */
@@ -75,7 +78,7 @@ export function SimCardForm({
 
   useEffect(() => {
     if (card === null) return
-    setDraft(existing ? simDraftOf(existing) : emptySimDraft(today, defaultProvider ?? '', defaultValueCents ?? null))
+    setDraft(existing ? simDraftOf(existing) : emptySimDraft(today, defaultProvider ?? '', defaultValueCents ?? null, defaultPlan ?? ''))
     setErrors({})
     setTaken(undefined)
     setFailure(undefined)

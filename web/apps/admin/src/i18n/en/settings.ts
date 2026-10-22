@@ -21,7 +21,7 @@ export const settings = {
   invalidLink: 'Paste the group invite link from WhatsApp: it starts with https://chat.whatsapp.com/',
   simProviders: 'SIM providers',
   simProvidersIntro:
-    'Add SIM offers these providers, the default one chosen first, and fills in the default Non-return Value; Give SIM fills in the default plan for a card without one. A card keeps its own provider, value and plan.',
+    'Add SIM offers these providers, the default one chosen first, and fills in the default Non-return Value and plan; Give SIM fills in the default plan for a card without one. A card keeps its own provider, value and plan.',
   noProviders: 'None listed: Add SIM asks for the provider to be typed.',
   defaultProviderIs: (name: string) => `Add SIM chooses ${name} first.`,
   noDefaultProvider: 'No default: Add SIM asks which one.',
@@ -45,7 +45,7 @@ export const settings = {
     tooLarge: 'At most €100,000,000.',
   },
   defaultPlan: 'Default plan',
-  defaultPlanHint: 'Give SIM fills it in for a card that has no plan yet. Leave it empty for none.',
+  defaultPlanHint: 'Add SIM fills it in for a new card, and Give SIM for a card that has no plan yet. Leave it empty for none.',
   saveProviders: 'Save',
   discard: 'Discard changes',
 }

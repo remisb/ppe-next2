@@ -126,6 +126,9 @@ describe('default provider', () => {
     expect(emptySimDraft('2026-10-09', 'Telia', 2500).value).toBe('25.00')
     expect(emptySimDraft('2026-10-09', 'Telia', 0).value).toBe('0.00')
     expect(emptySimDraft('2026-10-09').value).toBe('')
+    // And the default plan.
+    expect(emptySimDraft('2026-10-09', 'Telia', null, 'Biz 5 GB').plan).toBe('Biz 5 GB')
+    expect(emptySimDraft('2026-10-09').plan).toBe('')
   })
 
   it('offers the providers listed on Settings, and a card’s own when it is not listed', () => {
