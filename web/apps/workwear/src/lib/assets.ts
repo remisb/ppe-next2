@@ -42,6 +42,11 @@ const tilePlaces: Record<Tile, Pick<AssetFilters, 'place' | 'notReturned'>> = {
   notReturned: { place: 'all', notReturned: true },
 }
 
+/** The tile a register opens on: SIM Cards has no Not Returned filter, so its Not Returned figure opens the whole register. */
+export function registerTile<T extends Tile>(kind: AssetKind, tile: T | undefined): T | undefined {
+  return kind === 'SIM' && tile === 'notReturned' ? undefined : tile
+}
+
 /** The filters after choosing tile: its place, the status, provider and search kept (Office + Blocked, §3). */
 export function chooseTile(f: AssetFilters, tile: Tile): AssetFilters {
   return { ...f, ...tilePlaces[tile] }
@@ -74,23 +79,27 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
 }
 
 /**
- * Each register's row of tabs, with counts, in place of tiles: All, on SIM
- * Cards each status, then In Office, on Equipment With Employees (whereabouts
- * known or not), and Not Returned. A tab sets the status or the place and
+ * Each register's row of tabs, with counts, in place of tiles: on SIM Cards
+ * All, Not Activated and Active (Blocked cards are listed under All); on Equipment All, In Office, With Employees
+ * (whereabouts known or not) and Not Returned. A tab sets the status or the place and
  * clears the other, so one is chosen at a time; the search, provider, category
  * and documents stay. The Location filter still keeps the status (Office +
  * Blocked, §3), and a dashboard's tile link opens the screen on its tab (SIM
- * Cards' With Employees on Location's With Employee, as it has no such tab).
+ * Cards' In Office and With Employees on Location's Office and With Employee,
+ * as it has no such tabs).
  */
 export type AssetTab = 'all' | ConnectionStatus | 'inOffice' | 'withEmployees' | 'notReturned'
 
-/** Equipment has no connection status, so its tabs are All and the places; SIM Cards has no With Employees (Location has it). */
+/** Equipment has no connection status, so its tabs are All and the places; SIM Cards' are All, Not Activated and Active (Location has the places). */
 export function assetTabs(kind: AssetKind): AssetTab[] {
-  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] : ['all', 'inOffice', 'withEmployees', 'notReturned']
+  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE'] : ['all', 'inOffice', 'withEmployees', 'notReturned']
 }
 
-export function chooseTab(f: AssetFilters, tab: AssetTab): AssetFilters {
-  const cleared: AssetFilters = { ...f, status: '', place: 'all', notReturned: false }
+/** SIM Cards' tabs have no place: there the Location filter holds it, and a tab keeps it. */
+const tabsHavePlace = (kind: AssetKind) => kind !== 'SIM'
+
+export function chooseTab(kind: AssetKind, f: AssetFilters, tab: AssetTab): AssetFilters {
+  const cleared: AssetFilters = { ...f, status: '', place: tabsHavePlace(kind) ? 'all' : f.place, notReturned: false }
   if (tab === 'all') return cleared
   if (tab === 'inOffice') return { ...cleared, place: 'office' }
   if (tab === 'withEmployees') return { ...cleared, place: 'held' }
@@ -98,8 +107,8 @@ export function chooseTab(f: AssetFilters, tab: AssetTab): AssetFilters {
   return { ...cleared, status: tab }
 }
 
-export function tabPressed(f: AssetFilters, tab: AssetTab): boolean {
-  if (tab === 'all') return f.status === '' && f.place === 'all' && !f.notReturned
+export function tabPressed(kind: AssetKind, f: AssetFilters, tab: AssetTab): boolean {
+  if (tab === 'all') return f.status === '' && (f.place === 'all' || !tabsHavePlace(kind)) && !f.notReturned
   if (tab === 'inOffice') return f.place === 'office' && !f.notReturned
   if (tab === 'withEmployees') return f.place === 'held' && !f.notReturned
   if (tab === 'notReturned') return f.notReturned
@@ -108,22 +117,22 @@ export function tabPressed(f: AssetFilters, tab: AssetTab): boolean {
 
 /** The tabs a count is asked for; the rest follow from them (tabCounts). */
 export function countedTabs(kind: AssetKind): AssetTab[] {
-  return kind === 'SIM' ? ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] : ['all', 'inOffice', 'notReturned']
+  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE'] : ['all', 'inOffice', 'notReturned']
 }
 
 /** The query counting what tab would list: choosing it, then one row, as only the total is read. */
 export function tabCountQuery(kind: AssetKind, f: AssetFilters, tab: AssetTab): AssetQuery {
-  return { ...assetQuery(kind, chooseTab(f, tab), 'inventory', 'asc', 1), page_size: 1 }
+  return { ...assetQuery(kind, chooseTab(kind, f, tab), 'inventory', 'asc', 1), page_size: 1 }
 }
 
 /**
- * Every tab's count from those asked: every SIM has a status, so its All is
- * the three added up; an asset is either in the office or held, so With
- * Employees is All less In Office.
+ * Every tab's count from those asked: an asset is either in the office or
+ * held, so With Employees, where In Office is counted (Equipment), is All
+ * less In Office.
  */
 export function tabCounts(n: Partial<Record<AssetTab, number>>): Partial<Record<AssetTab, number>> {
-  const all = n.all ?? (n.NOT_ACTIVATED ?? 0) + (n.ACTIVE ?? 0) + (n.BLOCKED ?? 0)
-  return { ...n, all, withEmployees: all - (n.inOffice ?? 0) }
+  const all = n.all ?? 0
+  return { ...n, all, ...(n.inOffice === undefined ? {} : { withEmployees: all - n.inOffice }) }
 }
 
 /** What a SIM's copy button in the register puts on the clipboard: SIM: <SIM No.> | Phone: <Phone No.>, the phone left out until known. */

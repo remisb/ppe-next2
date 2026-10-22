@@ -128,7 +128,10 @@ The workwear app is the reference.
   scrolls only when the window itself is narrow. Never cap a list or table's width;
   cap what is read as text or filled in instead (a form's `Card md:max-w-xl`, a sheet,
   the Items Given Record's `max-w-4xl`). An element that bleeds to the screen's edge
-  (Create Order's sticky bar) uses the same gutter as a negative margin.
+  (Create Order's sticky bar) uses the same gutter as a negative margin. A table's cells
+  are one line (`TableCell`'s `whitespace-nowrap`); give a cell of words (a name, a plan, a
+  place, a date with its days) `whitespace-normal` so long real values wrap rather than
+  scroll, as Company Assets' registers do. Numbers, badges and buttons stay one line.
 
 - **Navigation** is one `<nav aria-label="Main">` that changes shape: a bottom tab bar on
   a phone, an icon rail from `md`, a labelled sidebar from `xl`. The rail stays up to `xl`

@@ -49,7 +49,6 @@ export const assets: AssetsText = {
   filters: 'Фильтры',
   filtersCount: (n: number) => `Фильтры (${n})`,
   status: 'Статус',
-  statusAndLocation: 'Статус и место',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Место и возврат',
   all: 'Все',

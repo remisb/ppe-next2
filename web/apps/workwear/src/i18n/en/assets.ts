@@ -52,8 +52,6 @@ export const assets = {
   filters: 'Filters',
   filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
-  // SIM Cards' row of tabs: All, the statuses, In Office and Not Returned.
-  statusAndLocation: 'Status and location',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Location and return',
   all: 'All',

@@ -49,7 +49,6 @@ export const assets: AssetsText = {
   filters: 'Filtrai',
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
-  statusAndLocation: 'Būsena ir vieta',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Vieta ir grąžinimas',
   all: 'Visos',

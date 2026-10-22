@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simDraftOf, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simDraftOf, todayIn } from './assets'
 
 describe('tabs and filters', () => {
   it("a dashboard's tile sets the place and keeps the status: In Office + Blocked (§3)", () => {
     const blocked = { ...noAssetFilters, status: 'BLOCKED' as const }
     const f = chooseTile(blocked, 'inOffice')
     expect(f).toMatchObject({ place: 'office', status: 'BLOCKED', notReturned: false })
-    expect(tabPressed(f, 'inOffice')).toBe(true)
-    expect(tabPressed(f, 'all')).toBe(false)
+    expect(tabPressed('EQUIPMENT', f, 'inOffice')).toBe(true)
+    expect(tabPressed('EQUIPMENT', f, 'all')).toBe(false)
     expect(assetQuery('SIM', f, 'inventory', 'asc', 1)).toEqual({ kind: 'SIM', location: 'OFFICE', status: 'BLOCKED', sort: 'inventory', dir: 'asc', page: 1, page_size: 50 })
   })
   it('With Employees is everyone holding a card, whereabouts known or not', () => {
@@ -22,37 +22,50 @@ describe('tabs and filters', () => {
     const nr = chooseTile({ ...noAssetFilters, place: 'office' }, 'notReturned')
     expect(assetQuery('SIM', nr, 'inventory', 'asc', 1)).toMatchObject({ not_returned: true })
     expect(assetQuery('SIM', nr, 'inventory', 'asc', 1)).not.toHaveProperty('location')
-    expect(tabPressed(chooseTile(nr, 'total'), 'all')).toBe(true)
+    expect(tabPressed('SIM', chooseTile(nr, 'total'), 'all')).toBe(true)
   })
   it('a tab sets the status or the place, clears the other and keeps the rest', () => {
     const f = { ...chooseTile({ ...noAssetFilters, status: 'BLOCKED' as const, provider: 'Telia' }, 'notReturned'), q: 'x' }
-    expect(chooseTab(f, 'inOffice')).toEqual({ ...noAssetFilters, place: 'office', provider: 'Telia', q: 'x' })
-    expect(chooseTab(f, 'withEmployees')).toEqual({ ...noAssetFilters, place: 'held', provider: 'Telia', q: 'x' })
-    expect(chooseTab(f, 'ACTIVE')).toEqual({ ...noAssetFilters, status: 'ACTIVE', provider: 'Telia', q: 'x' })
-    expect(chooseTab(f, 'all')).toEqual({ ...noAssetFilters, provider: 'Telia', q: 'x' })
-    expect(chooseTab({ ...f, place: 'office' }, 'notReturned')).toEqual({ ...noAssetFilters, notReturned: true, provider: 'Telia', q: 'x' })
+    expect(chooseTab('EQUIPMENT', f, 'inOffice')).toEqual({ ...noAssetFilters, place: 'office', provider: 'Telia', q: 'x' })
+    expect(chooseTab('EQUIPMENT', f, 'withEmployees')).toEqual({ ...noAssetFilters, place: 'held', provider: 'Telia', q: 'x' })
+    expect(chooseTab('SIM', f, 'ACTIVE')).toEqual({ ...noAssetFilters, status: 'ACTIVE', provider: 'Telia', q: 'x' })
+    expect(chooseTab('EQUIPMENT', f, 'all')).toEqual({ ...noAssetFilters, provider: 'Telia', q: 'x' })
+    expect(chooseTab('EQUIPMENT', { ...f, place: 'office' }, 'notReturned')).toEqual({ ...noAssetFilters, notReturned: true, provider: 'Telia', q: 'x' })
+  })
+  it("SIM Cards' tabs keep the Location, which holds the place there", () => {
+    const office = { ...noAssetFilters, place: 'office' as const }
+    expect(chooseTab('SIM', office, 'BLOCKED')).toEqual({ ...office, status: 'BLOCKED' })
+    expect(chooseTab('SIM', { ...office, status: 'BLOCKED' }, 'all')).toEqual(office)
+    expect(chooseTab('SIM', office, 'notReturned')).toEqual({ ...office, notReturned: true })
+    expect(tabPressed('SIM', office, 'all')).toBe(true)
+    expect(tabCountQuery('SIM', office, 'ACTIVE')).toMatchObject({ location: 'OFFICE', status: 'ACTIVE' })
   })
   it('marks the tab its filters are; a place with a status marks both', () => {
-    const marked = (f: typeof noAssetFilters) => (['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned'] as const).filter((tab) => tabPressed(f, tab))
+    const marked = (f: typeof noAssetFilters) => (['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned'] as const).filter((tab) => tabPressed('EQUIPMENT', f, tab))
     expect(marked(noAssetFilters)).toEqual(['all'])
-    expect(marked(chooseTab(noAssetFilters, 'withEmployees'))).toEqual(['withEmployees'])
+    expect(marked(chooseTab('EQUIPMENT', noAssetFilters, 'withEmployees'))).toEqual(['withEmployees'])
     expect(marked(chooseTile({ ...noAssetFilters, status: 'BLOCKED' }, 'inOffice'))).toEqual(['BLOCKED', 'inOffice'])
     // A dashboard's Not Returned link opens the screen on its tab.
     expect(marked(chooseTile(noAssetFilters, 'notReturned'))).toEqual(['notReturned'])
   })
   it("Equipment's tabs are All and the places: it has no status", () => {
     expect(assetTabs('EQUIPMENT')).toEqual(['all', 'inOffice', 'withEmployees', 'notReturned'])
-    expect(assetTabs('SIM')).toEqual(['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'])
+    expect(assetTabs('SIM')).toEqual(['all', 'NOT_ACTIVATED', 'ACTIVE'])
+    // SIM Cards has no Not Returned filter: that figure opens the whole register; its places open on Location.
+    expect(registerTile('SIM', 'notReturned')).toBeUndefined()
+    expect(registerTile('SIM', 'inOffice')).toBe('inOffice')
+    expect(registerTile('EQUIPMENT', 'notReturned')).toBe('notReturned')
   })
   it('a tab counts what choosing it would list; All and With Employees follow from the others', () => {
     const f = { ...chooseTile({ ...noAssetFilters, status: 'BLOCKED' as const, provider: 'Telia' }, 'inOffice'), q: ' 612 ' }
-    expect(tabCountQuery('SIM', f, 'ACTIVE')).toEqual({ kind: 'SIM', q: '612', status: 'ACTIVE', provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
-    expect(tabCountQuery('SIM', f, 'inOffice')).toEqual({ kind: 'SIM', q: '612', location: 'OFFICE', provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
-    expect(tabCountQuery('SIM', f, 'notReturned')).toEqual({ kind: 'SIM', q: '612', not_returned: true, provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
-    expect(countedTabs('SIM')).toEqual(['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'])
-    expect(tabCounts({ NOT_ACTIVATED: 2, ACTIVE: 5, BLOCKED: 1, inOffice: 3, notReturned: 1 })).toEqual({
-      all: 8, NOT_ACTIVATED: 2, ACTIVE: 5, BLOCKED: 1, inOffice: 3, withEmployees: 5, notReturned: 1,
-    })
+    // On SIM Cards the place is Location's, so the counts keep it.
+    expect(tabCountQuery('SIM', f, 'ACTIVE')).toEqual({ kind: 'SIM', q: '612', location: 'OFFICE', status: 'ACTIVE', provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
+    expect(tabCountQuery('EQUIPMENT', f, 'inOffice')).toEqual({ kind: 'EQUIPMENT', q: '612', location: 'OFFICE', provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
+    expect(tabCountQuery('EQUIPMENT', f, 'notReturned')).toEqual({ kind: 'EQUIPMENT', q: '612', not_returned: true, provider: 'Telia', sort: 'inventory', dir: 'asc', page: 1, page_size: 1 })
+    // SIM Cards has no place tabs: its All is the statuses added up.
+    // SIM Cards asks for All too: Blocked cards have no tab but are among them.
+    expect(countedTabs('SIM')).toEqual(['all', 'NOT_ACTIVATED', 'ACTIVE'])
+    expect(tabCounts({ all: 8, NOT_ACTIVATED: 2, ACTIVE: 5 })).toEqual({ all: 8, NOT_ACTIVATED: 2, ACTIVE: 5 })
     // Equipment asks for All itself, keeping its category.
     const desks = { ...noAssetFilters, category: 'FURNITURE' as const }
     expect(countedTabs('EQUIPMENT')).toEqual(['all', 'inOffice', 'notReturned'])

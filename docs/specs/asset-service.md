@@ -348,18 +348,21 @@ Company Assets in the sidebar and in a phone's More panel; on the rail, which ha
 for them, the screen switches between the two itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
 their own address:
 
-- **Tabs**, in place of tiles (§3's figures): All, Not Activated, Active, Blocked, In
-  Office and Not Returned, below the search and always in sight, a phone included (no With
-  Employees tab: the Location filter's With Employee lists those cards). One is chosen at a
-  time: a tab sets the status or the place (In Office, Not Returned) and clears the other, keeping the
-  search, provider and documents (`chooseTab`). Each shows how many SIMs choosing it
-  would list (`tabCountQuery`: one list request, one row, for each status, In Office and
-  Not Returned; All is the statuses added up, as every SIM has a status). Each has a tooltip on hover or keyboard focus (`HelpTooltip`, also
-  its description for screen readers): a status's meaning and what to do about it, and for
-  the others what they count and how they overlap (In Office and With Employees make up
-  All; Not Returned is also With Employees). Two to a row on a phone, three up to `xl`,
-  then one row, each as wide as its words. A dashboard's figure link (`?show=…`) opens the
-  screen on its tab; With Employees, which has none here, on Location's With Employee. The dashboards' Company Assets card keeps the overlap as its description.
+- **Tabs** (group "Status"), in place of tiles (§3's figures): All, Not Activated and
+  Active, below the search and always in sight, a phone included. Blocked cards have no tab
+  (they are under All, with their Blocked badge), and there are no place or Not Returned tabs: the Location filter (Office, With Employee, Unknown) holds the
+  place, and a tab keeps it; Not Returned cards are not filtered here (their rows show the
+  Not Returned badge). One tab is chosen at a time, keeping the location, search, provider
+  and documents (`chooseTab`). Each shows how many SIMs choosing it would list
+  (`tabCountQuery`: one list request, one row, for All and each of the two statuses). Each has a tooltip on hover or keyboard focus
+  (`HelpTooltip`, also its description for screen readers): a status's meaning and what to
+  do about it, and All's what it counts. One row everywhere, a phone and beside an open
+  card included, each as wide as its words; from a tablet they lead the filters' row
+  (tabs, search, Location, Provider, Documents), one line where it fits (about 1,230px of
+  list, so a wide screen with no card open) and wrapping where it does not. A dashboard's figure link
+  (`?show=…`) opens the screen on its tab; In Office and With Employees, which have none
+  here, on Location's Office and With Employee, with All; Not Returned on the whole
+  register (`registerTile`). The dashboards' Company Assets card keeps the overlap as its description.
 - **Filters**: the search (numbers with spaces ignored, or a holder's name), the location
   (any, Office, with an employee, Unknown), the provider and the documents, on one line
   under the tabs, the choices shadcn's Select (Equipment has the category in place of the

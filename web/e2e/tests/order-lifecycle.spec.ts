@@ -1442,7 +1442,8 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await form.getByLabel('Non-return Value').fill('')
   // The default plan too, which this card changes.
   await expect(form.getByLabel('Plan')).toHaveValue('Biz 5 GB')
-  await form.getByLabel('Plan').fill('Biz 10 GB')
+  // A plan as long as real ones run: the register wraps it rather than scrolling sideways (phone and tablet: …).
+  await form.getByLabel('Plan').fill('Verslo planas: neriboti pokalbiai ir SMS, 50 GB duomenų, tarptinklinis ryšys ES')
   await form.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()
   const card = page.getByRole('row', { name: /SIM-000001/ })
@@ -1459,7 +1460,7 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card).toContainText('Office')
   // No tiles here: the tabs count instead.
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
-  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^Not Activated\s*1/ })).toBeVisible()
   // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
   await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
   await expect(page.getByText(/Email your provider to activate this SIM/)).toBeVisible()
@@ -1476,20 +1477,20 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await form.getByRole('button', { name: 'Open the existing SIM' }).click()
   await expect(page.getByLabel('Search SIMs')).toHaveValue('SIM-000001')
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
-  // Each tab counts what choosing it would list, under the search: the one card, Active and in the office.
-  const tabs = page.getByRole('group', { name: 'Status and location' })
-  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1', 'Blocked0', 'In Office1', 'Not Returned0'])
-  // A tab sets the status or the place and clears the other.
-  await tabs.getByRole('button', { name: /^In Office/ }).click()
+  // Each tab counts what choosing it would list, under the search: the one card, Active. Only statuses: Location has the places.
+  const tabs = page.getByRole('group', { name: 'Status', exact: true })
+  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1'])
+  // One tab at a time.
+  await tabs.getByRole('button', { name: /^Not Activated/ }).click()
   await tabs.getByRole('button', { name: /^Active/ }).click()
-  await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'false')
-  // Location keeps the status: Office with Blocked is the blocked cards in the office (§3).
-  await tabs.getByRole('button', { name: /^Blocked/ }).click()
+  await expect(tabs.getByRole('button', { name: /^Not Activated/ })).toHaveAttribute('aria-pressed', 'false')
+  // Location keeps the status: Office with Not Activated is the cards not activated in the office (§3).
+  await tabs.getByRole('button', { name: /^Not Activated/ }).click()
   // The register's filters are shadcn's Select, as Sort by: their own list, opened by a click.
   await page.getByRole('combobox', { name: 'Location' }).click()
   await page.getByRole('option', { name: 'Office', exact: true }).click()
-  await expect(tabs.getByRole('button', { name: /^Blocked/ })).toHaveAttribute('aria-pressed', 'true')
-  await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(tabs.getByRole('button', { name: /^Not Activated/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Office/)
   await expect(page.getByText('No SIMs match these filters.')).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters' }).first().click()
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
@@ -1711,19 +1712,25 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
 
-  // The Dashboard's Company Assets card opens the register on the figure's tab.
+  // The Dashboard's Company Assets card opens the register on the figure's tab; SIM Cards' tabs are its statuses,
+  // so In Office and With Employees open it on Location's Office and With Employee, with All.
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs\s*1/ })).toBeVisible()
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=in-office$/)
-  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
-  // SIM Cards has no With Employees tab: its figure opens the register on Location's With Employee, no tab chosen.
+  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Office/)
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^All/])
   await openTab('Dashboard')
   await assetsCard.getByRole('link', { name: /With Employees\s*0/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=with-employees$/)
   await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/With Employee/)
-  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { pressed: true })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^All/])
+  // SIM Cards has no Not Returned filter: that figure opens the whole register.
+  await openTab('Dashboard')
+  await assetsCard.getByRole('link', { name: /Not Returned\s*0/ }).click()
+  await expect(page).toHaveURL(/\/assets\/sim-cards$/)
+  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Any location/)
 })
 
 test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {
@@ -1938,6 +1945,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
         [...document.querySelectorAll('[data-slot=table-container]')].every((t) => t.scrollWidth <= t.clientWidth),
     )
 
+  // How many rows SIM Cards' tabs take.
+  const tabRows = async () =>
+    new Set(await page.getByRole('group', { name: 'Status', exact: true }).getByRole('button').evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().top))).size
+
   // Each screen is measured once its data is in: a table measured while loading always fits.
   for (const [tab, content] of [
     ['Dashboard', 'Spending by month'],
@@ -1963,6 +1974,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     // In the screen itself: the navigation's foot names the signed-in user too.
     await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()
     expect(await fits(), `${tab} scrolls sideways`).toBe(true)
+    if (tab === 'Company Assets') expect(await tabRows(), "SIM Cards' tabs on a phone").toBe(1)
     // The bar is one row of tabs, however many sections the app shows.
     const bar = await page.getByRole('navigation', { name: 'Main' }).boundingBox()
     expect(bar!.height, `${tab}: the tab bar is more than one row`).toBeLessThan(100)
@@ -2122,9 +2134,19 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     expect(await fits(), `the item page scrolls sideways at ${width}px`).toBe(true)
     // A SIM open beside the register (from 1024px; on its own below): the register drops to its short columns.
     await openTab('Company Assets')
+    // SIM Cards' tabs, search and filters are one row: one line where it fits, as at 1920px with no SIM open.
+    if (width === 1920) {
+      const middles = await page
+        .getByRole('region', { name: 'Filters' })
+        .evaluate((r) => [...r.children].map((c) => c.getBoundingClientRect()).filter((b) => b.width > 4 && b.height > 4).map((b) => b.top + b.height / 2))
+      expect(middles.length, 'tabs, search, Location, Provider, Documents').toBe(5)
+      expect(Math.max(...middles) - Math.min(...middles), "SIM Cards' tabs, search and filters on one line at 1920px").toBeLessThan(4)
+    }
     await page.getByRole('main').getByRole('link', { name: /612 40118/ }).click()
     await expect(page.getByRole('complementary', { name: 'SIM', exact: true }).getByRole('heading', { name: '+370 612 40118' })).toBeVisible()
     expect(await fits(), `a SIM beside the register scrolls sideways at ${width}px`).toBe(true)
+    // SIM Cards' tabs stay one row beside the open card (from 1024px; below it the card takes the screen).
+    if (width >= 1024) expect(await tabRows(), `SIM Cards' tabs beside a SIM at ${width}px`).toBe(1)
     // The rail (and the sidebar) lists Company Assets' two screens itself; the register has no switcher of its own.
     const mainNav = page.getByRole('navigation', { name: 'Main' })
     await expect(mainNav.getByRole('link', { name: 'SIM Cards' })).toHaveAttribute('aria-current', 'page')

@@ -6,6 +6,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ArrowRight } from 'lucide-react'
 
 import { t } from '@/i18n'
+import { registerTile } from '@/lib/assets'
 import { type AssetTile, type Route, linkTo } from '@/lib/router'
 
 /**
@@ -44,11 +45,12 @@ function Figures({
   equipment: boolean
   navigate: (to: Route) => void
 }) {
-  const rows: { label: string; value: number; tile?: AssetTile; alert?: boolean }[] = [
+  const rows: { label: string; value: number; tile?: AssetTile | undefined; alert?: boolean }[] = [
     { label: total, value: s.total },
     { label: t.assets.inOffice, value: s.in_office, tile: 'inOffice' },
     { label: t.assets.withEmployees, value: s.with_employees, tile: 'withEmployees' },
-    { label: t.assets.notReturned, value: s.not_returned, tile: 'notReturned', alert: s.not_returned > 0 },
+    // SIM Cards has no Not Returned filter: its figure opens the whole register (registerTile).
+    { label: t.assets.notReturned, value: s.not_returned, tile: registerTile(equipment ? 'EQUIPMENT' : 'SIM', 'notReturned'), alert: s.not_returned > 0 },
   ]
   return (
     <div className="not-first:mt-3">

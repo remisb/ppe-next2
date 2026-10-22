@@ -25,6 +25,7 @@ import {
   type AssetFilters,
   type Place,
   chooseTile,
+  registerTile,
   assetQuery,
   documentsText,
   categories,
@@ -115,8 +116,9 @@ export function Assets({
   const canManage = session.can('assets.manage')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
-  // A dashboard's Company Assets card opens the register on the tab of one of its tiles.
-  const [filters, setFilters] = useState<AssetFilters>(() => (tile ? chooseTile(noAssetFilters, tile) : noAssetFilters))
+  // A dashboard's Company Assets card opens the register on the tab of one of its tiles (SIM Cards' places on Location).
+  const opened = registerTile(kind, tile)
+  const [filters, setFilters] = useState<AssetFilters>(() => (opened ? chooseTile(noAssetFilters, opened) : noAssetFilters))
   // The search as typed; it filters a moment after typing stops.
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortState<AssetSort>>(byNumber)
@@ -142,7 +144,7 @@ export function Assets({
   const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
   const summary = useLoad(() => client.assets.summary(kind), [reloads])
   // The tabs each show how many choosing them would list; they set the status and place, so only the rest counts.
-  const counted = chooseTab(filters, 'all')
+  const counted = chooseTab(kind, filters, 'all')
   const counts = useLoad(
     () =>
       Promise.all(countedTabs(kind).map((tab) => client.assets.list(tabCountQuery(kind, filters, tab)).then((r) => [tab, r.total] as const))).then((pairs) =>
@@ -194,7 +196,7 @@ export function Assets({
   }
 
   // The register's address keeps the tile it was opened on, so opening a SIM or item keeps the register as it is.
-  const at = tile ? { tile } : {}
+  const at = opened ? { tile: opened } : {}
   const openAsset = (id: string) => navigate({ name: register, ...at, asset: id }, { scroll: !wide() })
   const close = () => navigate({ name: register, ...at }, { scroll: false })
 
@@ -220,7 +222,7 @@ export function Assets({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selected, shown, navigate, tile, register])
+  }, [selected, shown, navigate, opened, register])
 
   // The open SIM's or item's row stays in view as J and K move through the register.
   useEffect(() => {
@@ -266,6 +268,40 @@ export function Assets({
   // Phone only: what Filters folds away.
   const folded = cn(!showFilters && 'max-md:hidden')
 
+  /**
+   * The tabs with their counts, always in sight, in place of tiles, each as wide as its words (Russian needs it).
+   * SIM Cards' three are one row everywhere and lead its filters' row, so tabs, search and filters are one line
+   * where it fits and wrap where it does not, beside an open SIM too. Equipment's four sit above its filters, two
+   * to a row on a phone and beside an open item, else one row.
+   */
+  const tabGroup = (
+    <div
+      role="group"
+      aria-label={sim ? t.assets.status : t.assets.locationAndReturn}
+      className={cn(
+        'grid gap-1 rounded-lg bg-muted p-1',
+        sim
+          ? 'grid-flow-col auto-cols-auto sm:inline-grid sm:self-start md:self-auto'
+          : beside
+            ? 'grid-cols-2'
+            : 'grid-cols-2 sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
+      )}
+    >
+      {assetTabs(kind).map((tab) => (
+        <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
+          <button type="button" aria-pressed={tabPressed(kind, filters, tab)} onClick={() => update(chooseTab(kind, filters, tab))} className={segment}>
+            {tabLabels[tab]}
+            {counts.data ? (
+              <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
+                {counts.data[tab]}
+              </span>
+            ) : null}
+          </button>
+        </HelpTooltip>
+      ))}
+    </div>
+  )
+
   return (
     <>
       <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
@@ -287,35 +323,13 @@ export function Assets({
             }
           />
           <div className="mb-4 flex flex-col gap-3">
+            {sim ? null : tabGroup}
             {/*
-              The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' six
-              three to a row and Equipment's four in one, and from the sidebar's width one row, each as wide as its words (Russian needs it).
+              The search and the filters on one line, as wide as it lets them (on SIM Cards after the tabs), wrapping where it
+              does not fit; on a phone the search stays in view and Filters folds away the rest.
             */}
-            <div
-              role="group"
-              aria-label={sim ? t.assets.statusAndLocation : t.assets.locationAndReturn}
-              className={cn(
-                'grid grid-cols-2 gap-1 rounded-lg bg-muted p-1',
-                // Beside an open SIM or item the register is narrow: the tabs stay three (Equipment's two) to a row there.
-                !beside && 'xl:inline-grid xl:grid-flow-col xl:auto-cols-auto xl:grid-cols-none xl:self-start',
-                sim ? 'sm:grid-cols-3' : beside ? 'sm:grid-cols-2' : 'sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
-              )}
-            >
-              {assetTabs(kind).map((tab) => (
-                <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
-                  <button type="button" aria-pressed={tabPressed(filters, tab)} onClick={() => update(chooseTab(filters, tab))} className={segment}>
-                    {tabLabels[tab]}
-                    {counts.data ? (
-                      <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
-                        {counts.data[tab]}
-                      </span>
-                    ) : null}
-                  </button>
-                </HelpTooltip>
-              ))}
-            </div>
-            {/* The search and the filters on one line, as wide as it lets them; on a phone the search stays in view and Filters folds away the rest. */}
             <div id="asset-filters" role="region" aria-label={t.assets.filters} className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+              {sim ? tabGroup : null}
               <Input
                 type="search"
                 data-shortcut="search"
@@ -382,7 +396,10 @@ export function Assets({
           ) : (
             <>
               <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
-                {/* Two-word headers wrap, so the nine columns fit beside the sidebar or rail (from 1100px, where the table starts). */}
+                {/*
+                  Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
+                  nine columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
+                */}
                 <TableHeader className="[&_th]:whitespace-normal">
                   <TableRow>
                     {sim ? (
@@ -453,7 +470,7 @@ export function Assets({
                         )}
                         {/* Who holds the card, also when it is Unknown (its last holder); where it is has a column of its own. */}
                         {sim ? (
-                          <TableCell className="stacked:hidden">
+                          <TableCell className="whitespace-normal stacked:hidden">
                             {open ? (
                               <a
                                 {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
@@ -477,7 +494,7 @@ export function Assets({
                           {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
                         </TableCell>
                         {sim && !beside ? (
-                        <TableCell className="stacked:hidden">
+                        <TableCell className="whitespace-normal stacked:hidden">
                           {a.provider}
                           {a.plan ? <span className="block text-xs text-muted-foreground">{a.plan}</span> : null}
                         </TableCell>
@@ -485,7 +502,7 @@ export function Assets({
                         {sim ? (
                           <>
                             <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
-                            <TableCell className="stacked:hidden">
+                            <TableCell className="whitespace-normal stacked:hidden">
                               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{locationText(a)}</span>
                                 {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
@@ -494,12 +511,12 @@ export function Assets({
                           </>
                         ) : (
                           <>
-                            <TableCell className="stacked:hidden">
+                            <TableCell className="whitespace-normal stacked:hidden">
                               {a.name}
                               {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
                             </TableCell>
                             {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '–'}</TableCell>}
-                            <TableCell className="stacked:hidden">
+                            <TableCell className="whitespace-normal stacked:hidden">
                               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
                                 {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
@@ -510,7 +527,7 @@ export function Assets({
                         )}
                         {beside ? null : (
                           <>
-                            <TableCell className="stacked:hidden">
+                            <TableCell className="whitespace-normal stacked:hidden">
                               {open ? (
                                 <>
                                   <span className="tabular-nums">{formatDay(open.given_date)}</span>
@@ -520,7 +537,7 @@ export function Assets({
                                 '–'
                               )}
                             </TableCell>
-                            <TableCell className="stacked:hidden">{documentsText(open) ?? '–'}</TableCell>
+                            <TableCell className="whitespace-normal stacked:hidden">{documentsText(open) ?? '–'}</TableCell>
                             <TableCell className={cn('max-w-48 truncate stacked:hidden', sim && 'hidden 2xl:table-cell')} title={a.comment || undefined}>
                               {a.comment || '–'}
                             </TableCell>
