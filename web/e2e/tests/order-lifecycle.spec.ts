@@ -1478,7 +1478,7 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
   // Each tab counts what choosing it would list, under the search: the one card, Active and in the office.
   const tabs = page.getByRole('group', { name: 'Status and location' })
-  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1', 'Blocked0', 'In Office1', 'With Employees0', 'Not Returned0'])
+  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1', 'Blocked0', 'In Office1', 'Not Returned0'])
   // A tab sets the status or the place and clears the other.
   await tabs.getByRole('button', { name: /^In Office/ }).click()
   await tabs.getByRole('button', { name: /^Active/ }).click()
@@ -1718,6 +1718,12 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=in-office$/)
   await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'true')
+  // SIM Cards has no With Employees tab: its figure opens the register on Location's With Employee, no tab chosen.
+  await openTab('Dashboard')
+  await assetsCard.getByRole('link', { name: /With Employees\s*0/ }).click()
+  await expect(page).toHaveURL(/\/assets\/sim-cards\?show=with-employees$/)
+  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/With Employee/)
+  await expect(page.getByRole('group', { name: 'Status and location' }).getByRole('button', { pressed: true })).toHaveCount(0)
 })
 
 test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {

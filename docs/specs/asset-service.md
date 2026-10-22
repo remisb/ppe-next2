@@ -349,18 +349,17 @@ for them, the screen switches between the two itself. The old address `/assets` 
 their own address:
 
 - **Tabs**, in place of tiles (§3's figures): All, Not Activated, Active, Blocked, In
-  Office, With Employees and Not Returned, below the search and always in sight, a phone
-  included. One is chosen at a time: a tab sets the status or the place (In Office, With
-  Employees whereabouts known or not, Not Returned) and clears the other, keeping the
+  Office and Not Returned, below the search and always in sight, a phone included (no With
+  Employees tab: the Location filter's With Employee lists those cards). One is chosen at a
+  time: a tab sets the status or the place (In Office, Not Returned) and clears the other, keeping the
   search, provider and documents (`chooseTab`). Each shows how many SIMs choosing it
   would list (`tabCountQuery`: one list request, one row, for each status, In Office and
-  Not Returned; All is the statuses added up, as every SIM has a status, and With Employees
-  is All less In Office). Each has a tooltip on hover or keyboard focus (`HelpTooltip`, also
+  Not Returned; All is the statuses added up, as every SIM has a status). Each has a tooltip on hover or keyboard focus (`HelpTooltip`, also
   its description for screen readers): a status's meaning and what to do about it, and for
   the others what they count and how they overlap (In Office and With Employees make up
   All; Not Returned is also With Employees). Two to a row on a phone, three up to `xl`,
   then one row, each as wide as its words. A dashboard's figure link (`?show=…`) opens the
-  screen on its tab. The dashboards' Company Assets card keeps the overlap as its description.
+  screen on its tab; With Employees, which has none here, on Location's With Employee. The dashboards' Company Assets card keeps the overlap as its description.
 - **Filters**: the search (numbers with spaces ignored, or a holder's name), the location
   (any, Office, with an employee, Unknown), the provider and the documents, on one line
   under the tabs, the choices shadcn's Select (Equipment has the category in place of the

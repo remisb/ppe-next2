@@ -853,7 +853,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Brief:** Total, In Office, With Employees, Not Returned on the dashboards' Company
   Assets card; tapping one opens the register on its tab. The registers show the same
   figures as tabs instead, each with its count: SIM Cards All, the three statuses, In
-  Office, With Employees, Not Returned; Equipment the same without the statuses.
+  Office, Not Returned (its With Employees is the Location filter's With Employee);
+  Equipment All, In Office, With Employees, Not Returned.
 - **Detail:** they overlap (a Not Returned card is also With Employees), so they are never
   added up (§3). Total excludes written-off cards.
 

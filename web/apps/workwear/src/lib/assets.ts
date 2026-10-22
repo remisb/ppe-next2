@@ -75,17 +75,18 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
 
 /**
  * Each register's row of tabs, with counts, in place of tiles: All, on SIM
- * Cards each status, then In Office, With Employees (whereabouts known or
- * not) and Not Returned. A tab sets the status or the place and clears the
- * other, so one is chosen at a time; the search, provider, category and
- * documents stay. The Location filter still keeps the status (Office +
- * Blocked, §3), and a dashboard's tile link opens the screen on its tab.
+ * Cards each status, then In Office, on Equipment With Employees (whereabouts
+ * known or not), and Not Returned. A tab sets the status or the place and
+ * clears the other, so one is chosen at a time; the search, provider, category
+ * and documents stay. The Location filter still keeps the status (Office +
+ * Blocked, §3), and a dashboard's tile link opens the screen on its tab (SIM
+ * Cards' With Employees on Location's With Employee, as it has no such tab).
  */
 export type AssetTab = 'all' | ConnectionStatus | 'inOffice' | 'withEmployees' | 'notReturned'
 
-/** Equipment has no connection status, so its tabs are All and the places. */
+/** Equipment has no connection status, so its tabs are All and the places; SIM Cards has no With Employees (Location has it). */
 export function assetTabs(kind: AssetKind): AssetTab[] {
-  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned'] : ['all', 'inOffice', 'withEmployees', 'notReturned']
+  return kind === 'SIM' ? ['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'] : ['all', 'inOffice', 'withEmployees', 'notReturned']
 }
 
 export function chooseTab(f: AssetFilters, tab: AssetTab): AssetFilters {

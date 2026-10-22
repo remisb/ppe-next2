@@ -288,7 +288,7 @@ export function Assets({
           />
           <div className="mb-4 flex flex-col gap-3">
             {/*
-              The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' seven
+              The tabs with their counts, always in sight, in place of tiles: two to a row on a phone, then SIM Cards' six
               three to a row and Equipment's four in one, and from the sidebar's width one row, each as wide as its words (Russian needs it).
             */}
             <div

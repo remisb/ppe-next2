@@ -42,7 +42,7 @@ describe('tabs and filters', () => {
   })
   it("Equipment's tabs are All and the places: it has no status", () => {
     expect(assetTabs('EQUIPMENT')).toEqual(['all', 'inOffice', 'withEmployees', 'notReturned'])
-    expect(assetTabs('SIM')).toEqual(['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'withEmployees', 'notReturned'])
+    expect(assetTabs('SIM')).toEqual(['all', 'NOT_ACTIVATED', 'ACTIVE', 'BLOCKED', 'inOffice', 'notReturned'])
   })
   it('a tab counts what choosing it would list; All and With Employees follow from the others', () => {
     const f = { ...chooseTile({ ...noAssetFilters, status: 'BLOCKED' as const, provider: 'Telia' }, 'inOffice'), q: ' 612 ' }
