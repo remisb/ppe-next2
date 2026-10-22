@@ -123,6 +123,13 @@ writes `docs/guide` from the desktop guide, so never edit `docs/guide` by hand.
 Mobile first: unprefixed classes are the phone layout, `sm:`/`md:`/`lg:` add to it.
 The workwear app is the reference.
 
+- **Screen width**: `<main>` has no width cap and the same gutter from a tablet up
+  (`px-4`, `md:px-6`), in both apps, so a list grows with the window and stacks or
+  scrolls only when the window itself is narrow. Never cap a list or table's width;
+  cap what is read as text or filled in instead (a form's `Card md:max-w-xl`, a sheet,
+  the Items Given Record's `max-w-4xl`). An element that bleeds to the screen's edge
+  (Create Order's sticky bar) uses the same gutter as a negative margin.
+
 - **Navigation** is one `<nav aria-label="Main">` that changes shape: a bottom tab bar on
   a phone, an icon rail from `md`, a labelled sidebar from `xl`. The rail stays up to `xl`
   so a landscape tablet (1024px) keeps room for tables; the sidebar's 15rem there would

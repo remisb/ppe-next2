@@ -171,7 +171,7 @@ export function App() {
       <main
         id="main"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none md:px-6 md:py-8 xl:px-10"
+        className="w-full min-w-0 px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none md:px-6 md:py-8"
       >
         {route.name === 'overview' ? <OverviewPage navigate={navigate} /> : null}
         {route.name === 'users' ? <UsersPage navigate={navigate} /> : null}

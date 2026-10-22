@@ -2073,9 +2073,10 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   expect(await fits(), 'the record scrolls sideways').toBe(true)
 
-  // Tablet and narrow-laptop widths, beside the side rail: a table either fits
-  // side by side or stacks, never scrolls. 920px left Orders 8rem too narrow.
-  for (const width of [768, 920, 1100, desktop.width]) {
+  // Tablet, laptop and wide desktop widths, beside the rail or sidebar: a table either fits
+  // side by side or stacks, never scrolls. 920px left Orders 8rem too narrow. The screen
+  // has no width cap, so 1920px checks a table that has the whole width to itself.
+  for (const width of [768, 920, 1100, desktop.width, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 })
     for (const [tab, content] of [
       ['Dashboard', 'Spending by month'],

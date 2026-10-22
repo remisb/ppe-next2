@@ -442,8 +442,8 @@ export function App() {
         id="main"
         tabIndex={-1}
         className={cn(
-          'mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none',
-          'md:px-6 md:py-8 xl:px-10 print:max-w-none print:p-0',
+          'w-full min-w-0 px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none',
+          'md:px-6 md:py-8 print:p-0',
         )}
       >
         {route.name === 'dashboard' ? <Dashboard navigate={navigate} /> : null}

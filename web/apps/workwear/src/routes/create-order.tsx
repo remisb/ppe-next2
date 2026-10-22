@@ -565,7 +565,7 @@ function OrderSummary({
       aria-label={t.order.orderSummary}
       className={cn(
         'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
-        '-mx-4 px-4 md:-mx-6 md:px-6 xl:-mx-10 xl:px-10 print:hidden',
+        '-mx-4 px-4 md:-mx-6 md:px-6 print:hidden',
         'composer-wide:top-6 composer-wide:bottom-auto composer-wide:mx-0 composer-wide:mt-0 composer-wide:flex composer-wide:flex-col composer-wide:gap-4 composer-wide:rounded-lg composer-wide:border composer-wide:bg-card composer-wide:p-4 composer-wide:backdrop-blur-none',
       )}
     >

@@ -396,4 +396,5 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if
-  any screen or table scrolls sideways at 375, 768, 920, 1100 or 1280px.
+  any screen or table scrolls sideways at 375, 768, 920, 1100, 1280, 1440 or 1920px.
+  The screen has no width cap (lists grow with the window); see "Screen width" there.
