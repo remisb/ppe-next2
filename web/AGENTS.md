@@ -149,7 +149,9 @@ The workwear app is the reference.
   sidebar alone groups Orders, Item Catalogue and Item Sets under **Workwear**
   (`workwearSections` in `app.tsx`), in Orders' place: the three are listed under it as
   `navSubItem`s (Orders with its count), and their own links are `xl:hidden`; the bar,
-  More and the rail keep them as sections. In the sidebar, Workwear and a section with
+  More and the rail keep them as sections. The sidebar also lists Employees below Company
+  Assets (`belowAssets`): an `xl`-only link there, its own link `xl:hidden`, so the focus
+  order is the order on screen; the bar and the rail keep it after Orders. In the sidebar, Workwear and a section with
   screens are a `SidebarGroup`: its row is a button (`aria-expanded`, a chevron) that shows
   or hides the list and opens no screen, open at first and remembered per user on the
   device (`useOpenKey('nav.<id>')`); it is `aria-current="true"` while it is the current

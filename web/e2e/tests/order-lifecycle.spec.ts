@@ -571,6 +571,10 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(workwear).toHaveAccessibleName('Workwear (1 waiting for confirmation)')
   await workwear.click()
   await expect(workwear).toHaveAccessibleName('Workwear')
+  // The sidebar lists Employees below Company Assets (the bar and the rail keep it after Orders).
+  const assets = await mainNav.getByText('Company Assets', { exact: true }).filter({ visible: true }).boundingBox()
+  const employees = await mainNav.getByRole('link', { name: 'Employees', exact: true }).boundingBox()
+  expect(employees!.y, 'Employees below Company Assets in the sidebar').toBeGreaterThan(assets!.y)
   // The status tabs count what is waiting and what was given.
   await expect(page.getByRole('button', { name: 'Ordered 1' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()

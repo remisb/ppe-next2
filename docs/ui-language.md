@@ -108,7 +108,7 @@ Rules:
     short centred links under its icon (SIM Cards, Equipment), a long word hyphenated.
   - **Sidebar** (desktop, from `xl`): icons beside full labels, a section's screens listed
     under it, **Search…** at the top. In the staff app, Orders, Item Catalogue and Item Sets
-    are listed under **Workwear** there. A click on Workwear or Company Assets shows or
+    are listed under **Workwear** there, and Employees comes below Company Assets. A click on Workwear or Company Assets shows or
     hides its list (a chevron says which), remembered per user on the device; closed,
     Workwear shows Orders' count of orders waiting for confirmation.
   - **Foot links**: at the foot of the rail and sidebar, and in More: Help, Keyboard

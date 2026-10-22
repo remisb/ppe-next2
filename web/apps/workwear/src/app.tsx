@@ -74,6 +74,8 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
  * the bar, More and the rail keep them as sections of their own.
  */
 const workwearSections: Route['name'][] = ['history', 'catalogue', 'itemSets']
+/** The section the desktop sidebar lists below Company Assets; the bar and the rail keep it in its place. */
+const belowAssets: Route['name'] = 'employees'
 /** A start screen's tab: the Dashboard for administrators, managers and the employee role alike. */
 const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): Tab => ({
   route: { name },
@@ -207,9 +209,11 @@ export function App() {
   const link = (to: Route) => linkTo(to, navigate)
   const workwear = shownTabs.filter((tab) => workwearSections.includes(tab.route.name))
   const workwearCurrent = workwear.find((tab) => isCurrent(route.name, tab.route.name))
+  const movedDown = shownTabs.find((tab) => tab.route.name === belowAssets)
   /**
    * A section's link, and in the rail (and under More, the phone's More panel) the screens listed under it.
-   * The sidebar shows a section with screens, and Workwear in the place of its first section, as a SidebarGroup instead (xl:hidden).
+   * The sidebar shows a section with screens, and Workwear in the place of its first section, as a SidebarGroup instead (xl:hidden),
+   * and Employees below Company Assets.
    */
   const section = (tab: Tab, props: Omit<Parameters<typeof NavLink>[0], 'tab' | 'current' | 'link'> = {}, subList = navSubList) => {
     const current = isCurrent(route.name, tab.route.name)
@@ -246,7 +250,7 @@ export function App() {
           current={screen ? 'section' : current}
           link={link}
           {...props}
-          className={cn(props.className, (workwear.includes(tab) || tab.screens) && 'xl:hidden')}
+          className={cn(props.className, (workwear.includes(tab) || tab.screens || tab === movedDown) && 'xl:hidden')}
         />
         {tab.screens ? (
           <div className={cn(subList, 'xl:hidden')}>
@@ -255,6 +259,11 @@ export function App() {
                 {s.label}
               </a>
             ))}
+          </div>
+        ) : null}
+        {tab.route.name === 'simCards' && movedDown ? (
+          <div className="hidden xl:contents">
+            <NavLink tab={movedDown} current={isCurrent(route.name, movedDown.route.name)} link={link} />
           </div>
         ) : null}
       </Fragment>
