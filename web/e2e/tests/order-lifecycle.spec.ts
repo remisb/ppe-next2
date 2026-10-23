@@ -1450,10 +1450,11 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card).toContainText('0089370011')
   // The register copies nothing: the numbers are copied on the card.
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(0)
-  // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it; Location says only where.
+  // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it or where
+  // it is (Office, Unknown) in one Employee column, with no Location column.
   await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone \/ SIM/)
   await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Employee/)
-  await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toHaveCount(0)
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
@@ -1592,6 +1593,8 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   // One action changed the holder, the location, the form and the history (§7).
   await expect(pane.getByRole('link', { name: 'Ona Kazlauskienė' }).first()).toBeVisible()
   await expect(pane.getByText('With Employee')).toBeVisible()
+  // In the list beside it, the Employee column names the holder, linked to their page.
+  await expect(page.getByRole('row', { name: /0089370011/ }).getByRole('link', { name: 'Ona Kazlauskienė' })).toBeVisible()
   const assignments = pane.getByRole('region', { name: 'Assignments' })
   await expect(assignments.getByText('Paper form signed')).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
@@ -1631,10 +1634,10 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(pane.getByText('Unknown', { exact: true }).first()).toBeVisible()
   await expect(pane.getByText('Not Returned').first()).toBeVisible()
   await expect(pane.getByText('Active', { exact: true }).first()).toBeVisible()
-  // In the list: the Employee column names the last holder, the Location column says only where.
+  // In the list: the Employee column says Unknown, with the Not Returned mark; the card keeps the last holder.
   await openTab('Company Assets')
   const heldRow = page.getByRole('row', { name: /SIM-000001/ })
-  await expect(heldRow.getByRole('link', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  await expect(heldRow.getByRole('link', { name: 'Ona Kazlauskienė' })).toHaveCount(0)
   await expect(heldRow.getByRole('cell').filter({ hasText: /^Unknown/ })).toHaveText(/^Unknown\s*Not Returned$/)
   await heldRow.getByRole('link', { name: /0089370011/ }).click()
 
@@ -2108,7 +2111,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['Orders', recordNumber],
       ['Employees', 'Ona Kazlauskienė'],
       ['Item Catalogue', 'Protective gloves'],
-      // Nine columns beside the rail or sidebar: the headers wrap, the comment waits for 2xl.
+      // Eight columns beside the rail or sidebar: the headers wrap, the comment waits for 2xl.
       ['Company Assets', '+370 612 40118'],
       ['Users', admin.email],
       ['Roles & permissions', 'Built-in'],

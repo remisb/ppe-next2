@@ -802,15 +802,15 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** stays the holder when the asset is marked Not Returned, and is still shown as
   the last holder when the whereabouts are Unknown (§3, §13). An employee leaving the company
   never ends an assignment.
-- **UI:** Held By column; SIM Cards' Employee column.
+- **UI:** Held By column; SIM Cards' Employee column (which says Office or Unknown when no one holds the card, or its whereabouts are unknown).
 
 ### Location
 - **Brief:** where an asset physically is: **Office**, **With Employee** or **Unknown**.
 - **Detail:** follows from the assignment, never typed: no open assignment is Office; an
   open one is With Employee, or Unknown when it is marked Not Returned with unknown
   whereabouts. Any other place is said in the asset's Comment (§3).
-- **UI:** Held By / Location column (Equipment), SIM Cards' Location column (where alone), the
-  Office and Unknown filters.
+- **UI:** Held By / Location column (Equipment), SIM Cards' Employee column (Office or Unknown
+  in place of a holder) and a SIM's card, the Office and Unknown filters.
 
 ### Give SIM, Give Asset
 - **Brief:** registering that an asset was given to an employee: one form.

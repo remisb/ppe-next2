@@ -33,7 +33,6 @@ import {
   filterCount,
   formatDay,
   holderText,
-  locationText,
   noAssetFilters,
   type AssetTab,
   assetTabs,
@@ -398,7 +397,7 @@ export function Assets({
               <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
                 {/*
                   Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
-                  nine columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
+                  columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
                 */}
                 <TableHeader className="[&_th]:whitespace-normal">
                   <TableRow>
@@ -408,7 +407,6 @@ export function Assets({
                         <SortableHead column={column('holder')} {...sortProps} />
                         {beside ? null : <TableHead>{t.assets.colProvider}</TableHead>}
                         <SortableHead column={column('status')} {...sortProps} />
-                        <TableHead>{t.assets.location}</TableHead>
                       </>
                     ) : (
                       <>
@@ -468,19 +466,22 @@ export function Assets({
                             </a>
                           </TableCell>
                         )}
-                        {/* Who holds the card, also when it is Unknown (its last holder); where it is has a column of its own. */}
+                        {/* Who holds the card, or where it is: the employee (their page), Office or Unknown, and the Not Returned mark. */}
                         {sim ? (
                           <TableCell className="whitespace-normal stacked:hidden">
-                            {open ? (
-                              <a
-                                {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
-                                className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                {open.employee_name}
-                              </a>
-                            ) : (
-                              '–'
-                            )}
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              {a.location === 'WITH_EMPLOYEE' && open ? (
+                                <a
+                                  {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
+                                  className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                  {open.employee_name}
+                                </a>
+                              ) : (
+                                <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
+                              )}
+                              {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                            </span>
                           </TableCell>
                         ) : null}
                         {/* The stacked row's second line: the SIM No. (when the phone number is the first), provider and where the card is. */}
@@ -502,12 +503,6 @@ export function Assets({
                         {sim ? (
                           <>
                             <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
-                            <TableCell className="whitespace-normal stacked:hidden">
-                              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{locationText(a)}</span>
-                                {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
-                              </span>
-                            </TableCell>
                           </>
                         ) : (
                           <>

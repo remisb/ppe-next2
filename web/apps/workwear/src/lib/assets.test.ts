@@ -98,7 +98,7 @@ describe('held by / location', () => {
     expect(holderText(card({}))).toEqual({ main: 'Office' })
     expect(holderText(card({ location: 'WITH_EMPLOYEE', open_assignment: open }))).toEqual({ main: 'Jonas Petraitis' })
     expect(holderText(card({ location: 'UNKNOWN', open_assignment: open }))).toEqual({ main: 'Unknown', sub: 'Last held by Jonas Petraitis' })
-    // SIM Cards' Location column says only where; its Employee column says who.
+    // A SIM's Location on its card says only where; the register's Employee column is holderText's main.
     expect(locationText(card({}))).toBe('Office')
     expect(locationText(card({ location: 'WITH_EMPLOYEE', open_assignment: open }))).toBe('With Employee')
     expect(locationText(card({ location: 'UNKNOWN', open_assignment: open }))).toBe('Unknown')

@@ -369,10 +369,10 @@ their own address:
   provider). On a phone all but the search fold under Filters, whose count leaves out the tabs. The location keeps the
   status, so Office with Blocked is the blocked cards in the office (§3).
 - **Rows**: first the phone number (or that there is none yet) with the SIM No. under it,
-  the link to the card's page (no copy button: the card copies them); then the Employee who
-  holds it (linked to the employee's page; the last holder when Unknown; the Inventory No. is
-  on the card's page); provider and plan; status; Location (Office, With an employee or
-  Unknown, nothing of who) with Not Returned; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
+  the link to the card's page (no copy button: the card copies them); then Employee, who
+  holds it or where it is in one column: the holder's name (linked to the employee's page),
+  Office, or Unknown (the last holder is on the card's page), with Not Returned; no Location
+  column (the Inventory No. is on the card's page too); provider and plan; status; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
   wrap and the comment waits so that the columns fit beside the rail or sidebar; it is on
   the card's page). Sorted on the server, 50 a page, by phone number (`phone`: spaces
   ignored, a card without one last, then the SIM No.), Inventory No. (the default, and on a
@@ -390,7 +390,7 @@ their own address:
   the register; a taken inventory number offers another.
 - A row opens the card as Orders opens an order, at `/assets/sim-cards/<id>` (`?show=` kept
   when the register was opened on a tile); its number is the link. From `lg` the card sits
-  beside the register, which keeps only Numbers, Employee, Status and Location (stacked
+  beside the register, which keeps only Numbers, Employee and Status (stacked
   under 30rem), marks the open row, and J / K open the next or previous card on the page,
   Escape closes it; below `lg` the card replaces the register, with Back to SIM Cards. The
   card beside the register is the asset page's own detail (`components/asset-detail.tsx`),
