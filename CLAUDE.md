@@ -252,6 +252,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   the UI options and the chosen one; the rules are `docs/specs/asset-service.md` (planned).
 - `docs/ubiquitous-language.md` — the project's terms and the labels of the domain's controls
   (EN/LT/RU), and the words to avoid; add a term there before using it.
+- `docs/ux/ui-ux-guidelines.md` — the UI and UX guidelines: principles, the detail pane's
+  layout and spacing, explaining things (ⓘ, status badges with issues, help tooltips),
+  collapsible sections, moving items, touch and keyboard, loading, the components to use and
+  a checklist for a new pane, section or badge.
 - `docs/ui-language.md` — the UI and UX language of both apps: the parts of a screen, overlays,
   controls, list shapes, states and feedback, the named patterns (list and detail, ask first,
   review first…), casing, verbs and punctuation on screen, and its known deviations.

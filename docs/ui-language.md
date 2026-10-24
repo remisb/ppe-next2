@@ -12,7 +12,8 @@ domain (Order, Given, Assignment, Item Set…) and the labels of the domain's ow
 (**Mark as Ordered**, **Give SIM**). This file names everything around them. The binding
 build rules (breakpoints, CSP, i18n mechanics) stay in [web/AGENTS.md](../web/AGENTS.md);
 this file says what things are called and how they behave, and points there for how to
-build them.
+build them. Why and when to use each pattern, the detail pane's layout and spacing, and the
+checklist for a new screen are in [ux/ui-ux-guidelines.md](ux/ui-ux-guidelines.md).
 
 How to read an entry: **Brief**, one line; **Detail**, the rules; **Code**, the component or
 file; **UI**, the words a user reads. Lithuanian and Russian are in
