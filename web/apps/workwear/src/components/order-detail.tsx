@@ -9,7 +9,7 @@ import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
+import { ChevronDown, FileText, Handshake, Link2, PenLine, Printer } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
@@ -18,8 +18,8 @@ import { OrderLinesTable } from '@/components/order-lines'
 import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
-import { BackButton } from '@ppe/ui/components/back-button'
 import { useAction } from '@ppe/ui/lib/use-action'
+import { PaneBar } from '@ppe/ui/components/list-detail'
 import { OrderStatusBadge, OrderWait } from '@/components/order-status'
 import { deleteQuestion, historyActions, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
@@ -68,14 +68,7 @@ export function OrderDetail({
 
   return (
     <article aria-label={o ? t.history.orderLabel(o.record_number) : t.history.order} className="@container flex flex-col gap-4">
-      {/* Narrow: the detail is the whole screen, so the way out is Back to the list, on its own row. */}
-      <div className="flex items-center lg:contents">
-        <BackButton className="lg:hidden" onClick={onClose}>{t.history.title}</BackButton>
-        {/* Beside the list: Close sits in the pane's corner, beside the heading rather than above it. */}
-        <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.history.closeOrder} onClick={onClose}>
-          <X aria-hidden />
-        </Button>
-      </div>
+      <PaneBar backLabel={t.history.title} closeLabel={t.history.closeOrder} onClose={onClose} className="self-start" />
       <Loaded load={order}>
         {(o) => (
           <>

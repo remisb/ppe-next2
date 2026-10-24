@@ -82,6 +82,7 @@ export const system: SystemText = {
   noMatch: 'Šios rūšies klaidų nėra.',
   older: 'Rodyti senesnes klaidas',
   closeError: 'Uždaryti klaidą',
+  nextOrPrevious: 'kita arba ankstesnė klaida',
   notFound: 'Šios klaidos rasti nepavyko. Galbūt ji ištrinta po 30 dienų.',
   reference: 'Nuoroda į užklausą',
   referenceHint: 'Paskutinio atvejo. Žmonės nurodo pirmus 8 simbolius; serveryje: make prod-logs | grep.',

@@ -29,6 +29,7 @@ export const audit = {
   older: 'Show older changes',
   change: 'Change',
   closeChange: 'Close the change',
+  nextOrPrevious: 'next or previous change',
   notFound: 'This change could not be found. It may be one this list does not show.',
   openRecord: 'Open in Workwear & Equipment',
   recordChanges: 'All changes to this record',

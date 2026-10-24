@@ -14,14 +14,17 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
+import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { EmployeePage } from '@/routes/employee'
 import { EmployeeForm } from '@/components/employee-form'
 import { t } from '@/i18n'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { employeeFacts, initials, missingLabel } from '@/lib/records'
-import { type Route, linkTo } from '@/lib/router'
+import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
@@ -35,7 +38,16 @@ const employeeColumns = (): SortColumn<EmployeeSort>[] => [
   { key: 'shoes', label: t.employees.shoes, kind: 'size' },
 ]
 
-export function Employees({ missing = false, navigate }: { missing?: boolean; navigate: (to: Route) => void }) {
+export function Employees({
+  missing = false,
+  selected,
+  navigate,
+}: {
+  missing?: boolean
+  /** The employee open beside the list (/employees/<id>). */
+  selected?: string | undefined
+  navigate: (to: Route, options?: NavigateOptions) => void
+}) {
   const { client } = useApi()
   const session = useSession()
   const employees = useLoad(() => client.employees.list())
@@ -84,8 +96,24 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
       { confirm: t.employees.confirmDelete(e.full_name) },
     )
 
+  const open = (id: string) => navigate({ name: 'employee', id }, { scroll: !besideList() })
+  const close = () => navigate({ name: 'employees' }, { scroll: false })
+  // J and K: the next or previous employee in the list as shown, while one is open; Escape closes her beside the list.
+  const shownIds = useMemo(() => shown.map((e) => e.id), [shown])
+  useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'employee', id }, { scroll: false }), onClose: close })
+
   return (
-    <>
+    // An employee opens beside the list from lg (S17), with more room than an order: her sections hold tables.
+    <ListDetail
+      width="lg"
+      pane={
+        selected ? (
+          <DetailPane label={t.employees.employee} next={t.employees.nextOrPrevious}>
+            <EmployeePage key={selected} id={selected} navigate={navigate} onClose={close} onChanged={employees.reload} />
+          </DetailPane>
+        ) : null
+      }
+    >
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
@@ -150,12 +178,14 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                 return (
                   <TableRow
                     key={e.id}
-                    className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50"
+                    data-state={selected === e.id ? 'selected' : undefined}
+                    aria-current={selected === e.id ? 'true' : undefined}
+                    className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
                     // The whole row opens the employee; the name is the real link, for keyboards,
                     // screen readers and "open in new tab". The row's own buttons keep their action.
                     onClick={(ev) => {
                       if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                      navigate({ name: 'employee', id: e.id })
+                      open(e.id)
                     }}
                   >
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
@@ -234,7 +264,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
           employees.reload()
         }}
       />
-    </>
+    </ListDetail>
   )
 }
 

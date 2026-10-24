@@ -490,9 +490,9 @@ Lithuanian or Russian label wraps rather than overflow.
 
 ### Row opens
 - **Brief:** what tapping a row does, one of three:
-  - **opens beside** (a detail pane: Orders, the registers, Item Catalogue, the Audit log,
-    System's Errors);
-  - **opens its page** (a record page: Employees);
+  - **opens beside** (a detail pane: Orders, Employees, the registers, Item Catalogue, the
+    Audit log, System's Errors);
+  - **opens its page** (a record page: an asset from the employee page or ⌘K);
   - nothing; the row's action is its button (Replacements due).
 - **Detail:** a stacked row that opens something shows a chevron. J / K step through the
   rows beside an open detail; Escape closes it.
@@ -598,11 +598,12 @@ one.
 ### List and detail
 A list screen whose records have more to show opens a record **beside** the list from `lg`
 and **in its place** below, at the record's own address; the list keeps its filters and page
-behind it. Orders, SIM Cards, Equipment, Item Catalogue, the Audit log, System's Errors.
-
-### List and page
-A list whose records have pages of their own (sections, history) opens the **record page**;
-the page has the back link and the record's ⋯. Employees.
+behind it, its open row marked. J / K step through the list as shown and Esc closes the
+record beside it. Orders, Employees, SIM Cards, Equipment, Item Catalogue, the Audit log,
+System's Errors.
+- **Code:** `ListDetail` (`width` `md` 26rem, `lg` 30rem for an item or an employee),
+  `DetailPane`, `PaneBar` (Back below `lg`, Close in the corner beside), `useListKeys`
+  (`@ppe/ui`).
 
 ### Edit in a sheet, edit in place
 A record's fields are edited in a **form sheet** from its row or header (Edit Item, Edit

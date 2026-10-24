@@ -1,3 +1,4 @@
+import { isTyping } from '@ppe/ui/lib/list-keys'
 import { useEffect, useRef } from 'react'
 
 import { t } from '@/i18n'
@@ -22,12 +23,6 @@ export function shortcutList(): { keys: string; does: string }[] {
   ]
 }
 
-/** Whether a key press belongs to a field (or other editable content) rather than to the app. */
-export function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  const tag = target.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
-}
 
 /** The key a "G then …" sequence goes on to, from the letter pressed after G. */
 export type GoTarget = 'd' | 'o' | 'h' | 'e' | 'a' | 'c' | 's' | 'u'

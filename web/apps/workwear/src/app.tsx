@@ -27,7 +27,6 @@ import { Catalogue } from './routes/catalogue'
 import { ConfirmPage } from './routes/confirm'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
-import { EmployeePage } from './routes/employee'
 import { EmployeeDashboard } from './routes/employee-dashboard'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
@@ -461,8 +460,10 @@ export function App() {
         {route.name === 'managerDashboard' ? <ManagerDashboard navigate={navigate} /> : null}
         {route.name === 'employeeDashboard' ? <EmployeeDashboard navigate={navigate} /> : null}
         {route.name === 'createOrder' ? <CreateOrder prefill={route.prefill} navigate={navigate} /> : null}
-        {route.name === 'employees' ? <Employees missing={route.missing ?? false} navigate={navigate} /> : null}
-        {route.name === 'employee' ? <EmployeePage id={route.id} navigate={navigate} onBack={back({ name: 'employees' })} /> : null}
+        {/* One element for the list and an open employee, so the list keeps its search and tab behind her. */}
+        {route.name === 'employees' || route.name === 'employee' ? (
+          <Employees missing={route.name === 'employees' && (route.missing ?? false)} selected={route.name === 'employee' ? route.id : undefined} navigate={navigate} />
+        ) : null}
         {route.name === 'simCards' || route.name === 'equipment' ? (
           // startRoute has already sent anyone without equipment.read from Equipment to the SIM cards.
           <Assets

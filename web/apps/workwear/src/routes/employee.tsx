@@ -8,7 +8,7 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/drop
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { InControl } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
@@ -24,9 +24,10 @@ import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { linkVariants } from '@ppe/ui/components/link'
-import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { useAction } from '@ppe/ui/lib/use-action'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { PaneBar } from '@ppe/ui/components/list-detail'
 import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
@@ -46,7 +47,19 @@ import { MissingBadge, type SizeField, SizeFields, useSizesDraft } from './emplo
  * Order for them; Edit details and Delete are under ⋯. Changes lists who
  * changed their details and sizes, and when.
  */
-export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (to: Route) => void; onBack: () => void }) {
+export function EmployeePage({
+  id,
+  navigate,
+  onClose,
+  onChanged,
+}: {
+  id: string
+  navigate: (to: Route) => void
+  /** Back to the list, or Close beside it. */
+  onClose: () => void
+  /** Her name, code or sizes changed, or she was deleted: the list shows them too. */
+  onChanged: () => void
+}) {
   const { client } = useApi()
   const session = useSession()
   const employee = useLoad(() => client.employees.get(id), [id])
@@ -77,6 +90,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const draft = useSizesDraft(sizing ? (employee.data ?? null) : null, () => {
     closeInPlace()
     employee.reload()
+    onChanged()
   })
   const [language, setLanguage] = useState('')
   const [languageError, setLanguageError] = useState<string>()
@@ -121,7 +135,8 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
     action.run(
       async () => {
         await client.employees.remove(emp.id)
-        navigate({ name: 'employees' })
+        onChanged()
+        onClose()
       },
       {
         confirm: t.employees.confirmDelete(emp.full_name),
@@ -135,13 +150,13 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
 
   return (
     <>
-      <BackButton className="mb-2" onClick={onBack}>{t.employees.title}</BackButton>
+      <PaneBar backLabel={t.employees.title} closeLabel={t.employees.closeEmployee} onClose={onClose} className="mb-2" />
       <Loaded load={employee}>
         {(e) => (
           <>
-            <PageHeader
-              title={e.full_name}
-              subtitle={e.code ? t.employees.codeIs(e.code) : undefined}
+            <RecordHeader
+              className="mb-5"
+              title={<RecordTitle>{e.full_name}</RecordTitle>}
               actions={
                 <>
                   <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
@@ -160,7 +175,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                   </MoreActions>
                 </>
               }
-            />
+            >
+              {e.code ? <p className="mt-1 text-sm text-muted-foreground">{t.employees.codeIs(e.code)}</p> : null}
+            </RecordHeader>
             {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
             {/* Flat, between two rules, as a pane's facts; while one part is edited in place, its rules are the focus colour. */}
             <div className={cn('mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
@@ -182,7 +199,10 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                     aria-label={t.employees.editSizesTitle(e.full_name)}
                     onSubmit={draft.submit}
                     onKeyDown={(ev) => {
-                      if (ev.key === 'Escape') closeInPlace()
+                      if (ev.key === 'Escape') {
+                        ev.preventDefault()
+                        closeInPlace()
+                      }
                     }}
                     className="grid gap-3 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
                   >
@@ -230,7 +250,10 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                     aria-label={t.employees.editLanguage}
                     onSubmit={(ev) => void saveLanguage(ev, e)}
                     onKeyDown={(ev) => {
-                      if (ev.key === 'Escape') closeInPlace()
+                      if (ev.key === 'Escape') {
+                        ev.preventDefault()
+                        closeInPlace()
+                      }
                     }}
                     className="grid gap-4 sm:grid-cols-3 sm:items-end"
                   >
@@ -355,6 +378,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               onSaved={() => {
                 setEditing(false)
                 employee.reload()
+                onChanged()
               }}
             />
           </>

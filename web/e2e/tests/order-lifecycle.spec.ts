@@ -1569,8 +1569,12 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
   // Items given stays open as she left it, on this device, for this user.
   await expect(page.getByRole('button', { name: /^Items given/ })).toHaveAttribute('aria-expanded', 'true')
-  await page.getByRole('button', { name: 'Employees' }).click()
-  await expect(page.getByRole('heading', { name: 'Employees' })).toBeVisible()
+  // Beside the list (S17): the list is still there, its row marked; Close leaves the list alone.
+  await expect(page.getByRole('heading', { name: 'Employees', level: 1 })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Ona Kazlauskienė/ })).toHaveAttribute('aria-current', 'true')
+  await page.getByRole('button', { name: 'Close employee' }).click()
+  await expect(page).toHaveURL(/\/employees$/)
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toHaveCount(0)
 })
 
 test('a reorder link starts the order with the item at the quantity given; the stepper changes it', async () => {

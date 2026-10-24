@@ -4,6 +4,9 @@ import type { EmployeesText } from '../en/employees'
 
 export const employees: EmployeesText = {
   title: 'Сотрудники',
+  employee: 'Сотрудник',
+  closeEmployee: 'Закрыть сотрудника',
+  nextOrPrevious: 'следующий или предыдущий сотрудник',
   description: 'Размеры по умолчанию для будущих заказов. Изменение размеров не меняет прошлые заказы.',
   addNew: 'Добавить сотрудника',
   searchPlaceholder: 'Поиск по имени или коду',

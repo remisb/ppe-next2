@@ -197,9 +197,12 @@ The workwear app is the reference.
   the route `history`): it was renamed for users only, so `t.orders` never sits beside
   `t.order`. Its address is `/orders`; `/history` addresses still open it.
 - **List and detail**: a row that has more to show opens it at its own address (Orders:
-  `/orders/<id>`; SIM Cards and Equipment: `/assets/sim-cards/<id>`, `/assets/equipment/<id>`;
-  Item Catalogue: `/catalogue/<id>`). From `lg` the detail sits beside the list; below it, it replaces the
-  list, which keeps its filters and page behind it. The row's actions live in the
+  `/orders/<id>`; Employees: `/employees/<id>`; SIM Cards and Equipment: `/assets/sim-cards/<id>`,
+  `/assets/equipment/<id>`; Item Catalogue: `/catalogue/<id>`; Administration's Audit log and
+  System's Errors). From `lg` the detail sits beside the list; below it, it replaces the
+  list, which keeps its filters and page behind it. Build it with `ListDetail`, `DetailPane`,
+  `PaneBar` and `useListKeys` (`@ppe/ui`); the list and an open record are one element in
+  `app.tsx`, so the list keeps its state when a record opens. The row's actions live in the
   detail, not in an Actions column. Beside a detail the list drops to the columns that
   find the next record (Orders: no Usage time, no time of day, the wait as the status;
   SIM Cards: Numbers, Employee, Status, Location; Equipment: Inventory No., Item, Held By;

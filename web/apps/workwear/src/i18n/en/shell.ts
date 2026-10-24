@@ -47,8 +47,8 @@ export const shell = {
     /** The key names stay; only the word between them is translated. */
     goToKeys: 'G then D, O, H, E, A, C, S, U',
     goTo: 'Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets, Users',
-    nextPrevious: 'Orders, SIM Cards and Equipment: the next or previous one, beside the list',
-    closeOrder: 'Orders, SIM Cards and Equipment: close the one beside the list',
+    nextPrevious: 'A list with a record open beside it (Orders, Employees, Item Catalogue, SIM Cards, Equipment): the next or previous one',
+    closeOrder: 'A list with a record open beside it: close the record',
     review: 'Create Order: review the order before Mark as Ordered',
     quantity: 'Create Order: one more or one fewer, in a quantity field',
     help: 'Show these shortcuts',

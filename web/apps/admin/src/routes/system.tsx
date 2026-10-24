@@ -12,13 +12,13 @@ import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
-import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
-import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { intlLocale, t } from '@/i18n'
@@ -335,94 +335,96 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
   }
   const open = (id: string) => navigate({ name: 'system', tab: 'errors', error: id }, { scroll: false })
   const close = () => navigate({ name: 'system', tab: 'errors' }, { scroll: false })
+  // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
+  const shownIds = useMemo(() => errors.map((e) => e.id), [errors])
+  useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
   const beside = selected !== undefined
 
   return (
-    <div className={cn(beside && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] lg:items-start lg:gap-6')}>
-      <div className={cn('min-w-0', beside && 'max-lg:hidden')}>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <label className="text-sm font-medium">
-            {t.system.kind}
-            <Select className="mt-1.5" value={kind} onChange={(e) => setKind(e.target.value as ErrorKind | '')}>
-              <option value="">{t.system.allKinds}</option>
-              {errorKinds.map((k) => (
-                <option key={k} value={k}>
-                  {t.system.kinds[k]}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <RefreshButton loading={first.loading} onClick={reload} />
-        </div>
-        {first.error ? (
-          <ErrorState error={first.error} onRetry={reload} />
-        ) : !first.data ? (
-          <Loading />
-        ) : errors.length === 0 ? (
-          <EmptyState>{kind ? t.system.noMatch : t.system.noErrors}</EmptyState>
-        ) : (
-          <>
-            <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.system.lastSeen}</TableHead>
-                  <TableHead>{t.system.error}</TableHead>
-                  {beside ? null : <TableHead>{t.system.kind}</TableHead>}
-                  <TableHead className="text-right">{t.system.count}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {errors.map((e) => (
-                  <TableRow
-                    key={e.id}
-                    data-state={selected === e.id ? 'selected' : undefined}
-                    aria-current={selected === e.id ? 'true' : undefined}
-                    className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
-                    onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                      open(e.id)
-                    }}
-                  >
-                    <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-                      <RelativeDate iso={e.last_seen} timeZone={timeZone} time />
-                    </TableCell>
-                    <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
-                      <a
-                        {...linkTo({ name: 'system', tab: 'errors', error: e.id }, () => open(e.id))}
-                        className={linkVariants({ weight: 'medium', className: 'line-clamp-2 break-words' })}
-                      >
-                        {e.message}
-                      </a>
-                      <span className="block font-mono text-xs break-all text-muted-foreground">{e.route}</span>
-                    </TableCell>
-                    {beside ? null : (
-                      <TableCell className="whitespace-nowrap text-muted-foreground stacked:hidden">{kindLabel(e.kind)}</TableCell>
-                    )}
-                    <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{t.system.times(e.count)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
-            {next ? (
-              <div className="mt-4 flex justify-center">
-                <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
-                  {t.system.older}
-                </Button>
-              </div>
-            ) : null}
-          </>
-        )}
+    <ListDetail
+      width="md"
+      pane={
+        selected ? (
+          <DetailPane label={t.system.error} next={t.system.nextOrPrevious}>
+            <ErrorPane key={selected} id={selected} listed={errors.find((e) => e.id === selected)} timeZone={timeZone} onClose={close} />
+          </DetailPane>
+        ) : null
+      }
+    >
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <label className="text-sm font-medium">
+          {t.system.kind}
+          <Select className="mt-1.5" value={kind} onChange={(e) => setKind(e.target.value as ErrorKind | '')}>
+            <option value="">{t.system.allKinds}</option>
+            {errorKinds.map((k) => (
+              <option key={k} value={k}>
+                {t.system.kinds[k]}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <RefreshButton loading={first.loading} onClick={reload} />
       </div>
-      {selected ? (
-        <aside
-          aria-label={t.system.error}
-          className="lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
-        >
-          <ErrorPane key={selected} id={selected} listed={errors.find((e) => e.id === selected)} timeZone={timeZone} onClose={close} />
-        </aside>
-      ) : null}
-    </div>
+      {first.error ? (
+        <ErrorState error={first.error} onRetry={reload} />
+      ) : !first.data ? (
+        <Loading />
+      ) : errors.length === 0 ? (
+        <EmptyState>{kind ? t.system.noMatch : t.system.noErrors}</EmptyState>
+      ) : (
+        <>
+          <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t.system.lastSeen}</TableHead>
+                <TableHead>{t.system.error}</TableHead>
+                {beside ? null : <TableHead>{t.system.kind}</TableHead>}
+                <TableHead className="text-right">{t.system.count}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {errors.map((e) => (
+                <TableRow
+                  key={e.id}
+                  data-state={selected === e.id ? 'selected' : undefined}
+                  aria-current={selected === e.id ? 'true' : undefined}
+                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
+                  onClick={(ev) => {
+                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                    open(e.id)
+                  }}
+                >
+                  <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
+                    <RelativeDate iso={e.last_seen} timeZone={timeZone} time />
+                  </TableCell>
+                  <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
+                    <a
+                      {...linkTo({ name: 'system', tab: 'errors', error: e.id }, () => open(e.id))}
+                      className={linkVariants({ weight: 'medium', className: 'line-clamp-2 break-words' })}
+                    >
+                      {e.message}
+                    </a>
+                    <span className="block font-mono text-xs break-all text-muted-foreground">{e.route}</span>
+                  </TableCell>
+                  {beside ? null : (
+                    <TableCell className="whitespace-nowrap text-muted-foreground stacked:hidden">{kindLabel(e.kind)}</TableCell>
+                  )}
+                  <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{t.system.times(e.count)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
+          {next ? (
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
+                {t.system.older}
+              </Button>
+            </div>
+          ) : null}
+        </>
+      )}
+    </ListDetail>
   )
 }
 
@@ -431,13 +433,8 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
   const loaded = useLoad(() => (listed ? Promise.resolve(listed) : client.system.error(id)), [id, listed])
   const e = listed ?? loaded.data
   return (
-    <article aria-label={t.system.error} className="relative flex flex-col gap-4">
-      <div className="flex items-center lg:contents">
-        <BackButton className="lg:hidden" onClick={onClose}>{t.system.errors}</BackButton>
-        <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 max-lg:hidden" aria-label={t.system.closeError} onClick={onClose}>
-          <X aria-hidden />
-        </Button>
-      </div>
+    <article aria-label={t.system.error} className="flex flex-col gap-4">
+      <PaneBar backLabel={t.system.errors} closeLabel={t.system.closeError} onClose={onClose} className="self-start" />
       {!e && loaded.error ? (
         <ErrorState title={t.system.notFound} error={loaded.error} onRetry={loaded.reload} />
       ) : !e ? (

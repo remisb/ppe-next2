@@ -144,7 +144,11 @@ instance).
    ⓘ for the details). A table row now makes its help a tooltip only when the row opens its
    record (`onClick`).
 5. **The list-and-detail view** X1. Then S17 (Employees beside the list) and the admin panes
-   on it.
+   on it. **Done**: `ListDetail`, `DetailPane`, `PaneBar` and `useListKeys` (with
+   `besideList` and `isTyping`) in `@ppe/ui`, used by Orders, Item Catalogue, SIM Cards,
+   Equipment, the Audit log and System's Errors. Pane widths are two: 26rem, and 30rem for an
+   item or an employee. Close sits in the same corner in both apps, and Administration's two
+   lists gained J / K. Employees open beside the list (S17), keeping its search and tab.
 6. **New capabilities that need the API or bigger flows**: S11 (link state), S13, S14, S18,
    A4, A7, A13.
 
@@ -152,8 +156,7 @@ instance).
 
 - **Given as a `success` (green) badge** (S5, X10): decided, Given is green and the separate
   Signed badge is gone.
-- **Employees beside the list** (S17): the employee page becomes a pane on wide screens, like
-  Orders and the catalogue.
+- **Employees beside the list** (S17): done, the employee opens beside the list from `lg`.
 - **Replacing a confirmation link** (S11): keep it silent, or ask first and show the old link's
   state.
 - **One count style on filter tabs** (X2): decided for the plain muted number most screens

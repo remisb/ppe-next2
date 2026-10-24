@@ -29,6 +29,7 @@ export const audit: AuditText = {
   older: 'Rodyti senesnius pakeitimus',
   change: 'Pakeitimas',
   closeChange: 'Uždaryti pakeitimą',
+  nextOrPrevious: 'kitas arba ankstesnis pakeitimas',
   notFound: 'Šio pakeitimo rasti nepavyko. Galbūt šis sąrašas jo nerodo.',
   openRecord: 'Atidaryti programoje „Darbo drabužiai ir įranga“',
   recordChanges: 'Visi šio įrašo pakeitimai',

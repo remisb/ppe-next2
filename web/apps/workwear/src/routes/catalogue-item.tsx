@@ -10,7 +10,7 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ActionError, EmptyState, ErrorState, Loaded, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowDown, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, FileText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
@@ -22,10 +22,10 @@ import { t } from '@/i18n'
 import { percentChange } from '@/lib/dashboard'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
-import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { PaneBar } from '@ppe/ui/components/list-detail'
 import { activityAt } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
@@ -95,12 +95,7 @@ export function CatalogueItemDetail({
 
   return (
     <article aria-label={i ? i.name : t.catalogue.item} className="@container">
-      {/* Narrow: the item is the whole screen, so the way out is Back to the list, on its own row. */}
-      <BackButton className="mb-2 lg:hidden" onClick={onClose}>{t.catalogue.title}</BackButton>
-      {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
-      <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.catalogue.closeItem} onClick={onClose}>
-        <X aria-hidden />
-      </Button>
+      <PaneBar backLabel={t.catalogue.title} closeLabel={t.catalogue.closeItem} onClose={onClose} className="mb-2" />
       <Loaded load={item}>
         {(i) => (
           <>

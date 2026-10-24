@@ -12,11 +12,12 @@ import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
-import { Kbd } from '@ppe/ui/components/kbd'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
+import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
 import { AssetMoreActions, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
@@ -49,7 +50,6 @@ import {
   todayIn,
 } from '@/lib/assets'
 import { type AssetTile, type NavigateOptions, type Route, linkTo } from '@/lib/router'
-import { isTyping } from '@/lib/shortcuts'
 
 /**
  * The sortable columns. A SIM is known by its numbers, so SIM Cards starts
@@ -74,8 +74,6 @@ const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
       ]
 const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
 
-/** From lg a SIM or item opens beside the register; below it, instead of the register. */
-const wide = () => window.matchMedia('(min-width: 64rem)').matches
 
 
 /**
@@ -188,37 +186,12 @@ export function Assets({
 
   // The register's address keeps the tile it was opened on, so opening a SIM or item keeps the register as it is.
   const at = opened ? { tile: opened } : {}
-  const openAsset = (id: string) => navigate({ name: register, ...at, asset: id }, { scroll: !wide() })
+  const openAsset = (id: string) => navigate({ name: register, ...at, asset: id }, { scroll: !besideList() })
   const close = () => navigate({ name: register, ...at }, { scroll: false })
 
   // J and K: the next or previous SIM or item on this page, while one is open; Escape closes it beside the register.
-  const shown = list.data?.assets
-  useEffect(() => {
-    if (!selected || !shown) return
-    const onKey = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase()
-      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target) || document.querySelector('dialog[open]')) return
-      if (e.key === 'Escape' && wide()) {
-        e.preventDefault()
-        close()
-        return
-      }
-      if (key !== 'j' && key !== 'k') return
-      const i = shown.findIndex((a) => a.id === selected)
-      const next = shown[i + (key === 'j' ? 1 : -1)]
-      if (next) {
-        e.preventDefault()
-        navigate({ name: register, ...at, asset: next.id }, { scroll: false })
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selected, shown, navigate, opened, register])
-
-  // The open SIM's or item's row stays in view as J and K move through the register.
-  useEffect(() => {
-    if (selected && wide()) document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' })
-  }, [selected, shown])
+  const shownIds = useMemo(() => list.data?.assets.map((a) => a.id), [list.data])
+  useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: register, ...at, asset: id }, { scroll: false }), onClose: close })
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
@@ -284,309 +257,303 @@ export function Assets({
 
   return (
     <>
-      <div className={cn(selected && 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-start lg:gap-6')}>
-        {/* Narrow, an open card takes the screen; the register keeps its state behind it. */}
-        <div className={cn('min-w-0', selected && 'max-lg:hidden')}>
-          <PageHeader
-            title={sim ? t.assets.simCards : t.assets.equipment}
-            actions={
-              <>
-                {canManage ? (
-                  <Button onClick={() => setEditing('new')}>
-                    <Plus aria-hidden /> {sim ? t.assets.addSimCard : t.assets.addAsset}
-                  </Button>
-                ) : null}
-                <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="asset-filters" onClick={() => setShowFilters((v) => !v)}>
-                  <SlidersHorizontal aria-hidden /> {extra > 0 ? t.assets.filtersCount(extra) : t.assets.filters}
-                </Button>
-              </>
-            }
-          />
-          <div className="mb-4 flex flex-col gap-3">
-            {sim ? null : tabGroup}
-            {/*
-              The search and the filters on one line, as wide as it lets them (on SIM Cards after the tabs), wrapping where it
-              does not fit; on a phone the search stays in view and Filters folds away the rest.
-            */}
-            <div id="asset-filters" role="region" aria-label={t.assets.filters} className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-              {sim ? tabGroup : null}
-              <Input
-                type="search"
-                data-shortcut="search"
-                aria-label={sim ? t.assets.searchLabel : t.assets.equipmentSearchLabel}
-                placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="md:max-w-md md:min-w-72 md:flex-1"
+      {/* Narrow, an open card takes the screen; the register keeps its state behind it. */}
+      <ListDetail
+        width="md"
+        pane={
+          selected ? (
+            <DetailPane label={sim ? t.assets.simCard : t.assets.item} next={sim ? t.assets.nextOrPreviousCard : t.assets.nextOrPreviousItem}>
+              <AssetDetail
+                key={selected}
+                id={selected}
+                place={{ page: false, kind, onClose: close }}
+                navigate={navigate}
+                onOpen={(id) => navigate({ name: 'asset', id })}
+                onChanged={reload}
+                refresh={reloads}
               />
-              {sim ? null : (
-                <FilterSelect
-                  label={t.assets.category}
-                  value={filters.category}
-                  items={[{ value: '', label: t.assets.allCategories }, ...categories.map((c) => ({ value: c, label: categoryLabel(c) }))]}
-                  onChange={(category) => update({ ...filters, category })}
-                  className={folded}
-                />
-              )}
-              <FilterSelect label={t.assets.location} value={filters.place} items={places} onChange={(place) => update({ ...filters, place })} className={folded} />
-              {sim ? (
-                <FilterSelect
-                  label={t.assets.provider}
-                  value={filters.provider}
-                  items={[{ value: '', label: t.assets.allProviders }, ...(s?.providers ?? []).map((p) => ({ value: p, label: p }))]}
-                  onChange={(provider) => update({ ...filters, provider })}
-                  className={folded}
-                />
+            </DetailPane>
+          ) : null
+        }
+      >
+        <PageHeader
+          title={sim ? t.assets.simCards : t.assets.equipment}
+          actions={
+            <>
+              {canManage ? (
+                <Button onClick={() => setEditing('new')}>
+                  <Plus aria-hidden /> {sim ? t.assets.addSimCard : t.assets.addAsset}
+                </Button>
               ) : null}
+              <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="asset-filters" onClick={() => setShowFilters((v) => !v)}>
+                <SlidersHorizontal aria-hidden /> {extra > 0 ? t.assets.filtersCount(extra) : t.assets.filters}
+              </Button>
+            </>
+          }
+        />
+        <div className="mb-4 flex flex-col gap-3">
+          {sim ? null : tabGroup}
+          {/*
+            The search and the filters on one line, as wide as it lets them (on SIM Cards after the tabs), wrapping where it
+            does not fit; on a phone the search stays in view and Filters folds away the rest.
+          */}
+          <div id="asset-filters" role="region" aria-label={t.assets.filters} className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+            {sim ? tabGroup : null}
+            <Input
+              type="search"
+              data-shortcut="search"
+              aria-label={sim ? t.assets.searchLabel : t.assets.equipmentSearchLabel}
+              placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="md:max-w-md md:min-w-72 md:flex-1"
+            />
+            {sim ? null : (
               <FilterSelect
-                label={t.assets.documents}
-                value={filters.signedCopyMissing ? 'missing' : ''}
-                items={[
-                  { value: '', label: t.assets.anyDocuments },
-                  { value: 'missing', label: t.assets.signedCopyMissing },
-                ]}
-                onChange={(v) => update({ ...filters, signedCopyMissing: v === 'missing' })}
+                label={t.assets.category}
+                value={filters.category}
+                items={[{ value: '', label: t.assets.allCategories }, ...categories.map((c) => ({ value: c, label: categoryLabel(c) }))]}
+                onChange={(category) => update({ ...filters, category })}
                 className={folded}
               />
-              {filtered ? (
-                <Button variant="ghost" className={folded} onClick={clear}>
-                  {t.assets.clearFilters}
-                </Button>
-              ) : null}
-            </div>
+            )}
+            <FilterSelect label={t.assets.location} value={filters.place} items={places} onChange={(place) => update({ ...filters, place })} className={folded} />
+            {sim ? (
+              <FilterSelect
+                label={t.assets.provider}
+                value={filters.provider}
+                items={[{ value: '', label: t.assets.allProviders }, ...(s?.providers ?? []).map((p) => ({ value: p, label: p }))]}
+                onChange={(provider) => update({ ...filters, provider })}
+                className={folded}
+              />
+            ) : null}
+            <FilterSelect
+              label={t.assets.documents}
+              value={filters.signedCopyMissing ? 'missing' : ''}
+              items={[
+                { value: '', label: t.assets.anyDocuments },
+                { value: 'missing', label: t.assets.signedCopyMissing },
+              ]}
+              onChange={(v) => update({ ...filters, signedCopyMissing: v === 'missing' })}
+              className={folded}
+            />
+            {filtered ? (
+              <Button variant="ghost" className={folded} onClick={clear}>
+                {t.assets.clearFilters}
+              </Button>
+            ) : null}
           </div>
-
-          <p role="status" className={cn('text-sm text-muted-foreground', message && 'mb-3')}>
-            {message}
-          </p>
-          <ActionError error={action.error} />
-          {list.error ? (
-            <ErrorState error={list.error} onRetry={reload} />
-          ) : list.loading && !list.data ? (
-            <Loading />
-          ) : !list.data || list.data.assets.length === 0 ? (
-            <EmptyState>
-              {filtered ? (sim ? t.assets.noMatches : t.assets.noEquipmentMatches) : sim ? t.assets.noSimCards : t.assets.noEquipment}
-              {filtered ? (
-                <Button variant="outline" className="mt-3" onClick={clear}>
-                  {t.assets.clearFilters}
-                </Button>
-              ) : null}
-            </EmptyState>
-          ) : (
-            <>
-              <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
-                {/*
-                  Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
-                  columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
-                */}
-                <TableHeader className="[&_th]:whitespace-normal">
-                  <TableRow>
-                    {sim ? (
-                      <>
-                        <SortableHead column={column('phone')} {...sortProps} />
-                        <SortableHead column={column('holder')} {...sortProps} />
-                        {beside ? null : <TableHead>{t.assets.colProvider}</TableHead>}
-                        <SortableHead column={column('status')} {...sortProps} />
-                      </>
-                    ) : (
-                      <>
-                        <SortableHead column={column('inventory')} {...sortProps} />
-                        <SortableHead column={column('name')} {...sortProps} />
-                        {beside ? null : <TableHead>{t.assets.colSerialNo}</TableHead>}
-                        <SortableHead column={column('holder')} {...sortProps} />
-                      </>
-                    )}
-                    {beside ? null : (
-                      <>
-                        <SortableHead column={column('given')} {...sortProps} />
-                        <TableHead>{t.assets.colDocuments}</TableHead>
-                        {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
-                        <TableHead className={cn(sim && 'hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
-                        {canManage ? <TableHead className="text-right">{t.assets.actions}</TableHead> : null}
-                      </>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.data.assets.map((a) => {
-                    const holder = holderText(a)
-                    const open = a.open_assignment
-                    const action = primaryAction(a)
-                    return (
-                      <TableRow
-                        key={a.id}
-                        data-state={selected === a.id ? 'selected' : undefined}
-                        aria-current={selected === a.id ? 'true' : undefined}
-                        className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
-                        // The whole row opens the card; its number is the real link, for keyboards and new tabs.
-                        onClick={(ev) => {
-                          if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                          openAsset(a.id)
-                        }}
-                      >
-                        {sim ? (
-                          <TableCell className="stacked:col-start-1 stacked:row-start-1">
-                            {/* The phone number over the SIM No., the card's link; the card copies both (the Copy button there). */}
-                            <a
-                              {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
-                              className={linkVariants({ className: 'flex flex-col items-start' })}
-                            >
-                              <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
-                                {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
-                              </span>
-                              <span className="font-mono text-xs text-muted-foreground tabular-nums stacked:hidden">{a.sim_no}</span>
-                              {/* A phone's row is one number: the phone's, or the SIM No. until there is one. */}
-                              <span className="hidden font-mono font-medium tabular-nums stacked:inline">{a.phone_no ?? a.sim_no}</span>
-                            </a>
-                          </TableCell>
-                        ) : (
-                          <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
-                            <a {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))} className={linkVariants()}>
-                              {a.inventory_no}
-                            </a>
-                          </TableCell>
-                        )}
-                        {/* Who holds the card, or where it is: the employee (their page), Office or Unknown, and the Not Returned mark. */}
-                        {sim ? (
-                          <TableCell className="whitespace-normal stacked:hidden">
-                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              {a.location === 'WITH_EMPLOYEE' && open ? (
-                                <a
-                                  {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
-                                  className={linkVariants()}
-                                >
-                                  {open.employee_name}
-                                </a>
-                              ) : (
-                                <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
-                              )}
-                              {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
-                            </span>
-                          </TableCell>
-                        ) : null}
-                        {/* The stacked row's second line: the SIM No. (when the phone number is the first), provider and where the card is. */}
-                        <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                          {(sim
-                            ? [a.phone_no ? a.sim_no : null, a.provider, holder.main]
-                            : [a.name, a.category ? categoryLabel(a.category) : null, holder.main]
-                          )
-                            .filter(Boolean)
-                            .join(' · ')}
-                          {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
-                        </TableCell>
-                        {sim && !beside ? (
-                        <TableCell className="whitespace-normal stacked:hidden">
-                          {a.provider}
-                          {a.plan ? <span className="block text-xs text-muted-foreground">{a.plan}</span> : null}
-                        </TableCell>
-                        ) : null}
-                        {sim ? (
-                          <>
-                            <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell className="whitespace-normal stacked:hidden">
-                              {a.name}
-                              {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
-                            </TableCell>
-                            {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '–'}</TableCell>}
-                            <TableCell className="whitespace-normal stacked:hidden">
-                              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
-                                {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
-                              </span>
-                              {holder.sub ? <span className="block text-xs text-muted-foreground">{holder.sub}</span> : null}
-                            </TableCell>
-                          </>
-                        )}
-                        {beside ? null : (
-                          <>
-                            <TableCell className="whitespace-normal stacked:hidden">
-                              {open ? (
-                                <>
-                                  <span className="tabular-nums">{formatDay(open.given_date)}</span>
-                                  <span className="block text-xs text-muted-foreground">{t.assets.daysHeld(open.days_held)}</span>
-                                </>
-                              ) : (
-                                '–'
-                              )}
-                            </TableCell>
-                            <TableCell className="whitespace-normal stacked:hidden">{documentsText(open) ?? '–'}</TableCell>
-                            <TableCell className={cn('max-w-48 truncate stacked:hidden', sim && 'hidden 2xl:table-cell')} title={a.comment || undefined}>
-                              {a.comment || '–'}
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2] stacked:items-center">
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                        </TableCell>
-                        {canManage && !beside ? (
-                          <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                            {action === 'give' ? (
-                              <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
-                                {sim ? t.assets.giveSimCard : t.assets.giveAsset}
-                              </Button>
-                            ) : action === 'return' ? (
-                              <ReturnButton kind={a.kind} size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })} />
-                            ) : a.connection_status ? (
-                              <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
-                            ) : null}{' '}
-                            <AssetMoreActions
-                              asset={a}
-                              status={action !== 'status'}
-                              onStatus={(next) => void changeStatus(a, next)}
-                              onEdit={() => setEditing(a)}
-                              onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                              onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
-                            />
-                          </TableCell>
-                        ) : null}
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>{sim ? t.assets.shown(list.data.total) : t.assets.shownItems(list.data.total)}</span>
-                {pages > 1 ? (
-                  <span className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                      {t.assets.previous}
-                    </Button>
-                    <span className="tabular-nums">{t.assets.page(page, pages)}</span>
-                    <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
-                      {t.assets.next}
-                    </Button>
-                  </span>
-                ) : null}
-              </div>
-            </>
-          )}
         </div>
 
-        {selected ? (
-          <aside
-            aria-label={sim ? t.assets.simCard : t.assets.item}
-            className="lg:sticky lg:top-8 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
-          >
-            <AssetDetail
-              key={selected}
-              id={selected}
-              place={{ page: false, kind, onClose: close }}
-              navigate={navigate}
-              onOpen={(id) => navigate({ name: 'asset', id })}
-              onChanged={reload}
-              refresh={reloads}
-            />
-            {/* Beside the register only, and only where there is a keyboard. */}
-            <p className="mt-3 hidden border-t border-border pt-3 text-xs text-muted-foreground lg:block pointer-coarse:hidden">
-              <Kbd>J</Kbd> / <Kbd>K</Kbd> {sim ? t.assets.nextOrPreviousCard : t.assets.nextOrPreviousItem} · <Kbd>Esc</Kbd> {t.history.closeHint}
-            </p>
-          </aside>
-        ) : null}
-      </div>
+        <p role="status" className={cn('text-sm text-muted-foreground', message && 'mb-3')}>
+          {message}
+        </p>
+        <ActionError error={action.error} />
+        {list.error ? (
+          <ErrorState error={list.error} onRetry={reload} />
+        ) : list.loading && !list.data ? (
+          <Loading />
+        ) : !list.data || list.data.assets.length === 0 ? (
+          <EmptyState>
+            {filtered ? (sim ? t.assets.noMatches : t.assets.noEquipmentMatches) : sim ? t.assets.noSimCards : t.assets.noEquipment}
+            {filtered ? (
+              <Button variant="outline" className="mt-3" onClick={clear}>
+                {t.assets.clearFilters}
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <>
+            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
+              {/*
+                Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
+                columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
+              */}
+              <TableHeader className="[&_th]:whitespace-normal">
+                <TableRow>
+                  {sim ? (
+                    <>
+                      <SortableHead column={column('phone')} {...sortProps} />
+                      <SortableHead column={column('holder')} {...sortProps} />
+                      {beside ? null : <TableHead>{t.assets.colProvider}</TableHead>}
+                      <SortableHead column={column('status')} {...sortProps} />
+                    </>
+                  ) : (
+                    <>
+                      <SortableHead column={column('inventory')} {...sortProps} />
+                      <SortableHead column={column('name')} {...sortProps} />
+                      {beside ? null : <TableHead>{t.assets.colSerialNo}</TableHead>}
+                      <SortableHead column={column('holder')} {...sortProps} />
+                    </>
+                  )}
+                  {beside ? null : (
+                    <>
+                      <SortableHead column={column('given')} {...sortProps} />
+                      <TableHead>{t.assets.colDocuments}</TableHead>
+                      {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
+                      <TableHead className={cn(sim && 'hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
+                      {canManage ? <TableHead className="text-right">{t.assets.actions}</TableHead> : null}
+                    </>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.data.assets.map((a) => {
+                  const holder = holderText(a)
+                  const open = a.open_assignment
+                  const action = primaryAction(a)
+                  return (
+                    <TableRow
+                      key={a.id}
+                      data-state={selected === a.id ? 'selected' : undefined}
+                      aria-current={selected === a.id ? 'true' : undefined}
+                      className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
+                      // The whole row opens the card; its number is the real link, for keyboards and new tabs.
+                      onClick={(ev) => {
+                        if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                        openAsset(a.id)
+                      }}
+                    >
+                      {sim ? (
+                        <TableCell className="stacked:col-start-1 stacked:row-start-1">
+                          {/* The phone number over the SIM No., the card's link; the card copies both (the Copy button there). */}
+                          <a
+                            {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
+                            className={linkVariants({ className: 'flex flex-col items-start' })}
+                          >
+                            <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
+                              {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
+                            </span>
+                            <span className="font-mono text-xs text-muted-foreground tabular-nums stacked:hidden">{a.sim_no}</span>
+                            {/* A phone's row is one number: the phone's, or the SIM No. until there is one. */}
+                            <span className="hidden font-mono font-medium tabular-nums stacked:inline">{a.phone_no ?? a.sim_no}</span>
+                          </a>
+                        </TableCell>
+                      ) : (
+                        <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
+                          <a {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))} className={linkVariants()}>
+                            {a.inventory_no}
+                          </a>
+                        </TableCell>
+                      )}
+                      {/* Who holds the card, or where it is: the employee (their page), Office or Unknown, and the Not Returned mark. */}
+                      {sim ? (
+                        <TableCell className="whitespace-normal stacked:hidden">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {a.location === 'WITH_EMPLOYEE' && open ? (
+                              <a
+                                {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
+                                className={linkVariants()}
+                              >
+                                {open.employee_name}
+                              </a>
+                            ) : (
+                              <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
+                            )}
+                            {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                          </span>
+                        </TableCell>
+                      ) : null}
+                      {/* The stacked row's second line: the SIM No. (when the phone number is the first), provider and where the card is. */}
+                      <TableCell className="hidden stacked:col-start-1 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                        {(sim
+                          ? [a.phone_no ? a.sim_no : null, a.provider, holder.main]
+                          : [a.name, a.category ? categoryLabel(a.category) : null, holder.main]
+                        )
+                          .filter(Boolean)
+                          .join(' · ')}
+                        {open?.not_returned_at ? ` · ${t.assets.notReturned}` : ''}
+                      </TableCell>
+                      {sim && !beside ? (
+                      <TableCell className="whitespace-normal stacked:hidden">
+                        {a.provider}
+                        {a.plan ? <span className="block text-xs text-muted-foreground">{a.plan}</span> : null}
+                      </TableCell>
+                      ) : null}
+                      {sim ? (
+                        <>
+                          <TableCell className="stacked:col-start-2 stacked:row-start-1">{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="whitespace-normal stacked:hidden">
+                            {a.name}
+                            {a.category ? <span className="block text-xs text-muted-foreground">{categoryLabel(a.category)}</span> : null}
+                          </TableCell>
+                          {beside ? null : <TableCell className="font-mono text-xs stacked:hidden">{a.serial_no ?? '–'}</TableCell>}
+                          <TableCell className="whitespace-normal stacked:hidden">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className={cn(a.location === 'UNKNOWN' && 'font-medium')}>{holder.main}</span>
+                              {open?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                            </span>
+                            {holder.sub ? <span className="block text-xs text-muted-foreground">{holder.sub}</span> : null}
+                          </TableCell>
+                        </>
+                      )}
+                      {beside ? null : (
+                        <>
+                          <TableCell className="whitespace-normal stacked:hidden">
+                            {open ? (
+                              <>
+                                <span className="tabular-nums">{formatDay(open.given_date)}</span>
+                                <span className="block text-xs text-muted-foreground">{t.assets.daysHeld(open.days_held)}</span>
+                              </>
+                            ) : (
+                              '–'
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-normal stacked:hidden">{documentsText(open) ?? '–'}</TableCell>
+                          <TableCell className={cn('max-w-48 truncate stacked:hidden', sim && 'hidden 2xl:table-cell')} title={a.comment || undefined}>
+                            {a.comment || '–'}
+                          </TableCell>
+                        </>
+                      )}
+                      <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_2] stacked:items-center">
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      </TableCell>
+                      {canManage && !beside ? (
+                        <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                          {action === 'give' ? (
+                            <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
+                              {sim ? t.assets.giveSimCard : t.assets.giveAsset}
+                            </Button>
+                          ) : action === 'return' ? (
+                            <ReturnButton kind={a.kind} size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })} />
+                          ) : a.connection_status ? (
+                            <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
+                          ) : null}{' '}
+                          <AssetMoreActions
+                            asset={a}
+                            status={action !== 'status'}
+                            onStatus={(next) => void changeStatus(a, next)}
+                            onEdit={() => setEditing(a)}
+                            onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
+                            onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                          />
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+              <span>{sim ? t.assets.shown(list.data.total) : t.assets.shownItems(list.data.total)}</span>
+              {pages > 1 ? (
+                <span className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                    {t.assets.previous}
+                  </Button>
+                  <span className="tabular-nums">{t.assets.page(page, pages)}</span>
+                  <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+                    {t.assets.next}
+                  </Button>
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
+      </ListDetail>
 
       <AssetSheets
         sheet={sheet}

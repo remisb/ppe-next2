@@ -4,6 +4,9 @@ import type { EmployeesText } from '../en/employees'
 
 export const employees: EmployeesText = {
   title: 'Darbuotojai',
+  employee: 'Darbuotojas',
+  closeEmployee: 'Uždaryti darbuotoją',
+  nextOrPrevious: 'kitas arba ankstesnis darbuotojas',
   description: 'Numatytieji dydžiai, naudojami ruošiant būsimus užsakymus. Dydžių keitimas nepakeičia ankstesnių užsakymų.',
   addNew: 'Pridėti darbuotoją',
   searchPlaceholder: 'Ieškoti pagal vardą ar kodą',

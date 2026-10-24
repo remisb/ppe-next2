@@ -50,8 +50,8 @@ If a rule here and either of those disagree, fix the one that is out of date in 
 
 ## 2. The detail pane
 
-A record opened beside a list (the item pane, the order pane, the asset pane, and Administration's
-change and error panes) or on its own page below `lg`. Names are in [ui-language.md › Detail pane](../ui-language.md#detail-pane).
+A record opened beside a list (the item pane, the order pane, the asset pane, the employee, and
+Administration's change and error panes) or on its own page below `lg` (`ListDetail`). Names are in [ui-language.md › Detail pane](../ui-language.md#detail-pane).
 
 ### Anatomy, top to bottom
 
@@ -280,6 +280,7 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | Every order for a filter | `loadAllOrders` | `apps/workwear/src/lib/employee-items.ts` |
 | An icon button | `buttonVariants({ variant: 'ghost', size: 'icon-sm' })` | `@ppe/ui/components/button` |
 | A text link, or a button that reads as one (with its focus ring) | `linkVariants({ underline, weight, className })` | `@ppe/ui/components/link` |
+| A list with its record beside it from `lg`, in its place below; the pane's card and J / K line; Back and Close; J / K and Esc | `ListDetail`, `DetailPane`, `PaneBar`, `useListKeys`, `besideList` | `@ppe/ui/components/list-detail`, `@ppe/ui/lib/list-keys` |
 | A record's header: title, main action and ⋯ in the corner, details under it | `RecordHeader`, `RecordTitle` | `@ppe/ui/components/record-header` |
 | A ruled status line: an icon by tone, what it says, an action at its end (Overview's attention rows, the audit seals, Backups' verdict) | `StatusLine` (`tone`: `muted`, `success`, `warning`, `danger`) | `@ppe/ui/components/status-line` |
 | An order's status, and an Ordered one's wait (an `IssueBadge` past 14 days) | `OrderStatusBadge`, `OrderWait` | `apps/workwear/src/components/order-status.tsx` |

@@ -17,7 +17,8 @@ import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { FileDown, Printer, X } from 'lucide-react'
+import { PaneBar } from '@ppe/ui/components/list-detail'
+import { FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { AssetMoreActions, CopyButton, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
@@ -105,14 +106,12 @@ export function AssetDetail({
         // Back to its register: SIM Cards or Equipment, once the asset says which.
         <BackButton className="mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>{!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}</BackButton>
       ) : (
-        <>
-          {/* Narrow: the card is the whole screen, so the way out is Back to the list, on its own row. */}
-          <BackButton className="mb-2 lg:hidden" onClick={place.onClose}>{place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}</BackButton>
-          {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
-          <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={place.kind === 'SIM' ? t.assets.closeCard : t.assets.closeItem} onClick={place.onClose}>
-            <X aria-hidden />
-          </Button>
-        </>
+        <PaneBar
+          backLabel={place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}
+          closeLabel={place.kind === 'SIM' ? t.assets.closeCard : t.assets.closeItem}
+          onClose={place.onClose}
+          className="mb-2"
+        />
       )}
       <Loaded load={asset}>
         {(a) => (

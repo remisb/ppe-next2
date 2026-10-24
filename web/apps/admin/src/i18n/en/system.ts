@@ -85,6 +85,7 @@ export const system = {
   noMatch: 'No errors of this kind.',
   older: 'Show older errors',
   closeError: 'Close the error',
+  nextOrPrevious: 'next or previous error',
   notFound: 'This error could not be found. It may have been deleted after 30 days.',
   reference: 'Reference',
   referenceHint: 'The latest occurrence’s. A person quotes its first 8 characters; on the server, make prod-logs | grep it.',

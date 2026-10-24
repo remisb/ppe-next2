@@ -3,6 +3,9 @@ import { plural } from '@ppe/i18n'
 /** Employees: the list, an employee's page, Add / Edit employee and Edit Sizes. */
 export const employees = {
   title: 'Employees',
+  employee: 'Employee',
+  closeEmployee: 'Close employee',
+  nextOrPrevious: 'next or previous employee',
   description: 'Size defaults used when preparing future orders. Editing sizes never changes past orders.',
   addNew: 'Add New Employee',
   searchPlaceholder: 'Search by name or code',
