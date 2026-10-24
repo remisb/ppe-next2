@@ -6,8 +6,19 @@ next, and into what can become shared views, components and patterns. The yardst
 Every finding was checked in the code; paths are under `web/`, with `ww` for
 `apps/workwear/src` and `ad` for `apps/admin/src`.
 
-24 Oct 2026 · build `9e08b5c` · code review only (no usability sessions) · 48 findings in
+24 Oct 2026 · build `9e08b5c` · code review only (no usability sessions) · 49 findings in
 four parts: defects, staff app, Administration and extraction.
+
+**Status (24 Oct 2026):** steps 1–5 of the [suggested order](#5-suggested-order) are done and
+live in `571764f`, which is 36 of the 49 findings:
+
+- **Done:** D1–D4; S1–S6, S10, S12, S15, S16, S17; A1–A3, A5, A6, A8, A10–A12; X1–X7, X9–X11,
+  X13, X14.
+- **Open, step 6** (needs the API or bigger flows): S11, S13, S14, S18, A4, A7, A13.
+- **Open, in no step yet:** S7 (Item Sets), S8 (the busy cue while reloading), S9 (which SIM
+  number is which), A9 (the error pane's links), X8 (`useCursorPages`), X12 (`BarList`).
+
+The summary and tables below describe the code as it was at `9e08b5c`.
 
 ## Summary
 
@@ -120,7 +131,7 @@ instance).
 
 ## 5. Suggested order
 
-1. **Defects** D1–D4, all in one change (about a day).
+1. **Defects** D1–D4, all in one change (about a day). **Done** in `8209667`.
 2. **Quick wins in the guidelines' direction** (S each): S3, S4, S10, S12, S15, S16, A1, A2,
    A8, A10, A11, plus X5 (the links without a focus ring) and X7 (double submit). **Done.**
    S12's Hand over now follows `HAND_OVER_NOW`, which keeps hand-over mode switched off for
@@ -150,7 +161,9 @@ instance).
    item or an employee. Close sits in the same corner in both apps, and Administration's two
    lists gained J / K. Employees open beside the list (S17), keeping its search and tab.
 6. **New capabilities that need the API or bigger flows**: S11 (link state), S13, S14, S18,
-   A4, A7, A13.
+   A4, A7, A13. Not started.
+
+Not in any step yet: S7, S8, S9, A9, X8 and X12.
 
 ### Decisions for you
 
