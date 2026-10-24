@@ -51,6 +51,19 @@ export const catalogue: CatalogueText = {
   servicePeriodMonths: 'Срок службы (мес.)',
   displayOrderHint: 'Меньшее число показывается выше при добавлении в заказ.',
   picture: 'Изображение',
+  pictureSizeGroup: (group: string) => `Группа размеров: ${group}, по изображению.`,
+  pictures: 'Изображения',
+  picturesDescription: 'Каждое изображение задаёт группу размеров всех предметов с ним. В заказах остаётся группа размеров, с которой они оформлены.',
+  pictureItems: (n: number) =>
+    n === 0 ? 'Нет предметов' : plural(n, { one: '# предмет', few: '# предмета', many: '# предметов', other: '# предмета' }),
+  pictureSizeGroupFor: (picture: string) => `Группа размеров: ${picture}`,
+  pictureChanges: (n: number) =>
+    plural(n, {
+      one: 'Изменит группу размеров # предмета.',
+      few: 'Изменит группу размеров # предметов.',
+      many: 'Изменит группу размеров # предметов.',
+      other: 'Изменит группу размеров # предмета.',
+    }),
   activeInAddItem: 'Активен (предлагается при добавлении в заказ)',
   priceInvalid: 'Введите цену, например 49,99.',
   periodInvalid: 'Целое число месяцев, не меньше 1.',

@@ -34,7 +34,7 @@ var areas = []struct {
 }{
 	{AreaUsers, []string{"user", "role"}},
 	{AreaEmployees, []string{"employee"}},
-	{AreaCatalogue, []string{"catalogue_item"}},
+	{AreaCatalogue, []string{"catalogue_item", "catalogue_picture"}},
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
@@ -53,7 +53,7 @@ var events = []string{
 	"role.created", "role.updated", "role.deleted",
 	"employee.created", "employee.updated", "employee.sizes_changed", "employee.deleted",
 	"catalogue.created", "catalogue.updated", "catalogue.price_changed",
-	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted",
+	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted", "catalogue.picture_changed",
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"asset.registered", "asset.updated", "asset.status_changed", "asset.given", "asset.returned", "asset.marked_not_returned",

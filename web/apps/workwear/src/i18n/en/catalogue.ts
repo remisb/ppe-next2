@@ -54,6 +54,14 @@ export const catalogue = {
   servicePeriodMonths: 'Service period (months)',
   displayOrderHint: 'Lower comes first in Add Item.',
   picture: 'Picture',
+  /** Under the item form's pictures: the size group the chosen one gives the item. */
+  pictureSizeGroup: (group: string) => `Size group: ${group}, set by the picture.`,
+  // Pictures: each picture's size group
+  pictures: 'Pictures',
+  picturesDescription: 'Each picture sets the size group of every item that has it. Orders keep the size group they were placed with.',
+  pictureItems: (n: number) => (n === 0 ? 'No items' : plural(n, { one: '# item', other: '# items' })),
+  pictureSizeGroupFor: (picture: string) => `Size group for ${picture}`,
+  pictureChanges: (n: number) => plural(n, { one: 'Changes the size group of # item.', other: 'Changes the size group of # items.' }),
   activeInAddItem: 'Active (offered in Add Item)',
   priceInvalid: 'Enter a price like 49.99.',
   periodInvalid: 'Whole months, at least 1.',

@@ -34,12 +34,22 @@ export function appDSN(): string {
 }
 
 /**
- * Empties the test database (the trails' TRUNCATE guard asks for the flag)
- * and lets ppe_app sign in with the test password.
+ * Puts each catalogue picture's size group back to migration 0036's: the
+ * pictures are fixed rows that TRUNCATE leaves, so a run stopped halfway
+ * through changing one would otherwise leave it changed for the next.
+ */
+const resetPictures = `UPDATE catalogue_pictures SET size_group = CASE
+  WHEN icon = 'shoes' THEN 'SHOES'
+  WHEN icon IN ('jacket', 'insulated_jacket', 'trousers', 'vest') THEN 'CLOTHING'
+  ELSE 'NONE' END`
+
+/**
+ * Empties the test database (the trails' TRUNCATE guard asks for the flag),
+ * resets the catalogue pictures, and lets ppe_app sign in with the test password.
  */
 export async function prepareDatabase(query: (sql: string) => Promise<unknown>, ...more: string[]): Promise<void> {
   await query(
-    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
+    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE; ${resetPictures}; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
   )
   await allowAppRole(query)
 }

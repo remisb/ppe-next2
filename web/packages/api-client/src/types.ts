@@ -145,7 +145,7 @@ export interface EmployeeSizesInput {
   shoe_size: string | null
 }
 
-/** An item's pictogram; the web app draws each one. */
+/** An item's picture; the web app draws each one. Each is a CataloguePicture, which gives its items their size group. */
 export type CatalogueIcon =
   | 'shoes'
   | 'jacket'
@@ -164,6 +164,7 @@ export interface CatalogueItem {
   id: string
   name: string
   details: string
+  /** The picture's size group (read only): the item has none of its own. */
   size_group: SizeGroup
   /** What the supplier charges; optional, never needed to order. */
   purchase_price_cents: number | null
@@ -193,10 +194,24 @@ export interface PriceEntry {
   before_service_months: number | null
 }
 
+/** A picture (GET /api/v1/catalogue/pictures): the category an item belongs to, which sets its size group. */
+export interface CataloguePicture {
+  id: string
+  icon: CatalogueIcon
+  size_group: SizeGroup
+  /** Live items with this picture, active or not. */
+  item_count: number
+}
+
+/** Body of PUT /api/v1/catalogue/pictures/{icon}. */
+export interface CataloguePictureInput {
+  size_group: SizeGroup
+}
+
+/** An item's size group is its picture's, so the body has none. */
 export interface CatalogueItemInput {
   name: string
   details: string
-  size_group: SizeGroup
   purchase_price_cents: number | null
   accounting_price_cents: number | null
   service_period_months: number | null
@@ -718,7 +733,7 @@ export interface BackupRun {
 }
 
 /** The record types the API records changes to (entity_type). */
-export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'item_set' | 'order' | 'asset' | 'settings' | 'access_review' | 'audit_log'
+export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'catalogue_picture' | 'item_set' | 'order' | 'asset' | 'settings' | 'access_review' | 'audit_log'
 
 /** Where a change was made. */
 export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'

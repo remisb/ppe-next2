@@ -29,6 +29,7 @@ export const AUDIT_EVENTS = [
   'catalogue.activated',
   'catalogue.deactivated',
   'catalogue.deleted',
+  'catalogue.picture_changed',
   'item_set.created',
   'item_set.updated',
   'item_set.deleted',

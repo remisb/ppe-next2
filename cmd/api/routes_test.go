@@ -447,7 +447,9 @@ func (stubEmployees) Update(context.Context, uuid.UUID, employee.Mutation) (empl
 
 type stubCatalogue struct{}
 
-func (stubCatalogue) Create(context.Context, catalogue.Item, *audit.Event) error { return nil }
+func (stubCatalogue) Create(_ context.Context, i catalogue.Item, _ *audit.Event) (catalogue.Item, error) {
+	return i, nil
+}
 func (stubCatalogue) Get(context.Context, uuid.UUID) (catalogue.Item, error) {
 	return catalogue.Item{}, catalogue.ErrNotFound
 }
@@ -460,6 +462,12 @@ func (stubCatalogue) PriceHistory(context.Context, uuid.UUID) ([]catalogue.Price
 }
 func (stubCatalogue) Update(context.Context, uuid.UUID, catalogue.Mutation) (catalogue.Item, error) {
 	return catalogue.Item{}, catalogue.ErrNotFound
+}
+func (stubCatalogue) Pictures(context.Context) ([]catalogue.Picture, error) {
+	return []catalogue.Picture{}, nil
+}
+func (stubCatalogue) UpdatePicture(context.Context, catalogue.Icon, catalogue.PictureMutation) (catalogue.Picture, error) {
+	return catalogue.Picture{}, catalogue.ErrPictureNotFound
 }
 
 // stubAudit is an empty trail with no seals; it keeps the events written to
@@ -765,6 +773,8 @@ var policy = map[string]rule{
 
 	"GET /api/v1/catalogue":                    {"", "any"},
 	"GET /api/v1/catalogue/active":             {"", "any"},
+	"GET /api/v1/catalogue/pictures":           {"", "any"},
+	"PUT /api/v1/catalogue/pictures/{icon}":    {role.CatalogueManage, "managers"},
 	"GET /api/v1/catalogue/{id}":               {"", "any"},
 	"GET /api/v1/catalogue/{id}/price-history": {"", "any"},
 	"POST /api/v1/catalogue":                   {role.CatalogueManage, "managers"},

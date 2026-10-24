@@ -17,12 +17,33 @@ import (
 )
 
 type fakeRepo struct {
-	mu     sync.Mutex
-	rows   map[uuid.UUID]Item
-	events []audit.Event
+	mu       sync.Mutex
+	rows     map[uuid.UUID]Item
+	pictures map[Icon]Picture
+	events   []audit.Event
 }
 
-func newFakeRepo() *fakeRepo { return &fakeRepo{rows: map[uuid.UUID]Item{}} }
+// newFakeRepo has migration 0036's pictures: shoes, the four clothes, and no size for the rest.
+func newFakeRepo() *fakeRepo {
+	f := &fakeRepo{rows: map[uuid.UUID]Item{}, pictures: map[Icon]Picture{}}
+	for _, icon := range Icons {
+		g := size.GroupNone
+		switch icon {
+		case IconShoes:
+			g = size.GroupShoes
+		case IconJacket, IconInsulatedJacket, IconTrousers, IconVest:
+			g = size.GroupClothing
+		}
+		f.pictures[icon] = Picture{ID: uuid.New(), Icon: icon, SizeGroup: g}
+	}
+	return f
+}
+
+// withGroup is i as the database reads it: with its picture's size group.
+func (f *fakeRepo) withGroup(i Item) Item {
+	i.SizeGroup = f.pictures[i.Icon].SizeGroup
+	return i
+}
 
 func (f *fakeRepo) nameTaken(name string, except uuid.UUID) bool {
 	for _, i := range f.rows {
@@ -33,17 +54,17 @@ func (f *fakeRepo) nameTaken(name string, except uuid.UUID) bool {
 	return false
 }
 
-func (f *fakeRepo) Create(_ context.Context, i Item, ev *audit.Event) error {
+func (f *fakeRepo) Create(_ context.Context, i Item, ev *audit.Event) (Item, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.nameTaken(i.Name, i.ID) {
-		return ErrNameTaken
+		return Item{}, ErrNameTaken
 	}
 	f.rows[i.ID] = i
 	if ev != nil {
 		f.events = append(f.events, *ev)
 	}
-	return nil
+	return f.withGroup(i), nil
 }
 
 func (f *fakeRepo) Get(_ context.Context, id uuid.UUID) (Item, error) {
@@ -53,7 +74,7 @@ func (f *fakeRepo) Get(_ context.Context, id uuid.UUID) (Item, error) {
 	if !ok || i.Deleted() {
 		return Item{}, ErrNotFound
 	}
-	return i, nil
+	return f.withGroup(i), nil
 }
 
 func (f *fakeRepo) PriceHistory(_ context.Context, id uuid.UUID) ([]PriceEntry, error) {
@@ -81,7 +102,7 @@ func (f *fakeRepo) list(activeOnly bool) []Item {
 	out := make([]Item, 0)
 	for _, i := range f.rows {
 		if !i.Deleted() && (!activeOnly || i.Active) {
-			out = append(out, i)
+			out = append(out, f.withGroup(i))
 		}
 	}
 	slices.SortFunc(out, func(a, b Item) int {
@@ -112,7 +133,7 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Item, er
 	if !ok || cur.Deleted() {
 		return Item{}, ErrNotFound
 	}
-	next, evs, err := m(cur)
+	next, evs, err := m(f.withGroup(cur))
 	if err != nil {
 		return Item{}, err
 	}
@@ -120,6 +141,38 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Item, er
 		return Item{}, ErrNameTaken
 	}
 	f.rows[id] = next
+	f.events = append(f.events, evs...)
+	return f.withGroup(next), nil
+}
+
+func (f *fakeRepo) Pictures(context.Context) ([]Picture, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]Picture, 0, len(Icons))
+	for _, icon := range Icons {
+		p := f.pictures[icon]
+		for _, i := range f.rows {
+			if i.Icon == icon && !i.Deleted() {
+				p.ItemCount++
+			}
+		}
+		out = append(out, p)
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) UpdatePicture(_ context.Context, icon Icon, m PictureMutation) (Picture, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cur, ok := f.pictures[icon]
+	if !ok {
+		return Picture{}, ErrPictureNotFound
+	}
+	next, evs, err := m(cur)
+	if err != nil {
+		return Picture{}, err
+	}
+	f.pictures[icon] = next
 	f.events = append(f.events, evs...)
 	return next, nil
 }
@@ -134,14 +187,14 @@ func newTestService() (*Service, *fakeRepo) {
 func TestCreate(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	i, err := svc.Create(ctx, Params{Name: "Safety shoes", SizeGroup: size.GroupShoes, AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, testActor)
+	i, err := svc.Create(ctx, Params{Name: "Safety shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, testActor)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if i.Currency != CurrencyEUR || i.DisplayRank != DefaultDisplayRank || len(repo.events) != 1 || repo.events[0].Event != EventCreated {
 		t.Errorf("item %+v events %+v", i, repo.events)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "SAFETY SHOES", SizeGroup: size.GroupShoes}, testActor); !errors.Is(err, ErrNameTaken) {
+	if _, err := svc.Create(ctx, Params{Name: "SAFETY SHOES"}, testActor); !errors.Is(err, ErrNameTaken) {
 		t.Errorf("duplicate name err = %v", err)
 	}
 }
@@ -150,20 +203,20 @@ func TestCreate(t *testing.T) {
 func TestIcon(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	i, err := svc.Create(ctx, Params{Name: "Ear plugs", SizeGroup: size.GroupNone}, testActor)
+	i, err := svc.Create(ctx, Params{Name: "Ear plugs"}, testActor)
 	if err != nil || i.Icon != IconOther {
 		t.Fatalf("default icon %q, err %v", i.Icon, err)
 	}
-	u, err := svc.Update(ctx, i.ID, Params{Name: "Ear plugs", SizeGroup: size.GroupNone, Icon: " Ear "}, testActor)
+	u, err := svc.Update(ctx, i.ID, Params{Name: "Ear plugs", Icon: " Ear "}, testActor)
 	if err != nil || u.Icon != IconEar {
 		t.Fatalf("updated icon %q, err %v", u.Icon, err)
 	}
 	for _, icon := range []Icon{IconWeldingHelmet, IconInsulatedJacket} {
-		if w, err := svc.Create(ctx, Params{Name: "Item " + string(icon), SizeGroup: size.GroupNone, Icon: icon}, testActor); err != nil || w.Icon != icon {
+		if w, err := svc.Create(ctx, Params{Name: "Item " + string(icon), Icon: icon}, testActor); err != nil || w.Icon != icon {
 			t.Errorf("icon %q: got %q, err %v", icon, w.Icon, err)
 		}
 	}
-	if _, err := svc.Create(ctx, Params{Name: "Boots", SizeGroup: size.GroupShoes, Icon: "boot"}, testActor); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.Create(ctx, Params{Name: "Boots", Icon: "boot"}, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("unknown icon err = %v", err)
 	}
 }
@@ -171,7 +224,7 @@ func TestIcon(t *testing.T) {
 func TestPriceChangeAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	p := Params{Name: "Work jacket", SizeGroup: size.GroupClothing, AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
+	p := Params{Name: "Work jacket", AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
 	i, _ := svc.Create(ctx, p, testActor)
 	repo.events = nil
 
@@ -216,7 +269,7 @@ func TestActivationAndListActive(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	mk := func(name string, rank int) Item {
-		i, err := svc.Create(ctx, Params{Name: name, SizeGroup: size.GroupNone, Active: true, DisplayRank: ip(rank)}, testActor)
+		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, testActor)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -253,14 +306,14 @@ func TestActivationAndListActive(t *testing.T) {
 func TestDelete(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	i, _ := svc.Create(ctx, Params{Name: "Gloves", SizeGroup: size.GroupNone}, testActor)
+	i, _ := svc.Create(ctx, Params{Name: "Gloves"}, testActor)
 	if err := svc.Delete(ctx, i.ID, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.Delete(ctx, i.ID, testActor); !errors.Is(err, ErrNotFound) {
 		t.Errorf("second delete err = %v", err)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "gloves", SizeGroup: size.GroupNone}, testActor); err != nil {
+	if _, err := svc.Create(ctx, Params{Name: "gloves"}, testActor); err != nil {
 		t.Errorf("name reuse after delete: %v", err)
 	}
 }
@@ -268,7 +321,7 @@ func TestDelete(t *testing.T) {
 func TestPriceHistory(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	p := Params{Name: "Gloves", SizeGroup: size.GroupNone, AccountingPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
+	p := Params{Name: "Gloves", AccountingPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
 	i, _ := svc.Create(ctx, p, testActor)
 	p.AccountingPriceCents = i64(250)
 	svc.Update(ctx, i.ID, p, testActor)
@@ -295,7 +348,7 @@ func TestPriceHistory(t *testing.T) {
 func TestOneSaveRecordsEachKindOfChange(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	p := Params{Name: "Work jacket", SizeGroup: size.GroupClothing, AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
+	p := Params{Name: "Work jacket", AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
 	i, _ := svc.Create(ctx, p, testActor)
 	repo.events = nil
 
@@ -312,5 +365,89 @@ func TestOneSaveRecordsEachKindOfChange(t *testing.T) {
 	}
 	if string(repo.events[2].After) != `{"name":"Winter jacket"}` {
 		t.Errorf("updated after = %s", repo.events[2].After)
+	}
+}
+
+// An item's size group is its picture's: set by the picture it is created
+// with, changed with its picture, and recorded beside a new picture.
+func TestSizeGroupFromPicture(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	shoes, err := svc.Create(ctx, Params{Name: "Safety shoes", Icon: IconShoes, Active: true}, testActor)
+	if err != nil || shoes.SizeGroup != size.GroupShoes {
+		t.Fatalf("created size group %q, err %v", shoes.SizeGroup, err)
+	}
+	other, _ := svc.Create(ctx, Params{Name: "Ear plugs", Active: true}, testActor)
+	if other.SizeGroup != size.GroupNone {
+		t.Errorf("default picture's size group = %q", other.SizeGroup)
+	}
+	repo.events = nil
+
+	u, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconVest, Active: true}, testActor)
+	if err != nil || u.SizeGroup != size.GroupClothing {
+		t.Fatalf("new picture's size group %q, err %v", u.SizeGroup, err)
+	}
+	if len(repo.events) != 1 || string(repo.events[0].Before) != `{"icon":"other","size_group":"NONE"}` ||
+		string(repo.events[0].After) != `{"icon":"vest","size_group":"CLOTHING"}` {
+		t.Errorf("picture change recorded %+v", repo.events)
+	}
+	repo.events = nil
+	// Another picture with the same size group records the picture alone.
+	if _, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconJacket, Active: true}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if len(repo.events) != 1 || string(repo.events[0].After) != `{"icon":"jacket"}` {
+		t.Errorf("same-group picture change recorded %+v", repo.events)
+	}
+}
+
+func TestUpdatePicture(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	gloves, _ := svc.Create(ctx, Params{Name: "Gloves", Icon: IconGloves, Active: true}, testActor)
+	svc.Create(ctx, Params{Name: "Winter gloves", Icon: IconGloves, Active: true}, testActor)
+	repo.events = nil
+
+	p, err := svc.UpdatePicture(ctx, " Gloves ", PictureParams{SizeGroup: "clothing"}, testActor)
+	if err != nil || p.SizeGroup != size.GroupClothing {
+		t.Fatalf("picture %+v, err %v", p, err)
+	}
+	if got, _ := svc.Get(ctx, gloves.ID); got.SizeGroup != size.GroupClothing {
+		t.Errorf("the picture's item has size group %q", got.SizeGroup)
+	}
+	if len(repo.events) != 1 || repo.events[0].Event != EventPictureChanged || repo.events[0].EntityType != PictureEntity ||
+		repo.events[0].EntityID != p.ID || string(repo.events[0].Before) != `{"icon":"gloves","size_group":"NONE"}` ||
+		string(repo.events[0].After) != `{"icon":"gloves","size_group":"CLOTHING"}` {
+		t.Errorf("events = %+v", repo.events)
+	}
+	// Saving the size group it has records nothing.
+	if _, err := svc.UpdatePicture(ctx, IconGloves, PictureParams{SizeGroup: size.GroupClothing}, testActor); err != nil || len(repo.events) != 1 {
+		t.Errorf("unchanged save: err %v, events %d", err, len(repo.events))
+	}
+	pics, _ := svc.Pictures(ctx)
+	if len(pics) != len(Icons) || pics[0].Icon != IconShoes || pics[5].Icon != IconGloves || pics[5].ItemCount != 2 {
+		t.Errorf("pictures = %+v", pics)
+	}
+	for name, err := range map[string]error{
+		"unknown picture": func() error {
+			_, err := svc.UpdatePicture(ctx, "boot", PictureParams{SizeGroup: size.GroupNone}, testActor)
+			return err
+		}(),
+		"unknown size group": func() error {
+			_, err := svc.UpdatePicture(ctx, IconGloves, PictureParams{SizeGroup: "GLOVES"}, testActor)
+			return err
+		}(),
+		"no actor": func() error {
+			_, err := svc.UpdatePicture(ctx, IconGloves, PictureParams{SizeGroup: size.GroupNone}, uuid.Nil)
+			return err
+		}(),
+	} {
+		want := ErrInvalid
+		if name == "unknown picture" {
+			want = ErrPictureNotFound
+		}
+		if !errors.Is(err, want) {
+			t.Errorf("%s: err = %v, want %v", name, err, want)
+		}
 	}
 }

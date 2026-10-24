@@ -66,10 +66,10 @@ func seedPG(t *testing.T) pgData {
 		VALUES ($1, 'Gone', 'Away', 54, '44', now(), now(), now(), $2, $2, $2)`, gone, admin)
 
 	shoes, gloves, draft := uuid.New(), uuid.New(), uuid.New()
-	exec(`INSERT INTO catalogue_items (id, name, size_group, accounting_price_cents, service_period_months, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, 'Safety shoes', 'SHOES', 5000, 12, now(), now(), $4, $4),
-		       ($2, 'Gloves', 'NONE', 200, 1, now(), now(), $4, $4),
-		       ($3, 'Helmet', 'NONE', NULL, 24, now(), now(), $4, $4)`, shoes, gloves, draft, admin)
+	exec(`INSERT INTO catalogue_items (id, name, icon, accounting_price_cents, service_period_months, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'Safety shoes', 'shoes', 5000, 12, now(), now(), $4, $4),
+		       ($2, 'Gloves', 'gloves', 200, 1, now(), now(), $4, $4),
+		       ($3, 'Helmet', 'helmet', NULL, 24, now(), now(), $4, $4)`, shoes, gloves, draft, admin)
 	exec(`INSERT INTO item_sets (id, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Starter', now(), now(), $2, $2)`, uuid.New(), admin)
 
@@ -231,9 +231,9 @@ func TestPostgresManager(t *testing.T) {
 		}
 	}
 	vest, plugs := uuid.New(), uuid.New()
-	exec(`INSERT INTO catalogue_items (id, name, size_group, accounting_price_cents, service_period_months, active, created_at, updated_at, created_by_user_id, updated_by_user_id)
-		VALUES ($1, 'Old vest', 'CLOTHING', 1500, 12, FALSE, now(), now(), $3, $3),
-		       ($2, 'Ear plugs', 'NONE', 50, 1, TRUE, now(), now(), $3, $3)`, vest, plugs, d.admin)
+	exec(`INSERT INTO catalogue_items (id, name, icon, accounting_price_cents, service_period_months, active, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'Old vest', 'vest', 1500, 12, FALSE, now(), now(), $3, $3),
+		       ($2, 'Ear plugs', 'ear', 50, 1, TRUE, now(), now(), $3, $3)`, vest, plugs, d.admin)
 	// Events written before migration 0021 name the accounting price
 	// unit_price_cents and have no purchase price.
 	legacyPrice := func(at string, before, after int64) {

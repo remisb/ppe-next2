@@ -91,6 +91,7 @@ var errorStatuses = []struct {
 	{session.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
+	{catalogue.ErrPictureNotFound, http.StatusNotFound},
 	{itemset.ErrNotFound, http.StatusNotFound},
 	{order.ErrNotFound, http.StatusNotFound},
 	{order.ErrEmployeeNotFound, http.StatusNotFound},

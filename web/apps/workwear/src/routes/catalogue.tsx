@@ -99,6 +99,7 @@ export function Catalogue({
   const canManageItems = useSession().can('catalogue.manage')
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
+  const [picturesOpen, setPicturesOpen] = useState(false)
   const [actionError, setActionError] = useState<unknown>()
   // null is the catalogue's display order, the order Add Item lists items in.
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
@@ -190,9 +191,14 @@ export function Catalogue({
             descriptionClassName="max-md:hidden"
             actions={
               canManageItems ? (
-                <Button onClick={() => setEditing('new')}>
-                  <Plus aria-hidden /> {t.catalogue.addItem}
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => setPicturesOpen(true)}>
+                    {t.catalogue.pictures}
+                  </Button>
+                  <Button onClick={() => setEditing('new')}>
+                    <Plus aria-hidden /> {t.catalogue.addItem}
+                  </Button>
+                </>
               ) : undefined
             }
           />
@@ -352,6 +358,14 @@ export function Catalogue({
           items.reload()
         }}
       />
+      <PicturesSheet
+        open={picturesOpen}
+        onClose={() => setPicturesOpen(false)}
+        onSaved={() => {
+          setPicturesOpen(false)
+          items.reload()
+        }}
+      />
     </>
   )
 }
@@ -362,7 +376,6 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   const existing = item !== 'new' && item !== null ? item : undefined
   const [name, setName] = useState('')
   const [details, setDetails] = useState('')
-  const [group, setGroup] = useState<SizeGroup>('NONE')
   const [purchase, setPurchase] = useState('')
   const [price, setPrice] = useState('')
   const [period, setPeriod] = useState('')
@@ -372,11 +385,13 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   // A new item's picture follows its name until someone picks one.
   const [iconPicked, setIconPicked] = useState(false)
   const [error, setError] = useState<string>()
+  // The picture gives the item its size group; read afresh each time the form opens.
+  const pictures = useLoad(() => client.catalogue.pictures(), [item])
+  const pictureGroup = pictures.data?.find((p) => p.icon === icon)?.size_group
 
   useEffect(() => {
     setName(existing?.name ?? '')
     setDetails(existing?.details ?? '')
-    setGroup(existing?.size_group ?? 'NONE')
     setPurchase(existing?.purchase_price_cents != null ? (existing.purchase_price_cents / 100).toFixed(2) : '')
     setPrice(existing?.accounting_price_cents != null ? (existing.accounting_price_cents / 100).toFixed(2) : '')
     setPeriod(existing?.service_period_months?.toString() ?? '')
@@ -402,7 +417,6 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     const input: CatalogueItemInput = {
       name,
       details,
-      size_group: group,
       purchase_price_cents: purchaseCents,
       accounting_price_cents: priceCents,
       service_period_months: months,
@@ -450,17 +464,6 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
           )}
         </Field>
         <Field label={t.catalogue.manufacturerModel}>{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
-        <Field label={t.catalogue.sizeGroup} hint={t.catalogue.sizeGroupHint}>
-          {(p) => (
-            <Select {...controlProps(p)} value={group} onChange={(e) => setGroup(e.target.value as SizeGroup)}>
-              {(Object.keys(sizeGroupLabel) as SizeGroup[]).map((g) => (
-                <option key={g} value={g}>
-                  {sizeGroupLabel[g]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
         <Field label={t.catalogue.purchasePriceEuro} hint={t.catalogue.purchasePriceHint} error={purchaseError}>
           {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={purchase} onChange={(e) => setPurchase(e.target.value)} />}
         </Field>
@@ -495,12 +498,107 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
               </label>
             ))}
           </div>
+          {/* Polite, so a screen reader hears the size group a newly picked picture brings. */}
+          <p aria-live="polite" className="mt-2 text-sm text-muted-foreground">
+            {pictureGroup ? `${t.catalogue.pictureSizeGroup(sizeGroupLabel[pictureGroup])} ${t.catalogue.sizeGroupHint}` : null}
+          </p>
         </fieldset>
         <label className="flex min-h-11 items-center gap-3 text-sm sm:col-span-2">
           <input type="checkbox" className="size-5 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} /> {t.catalogue.activeInAddItem}
         </label>
         {error ? <p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p> : null}
       </form>
+    </FormSheet>
+  )
+}
+
+/**
+ * Pictures: the size group each picture gives every item that has it. Saving
+ * changes those items at once; orders keep the size group they were placed with.
+ */
+export function PicturesSheet({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
+  const { client } = useApi()
+  const pictures = useLoad(() => client.catalogue.pictures(), [open])
+  // The size groups chosen here, by picture, until saved.
+  const [chosen, setChosen] = useState<Partial<Record<CatalogueIcon, SizeGroup>>>({})
+  const [error, setError] = useState<string>()
+
+  useEffect(() => {
+    setChosen({})
+    setError(undefined)
+  }, [open])
+
+  const changed = (pictures.data ?? []).filter((p) => chosen[p.icon] !== undefined && chosen[p.icon] !== p.size_group)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      for (const p of changed) await client.catalogue.updatePicture(p.icon, { size_group: chosen[p.icon]! })
+      onSaved()
+    } catch (err) {
+      setError(errorText(err))
+      pictures.reload()
+    }
+  }
+
+  return (
+    <FormSheet
+      open={open}
+      onClose={onClose}
+      title={t.catalogue.pictures}
+      description={t.catalogue.picturesDescription}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            {t.common.cancel}
+          </Button>
+          <Button type="submit" form="pictures-form" disabled={changed.length === 0}>
+            {t.common.save}
+          </Button>
+        </>
+      }
+    >
+      {pictures.error ? (
+        <ErrorState error={pictures.error} onRetry={pictures.reload} />
+      ) : !pictures.data ? (
+        <Loading />
+      ) : (
+        <form id="pictures-form" onSubmit={submit}>
+          <ul aria-label={t.catalogue.pictures} className="divide-y divide-border rounded-lg border border-border">
+            {pictures.data.map((p) => {
+              const label = t.catalogue.icons[p.icon]
+              const value = chosen[p.icon] ?? p.size_group
+              return (
+                <li key={p.icon} className="flex items-center gap-3 p-2">
+                  <ItemTile icon={p.icon} />
+                  <div className="min-w-0 flex-1 text-sm">
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">{t.catalogue.pictureItems(p.item_count)}</div>
+                    {value !== p.size_group && p.item_count > 0 ? <div className="text-xs text-warning">{t.catalogue.pictureChanges(p.item_count)}</div> : null}
+                  </div>
+                  <Select
+                    aria-label={t.catalogue.pictureSizeGroupFor(label)}
+                    value={value}
+                    onChange={(e) => setChosen((c) => ({ ...c, [p.icon]: e.target.value as SizeGroup }))}
+                    className="w-36 shrink-0"
+                  >
+                    {(Object.keys(sizeGroupLabel) as SizeGroup[]).map((g) => (
+                      <option key={g} value={g}>
+                        {sizeGroupLabel[g]}
+                      </option>
+                    ))}
+                  </Select>
+                </li>
+              )
+            })}
+          </ul>
+          {error ? (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+        </form>
+      )}
     </FormSheet>
   )
 }

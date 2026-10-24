@@ -1,6 +1,7 @@
 // Package catalogue is the Item Catalogue: the only normal source of item name,
 // details, size group, prices and service period. Values are copied into
 // order lines at Mark as Ordered, so editing an item never changes history.
+// An item's size group is its picture's (Picture): the item has none of its own.
 package catalogue
 
 import (
@@ -22,7 +23,8 @@ const (
 	DefaultDisplayRank = 1000
 )
 
-// Icon is an item's pictogram, from a fixed set the web app draws.
+// Icon is an item's picture, from a fixed set the web app draws. Each one is a
+// Picture, which gives its items their size group.
 type Icon string
 
 const (
@@ -41,7 +43,7 @@ const (
 )
 
 // Icons lists every Icon, in the order a picker offers them. The database's
-// catalogue_items_icon_check (migration 0014) must list the same values.
+// catalogue_pictures (migration 0036) has a row for each and refuses others.
 var Icons = []Icon{
 	IconShoes, IconJacket, IconInsulatedJacket, IconTrousers, IconVest, IconGloves,
 	IconHelmet, IconWeldingHelmet, IconGlasses, IconEar, IconMask, IconOther,
@@ -56,15 +58,43 @@ func (i Icon) Valid() bool {
 	return false
 }
 
+// Picture is the category an item belongs to: a pictogram and the size group of
+// every item that has it. The set is fixed (Icons); only SizeGroup changes.
+type Picture struct {
+	ID        uuid.UUID  `json:"id"`
+	Icon      Icon       `json:"icon"`
+	SizeGroup size.Group `json:"size_group"`
+	// ItemCount is the live items with this picture, active or not.
+	ItemCount int `json:"item_count"`
+}
+
+// PictureParams are a picture's client-settable fields.
+type PictureParams struct {
+	SizeGroup size.Group
+}
+
+func (p *PictureParams) Normalize() {
+	p.SizeGroup = size.Group(strings.ToUpper(strings.TrimSpace(string(p.SizeGroup))))
+}
+
+func (p *PictureParams) Validate() error {
+	p.Normalize()
+	if !p.SizeGroup.Valid() {
+		return fieldError("size_group", "must be CLOTHING, SHOES or NONE")
+	}
+	return nil
+}
+
 // Item is one orderable catalogue entry. It has two prices: the purchase
 // price, what the supplier charges, and the accounting price, what the
 // organisation books and orders show. AccountingPriceCents and
 // ServicePeriodMonths may be nil while an item is being set up; Mark as Ordered
 // refuses such an item (see Orderable). PurchasePriceCents is optional.
 type Item struct {
-	ID                   uuid.UUID  `json:"id"`
-	Name                 string     `json:"name"`
-	Details              string     `json:"details"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Details string    `json:"details"`
+	// SizeGroup is the picture's (Icon's), read with the item; never written.
 	SizeGroup            size.Group `json:"size_group"`
 	PurchasePriceCents   *int64     `json:"purchase_price_cents"`
 	AccountingPriceCents *int64     `json:"accounting_price_cents"`
@@ -109,24 +139,23 @@ func (i Item) Orderable() bool {
 }
 
 // Params are the client-settable fields; Update replaces all of them.
-// Currency is not settable: it is always EUR.
+// Currency is not settable: it is always EUR, and neither is the size group,
+// which is the picture's.
 type Params struct {
 	Name                 string
 	Details              string
-	SizeGroup            size.Group
 	PurchasePriceCents   *int64
 	AccountingPriceCents *int64
 	ServicePeriodMonths  *int
 	Active               bool
 	DisplayRank          *int
-	// Icon is the pictogram; empty is IconOther.
+	// Icon is the picture, which sets the size group; empty is IconOther.
 	Icon Icon
 }
 
 func (p *Params) Normalize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.Details = strings.TrimSpace(p.Details)
-	p.SizeGroup = size.Group(strings.ToUpper(strings.TrimSpace(string(p.SizeGroup))))
 	if p.DisplayRank == nil {
 		r := DefaultDisplayRank
 		p.DisplayRank = &r
@@ -146,8 +175,6 @@ func (p *Params) Validate() error {
 		return fieldError("name", "is too long")
 	case len(p.Details) > maxDetailsLen:
 		return fieldError("details", "is too long")
-	case !p.SizeGroup.Valid():
-		return fieldError("size_group", "must be CLOTHING, SHOES or NONE")
 	case p.PurchasePriceCents != nil && *p.PurchasePriceCents < 0:
 		return fieldError("purchase_price_cents", "must not be negative")
 	case p.AccountingPriceCents != nil && *p.AccountingPriceCents < 0:

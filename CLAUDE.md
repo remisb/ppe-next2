@@ -112,6 +112,10 @@ twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not
 `asset_signed_copies` is append-only (trigger and grants): uploading again adds a row. The
 files themselves are in the Spaces bucket, not in the database or its backups
 (`docs/backups.md`, "Uploaded files").
+An item's size group is its **picture's** (migration 0036, `catalogue_pictures`: one fixed
+row per pictogram, ppe_app may only UPDATE it; spec "Pictures" in `catalogue-service.md`):
+`catalogue_items` has no `size_group` column, so SQL over items joins the picture for it, and
+the e2e setup puts the pictures' size groups back. Order lines keep their own.
 An item also has an optional purchase price (migration 0021), snapshotted on order lines
 but shown on no order or record. The app labels the accounting price "Price"; the record's
 `unit_price_cents` key holds it and never changes, because it is part of the document hash.

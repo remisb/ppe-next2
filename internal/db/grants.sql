@@ -6,7 +6,8 @@
 -- It reads and writes the business tables and uses their sequences; only
 -- INSERTs and SELECTs the trails (audit_events, auth_events, audit_seals, audit_seal_stamps,
 -- audit_purges, order_lines, asset_numbers), which it purges only through the owner's
--- functions; never deletes an asset assignment; only reads what others write (schema_migrations, the backup
+-- functions; never deletes an asset assignment; only changes the catalogue's
+-- fixed pictures (catalogue_pictures), never adds or deletes one; only reads what others write (schema_migrations, the backup
 -- agent's tables); reads the statistics System shows; truncates, alters and
 -- creates nothing. A new trail table belongs in the REVOKE below.
 
@@ -25,6 +26,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO ppe_app;
 REVOKE UPDATE, DELETE ON audit_events, auth_events, audit_seals, audit_seal_stamps, audit_purges, order_lines, asset_numbers, asset_signed_copies FROM ppe_app;
 REVOKE DELETE ON asset_assignments FROM ppe_app;
+REVOKE INSERT, DELETE ON catalogue_pictures FROM ppe_app;
 REVOKE INSERT, UPDATE, DELETE ON schema_migrations, dbbackup_runs, dbbackup_agents FROM ppe_app;
 REVOKE EXECUTE ON FUNCTION purge_audit_events(TIMESTAMPTZ), purge_auth_events(TIMESTAMPTZ) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION purge_audit_events(TIMESTAMPTZ), purge_auth_events(TIMESTAMPTZ) TO ppe_app;

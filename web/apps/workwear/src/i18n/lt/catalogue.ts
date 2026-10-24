@@ -51,6 +51,13 @@ export const catalogue: CatalogueText = {
   servicePeriodMonths: 'Naudojimo laikotarpis (mėn.)',
   displayOrderHint: 'Mažesnis skaičius rodomas pirmiau renkantis prekes.',
   picture: 'Paveikslėlis',
+  pictureSizeGroup: (group: string) => `Dydžių grupė: ${group}, pagal paveikslėlį.`,
+  pictures: 'Paveikslėliai',
+  picturesDescription: 'Kiekvienas paveikslėlis nustato visų jį turinčių prekių dydžių grupę. Užsakymuose lieka ta dydžių grupė, su kuria jie pateikti.',
+  pictureItems: (n: number) => (n === 0 ? 'Prekių nėra' : plural(n, { one: '# prekė', few: '# prekės', other: '# prekių' })),
+  pictureSizeGroupFor: (picture: string) => `Dydžių grupė: ${picture}`,
+  pictureChanges: (n: number) =>
+    plural(n, { one: 'Pakeis # prekės dydžių grupę.', few: 'Pakeis # prekių dydžių grupę.', other: 'Pakeis # prekių dydžių grupę.' }),
   activeInAddItem: 'Aktyvi (siūloma renkantis prekes užsakymui)',
   priceInvalid: 'Įveskite kainą, pvz., 49,99.',
   periodInvalid: 'Sveikas mėnesių skaičius, ne mažiau kaip 1.',

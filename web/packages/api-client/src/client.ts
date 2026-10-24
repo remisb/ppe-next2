@@ -24,8 +24,11 @@ import type {
   AuditRecordKind,
   AuditVerification,
   BackupStatus,
+  CatalogueIcon,
   CatalogueItem,
   CatalogueItemInput,
+  CataloguePicture,
+  CataloguePictureInput,
   ClientErrorReport,
   ConfirmationLink,
   Dashboard,
@@ -327,6 +330,10 @@ export function createClient(options: ClientOptions) {
       setActive: (id: string, active: boolean) =>
         request<CatalogueItem>('POST', `/api/v1/catalogue/${seg(id)}/${active ? 'activate' : 'deactivate'}`),
       remove: (id: string) => request<void>('DELETE', `/api/v1/catalogue/${seg(id)}`),
+      /** Every picture in the item form's order, with the size group it gives its items. */
+      pictures: () => request<CataloguePicture[]>('GET', '/api/v1/catalogue/pictures'),
+      updatePicture: (icon: CatalogueIcon, input: CataloguePictureInput) =>
+        request<CataloguePicture>('PUT', `/api/v1/catalogue/pictures/${seg(icon)}`, input),
     },
 
     itemSets: {

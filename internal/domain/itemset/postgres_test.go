@@ -36,8 +36,8 @@ func newTestPool(t *testing.T, n int) (*pgxpool.Pool, uuid.UUID, []uuid.UUID) {
 	items := make([]uuid.UUID, n)
 	for i := range items {
 		items[i] = uuid.New()
-		if _, err := pool.Exec(ctx, `INSERT INTO catalogue_items (id, name, size_group, created_at, updated_at,
-			created_by_user_id, updated_by_user_id) VALUES ($1, $2, 'NONE', now(), now(), $3, $3)`,
+		if _, err := pool.Exec(ctx, `INSERT INTO catalogue_items (id, name, created_at, updated_at,
+			created_by_user_id, updated_by_user_id) VALUES ($1, $2, now(), now(), $3, $3)`,
 			items[i], "item-"+items[i].String(), actor); err != nil {
 			t.Fatal(err)
 		}

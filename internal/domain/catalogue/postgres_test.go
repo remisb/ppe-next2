@@ -42,7 +42,11 @@ func TestPostgresCatalogue(t *testing.T) {
 	svc := NewService(NewPostgresRepository(pool))
 	ctx := context.Background()
 
-	p := Params{Name: "Work trousers", SizeGroup: size.GroupClothing, PurchasePriceCents: i64(1900), AccountingPriceCents: i64(2500),
+	// The trousers start under "other", made Clothing for the test.
+	if _, err := pool.Exec(ctx, `UPDATE catalogue_pictures SET size_group = 'CLOTHING' WHERE icon = 'other'`); err != nil {
+		t.Fatal(err)
+	}
+	p := Params{Name: "Work trousers", PurchasePriceCents: i64(1900), AccountingPriceCents: i64(2500),
 		ServicePeriodMonths: ip(12), Active: true, DisplayRank: ip(3)}
 	i, err := svc.Create(ctx, p, actor)
 	if err != nil {
@@ -51,7 +55,7 @@ func TestPostgresCatalogue(t *testing.T) {
 	if got, _ := svc.Get(ctx, i.ID); *got.PurchasePriceCents != 1900 || *got.AccountingPriceCents != 2500 {
 		t.Errorf("prices read back = %v, %v", got.PurchasePriceCents, got.AccountingPriceCents)
 	}
-	draft, err := svc.Create(ctx, Params{Name: "Helmet", SizeGroup: size.GroupNone, Active: true}, actor)
+	draft, err := svc.Create(ctx, Params{Name: "Helmet", Active: true}, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,14 +64,22 @@ func TestPostgresCatalogue(t *testing.T) {
 		t.Errorf("draft item = %+v", got)
 	}
 	// The pictogram is stored and read back; the database refuses one the app cannot draw.
-	if _, err := svc.Update(ctx, draft.ID, Params{Name: "Helmet", SizeGroup: size.GroupNone, Active: true, Icon: IconHelmet}, actor); err != nil {
+	if _, err := svc.Update(ctx, draft.ID, Params{Name: "Helmet", Active: true, Icon: IconHelmet}, actor); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := svc.Get(ctx, draft.ID); got.Icon != IconHelmet {
 		t.Errorf("icon = %q", got.Icon)
 	}
-	// The database accepts every pictogram the app draws: its CHECK and Icons list the same set.
-	for _, icon := range Icons {
+	// The database has a picture for every pictogram the app draws, in Icons
+	// order, and refuses an item with any other.
+	pics, err := svc.Pictures(ctx)
+	if err != nil || len(pics) != len(Icons) {
+		t.Fatalf("pictures = %+v, err %v", pics, err)
+	}
+	for n, icon := range Icons {
+		if pics[n].Icon != icon || pics[n].ID == uuid.Nil {
+			t.Errorf("picture %d = %+v, want %q", n, pics[n], icon)
+		}
 		if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = $2 WHERE id = $1`, draft.ID, string(icon)); err != nil {
 			t.Errorf("the database refused icon %q: %v", icon, err)
 		}
@@ -75,12 +87,40 @@ func TestPostgresCatalogue(t *testing.T) {
 	if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = 'boot' WHERE id = $1`, draft.ID); err == nil {
 		t.Error("the database accepted an unknown icon")
 	}
+	if _, err := pool.Exec(ctx, `UPDATE catalogue_items SET icon = 'helmet' WHERE id = $1`, draft.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// An item's size group is its picture's, and follows it.
+	if got, _ := svc.Get(ctx, i.ID); got.SizeGroup != size.GroupClothing || got.Icon != IconOther {
+		t.Fatalf("other's size group = %q (icon %q)", got.SizeGroup, got.Icon)
+	}
+	t.Cleanup(func() {
+		pool.Exec(context.Background(), `UPDATE catalogue_pictures SET size_group = 'NONE' WHERE icon IN ('other', 'helmet')`)
+	})
+	pic, err := svc.UpdatePicture(ctx, IconHelmet, PictureParams{SizeGroup: size.GroupClothing}, actor)
+	if err != nil || pic.SizeGroup != size.GroupClothing || pic.ItemCount != 1 {
+		t.Fatalf("picture = %+v, err %v", pic, err)
+	}
+	if got, _ := svc.Get(ctx, draft.ID); got.SizeGroup != size.GroupClothing {
+		t.Errorf("helmet item's size group = %q after its picture changed", got.SizeGroup)
+	}
+	var before, after string
+	if err := pool.QueryRow(ctx, `SELECT before->>'size_group', after->>'size_group' FROM audit_events
+		WHERE entity_type = $1 AND entity_id = $2 AND event = $3`, PictureEntity, pic.ID, EventPictureChanged).Scan(&before, &after); err != nil {
+		t.Fatalf("picture event: %v", err)
+	}
+	if before != "NONE" || after != "CLOTHING" {
+		t.Errorf("picture event %s -> %s", before, after)
+	}
+	if _, err := svc.UpdatePicture(ctx, IconHelmet, PictureParams{SizeGroup: size.GroupNone}, actor); err != nil {
+		t.Fatal(err)
+	}
 
 	p.PurchasePriceCents, p.AccountingPriceCents = i64(2000), i64(2750)
 	if _, err := svc.Update(ctx, i.ID, p, actor); err != nil {
 		t.Fatal(err)
 	}
-	var before, after string
 	if err := pool.QueryRow(ctx, `SELECT before->>'accounting_price_cents', after->>'accounting_price_cents' FROM audit_events
 		WHERE entity_id = $1 AND event = $2`, i.ID, EventPriceChanged).Scan(&before, &after); err != nil {
 		t.Fatalf("price event: %v", err)
@@ -121,7 +161,7 @@ func TestPostgresCatalogue(t *testing.T) {
 	if len(active) != 1 || active[0].ID != i.ID {
 		t.Errorf("active = %+v", active)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "WORK TROUSERS", SizeGroup: size.GroupNone}, actor); !errors.Is(err, ErrNameTaken) {
+	if _, err := svc.Create(ctx, Params{Name: "WORK TROUSERS"}, actor); !errors.Is(err, ErrNameTaken) {
 		t.Errorf("duplicate err = %v", err)
 	}
 }

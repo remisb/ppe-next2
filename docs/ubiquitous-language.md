@@ -195,7 +195,8 @@ Rules for using it:
 ### Size group
 - **Brief:** which size dimension a catalogue item uses: Clothing, Shoes or No size.
 - **Detail:** `CLOTHING` takes a clothing size, `SHOES` a shoe size, `NONE` (gloves,
-  helmets…) none, stored as null and shown as an en dash.
+  helmets…) none, stored as null and shown as an en dash. An item's size group is its
+  **picture's**: the item has none of its own. Order lines keep the one they were ordered with.
 - **Code:** `size.Group`. **UI:** Size group; Clothing, Shoes, No size.
 
 ### Clothing size and size band
@@ -261,8 +262,8 @@ Rules for using it:
 - **Code:** `internal/domain/catalogue`, table `catalogue_items`. **UI:** Item Catalogue.
 
 ### Catalogue item (item)
-- **Brief:** one orderable entry: name, details (manufacturer / model), size group,
-  purchase price, accounting price, service period, display order, picture.
+- **Brief:** one orderable entry: name, details (manufacturer / model), picture (which
+  sets its size group), purchase price, accounting price, service period, display order.
 - **Detail:** the accounting price and service period may be empty while the item is being
   set up. Such an item is **Incomplete** and cannot be ordered. The purchase price is always
   optional. **Inactive** items are not offered in Add
@@ -302,8 +303,14 @@ Rules for using it:
 - **Brief:** where an item sorts in Add Item; lower comes first.
 
 ### Picture (icon)
-- **Brief:** the item's pictogram from a fixed set (shoes, jacket, gloves, helmet…).
-- **Code:** `catalogue.Icon`.
+- **Brief:** the category a catalogue item belongs to: a pictogram from a fixed set (shoes,
+  jacket, gloves, helmet…) and the size group of every item that has it.
+- **Detail:** the set is fixed because the app draws each one; only a picture's size group
+  changes, and changing it changes every item with that picture. A new item's picture follows
+  its name until someone picks one. Not "category" on screen: Company Assets' **category** is
+  something else.
+- **Code:** `catalogue.Icon`, `catalogue.Picture`, table `catalogue_pictures`. **UI:**
+  Picture; **Pictures** (the Item Catalogue's sheet that sets each picture's size group).
 
 ### Item Set
 - **Brief:** a named kit of catalogue items with default quantities, applied in one tap.
@@ -946,6 +953,7 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Save as Employee Default | Išsaugoti kaip numatytąjį | Сохранить как размер сотрудника |
 | Preferred language | Pageidaujama kalba | Предпочитаемый язык |
 | Size group | Dydžių grupė | Группа размеров |
+| Picture / Pictures | Paveikslėlis / Paveikslėliai | Изображение / Изображения |
 | Clothing / Shoes / No size | Drabužiai / Avalynė / Be dydžio | Одежда / Обувь / Без размера |
 | Purchase price | Pirkimo kaina | Закупочная цена |
 | Price (the accounting price) | Kaina | Цена |

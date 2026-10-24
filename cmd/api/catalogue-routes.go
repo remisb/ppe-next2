@@ -13,12 +13,14 @@ type catalogueHandler struct {
 }
 
 // registerCatalogueRoutes mounts /api/v1/catalogue. Everyone reads; only
-// admin and manager ("Manage Items and Prices") write.
+// catalogue.manage ("Manage Items and Prices") writes, items and pictures.
 func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	h := &catalogueHandler{items: items}
 	rt.authenticated("GET /api/v1/catalogue", h.list)
-	// The literal /active outranks the /{id} wildcard in ServeMux.
+	// The literals /active and /pictures outrank the /{id} wildcard in ServeMux.
 	rt.authenticated("GET /api/v1/catalogue/active", h.listActive)
+	rt.authenticated("GET /api/v1/catalogue/pictures", h.pictures)
+	rt.restricted("PUT /api/v1/catalogue/pictures/{icon}", h.updatePicture, role.CatalogueManage)
 	rt.authenticated("GET /api/v1/catalogue/{id}", h.get)
 	rt.authenticated("GET /api/v1/catalogue/{id}/price-history", h.priceHistory)
 	rt.restricted("POST /api/v1/catalogue", h.create, role.CatalogueManage)
@@ -28,17 +30,22 @@ func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	rt.restricted("DELETE /api/v1/catalogue/{id}", h.delete, role.CatalogueManage)
 }
 
+// catalogueRequest has no size_group: an item's is its picture's, so a body
+// that sends one is refused as an unknown field.
 type catalogueRequest struct {
-	Name                 string     `json:"name"`
-	Details              string     `json:"details"`
-	SizeGroup            size.Group `json:"size_group"`
-	PurchasePriceCents   *int64     `json:"purchase_price_cents"`
-	AccountingPriceCents *int64     `json:"accounting_price_cents"`
-	ServicePeriodMonths  *int       `json:"service_period_months"`
-	Active               *bool      `json:"active"`
-	DisplayRank          *int       `json:"display_rank"`
-	// Icon is optional: omitted is "other".
+	Name                 string `json:"name"`
+	Details              string `json:"details"`
+	PurchasePriceCents   *int64 `json:"purchase_price_cents"`
+	AccountingPriceCents *int64 `json:"accounting_price_cents"`
+	ServicePeriodMonths  *int   `json:"service_period_months"`
+	Active               *bool  `json:"active"`
+	DisplayRank          *int   `json:"display_rank"`
+	// Icon is the picture, optional: omitted is "other".
 	Icon catalogue.Icon `json:"icon"`
+}
+
+type pictureRequest struct {
+	SizeGroup size.Group `json:"size_group"`
 }
 
 func (req catalogueRequest) params() (catalogue.Params, error) {
@@ -47,7 +54,7 @@ func (req catalogueRequest) params() (catalogue.Params, error) {
 		return catalogue.Params{}, err
 	}
 	return catalogue.Params{
-		Name: req.Name, Details: req.Details, SizeGroup: req.SizeGroup,
+		Name: req.Name, Details: req.Details,
 		PurchasePriceCents: req.PurchasePriceCents, AccountingPriceCents: req.AccountingPriceCents,
 		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank, Icon: req.Icon,
 	}, nil
@@ -69,6 +76,35 @@ func (h *catalogueHandler) listActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (h *catalogueHandler) pictures(w http.ResponseWriter, r *http.Request) {
+	pics, err := h.items.Pictures(r.Context())
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, pics)
+}
+
+// updatePicture sets a picture's size group, and so its items'.
+func (h *catalogueHandler) updatePicture(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req pictureRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	pic, err := h.items.UpdatePicture(r.Context(), catalogue.Icon(r.PathValue("icon")), catalogue.PictureParams{SizeGroup: req.SizeGroup}, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, pic)
 }
 
 func (h *catalogueHandler) get(w http.ResponseWriter, r *http.Request) {

@@ -26,7 +26,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		role.EventCreated, role.EventUpdated, role.EventDeleted,
 		employee.EventCreated, employee.EventUpdated, employee.EventSizesChanged, employee.EventDeleted,
 		catalogue.EventCreated, catalogue.EventUpdated, catalogue.EventPriceChanged,
-		catalogue.EventActivated, catalogue.EventDeactivated, catalogue.EventDeleted,
+		catalogue.EventActivated, catalogue.EventDeactivated, catalogue.EventDeleted, catalogue.EventPictureChanged,
 		itemset.EventCreated, itemset.EventUpdated, itemset.EventDeleted,
 		order.EventOrdered, order.EventLinkCreated, order.EventLinkOpened, order.EventGiven, order.EventDeleted,
 		asset.EventRegistered, asset.EventUpdated, asset.EventStatusChanged, asset.EventGiven, asset.EventReturned,

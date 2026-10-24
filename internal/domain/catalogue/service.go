@@ -2,11 +2,13 @@ package catalogue
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
 const (
@@ -17,6 +19,11 @@ const (
 	EventDeactivated  = "catalogue.deactivated"
 	EventDeleted      = "catalogue.deleted"
 	auditEntity       = "catalogue_item"
+
+	// EventPictureChanged is a picture's new size group.
+	EventPictureChanged = "catalogue.picture_changed"
+	// PictureEntity is the audit entity type of a picture, keyed by its ID.
+	PictureEntity = "catalogue_picture"
 )
 
 type Service struct {
@@ -63,7 +70,11 @@ func eqPtr[T comparable](a, b *T) bool {
 }
 
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
-	ev, err := audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
+	return s.eventOn(auditEntity, actor, name, id, at, before, after)
+}
+
+func (s *Service) eventOn(entity string, actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
+	ev, err := audit.New(s.newID(), &actor, name, entity, id, at, before, after)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +90,7 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Item, 
 	}
 	now := s.now()
 	i := Item{
-		ID: s.newID(), Name: p.Name, Details: p.Details, SizeGroup: p.SizeGroup,
+		ID: s.newID(), Name: p.Name, Details: p.Details,
 		PurchasePriceCents: p.PurchasePriceCents, AccountingPriceCents: p.AccountingPriceCents,
 		Currency: CurrencyEUR, ServicePeriodMonths: p.ServicePeriodMonths,
 		Active: p.Active, DisplayRank: *p.DisplayRank, Icon: p.Icon,
@@ -89,10 +100,7 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Item, 
 	if err != nil {
 		return Item{}, err
 	}
-	if err := s.repo.Create(ctx, i, ev); err != nil {
-		return Item{}, err
-	}
-	return i, nil
+	return s.repo.Create(ctx, i, ev)
 }
 
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Item, error) { return s.repo.Get(ctx, id) }
@@ -105,7 +113,8 @@ func (s *Service) ListActive(ctx context.Context) ([]Item, error) { return s.rep
 // Update replaces every mutable field. A change to either price or the service
 // period records catalogue.price_changed with the before and after values; an
 // active-flag change records activated/deactivated; a change to the name,
-// details, size group, pictogram or order records catalogue.updated.
+// details, picture or order records catalogue.updated, a new picture with the
+// size group it brings.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
@@ -113,9 +122,16 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	if err := p.Validate(); err != nil {
 		return Item{}, err
 	}
+	groups, err := s.sizeGroups(ctx)
+	if err != nil {
+		return Item{}, err
+	}
 	return s.repo.Update(ctx, id, func(cur Item) (Item, []audit.Event, error) {
 		next := cur
-		next.Name, next.Details, next.SizeGroup = p.Name, p.Details, p.SizeGroup
+		next.Name, next.Details = p.Name, p.Details
+		if p.Icon != cur.Icon {
+			next.SizeGroup = groups[p.Icon]
+		}
 		next.PurchasePriceCents, next.AccountingPriceCents = p.PurchasePriceCents, p.AccountingPriceCents
 		next.ServicePeriodMonths = p.ServicePeriodMonths
 		next.Active, next.DisplayRank, next.Icon = p.Active, *p.DisplayRank, p.Icon
@@ -135,8 +151,22 @@ func (s *Service) SetActive(ctx context.Context, id uuid.UUID, active bool, acto
 	})
 }
 
+// sizeGroups maps each picture to its size group.
+func (s *Service) sizeGroups(ctx context.Context) (map[Icon]size.Group, error) {
+	pics, err := s.repo.Pictures(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[Icon]size.Group, len(pics))
+	for _, p := range pics {
+		out[p.Icon] = p.SizeGroup
+	}
+	return out, nil
+}
+
 // detailsChange is what catalogue.updated records: the changed descriptive
-// fields, before and after.
+// fields, before and after. The size group is the picture's, so it is
+// recorded only beside a new picture that brings another one.
 func detailsChange(cur, next Item) (before, after map[string]any) {
 	before, after = map[string]any{}, map[string]any{}
 	set := func(key string, changed bool, b, a any) {
@@ -146,8 +176,8 @@ func detailsChange(cur, next Item) (before, after map[string]any) {
 	}
 	set("name", cur.Name != next.Name, cur.Name, next.Name)
 	set("details", cur.Details != next.Details, cur.Details, next.Details)
-	set("size_group", cur.SizeGroup != next.SizeGroup, cur.SizeGroup, next.SizeGroup)
 	set("icon", cur.Icon != next.Icon, cur.Icon, next.Icon)
+	set("size_group", cur.Icon != next.Icon && cur.SizeGroup != next.SizeGroup, cur.SizeGroup, next.SizeGroup)
 	set("display_rank", cur.DisplayRank != next.DisplayRank, cur.DisplayRank, next.DisplayRank)
 	return before, after
 }
@@ -213,4 +243,43 @@ func (s *Service) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry,
 		return nil, err
 	}
 	return s.repo.PriceHistory(ctx, id)
+}
+
+// Pictures lists every picture in Icons order, with the size group it gives
+// its items and how many live items have it.
+func (s *Service) Pictures(ctx context.Context) ([]Picture, error) { return s.repo.Pictures(ctx) }
+
+// pictureChange is what catalogue.picture_changed records on each side; the
+// icon names the picture on the Audit log.
+type pictureChange struct {
+	Icon      Icon       `json:"icon"`
+	SizeGroup size.Group `json:"size_group"`
+}
+
+// UpdatePicture sets a picture's size group, and so every item's that has it.
+// Saving the size group it already has records nothing.
+func (s *Service) UpdatePicture(ctx context.Context, icon Icon, p PictureParams, actor uuid.UUID) (Picture, error) {
+	if actor == uuid.Nil {
+		return Picture{}, fieldError("actor", "is required")
+	}
+	icon = Icon(strings.ToLower(strings.TrimSpace(string(icon))))
+	if !icon.Valid() {
+		return Picture{}, ErrPictureNotFound
+	}
+	if err := p.Validate(); err != nil {
+		return Picture{}, err
+	}
+	return s.repo.UpdatePicture(ctx, icon, func(cur Picture) (Picture, []audit.Event, error) {
+		if cur.SizeGroup == p.SizeGroup {
+			return cur, nil, nil
+		}
+		next := cur
+		next.SizeGroup = p.SizeGroup
+		ev, err := s.eventOn(PictureEntity, actor, EventPictureChanged, cur.ID, s.now(),
+			pictureChange{cur.Icon, cur.SizeGroup}, pictureChange{next.Icon, next.SizeGroup})
+		if err != nil {
+			return next, nil, err
+		}
+		return next, []audit.Event{*ev}, nil
+	})
 }

@@ -340,6 +340,8 @@ function clean(f: AuditFilter): AuditFilter {
 /** The record a change was made to, as the list names it. */
 function recordName(e: AuditEntry): string {
   const name =
+    // A picture is named by its icon, in the language in use.
+    (e.entity_type === 'catalogue_picture' && e.entity_label ? (auditText().icons[e.entity_label] ?? e.entity_label) : null) ??
     e.entity_label ??
     (e.entity_type === 'settings'
       ? areaLabel('settings')
@@ -360,6 +362,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return { href: staffHref(`/employees/${id}`) }
     case 'catalogue_item':
       return { href: staffHref(`/catalogue/${id}`) }
+    case 'catalogue_picture':
+      return { href: staffHref('/catalogue') }
     case 'order':
       return { href: staffHref(`/orders/${id}`) }
     case 'asset':

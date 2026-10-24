@@ -16,15 +16,15 @@ func TestParamsValidate(t *testing.T) {
 		p    Params
 		want error
 	}{
-		{"full", Params{Name: "Safety shoes", SizeGroup: "shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, nil},
-		{"price not yet set", Params{Name: "Helmet", SizeGroup: size.GroupNone}, nil},
-		{"free item", Params{Name: "Earplugs", SizeGroup: size.GroupNone, AccountingPriceCents: i64(0)}, nil},
-		{"no name", Params{SizeGroup: size.GroupNone}, ErrInvalid},
-		{"bad group", Params{Name: "Gloves", SizeGroup: "GLOVES"}, ErrInvalid},
-		{"negative price", Params{Name: "X", SizeGroup: size.GroupNone, AccountingPriceCents: i64(-1)}, ErrInvalid},
-		{"negative purchase price", Params{Name: "X", SizeGroup: size.GroupNone, PurchasePriceCents: i64(-1)}, ErrInvalid},
-		{"zero period", Params{Name: "X", SizeGroup: size.GroupNone, ServicePeriodMonths: ip(0)}, ErrInvalid},
-		{"negative rank", Params{Name: "X", SizeGroup: size.GroupNone, DisplayRank: ip(-1)}, ErrInvalid},
+		{"full", Params{Name: "Safety shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, nil},
+		{"price not yet set", Params{Name: "Helmet"}, nil},
+		{"free item", Params{Name: "Earplugs", AccountingPriceCents: i64(0)}, nil},
+		{"no name", Params{}, ErrInvalid},
+		{"unknown picture", Params{Name: "Gloves", Icon: "boot"}, ErrInvalid},
+		{"negative price", Params{Name: "X", AccountingPriceCents: i64(-1)}, ErrInvalid},
+		{"negative purchase price", Params{Name: "X", PurchasePriceCents: i64(-1)}, ErrInvalid},
+		{"zero period", Params{Name: "X", ServicePeriodMonths: ip(0)}, ErrInvalid},
+		{"negative rank", Params{Name: "X", DisplayRank: ip(-1)}, ErrInvalid},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -36,11 +36,11 @@ func TestParamsValidate(t *testing.T) {
 }
 
 func TestDefaultsAndOrderable(t *testing.T) {
-	p := Params{Name: " X ", SizeGroup: " clothing "}
+	p := Params{Name: " X "}
 	if err := p.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if p.Name != "X" || p.SizeGroup != size.GroupClothing || *p.DisplayRank != DefaultDisplayRank {
+	if p.Name != "X" || p.Icon != IconOther || *p.DisplayRank != DefaultDisplayRank {
 		t.Errorf("normalized = %+v", p)
 	}
 	item := Item{Active: true, AccountingPriceCents: i64(100), ServicePeriodMonths: ip(6)}
@@ -56,6 +56,19 @@ func TestDefaultsAndOrderable(t *testing.T) {
 		mutate(&it)
 		if it.Orderable() {
 			t.Errorf("%s: should not be orderable", name)
+		}
+	}
+}
+
+func TestPictureParamsValidate(t *testing.T) {
+	p := PictureParams{SizeGroup: " clothing "}
+	if err := p.Validate(); err != nil || p.SizeGroup != size.GroupClothing {
+		t.Errorf("normalized = %+v, err %v", p, err)
+	}
+	for _, g := range []size.Group{"", "GLOVES"} {
+		p := PictureParams{SizeGroup: g}
+		if err := p.Validate(); !errors.Is(err, ErrInvalid) {
+			t.Errorf("size group %q: err = %v", g, err)
 		}
 	}
 }

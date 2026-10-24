@@ -46,15 +46,16 @@ func newPGFixture(t *testing.T) pgFixture {
 		VALUES ($1, 'a@example.com', 'Admin', 'x', now(), now(), $1, $1)`, f.actor)
 	exec(`INSERT INTO employees (id, first_name, last_name, code, shoe_size, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Jonas', 'Petraitis', 'W-17', '43', now(), now(), $2, $2)`, f.emp, f.actor)
-	item := func(id uuid.UUID, name, group string, cents *int64, months *int) {
-		exec(`INSERT INTO catalogue_items (id, name, details, size_group, accounting_price_cents, service_period_months,
+	// The picture sets the size group: shoes are Shoes, other and gloves No size.
+	item := func(id uuid.UUID, name, icon string, cents *int64, months *int) {
+		exec(`INSERT INTO catalogue_items (id, name, details, icon, accounting_price_cents, service_period_months,
 			created_at, updated_at, created_by_user_id, updated_by_user_id)
-			VALUES ($1, $2, 'model', $3, $4, $5, now(), now(), $6, $6)`, id, name, group, cents, months, f.actor)
+			VALUES ($1, $2, 'model', $3, $4, $5, now(), now(), $6, $6)`, id, name, icon, cents, months, f.actor)
 	}
-	item(f.shoes, "Safety shoes", "SHOES", i64(4999), ip(12))
+	item(f.shoes, "Safety shoes", "shoes", i64(4999), ip(12))
 	exec(`UPDATE catalogue_items SET purchase_price_cents = 3800 WHERE id = $1`, f.shoes) // the others have none
-	item(f.gloves, "Protective gloves", "NONE", i64(250), ip(1))
-	item(f.draft, "Helmet", "NONE", nil, ip(24))
+	item(f.gloves, "Protective gloves", "gloves", i64(250), ip(1))
+	item(f.draft, "Helmet", "other", nil, ip(24))
 	f.svc = NewService(NewPostgresRepository(pool), Readers{})
 	return f
 }

@@ -17,7 +17,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
-	"github.com/remisb/ppe-next2/internal/domain/size"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 )
@@ -90,22 +89,22 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	s := seeder{ctx: ctx, actor: admin.ID, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
 		today: func() string { return clock.now().In(loc).Format(time.DateOnly) }}
 
-	// Catalogue, in the manual's default order.
-	// Purchase price, then accounting price, in cents.
-	shoes := s.item("Safety shoes", "S3 SRC, steel toe cap", size.GroupShoes, ptr[int64](4200), 5490, 12, 10, catalogue.IconShoes)
-	jacket := s.item("Work jacket", "Polyester/cotton, reflective strips", size.GroupClothing, ptr[int64](6150), 7900, 24, 20, catalogue.IconJacket)
-	trousers := s.item("Work trousers", "Knee-pad pockets", size.GroupClothing, ptr[int64](3480), 4550, 12, 30, catalogue.IconTrousers)
-	gloves := s.item("Protective gloves", "Nitrile-coated, pair", size.GroupNone, ptr[int64](245), 320, 1, 40, catalogue.IconGloves)
-	helmet := s.item("Safety helmet", "EN 397, adjustable", size.GroupNone, ptr[int64](1390), 1800, 36, 50, catalogue.IconHelmet)
-	vest := s.item("Hi-vis vest", "Class 2, yellow", size.GroupClothing, ptr[int64](720), 990, 12, 60, catalogue.IconVest)
-	glasses := s.item("Safety glasses", "Anti-fog, clear lens", size.GroupNone, ptr[int64](480), 650, 12, 70, catalogue.IconGlasses)
+	// Catalogue, in the manual's default order; each item's size group is its
+	// picture's (migration 0036). Purchase price, then accounting price, in cents.
+	shoes := s.item("Safety shoes", "S3 SRC, steel toe cap", ptr[int64](4200), 5490, 12, 10, catalogue.IconShoes)
+	jacket := s.item("Work jacket", "Polyester/cotton, reflective strips", ptr[int64](6150), 7900, 24, 20, catalogue.IconJacket)
+	trousers := s.item("Work trousers", "Knee-pad pockets", ptr[int64](3480), 4550, 12, 30, catalogue.IconTrousers)
+	gloves := s.item("Protective gloves", "Nitrile-coated, pair", ptr[int64](245), 320, 1, 40, catalogue.IconGloves)
+	helmet := s.item("Safety helmet", "EN 397, adjustable", ptr[int64](1390), 1800, 36, 50, catalogue.IconHelmet)
+	vest := s.item("Hi-vis vest", "Class 2, yellow", ptr[int64](720), 990, 12, 60, catalogue.IconVest)
+	glasses := s.item("Safety glasses", "Anti-fog, clear lens", ptr[int64](480), 650, 12, 70, catalogue.IconGlasses)
 	// No purchase price: optional, so it can still be ordered.
-	s.item("Ear defenders", "SNR 30 dB", size.GroupNone, nil, 2200, 24, 80, catalogue.IconEar)
+	s.item("Ear defenders", "SNR 30 dB", nil, 2200, 24, 80, catalogue.IconEar)
 	// No prices or service period yet: selectable, but Mark as Ordered refuses it.
-	s.itemWith(catalogue.Params{Name: "Winter jacket", Details: "Insulated, waterproof", SizeGroup: size.GroupClothing, Active: true, DisplayRank: ptr(90),
+	s.itemWith(catalogue.Params{Name: "Winter jacket", Details: "Insulated, waterproof", Active: true, DisplayRank: ptr(90),
 		Icon: catalogue.IconJacket})
 	// Inactive: hidden from Add Item, still in old snapshots.
-	s.itemWith(catalogue.Params{Name: "Rain coat", Details: "Discontinued model", SizeGroup: size.GroupClothing,
+	s.itemWith(catalogue.Params{Name: "Rain coat", Details: "Discontinued model",
 		AccountingPriceCents: ptr[int64](2500), ServicePeriodMonths: ptr(24), Active: false, DisplayRank: ptr(100), Icon: catalogue.IconJacket})
 
 	starter := s.set("Warehouse starter kit", "Everything a new warehouse worker needs",
@@ -229,8 +228,8 @@ func (s *seeder) fail(what string, err error) {
 	}
 }
 
-func (s *seeder) item(name, details string, g size.Group, purchase *int64, cents int64, months, rank int, icon catalogue.Icon) uuid.UUID {
-	return s.itemWith(catalogue.Params{Name: name, Details: details, SizeGroup: g, PurchasePriceCents: purchase,
+func (s *seeder) item(name, details string, purchase *int64, cents int64, months, rank int, icon catalogue.Icon) uuid.UUID {
+	return s.itemWith(catalogue.Params{Name: name, Details: details, PurchasePriceCents: purchase,
 		AccountingPriceCents: &cents, ServicePeriodMonths: &months, Active: true, DisplayRank: &rank, Icon: icon})
 }
 

@@ -15,7 +15,8 @@ import (
 )
 
 // PostgresRepository stores orders and their snapshot lines (migration 0006).
-// Inside Mark as Ordered it also reads employees, catalogue_items and users:
+// Inside Mark as Ordered it also reads employees, catalogue_items (with their
+// catalogue_pictures, which give the size group) and users:
 // the copy into the snapshot must see exactly the rows it locks.
 type PostgresRepository struct {
 	pool *pgxpool.Pool
@@ -72,10 +73,13 @@ func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs 
 		return Snapshot{}, err
 	}
 
-	rows, err := tx.Query(ctx, `SELECT id, name, details, size_group, purchase_price_cents, accounting_price_cents, currency,
-			service_period_months, active
-		FROM catalogue_items WHERE id = ANY($1) AND deleted_at IS NULL
-		ORDER BY id FOR SHARE`, itemIDs)
+	// An item's size group is its picture's; the picture is locked too, so it
+	// cannot change between the check and the snapshot.
+	rows, err := tx.Query(ctx, `SELECT i.id, i.name, i.details, p.size_group, i.purchase_price_cents, i.accounting_price_cents,
+			i.currency, i.service_period_months, i.active
+		FROM catalogue_items i JOIN catalogue_pictures p ON p.icon = i.icon
+		WHERE i.id = ANY($1) AND i.deleted_at IS NULL
+		ORDER BY i.id FOR SHARE OF i, p`, itemIDs)
 	if err != nil {
 		return Snapshot{}, err
 	}

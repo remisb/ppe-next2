@@ -110,12 +110,13 @@ async function markAsOrdered() {
   await review.getByRole('button', { name: 'Mark as Ordered' }).click()
 }
 
-async function addCatalogueItem(item: { name: string; details: string; group: string; price?: string; months?: string; rank: string }) {
+/** Adds an item; its picture, guessed from its name, must bring the size group named. */
+async function addCatalogueItem(item: { name: string; details: string; group: 'Clothing' | 'Shoes' | 'No size'; price?: string; months?: string; rank: string }) {
   await page.getByRole('button', { name: 'Add Item' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Item name').fill(item.name)
   await dialog.getByLabel('Manufacturer / model').fill(item.details)
-  await dialog.getByLabel('Size group').selectOption(item.group)
+  await expect(dialog.getByText(`Size group: ${item.group}, set by the picture.`)).toBeVisible()
   if (item.price) await dialog.getByLabel('Price (€)', { exact: true }).fill(item.price)
   if (item.months) await dialog.getByLabel('Service period (months)').fill(item.months)
   await dialog.getByLabel('Display order').fill(item.rank)
@@ -298,10 +299,10 @@ test('Settings: an administrator lists the SIM providers, the default one, the d
 
 test('Item Catalogue: items with and without a price', async () => {
   await openTab('Item Catalogue')
-  await addCatalogueItem({ name: 'Safety shoes', details: 'S3 SRC', group: 'SHOES', price: '49.99', months: '12', rank: '1' })
-  await addCatalogueItem({ name: 'Work jacket', details: 'Winter', group: 'CLOTHING', price: '39.99', months: '24', rank: '2' })
-  await addCatalogueItem({ name: 'Protective gloves', details: 'Nitrile', group: 'NONE', price: '2.50', months: '1', rank: '4' })
-  await addCatalogueItem({ name: 'Safety helmet', details: 'EN 397', group: 'NONE', rank: '5' })
+  await addCatalogueItem({ name: 'Safety shoes', details: 'S3 SRC', group: 'Shoes', price: '49.99', months: '12', rank: '1' })
+  await addCatalogueItem({ name: 'Work jacket', details: 'Winter', group: 'Clothing', price: '39.99', months: '24', rank: '2' })
+  await addCatalogueItem({ name: 'Protective gloves', details: 'Nitrile', group: 'No size', price: '2.50', months: '1', rank: '4' })
+  await addCatalogueItem({ name: 'Safety helmet', details: 'EN 397', group: 'No size', rank: '5' })
   await expect(page.getByRole('row', { name: /Safety helmet/ })).toContainText('Incomplete')
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€49.99')
   // A new item's picture follows its name: a welding helmet and an insulated jacket have their own.
@@ -311,7 +312,27 @@ test('Item Catalogue: items with and without a price', async () => {
   await expect(form.getByRole('radio', { name: 'Welding helmet' })).toBeChecked()
   await form.getByLabel('Item name').fill('Insulated jacket')
   await expect(form.getByRole('radio', { name: 'Insulated jacket' })).toBeChecked()
+  // The size group is the picture's: picking another brings its own.
+  await expect(form.getByText('Size group: Clothing, set by the picture.')).toBeVisible()
+  await form.getByText('Gloves', { exact: true }).click()
+  await expect(form.getByText('Size group: No size, set by the picture.')).toBeVisible()
   await form.getByRole('button', { name: 'Cancel' }).click()
+
+  // Pictures: a picture's size group is every item's that has it, so changing it says how many items it changes.
+  const gloves = page.getByRole('row', { name: /Protective gloves/ })
+  await expect(gloves).toContainText('No size')
+  const setGlovesTo = async (group: string, warns: boolean) => {
+    await page.getByRole('button', { name: 'Pictures' }).click()
+    const pictures = page.getByRole('dialog', { name: 'Pictures' })
+    await pictures.getByLabel('Size group for Gloves').selectOption({ label: group })
+    await expect(pictures.getByText('Changes the size group of 1 item.')).toBeVisible({ visible: warns })
+    await pictures.getByRole('button', { name: 'Save' }).click()
+    await expect(pictures).toBeHidden()
+  }
+  await setGlovesTo('Clothing', true)
+  await expect(gloves).toContainText('Clothing')
+  await setGlovesTo('No size', true)
+  await expect(gloves).toContainText('No size')
   // One status per item: the tabs count the items and show one status at a time.
   await page.getByRole('button', { name: 'Incomplete 1' }).click()
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toHaveCount(0)
