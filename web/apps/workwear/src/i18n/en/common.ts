@@ -11,7 +11,6 @@ export const common = {
   delete: 'Delete',
   add: 'Add',
   search: 'Search',
-  actionFailed: 'Action failed',
   moreActions: (name: string) => `More actions for ${name}`,
   ordered: 'Ordered',
   given: 'Given',

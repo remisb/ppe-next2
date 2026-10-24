@@ -1,7 +1,7 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 
@@ -32,7 +32,6 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title={t.dashboard.employeeDashboard}
-        descriptionClassName="max-md:hidden"
         description={
           d
             ? `${t.dashboard.employeeIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
@@ -45,27 +44,25 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
           </>
         }
       />
-      {board.error ? (
-        <ErrorState error={board.error} onRetry={board.reload} />
-      ) : !d ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} navigate={navigate} />
-          <NeedsYouPanel
-            needs={needsOf(d)}
-            navigate={navigate}
-            empty={t.dashboard.employeeNothingNeeded}
-            footer={
-              d.awaiting.orders > d.awaiting.longest.length ? (
-                <MoreLink label={t.dashboard.allYoursWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
-              ) : null
-            }
-          />
-          <ActivityChart d={d} />
-          <RecentlyGivenCard d={d} navigate={navigate} />
-        </div>
-      )}
+      <Loaded load={board}>
+        {(d) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <Kpis d={d} navigate={navigate} />
+            <NeedsYouPanel
+              needs={needsOf(d)}
+              navigate={navigate}
+              empty={t.dashboard.employeeNothingNeeded}
+              footer={
+                d.awaiting.orders > d.awaiting.longest.length ? (
+                  <MoreLink label={t.dashboard.allYoursWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
+                ) : null
+              }
+            />
+            <ActivityChart d={d} />
+            <RecentlyGivenCard d={d} navigate={navigate} />
+          </div>
+        )}
+      </Loaded>
     </>
   )
 }

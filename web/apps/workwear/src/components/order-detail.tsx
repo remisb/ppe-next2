@@ -5,10 +5,10 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, ChevronDown, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
+import { ChevronDown, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
@@ -17,6 +17,8 @@ import { OrderLinesTable } from '@/components/order-lines'
 import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { LONG_WAIT_DAYS, deleteQuestion, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
@@ -50,69 +52,63 @@ export function OrderDetail({
   const changesKey = useOpenKey('order.changes')
   const order = useLoad(() => client.orders.get(id), [id])
   const [handingOver, setHandingOver] = useState(false)
-  const [deleteError, setDeleteError] = useState<unknown>()
+  const deleting = useAction()
   const o = order.data
 
-  const remove = async (o: Order) => {
-    if (!window.confirm(deleteQuestion(o))) return
-    setDeleteError(undefined)
-    try {
-      await client.orders.remove(o.id)
-      onDeleted()
-    } catch (err) {
-      setDeleteError(err)
-    }
-  }
+  const remove = (o: Order) =>
+    deleting.run(
+      async () => {
+        await client.orders.remove(o.id)
+        onDeleted()
+      },
+      { confirm: deleteQuestion(o) },
+    )
 
   return (
     <article aria-label={o ? t.history.orderLabel(o.record_number) : t.history.order} className="flex flex-col gap-4">
       {/* Narrow: the detail is the whole screen, so the way out is Back to the list, on its own row. */}
       <div className="flex items-center lg:contents">
-        <Button variant="ghost" className="-ml-3 lg:hidden" onClick={onClose}>
-          <ArrowLeft aria-hidden /> {t.history.title}
-        </Button>
+        <BackButton className="lg:hidden" onClick={onClose}>{t.history.title}</BackButton>
         {/* Beside the list: Close sits in the pane's corner, beside the heading rather than above it. */}
         <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.history.closeOrder} onClick={onClose}>
           <X aria-hidden />
         </Button>
       </div>
-      {order.error ? (
-        <ErrorState error={order.error} onRetry={order.reload} />
-      ) : !o ? (
-        <Loading />
-      ) : (
-        <>
-          <Summary order={o} timeZone={timeZone} navigate={navigate} />
-          <OrderLinesTable order={o} />
-          <Actions
-            // A link is shown once, for the order it was created for.
-            key={o.id}
-            order={o}
-            onHandOver={() => setHandingOver(true)}
-            onOpenRecord={(print) => onOpenRecord(o.id, print)}
-            onGiven={() => {
-              order.reload()
-              onChanged()
-            }}
-            // Only the manager role clears demo and test orders; the API allows no one else.
-            onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
-          />
-          {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
-          {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
-              the order is (after a confirmation), so its new step shows. */}
-          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} rememberAs={changesKey} className="mb-0" />
-          {handingOver ? (
-            <HandOver
-              orderId={o.id}
+      <Loaded load={order}>
+        {(o) => (
+          <>
+            <Summary order={o} timeZone={timeZone} navigate={navigate} />
+            <OrderLinesTable order={o} />
+            <Actions
+              // A link is shown once, for the order it was created for.
+              key={o.id}
+              order={o}
+              onHandOver={() => setHandingOver(true)}
+              onOpenRecord={(print) => onOpenRecord(o.id, print)}
               onGiven={() => {
                 order.reload()
                 onChanged()
               }}
-              onClose={() => setHandingOver(false)}
+              // Only the manager role clears demo and test orders; the API allows no one else.
+              onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
             />
-          ) : null}
-        </>
-      )}
+            <ActionError title={t.history.notDeleted} error={deleting.error} />
+            {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
+                the order is (after a confirmation), so its new step shows. */}
+            <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} rememberAs={changesKey} className="mb-0" />
+            {handingOver ? (
+              <HandOver
+                orderId={o.id}
+                onGiven={() => {
+                  order.reload()
+                  onChanged()
+                }}
+                onClose={() => setHandingOver(false)}
+              />
+            ) : null}
+          </>
+        )}
+      </Loaded>
     </article>
   )
 }
@@ -179,30 +175,18 @@ function Actions({
   const [link, setLink] = useState<ConfirmationLink | null>(null)
   const [linkOpen, setLinkOpen] = useState(false)
   const linkId = useId()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<unknown>()
+  const action = useAction()
   const actions = historyActions(o.status)
   const name = `${o.employee_first_name} ${o.employee_last_name}`
 
-  const run = async (f: () => Promise<void>) => {
-    setBusy(true)
-    setError(undefined)
-    try {
-      await f()
-    } catch (err) {
-      setError(err)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const sign = () => {
-    if (!window.confirm(t.history.recordPaperQuestion(name, o.record_number))) return
-    void run(async () => {
-      await client.orders.confirmPaper(o.id)
-      onGiven()
-    })
-  }
+  const sign = () =>
+    void action.run(
+      async () => {
+        await client.orders.confirmPaper(o.id)
+        onGiven()
+      },
+      { confirm: t.history.recordPaperQuestion(name, o.record_number) },
+    )
 
   return (
     <div className="flex flex-col gap-4">
@@ -225,9 +209,9 @@ function Actions({
           ) : (
             <Button
               className="w-full sm:w-fit"
-              disabled={busy}
+              disabled={action.pending}
               onClick={() =>
-                void run(async () => {
+                void action.run(async () => {
                   setLink(await client.orders.createConfirmationLink(o.id))
                   setLinkOpen(true)
                 })
@@ -262,7 +246,7 @@ function Actions({
           </Button>
         ) : null}
         {actions.includes('sign') ? (
-          <Button variant="outline" disabled={busy} onClick={sign}>
+          <Button variant="outline" disabled={action.pending} onClick={sign}>
             <PenLine aria-hidden className="text-warning" /> {t.history.sign}
           </Button>
         ) : null}
@@ -274,7 +258,7 @@ function Actions({
           </MoreActions>
         ) : null}
       </div>
-      {error ? <ErrorState title={t.common.actionFailed} error={error} /> : null}
+      <ActionError error={action.error} />
     </div>
   )
 }

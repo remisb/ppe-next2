@@ -8,10 +8,10 @@ import { Field, Input, PasswordInput, controlProps } from '@ppe/ui/components/fi
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
-import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
@@ -81,7 +81,6 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.users.title}
         description={t.users.description}
-        descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
             <Plus aria-hidden /> {t.users.addUser}
@@ -102,71 +101,67 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
-      {users.error || roleList.error ? (
-        <ErrorState error={users.error ?? roleList.error} onRetry={() => (users.error ? users.reload() : roleList.reload())} />
-      ) : (users.loading && !users.data) || (roleList.loading && !roleList.data) ? (
-        <Loading />
-      ) : shown.length === 0 ? (
-        <EmptyState>{filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}</EmptyState>
-      ) : (
-        // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
-        <Table stack="list" sortControl={<SortControl columns={columns()} {...sortProps} />}>
-          <TableHeader>
-            <TableRow>
-              {columns().map((c) => (
-                <SortableHead key={c.key} column={c} {...sortProps} />
-              ))}
-              <TableHead className="text-right">{t.users.actions}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shown.map((u) => (
-              <TableRow key={u.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground')}>
-                <TableCell className="font-medium stacked:col-start-1 stacked:row-start-1">
-                  {u.name}
-                  {u.id === session.userId ? (
-                    <Badge variant="outline" className="ml-2 align-middle">
-                      {t.users.you}
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell className="break-all whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">{u.email}</TableCell>
-                <TableCell className="stacked:col-start-1 stacked:row-start-3 stacked:pt-1">
-                  <span className="flex flex-wrap gap-1">
-                    {rolesOf(u.role_ids, allRoles).map((r) => (
-                      <Badge key={r.id} variant={r.key === 'admin' ? 'default' : 'secondary'}>
-                        {roleName(r)}
-                      </Badge>
-                    ))}
-                    {/* Stacked, an inactive account says so beside its roles; an active one needs no word. */}
-                    {u.is_active ? null : (
-                      <Badge variant="outline" className="hidden stacked:inline-flex">
-                        {t.common.inactive}
-                      </Badge>
-                    )}
-                  </span>
-                </TableCell>
-                <TableCell className="stacked:hidden">
-                  <Badge variant={u.is_active ? 'secondary' : 'outline'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
-                </TableCell>
-                <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
-                  <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
-                    {t.common.edit}
-                  </Button>{' '}
-                  <MoreActions label={t.common.moreActions(u.name)}>
-                    <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
-                    {session.can('audit.read') ? (
-                      <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'user', entity_id: u.id } })}>
-                        {t.users.changes}
-                      </DropdownMenuItem>
-                    ) : null}
-                  </MoreActions>
-                </TableCell>
+      <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
+        {() => (
+          // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
+          <Table stack="list" sortControl={<SortControl columns={columns()} {...sortProps} />}>
+            <TableHeader>
+              <TableRow>
+                {columns().map((c) => (
+                  <SortableHead key={c.key} column={c} {...sortProps} />
+                ))}
+                <TableHead className="text-right">{t.users.actions}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {shown.map((u) => (
+                <TableRow key={u.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground')}>
+                  <TableCell className="font-medium stacked:col-start-1 stacked:row-start-1">
+                    {u.name}
+                    {u.id === session.userId ? (
+                      <Badge variant="outline" className="ml-2 align-middle">
+                        {t.users.you}
+                      </Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="break-all whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="stacked:col-start-1 stacked:row-start-3 stacked:pt-1">
+                    <span className="flex flex-wrap gap-1">
+                      {rolesOf(u.role_ids, allRoles).map((r) => (
+                        <Badge key={r.id} variant={r.key === 'admin' ? 'default' : 'secondary'}>
+                          {roleName(r)}
+                        </Badge>
+                      ))}
+                      {/* Stacked, an inactive account says so beside its roles; an active one needs no word. */}
+                      {u.is_active ? null : (
+                        <Badge variant="outline" className="hidden stacked:inline-flex">
+                          {t.common.inactive}
+                        </Badge>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell className="stacked:hidden">
+                    <Badge variant={u.is_active ? 'secondary' : 'outline'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
+                    <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
+                      {t.common.edit}
+                    </Button>{' '}
+                    <MoreActions label={t.common.moreActions(u.name)}>
+                      <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
+                      {session.can('audit.read') ? (
+                        <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'user', entity_id: u.id } })}>
+                          {t.users.changes}
+                        </DropdownMenuItem>
+                      ) : null}
+                    </MoreActions>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Loaded>
       <UserForm
         open={editing !== null}
         user={editing === 'new' || editing === null ? undefined : editing}

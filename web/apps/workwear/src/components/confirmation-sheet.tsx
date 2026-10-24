@@ -3,13 +3,14 @@ import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { Input } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { ErrorState } from '@ppe/ui/components/states'
+import { ActionError } from '@ppe/ui/components/states'
 import { Copy, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
+import { useAction } from '@ppe/ui/lib/use-action'
 
 /**
  * Open Employee Confirmation for an ORDERED order: create a secure link for
@@ -29,25 +30,13 @@ export function ConfirmationSheet({
 }) {
   const { client } = useApi()
   const [link, setLink] = useState<ConfirmationLink | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<unknown>()
+  const action = useAction()
+  const { clear } = action
 
   useEffect(() => {
     setLink(null)
-    setError(undefined)
-  }, [order])
-
-  const run = async (f: () => Promise<void>) => {
-    setBusy(true)
-    setError(undefined)
-    try {
-      await f()
-    } catch (err) {
-      setError(err)
-    } finally {
-      setBusy(false)
-    }
-  }
+    clear()
+  }, [order, clear])
 
   if (!order) return <FormSheet open={false} onClose={onClose} title="" children={null} />
   const name = `${order.employee_first_name} ${order.employee_last_name}`
@@ -60,14 +49,14 @@ export function ConfirmationSheet({
       description={t.history.confirmationDescription(order.record_number, name)}
     >
       <div className="flex flex-col gap-6">
-        {error ? <ErrorState title={t.common.actionFailed} error={error} /> : null}
+        <ActionError error={action.error} />
 
         <section className="flex flex-col gap-2">
           <h3 className="font-medium">{t.history.electronicConfirmation}</h3>
           {link ? (
             <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
           ) : (
-            <Button className="w-full sm:w-fit" disabled={busy} onClick={() => void run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
+            <Button className="w-full sm:w-fit" disabled={action.pending} onClick={() => void action.run(async () => setLink(await client.orders.createConfirmationLink(order.id)))}>
               {t.history.createLink}
             </Button>
           )}
@@ -82,14 +71,16 @@ export function ConfirmationSheet({
             </Button>
             <Button
               variant="outline"
-              disabled={busy}
-              onClick={() => {
-                if (!window.confirm(t.history.recordPaperQuestion(name, order.record_number))) return
-                void run(async () => {
-                  await client.orders.confirmPaper(order.id)
-                  onGiven()
-                })
-              }}
+              disabled={action.pending}
+              onClick={() =>
+                void action.run(
+                  async () => {
+                    await client.orders.confirmPaper(order.id)
+                    onGiven()
+                  },
+                  { confirm: t.history.recordPaperQuestion(name, order.record_number) },
+                )
+              }
             >
               {t.history.recordPaper}
             </Button>

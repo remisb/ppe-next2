@@ -3,7 +3,7 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { formatDate } from '@ppe/ui/lib/dates'
@@ -13,10 +13,13 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { formatEuro } from '@ppe/i18n'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
-import { ArrowLeft, FileDown, Printer, X } from 'lucide-react'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { useAction } from '@ppe/ui/lib/use-action'
+import { FileDown, Printer, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, CopyButton, NotReturnedBadge, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
+import { AssetMoreActions, CopyButton, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -24,7 +27,7 @@ import { usePrintInPlace } from '@/components/print-in-place'
 import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, locationText, primaryAction, simCopyText, statusLabel, todayIn } from '@/lib/assets'
+import { categoryLabel, formatDay, locationText, primaryAction, simCopyText, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
@@ -77,27 +80,18 @@ export function AssetDetail({
   const [sheet, setSheet] = useState<AssetSheet>(null)
   const [editing, setEditing] = useState(false)
   const [message, setMessage] = useState('')
-  const [actionError, setActionError] = useState<unknown>()
-  const [saving, setSaving] = useState(false)
+  const action = useAction()
 
   const a = asset.data
   const sim = a?.kind !== 'EQUIPMENT'
   // Beside the register, the register loads both again (refresh); on its own, the page loads the asset.
   const changed = () => (onChanged ? onChanged() : asset.reload())
-  const changeStatus = async (next: ConnectionStatus) => {
-    if (!a) return
-    setSaving(true)
-    setActionError(undefined)
-    try {
-      await client.assets.setStatus(a.id, next)
-      setMessage(t.assets.statusChanged(a.inventory_no, statusLabel(next)))
+  const changeStatus = (next: ConnectionStatus) =>
+    a &&
+    action.run(async () => {
+      setMessage(await setStatus(client, a, next))
       changed()
-    } catch (err) {
-      setActionError(err)
-    } finally {
-      setSaving(false)
-    }
-  }
+    })
   const copied = (value: string) => (ok: boolean) => setMessage(ok ? t.assets.copied(value) : t.assets.copyFailed)
   // The page's title is its h1; beside the register, the register's title is, as an order's beside Orders.
   const Title = place.page ? 'h1' : 'h2'
@@ -108,231 +102,223 @@ export function AssetDetail({
     <article aria-label={a ? a.inventory_no : sim ? t.assets.simCard : t.assets.item} className="@container">
       {place.page ? (
         // Back to its register: SIM Cards or Equipment, once the asset says which.
-        <Button variant="ghost" className="-ml-3 mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>
-          <ArrowLeft aria-hidden /> {!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}
-        </Button>
+        <BackButton className="mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>{!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}</BackButton>
       ) : (
         <>
           {/* Narrow: the card is the whole screen, so the way out is Back to the list, on its own row. */}
-          <Button variant="ghost" className="-ml-3 mb-2 lg:hidden" onClick={place.onClose}>
-            <ArrowLeft aria-hidden /> {place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}
-          </Button>
+          <BackButton className="mb-2 lg:hidden" onClick={place.onClose}>{place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}</BackButton>
           {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
           <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={place.kind === 'SIM' ? t.assets.closeCard : t.assets.closeItem} onClick={place.onClose}>
             <X aria-hidden />
           </Button>
         </>
       )}
-      {asset.error ? (
-        <ErrorState error={asset.error} onRetry={asset.reload} />
-      ) : !a ? (
-        <Loading />
-      ) : (
-        <>
-          <header className={cn('mb-5 md:mb-6', !place.page && 'mb-4 md:mb-4 lg:pr-10')}>
-            {/*
-              What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
-              tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
-              The action stays in the top right corner: the phone number (or the title) shares its row, and where the
-              two do not fit (a long action on a phone) the number moves under it, never the action down (wrap-reverse).
-            */}
-            <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-1">
-              {!sim ? (
-                <Title className={cn('min-w-0 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
-              ) : a.phone_no ? (
-                <SimNumber as={Title} label={t.assets.phoneNo} className={simNumber}>
-                  {a.phone_no}
-                </SimNumber>
-              ) : (
-                <p className="text-muted-foreground">{t.assets.noPhoneNo}</p>
-              )}
-              {canManage ? (
-                <div className="ml-auto flex shrink-0 gap-2">
-                  {primaryAction(a) === 'give' ? (
-                    <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
-                  ) : null}
-                  {primaryAction(a) === 'return' ? (
-                    <ReturnButton kind={a.kind} onClick={() => setSheet({ kind: 'return', asset: a })} />
-                  ) : null}
-                  <AssetMoreActions
-                    asset={a}
-                    onStatus={(next) => void changeStatus(next)}
-                    onEdit={() => setEditing(true)}
-                    onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                    onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
-                  />
+      <Loaded load={asset}>
+        {(a) => (
+          <>
+            <header className={cn('mb-5 md:mb-6', !place.page && 'mb-4 md:mb-4 lg:pr-10')}>
+              {/*
+                What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
+                tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
+                The action stays in the top right corner: the phone number (or the title) shares its row, and where the
+                two do not fit (a long action on a phone) the number moves under it, never the action down (wrap-reverse).
+              */}
+              <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-1">
+                {!sim ? (
+                  <Title className={cn('min-w-0 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
+                ) : a.phone_no ? (
+                  <SimNumber as={Title} label={t.assets.phoneNo} className={simNumber}>
+                    {a.phone_no}
+                  </SimNumber>
+                ) : (
+                  <p className="text-muted-foreground">{t.assets.noPhoneNo}</p>
+                )}
+                {canManage ? (
+                  <div className="ml-auto flex shrink-0 gap-2">
+                    {primaryAction(a) === 'give' ? (
+                      <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
+                    ) : null}
+                    {primaryAction(a) === 'return' ? (
+                      <ReturnButton kind={a.kind} onClick={() => setSheet({ kind: 'return', asset: a })} />
+                    ) : null}
+                    <AssetMoreActions
+                      asset={a}
+                      onStatus={(next) => void changeStatus(next)}
+                      onEdit={() => setEditing(true)}
+                      onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
+                      onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                    />
+                  </div>
+                ) : null}
+              </div>
+              {sim && a.sim_no ? (
+                // One button copying both numbers, beside the second of them; it takes no more height than the number,
+                // so the two numbers stay close.
+                <div className="flex items-center gap-1">
+                  <SimNumber as={a.phone_no ? 'p' : Title} label={t.assets.simNo} className={simNumber}>
+                    {a.sim_no}
+                  </SimNumber>
+                  <span className="-my-2">
+                    <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} />
+                  </span>
                 </div>
               ) : null}
-            </div>
-            {sim && a.sim_no ? (
-              // One button copying both numbers, beside the second of them; it takes no more height than the number,
-              // so the two numbers stay close.
-              <div className="flex items-center gap-1">
-                <SimNumber as={a.phone_no ? 'p' : Title} label={t.assets.simNo} className={simNumber}>
-                  {a.sim_no}
-                </SimNumber>
-                <span className="-my-2">
-                  <CopyButton text={simCopyText(a)} label={t.assets.copyNumbers(a.inventory_no)} onCopied={copied(simCopyText(a))} />
-                </span>
-              </div>
-            ) : null}
-            {sim ? (
-              <p className="mt-2 text-sm">
-                <span className="text-muted-foreground">{t.assets.inventoryNo}</span> <span className="font-mono">{a.inventory_no}</span>
+              {sim ? (
+                <p className="mt-2 text-sm">
+                  <span className="text-muted-foreground">{t.assets.inventoryNo}</span> <span className="font-mono">{a.inventory_no}</span>
+                </p>
+              ) : null}
+              <p className="mt-1 max-w-prose text-sm text-muted-foreground empty:hidden">
+                {(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
               </p>
-            ) : null}
-            <p className="mt-1 max-w-prose text-sm text-muted-foreground empty:hidden">
-              {(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
+            </header>
+            <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
+              {message}
             </p>
-          </header>
-          <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
-            {message}
-          </p>
-          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+            <ActionError error={action.error} />
 
-          {/*
-            The three facts the brief keeps apart: changing one never changes another (§2). Connection
-            is one line of its own at every width; Where and Held by are short, so they share the row below it.
-            They and the details are not boxes, only lines between them, so the room goes to the content.
-          */}
-          <div className="grid grid-cols-2 border-b border-border">
-            {sim ? (
-              <Fact title={t.assets.connection} inline className="col-span-2">
-                <span className="flex flex-wrap items-center gap-2">
-                  {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
-                  {canManage && a.connection_status ? (
-                    <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving} onChange={(next) => void changeStatus(next)} />
-                  ) : null}
-                </span>
-              </Fact>
-            ) : null}
-            <Fact title={t.assets.where}>
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">{locationText(a)}</span>
-                {a.open_assignment?.not_returned_at ? <NotReturnedBadge kind={a.kind} /> : null}
-              </span>
-            </Fact>
-            <Fact title={t.assets.heldBy} className="pl-4">
-              {a.open_assignment ? (
-                <>
-                  <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
-                    {a.open_assignment.employee_name}
-                  </a>
-                  <span className="block text-xs text-muted-foreground">
-                    {t.assets.heldSince(formatDay(a.open_assignment.given_date), t.assets.daysHeld(a.open_assignment.days_held))}
+            {/*
+              The three facts the brief keeps apart: changing one never changes another (§2). Connection
+              is one line of its own at every width; Where and Held by are short, so they share the row below it.
+              They and the details are not boxes, only lines between them, so the room goes to the content.
+            */}
+            <div className="grid grid-cols-2">
+              {sim ? (
+                <StateFact title={t.assets.connection} inline className="col-span-2">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
+                    {canManage && a.connection_status ? (
+                      <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={action.pending} onChange={(next) => void changeStatus(next)} />
+                    ) : null}
                   </span>
+                </StateFact>
+              ) : null}
+              <StateFact title={t.assets.where}>
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{locationText(a)}</span>
+                  {a.open_assignment?.not_returned_at ? <NotReturnedBadge kind={a.kind} /> : null}
+                </span>
+              </StateFact>
+              <StateFact title={t.assets.heldBy} className="pl-4">
+                {a.open_assignment ? (
+                  <>
+                    <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
+                      {a.open_assignment.employee_name}
+                    </a>
+                    <span className="block text-xs text-muted-foreground">
+                      {t.assets.heldSince(formatDay(a.open_assignment.given_date), t.assets.daysHeld(a.open_assignment.days_held))}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">{t.assets.nobody}</span>
+                )}
+              </StateFact>
+            </div>
+
+            <FactGrid aria-label={t.assets.details} className="mb-4">
+              {sim ? (
+                <>
+                  <Fact label={t.assets.provider}>{a.provider ?? '–'}</Fact>
+                  <Fact label={t.assets.plan}>{a.plan ?? '–'}</Fact>
                 </>
               ) : (
-                <span className="text-muted-foreground">{t.assets.nobody}</span>
+                <>
+                  <Fact label={t.assets.category}>{a.category ? categoryLabel(a.category) : '–'}</Fact>
+                  <Fact label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '–'}</Fact>
+                </>
               )}
-            </Fact>
-          </div>
-
-          <dl aria-label={t.assets.details} className="mb-4 grid grid-cols-2 gap-4 border-b border-border py-3 text-sm @lg:grid-cols-3">
-            {sim ? (
-              <>
-                <Detail label={t.assets.provider}>{a.provider ?? '–'}</Detail>
-                <Detail label={t.assets.plan}>{a.plan ?? '–'}</Detail>
-              </>
-            ) : (
-              <>
-                <Detail label={t.assets.category}>{a.category ? categoryLabel(a.category) : '–'}</Detail>
-                <Detail label={t.assets.serialNo}>{a.serial_no ? <span className="font-mono">{a.serial_no}</span> : '–'}</Detail>
-              </>
-            )}
-            <Detail label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '–' : formatEuro(a.non_return_value_cents)}</Detail>
-            {sim ? <Detail label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '–'}</Detail> : null}
-            {a.comment ? (
-              <div className="col-span-2 @lg:col-span-3">
-                <Detail label={t.assets.comment}>
+              <Fact label={t.assets.nonReturnValueShort}>{a.non_return_value_cents === null ? '–' : formatEuro(a.non_return_value_cents)}</Fact>
+              {sim ? <Fact label={t.assets.receivedDate}>{a.received_date ? formatDay(a.received_date) : '–'}</Fact> : null}
+              {a.comment ? (
+                <Fact label={t.assets.comment} wide>
                   <span className="whitespace-pre-line">{a.comment}</span>
-                </Detail>
-              </div>
-            ) : null}
-          </dl>
+                </Fact>
+              ) : null}
+            </FactGrid>
 
-          <DisclosureSection
-            id={`assignments-${a.id}`}
-            title={t.assets.assignmentsTitle}
-            count={a.assignments.length}
-            description={t.assets.assignmentsIntro}
-            open={assignmentsRemembered || assignmentsOpened}
-            onOpenChange={(next) => {
-              setAssignmentsOpened(false)
-              rememberAssignments(next)
-            }}
-          >
-            {a.assignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t.assets.noAssignments}</p>
-            ) : (
-              // Flat, as the rest of the pane: a rule between givings, no boxes.
-              <RuleList ordered>
-                {a.assignments.map((s) => (
-                  <AssignmentItem
-                    key={s.id}
-                    assetId={a.id}
-                    kind={a.kind}
-                    inventoryNo={a.inventory_no}
-                    assignment={s}
-                    canManage={canManage}
-                    timeZone={tz}
-                    navigate={navigate}
-                    onUploaded={(m) => {
-                      setMessage(m)
-                      changed()
-                    }}
-                  />
-                ))}
-              </RuleList>
-            )}
-          </DisclosureSection>
+            <DisclosureSection
+              id={`assignments-${a.id}`}
+              title={t.assets.assignmentsTitle}
+              count={a.assignments.length}
+              description={t.assets.assignmentsIntro}
+              open={assignmentsRemembered || assignmentsOpened}
+              onOpenChange={(next) => {
+                setAssignmentsOpened(false)
+                rememberAssignments(next)
+              }}
+            >
+              {a.assignments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t.assets.noAssignments}</p>
+              ) : (
+                // Flat, as the rest of the pane: a rule between givings, no boxes.
+                <RuleList ordered>
+                  {a.assignments.map((s) => (
+                    <AssignmentItem
+                      key={s.id}
+                      assetId={a.id}
+                      kind={a.kind}
+                      inventoryNo={a.inventory_no}
+                      assignment={s}
+                      canManage={canManage}
+                      timeZone={tz}
+                      navigate={navigate}
+                      onUploaded={(m) => {
+                        setMessage(m)
+                        changed()
+                      }}
+                    />
+                  ))}
+                </RuleList>
+              )}
+            </DisclosureSection>
 
-          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+            <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
-          <AssetSheets
-            sheet={sheet}
-            today={today}
-            defaultPlan={settings.data?.default_sim_plan}
-            onChange={setSheet}
-            onDone={(m) => {
-              setMessage(m)
-              setAssignmentsOpened(true)
-              changed()
-            }}
-          />
-          {sim ? (
-            <SimCardForm
-              card={editing ? a : null}
+            <AssetSheets
+              sheet={sheet}
               today={today}
-              providers={settings.data?.sim_providers ?? []}
-              onClose={() => setEditing(false)}
-              onSaved={(saved) => {
-                setEditing(false)
-                setMessage(t.assets.saved(saved.inventory_no))
+              defaultPlan={settings.data?.default_sim_plan}
+              onChange={setSheet}
+              onDone={(m) => {
+                setMessage(m)
+                setAssignmentsOpened(true)
                 changed()
               }}
-              onOpenExisting={(other) => {
-                setEditing(false)
-                onOpen(other)
-              }}
             />
-          ) : (
-            <EquipmentForm
-              item={editing ? a : null}
-              onClose={() => setEditing(false)}
-              onSaved={(saved) => {
-                setEditing(false)
-                setMessage(t.assets.saved(saved.inventory_no))
-                changed()
-              }}
-              onOpenExisting={(other) => {
-                setEditing(false)
-                onOpen(other)
-              }}
-            />
-          )}
-        </>
-      )}
+            {sim ? (
+              <SimCardForm
+                card={editing ? a : null}
+                today={today}
+                providers={settings.data?.sim_providers ?? []}
+                onClose={() => setEditing(false)}
+                onSaved={(saved) => {
+                  setEditing(false)
+                  setMessage(t.assets.saved(saved.inventory_no))
+                  changed()
+                }}
+                onOpenExisting={(other) => {
+                  setEditing(false)
+                  onOpen(other)
+                }}
+              />
+            ) : (
+              <EquipmentForm
+                item={editing ? a : null}
+                onClose={() => setEditing(false)}
+                onSaved={(saved) => {
+                  setEditing(false)
+                  setMessage(t.assets.saved(saved.inventory_no))
+                  changed()
+                }}
+                onOpenExisting={(other) => {
+                  setEditing(false)
+                  onOpen(other)
+                }}
+              />
+            )}
+          </>
+        )}
+      </Loaded>
     </article>
   )
 }
@@ -343,9 +329,9 @@ export function AssetDetail({
  * phone) and after the title where it is long. Where a long word leaves no room
  * (Russian on a phone), the value moves under the title in one piece.
  */
-function Fact({ title, inline = false, className, children }: { title: string; inline?: boolean; className?: string; children: ReactNode }) {
+function StateFact({ title, inline = false, className, children }: { title: string; inline?: boolean; className?: string; children: ReactNode }) {
   return (
-    // A line above each, none around it (see the facts' grid).
+    // A line above each; the details' upper rule closes the last row.
     <div
       className={cn(
         'min-w-0 border-t border-border py-2.5',
@@ -355,15 +341,6 @@ function Fact({ title, inline = false, className, children }: { title: string; i
     >
       <div className={cn('mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase', inline && 'mb-0')}>{title}</div>
       <div className={cn('text-sm', inline && 'max-w-full shrink-0')}>{children}</div>
-    </div>
-  )
-}
-
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
     </div>
   )
 }

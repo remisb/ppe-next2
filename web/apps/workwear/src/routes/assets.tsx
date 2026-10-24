@@ -5,18 +5,21 @@ import { Button } from '@ppe/ui/components/button'
 import { Input } from '@ppe/ui/components/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import type { Help } from '@ppe/ui/components/tooltip'
+import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Kbd } from '@ppe/ui/components/kbd'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
-import { AssetMoreActions, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
+import { AssetMoreActions, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
@@ -40,7 +43,6 @@ import {
   chooseTab,
   countedTabs,
   primaryAction,
-  statusLabel,
   tabCountQuery,
   tabCounts,
   tabPressed,
@@ -75,12 +77,6 @@ const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
 /** From lg a SIM or item opens beside the register; below it, instead of the register. */
 const wide = () => window.matchMedia('(min-width: 64rem)').matches
 
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
-}
-
-const segment =
-  'flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11'
 
 /**
  * Company Assets' two screens, SIM Cards (assets brief §3–§5) and Equipment
@@ -130,7 +126,7 @@ export function Assets({
   const [sheet, setSheet] = useState<AssetSheet>(null)
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState('')
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -165,16 +161,11 @@ export function Assets({
 
   const changeStatus = async (a: Asset, next: ConnectionStatus) => {
     setSaving(a.id)
-    setActionError(undefined)
-    try {
-      await client.assets.setStatus(a.id, next)
-      setMessage(t.assets.statusChanged(a.inventory_no, statusLabel(next)))
+    await action.run(async () => {
+      setMessage(await setStatus(client, a, next))
       reload()
-    } catch (err) {
-      setActionError(err)
-    } finally {
-      setSaving(null)
-    }
+    })
+    setSaving(null)
   }
 
   // The card that already has a number typed on the form: found in this
@@ -191,7 +182,7 @@ export function Assets({
       setSearch(found.inventory_no)
       update({ ...noAssetFilters, q: found.inventory_no })
     } catch (err) {
-      setActionError(err)
+      action.fail(err)
     }
   }
 
@@ -275,31 +266,20 @@ export function Assets({
    * to a row on a phone and beside an open item, else one row.
    */
   const tabGroup = (
-    <div
-      role="group"
-      aria-label={sim ? t.assets.status : t.assets.locationAndReturn}
-      className={cn(
-        'grid gap-1 rounded-lg bg-muted p-1',
+    <Segmented
+      label={sim ? t.assets.status : t.assets.locationAndReturn}
+      options={assetTabs(kind).map((tab) => ({ value: tab, label: tabLabels[tab], help: tabHelp[tab], count: counts.data?.[tab], pressed: tabPressed(kind, filters, tab) }))}
+      onChange={(tab) => update(chooseTab(kind, filters, tab))}
+      busy={counts.loading}
+      layout="grid"
+      className={
         sim
           ? 'grid-flow-col auto-cols-auto sm:inline-grid sm:self-start md:self-auto'
           : beside
             ? 'grid-cols-2'
-            : 'grid-cols-2 sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start',
-      )}
-    >
-      {assetTabs(kind).map((tab) => (
-        <HelpTooltip key={tab} title={tabLabels[tab]} help={tabHelp[tab]}>
-          <button type="button" aria-pressed={tabPressed(kind, filters, tab)} onClick={() => update(chooseTab(kind, filters, tab))} className={segment}>
-            {tabLabels[tab]}
-            {counts.data ? (
-              <span className={cn('min-w-5 rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-center text-xs leading-none tabular-nums', counts.loading && 'opacity-60')}>
-                {counts.data[tab]}
-              </span>
-            ) : null}
-          </button>
-        </HelpTooltip>
-      ))}
-    </div>
+            : 'grid-cols-2 sm:inline-grid sm:grid-flow-col sm:auto-cols-auto sm:grid-cols-none sm:self-start'
+      }
+    />
   )
 
   return (
@@ -379,7 +359,7 @@ export function Assets({
           <p role="status" className={cn('text-sm text-muted-foreground', message && 'mb-3')}>
             {message}
           </p>
-          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+          <ActionError error={action.error} />
           {list.error ? (
             <ErrorState error={list.error} onRetry={reload} />
           ) : list.loading && !list.data ? (

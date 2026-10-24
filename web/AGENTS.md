@@ -67,7 +67,9 @@ a missing key fails the typecheck. Counted phrases are functions using `plural`
 sentence with a value in it is one function, never glued fragments. Never read `t` at
 module level (a constant array of labels is evaluated once, in the language of the moment):
 build it in the component or a function. Dates and amounts use `intlLocale()`;
-`formatEuro` and `formatMonths` already do. The app remounts when the language changes.
+`formatEuro`, `formatNumber` and `formatMonths` already do (`@ppe/i18n`). An amount field
+shows cents with `euroInput` and reads them back with `parseEuro`; a locked document prints
+€ with `formatDocumentEuro`, the same in every language. The app remounts when the language changes.
 Not translated: data (names, codes, sizes, record numbers), server error messages, and the
 employee-facing confirmation page, hand-over mode and the Items Given Record, which keep
 their English / Russian as the manual defines. `src/i18n/i18n.test.ts` fails when a
@@ -324,6 +326,12 @@ both apps share it (Layout above):
   `aria-label`. No chart library.
 - Show errors through `errorText` (or `ErrorState`, which uses it): a 5xx becomes the user's
   language's "The server could not do this…" with its reference, never the API's raw words.
+- A load's states are `<Loaded load={…} emptyState={…}>{(data) => …}</Loaded>` (error with
+  Retry, Loading, empty, content); several loads a screen needs together are
+  `combineLoads(a, b)`. An action (Delete, Deactivate, Change Status) runs through
+  `useAction().run(fn, { confirm, mapError })`, which asks first, clears the last error and
+  keeps the new one for `<ActionError error={action.error} />`; never a try/catch with an
+  error state of its own.
 - Uncaught errors and unhandled rejections are reported to System's error list by
   `@ppe/app-shell` while someone is signed in; an app adds nothing. Catch an error only to
   handle it, never to hide it from that report.

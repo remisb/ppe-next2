@@ -29,8 +29,6 @@ export const account: AccountText = {
   devices: 'Prisijungę įrenginiai',
   devicesHint: 'Kur esate prisijungę dabar. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate.',
   thisDevice: 'Šis įrenginys',
-  deviceOn: (browser: string, system: string) => `${browser}, ${system}`,
-  unknownDevice: 'Nežinoma naršyklė',
   lastUsed: 'Paskutinį kartą naudota',
   keptSignedIn: 'Liekama prisijungus',
   untilBrowserCloses: 'Iki naršyklės uždarymo',

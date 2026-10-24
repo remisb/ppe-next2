@@ -2,7 +2,7 @@ import type { AssetKind, HeldAsset } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
-import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
+import { Loaded } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -87,19 +87,15 @@ export function HeldAssets({
       <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
         {message}
       </p>
-      {held.error ? (
-        <ErrorState error={held.error} onRetry={held.reload} />
-      ) : !held.data ? (
-        <Loading />
-      ) : rows.length === 0 ? (
-        <EmptyState>{sim ? t.assets.noGivenSim(employee.full_name) : t.assets.noEquipmentGiven(employee.full_name)}</EmptyState>
-      ) : (
-        <ul className="grid gap-2">
-          {rows.map((h) => (
-            <HeldRow key={h.id} held={h} navigate={navigate} />
-          ))}
-        </ul>
-      )}
+      <Loaded load={held} empty={rows.length === 0} emptyState={sim ? t.assets.noGivenSim(employee.full_name) : t.assets.noEquipmentGiven(employee.full_name)}>
+        {() => (
+          <ul className="grid gap-2">
+            {rows.map((h) => (
+              <HeldRow key={h.id} held={h} navigate={navigate} />
+            ))}
+          </ul>
+        )}
+      </Loaded>
       <AssetSheets
         sheet={sheet}
         today={todayIn(timeZone)}

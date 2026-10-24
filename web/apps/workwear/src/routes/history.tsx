@@ -5,7 +5,7 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
-import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
+import type { Help } from '@ppe/ui/components/tooltip'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -20,6 +20,8 @@ import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Kbd } from '@ppe/ui/components/kbd'
+import { Segmented } from '@ppe/ui/components/segmented'
 import { t } from '@/i18n'
 import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, looksLikeRecord, monthOf, periodRange, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
@@ -72,9 +74,6 @@ const leftForRecord = new Map<string, { filters: Filters; page: number; sort: So
 
 const recordLink = linkVariants()
 
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
-}
 
 /** From lg the order opens beside the list; below it, instead of the list. */
 const wide = () => window.matchMedia('(min-width: 64rem)').matches
@@ -242,21 +241,13 @@ export function History({
           }
         />
 
-        <div role="group" aria-label={t.history.status} className="mb-4 grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-          {statusTabs().map((tab) => (
-            <HelpTooltip key={tab.label} title={tab.label} help={tab.help}>
-              <button
-                type="button"
-                aria-pressed={filters.status === tab.value}
-                onClick={() => setFilter('status', tab.value)}
-                className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-              >
-                {tab.label}
-                {counts.data ? <span className="tabular-nums text-muted-foreground">{counts.data[tab.value]}</span> : null}
-              </button>
-            </HelpTooltip>
-          ))}
-        </div>
+        <Segmented
+          label={t.history.status}
+          options={statusTabs().map((tab) => ({ ...tab, count: counts.data?.[tab.value] }))}
+          value={filters.status}
+          onChange={(v) => setFilter('status', v)}
+          className="mb-4"
+        />
 
         <section
           id="history-filters"

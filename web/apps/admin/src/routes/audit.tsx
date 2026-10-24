@@ -15,7 +15,8 @@ import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
-import { ArrowLeft, Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -441,9 +442,7 @@ function ChangePane({
   return (
     <article aria-label={t.audit.change} className="relative flex flex-col gap-4">
       <div className="flex items-center lg:contents">
-        <Button variant="ghost" className="-ml-3 lg:hidden" onClick={onClose}>
-          <ArrowLeft aria-hidden /> {t.audit.title}
-        </Button>
+        <BackButton className="lg:hidden" onClick={onClose}>{t.audit.title}</BackButton>
         <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 max-lg:hidden" aria-label={t.audit.closeChange} onClick={onClose}>
           <X aria-hidden />
         </Button>

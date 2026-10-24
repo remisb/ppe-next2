@@ -7,14 +7,17 @@ import { Button } from '@ppe/ui/components/button'
 import { Select } from '@ppe/ui/components/field'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loaded, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
-import { ArrowLeft, X } from 'lucide-react'
-import { type ReactNode, useMemo, useState } from 'react'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { formatNumber } from '@ppe/i18n'
+import { X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { intlLocale, t } from '@/i18n'
 import { type Route, type SystemTab, linkTo, systemTabPermission, systemTabs } from '@/lib/router'
@@ -60,7 +63,6 @@ export function SystemPage({ route, navigate }: { route: SystemRoute; navigate: 
   )
 }
 
-const number = (n: number) => new Intl.NumberFormat(intlLocale()).format(n)
 const percentOf = (part: number, whole: number) => (whole > 0 ? Math.round((1000 * part) / whole) / 10 : 0)
 
 function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navigate: Navigate }) {
@@ -73,31 +75,19 @@ function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navig
         <p className="text-sm text-muted-foreground">{s ? t.system.timesIn(s.timezone) : null}</p>
         <RefreshButton loading={loaded.loading} onClick={loaded.reload} />
       </div>
-      {loaded.error ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
-      ) : !s ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <Service s={s} timeZone={timeZone} />
-          <Requests s={s} timeZone={timeZone} onErrors={() => navigate({ name: 'system', tab: 'errors' })} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <Database s={s} className="lg:col-span-2" />
-            <Retention s={s} timeZone={timeZone} />
+      <Loaded load={loaded}>
+        {(s) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <Service s={s} timeZone={timeZone} />
+            <Requests s={s} timeZone={timeZone} onErrors={() => navigate({ name: 'system', tab: 'errors' })} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <Database s={s} className="lg:col-span-2" />
+              <Retention s={s} timeZone={timeZone} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Loaded>
     </>
-  )
-}
-
-/** A label and its value, as the panels list them. */
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 py-2 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-right break-words tabular-nums">{children}</dd>
-    </div>
   )
 }
 
@@ -157,10 +147,10 @@ function Requests({ s, timeZone, onErrors }: { s: SystemStatus; timeZone: string
     <Panel title={t.system.requests} description={t.system.requestsSince}>
       <div className="flex flex-col gap-5">
         <KeyFigures>
-          <Kpi label={t.system.total} value={number(r.requests)} detail={formatDateTime(r.since, timeZone)} />
+          <Kpi label={t.system.total} value={formatNumber(r.requests)} detail={formatDateTime(r.since, timeZone)} />
           <Kpi
             label={t.system.failed}
-            value={number(r.errors)}
+            value={formatNumber(r.errors)}
             detail={t.system.failedShare(percentOf(r.errors, r.requests))}
             alert={r.errors > 0}
             help={{ body: t.overview.figureHelp.requests }}
@@ -212,9 +202,9 @@ function Requests({ s, timeZone, onErrors }: { s: SystemStatus; timeZone: string
                   {r.slowest.map((x) => (
                     <TableRow key={x.route} className={stackedBreak}>
                       <TableCell className="font-mono text-xs break-all whitespace-normal stacked:order-1 stacked:w-full">{x.route}</TableCell>
-                      <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{number(x.requests)}</TableCell>
+                      <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{formatNumber(x.requests)}</TableCell>
                       <TableCell className={cn('text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs', x.errors > 0 && 'text-destructive')}>
-                        {number(x.errors)}
+                        {formatNumber(x.errors)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{x.p50_ms} ms</TableCell>
                       <TableCell className="text-right tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs">{x.p95_ms} ms</TableCell>
@@ -237,7 +227,7 @@ function Database({ s, className }: { s: SystemStatus; className?: string }) {
     : null
   return (
     <Panel title={t.system.database} className={className}>
-      <dl className="divide-y divide-border">
+      <FactGrid layout="rows">
         <Fact label={t.system.size}>
           {formatBytes(d.bytes)}
           {growth ? <span className="block text-xs text-muted-foreground">{growth}</span> : null}
@@ -262,7 +252,7 @@ function Database({ s, className }: { s: SystemStatus; className?: string }) {
           {d.oldest_transaction_seconds > 0 ? t.system.seconds(Math.round(d.oldest_transaction_seconds)) : t.system.none}
         </Fact>
         <Fact label={t.system.migration}>{d.latest_migration ? <code className="text-xs">{d.latest_migration.file}</code> : t.system.none}</Fact>
-      </dl>
+      </FactGrid>
       <h3 className="mt-4 mb-2 text-sm font-medium">{t.system.largestTables}</h3>
       <Table>
         <TableHeader>
@@ -277,7 +267,7 @@ function Database({ s, className }: { s: SystemStatus; className?: string }) {
             <TableRow key={x.name}>
               <TableCell className="font-mono text-xs break-all whitespace-normal">{x.name}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBytes(x.bytes)}</TableCell>
-              <TableCell className="text-right tabular-nums">{number(x.rows)}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatNumber(x.rows)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -290,7 +280,7 @@ function Retention({ s, timeZone }: { s: SystemStatus; timeZone: string | undefi
   const r = s.retention
   return (
     <Panel title={t.system.retention} description={t.system.retentionHint}>
-      <dl className="divide-y divide-border">
+      <FactGrid layout="rows">
         <Fact label={t.system.auditRecords}>{t.system.days(r.audit_events_days)}</Fact>
         <Fact label={t.system.signInRecords}>{t.system.days(r.auth_events_days)}</Fact>
         <Fact label={t.system.errorRecords}>{t.system.days(r.error_events_days)}</Fact>
@@ -308,7 +298,7 @@ function Retention({ s, timeZone }: { s: SystemStatus; timeZone: string | undefi
             t.system.notYet
           )}
         </Fact>
-      </dl>
+      </FactGrid>
     </Panel>
   )
 }
@@ -442,9 +432,7 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
   return (
     <article aria-label={t.system.error} className="relative flex flex-col gap-4">
       <div className="flex items-center lg:contents">
-        <Button variant="ghost" className="-ml-3 lg:hidden" onClick={onClose}>
-          <ArrowLeft aria-hidden /> {t.system.errors}
-        </Button>
+        <BackButton className="lg:hidden" onClick={onClose}>{t.system.errors}</BackButton>
         <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 max-lg:hidden" aria-label={t.system.closeError} onClick={onClose}>
           <X aria-hidden />
         </Button>
@@ -461,7 +449,7 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
               {kindLabel(e.kind)} · {t.system.times(e.count)}
             </p>
           </header>
-          <dl className="divide-y divide-border">
+          <FactGrid layout="rows">
             <Fact label={t.system.route}>
               <code className="text-xs break-all">{e.route}</code>
             </Fact>
@@ -477,7 +465,7 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
                 <span className="block text-xs text-muted-foreground">{t.system.referenceHint}</span>
               </Fact>
             ) : null}
-          </dl>
+          </FactGrid>
           {e.stack ? (
             <details>
               <summary className="cursor-pointer text-sm font-medium">{t.system.stack}</summary>

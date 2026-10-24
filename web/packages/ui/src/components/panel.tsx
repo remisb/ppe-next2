@@ -2,7 +2,8 @@ import { AlertTriangle, ChevronRight, RefreshCw } from 'lucide-react'
 import { type ReactNode, useId } from 'react'
 
 import { Button } from './button.tsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card.tsx'
+import { Card, CardContent, CardHeader, CardTitle } from './card.tsx'
+import { InfoTip } from './info-tip.tsx'
 import { type Help, HelpTooltip } from './tooltip.tsx'
 import { uiText } from '../text.ts'
 import { cn } from '../lib/utils.ts'
@@ -12,19 +13,19 @@ import { cn } from '../lib/utils.ts'
  * of headline figures and their tiles, and Refresh.
  */
 
-/** A dashboard section: a card whose title is a level-2 heading, and a region named by it. */
+/**
+ * A dashboard section: a card whose title is a level-2 heading, and a region
+ * named by it. description explains it from an ⓘ beside the title (InfoTip).
+ */
 export function Panel({
   title,
   description,
   className,
   anchor,
-  descriptionClassName,
   children,
 }: {
   title: string
-  description?: ReactNode
-  /** Such as `max-md:hidden`, where the phone needs the height. */
-  descriptionClassName?: string
+  description?: string | undefined
   className?: string | undefined
   /** A name to jump to it by (data-panel), for a tile that leads here. */
   anchor?: string
@@ -39,10 +40,10 @@ export function Panel({
       {...(anchor ? { 'data-panel': anchor } : {})}
     >
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="flex items-center gap-1">
           <h2 id={id}>{title}</h2>
+          {description ? <InfoTip section={title}>{description}</InfoTip> : null}
         </CardTitle>
-        {description ? <CardDescription className={descriptionClassName}>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>

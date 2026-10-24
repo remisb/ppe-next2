@@ -1,7 +1,7 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
@@ -36,7 +36,6 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title={t.dashboard.title}
-        descriptionClassName="max-md:hidden"
         description={
           d
             ? `${t.dashboard.adminIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
@@ -59,38 +58,36 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
           </>
         }
       />
-      {board.error ? (
-        <ErrorState error={board.error} onRetry={board.reload} />
-      ) : !d ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} navigate={navigate} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <NeedsYouPanel
-              className="lg:col-span-2"
-              needs={needsOf(d)}
-              navigate={navigate}
-              empty={t.dashboard.adminNothingNeeded}
-              footer={
-                d.awaiting.orders > d.awaiting.longest.length ? (
-                  <MoreLink label={t.dashboard.allWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
-                ) : null
-              }
-            />
-            <div className="flex flex-col gap-4 md:gap-6">
-              <SetupCard d={d} navigate={navigate} />
-              <BackupCard navigate={navigate} />
-              <AssetsCard navigate={navigate} />
+      <Loaded load={board}>
+        {(d) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <Kpis d={d} navigate={navigate} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <NeedsYouPanel
+                className="lg:col-span-2"
+                needs={needsOf(d)}
+                navigate={navigate}
+                empty={t.dashboard.adminNothingNeeded}
+                footer={
+                  d.awaiting.orders > d.awaiting.longest.length ? (
+                    <MoreLink label={t.dashboard.allWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
+                  ) : null
+                }
+              />
+              <div className="flex flex-col gap-4 md:gap-6">
+                <SetupCard d={d} navigate={navigate} />
+                <BackupCard navigate={navigate} />
+                <AssetsCard navigate={navigate} />
+              </div>
             </div>
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <MonthlyChart months={d.months} className="lg:col-span-2" />
+              <ConfirmationCard d={d} />
+            </div>
+            <TopItemsCard d={d} />
           </div>
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <MonthlyChart months={d.months} className="lg:col-span-2" />
-            <ConfirmationCard d={d} />
-          </div>
-          <TopItemsCard d={d} />
-        </div>
-      )}
+        )}
+      </Loaded>
     </>
   )
 }
@@ -153,12 +150,7 @@ function MonthlyChart({ months, className }: { months: DashboardMonth[]; classNa
     <Panel
       title={t.dashboard.spendingByMonth}
       className={className}
-      description={
-        <>
-          {first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}: ` : ''}
-          {t.dashboard.spendingDescription(formatEuro(total))}
-        </>
-      }
+      description={`${first && last ? `${monthLabel(first.month, true)} – ${monthLabel(last.month, true)}: ` : ''}${t.dashboard.spendingDescription(formatEuro(total))}`}
     >
       <MonthChart
         months={months.map((m) => m.month)}

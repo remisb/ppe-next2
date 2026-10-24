@@ -110,7 +110,6 @@ export function NeedsYouPanel({
     <Panel
       title={sorted.length > 0 ? t.dashboard.needsYouCount(sorted.length) : t.dashboard.needsYou}
       description={t.dashboard.needsYouDescription}
-      descriptionClassName="max-md:hidden"
       className={className}
     >
       {sorted.length === 0 ? (

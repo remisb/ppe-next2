@@ -12,7 +12,6 @@ export const common: CommonText = {
   delete: 'Ištrinti',
   add: 'Pridėti',
   search: 'Paieška',
-  actionFailed: 'Veiksmas nepavyko',
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
   ordered: 'Užsakyta',
   given: 'Išduota',

@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { cn } from '@ppe/ui/lib/utils'
 
 import { printDateTime } from '@ppe/ui/lib/dates'
+import { formatDocumentEuro } from '@ppe/i18n'
 import { methodText } from '@/lib/history'
 import { formatSize } from '@/lib/utils'
 
@@ -11,8 +12,6 @@ import { formatSize } from '@/lib/utils'
 // (manual §8): English / Russian words, and amounts and periods as when it was
 // first printed, rather than lib/utils' formatters, which follow the language.
 const receiptStatus = { ORDERED: 'Ordered / Заказано', GIVEN: 'Given / Выдано' } as const
-const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })
-const formatEuro = (cents: number) => euro.format(cents / 100)
 const formatMonths = (n: number) => (n === 1 ? '1 month' : `${n} months`)
 
 /**
@@ -75,8 +74,8 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
               </TableCell>
               <TableCell label="Size / Размер" className={td}>{formatSize(l.size)}</TableCell>
               <TableCell label="Qty / Кол-во" className={cn(td, 'text-right tabular-nums')}>{l.quantity}</TableCell>
-              <TableCell label="Unit price / Цена" className={cn(td, 'text-right tabular-nums')}>{formatEuro(l.unit_price_cents)}</TableCell>
-              <TableCell label="Total / Сумма" className={cn(td, 'text-right font-medium tabular-nums')}>{formatEuro(l.total_cents)}</TableCell>
+              <TableCell label="Unit price / Цена" className={cn(td, 'text-right tabular-nums')}>{formatDocumentEuro(l.unit_price_cents)}</TableCell>
+              <TableCell label="Total / Сумма" className={cn(td, 'text-right font-medium tabular-nums')}>{formatDocumentEuro(l.total_cents)}</TableCell>
               <TableCell label="Service period / Срок службы" className={td}>{formatMonths(l.service_period_months)}</TableCell>
             </TableRow>
           ))}
@@ -86,7 +85,7 @@ export function ReceiptDocument({ record, timeZone }: { record: OrderRecord; tim
             <TableCell colSpan={4} className="px-2 py-2 text-right font-medium stacked:w-auto stacked:text-left">
               Total value / Общая стоимость
             </TableCell>
-            <TableCell className="px-2 py-2 text-right font-semibold tabular-nums stacked:w-auto">{formatEuro(r.total_cents)}</TableCell>
+            <TableCell className="px-2 py-2 text-right font-semibold tabular-nums stacked:w-auto">{formatDocumentEuro(r.total_cents)}</TableCell>
             <TableCell className="stacked:hidden" />
           </TableRow>
         </TableFooter>

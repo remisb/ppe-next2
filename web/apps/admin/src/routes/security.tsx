@@ -19,7 +19,7 @@ import { DateInput } from '@ppe/ui/components/date-input'
 import { Select } from '@ppe/ui/components/field'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loaded, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -343,79 +343,75 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
           {message.text}
         </p>
       ) : null}
-      {list.error ? (
-        <ErrorState error={list.error} onRetry={list.reload} />
-      ) : !list.data ? (
-        <Loading />
-      ) : list.data.length === 0 ? (
-        <EmptyState>{t.security.noDevices}</EmptyState>
-      ) : (
-        <>
-          <p className="mb-2 text-sm text-muted-foreground">
-            {t.security.deviceCount(list.data.length)} · {t.security.people(people)}
-          </p>
-          <Table stack="list">
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.security.name}</TableHead>
-                <TableHead>{t.security.device}</TableHead>
-                <TableHead>{t.security.lastUsed}</TableHead>
-                <TableHead>{t.security.signedInAt}</TableHead>
-                {mayEnd ? <TableHead className="text-right">{t.security.signOut}</TableHead> : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.data.map((s) => {
-                const device = deviceText(s.user_agent)
-                return (
-                  <TableRow key={s.id} className="stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3">
-                    <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
-                      <span className="font-medium">{s.user_name}</span>
-                      {s.id === current ? (
-                        <Badge variant="outline" className="ml-2 align-middle">
-                          {t.security.thisDevice}
-                        </Badge>
-                      ) : null}
-                      <span className="block text-xs break-all text-muted-foreground">{s.user_email}</span>
-                    </TableCell>
-                    <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs">
-                      {device}
-                      <span className="block text-xs text-muted-foreground tabular-nums">
-                        {s.ip}
-                        {' · '}
-                        {s.keep_signed_in ? t.security.keptSignedIn : t.security.untilBrowserCloses}
-                      </span>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">
-                      <span className="hidden stacked:inline">{t.security.lastUsed} </span>
-                      <RelativeDate iso={s.last_used_at} timeZone={timeZone} time sentence />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums stacked:hidden">
-                      <RelativeDate iso={s.created_at} timeZone={timeZone} time />
-                    </TableCell>
-                    {mayEnd ? (
-                      <TableCell className="text-right stacked:col-start-2 stacked:[grid-row:1/span_3] stacked:flex stacked:items-center">
-                        {s.id === current ? null : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="pointer-coarse:h-11"
-                            aria-label={t.security.signOutDevice(device, s.user_name)}
-                            disabled={busy !== null}
-                            onClick={() => void end(s)}
-                          >
-                            {t.security.signOut}
-                          </Button>
-                        )}
+      <Loaded load={list} emptyState={t.security.noDevices}>
+        {(data) => (
+          <>
+            <p className="mb-2 text-sm text-muted-foreground">
+              {t.security.deviceCount(data.length)} · {t.security.people(people)}
+            </p>
+            <Table stack="list">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.security.name}</TableHead>
+                  <TableHead>{t.security.device}</TableHead>
+                  <TableHead>{t.security.lastUsed}</TableHead>
+                  <TableHead>{t.security.signedInAt}</TableHead>
+                  {mayEnd ? <TableHead className="text-right">{t.security.signOut}</TableHead> : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((s) => {
+                  const device = deviceText(s.user_agent)
+                  return (
+                    <TableRow key={s.id} className="stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3">
+                      <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
+                        <span className="font-medium">{s.user_name}</span>
+                        {s.id === current ? (
+                          <Badge variant="outline" className="ml-2 align-middle">
+                            {t.security.thisDevice}
+                          </Badge>
+                        ) : null}
+                        <span className="block text-xs break-all text-muted-foreground">{s.user_email}</span>
                       </TableCell>
-                    ) : null}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </>
-      )}
+                      <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-2 stacked:text-xs">
+                        {device}
+                        <span className="block text-xs text-muted-foreground tabular-nums">
+                          {s.ip}
+                          {' · '}
+                          {s.keep_signed_in ? t.security.keptSignedIn : t.security.untilBrowserCloses}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap tabular-nums stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">
+                        <span className="hidden stacked:inline">{t.security.lastUsed} </span>
+                        <RelativeDate iso={s.last_used_at} timeZone={timeZone} time sentence />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap tabular-nums stacked:hidden">
+                        <RelativeDate iso={s.created_at} timeZone={timeZone} time />
+                      </TableCell>
+                      {mayEnd ? (
+                        <TableCell className="text-right stacked:col-start-2 stacked:[grid-row:1/span_3] stacked:flex stacked:items-center">
+                          {s.id === current ? null : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="pointer-coarse:h-11"
+                              aria-label={t.security.signOutDevice(device, s.user_name)}
+                              disabled={busy !== null}
+                              onClick={() => void end(s)}
+                            >
+                              {t.security.signOut}
+                            </Button>
+                          )}
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </>
+        )}
+      </Loaded>
     </>
   )
 }

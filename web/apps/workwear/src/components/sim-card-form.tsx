@@ -6,6 +6,7 @@ import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Segmented } from '@ppe/ui/components/segmented'
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -237,19 +238,13 @@ footer={<FormSheetActions form="sim-card-form" onCancel={onClose} busy={saving} 
         {existing ? null : (
           <fieldset className="flex flex-col gap-1.5">
             <legend className="mb-1.5 text-sm font-medium">{t.assets.status}</legend>
-            <div role="group" className="inline-grid grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1">
-              {(['NOT_ACTIVATED', 'ACTIVE'] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  aria-pressed={draft.status === s}
-                  onClick={() => set('status', s)}
-                  className="flex h-9 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-                >
-                  {t.assets.statuses[s]}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              layout="fit"
+              className="auto-cols-fr"
+              options={(['NOT_ACTIVATED', 'ACTIVE'] as const).map((s) => ({ value: s, label: t.assets.statuses[s] }))}
+              value={draft.status}
+              onChange={(s) => set('status', s)}
+            />
             <p className="text-xs text-muted-foreground">{t.assets.statusHint}</p>
           </fieldset>
         )}

@@ -1,8 +1,9 @@
 import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Printer } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 import { AssignmentFormDocument } from '@/components/assignment-form'
@@ -73,25 +74,21 @@ export function AssetFormPage({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2 print:hidden">
-        <Button variant="ghost" className="-ml-3" onClick={onBack}>
-          <ArrowLeft aria-hidden /> {t.common.back}
-        </Button>
+        <BackButton onClick={onBack}>{t.common.back}</BackButton>
         {form.data ? (
           <Button onClick={() => void print()}>
             <Printer aria-hidden /> {t.assets.printForm}
           </Button>
         ) : null}
       </div>
-      {form.error ? (
-        <ErrorState error={form.error} onRetry={form.reload} />
-      ) : !form.data ? (
-        <Loading />
-      ) : (
-        <>
-          {assignment ? null : <p className="mb-3 text-sm text-muted-foreground print:hidden">{t.assets.formLayoutNote}</p>}
-          <AssignmentFormDocument form={form.data.form} documentHash={form.data.document_hash} />
-        </>
-      )}
+      <Loaded load={form}>
+        {(data) => (
+          <>
+            {assignment ? null : <p className="mb-3 text-sm text-muted-foreground print:hidden">{t.assets.formLayoutNote}</p>}
+            <AssignmentFormDocument form={data.form} documentHash={data.document_hash} />
+          </>
+        )}
+      </Loaded>
     </>
   )
 }

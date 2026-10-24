@@ -29,8 +29,6 @@ export const account: AccountText = {
   devices: 'Устройства со входом',
   devicesHint: 'Где вы сейчас вошли. Выйдите на устройстве, которым больше не пользуетесь или которого не узнаёте.',
   thisDevice: 'Это устройство',
-  deviceOn: (browser: string, system: string) => `${browser}, ${system}`,
-  unknownDevice: 'Неизвестный браузер',
   lastUsed: 'Последнее использование',
   keptSignedIn: 'Вход сохраняется',
   untilBrowserCloses: 'До закрытия браузера',

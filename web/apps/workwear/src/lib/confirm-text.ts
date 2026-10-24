@@ -3,6 +3,7 @@
  * hand-over mode) in English and Russian. The switch changes only these words:
  * the Items Given Record itself stays bilingual and locked.
  */
+import { formatDocumentEuro } from '@ppe/i18n'
 
 export type ConfirmLang = 'en' | 'ru'
 
@@ -49,11 +50,11 @@ export function formatDay(iso: string, lang: ConfirmLang, timeZone?: string): st
   return new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' }).format(d)
 }
 
-const money = { en: new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }), ru: new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR' }) }
+const russianEuro = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'EUR' })
 
 /** An amount as "€274.90" (en, as on the record) or "274,90 €" (ru). */
 export function formatMoney(cents: number, lang: ConfirmLang): string {
-  return money[lang].format(cents / 100)
+  return lang === 'ru' ? russianEuro.format(cents / 100) : formatDocumentEuro(cents)
 }
 
 /** A time of day as "14:02", in timeZone. */

@@ -1,8 +1,9 @@
 import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Printer } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 import { ReceiptDocument } from '@/components/receipt'
@@ -30,9 +31,7 @@ export function RecordPage({ id, autoPrint, onBack }: { id: string; autoPrint: b
   return (
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-2 print:hidden">
-        <Button variant="ghost" className="-ml-3" onClick={onBack}>
-          <ArrowLeft aria-hidden /> {t.common.back}
-        </Button>
+        <BackButton onClick={onBack}>{t.common.back}</BackButton>
         {record.data ? (
           <div className="flex flex-wrap items-start gap-2">
             {record.data.status === 'GIVEN' ? (
@@ -44,13 +43,11 @@ export function RecordPage({ id, autoPrint, onBack }: { id: string; autoPrint: b
           </div>
         ) : null}
       </div>
-      {record.error ? (
-        <ErrorState error={record.error} onRetry={record.reload} />
-      ) : !record.data ? (
-        <Loading />
-      ) : (
-        <ReceiptDocument record={record.data} timeZone={settings.data?.timezone} />
-      )}
+      <Loaded load={record}>
+        {(data) => (
+          <ReceiptDocument record={data} timeZone={settings.data?.timezone} />
+        )}
+      </Loaded>
     </>
   )
 }

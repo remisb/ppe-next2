@@ -1,26 +1,24 @@
 import { ApiError } from '@ppe/api-client'
 import { type Density, MIN_PASSWORD_LENGTH, type PasswordChange, type PasswordErrors, themes, useApi, useDensity, useSession, useTheme, validatePasswordChange } from '@ppe/app-shell'
+import { deviceText } from '@ppe/audit'
 import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { Field, PasswordInput, controlProps } from '@ppe/ui/components/field'
-import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Loaded, PageHeader } from '@ppe/ui/components/states'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { CheckCircle2, LogOut } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { type Lang, languages, t } from '@/i18n'
-import { deviceLabel, sortDevices } from '@/lib/devices'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { languages, t } from '@/i18n'
+import { sortDevices } from '@/lib/devices'
 
 const empty: PasswordChange = { current: '', next: '', confirm: '' }
 
 const densities: Density[] = ['comfortable', 'compact']
-
-/** A row of mutually exclusive choices, the pressed one raised: Language, Table rows. */
-const choice =
-  'flex h-9 cursor-pointer items-center rounded-md px-3 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11'
 
 /**
  * Account: the signed-in user's interface language (saved on their account),
@@ -78,30 +76,23 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <>
-      <PageHeader title={t.account.title} description={t.account.signedInAs(session.name)} />
+      <PageHeader title={t.account.title} subtitle={t.account.signedInAs(session.name)} />
       <Card className="mb-6 md:max-w-md">
         <CardHeader>
           <CardTitle>{t.account.language}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {/* Each language is named in itself, so it can be found whatever is showing now. */}
-          <div role="group" aria-label={t.account.language} className="inline-grid w-fit grid-flow-col gap-1 rounded-lg bg-muted p-1">
-            {languages.map((l) => (
-              <button
-                key={l.value}
-                type="button"
-                lang={l.value}
-                aria-pressed={session.language === l.value}
-                onClick={() => {
-                  setLanguageError(undefined)
-                  setUserLanguage(l.value as Lang).catch((err: unknown) => setLanguageError(errorText(err)))
-                }}
-                className={choice}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            layout="fit"
+            label={t.account.language}
+            options={languages.map((l) => ({ ...l, lang: l.value }))}
+            value={session.language}
+            onChange={(lang) => {
+              setLanguageError(undefined)
+              setUserLanguage(lang).catch((err: unknown) => setLanguageError(errorText(err)))
+            }}
+          />
           {languageError ? (
             <p role="alert" className="text-sm text-destructive">
               {t.account.languageFailed}: {languageError}
@@ -115,13 +106,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           <CardTitle>{t.account.theme}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <div role="group" aria-label={t.account.theme} className="inline-grid w-fit grid-flow-col gap-1 rounded-lg bg-muted p-1">
-            {themes.map((th) => (
-              <button key={th} type="button" aria-pressed={theme === th} onClick={() => setTheme(th)} className={choice}>
-                {t.account[th]}
-              </button>
-            ))}
-          </div>
+          <Segmented layout="fit" label={t.account.theme} options={themes.map((th) => ({ value: th, label: t.account[th] }))} value={theme} onChange={setTheme} />
           <p className="text-sm text-muted-foreground">{t.account.themeHint}</p>
         </CardContent>
       </Card>
@@ -167,13 +152,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           <CardTitle>{t.account.tableRows}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <div role="group" aria-label={t.account.tableRows} className="inline-grid w-fit grid-flow-col gap-1 rounded-lg bg-muted p-1">
-            {densities.map((d) => (
-              <button key={d} type="button" aria-pressed={density === d} onClick={() => setDensity(d)} className={choice}>
-                {t.account[d]}
-              </button>
-            ))}
-          </div>
+          <Segmented layout="fit" label={t.account.tableRows} options={densities.map((d) => ({ value: d, label: t.account[d] }))} value={density} onChange={setDensity} />
           <p className="text-sm text-muted-foreground">{t.account.densityHint}</p>
         </CardContent>
       </Card>
@@ -218,37 +197,35 @@ function Devices() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">{t.account.devicesHint}</p>
-        {devices.error ? (
-          <ErrorState error={devices.error} onRetry={devices.reload} />
-        ) : !devices.data ? (
-          <Loading />
-        ) : (
-          <ul aria-label={t.account.devices} className="divide-y divide-border">
-            {list.map((d) => {
-              const label = deviceLabel(d.user_agent)
-              return (
-                <li key={d.id} className="flex items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 font-medium">
-                      {label}
-                      {d.current ? <Badge variant="outline">{t.account.thisDevice}</Badge> : null}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {t.account.lastUsed} <RelativeDate iso={d.last_used_at} timeZone={undefined} time sentence />
-                      {d.ip ? ` · ${d.ip}` : null}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{d.keep_signed_in ? t.account.keptSignedIn : t.account.untilBrowserCloses}</p>
-                  </div>
-                  {d.current ? null : (
-                    <Button size="sm" variant="outline" className="shrink-0 pointer-coarse:h-11" aria-label={t.account.signOutDevice(label)} disabled={busy} onClick={() => void end(d.id)}>
-                      {t.account.signOut}
-                    </Button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
+        <Loaded load={devices}>
+          {() => (
+            <ul aria-label={t.account.devices} className="divide-y divide-border">
+              {list.map((d) => {
+                const label = deviceText(d.user_agent)
+                return (
+                  <li key={d.id} className="flex items-center justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 font-medium">
+                        {label}
+                        {d.current ? <Badge variant="outline">{t.account.thisDevice}</Badge> : null}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t.account.lastUsed} <RelativeDate iso={d.last_used_at} timeZone={undefined} time sentence />
+                        {d.ip ? ` · ${d.ip}` : null}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{d.keep_signed_in ? t.account.keptSignedIn : t.account.untilBrowserCloses}</p>
+                    </div>
+                    {d.current ? null : (
+                      <Button size="sm" variant="outline" className="shrink-0 pointer-coarse:h-11" aria-label={t.account.signOutDevice(label)} disabled={busy} onClick={() => void end(d.id)}>
+                        {t.account.signOut}
+                      </Button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </Loaded>
         {devices.data && others === 0 ? <p className="text-sm text-muted-foreground">{t.account.noOtherDevices}</p> : null}
         {others > 0 ? (
           <Button variant="outline" className="w-full sm:w-fit" disabled={busy} onClick={() => void end()}>

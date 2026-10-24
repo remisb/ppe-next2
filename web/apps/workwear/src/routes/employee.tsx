@@ -9,13 +9,13 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/drop
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { InControl } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { type FormEvent, useMemo, useRef, useState } from 'react'
 
 import { formatDate } from '@/components/dashboard'
@@ -24,6 +24,9 @@ import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { linkVariants } from '@ppe/ui/components/link'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
@@ -51,7 +54,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
   const givenKey = useOpenKey('employee.items-given')
   const orderedKey = useOpenKey('employee.items-ordered')
   const changesKey = useOpenKey('employee.changes')
@@ -114,258 +117,244 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const missing = e ? missingSizes(e) : { clothing: false, shoes: false }
 
   // Delete is here and under ⋯ in the table, never on a list row a phone scrolls past.
-  const remove = async (emp: Employee) => {
-    if (!window.confirm(t.employees.confirmDelete(emp.full_name))) return
-    setActionError(undefined)
-    try {
-      await client.employees.remove(emp.id)
-      navigate({ name: 'employees' })
-    } catch (err) {
-      // Leaving never returns company assets (assets brief §2): the API names the ones still held.
-      const held = err instanceof ApiError && err.isConflict ? /holds company assets: (.+)$/.exec(err.message) : null
-      setActionError(held?.[1] ? new Error(t.assets.holdsAssets(held[1])) : err)
-    }
-  }
+  const remove = (emp: Employee) =>
+    action.run(
+      async () => {
+        await client.employees.remove(emp.id)
+        navigate({ name: 'employees' })
+      },
+      {
+        confirm: t.employees.confirmDelete(emp.full_name),
+        // Leaving never returns company assets (assets brief §2): the API names the ones still held.
+        mapError: (err) => {
+          const held = err instanceof ApiError && err.isConflict ? /holds company assets: (.+)$/.exec(err.message) : null
+          return held?.[1] ? new Error(t.assets.holdsAssets(held[1])) : err
+        },
+      },
+    )
 
   return (
     <>
-      <Button variant="ghost" className="-ml-3 mb-2" onClick={onBack}>
-        <ArrowLeft aria-hidden /> {t.employees.title}
-      </Button>
-      {employee.error ? (
-        <ErrorState error={employee.error} onRetry={employee.reload} />
-      ) : !e ? (
-        <Loading />
-      ) : (
-        <>
-          <PageHeader
-            title={e.full_name}
-            {...(e.code ? { description: t.employees.codeIs(e.code) } : {})}
-            actions={
-              <>
-                <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
-                  <Plus aria-hidden /> {t.employees.newOrder}
-                </Button>
-                <MoreActions label={t.common.moreActions(e.full_name)}>
-                  <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem>
-                  {session.can('employees.delete') ? (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                        {t.employees.deleteEmployee}
-                      </DropdownMenuItem>
-                    </>
-                  ) : null}
-                </MoreActions>
-              </>
-            }
-          />
-          {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
-          <div className={cn('mb-8 rounded-lg border border-border text-sm transition-shadow sm:max-w-2xl', inPlace && 'border-ring ring-3 ring-ring/20')}>
-            <section aria-labelledby="sizes-heading">
-              <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-2">
-                <h2 id="sizes-heading" className="font-semibold">
-                  {t.employees.sizes}
-                </h2>
-                {sizing ? (
-                  <p className="text-muted-foreground">{t.employees.futureOnly}</p>
-                ) : (
-                  <Button ref={editSizesButton} size="sm" variant="outline" aria-label={t.employees.editSizes} onClick={() => openSizes('height')}>
-                    <Pencil aria-hidden /> {t.common.edit}
+      <BackButton className="mb-2" onClick={onBack}>{t.employees.title}</BackButton>
+      <Loaded load={employee}>
+        {(e) => (
+          <>
+            <PageHeader
+              title={e.full_name}
+              subtitle={e.code ? t.employees.codeIs(e.code) : undefined}
+              actions={
+                <>
+                  <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
+                    <Plus aria-hidden /> {t.employees.newOrder}
                   </Button>
-                )}
-              </div>
-              {sizing ? (
-                <form
-                  aria-label={t.employees.editSizesTitle(e.full_name)}
-                  onSubmit={draft.submit}
-                  onKeyDown={(ev) => {
-                    if (ev.key === 'Escape') closeInPlace()
-                  }}
-                  className="grid gap-3 px-4 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
-                >
-                  <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
-                  {draft.error ? (
-                    <p role="alert" className="col-span-full text-destructive">
-                      {draft.error}
-                    </p>
-                  ) : null}
-                  <div className="col-span-full flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={closeInPlace}>
-                      {t.common.cancel}
+                  <MoreActions label={t.common.moreActions(e.full_name)}>
+                    <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem>
+                    {session.can('employees.delete') ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                          {t.employees.deleteEmployee}
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </MoreActions>
+                </>
+              }
+            />
+            {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
+            <div className={cn('mb-8 rounded-lg border border-border text-sm transition-shadow sm:max-w-2xl', inPlace && 'border-ring ring-3 ring-ring/20')}>
+              <section aria-labelledby="sizes-heading">
+                <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-2">
+                  <h2 id="sizes-heading" className="font-semibold">
+                    {t.employees.sizes}
+                  </h2>
+                  {sizing ? (
+                    <p className="text-muted-foreground">{t.employees.futureOnly}</p>
+                  ) : (
+                    <Button ref={editSizesButton} size="sm" variant="outline" aria-label={t.employees.editSizes} onClick={() => openSizes('height')}>
+                      <Pencil aria-hidden /> {t.common.edit}
                     </Button>
-                    <Button type="submit" disabled={draft.busy}>
-                      {draft.busy ? t.common.saving : t.common.save}
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <dl className="grid grid-cols-3 gap-4 px-4 pt-2 pb-4">
-                  {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
-                  <Fact label={t.employees.height}>
-                    {e.height_cm ? (
-                      t.employees.heightCm(e.height_cm)
-                    ) : (
-                      <SetMissing label={t.employees.height} optional={!missing.clothing} onClick={() => openSizes('height')} />
-                    )}
-                  </Fact>
-                  <Fact label={t.employees.clothing}>
-                    {missing.clothing ? (
-                      <SetMissing label={t.employees.clothing} onClick={() => openSizes('clothing')} />
-                    ) : (
-                      clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)
-                    )}
-                  </Fact>
-                  <Fact label={t.employees.shoes}>
-                    {missing.shoes ? <SetMissing label={t.employees.shoes} onClick={() => openSizes('shoe')} /> : formatSize(e.shoe_size)}
-                  </Fact>
-                </dl>
-              )}
-            </section>
-            <div className="grid gap-4 border-t border-border p-4">
-              {inPlace === 'language' ? (
-                <form
-                  aria-label={t.employees.editLanguage}
-                  onSubmit={(ev) => void saveLanguage(ev, e)}
-                  onKeyDown={(ev) => {
-                    if (ev.key === 'Escape') closeInPlace()
-                  }}
-                  className="grid gap-4 sm:grid-cols-3 sm:items-end"
-                >
-                  <Field label={t.employees.preferredLanguage}>
-                    {(p) => (
-                      // Each language named in itself, as on Account.
-                      <Select {...controlProps(p)} autoFocus value={language} onChange={(ev) => setLanguage(ev.target.value)}>
-                        <option value="">{t.employees.notSet}</option>
-                        {languages.map((l) => (
-                          <option key={l.value} value={l.value} lang={l.value}>
-                            {l.label}
-                          </option>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                  <div className="flex justify-end gap-2 sm:col-span-2">
-                    <Button type="button" variant="outline" onClick={closeInPlace}>
-                      {t.common.cancel}
-                    </Button>
-                    <Button type="submit">{t.common.save}</Button>
-                  </div>
-                  {languageError ? (
-                    <p role="alert" className="col-span-full text-destructive">
-                      {languageError}
-                    </p>
-                  ) : null}
-                </form>
-              ) : (
-                <div className="flex items-start justify-between gap-3">
-                  <dl>
-                    <Fact label={t.employees.preferredLanguage}>
-                      <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '–'}</span>
-                    </Fact>
-                  </dl>
-                  <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
-                    <Pencil aria-hidden /> {t.common.edit}
-                  </Button>
+                  )}
                 </div>
-              )}
-              {e.notes ? (
-                <dl>
-                  <dt className="text-muted-foreground">{t.employees.notes}</dt>
-                  <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
-                </dl>
-              ) : null}
+                {sizing ? (
+                  <form
+                    aria-label={t.employees.editSizesTitle(e.full_name)}
+                    onSubmit={draft.submit}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Escape') closeInPlace()
+                    }}
+                    className="grid gap-3 px-4 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
+                  >
+                    <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
+                    {draft.error ? (
+                      <p role="alert" className="col-span-full text-destructive">
+                        {draft.error}
+                      </p>
+                    ) : null}
+                    <div className="col-span-full flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={closeInPlace}>
+                        {t.common.cancel}
+                      </Button>
+                      <Button type="submit" disabled={draft.busy}>
+                        {draft.busy ? t.common.saving : t.common.save}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <FactGrid ruled={false} className="grid-cols-3 px-4 pt-2 pb-4">
+                    {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
+                    <Fact label={t.employees.height}>
+                      {e.height_cm ? (
+                        t.employees.heightCm(e.height_cm)
+                      ) : (
+                        <SetMissing label={t.employees.height} optional={!missing.clothing} onClick={() => openSizes('height')} />
+                      )}
+                    </Fact>
+                    <Fact label={t.employees.clothing}>
+                      {missing.clothing ? (
+                        <SetMissing label={t.employees.clothing} onClick={() => openSizes('clothing')} />
+                      ) : (
+                        clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)
+                      )}
+                    </Fact>
+                    <Fact label={t.employees.shoes}>
+                      {missing.shoes ? <SetMissing label={t.employees.shoes} onClick={() => openSizes('shoe')} /> : formatSize(e.shoe_size)}
+                    </Fact>
+                  </FactGrid>
+                )}
+              </section>
+              <div className="grid gap-4 border-t border-border p-4">
+                {inPlace === 'language' ? (
+                  <form
+                    aria-label={t.employees.editLanguage}
+                    onSubmit={(ev) => void saveLanguage(ev, e)}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Escape') closeInPlace()
+                    }}
+                    className="grid gap-4 sm:grid-cols-3 sm:items-end"
+                  >
+                    <Field label={t.employees.preferredLanguage}>
+                      {(p) => (
+                        // Each language named in itself, as on Account.
+                        <Select {...controlProps(p)} autoFocus value={language} onChange={(ev) => setLanguage(ev.target.value)}>
+                          <option value="">{t.employees.notSet}</option>
+                          {languages.map((l) => (
+                            <option key={l.value} value={l.value} lang={l.value}>
+                              {l.label}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                    <div className="flex justify-end gap-2 sm:col-span-2">
+                      <Button type="button" variant="outline" onClick={closeInPlace}>
+                        {t.common.cancel}
+                      </Button>
+                      <Button type="submit">{t.common.save}</Button>
+                    </div>
+                    {languageError ? (
+                      <p role="alert" className="col-span-full text-destructive">
+                        {languageError}
+                      </p>
+                    ) : null}
+                  </form>
+                ) : (
+                  <div className="flex items-start justify-between gap-3">
+                    <dl>
+                      <Fact label={t.employees.preferredLanguage}>
+                        <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '–'}</span>
+                      </Fact>
+                    </dl>
+                    <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
+                      <Pencil aria-hidden /> {t.common.edit}
+                    </Button>
+                  </div>
+                )}
+                {e.notes ? (
+                  <dl>
+                    <dt className="text-muted-foreground">{t.employees.notes}</dt>
+                    <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
+                  </dl>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          {reorder.length > 0 ? (
-            <Alert className="mb-6">
-              <RotateCcw aria-hidden />
-              <AlertTitle>{t.employees.dueForReplacement(reorder.length)}</AlertTitle>
-              <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-                <span>
-                  {reorder
-                    .map((d) =>
-                      d.overdue ? t.employees.dueItemOverdue(d.item.itemName) : t.employees.dueItemOn(d.item.itemName, formatDate(d.dueAt.toISOString(), tz ?? 'UTC')),
-                    )
-                    .join(', ')}
-                </span>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    navigate({
-                      name: 'createOrder',
-                      prefill: { employeeId: e.id, items: reorder.map((d) => ({ id: d.item.catalogueItemId, quantity: d.item.quantity })) },
-                    })
-                  }
-                >
-                  {reorder.length === 1 ? t.employees.reorderIt : t.employees.reorderAll(reorder.length)}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+            {reorder.length > 0 ? (
+              <Alert className="mb-6">
+                <RotateCcw aria-hidden />
+                <AlertTitle>{t.employees.dueForReplacement(reorder.length)}</AlertTitle>
+                <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+                  <span>
+                    {reorder
+                      .map((d) =>
+                        d.overdue ? t.employees.dueItemOverdue(d.item.itemName) : t.employees.dueItemOn(d.item.itemName, formatDate(d.dueAt.toISOString(), tz ?? 'UTC')),
+                      )
+                      .join(', ')}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      navigate({
+                        name: 'createOrder',
+                        prefill: { employeeId: e.id, items: reorder.map((d) => ({ id: d.item.catalogueItemId, quantity: d.item.quantity })) },
+                      })
+                    }
+                  >
+                    {reorder.length === 1 ? t.employees.reorderIt : t.employees.reorderAll(reorder.length)}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <ActionError error={action.error} />
 
-          {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
-          <DisclosureSection
-            id="items-given"
-            title={t.employees.itemsGiven}
-            count={orders.data ? items.given.length : undefined}
-            description={`${t.employees.itemsGivenHint}${tz ? ` ${t.employees.datesIn(tz)}` : ''}`}
-            rememberAs={givenKey}
-          >
-            {orders.error ? (
-              <ErrorState error={orders.error} onRetry={orders.reload} />
-            ) : !orders.data ? (
-              <Loading />
-            ) : items.given.length === 0 ? (
-              <EmptyState>{t.employees.noItemsGiven(e.first_name)}</EmptyState>
-            ) : (
-              <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} />
-            )}
-          </DisclosureSection>
-
-          {items.ordered.length > 0 ? (
-            <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt} rememberAs={orderedKey}>
-              <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
+            {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
+            <DisclosureSection
+              id="items-given"
+              title={t.employees.itemsGiven}
+              count={orders.data ? items.given.length : undefined}
+              description={`${t.employees.itemsGivenHint}${tz ? ` ${t.employees.datesIn(tz)}` : ''}`}
+              rememberAs={givenKey}
+            >
+              <Loaded load={orders} empty={items.given.length === 0} emptyState={t.employees.noItemsGiven(e.first_name)}>
+                {() => (
+                  <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} />
+                )}
+              </Loaded>
             </DisclosureSection>
-          ) : null}
 
-          <HeldAssets
-            kind="SIM"
-            employee={{ id: e.id, full_name: e.full_name, code: e.code }}
-            timeZone={tz}
-            defaultPlan={settings.data?.default_sim_plan}
-            navigate={navigate}
-          />
-          {session.can('equipment.read') ? (
-            <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
-          ) : null}
+            {items.ordered.length > 0 ? (
+              <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt} rememberAs={orderedKey}>
+                <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
+              </DisclosureSection>
+            ) : null}
 
-          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+            <HeldAssets
+              kind="SIM"
+              employee={{ id: e.id, full_name: e.full_name, code: e.code }}
+              timeZone={tz}
+              defaultPlan={settings.data?.default_sim_plan}
+              navigate={navigate}
+            />
+            {session.can('equipment.read') ? (
+              <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
+            ) : null}
 
-          <EmployeeForm
-            open={editing}
-            employee={e}
-            sizes={sizes.data}
-            onClose={() => setEditing(false)}
-            onSaved={() => {
-              setEditing(false)
-              employee.reload()
-            }}
-          />
-        </>
-      )}
+            <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+
+            <EmployeeForm
+              open={editing}
+              employee={e}
+              sizes={sizes.data}
+              onClose={() => setEditing(false)}
+              onSaved={() => {
+                setEditing(false)
+                employee.reload()
+              }}
+            />
+          </>
+        )}
+      </Loaded>
     </>
-  )
-}
-
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 font-medium">{children}</dd>
-    </div>
   )
 }
 

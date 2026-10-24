@@ -7,10 +7,10 @@ import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
+import { ActionError, EmptyState, ErrorState, Loaded, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { InactiveItemBadge, InactiveSetBadge, IncompleteBadge } from '@/components/status-badges'
@@ -21,13 +21,16 @@ import { t } from '@/i18n'
 import { percentChange } from '@/lib/dashboard'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
+import { BackButton } from '@ppe/ui/components/back-button'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { activityAt, statusLabel } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
 import { loadAllOrders } from '@/lib/employee-items'
 import { useOpenKey } from '@/lib/open-sections'
 
-import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
+import { ItemForm, activeChangeQuestion, sizeGroupLabel } from './catalogue'
 
 /**
  * One catalogue item (/catalogue/<id>), opened from the Item Catalogue: beside
@@ -62,7 +65,7 @@ export function CatalogueItemDetail({
   const ordersKey = useOpenKey('item.orders')
   const setsKey = useOpenKey('item.item-sets')
   const [editing, setEditing] = useState(false)
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
 
   const holding = useMemo(
     () =>
@@ -76,169 +79,148 @@ export function CatalogueItemDetail({
   const i = item.data
 
   const toggle = async () => {
-    if (!i || !confirmActiveChange(i)) return
-    setActionError(undefined)
-    try {
-      await client.catalogue.setActive(i.id, !i.active)
-      item.reload()
-      prices.reload()
-      onChanged()
-    } catch (err) {
-      setActionError(err)
-    }
+    if (!i) return
+    await action.run(
+      async () => {
+        await client.catalogue.setActive(i.id, !i.active)
+        item.reload()
+        prices.reload()
+        onChanged()
+      },
+      { confirm: activeChangeQuestion(i) },
+    )
   }
 
   return (
     <article aria-label={i ? i.name : t.catalogue.item} className="@container">
       {/* Narrow: the item is the whole screen, so the way out is Back to the list, on its own row. */}
-      <Button variant="ghost" className="-ml-3 mb-2 lg:hidden" onClick={onClose}>
-        <ArrowLeft aria-hidden /> {t.catalogue.title}
-      </Button>
+      <BackButton className="mb-2 lg:hidden" onClick={onClose}>{t.catalogue.title}</BackButton>
       {/* Beside the list: Close sits in the pane's corner, beside the heading. */}
       <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={t.catalogue.closeItem} onClick={onClose}>
         <X aria-hidden />
       </Button>
-      {item.error ? (
-        <ErrorState error={item.error} onRetry={item.reload} />
-      ) : !i ? (
-        <Loading />
-      ) : (
-        <>
-          {/* The list's title is the screen's h1; the item's is the pane's heading, as an order's beside Orders. */}
-          <header className="mb-4 lg:pr-10">
-            <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-2">
-              <h2 className="flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]">
-                <ItemTile icon={i.icon} className="size-10 shrink-0" />
-                {i.name}
-              </h2>
-              {canManageItems ? (
-                <div className="ml-auto flex shrink-0 gap-2">
-                  <Button variant="outline" onClick={() => setEditing(true)}>
-                    {t.common.edit}
-                  </Button>
-                  <MoreActions label={t.common.moreActions(i.name)}>
-                    <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle()}>
-                      {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                    </DropdownMenuItem>
-                  </MoreActions>
-                </div>
-              ) : null}
+      <Loaded load={item}>
+        {(i) => (
+          <>
+            {/* The list's title is the screen's h1; the item's is the pane's heading, as an order's beside Orders. */}
+            <header className="mb-4 lg:pr-10">
+              <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-2">
+                <h2 className="flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]">
+                  <ItemTile icon={i.icon} className="size-10 shrink-0" />
+                  {i.name}
+                </h2>
+                {canManageItems ? (
+                  <div className="ml-auto flex shrink-0 gap-2">
+                    <Button variant="outline" onClick={() => setEditing(true)}>
+                      {t.common.edit}
+                    </Button>
+                    <MoreActions label={t.common.moreActions(i.name)}>
+                      <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle()}>
+                        {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
+                      </DropdownMenuItem>
+                    </MoreActions>
+                  </div>
+                ) : null}
+              </div>
+              {i.details ? <p className="mt-1 text-sm text-muted-foreground">{i.details}</p> : null}
+            </header>
+            <ActionError error={action.error} />
+
+            {/* What is wrong with the item opens from its badges (IssueBadge), not written under them. */}
+            <div className="mb-3 flex flex-wrap gap-1">
+              {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <InactiveItemBadge />}
+              <IncompleteBadge item={i} />
             </div>
-            {i.details ? <p className="mt-1 text-sm text-muted-foreground">{i.details}</p> : null}
-          </header>
-          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
-          {/* What is wrong with the item opens from its badges (IssueBadge), not written under them. */}
-          <div className="mb-3 flex flex-wrap gap-1">
-            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <InactiveItemBadge />}
-            <IncompleteBadge item={i} />
-          </div>
+            {/* The pane is flat: its facts and lists sit between thin rules, no boxes. */}
+            <FactGrid aria-label={t.catalogue.itemDetails} className="mb-4">
+              <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
+              <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
+              <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
+              <Fact label={t.catalogue.servicePeriod}>{formatMonths(i.service_period_months)}</Fact>
+              <Fact label={t.catalogue.displayOrder}>{i.display_rank}</Fact>
+              <Fact label={t.catalogue.added}>{formatDateTime(i.created_at, tz)}</Fact>
+              <Fact label={t.catalogue.lastChanged}>{formatDateTime(i.updated_at, tz)}</Fact>
+            </FactGrid>
 
-          {/* The pane is flat: its facts and lists sit between thin rules, no boxes. */}
-          <dl aria-label={t.catalogue.itemDetails} className="mb-4 grid grid-cols-2 gap-x-6 gap-y-3 border-y border-border py-3 text-sm @lg:grid-cols-3">
-            <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
-            <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
-            <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
-            <Fact label={t.catalogue.servicePeriod}>{formatMonths(i.service_period_months)}</Fact>
-            <Fact label={t.catalogue.displayOrder}>{i.display_rank}</Fact>
-            <Fact label={t.catalogue.added}>{formatDateTime(i.created_at, tz)}</Fact>
-            <Fact label={t.catalogue.lastChanged}>{formatDateTime(i.updated_at, tz)}</Fact>
-          </dl>
-
-          {/* Its sections are closed at first, each counting what it holds, with what it is behind an ⓘ (description). */}
-          <DisclosureSection
-            id="price-history"
-            title={t.catalogue.priceHistory}
-            count={prices.data?.length}
-            description={t.catalogue.priceHistoryIntro}
-            rememberAs={pricesKey}
-          >
-            {prices.error ? (
-              <ErrorState error={prices.error} onRetry={prices.reload} />
-            ) : !prices.data ? (
-              <Loading />
-            ) : prices.data.length === 0 ? (
-              <EmptyState>{t.catalogue.noPriceHistory}</EmptyState>
-            ) : (
-              <RuleList ordered aria-label={t.catalogue.priceHistory}>
-                {prices.data.map((p, n) => (
-                  <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
-                ))}
-              </RuleList>
-            )}
-          </DisclosureSection>
-
-          <DisclosureSection
-            id="item-orders"
-            title={t.catalogue.orders}
-            count={orderCount.data?.total}
-            description={t.catalogue.ordersIntro(tz)}
-            rememberAs={ordersKey}
-          >
-            <AllItemOrders itemId={id} tz={tz} navigate={navigate} />
-          </DisclosureSection>
-
-          <DisclosureSection
-            id="item-sets"
-            title={t.catalogue.itemSets}
-            count={sets.data ? holding.length : undefined}
-            description={t.catalogue.itemSetsIntro}
-            rememberAs={setsKey}
-          >
-            {sets.error ? (
-              <ErrorState error={sets.error} onRetry={sets.reload} />
-            ) : !sets.data ? (
-              <Loading />
-            ) : holding.length === 0 ? (
-              <EmptyState>{t.catalogue.noSetHolds}</EmptyState>
-            ) : (
-              <RuleList aria-label={t.catalogue.itemSets}>
-                {holding.map(({ set, quantity }) => (
-                  <li key={set.id} className={cn('flex items-center justify-between gap-3', !set.active && 'text-muted-foreground')}>
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{set.name}</span>
-                      {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {set.active ? null : <InactiveSetBadge />}
-                      <span className="text-sm tabular-nums">× {quantity}</span>
-                    </span>
-                  </li>
-                ))}
-              </RuleList>
-            )}
-            <a
-              {...linkTo({ name: 'itemSets' }, navigate)}
-              className={linkVariants({ weight: 'medium', className: 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0' })}
+            {/* Its sections are closed at first, each counting what it holds, with what it is behind an ⓘ (description). */}
+            <DisclosureSection
+              id="price-history"
+              title={t.catalogue.priceHistory}
+              count={prices.data?.length}
+              description={t.catalogue.priceHistoryIntro}
+              rememberAs={pricesKey}
             >
-              {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
-            </a>
-          </DisclosureSection>
+              <Loaded load={prices} emptyState={t.catalogue.noPriceHistory}>
+                {(data) => (
+                  <RuleList ordered aria-label={t.catalogue.priceHistory}>
+                    {data.map((p, n) => (
+                      <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
+                    ))}
+                  </RuleList>
+                )}
+              </Loaded>
+            </DisclosureSection>
 
-          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+            <DisclosureSection
+              id="item-orders"
+              title={t.catalogue.orders}
+              count={orderCount.data?.total}
+              description={t.catalogue.ordersIntro(tz)}
+              rememberAs={ordersKey}
+            >
+              <AllItemOrders itemId={id} tz={tz} navigate={navigate} />
+            </DisclosureSection>
 
-          <ItemForm
-            item={editing ? i : null}
-            onClose={() => setEditing(false)}
-            onSaved={() => {
-              setEditing(false)
-              item.reload()
-              prices.reload()
-              onChanged()
-            }}
-          />
-        </>
-      )}
+            <DisclosureSection
+              id="item-sets"
+              title={t.catalogue.itemSets}
+              count={sets.data ? holding.length : undefined}
+              description={t.catalogue.itemSetsIntro}
+              rememberAs={setsKey}
+            >
+              <Loaded load={sets} empty={holding.length === 0} emptyState={t.catalogue.noSetHolds}>
+                {() => (
+                  <RuleList aria-label={t.catalogue.itemSets}>
+                    {holding.map(({ set, quantity }) => (
+                      <li key={set.id} className={cn('flex items-center justify-between gap-3', !set.active && 'text-muted-foreground')}>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{set.name}</span>
+                          {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {set.active ? null : <InactiveSetBadge />}
+                          <span className="text-sm tabular-nums">× {quantity}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </RuleList>
+                )}
+              </Loaded>
+              <a
+                {...linkTo({ name: 'itemSets' }, navigate)}
+                className={linkVariants({ weight: 'medium', className: 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0' })}
+              >
+                {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
+              </a>
+            </DisclosureSection>
+
+            <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+
+            <ItemForm
+              item={editing ? i : null}
+              onClose={() => setEditing(false)}
+              onSaved={() => {
+                setEditing(false)
+                item.reload()
+                prices.reload()
+                onChanged()
+              }}
+            />
+          </>
+        )}
+      </Loaded>
     </article>
-  )
-}
-
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 font-medium tabular-nums">{children}</dd>
-    </div>
   )
 }
 

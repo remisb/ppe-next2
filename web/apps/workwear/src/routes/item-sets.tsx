@@ -7,8 +7,9 @@ import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
-import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
+import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -30,27 +31,24 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const sets = useLoad(() => client.itemSets.list())
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
 
   const itemsById = useMemo(() => new Map((catalogue.data ?? []).map((i) => [i.id, i])), [catalogue.data])
 
-  const remove = async (s: ItemSet) => {
-    if (!window.confirm(t.catalogue.confirmDeleteSet(s.name))) return
-    try {
-      await client.itemSets.remove(s.id)
-      sets.reload()
-    } catch (err) {
-      setActionError(err)
-    }
-  }
+  const remove = (s: ItemSet) =>
+    action.run(
+      async () => {
+        await client.itemSets.remove(s.id)
+        sets.reload()
+      },
+      { confirm: t.catalogue.confirmDeleteSet(s.name) },
+    )
 
-  const error = sets.error ?? catalogue.error
   return (
     <>
       <PageHeader
         title={t.catalogue.setsTitle}
         description={t.catalogue.setsDescription}
-        descriptionClassName="max-md:hidden"
         actions={
           canManageItems ? (
             <Button onClick={() => setEditing('new')}>
@@ -59,68 +57,64 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
           ) : undefined
         }
       />
-      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
-      {error ? (
-        <ErrorState error={error} onRetry={() => { sets.reload(); catalogue.reload() }} />
-      ) : !sets.data || !catalogue.data ? (
-        <Loading />
-      ) : sets.data.length === 0 ? (
-        // The header's Add Item Set is the next step; a second button would only repeat it.
-        <EmptyState>{t.catalogue.noSets}</EmptyState>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sets.data.map((s) => (
-            <Card key={s.id}>
-              <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2">
-                  {s.name}
-                  {s.active ? null : <InactiveSetBadge />}
-                </CardTitle>
-                {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
-                <p className="text-sm font-medium tabular-nums">
-                  <SetTotalText total={setTotal(s, itemsById)} />
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col">
-                <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm">
-                  {s.lines.map((l) => {
-                    const item = itemsById.get(l.catalogue_item_id)
-                    return (
-                      <li key={l.catalogue_item_id}>
-                        {item?.name ?? t.catalogue.deletedItem} × {l.default_quantity}
-                        {item && !item.active ? <span className="text-muted-foreground">{t.catalogue.inactiveSuffix}</span> : null}
-                      </li>
-                    )
-                  })}
-                </ol>
-                <div className="mt-auto flex flex-wrap gap-2">
-                  {s.active ? (
-                    <a
-                      {...linkTo({ name: 'createOrder', prefill: { items: s.lines.map((l) => ({ id: l.catalogue_item_id, quantity: l.default_quantity })) } }, navigate)}
-                      aria-label={t.catalogue.useInNewOrderFor(s.name)}
-                      className={buttonVariants({ size: 'sm' })}
-                    >
-                      <ClipboardList aria-hidden /> {t.catalogue.useInNewOrder}
-                    </a>
-                  ) : null}
-                  {canManageItems ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
-                        {t.common.edit}
-                      </Button>
-                      <MoreActions label={t.common.moreActions(s.name)}>
-                        <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
-                          {t.catalogue.deleteItemSet}
-                        </DropdownMenuItem>
-                      </MoreActions>
-                    </>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <ActionError error={action.error} />
+      {/* The header's Add Item Set is the next step after an empty list; a second button would only repeat it. */}
+      <Loaded load={combineLoads(sets, catalogue)} empty={([list]) => list.length === 0} emptyState={t.catalogue.noSets}>
+        {([list]) => (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {list.map((s) => (
+              <Card key={s.id}>
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2">
+                    {s.name}
+                    {s.active ? null : <InactiveSetBadge />}
+                  </CardTitle>
+                  {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
+                  <p className="text-sm font-medium tabular-nums">
+                    <SetTotalText total={setTotal(s, itemsById)} />
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col">
+                  <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm">
+                    {s.lines.map((l) => {
+                      const item = itemsById.get(l.catalogue_item_id)
+                      return (
+                        <li key={l.catalogue_item_id}>
+                          {item?.name ?? t.catalogue.deletedItem} × {l.default_quantity}
+                          {item && !item.active ? <span className="text-muted-foreground">{t.catalogue.inactiveSuffix}</span> : null}
+                        </li>
+                      )
+                    })}
+                  </ol>
+                  <div className="mt-auto flex flex-wrap gap-2">
+                    {s.active ? (
+                      <a
+                        {...linkTo({ name: 'createOrder', prefill: { items: s.lines.map((l) => ({ id: l.catalogue_item_id, quantity: l.default_quantity })) } }, navigate)}
+                        aria-label={t.catalogue.useInNewOrderFor(s.name)}
+                        className={buttonVariants({ size: 'sm' })}
+                      >
+                        <ClipboardList aria-hidden /> {t.catalogue.useInNewOrder}
+                      </a>
+                    ) : null}
+                    {canManageItems ? (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => setEditing(s)}>
+                          {t.common.edit}
+                        </Button>
+                        <MoreActions label={t.common.moreActions(s.name)}>
+                          <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
+                            {t.catalogue.deleteItemSet}
+                          </DropdownMenuItem>
+                        </MoreActions>
+                      </>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Loaded>
       <SetForm
         set={editing}
         catalogue={catalogue.data ?? []}

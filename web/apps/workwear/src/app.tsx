@@ -8,6 +8,7 @@ import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Kbd } from '@ppe/ui/components/kbd'
 import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
@@ -308,7 +309,7 @@ export function App() {
             </span>
             <span className="xl:hidden">{t.common.search}</span>
             <span className="hidden flex-1 text-left xl:inline">{t.shell.searchEllipsis}</span>
-            <kbd className="hidden rounded border border-border px-1.5 font-mono text-[0.625rem] xl:inline">⌘K</kbd>
+            <Kbd size="tiny" className="hidden xl:inline">⌘K</Kbd>
           </button>
         </div>
         {/* A phone's More panel dims the page; a tap outside closes it. */}
@@ -530,7 +531,7 @@ export function App() {
           {shortcutList().map((s) => (
             <div key={s.keys} className="contents">
               <dt>
-                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">{s.keys}</kbd>
+                <Kbd size="chip">{s.keys}</Kbd>
               </dt>
               <dd className="text-muted-foreground max-sm:mb-2">{s.does}</dd>
             </div>

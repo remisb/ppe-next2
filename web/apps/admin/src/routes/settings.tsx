@@ -5,7 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
-import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Loaded, PageHeader } from '@ppe/ui/components/states'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
 import { ExternalLink, X } from 'lucide-react'
@@ -40,16 +40,14 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title={t.settings.title} description={t.settings.description} />
-      {settings.error ? (
-        <ErrorState error={settings.error} onRetry={settings.reload} />
-      ) : !settings.data ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-6">
-          <SupplierChatCard settings={settings.data} onSaved={settings.reload} />
-          <SimProvidersCard settings={settings.data} onSaved={settings.reload} />
-        </div>
-      )}
+      <Loaded load={settings}>
+        {(data) => (
+          <div className="flex flex-col gap-6">
+            <SupplierChatCard settings={data} onSaved={settings.reload} />
+            <SimProvidersCard settings={data} onSaved={settings.reload} />
+          </div>
+        )}
+      </Loaded>
     </>
   )
 }

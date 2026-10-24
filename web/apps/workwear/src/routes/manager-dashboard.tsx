@@ -2,7 +2,7 @@ import type { ManagerDashboard as Data } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -36,7 +36,6 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
     <>
       <PageHeader
         title={t.dashboard.managerDashboard}
-        descriptionClassName="max-md:hidden"
         description={
           d
             ? `${t.dashboard.managerIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
@@ -54,28 +53,26 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
           </>
         }
       />
-      {board.error ? (
-        <ErrorState error={board.error} onRetry={board.reload} />
-      ) : !d ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <Kpis d={d} navigate={navigate} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <OrderedChart d={d} className="lg:col-span-2" />
-            <div className="flex flex-col gap-4 md:gap-6">
-              <SizesCard d={d} />
-              <AssetsCard navigate={navigate} />
+      <Loaded load={board}>
+        {(d) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <Kpis d={d} navigate={navigate} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <OrderedChart d={d} className="lg:col-span-2" />
+              <div className="flex flex-col gap-4 md:gap-6">
+                <SizesCard d={d} />
+                <AssetsCard navigate={navigate} />
+              </div>
             </div>
+            <ForecastCard d={d} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+              <SpendCard d={d} />
+              <PriceChangesCard d={d} />
+            </div>
+            <ReadinessCard d={d} navigate={navigate} />
           </div>
-          <ForecastCard d={d} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <SpendCard d={d} />
-            <PriceChangesCard d={d} />
-          </div>
-          <ReadinessCard d={d} navigate={navigate} />
-        </div>
-      )}
+        )}
+      </Loaded>
     </>
   )
 }

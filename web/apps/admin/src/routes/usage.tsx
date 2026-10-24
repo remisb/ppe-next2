@@ -4,17 +4,17 @@ import { areaLabel, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
 import { BarChart, type Column, HeatStrip, Sparkline } from '@ppe/ui/components/charts'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { formatDay } from '@ppe/ui/lib/dates'
 import { deviceName } from '@ppe/ui/lib/devices'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
+import { formatNumber } from '@ppe/i18n'
 
 import { intlLocale, t } from '@/i18n'
 import { type Route, linkTo } from '@/lib/router'
 import { roleName } from '@/lib/users'
 
-const number = (n: number) => new Intl.NumberFormat(intlLocale()).format(n)
 const percent = (part: number, whole: number) => (whole > 0 ? Math.round((100 * part) / whole) : 0)
 
 /** A calendar day (YYYY-MM-DD) as people read it: "7 Oct" short, for an axis; long, as every date is written (formatDay). */
@@ -34,31 +34,28 @@ export function UsagePage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
   const loaded = useLoad(() => client.usage())
-  const r = loaded.data
   return (
     <>
       <PageHeader title={t.usage.title} description={t.usage.description} actions={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
-      {loaded.error ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
-      ) : !r ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <p className="-mt-2 text-sm text-muted-foreground">{t.usage.timesIn(r.timezone)}</p>
-          <Figures r={r} onSignIns={session.can('security.read') ? (day) => navigate({ name: 'security', tab: 'sign-ins', filter: { from: day, to: day } }) : undefined} />
-          <Active r={r} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-            <SignIns r={r} />
-            <Funnel r={r} />
+      <Loaded load={loaded}>
+        {(r) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <p className="-mt-2 text-sm text-muted-foreground">{t.usage.timesIn(r.timezone)}</p>
+            <Figures r={r} onSignIns={session.can('security.read') ? (day) => navigate({ name: 'security', tab: 'sign-ins', filter: { from: day, to: day } }) : undefined} />
+            <Active r={r} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+              <SignIns r={r} />
+              <Funnel r={r} />
+            </div>
+            <Changes r={r} navigate={session.can('audit.read') ? navigate : undefined} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <Devices r={r} />
+              <Languages r={r} />
+              <Quality r={r} />
+            </div>
           </div>
-          <Changes r={r} navigate={session.can('audit.read') ? navigate : undefined} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <Devices r={r} />
-            <Languages r={r} />
-            <Quality r={r} />
-          </div>
-        </div>
-      )}
+        )}
+      </Loaded>
     </>
   )
 }
@@ -68,12 +65,12 @@ function Figures({ r, onSignIns }: { r: UsageReport; onSignIns: ((day: string) =
   const today = r.days[last]
   return (
     <KeyFigures>
-      <Kpi label={t.usage.activeToday} value={number(r.active.total[last] ?? 0)} detail={t.usage.ofAccounts(r.active.users)} />
-      <Kpi label={t.usage.active7} value={number(r.active.last_7)} detail={t.usage.ofAccounts(r.active.users)} />
-      <Kpi label={t.usage.active30} value={number(r.active.last_30)} detail={t.usage.ofAccounts(r.active.users)} />
+      <Kpi label={t.usage.activeToday} value={formatNumber(r.active.total[last] ?? 0)} detail={t.usage.ofAccounts(r.active.users)} />
+      <Kpi label={t.usage.active7} value={formatNumber(r.active.last_7)} detail={t.usage.ofAccounts(r.active.users)} />
+      <Kpi label={t.usage.active30} value={formatNumber(r.active.last_30)} detail={t.usage.ofAccounts(r.active.users)} />
       <Kpi
         label={t.usage.signInsToday}
-        value={number(r.sign_ins[last] ?? 0)}
+        value={formatNumber(r.sign_ins[last] ?? 0)}
         detail={t.usage.failed(r.failed_sign_ins[last] ?? 0)}
         alert={(r.failed_sign_ins[last] ?? 0) > 0}
         help={{ body: t.overview.figureHelp.signIns }}
@@ -96,9 +93,9 @@ function Active({ r }: { r: UsageReport }) {
       <BarChart
         columns={dayColumns(r.days)}
         series={series}
-        format={number}
+        format={formatNumber}
         caption={t.usage.activePeople}
-        cell={(s, i) => number(s.values[i] ?? 0)}
+        cell={(s, i) => formatNumber(s.values[i] ?? 0)}
         columnHead={t.usage.day}
         dense
       />
@@ -130,9 +127,9 @@ function SignIns({ r }: { r: UsageReport }) {
           { label: t.usage.signedIn, className: 'bg-primary/80', values: r.sign_ins },
           { label: t.usage.failedSignIns, className: 'bg-destructive/80', values: r.failed_sign_ins },
         ]}
-        format={number}
+        format={formatNumber}
         caption={t.usage.signIns}
-        cell={(s, i) => number(s.values[i] ?? 0)}
+        cell={(s, i) => formatNumber(s.values[i] ?? 0)}
         columnHead={t.usage.day}
         dense
       />
@@ -159,7 +156,7 @@ function Funnel({ r }: { r: UsageReport }) {
                 <div className="flex justify-between gap-3">
                   <span>{s.label}</span>
                   <span className="tabular-nums">
-                    {number(s.value)}
+                    {formatNumber(s.value)}
                     {s.key === 'created' ? null : <span className="ml-2 text-xs text-muted-foreground">{t.usage.ofSent(percent(s.value, f.created))}</span>}
                   </span>
                 </div>
@@ -176,7 +173,7 @@ function Funnel({ r }: { r: UsageReport }) {
               [t.usage.replaced, f.replaced],
             ].map(([label, value]) => (
               <div key={String(label)} className="rounded-lg border border-border p-2">
-                <dd className="text-base font-semibold text-foreground tabular-nums">{number(Number(value))}</dd>
+                <dd className="text-base font-semibold text-foreground tabular-nums">{formatNumber(Number(value))}</dd>
                 <dt>{label}</dt>
               </div>
             ))}
@@ -253,7 +250,7 @@ function Devices({ r }: { r: UsageReport }) {
         {ranked(m).map(([k, n]) => (
           <li key={k} className="flex justify-between gap-3 py-0.5">
             <span className="truncate">{k}</span>
-            <span className="tabular-nums text-muted-foreground">{number(n)}</span>
+            <span className="tabular-nums text-muted-foreground">{formatNumber(n)}</span>
           </li>
         ))}
       </ul>
@@ -288,7 +285,7 @@ function Languages({ r }: { r: UsageReport }) {
             <li key={lang || 'none'} className="py-0.5">
               <div className="flex justify-between gap-3">
                 <span>{lang ? (names.of(lang) ?? lang) : t.usage.noLanguage}</span>
-                <span className="tabular-nums text-muted-foreground">{number(n)}</span>
+                <span className="tabular-nums text-muted-foreground">{formatNumber(n)}</span>
               </div>
               <div aria-hidden className="mt-0.5 h-1 rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary/70" style={{ width: `${percent(n, total)}%` }} />

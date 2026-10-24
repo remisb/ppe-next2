@@ -7,12 +7,13 @@ import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { Select } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Kbd } from '@ppe/ui/components/kbd'
 import { Check, CheckCircle2, Handshake, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
@@ -321,7 +322,7 @@ export function CreateOrder({
             error={new Error(t.order.conflictHelp(failure.error.message))}
           />
         ) : (
-          <ErrorState title={t.common.actionFailed} error={failure.error} onRetry={failure.retry} />
+          <ActionError error={failure.error} onRetry={failure.retry} />
         )
       ) : null}
 
@@ -633,13 +634,13 @@ function OrderSummary({
         </Button>
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pointer-coarse:hidden">
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">/</kbd> {t.order.keyAddItem}
+            <Kbd>/</Kbd> {t.order.keyAddItem}
           </span>
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">⌘/Ctrl ↵</kbd> {t.order.keyReview}
+            <Kbd>⌘/Ctrl ↵</Kbd> {t.order.keyReview}
           </span>
           <span>
-            <kbd className="rounded border border-border px-1 font-mono">↑↓</kbd> {t.order.keyQuantity}
+            <Kbd>↑↓</Kbd> {t.order.keyQuantity}
           </span>
         </p>
       </div>

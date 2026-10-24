@@ -38,6 +38,22 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[] = []
   return { ...state, reload }
 }
 
+/**
+ * Several loads as one, for a screen that needs them all: its data once every
+ * one has arrived, the first error, and a reload that loads again the ones that
+ * failed (all of them when none did).
+ */
+export function combineLoads<T extends readonly unknown[]>(...loads: { [K in keyof T]: Loaded<T[K]> }): Loaded<T> {
+  const all = loads as readonly Loaded<unknown>[]
+  const failed = all.filter((l) => l.error !== undefined)
+  return {
+    data: all.every((l) => l.data !== undefined) ? (all.map((l) => l.data) as unknown as T) : undefined,
+    error: failed[0]?.error,
+    loading: all.some((l) => l.loading),
+    reload: () => (failed.length > 0 ? failed : all).forEach((l) => l.reload()),
+  }
+}
+
 export function errorText(err: unknown): string {
   // An action that needed the password again, when the user cancelled the prompt.
   if (err instanceof ApiError && err.status === 403 && err.message === RECENT_SIGN_IN_REQUIRED) return uiText().passwordNotConfirmed

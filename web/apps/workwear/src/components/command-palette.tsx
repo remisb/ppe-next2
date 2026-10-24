@@ -1,6 +1,7 @@
 import type { Asset, CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
 import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
 import { cn } from '@ppe/ui/lib/utils'
+import { Kbd } from '@ppe/ui/components/kbd'
 import { Boxes, ClipboardList, CornerDownLeft, Smartphone, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
@@ -263,7 +264,7 @@ export function CommandPalette({
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[0.625rem] text-muted-foreground">esc</kbd>
+        <Kbd size="tiny" className="py-0.5 text-muted-foreground">esc</Kbd>
       </div>
       <ul id={listId} role="listbox" aria-label={text.results} className="max-h-[min(24rem,60dvh)] overflow-y-auto p-1">
         {entries.length === 0 ? <li className="px-3 py-6 text-center text-sm text-muted-foreground">{text.nothingMatches(q.trim())}</li> : null}

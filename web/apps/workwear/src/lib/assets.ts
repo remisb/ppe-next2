@@ -6,6 +6,7 @@
 import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
 import { helpText } from '@ppe/ui/components/tooltip'
 import { isoDay } from '@ppe/ui/lib/dates'
+import { euroInput } from '@ppe/i18n'
 
 import { t } from '@/i18n'
 import { parseEuro } from '@/lib/utils'
@@ -187,8 +188,7 @@ export interface SimDraft {
 
 /** Add SIM starts with the default provider, Non-return Value and plan (Settings), when there are. */
 export function emptySimDraft(today: string, provider = '', valueCents: number | null = null, plan = ''): SimDraft {
-  const value = valueCents === null ? '' : (valueCents / 100).toFixed(2)
-  return { simNo: '', phoneNo: '', provider, plan, value, receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
+  return { simNo: '', phoneNo: '', provider, plan, value: euroInput(valueCents), receivedDate: today, inventoryNo: '', status: 'NOT_ACTIVATED', comment: '' }
 }
 
 /**
@@ -207,7 +207,7 @@ export function simDraftOf(a: Asset): SimDraft {
     phoneNo: a.phone_no ?? '',
     provider: a.provider ?? '',
     plan: a.plan ?? '',
-    value: a.non_return_value_cents != null ? (a.non_return_value_cents / 100).toFixed(2) : '',
+    value: euroInput(a.non_return_value_cents),
     receivedDate: a.received_date ?? '',
     inventoryNo: a.inventory_no,
     status: a.connection_status === 'ACTIVE' ? 'ACTIVE' : 'NOT_ACTIVATED',
@@ -476,7 +476,7 @@ export function equipmentDraftOf(a: Asset): EquipmentDraft {
     category: a.category ?? '',
     inventoryNo: a.inventory_no,
     serialNo: a.serial_no ?? '',
-    value: a.non_return_value_cents != null ? (a.non_return_value_cents / 100).toFixed(2) : '',
+    value: euroInput(a.non_return_value_cents),
     comment: a.comment,
   }
 }

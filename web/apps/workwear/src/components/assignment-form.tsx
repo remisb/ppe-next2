@@ -1,12 +1,12 @@
 import type { AssignmentForm } from '@ppe/api-client'
 import { printDay } from '@ppe/ui/lib/dates'
+import { formatDocumentEuro } from '@ppe/i18n'
 
 // The form reads the same whatever the staff member's interface language, as
 // the Items Given Record does: English / Russian words, the amount as printed.
 // A plain layout (template 2026-10-plain) until the company's own form is
 // added (assets brief §8): the data and signature lines only, no wording of
 // terms, which the template will bring. The data and its hash come from the API.
-const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })
 
 /**
  * The assignment form of a SIM card or a computer (§8): who receives what, its
@@ -41,7 +41,7 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
             <Info label="Serial No. / Серийный №">{form.serial_no ?? '–'}</Info>
           </>
         )}
-        <Info label="Non-return value / Стоимость при невозврате">{euro.format(form.non_return_value_cents / 100)}</Info>
+        <Info label="Non-return value / Стоимость при невозврате">{formatDocumentEuro(form.non_return_value_cents)}</Info>
       </dl>
       <div className="print:break-inside-avoid">
         <div className="hidden grid-cols-3 gap-8 pt-10 text-sm print:grid">

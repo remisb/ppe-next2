@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { applyLanguage, deviceLanguage, localized, plural, rememberDeviceLanguage } from './index.ts'
+import { applyLanguage, deviceLanguage, euroInput, formatDocumentEuro, formatNumber, localized, parseEuro, plural, rememberDeviceLanguage } from './index.ts'
 import { dictionaryProblems, noProblems } from './testing.ts'
 
 afterEach(() => applyLanguage('en'))
@@ -17,6 +17,22 @@ describe('plural', () => {
     expect(plural(2.5, dienos)).toBe('2,5 dienos')
     applyLanguage('ru')
     expect([1, 3, 5, 11, 21, 24].map((n) => plural(n, dni))).toEqual(['1 день', '3 дня', '5 дней', '11 дней', '21 день', '24 дня'])
+  })
+})
+
+describe('numbers and amounts', () => {
+  it('groups counts in the language in use', () => {
+    expect(formatNumber(12345)).toBe('12,345')
+    applyLanguage('lt')
+    expect(formatNumber(12345).replace(/\s/g, ' ')).toBe('12 345')
+  })
+  it('shows cents in an amount field as parseEuro reads them back', () => {
+    expect([euroInput(2500), euroInput(4999), euroInput(null), euroInput(undefined)]).toEqual(['25.00', '49.99', '', ''])
+    expect(parseEuro(euroInput(4999))).toBe(4999)
+  })
+  it('prints a document’s euros the same in every language', () => {
+    applyLanguage('ru')
+    expect(formatDocumentEuro(27490)).toBe('€274.90')
   })
 })
 

@@ -1,4 +1,4 @@
-import type { Asset, AssetKind, ConnectionStatus } from '@ppe/api-client'
+import type { Asset, AssetKind, Client, ConnectionStatus } from '@ppe/api-client'
 import { Button } from '@ppe/ui/components/button'
 import {
   DropdownMenu,
@@ -51,6 +51,12 @@ export function StatusBadge({ status }: { status: ConnectionStatus }) {
  * records what the provider confirmed, and a Not Activated card says how to
  * get it activated.
  */
+/** Change Status, as the register and an asset's page do it; resolves to the words that say what changed. */
+export async function setStatus(client: Client, a: Asset, next: ConnectionStatus): Promise<string> {
+  await client.assets.setStatus(a.id, next)
+  return t.assets.statusChanged(a.inventory_no, statusLabel(next))
+}
+
 export function StatusMenu({
   number,
   status,

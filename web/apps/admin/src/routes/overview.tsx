@@ -3,13 +3,14 @@ import { useApi } from '@ppe/app-shell'
 import { formatBytes } from '@ppe/backups'
 import { buttonVariants } from '@ppe/ui/components/button'
 import { KeyFigures, Kpi, RefreshButton } from '@ppe/ui/components/panel'
-import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { Loaded, PageHeader } from '@ppe/ui/components/states'
 import { capitalize, formatRelative, isoDay } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { formatNumber } from '@ppe/i18n'
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 
-import { intlLocale, t } from '@/i18n'
+import { t } from '@/i18n'
 import { type Route, linkTo } from '@/lib/router'
 
 /** Where each attention item is put right. */
@@ -42,39 +43,36 @@ export function OverviewPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const loaded = useLoad(() => client.overview())
   const tz = useLoad(() => client.settings()).data?.timezone
-  const o = loaded.data
   return (
     <>
       <PageHeader title={t.overview.title} description={t.overview.description} actions={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
-      {loaded.error ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
-      ) : !o ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-6">
-          <section aria-labelledby="attention">
-            <h2 id="attention" className="mb-3 text-base font-semibold">
-              {t.overview.attention}
-            </h2>
-            {o.attention.length === 0 ? (
-              <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm">
-                <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
-                <span>
-                  <span className="block font-medium">{t.overview.allClear}</span>
-                  <span className="text-muted-foreground">{t.overview.allClearHint}</span>
-                </span>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {o.attention.map((item) => (
-                  <AttentionRow key={item.key} item={item} navigate={navigate} />
-                ))}
-              </ul>
-            )}
-          </section>
-          <Figures o={o} timeZone={tz} navigate={navigate} />
-        </div>
-      )}
+      <Loaded load={loaded}>
+        {(o) => (
+          <div className="flex flex-col gap-6">
+            <section aria-labelledby="attention">
+              <h2 id="attention" className="mb-3 text-base font-semibold">
+                {t.overview.attention}
+              </h2>
+              {o.attention.length === 0 ? (
+                <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm">
+                  <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
+                  <span>
+                    <span className="block font-medium">{t.overview.allClear}</span>
+                    <span className="text-muted-foreground">{t.overview.allClearHint}</span>
+                  </span>
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {o.attention.map((item) => (
+                    <AttentionRow key={item.key} item={item} navigate={navigate} />
+                  ))}
+                </ul>
+              )}
+            </section>
+            <Figures o={o} timeZone={tz} navigate={navigate} />
+          </div>
+        )}
+      </Loaded>
     </>
   )
 }
@@ -157,7 +155,7 @@ function Figures({ o, timeZone, navigate }: { o: Overview; timeZone: string | un
       <Kpi
         key="requests"
         label={t.overview.requests}
-        value={new Intl.NumberFormat(intlLocale()).format(o.requests.requests)}
+        value={formatNumber(o.requests.requests)}
         detail={t.overview.requestErrors(o.requests.errors)}
         alert={o.requests.errors > 0}
         help={{ body: h.requests }}

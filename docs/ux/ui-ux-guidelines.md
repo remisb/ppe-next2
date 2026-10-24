@@ -106,7 +106,7 @@ Three tools. Pick by who needs the words and where they sit.
 
 | Need | Use | Opens on | Example |
 |---|---|---|---|
-| What a section is | `DisclosureSection`'s `description`: an **ⓘ** beside the heading (`InfoTip`) | pointing (after 300 ms), a click, a tap, Enter. A click keeps it open until Escape or a click elsewhere. | "Orders with this item, newest activity first…" |
+| What a section or a screen is | the `description` of `DisclosureSection`, `Panel` or `PageHeader`: an **ⓘ** beside the heading (`InfoTip`) | pointing (after 300 ms), a click, a tap, Enter. A click keeps it open until Escape or a click elsewhere. | "Orders with this item, newest activity first…" |
 | What a state means, what to fix | a **status badge with issues** (`IssueBadge`, §5) | the same, on a page or pane; a tooltip inside a row | Incomplete (2), Inactive, Blocked |
 | What a tab, tile or figure counts, on top of what it shows | a **help tooltip** (`HelpTooltip`) | pointing and keyboard focus only | the SIM Cards status tabs, a dashboard figure |
 
@@ -118,6 +118,8 @@ Rules:
 - **Screen readers get the same words without opening anything.** The trigger is described
   by them (`aria-describedby`). The components do this; do not add a second hidden copy. A
   `DisclosureSection`'s ⓘ reuses the section's own hidden description.
+- **A fact stays in sight.** What the screen shows rather than explains (who is signed in, the
+  Help guide's lede) is `PageHeader`'s `subtitle`, a line under the title, not an ⓘ.
 - **The ⓘ is named "About ⟨section⟩"** (`uiText().aboutSection`), and it sits beside the
   heading, not inside it, so the heading's name stays its own.
 - **Panel and tooltip look alike** (`HelpContent`): an optional title in `font-medium`, the
@@ -277,6 +279,14 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | An icon button | `buttonVariants({ variant: 'ghost', size: 'icon-sm' })` | `@ppe/ui/components/button` |
 | A text link, or a button that reads as one (with its focus ring) | `linkVariants({ underline, weight, className })` | `@ppe/ui/components/link` |
 | A form sheet's Cancel and Save, Save disabled and "Saving…" while busy | `FormSheetActions` | `@ppe/ui/components/form-sheet` |
+| A record's facts, label over value (`FactGrid`, ruled), or a panel's, one per line (`layout="rows"`) | `FactGrid`, `Fact` (`wide` for a comment) | `@ppe/ui/components/facts` |
+| Status tabs that filter a list (with counts and tooltips), and choices such as Language or Theme | `Segmented` (`layout`: `fill`, `fit`, `scroll`, `grid`) | `@ppe/ui/components/segmented` |
+| An action with ask first, one error at a time and a busy state | `useAction` (`run(fn, { confirm, mapError })`, `fail`, `pending`), `ActionError` | `@ppe/ui/lib/use-action`, `@ppe/ui/components/states` |
+| What a load shows: its error with Retry, Loading, the empty state, the content | `Loaded` (`empty`, `emptyState`); several loads as one: `combineLoads` | `@ppe/ui/components/states`, `@ppe/ui/lib/use-load` |
+| Back to the list on a page or a narrow pane | `BackButton` | `@ppe/ui/components/back-button` |
+| A key: in a hint line, on its own (Help), beside a control | `Kbd` (`size`: `inline`, `chip`, `tiny`) | `@ppe/ui/components/kbd` |
+| Amounts and counts: a field's cents, a locked document's €, a grouped count | `euroInput`, `formatDocumentEuro`, `formatNumber` (with `formatEuro`, `parseEuro`) | `@ppe/i18n` |
+| A browser and system, "Chrome on Windows" | `deviceText` | `@ppe/audit` |
 
 ---
 
@@ -308,8 +318,11 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 
 Fix these with the screen they are on. Do not copy them.
 
-- **Asset pane facts** have a rule below only (`border-b`) and an even `gap-4`. The item pane's
-  facts are the pattern: `border-y`, `gap-x-6 gap-y-3`.
+- **Administration's tab hints** (Security's devices and access review, Backups) are still
+  paragraphs beside Refresh: the tabs have no heading for an ⓘ to sit beside.
+- **Four lists keep their own load states**: Orders and the asset registers (an empty state with
+  Clear filters), System's error list and hand-over mode (its own words). `Loaded` does not
+  take an empty state's action yet.
 - **The employee page's Given SIM and Equipment lists** are rounded cards
   (`held-assets.tsx`). They should be `RuleList` rows.
 - **The order pane's lines** are a stacked table, already ruled, not a `RuleList`. That is

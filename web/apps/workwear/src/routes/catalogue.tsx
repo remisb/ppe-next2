@@ -8,12 +8,16 @@ import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Kbd } from '@ppe/ui/components/kbd'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { useAction } from '@ppe/ui/lib/use-action'
+import { euroInput } from '@ppe/i18n'
 import { ChevronRight, GripVertical, Plus } from 'lucide-react'
 import { type FormEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -58,11 +62,11 @@ const columns = (): SortColumn<CatalogueSort>[] => [
 ]
 
 /**
- * Asks before an item is deactivated, which takes it out of Add Item;
- * activating needs no confirmation.
+ * The question asked before an item is deactivated, which takes it out of Add
+ * Item; activating needs no confirmation.
  */
-export function confirmActiveChange(i: CatalogueItem): boolean {
-  return !i.active || window.confirm(t.catalogue.confirmDeactivate(i.name))
+export function activeChangeQuestion(i: CatalogueItem): string | undefined {
+  return i.active ? t.catalogue.confirmDeactivate(i.name) : undefined
 }
 
 const statusChips = (): { status: ItemStatus | 'all'; label: string; empty: string }[] => [
@@ -80,9 +84,6 @@ function statusRank(i: CatalogueItem): number {
 /** From lg an item opens beside the list; below it, instead of the list. */
 const wide = () => window.matchMedia('(min-width: 64rem)').matches
 
-function Kbd({ children }: { children: string }) {
-  return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
-}
 
 /**
  * The Item Catalogue. A row opens its item as Orders opens an order
@@ -106,7 +107,7 @@ export function Catalogue({
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
   const [picturesOpen, setPicturesOpen] = useState(false)
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
   // null is the catalogue's display order, the order Add Item lists items in.
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
@@ -166,7 +167,7 @@ export function Catalogue({
         await client.catalogue.move(id, before)
         setMoved(t.catalogue.movedTo(name, order.indexOf(id) + 1, order.length))
       } catch (err) {
-        setActionError(err)
+        action.fail(err)
       }
       if (--m.waiting === 0) items.reload()
     })
@@ -213,15 +214,14 @@ export function Catalogue({
   // Its actions are in the pane beside the list.
   const rowActions = canManageItems && !beside
 
-  const toggle = async (i: CatalogueItem) => {
-    if (!confirmActiveChange(i)) return
-    try {
-      await client.catalogue.setActive(i.id, !i.active)
-      items.reload()
-    } catch (err) {
-      setActionError(err)
-    }
-  }
+  const toggle = (i: CatalogueItem) =>
+    action.run(
+      async () => {
+        await client.catalogue.setActive(i.id, !i.active)
+        items.reload()
+      },
+      { confirm: activeChangeQuestion(i) },
+    )
 
   return (
     <>
@@ -231,7 +231,6 @@ export function Catalogue({
           <PageHeader
             title={t.catalogue.title}
             description={t.catalogue.description}
-            descriptionClassName="max-md:hidden"
             actions={
               canManageItems ? (
                 <>
@@ -247,145 +246,133 @@ export function Catalogue({
           />
           {counts.all > 0 ? (
             // One status per item; a tab with nothing in it is left out unless it is the one chosen.
-            // The same tabs as Orders, equal where they fit; on a phone each narrows to its words, and four that still do not fit scroll sideways.
-            <div className="mb-4 max-md:-mx-4 max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]">
-              <div role="group" aria-label={t.catalogue.show} className="flex w-max min-w-full gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto sm:min-w-0 sm:grid-flow-col sm:auto-cols-fr">
-                {statusChips()
-                  .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
-                  .map((c) => (
-                    <button
-                      key={c.status}
-                      type="button"
-                      aria-pressed={status === c.status}
-                      onClick={() => setStatus(c.status)}
-                      className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-                    >
-                      {c.label}
-                      <span className="tabular-nums text-muted-foreground">{counts[c.status]}</span>
-                    </button>
-                  ))}
-              </div>
-            </div>
+            // The same tabs as Orders; on a phone four that do not fit scroll sideways.
+            <Segmented
+              layout="scroll"
+              label={t.catalogue.show}
+              options={statusChips()
+                .filter((c) => c.status === 'all' || c.status === 'active' || counts[c.status] > 0 || status === c.status)
+                .map((c) => ({ value: c.status, label: c.label, count: counts[c.status] }))}
+              value={status}
+              onChange={setStatus}
+              className="mb-4"
+            />
           ) : null}
-          {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+          <ActionError error={action.error} />
           <p aria-live="polite" className="sr-only">
             {moved}
           </p>
-          {items.error ? (
-            <ErrorState error={items.error} onRetry={items.reload} />
-          ) : items.loading && !items.data ? (
-            <Loading />
-          ) : shown.length === 0 ? (
-            <EmptyState>{statusChips().find((c) => c.status === status)!.empty}</EmptyState>
-          ) : (
-            /*
-              Where the table is narrow the items are one list of two-line rows:
-              name and price, then details, size group and service period, with
-              Incomplete or Inactive flagged. A row opens the item, whose page holds
-              Edit and Deactivate; the table keeps Edit and ⋯ on each row.
-            */
-            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
-              <TableHeader>
-                <TableRow>
-                  {shownColumns.map((c) => (
-                    <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
-                  ))}
-                  {rowActions ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((i, n, list) => {
-                  const incomplete = i.accounting_price_cents === null || i.service_period_months === null
-                  // Sorted by size group, a heading starts each group: the way sizes are resolved.
-                  const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
-                  return (
-                    <Fragment key={i.id}>
-                      {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
-                      <TableRow
-                        data-row-id={i.id}
-                        data-state={selected === i.id ? 'selected' : undefined}
-                        aria-current={selected === i.id ? 'true' : undefined}
-                        className={cn(
-                          'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
-                          // The row being moved stands out where it will land.
-                          drag.dragging === i.id && 'relative z-10 bg-accent shadow-md outline-2 -outline-offset-2 outline-primary hover:bg-accent',
-                          !i.active && 'text-muted-foreground',
-                        )}
-                        // The whole row opens the item; the name is the real link, for keyboards,
-                        // screen readers and "open in new tab". The row's own buttons keep their action.
-                        onClick={(ev) => {
-                          if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                          openItem(i.id)
-                        }}
-                      >
-                        <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
-                          <span className="flex items-center gap-3">
-                            {canMove ? (
-                              // The handle: press and move, or the arrow keys. Not on a stacked row, which only opens the item.
-                              <button
-                                type="button"
-                                aria-label={t.catalogue.moveItem(i.name)}
-                                title={t.catalogue.moveHint}
-                                className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), '-mx-1.5 size-8 cursor-grab touch-none text-muted-foreground active:cursor-grabbing stacked:hidden')}
-                                {...drag.handleProps(i.id)}
-                              >
-                                <GripVertical aria-hidden className="size-4" />
-                              </button>
-                            ) : null}
-                            <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
-                            <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className={linkVariants()}>
-                              {i.name}
-                            </a>
-                          </span>
-                        </TableCell>
-                        {/* The stacked row's picture spans both lines; in the table it sits beside the name. */}
-                        <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
-                          <ItemTile icon={i.icon} className="size-9" />
-                        </TableCell>
-                        {beside ? null : <TableCell className="whitespace-normal stacked:hidden">{i.details || '–'}</TableCell>}
-                        <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                          {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
-                        </TableCell>
-                        {beside ? null : <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>}
-                        <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.accounting_price_cents)}</TableCell>
-                        {beside ? null : <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>}
-                        <TableCell
+          <Loaded load={items} empty={shown.length === 0} emptyState={statusChips().find((c) => c.status === status)!.empty}>
+            {() => (
+              /*
+                Where the table is narrow the items are one list of two-line rows:
+                name and price, then details, size group and service period, with
+                Incomplete or Inactive flagged. A row opens the item, whose page holds
+                Edit and Deactivate; the table keeps Edit and ⋯ on each row.
+              */
+              <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
+                <TableHeader>
+                  <TableRow>
+                    {shownColumns.map((c) => (
+                      <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
+                    ))}
+                    {rowActions ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((i, n, list) => {
+                    const incomplete = i.accounting_price_cents === null || i.service_period_months === null
+                    // Sorted by size group, a heading starts each group: the way sizes are resolved.
+                    const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
+                    return (
+                      <Fragment key={i.id}>
+                        {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
+                        <TableRow
+                          data-row-id={i.id}
+                          data-state={selected === i.id ? 'selected' : undefined}
+                          aria-current={selected === i.id ? 'true' : undefined}
                           className={cn(
-                            'space-x-1 stacked:[grid-column:2/span_2] stacked:row-start-3 stacked:flex stacked:gap-1 stacked:space-x-0 stacked:pt-1',
-                            i.active && !incomplete && 'stacked:hidden',
+                            'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                            // The row being moved stands out where it will land.
+                            drag.dragging === i.id && 'relative z-10 bg-accent shadow-md outline-2 -outline-offset-2 outline-primary hover:bg-accent',
+                            !i.active && 'text-muted-foreground',
                           )}
+                          // The whole row opens the item; the name is the real link, for keyboards,
+                          // screen readers and "open in new tab". The row's own buttons keep their action.
+                          onClick={(ev) => {
+                            if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                            openItem(i.id)
+                          }}
                         >
-                          {i.active ? (
-                            <Badge variant="secondary" className="stacked:hidden">
-                              {t.catalogue.active}
-                            </Badge>
-                          ) : (
-                            <InactiveItemBadge />
-                          )}
-                          <IncompleteBadge item={i} />
-                        </TableCell>
-                        <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                        </TableCell>
-                        {rowActions ? (
-                          <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                            <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
-                              {t.common.edit}
-                            </Button>{' '}
-                            <MoreActions label={t.common.moreActions(i.name)}>
-                              <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                                {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                              </DropdownMenuItem>
-                            </MoreActions>
+                          <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
+                            <span className="flex items-center gap-3">
+                              {canMove ? (
+                                // The handle: press and move, or the arrow keys. Not on a stacked row, which only opens the item.
+                                <button
+                                  type="button"
+                                  aria-label={t.catalogue.moveItem(i.name)}
+                                  title={t.catalogue.moveHint}
+                                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), '-mx-1.5 size-8 cursor-grab touch-none text-muted-foreground active:cursor-grabbing stacked:hidden')}
+                                  {...drag.handleProps(i.id)}
+                                >
+                                  <GripVertical aria-hidden className="size-4" />
+                                </button>
+                              ) : null}
+                              <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
+                              <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className={linkVariants()}>
+                                {i.name}
+                              </a>
+                            </span>
                           </TableCell>
-                        ) : null}
-                      </TableRow>
-                    </Fragment>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
+                          {/* The stacked row's picture spans both lines; in the table it sits beside the name. */}
+                          <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_2]">
+                            <ItemTile icon={i.icon} className="size-9" />
+                          </TableCell>
+                          {beside ? null : <TableCell className="whitespace-normal stacked:hidden">{i.details || '–'}</TableCell>}
+                          <TableCell className="hidden stacked:[grid-column:2/span_2] stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                            {[i.details, sizeGroupLabel[i.size_group], i.service_period_months !== null ? formatMonths(i.service_period_months) : null].filter(Boolean).join(' · ')}
+                          </TableCell>
+                          {beside ? null : <TableCell className="stacked:hidden">{sizeGroupLabel[i.size_group]}</TableCell>}
+                          <TableCell className="text-right tabular-nums stacked:col-start-3 stacked:row-start-1 stacked:font-medium">{formatEuro(i.accounting_price_cents)}</TableCell>
+                          {beside ? null : <TableCell className="stacked:hidden">{formatMonths(i.service_period_months)}</TableCell>}
+                          <TableCell
+                            className={cn(
+                              'space-x-1 stacked:[grid-column:2/span_2] stacked:row-start-3 stacked:flex stacked:gap-1 stacked:space-x-0 stacked:pt-1',
+                              i.active && !incomplete && 'stacked:hidden',
+                            )}
+                          >
+                            {i.active ? (
+                              <Badge variant="secondary" className="stacked:hidden">
+                                {t.catalogue.active}
+                              </Badge>
+                            ) : (
+                              <InactiveItemBadge />
+                            )}
+                            <IncompleteBadge item={i} />
+                          </TableCell>
+                          <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
+                            <ChevronRight className="size-4 text-muted-foreground" />
+                          </TableCell>
+                          {rowActions ? (
+                            <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                              <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
+                                {t.common.edit}
+                              </Button>{' '}
+                              <MoreActions label={t.common.moreActions(i.name)}>
+                                <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
+                                  {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
+                                </DropdownMenuItem>
+                              </MoreActions>
+                            </TableCell>
+                          ) : null}
+                        </TableRow>
+                      </Fragment>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </Loaded>
         </div>
 
         {selected ? (
@@ -444,8 +431,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   useEffect(() => {
     setName(existing?.name ?? '')
     setDetails(existing?.details ?? '')
-    setPurchase(existing?.purchase_price_cents != null ? (existing.purchase_price_cents / 100).toFixed(2) : '')
-    setPrice(existing?.accounting_price_cents != null ? (existing.accounting_price_cents / 100).toFixed(2) : '')
+    setPurchase(euroInput(existing?.purchase_price_cents))
+    setPrice(euroInput(existing?.accounting_price_cents))
     setPeriod(existing?.service_period_months?.toString() ?? '')
     setRank(existing?.display_rank.toString() ?? '1000')
     setActive(existing?.active ?? true)
@@ -600,47 +587,45 @@ export function PicturesSheet({ open, onClose, onSaved }: { open: boolean; onClo
       description={t.catalogue.picturesDescription}
 footer={<FormSheetActions form="pictures-form" onCancel={onClose} busy={busy} disabled={changed.length === 0} />}
     >
-      {pictures.error ? (
-        <ErrorState error={pictures.error} onRetry={pictures.reload} />
-      ) : !pictures.data ? (
-        <Loading />
-      ) : (
-        <form id="pictures-form" onSubmit={submit}>
-          <ul aria-label={t.catalogue.pictures} className="divide-y divide-border rounded-lg border border-border">
-            {pictures.data.map((p) => {
-              const label = t.catalogue.icons[p.icon]
-              const value = chosen[p.icon] ?? p.size_group
-              return (
-                <li key={p.icon} className="flex items-center gap-3 p-2">
-                  <ItemTile icon={p.icon} />
-                  <div className="min-w-0 flex-1 text-sm">
-                    <div className="font-medium">{label}</div>
-                    <div className="text-xs text-muted-foreground">{t.catalogue.pictureItems(p.item_count)}</div>
-                    {value !== p.size_group && p.item_count > 0 ? <div className="text-xs text-warning">{t.catalogue.pictureChanges(p.item_count)}</div> : null}
-                  </div>
-                  <Select
-                    aria-label={t.catalogue.pictureSizeGroupFor(label)}
-                    value={value}
-                    onChange={(e) => setChosen((c) => ({ ...c, [p.icon]: e.target.value as SizeGroup }))}
-                    className="w-36 shrink-0"
-                  >
-                    {(Object.keys(sizeGroupLabel) as SizeGroup[]).map((g) => (
-                      <option key={g} value={g}>
-                        {sizeGroupLabel[g]}
-                      </option>
-                    ))}
-                  </Select>
-                </li>
-              )
-            })}
-          </ul>
-          {error ? (
-            <p role="alert" className="mt-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-        </form>
-      )}
+      <Loaded load={pictures}>
+        {(data) => (
+          <form id="pictures-form" onSubmit={submit}>
+            <ul aria-label={t.catalogue.pictures} className="divide-y divide-border rounded-lg border border-border">
+              {data.map((p) => {
+                const label = t.catalogue.icons[p.icon]
+                const value = chosen[p.icon] ?? p.size_group
+                return (
+                  <li key={p.icon} className="flex items-center gap-3 p-2">
+                    <ItemTile icon={p.icon} />
+                    <div className="min-w-0 flex-1 text-sm">
+                      <div className="font-medium">{label}</div>
+                      <div className="text-xs text-muted-foreground">{t.catalogue.pictureItems(p.item_count)}</div>
+                      {value !== p.size_group && p.item_count > 0 ? <div className="text-xs text-warning">{t.catalogue.pictureChanges(p.item_count)}</div> : null}
+                    </div>
+                    <Select
+                      aria-label={t.catalogue.pictureSizeGroupFor(label)}
+                      value={value}
+                      onChange={(e) => setChosen((c) => ({ ...c, [p.icon]: e.target.value as SizeGroup }))}
+                      className="w-36 shrink-0"
+                    >
+                      {(Object.keys(sizeGroupLabel) as SizeGroup[]).map((g) => (
+                        <option key={g} value={g}>
+                          {sizeGroupLabel[g]}
+                        </option>
+                      ))}
+                    </Select>
+                  </li>
+                )
+              })}
+            </ul>
+            {error ? (
+              <p role="alert" className="mt-3 text-sm text-destructive">
+                {error}
+              </p>
+            ) : null}
+          </form>
+        )}
+      </Loaded>
     </FormSheet>
   )
 }

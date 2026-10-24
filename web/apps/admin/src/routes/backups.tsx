@@ -1,7 +1,7 @@
 import type { BackupStatus } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
-import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
+import { EmptyState, Loaded } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -12,6 +12,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { t } from '@/i18n'
 import { backupHealth, describeSchedule, formatBytes, formatDuration, healthText, isLocalTarget } from '@ppe/backups'
 import { capitalize, formatDateTime, formatRelative } from '@ppe/ui/lib/dates'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
 
 /**
  * Backups (System's Backups tab, /system/backups; backups.read): whether the
@@ -22,7 +23,6 @@ import { capitalize, formatDateTime, formatRelative } from '@ppe/ui/lib/dates'
 export function BackupsTab() {
   const { client } = useApi()
   const loaded = useLoad(() => client.backups())
-  const s = loaded.data
 
   return (
     <>
@@ -30,20 +30,18 @@ export function BackupsTab() {
         <p className="max-w-prose text-sm text-muted-foreground">{t.backups.description}</p>
         <RefreshButton loading={loaded.loading} onClick={loaded.reload} />
       </div>
-      {loaded.error ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
-      ) : !s ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col gap-4 md:gap-6">
-          <Verdict s={s} />
-          <Figures s={s} />
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            <RecentRuns s={s} className="lg:col-span-2" />
-            <ServiceSettings s={s} />
+      <Loaded load={loaded}>
+        {(s) => (
+          <div className="flex flex-col gap-4 md:gap-6">
+            <Verdict s={s} />
+            <Figures s={s} />
+            <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
+              <RecentRuns s={s} className="lg:col-span-2" />
+              <ServiceSettings s={s} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Loaded>
     </>
   )
 }
@@ -171,14 +169,13 @@ function ServiceSettings({ s }: { s: BackupStatus }) {
   ]
   return (
     <Panel title={t.backups.settings} description={t.backups.settingsDescription}>
-      <dl className="flex flex-col divide-y divide-border text-sm">
+      <FactGrid layout="rows">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="font-medium break-words">{value}</dd>
-          </div>
+          <Fact key={label} label={label} className="first:pt-0 last:pb-0">
+            {value}
+          </Fact>
         ))}
-      </dl>
+      </FactGrid>
     </Panel>
   )
 }

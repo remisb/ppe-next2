@@ -7,12 +7,13 @@ import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { useAction } from '@ppe/ui/lib/use-action'
 import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -47,7 +48,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   const [onlyMissing, setOnlyMissing] = useState(missing)
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
-  const [actionError, setActionError] = useState<unknown>()
+  const action = useAction()
   const [sort, setSort] = useState<SortState<EmployeeSort> | null>({ key: 'name', dir: 'asc' })
 
   const shown = useMemo(() => {
@@ -74,22 +75,20 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   const sortProps = { sort, onSort: setSort }
   const missingCount = (employees.data ?? []).filter(isMissingASize).length
 
-  const remove = async (e: Employee) => {
-    if (!window.confirm(t.employees.confirmDelete(e.full_name))) return
-    try {
-      await client.employees.remove(e.id)
-      employees.reload()
-    } catch (err) {
-      setActionError(err)
-    }
-  }
+  const remove = (e: Employee) =>
+    action.run(
+      async () => {
+        await client.employees.remove(e.id)
+        employees.reload()
+      },
+      { confirm: t.employees.confirmDelete(e.full_name) },
+    )
 
   return (
     <>
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
-        descriptionClassName="max-md:hidden"
         actions={
           <Button onClick={() => setEditing('new')}>
             <Plus aria-hidden /> {t.employees.addNew}
@@ -109,127 +108,113 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
         />
         {missingCount > 0 || onlyMissing ? (
           // The same tabs as Orders, each with its tooltip; on a phone they take their own row below the search.
-          <div role="group" aria-label={t.employees.show} className="grid w-full grid-flow-col auto-cols-fr gap-1 rounded-lg bg-muted p-1 sm:inline-grid sm:w-auto">
-            {[
-              { label: t.employees.allTab, help: t.employees.tabHelp.all, count: employees.data?.length ?? 0, pressed: !onlyMissing, onClick: () => setOnlyMissing(false) },
-              { label: t.employees.missingTab, help: t.employees.tabHelp.missing, count: missingCount, pressed: onlyMissing, onClick: () => setOnlyMissing((v) => !v) },
-            ].map((tab) => (
-              <HelpTooltip key={tab.label} title={tab.label} help={tab.help}>
-                <button
-                  type="button"
-                  aria-pressed={tab.pressed}
-                  onClick={tab.onClick}
-                  className="flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm pointer-coarse:h-11"
-                >
-                  {tab.label}
-                  <span className="tabular-nums text-muted-foreground">{tab.count}</span>
-                </button>
-              </HelpTooltip>
-            ))}
-          </div>
+          <Segmented
+            label={t.employees.show}
+            options={[
+              { value: 'all', label: t.employees.allTab, help: t.employees.tabHelp.all, count: employees.data?.length ?? 0 },
+              { value: 'missing', label: t.employees.missingTab, help: t.employees.tabHelp.missing, count: missingCount },
+            ]}
+            value={onlyMissing ? 'missing' : 'all'}
+            // Missing sizes again shows everyone, as before.
+            onChange={(v) => setOnlyMissing(v === 'missing' && !onlyMissing)}
+          />
         ) : null}
       </div>
-      {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
-      {employees.error ? (
-        <ErrorState error={employees.error} onRetry={employees.reload} />
-      ) : employees.loading && !employees.data ? (
-        <Loading />
-      ) : shown.length === 0 ? (
-        <EmptyState>
-          {onlyMissing && !filter
-            ? t.employees.everyoneHasSizes
-            : filter
-              ? t.employees.noMatch(filter.trim())
-              : t.employees.noneYet}
-        </EmptyState>
-      ) : (
-        /*
-          Where the table is narrow the employees are one list of two-line rows:
-          name (a missing size flagged beside it), then code and saved sizes,
-          then the note, if any, on a third line.
-          A row opens the employee, whose page holds Edit Sizes, New order and
-          Delete; the table keeps Edit Sizes and ⋯ on each row.
-        */
-        <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
-          <TableHeader>
-            <TableRow>
-              {columns.map((c) => (
-                <SortableHead key={c.key} column={c} {...sortProps} />
-              ))}
-              <TableHead className="text-right">{t.employees.actions}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shown.map((e) => {
-              const missing = missingSizes(e)
-              const flag = missingLabel(e)
-              return (
-                <TableRow
-                  key={e.id}
-                  className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50"
-                  // The whole row opens the employee; the name is the real link, for keyboards,
-                  // screen readers and "open in new tab". The row's own buttons keep their action.
-                  onClick={(ev) => {
-                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                    navigate({ name: 'employee', id: e.id })
-                  }}
-                >
-                  <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
-                  </TableCell>
-                  <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
-                    <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
-                      {e.full_name}
-                    </a>
-                    {/* The note on one line under the name, in full on hover and on the employee's page. */}
-                    {e.notes ? (
-                      <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
-                        {e.notes}
-                      </p>
-                    ) : null}
-                    {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
-                    {flag ? (
-                      <IssueBadge label={flag} variant="destructive" issues={[t.employees.missingTitle]} className="hidden shrink-0 stacked:inline-flex" />
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                    {employeeFacts(e, bands) || t.employees.noSizesSaved}
-                  </TableCell>
-                  {e.notes ? (
-                    <TableCell title={e.notes} className="hidden stacked:col-start-2 stacked:row-start-3 stacked:block stacked:truncate stacked:text-xs stacked:text-muted-foreground">
-                      {e.notes}
+      <ActionError error={action.error} />
+      <Loaded
+        load={employees}
+        empty={shown.length === 0}
+        emptyState={onlyMissing && !filter ? t.employees.everyoneHasSizes : filter ? t.employees.noMatch(filter.trim()) : t.employees.noneYet}
+      >
+        {() => (
+          /*
+            Where the table is narrow the employees are one list of two-line rows:
+            name (a missing size flagged beside it), then code and saved sizes,
+            then the note, if any, on a third line.
+            A row opens the employee, whose page holds Edit Sizes, New order and
+            Delete; the table keeps Edit Sizes and ⋯ on each row.
+          */
+          <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
+            <TableHeader>
+              <TableRow>
+                {columns.map((c) => (
+                  <SortableHead key={c.key} column={c} {...sortProps} />
+                ))}
+                <TableHead className="text-right">{t.employees.actions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shown.map((e) => {
+                const missing = missingSizes(e)
+                const flag = missingLabel(e)
+                return (
+                  <TableRow
+                    key={e.id}
+                    className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50"
+                    // The whole row opens the employee; the name is the real link, for keyboards,
+                    // screen readers and "open in new tab". The row's own buttons keep their action.
+                    onClick={(ev) => {
+                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      navigate({ name: 'employee', id: e.id })
+                    }}
+                  >
+                    <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
                     </TableCell>
-                  ) : null}
-                  <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell>
-                  {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
-                  <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
-                  <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
-                  <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
-                  <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_3]">
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                    <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
-                      {t.employees.editSizes}
-                    </Button>{' '}
-                    <MoreActions label={t.common.moreActions(e.full_name)}>
-                      <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem>
-                      {session.can('employees.delete') ? (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                            {t.employees.deleteEmployee}
-                          </DropdownMenuItem>
-                        </>
+                    <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
+                      <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
+                        {e.full_name}
+                      </a>
+                      {/* The note on one line under the name, in full on hover and on the employee's page. */}
+                      {e.notes ? (
+                        <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
+                          {e.notes}
+                        </p>
                       ) : null}
-                    </MoreActions>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      )}
+                      {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
+                      {flag ? (
+                        <IssueBadge label={flag} variant="destructive" issues={[t.employees.missingTitle]} className="hidden shrink-0 stacked:inline-flex" />
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
+                      {employeeFacts(e, bands) || t.employees.noSizesSaved}
+                    </TableCell>
+                    {e.notes ? (
+                      <TableCell title={e.notes} className="hidden stacked:col-start-2 stacked:row-start-3 stacked:block stacked:truncate stacked:text-xs stacked:text-muted-foreground">
+                        {e.notes}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell>
+                    {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
+                    <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
+                    <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
+                    <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
+                    <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_3]">
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap stacked:hidden">
+                      <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
+                        {t.employees.editSizes}
+                      </Button>{' '}
+                      <MoreActions label={t.common.moreActions(e.full_name)}>
+                        <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem>
+                        {session.can('employees.delete') ? (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                              {t.employees.deleteEmployee}
+                            </DropdownMenuItem>
+                          </>
+                        ) : null}
+                      </MoreActions>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </Loaded>
       <EmployeeForm
         open={editing !== null}
         employee={editing === 'new' || editing === null ? undefined : editing}

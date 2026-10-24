@@ -1,4 +1,4 @@
-import { parseEuro } from '@ppe/i18n'
+import { euroInput, parseEuro } from '@ppe/i18n'
 
 /**
  * The Settings list of SIM providers, kept as a draft until saved: the
@@ -52,7 +52,7 @@ export type ValueProblem = 'invalid' | 'tooLarge'
 
 /** A saved default Non-return Value as the field shows it: 25.00, or empty for none. */
 export function valueText(cents: number | null | undefined): string {
-  return cents === null || cents === undefined ? '' : (cents / 100).toFixed(2)
+  return euroInput(cents)
 }
 
 /** Why the typed default Non-return Value cannot be saved, or undefined when it can (empty is none). */

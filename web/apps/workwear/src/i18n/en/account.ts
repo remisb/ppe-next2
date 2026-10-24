@@ -28,8 +28,6 @@ export const account = {
   devices: 'Signed-in devices',
   devicesHint: 'Where you are signed in now. Sign out a device you no longer use or do not recognise.',
   thisDevice: 'This device',
-  deviceOn: (browser: string, system: string) => `${browser} on ${system}`,
-  unknownDevice: 'Unknown browser',
   lastUsed: 'Last used',
   keptSignedIn: 'Kept signed in',
   untilBrowserCloses: 'Until the browser closes',

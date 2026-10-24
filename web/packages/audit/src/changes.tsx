@@ -2,7 +2,7 @@ import type { AuditEntry } from '@ppe/api-client'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
+import { Loaded } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import type { ReactNode } from 'react'
@@ -162,15 +162,11 @@ function ChangesBody({
   const changes = useLoad(load, deps)
   return (
     <>
-      {changes.error ? (
-        <ErrorState error={changes.error} onRetry={changes.reload} />
-      ) : !changes.data ? (
-        <Loading />
-      ) : changes.data.length === 0 ? (
-        <EmptyState>{t.noChanges}</EmptyState>
-      ) : (
-        <ChangeList entries={changes.data} timeZone={timeZone} options={options} />
-      )}
+      <Loaded load={changes} emptyState={t.noChanges}>
+        {(data) => (
+          <ChangeList entries={data} timeZone={timeZone} options={options} />
+        )}
+      </Loaded>
     </>
   )
 }

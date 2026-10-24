@@ -126,7 +126,12 @@ instance).
    S12's Hand over now follows `HAND_OVER_NOW`, which keeps hand-over mode switched off for
    now.
 3. **Shared pieces, then use them**: X3, X4, X2, X6, X9, X11, X14. Then S2/A5 (the ⓘ on
-   `Panel` and `PageHeader`), which moves every hint in both apps at once.
+   `Panel` and `PageHeader`), which moves every hint in both apps at once. **Done**, as
+   `Loaded` and `combineLoads`, `useAction` and `ActionError`, `Segmented` (X2's StatusTabs,
+   for choices too), `FactGrid` and `Fact`, `BackButton`, `Kbd`, and `euroInput`,
+   `formatDocumentEuro` and `formatNumber`; the guidelines' §10 lists them. The filter tabs
+   count with the plain muted number. Left: Administration's tab hints, and four lists whose
+   empty state has an action (guidelines §12).
 4. **Panes to the item pane's anatomy**: X13 and X10, then S1 (order pane), S5, S6
    (employee page), A3, A6 and A12 (Administration's badges and panes).
 5. **The list-and-detail view** X1. Then S17 (Employees beside the list) and the admin panes
@@ -142,7 +147,7 @@ instance).
   Orders and the catalogue.
 - **Replacing a confirmation link** (S11): keep it silent, or ask first and show the old link's
   state.
-- **One count style on filter tabs** (X2): the plain muted number most screens use, or the pill
-  the registers use.
+- **One count style on filter tabs** (X2): decided for the plain muted number most screens
+  used; the registers' pill is gone.
 
 The Help guide will need updating as these land; that is done separately.
