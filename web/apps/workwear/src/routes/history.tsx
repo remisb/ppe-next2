@@ -1,5 +1,5 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
@@ -58,6 +58,14 @@ const historyColumns = (): SortColumn<HistorySort>[] => [
 ]
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
 
+/**
+ * The list as a user left it (tab, period, employee, page, sort) on going to an
+ * order's record (View Order, Print Order), which replaces this screen: the next
+ * time Orders opens, coming back, it is restored once. Otherwise Orders opens
+ * afresh, and a reload forgets it.
+ */
+const leftForRecord = new Map<string, { filters: Filters; page: number; sort: SortState<HistorySort> }>()
+
 const recordLink = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 
 function Kbd({ children }: { children: string }) {
@@ -86,9 +94,20 @@ export function History({
   onOpenRecord: (id: string, print: boolean) => void
 }) {
   const { client } = useApi()
-  const [filters, setFilters] = useState<Filters>(() => ({ ...noFilters, status: status ?? '' }))
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState<HistorySort>>(newestFirst)
+  const { userId } = useSession()
+  // Back from an order's record, the list is as it was left; a tab from the address (a dashboard's link) starts afresh on it.
+  const [left] = useState(() => {
+    const was = leftForRecord.get(userId)
+    leftForRecord.delete(userId)
+    return status ? undefined : was
+  })
+  const [filters, setFilters] = useState<Filters>(() => left?.filters ?? { ...noFilters, status: status ?? '' })
+  const [page, setPage] = useState(left?.page ?? 1)
+  const [sort, setSort] = useState<SortState<HistorySort>>(left?.sort ?? newestFirst)
+  const openRecord = (id: string, print: boolean) => {
+    leftForRecord.set(userId, { filters, page, sort })
+    onOpenRecord(id, print)
+  }
   // Phone only: the filters fold away so the orders start at the top of the screen.
   const [showFilters, setShowFilters] = useState(false)
   const settings = useLoad(() => client.settings())
@@ -433,7 +452,7 @@ export function History({
             timeZone={tz}
             navigate={navigate}
             onClose={close}
-            onOpenRecord={onOpenRecord}
+            onOpenRecord={openRecord}
             onChanged={() => {
               orders.reload()
               counts.reload()

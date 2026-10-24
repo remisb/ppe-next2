@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { formatDateTime } from '@ppe/ui/lib/dates'
 import { Check, CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
@@ -23,7 +24,7 @@ import { ItemPicker } from '@/components/item-picker'
 import { OrderLinesTable } from '@/components/order-lines'
 import { QuantityStepper } from '@/components/quantity-stepper'
 import { WhatsAppButton } from '@/components/whatsapp-button'
-import { intlLocale, t } from '@/i18n'
+import { t } from '@/i18n'
 import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
 import { type Due, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
@@ -291,7 +292,7 @@ export function CreateOrder({
     return () => window.removeEventListener('keydown', onKey)
   }, [v.valid, busy, placed])
 
-  if (placed) return <OrderedPanel placed={placed} navigate={navigate} onNew={() => setPlaced(null)} />
+  if (placed) return <OrderedPanel placed={placed} timeZone={settings.data?.timezone} navigate={navigate} onNew={() => setPlaced(null)} />
   const whatsappText = formatWhatsApp(messageFromWorkingOrder(order, session.name, new Date()))
   const supplierChat = settings.data?.supplier_chat ?? null
 
@@ -765,7 +766,18 @@ function SizeChangedSheet({
   )
 }
 
-function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (to: Route) => void; onNew: () => void }) {
+function OrderedPanel({
+  placed,
+  timeZone,
+  navigate,
+  onNew,
+}: {
+  placed: Placed
+  /** The organisation's, as every other date shows; the browser's own may differ. */
+  timeZone: string | undefined
+  navigate: (to: Route) => void
+  onNew: () => void
+}) {
   const { order, link } = placed
   const [confirming, setConfirming] = useState(false)
   const [given, setGiven] = useState(false)
@@ -783,7 +795,7 @@ function OrderedPanel({ placed, navigate, onNew }: { placed: Placed; navigate: (
           <p className="text-sm text-muted-foreground">
             {name}
             {order.employee_code ? ` · ${order.employee_code}` : ''} · {t.order.preparedBy(order.prepared_by_name)} ·{' '}
-            {new Date(order.ordered_at).toLocaleString(intlLocale())}
+            {formatDateTime(order.ordered_at, timeZone)}
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

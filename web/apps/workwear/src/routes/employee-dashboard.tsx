@@ -58,7 +58,7 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
             empty={t.dashboard.employeeNothingNeeded}
             footer={
               d.awaiting.orders > d.awaiting.longest.length ? (
-                <MoreLink label={t.dashboard.allYoursWaiting(d.awaiting.orders)} to={{ name: 'history' }} navigate={navigate} />
+                <MoreLink label={t.dashboard.allYoursWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
               ) : null
             }
           />

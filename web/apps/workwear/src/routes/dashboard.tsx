@@ -74,7 +74,7 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
               empty={t.dashboard.adminNothingNeeded}
               footer={
                 d.awaiting.orders > d.awaiting.longest.length ? (
-                  <MoreLink label={t.dashboard.allWaiting(d.awaiting.orders)} to={{ name: 'history' }} navigate={navigate} />
+                  <MoreLink label={t.dashboard.allWaiting(d.awaiting.orders)} to={{ name: 'history', status: 'ORDERED' }} navigate={navigate} />
                 ) : null
               }
             />

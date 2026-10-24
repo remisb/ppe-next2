@@ -696,6 +696,8 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
   await expect(heading).toBeVisible()
   recordNumber = /WE-\d{6}/.exec((await heading.textContent()) ?? '')![0]
+  // When it was ordered, as every date shows: in the organisation's time zone, written one way.
+  await expect(page.getByText(/prepared by .* · \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)).toBeVisible()
   await expect(page.getByText('€114.98')).toBeVisible()
   // The next step is the employee's confirmation: the link is ready to send.
   await expect(page.getByLabel('Confirmation link')).toHaveValue(/\/confirm\/[\w-]{40,}$/)
@@ -1010,6 +1012,10 @@ test('a later price change does not alter the stored record', async () => {
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toContainText('€59.99')
 
   await openTab('Orders')
+  // The list keeps its place across the record: the Given tab chosen here is still chosen on the way back.
+  const statusTabs = page.getByRole('group', { name: 'Status', exact: true })
+  await statusTabs.getByRole('button', { name: /^Given/ }).click()
+  await expect(statusTabs.getByRole('button', { name: /^Given/ })).toHaveAttribute('aria-pressed', 'true')
   await (await openOrder(recordNumber)).getByRole('button', { name: 'View Order' }).click()
   await expect(page.getByText('Items Given Record / Акт выдачи')).toBeVisible()
   await expect(page.getByRole('cell', { name: '€49.99' }).first()).toBeVisible()
@@ -1031,6 +1037,13 @@ test('Print Record opens the print dialog; the record prints on one A4 page', as
   const nameLine = page.getByText('Employee name and surname / Имя и фамилия работника').locator('..')
   await expect(nameLine).toContainText('Ona Kazlauskienė')
   await page.emulateMedia({ media: null })
+  // Back to Orders, the list is as it was left before View Order: the Given tab still chosen.
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^Given/ })).toHaveAttribute('aria-pressed', 'true')
+  // Opened afresh, from the navigation, it starts on All again.
+  await openTab('Dashboard')
+  await openTab('Orders')
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('paper confirmation: a second order signed on paper', async () => {
@@ -1135,6 +1148,10 @@ test('Audit log: who changed a price, when and where; the item\'s Changes say th
   // Administration's Audit log, filtered to price changes in the Item Catalogue.
   await openTab('Audit log')
   await expect(page.getByRole('heading', { name: 'Audit log', exact: true })).toBeVisible()
+  // Every area is offered, Company Assets too, each narrowing Change to its own events.
+  await page.getByRole('combobox', { name: 'Area' }).selectOption({ label: 'Company Assets' })
+  await expect(page.getByRole('combobox', { name: 'Change' }).locator('option', { hasText: 'Asset added' })).toHaveCount(1)
+  await expect(page.getByRole('combobox', { name: 'Change' }).locator('option', { hasText: 'Price changed' })).toHaveCount(0)
   await page.getByRole('combobox', { name: 'Area' }).selectOption({ label: 'Item Catalogue' })
   await page.getByRole('combobox', { name: 'Change' }).selectOption({ label: 'Price changed' })
   await expect(page).toHaveURL(/\/admin\/audit\?area=catalogue&event=catalogue\.price_changed$/)

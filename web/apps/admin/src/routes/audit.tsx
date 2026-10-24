@@ -1,4 +1,4 @@
-import { AUDIT_EVENTS, type AuditEntry, type AuditPage as AuditPageData, type AuditVerification, isPermission } from '@ppe/api-client'
+import { AUDIT_AREAS, AUDIT_EVENTS, type AuditArea, type AuditEntry, type AuditPage as AuditPageData, type AuditVerification, isPermission } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { type DescribeOptions, ChangeDetail, areaLabel, auditText, auditTitle, changedBy, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
@@ -23,20 +23,25 @@ import { roleName } from '@/lib/users'
 
 type AuditRoute = Extract<Route, { name: 'audit' }>
 
-/** Which events each area's filter offers: the events of its record types. */
-const areaEvents: Record<string, string[]> = {
+/**
+ * Which events each area's filter offers: the events of its record types. Every
+ * area has an entry (the type requires it), so a new one cannot be left out of
+ * the filter.
+ */
+const areaEvents: Record<AuditArea, readonly string[]> = {
   users: ['user.', 'role.'],
   employees: ['employee.'],
   catalogue: ['catalogue.'],
   item_sets: ['item_set.'],
   orders: ['order.'],
+  assets: ['asset.'],
   settings: ['settings.'],
   security: ['access_review.'],
   audit: ['audit.'],
 }
 
 const eventsOf = (area: string | undefined) =>
-  AUDIT_EVENTS.filter((e) => !area || (areaEvents[area] ?? []).some((prefix) => e.startsWith(prefix)))
+  AUDIT_EVENTS.filter((e) => !area || (areaEvents[area as AuditArea] ?? []).some((prefix) => e.startsWith(prefix)))
 
 const recordLinkClass = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -147,7 +152,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
             {t.audit.area}
             <Select className="mt-1.5" value={filter.area ?? ''} onChange={(e) => setFilter('area', e.target.value)}>
               <option value="">{t.audit.allAreas}</option>
-              {Object.keys(areaEvents).map((a) => (
+              {AUDIT_AREAS.map((a) => (
                 <option key={a} value={a}>
                   {areaLabel(a)}
                 </option>
