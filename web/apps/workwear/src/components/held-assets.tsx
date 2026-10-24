@@ -134,7 +134,7 @@ function HeldRow({ held: h, navigate }: { held: HeldAsset; navigate: (to: Route)
             {h.asset.category ? <span className="text-muted-foreground">{categoryLabel(h.asset.category)}</span> : null}
           </>
         )}
-        {h.asset.connection_status ? <StatusBadge status={h.asset.connection_status} /> : null}
+        {h.asset.connection_status ? <StatusBadge status={h.asset.connection_status} opens /> : null}
         {h.not_returned_at && open ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
       </div>
       <div className="text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import type { CatalogueItem, Employee, ItemSet } from '@ppe/api-client'
+import type { HelpItem } from '@ppe/ui/components/tooltip'
 
 import { t } from '@/i18n'
 
@@ -50,6 +51,14 @@ export type ItemStatus = 'active' | 'incomplete' | 'inactive'
 export function itemStatus(i: Pick<CatalogueItem, 'active' | 'accounting_price_cents' | 'service_period_months'>): ItemStatus {
   if (!i.active) return 'inactive'
   return i.accounting_price_cents === null || i.service_period_months === null ? 'incomplete' : 'active'
+}
+
+/** Why an item is incomplete: one issue per missing value, what is missing and how to set it; none when it is complete. */
+export function incompleteReasons(i: Pick<CatalogueItem, 'accounting_price_cents' | 'service_period_months'>): HelpItem[] {
+  const out: HelpItem[] = []
+  if (i.accounting_price_cents === null) out.push(t.catalogue.priceMissing)
+  if (i.service_period_months === null) out.push(t.catalogue.periodMissing)
+  return out
 }
 
 export interface SetTotal {

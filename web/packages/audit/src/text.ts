@@ -199,6 +199,8 @@ const en = {
   noDetails: 'No fields to show for this change.',
   changes: 'Changes',
   changesIntro: 'Who changed this record and when, newest first.',
+  /** The ⓘ beside Changes that holds changesIntro. */
+  aboutChanges: 'About Changes',
   noChanges: 'No changes have been recorded yet.',
 }
 
@@ -390,6 +392,7 @@ const lt: AuditText = {
   noDetails: 'Šis pakeitimas neturi rodomų laukų.',
   changes: 'Pakeitimai',
   changesIntro: 'Kas ir kada keitė šį įrašą, naujausi pirmiau.',
+  aboutChanges: 'Apie skiltį „Pakeitimai“',
   noChanges: 'Pakeitimų dar neužfiksuota.',
 }
 
@@ -579,6 +582,7 @@ const ru: AuditText = {
   noDetails: 'У этого изменения нет полей для показа.',
   changes: 'Изменения',
   changesIntro: 'Кто и когда менял эту запись, сначала новые.',
+  aboutChanges: 'О разделе «Изменения»',
   noChanges: 'Изменений пока не записано.',
 }
 

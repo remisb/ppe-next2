@@ -522,7 +522,7 @@ function SetMissing({ label, optional = false, onClick }: { label: string; optio
       onClick={onClick}
       className="-m-1 inline-flex rounded-md p-1 outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 pointer-coarse:min-h-11 pointer-coarse:items-center"
     >
-      <MissingBadge optional={optional} />
+      <MissingBadge optional={optional} opens />
     </button>
   )
 }

@@ -1,5 +1,6 @@
 import type { AuditEntry } from '@ppe/api-client'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
+import { InfoTip } from '@ppe/ui/components/info-tip'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
@@ -51,10 +52,11 @@ export function ChangeList({
   timeZone: string | undefined
   options?: DescribeOptions | undefined
 }) {
+  // Flat, as the panels holding it are: a rule between changes, no frame.
   return (
-    <ol className="divide-y divide-border rounded-lg border border-border sm:max-w-2xl">
+    <ol className="divide-y divide-border sm:max-w-2xl">
       {entries.map((e) => (
-        <li key={e.id} className="grid gap-1.5 px-4 py-2.5">
+        <li key={e.id} className="grid gap-1 py-2 first:pt-0 last:pb-0">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="font-medium">{auditTitle(e.event)}</span>
             <RelativeDate iso={e.occurred_at} timeZone={timeZone} time className="text-xs text-muted-foreground tabular-nums" />
@@ -121,6 +123,7 @@ export function ChangeDetail({
  * updated_at, loads them again, so an edit made on the page shows at once.
  * collapsible makes the heading a disclosure, closed at first; the changes are
  * read only once it is opened. rememberAs keeps it open or closed as it was left.
+ * What Changes are is in an ⓘ beside the heading (InfoTip), not under it.
  */
 export function RecordChanges({
   load,
@@ -142,24 +145,28 @@ export function RecordChanges({
 }) {
   const t = auditText()
   const body = <ChangesBody load={load} deps={deps} timeZone={timeZone} options={options} />
+  const info = <InfoTip label={t.aboutChanges}>{t.changesIntro}</InfoTip>
   if (collapsible) {
     return (
-      <DisclosureSection id="record-changes" title={t.changes} rememberAs={rememberAs} className={className}>
+      <DisclosureSection id="record-changes" title={t.changes} action={info} rememberAs={rememberAs} className={className}>
         {body}
       </DisclosureSection>
     )
   }
   return (
     <section aria-labelledby="record-changes" className={cn('mb-8', className)}>
-      <h2 id="record-changes" className="mb-1 text-lg font-semibold">
-        {t.changes}
-      </h2>
+      <div className="mb-3 flex items-center gap-1">
+        <h2 id="record-changes" className="text-lg font-semibold">
+          {t.changes}
+        </h2>
+        {info}
+      </div>
       {body}
     </section>
   )
 }
 
-/** The intro and the changes themselves, read when shown. */
+/** The changes themselves, read when shown. */
 function ChangesBody({
   load,
   deps,
@@ -175,7 +182,6 @@ function ChangesBody({
   const changes = useLoad(load, deps)
   return (
     <>
-      <p className="mb-3 text-sm text-muted-foreground">{t.changesIntro}</p>
       {changes.error ? (
         <ErrorState error={changes.error} onRetry={changes.reload} />
       ) : !changes.data ? (

@@ -330,6 +330,9 @@ export function createClient(options: ClientOptions) {
       setActive: (id: string, active: boolean) =>
         request<CatalogueItem>('POST', `/api/v1/catalogue/${seg(id)}/${active ? 'activate' : 'deactivate'}`),
       remove: (id: string) => request<void>('DELETE', `/api/v1/catalogue/${seg(id)}`),
+      /** Puts the item in front of beforeId in the display order, or last for null; answers every live item in the new order. */
+      move: (id: string, beforeId: string | null) =>
+        request<CatalogueItem[]>('POST', `/api/v1/catalogue/${seg(id)}/move`, { before_id: beforeId }),
       /** Every picture in the item form's order, with the size group it gives its items. */
       pictures: () => request<CataloguePicture[]>('GET', '/api/v1/catalogue/pictures'),
       updatePicture: (icon: CatalogueIcon, input: CataloguePictureInput) =>

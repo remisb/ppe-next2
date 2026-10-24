@@ -133,6 +133,49 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+func (r *PostgresRepository) Reorder(ctx context.Context, m OrderMutation) ([]Item, error) {
+	var out []Item
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		cur, err := queryTx(ctx, tx, `SELECT `+columns+from+` WHERE i.deleted_at IS NULL `+selectorOrder+` FOR UPDATE OF i`)
+		if err != nil {
+			return err
+		}
+		changed, evs, err := m(cur)
+		if err != nil {
+			return err
+		}
+		for _, i := range changed {
+			if _, err := tx.Exec(ctx, `UPDATE catalogue_items SET display_rank = $2, updated_at = $3, updated_by_user_id = $4 WHERE id = $1`,
+				i.ID, i.DisplayRank, i.UpdatedAt, i.UpdatedByUserID); err != nil {
+				return err
+			}
+		}
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
+			return err
+		}
+		out, err = queryTx(ctx, tx, `SELECT `+columns+from+` WHERE i.deleted_at IS NULL `+selectorOrder)
+		return err
+	})
+	return out, translate(err)
+}
+
+func queryTx(ctx context.Context, tx pgx.Tx, sql string) ([]Item, error) {
+	rows, err := tx.Query(ctx, sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]Item, 0)
+	for rows.Next() {
+		i, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, i)
+	}
+	return out, rows.Err()
+}
+
 // pictureColumns are a picture's, with its live items counted.
 const pictureColumns = `p.id, p.icon, p.size_group,
 	(SELECT count(*) FROM catalogue_items i WHERE i.icon = p.icon AND i.deleted_at IS NULL)`

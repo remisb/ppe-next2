@@ -1,7 +1,6 @@
 import type { CatalogueItem, ItemSet } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
@@ -13,6 +12,7 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
+import { InactiveSetBadge } from '@/components/status-badges'
 import { t } from '@/i18n'
 import { type SetTotal, setTotal } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
@@ -74,7 +74,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
               <CardHeader>
                 <CardTitle className="flex flex-wrap items-center gap-2">
                   {s.name}
-                  {s.active ? null : <Badge variant="outline">{t.common.inactive}</Badge>}
+                  {s.active ? null : <InactiveSetBadge opens />}
                 </CardTitle>
                 {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
                 <p className="text-sm font-medium tabular-nums">

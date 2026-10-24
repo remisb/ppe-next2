@@ -2,6 +2,7 @@ package catalogue
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -282,4 +283,97 @@ func (s *Service) UpdatePicture(ctx context.Context, icon Icon, p PictureParams,
 		}
 		return next, []audit.Event{*ev}, nil
 	})
+}
+
+// rankStep is the gap Move leaves between items when it numbers them again.
+const rankStep = 10
+
+// Move puts an item in front of another in the display order (Add Item's and
+// the catalogue's), or last when before is nil. It changes as few display ranks
+// as it can: only the moved item's, to one between its new neighbours', when
+// there is room; else every item is numbered again 10, 20, 30… Each changed
+// rank is a catalogue.updated event. It returns every live item in the new order.
+func (s *Service) Move(ctx context.Context, id uuid.UUID, before *uuid.UUID, actor uuid.UUID) ([]Item, error) {
+	if actor == uuid.Nil {
+		return nil, fieldError("actor", "is required")
+	}
+	if before != nil && *before == id {
+		return nil, fieldError("before_id", "must be another item")
+	}
+	return s.repo.Reorder(ctx, func(cur []Item) ([]Item, []audit.Event, error) {
+		order := make([]Item, 0, len(cur))
+		var moved *Item
+		for _, i := range cur {
+			if i.ID == id {
+				moved = &i
+				continue
+			}
+			order = append(order, i)
+		}
+		if moved == nil {
+			return nil, nil, ErrNotFound
+		}
+		at := len(order)
+		if before != nil {
+			at = slices.IndexFunc(order, func(i Item) bool { return i.ID == *before })
+			if at < 0 {
+				return nil, nil, fieldError("before_id", "is not a live item")
+			}
+		}
+		order = slices.Insert(order, at, *moved)
+		var changed []Item
+		var evs []audit.Event
+		for n, rank := range newRanks(order, at) {
+			if order[n].DisplayRank == rank {
+				continue
+			}
+			next := order[n]
+			next.DisplayRank = rank
+			next, ev, err := s.touch(order[n], next, actor)
+			if err != nil {
+				return nil, nil, err
+			}
+			changed, evs = append(changed, next), append(evs, ev...)
+		}
+		return changed, evs, nil
+	})
+}
+
+// newRanks gives the items of order, where the item at moved has just been put,
+// their display ranks: theirs, with the moved item's between its neighbours'
+// when they leave room, else 10, 20, 30… for all. The others keep their order,
+// so only the moved item needs a rank strictly between its neighbours'.
+func newRanks(order []Item, moved int) []int {
+	out := make([]int, len(order))
+	for n, i := range order {
+		out[n] = i.DisplayRank
+	}
+	lo, hi := -1, -1 // the neighbours' ranks; -1 for none
+	if moved > 0 {
+		lo = order[moved-1].DisplayRank
+	}
+	if moved < len(order)-1 {
+		hi = order[moved+1].DisplayRank
+	}
+	r := order[moved].DisplayRank
+	switch {
+	case (lo < 0 || lo < r) && (hi < 0 || r < hi):
+		return out // already between them
+	case hi < 0:
+		out[moved] = lo + rankStep
+		return out
+	case lo < 0 && hi >= rankStep:
+		out[moved] = hi - rankStep
+		return out
+	case lo < 0 && hi >= 1:
+		out[moved] = hi / 2
+		return out
+	case lo >= 0 && hi-lo >= 2:
+		out[moved] = lo + (hi-lo)/2
+		return out
+	}
+	for n := range out {
+		out[n] = (n + 1) * rankStep
+	}
+	return out
 }

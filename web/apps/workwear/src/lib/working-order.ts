@@ -218,7 +218,11 @@ export function validate(order: WorkingOrder): Validation {
     if (l.unavailable) p.push(t.order.itemUnavailable)
     if (!Number.isInteger(l.quantity) || l.quantity < 1) p.push(t.order.quantityInvalid)
     if (needsSize(l)) p.push(t.order.selectSize)
-    if (l.priceMissing && !l.unavailable) p.push(t.order.priceMissing)
+    // Each missing catalogue value is a problem of its own.
+    if (l.priceMissing && !l.unavailable) {
+      if (l.accountingPriceCents === null) p.push(t.order.priceMissing)
+      if (l.servicePeriodMonths === null) p.push(t.order.periodMissing)
+    }
     if (p.length > 0) lineProblems.set(l.catalogueItemId, p)
   }
   return { valid: orderProblems.length === 0 && lineProblems.size === 0, orderProblems, lineProblems }

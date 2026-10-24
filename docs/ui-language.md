@@ -157,6 +157,10 @@ Rules:
   record's actions; the list beside it drops to the columns that find the next record. ✕
   closes it beside the list; the back link returns from it below `lg`. Reader words: "beside
   the list" (desktop), "open it" (phone, tablet).
+- **Layout:** flat. Facts sit between thin rules, and every list in it (price steps, orders,
+  item sets, assignments, Changes) has a rule between consecutive items and no box around
+  them or round each item; an item is a title line, then its details in small muted text.
+  Changes are drawn so on every record's page too (`ChangeList`).
 - **Names:** the **order pane** (Orders), the **asset pane** (SIM Cards, Equipment), the
   **item pane** (Item Catalogue), the **change pane** (Audit log), the **error pane**
   (System's Errors).
@@ -396,8 +400,36 @@ Lithuanian or Russian label wraps rather than overflow.
   a status line says "Copied 0712 345 678.".
 - **Detail:** if the browser refuses, it says so and how to copy by hand.
 
+### Info button
+- **Brief:** the ⓘ beside a section's heading that holds what the section is, kept out of
+  the way (every record's Changes, `RecordChanges`; the item pane's Orders and Item Sets),
+  beside their closed sections' toggles: pointing at it opens it, and a click, a tap
+  or Enter opens it and keeps it open until Escape or a click elsewhere. Its label is "About
+  <section>"; it sits beside the heading, not in it, so the heading keeps its own name.
+- **Code:** `InfoTip` (`@ppe/ui/components/info-tip`).
+
+### Move handle
+- **Brief:** the ⠿ grip at the start of a row whose place in a list can change (the Item
+  Catalogue in its display order): press on it and move, and the rows reorder under the
+  pointer, the moved row outlined where it will land; let go and the order is saved. Escape
+  while moving puts it back; the up and down arrow keys on the handle move it one place.
+- **Detail:** shown only where the list is in the order it changes (no column sorted), to
+  those who may change it, and never on a stacked row, which only opens its record. Its
+  label is "Move <name>", never "Reorder" (a new order for an item due). Pointer events, so
+  a finger moves rows too.
+- **Code:** `useRowDrag` (`lib/use-row-drag.ts`), `moveBefore` (`lib/catalogue-order.ts`).
+
 ### Badge
-- **Brief:** a short label for a state or a marker, never a button.
+- **Brief:** a short label for a state or a marker.
+- **Status badge with issues** (`IssueBadge`): a state that has something to fix or know
+  (Incomplete, an item's or a set's Inactive, a SIM's Not Activated and Blocked, Missing)
+  lists it: each issue a numbered row, one issue too, what is wrong then what to do, a rule
+  between rows, any note below with its ⓘ in the numbers' column, so the text of every row
+  and of the note starts at the same place however many issues there are; the badge counts them when there are several, "Incomplete (2)". On a page
+  or pane it is a button: pointing at it, a tap, a click or Enter opens the list. In a list
+  row it is a tooltip, since a stacked row only opens its record. Nothing about its state is
+  written under the badges. A badge that only names a state (Ordered, Given, a role) stays
+  plain.
 - **Variants and meanings:**
   - `default` (filled): the final state of a record's lifecycle (Given) and the
     Administrator role;
@@ -766,9 +798,10 @@ Say what cannot be undone ("This cannot be undone in the app."). OK is the brows
 | resting the pointer (desktop only) | point at | užvedę žymeklį | наведите указатель |
 | a checkbox | tick | pažymėkite | отметьте |
 | into a field | type, enter | įveskite | введите |
+| a row by its move handle | drag | vilkite | перетащите |
 
-Never "hover" (a builder word), "select" (except selecting text to copy), "swipe" or "drag":
-nothing in the apps needs them.
+Never "hover" (a builder word), "select" (except selecting text to copy) or "swipe": nothing
+in the apps needs them. "Drag" is only for a move handle.
 
 ---
 

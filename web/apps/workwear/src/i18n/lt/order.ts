@@ -116,7 +116,8 @@ export const order: OrderText = {
   itemUnavailable: 'Ši prekė nebetiekiama. Pašalinkite ją iš užsakymo.',
   quantityInvalid: 'Kiekis turi būti sveikasis skaičius, ne mažesnis nei 1.',
   selectSize: 'Pasirinkite dydį.',
-  priceMissing: 'Prekių kataloge nenurodyta kaina arba naudojimo laikotarpis. Įgaliotas naudotojas turi juos papildyti.',
+  priceMissing: 'Trūksta kainos. Įgaliotas naudotojas turi nurodyti kainą prekių kataloge.',
+  periodMissing: 'Trūksta naudojimo laikotarpio. Įgaliotas naudotojas turi nurodyti naudojimo laikotarpį prekių kataloge.',
 
   // The employee's saved sizes
   heightCm: (cm: number) => `${cm} cm`,

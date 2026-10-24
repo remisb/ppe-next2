@@ -709,6 +709,26 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 	if rec := api.do(t, "PUT", "/api/v1/catalogue/"+id, mgr, item); rec.Code != http.StatusOK {
 		t.Errorf("update = %d %s", rec.Code, rec.Body)
 	}
+
+	// Move: the helmet in front of the shoes; managers only; answers the new order.
+	helmetID := helmet["id"].(string)
+	before := map[string]any{"before_id": id}
+	if rec := api.do(t, "POST", "/api/v1/catalogue/"+helmetID+"/move", staff, before); rec.Code != http.StatusForbidden {
+		t.Errorf("employee move = %d, want 403", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/catalogue/"+helmetID+"/move", mgr, before)
+	if order := decode[[]map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(order) != 2 || order[0]["id"] != helmetID {
+		t.Fatalf("move = %d %s", rec.Code, rec.Body)
+	}
+	if all := decode[[]map[string]any](t, api.do(t, "GET", "/api/v1/catalogue", staff, nil).Body.Bytes()); all[0]["id"] != helmetID {
+		t.Errorf("the moved item is not first when read again: %v", all)
+	}
+	if rec := api.do(t, "POST", "/api/v1/catalogue/"+helmetID+"/move", mgr, map[string]any{"before_id": uuid.NewString()}); rec.Code != http.StatusBadRequest {
+		t.Errorf("unknown before_id = %d, want 400", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/catalogue/"+uuid.NewString()+"/move", mgr, map[string]any{}); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown item = %d, want 404", rec.Code)
+	}
 }
 
 // TestPostgresCreateOrderResolution covers the Create Order read path end to

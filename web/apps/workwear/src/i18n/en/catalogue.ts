@@ -29,13 +29,18 @@ export const catalogue = {
   colStatus: 'Status',
   displayOrder: 'Display order',
   actions: 'Actions',
+  // Moving an item in the display order, by its handle
+  moveItem: (name: string) => `Move ${name}`,
+  moveHint: 'Drag to change where the item comes in Add Item, or use the up and down arrow keys.',
+  movedTo: (name: string, place: number, of: number) => `${name} moved to place ${place} of ${of}.`,
   // An item's status badges
   active: 'Active',
   inactive: 'Inactive',
   incomplete: 'Incomplete',
-  // Why an item is Incomplete: the badge's tooltip in the list.
-  incompleteReason: (noPrice: boolean, noPeriod: boolean): string =>
-    noPrice && noPeriod ? 'The price and the service period are missing.' : noPrice ? 'The price is missing.' : 'The service period is missing.',
+  // Why an item is Incomplete, one line per missing value: the badge's tooltip in the list and the item's page.
+  // Each is what is wrong, then how to put it right.
+  priceMissing: { title: 'Price is missing.', detail: 'An authorised user must specify the price in Edit Item.' },
+  periodMissing: { title: 'Service period is missing.', detail: 'An authorised user must specify the service period in Edit Item.' },
   deactivateItem: 'Deactivate item…',
   activateItem: 'Activate item',
   confirmDeactivate: (name: string) => `Deactivate ${name}? It will no longer be offered in Add Item. Orders that hold it keep it.`,
@@ -85,7 +90,9 @@ export const catalogue = {
 
   // An item's page
   incompleteNote: 'Without a price and a service period this item cannot be ordered: Mark as Ordered refuses it.',
-  inactiveNote: 'Inactive: not offered in Add Item. Orders that hold it keep it.',
+  // Why an item or a set is Inactive: its badge's list, as Incomplete's.
+  inactiveIssue: { title: 'Not offered in Add Item.', detail: 'Orders that hold it keep it.' },
+  setInactiveIssue: 'Not offered in Create Order.',
   itemDetails: 'Item details',
   // The item open beside the list
   item: 'Item',
@@ -113,14 +120,18 @@ export const catalogue = {
   notOrdered: 'This item has not been ordered yet.',
   ordersSummary: (total: number, given: number, onOrder: number) =>
     plural(total, { one: `# order: ${given} given, ${onOrder} on order.`, other: `# orders: ${given} given, ${onOrder} on order.` }),
-  latestShown: (total: number, shown: number) => plural(total, { one: `# orders; the latest ${shown} are shown.`, other: `# orders; the latest ${shown} are shown.` }),
   colRecord: 'Record',
   colEmployee: 'Employee',
   colDate: 'Date',
   colSize: 'Size',
+  /** An order's line on the item pane: its size, and how many. */
+  orderSize: (size: string) => `Size ${size}`,
+  orderQuantity: (n: number) => `× ${n}`,
   colQuantity: 'Quantity',
   receipt: (record: string) => `Receipt ${record}`,
   itemSets: 'Item Sets',
+  /** The ⓘ beside a section's heading. */
+  aboutSection: (section: string) => `About ${section}`,
   itemSetsIntro: 'Sets that add this item when applied in Create Order, with their default quantity.',
   noSetHolds: 'No item set holds this item.',
   openItemSets: 'Open Item Sets',

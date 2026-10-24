@@ -198,7 +198,7 @@ export function AssetDetail({
             {sim ? (
               <Fact title={t.assets.connection} inline className="col-span-2">
                 <span className="flex flex-wrap items-center gap-2">
-                  {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
+                  {a.connection_status ? <StatusBadge status={a.connection_status} opens /> : null}
                   {canManage && a.connection_status ? (
                     <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving} onChange={(next) => void changeStatus(next)} />
                   ) : null}
@@ -269,7 +269,8 @@ export function AssetDetail({
             {a.assignments.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t.assets.noAssignments}</p>
             ) : (
-              <ol className="grid gap-3">
+              // Flat, as the rest of the pane: a rule between givings, no boxes.
+              <ol className="divide-y divide-border">
                 {a.assignments.map((s) => (
                   <AssignmentItem
                     key={s.id}
@@ -389,7 +390,7 @@ function AssignmentItem({
   onUploaded: (message: string) => void
 }) {
   return (
-    <li className="rounded-lg border border-border p-3 text-sm">
+    <li className="py-3 text-sm first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <a {...linkTo({ name: 'employee', id: s.employee_id }, navigate)} className={link}>
           {s.employee_name}

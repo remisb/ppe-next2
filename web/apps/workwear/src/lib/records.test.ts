@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { clothingBands } from './utils'
-import { employeeFacts, initials, itemStatus, missingLabel, setTotal } from './records'
+import { employeeFacts, incompleteReasons, initials, itemStatus, missingLabel, setTotal } from './records'
 
 describe('initials', () => {
   it('takes the first letter of each name', () => {
@@ -30,6 +30,19 @@ describe('missingLabel', () => {
     expect(missingLabel({ height_cm: 180, clothing_size: null, shoe_size: null })).toBe('No shoe size')
     expect(missingLabel({ height_cm: null, clothing_size: null, shoe_size: '42' })).toBe('No clothing size')
     expect(missingLabel({ height_cm: null, clothing_size: null, shoe_size: null })).toBe('No sizes')
+  })
+})
+
+describe('incompleteReasons', () => {
+  it('lists each missing value on its own', () => {
+    const both = incompleteReasons({ accounting_price_cents: null, service_period_months: null })
+    expect(both).toEqual([
+      { title: 'Price is missing.', detail: 'An authorised user must specify the price in Edit Item.' },
+      { title: 'Service period is missing.', detail: 'An authorised user must specify the service period in Edit Item.' },
+    ])
+    const one = incompleteReasons({ accounting_price_cents: 250, service_period_months: null })
+    expect(one).toEqual([{ title: 'Service period is missing.', detail: 'An authorised user must specify the service period in Edit Item.' }])
+    expect(incompleteReasons({ accounting_price_cents: 250, service_period_months: 1 })).toEqual([])
   })
 })
 

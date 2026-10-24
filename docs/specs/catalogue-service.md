@@ -55,10 +55,18 @@ An item missing an accounting price or service period is valid in the catalogue 
 | `PUT /api/v1/catalogue/{id}` | `catalogue.manage` (full replace) |
 | `POST /api/v1/catalogue/{id}/activate`, `/deactivate` | `catalogue.manage` |
 | `DELETE /api/v1/catalogue/{id}` | `catalogue.manage` (soft) |
+| `POST /api/v1/catalogue/{id}/move` | `catalogue.manage`; body `{"before_id": …}`: puts the item in front of that live item in the display order, or last when it is null or left out; answers every live item in the new order. 404 for an unknown item, 400 for an unknown `before_id` or the item itself |
 | `GET /api/v1/catalogue/pictures` | any authenticated; every picture in `catalogue.Icons` order |
 | `PUT /api/v1/catalogue/pictures/{icon}` | `catalogue.manage`; body `{"size_group": …}`; 404 for an unknown picture |
 
 `catalogue.manage` is held by the built-in Administrator and Manager roles.
+
+**Move** changes as few display ranks as it can, under a lock on every live item: only the
+moved item's, to one strictly between its new neighbours' (10 below the next when it goes
+first, 10 above the last when it goes last), when they leave room; else every item is
+numbered again 10, 20, 30… in the new order. Each changed rank records `catalogue.updated`
+(`display_rank` before/after). Moving an item to where it is records nothing. The Item
+Catalogue's move handle calls it (drag, or the arrow keys), only while no column is sorted.
 
 ## Audit
 

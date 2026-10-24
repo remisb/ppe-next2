@@ -184,8 +184,10 @@ export const assets: AssetsText = {
   paperFormSigned: 'Darbuotojas pasirašė atspausdintą aktą',
   changedAfterPrint: 'Aktas pasikeitė po spausdinimo, todėl žymė apie parašą nuimta. Atspausdinkite atnaujintą aktą ir duokite pasirašyti dar kartą.',
   alreadyGivenReason: 'Tai jau kažkas turi. Pirmiausia užregistruokite grąžinimą.',
-  notActivatedReason: 'Ši kortelė neaktyvuota. Parašykite tiekėjui, tada pakeiskite būseną į „Aktyvi“.',
-  blockedReason: 'Ši kortelė užblokuota. Paprašykite tiekėjo ją atblokuoti, tada pakeiskite būseną į „Aktyvi“.',
+  statusIssue: {
+    NOT_ACTIVATED: { title: 'Ši kortelė neaktyvuota.', detail: 'Parašykite tiekėjui, tada pakeiskite būseną į „Aktyvi“.' },
+    BLOCKED: { title: 'Ši kortelė užblokuota.', detail: 'Paprašykite tiekėjo ją atblokuoti, tada pakeiskite būseną į „Aktyvi“.' },
+  },
   chooseEmployeeReason: 'Pasirinkite darbuotoją.',
   givenDateReason: 'Įveskite išdavimo datą.',
   valueReason: 'Įrašykite negrąžinimo vertę: jos reikia aktui.',

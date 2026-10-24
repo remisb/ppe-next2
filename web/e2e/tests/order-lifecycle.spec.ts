@@ -345,6 +345,127 @@ test('Item Catalogue: items with and without a price', async () => {
   page.once('dialog', (d) => void d.dismiss())
   await page.getByRole('menuitem', { name: 'Deactivate item…' }).click()
   await expect(shoes).not.toContainText('Inactive')
+
+  // Moving an item: pressed on its handle and moved, the rows reorder under the pointer, showing where it lands;
+  // let go, the order is saved, and a reload keeps it.
+  const order = page.locator('tr[data-row-id] a')
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  // Only a drop is sent: one request, none while moving, none when it lands where it was.
+  let moves = 0
+  const countMoves = (r: { method(): string; url(): string }) => {
+    if (r.method() === 'POST' && /\/api\/v1\/catalogue\/[^/]+\/move$/.test(r.url())) moves++
+  }
+  page.on('request', countMoves)
+  const handle = (await page.getByRole('button', { name: 'Move Protective gloves' }).boundingBox())!
+  const top = (await page.getByRole('row', { name: /Safety shoes/ }).boundingBox())!
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(handle.x + handle.width / 2, top.y + 4, { steps: 12 })
+  await expect(order).toHaveText(['Protective gloves', 'Safety shoes', 'Work jacket', 'Safety helmet'])
+  await expect(page.getByRole('row', { name: /Protective gloves/ })).toHaveClass(/outline-primary/)
+  expect(moves, 'requests while moving').toBe(0)
+  await page.mouse.up()
+  await expect(page.getByText('Protective gloves moved to place 1 of 4.')).toBeAttached()
+  expect(moves, 'requests for one drop').toBe(1)
+  await page.reload()
+  await expect(order).toHaveText(['Protective gloves', 'Safety shoes', 'Work jacket', 'Safety helmet'])
+  // Moved down and back up, it lands where it was: the rows moved meanwhile, but nothing is sent.
+  const glovesHandle = page.getByRole('button', { name: 'Move Protective gloves' })
+  const box = (await glovesHandle.boundingBox())!
+  moves = 0
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + 150, { steps: 8 })
+  await expect(order).not.toHaveText(['Protective gloves', 'Safety shoes', 'Work jacket', 'Safety helmet'])
+  await page.mouse.move(box.x + box.width / 2, box.y + 2, { steps: 8 })
+  await expect(order).toHaveText(['Protective gloves', 'Safety shoes', 'Work jacket', 'Safety helmet'])
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+  expect(moves, 'requests for a drop where it started').toBe(0)
+  page.off('request', countMoves)
+  // Escape while moving puts it back; the arrow keys on the handle move it one place at a time.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + 150, { steps: 8 })
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(order).toHaveText(['Protective gloves', 'Safety shoes', 'Work jacket', 'Safety helmet'])
+  await glovesHandle.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(order).toHaveText(['Safety shoes', 'Protective gloves', 'Work jacket', 'Safety helmet'])
+  await page.keyboard.press('ArrowDown')
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  await page.reload()
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  // Dropped lower down (the moved row shifts in the page as it goes), one request, kept on reload.
+  moves = 0
+  page.on('request', countMoves)
+  const down = (await page.getByRole('button', { name: 'Move Protective gloves' }).boundingBox())!
+  const last = (await page.getByRole('row', { name: /Safety helmet/ }).boundingBox())!
+  await page.mouse.move(down.x + down.width / 2, down.y + down.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(down.x + down.width / 2, last.y + last.height - 4, { steps: 10 })
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Safety helmet', 'Protective gloves'])
+  expect(moves, 'requests while moving down').toBe(0)
+  await page.mouse.up()
+  await expect(page.getByText('Protective gloves moved to place 4 of 4.')).toBeAttached()
+  expect(moves, 'requests for one drop down').toBe(1)
+  page.off('request', countMoves)
+  await page.reload()
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Safety helmet', 'Protective gloves'])
+  await page.getByRole('button', { name: 'Move Protective gloves' }).focus()
+  await page.keyboard.press('ArrowUp')
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  await page.reload()
+  await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  // Sorted by a column, there is no order to change: no handles.
+  await page.getByRole('columnheader', { name: 'Price' }).getByRole('button').click()
+  await expect(page.getByRole('button', { name: /^Move / })).toHaveCount(0)
+  await page.getByRole('columnheader', { name: 'Price' }).getByRole('button').click()
+  await page.getByRole('columnheader', { name: 'Price' }).getByRole('button').click()
+  await expect(page.getByRole('button', { name: /^Move / })).toHaveCount(4)
+
+  // The helmet has two issues: its pane's Incomplete badge counts them, and opens a list of each on its own line.
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  const pane = page.getByRole('complementary', { name: 'Item' })
+  const badge = pane.getByRole('button', { name: 'Incomplete (2)', exact: true })
+  // The badge is the only place the pane lists them: nothing under the badges.
+  await expect(pane.getByRole('note')).toHaveCount(0)
+  await expect(pane.getByText('Price is missing.', { exact: false }).filter({ visible: true })).toHaveCount(0)
+  await expect(badge).toHaveAccessibleDescription(
+    'Price is missing. An authorised user must specify the price in Edit Item. Service period is missing. An authorised user must specify the service period in Edit Item. Without a price and a service period this item cannot be ordered: Mark as Ordered refuses it.',
+  )
+  // Hover opens it.
+  await badge.hover()
+  const issues = page.locator('[data-slot=popover-content]').filter({ hasText: 'Incomplete (2)' })
+  await expect(issues.getByText('Price is missing.', { exact: false })).toBeVisible()
+  await expect(issues.getByText('Service period is missing.', { exact: false })).toBeVisible()
+  await page.mouse.move(0, 0)
+  await expect(issues).toBeHidden()
+  // So does the keyboard: Enter on the badge, and Escape closes it.
+  await badge.focus()
+  await page.keyboard.press('Enter')
+  await expect(issues.getByText('Price is missing.', { exact: false })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(issues).toBeHidden()
+  // Deactivated, its Inactive badge says what that means, as Incomplete does, and nothing is written under the badges.
+  await pane.getByRole('button', { name: 'More actions for Safety helmet' }).click()
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('menuitem', { name: 'Deactivate item…' }).click()
+  const inactive = pane.getByRole('button', { name: 'Inactive', exact: true })
+  await expect(inactive).toHaveAccessibleDescription('Not offered in Add Item. Orders that hold it keep it.')
+  await expect(pane.getByText('Not offered in Add Item.').filter({ visible: true })).toHaveCount(0)
+  await inactive.click()
+  await expect(page.locator('[data-slot=popover-content]').filter({ hasText: 'Not offered in Add Item.' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  // In the list, the same words in a tooltip on the row's Inactive badge.
+  await expect(page.getByRole('row', { name: /Safety helmet/ }).getByText('Inactive', { exact: true })).toHaveAccessibleDescription(
+    'Not offered in Add Item. Orders that hold it keep it.',
+  )
+  await pane.getByRole('button', { name: 'More actions for Safety helmet' }).click()
+  await page.getByRole('menuitem', { name: 'Activate item' }).click()
+  await expect(pane.getByRole('button', { name: 'Inactive', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Close item' }).click()
 })
 
 test('Item Sets: a set of item references and default quantities', async () => {
@@ -387,15 +508,22 @@ test('Item Catalogue: a row opens the item beside the list, at its own address',
   const details = page.getByLabel('Item details').getByRole('definition')
   await expect(details.filter({ hasText: '€2.50' })).toBeVisible()
   await expect(details.filter({ hasText: 'No size' })).toBeVisible()
+  // Orders and Item Sets are closed at first, each counting what it holds beside its title; its heading opens it.
+  const setsToggle = page.getByRole('button', { name: /^Item Sets\s*\d+$/ })
+  await expect(setsToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(setsToggle).toHaveText(/^Item Sets\s*1$/)
+  await expect(page.getByRole('button', { name: /^Orders\s*\d+$/ })).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('listitem').filter({ hasText: 'Starter kit' })).toHaveCount(0)
+  await setsToggle.click()
   await expect(page.getByRole('listitem').filter({ hasText: 'Starter kit' })).toContainText('× 10')
   // The address works on its own (a bookmark or a reload).
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Protective gloves' })).toBeVisible()
 
-  // Another row opens its item in the same pane; an item missing its price says why it cannot be ordered.
+  // Another row opens its item in the same pane; an item missing its price says why it cannot be ordered, in its Incomplete badge.
   await page.getByRole('link', { name: 'Safety helmet' }).click()
   await expect(pane.getByRole('heading', { name: 'Safety helmet' })).toBeVisible()
-  await expect(pane.getByRole('note')).toContainText('cannot be ordered')
+  await expect(pane.getByRole('button', { name: 'Incomplete (2)', exact: true })).toHaveAccessibleDescription(/cannot be ordered/)
   await expect(pane.getByText('No item set holds this item.')).toBeVisible()
   // Escape closes it, as Close does, and the list has its columns again.
   await page.keyboard.press('Escape')
@@ -481,7 +609,13 @@ test('a size other than the saved one asks again; Skip size update keeps it on t
 
 test('missing catalogue price blocks Mark as Ordered', async () => {
   await addItem('helmet', /^Safety helmet/)
-  await expect(page.getByRole('alert').filter({ hasText: 'No price or service period' })).toBeVisible()
+  // The helmet has neither a price nor a service period: each is named on its own line.
+  await expect(page.getByRole('alert').filter({ hasText: 'Price is missing.' })).toHaveText(
+    'Price is missing. An authorised user must specify the price in the Item Catalogue.',
+  )
+  await expect(page.getByRole('alert').filter({ hasText: 'Service period is missing.' })).toHaveText(
+    'Service period is missing. An authorised user must specify the service period in the Item Catalogue.',
+  )
   await expect(reviewButton()).toBeDisabled()
   await page.getByRole('button', { name: 'Remove Safety helmet' }).click()
   await expect(reviewButton()).toBeEnabled()
@@ -715,12 +849,15 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   // No WhatsApp on a given order: the supplier message is Create Order's review's.
   await expect(order.getByRole('button', { name: /WhatsApp/ })).toHaveCount(0)
   // Its Changes are closed at first and open to show its steps.
-  const changes = order.getByRole('button', { name: 'Changes' })
+  const changes = order.getByRole('button', { name: 'Changes', exact: true })
   await expect(changes).toHaveAttribute('aria-expanded', 'false')
   await expect(order.getByText('Marked as ordered')).toHaveCount(0)
   await changes.click()
   await expect(changes).toHaveAttribute('aria-expanded', 'true')
   await expect(order.getByText('Marked as ordered')).toBeVisible()
+  // What Changes are is behind the ⓘ beside the heading, as on every record, not under it.
+  await expect(order.getByRole('button', { name: 'About Changes' })).toBeVisible()
+  await expect(order.getByText('Who changed this record and when').filter({ visible: true })).toHaveCount(0)
 })
 
 test('Orders: the Date filter\'s periods; Custom range opens From and To over it, taking only real dates in the language\'s one form', async () => {
@@ -927,6 +1064,11 @@ test('Item page: price history and the orders that hold the item', async () => {
   await openTab('Item Catalogue')
   await page.getByRole('link', { name: 'Safety shoes' }).click()
   await expect(page.getByRole('heading', { name: 'Safety shoes' })).toBeVisible()
+  // Price history is closed at first, its count beside the title; its heading opens it.
+  const priceHistory = page.getByRole('button', { name: /^Price history/ })
+  await expect(priceHistory).toHaveAttribute('aria-expanded', 'false')
+  await expect(priceHistory).toHaveText(/^Price history\s*2$/)
+  await openSection(/^Price history/)
   // The change made earlier, newest first, then the price it was added at.
   // The price is the figure on the right; a first purchase price follows the date.
   const steps = page.getByRole('list', { name: 'Price history' }).getByRole('listitem')
@@ -937,10 +1079,30 @@ test('Item page: price history and the orders that hold the item', async () => {
   await expect(steps.first()).toContainText('+20%')
   await expect(steps.last()).toContainText('Added')
   await expect(steps.last()).toContainText('€49.99')
-  // Each order at the price it was placed at: the paper order at the new one.
+  // What Orders and Item Sets hold is behind the ⓘ beside each heading, not under it:
+  // pointing at it opens it, and so does a click, which keeps it open until Escape.
+  const tip = (text: string) => page.locator('[data-slot=popover-content]').filter({ hasText: text })
+  await expect(page.getByText(/^Orders with this item/).filter({ visible: true })).toHaveCount(0)
+  await expect(page.getByText(/^Sets that add this item/).filter({ visible: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'About Orders' }).hover()
+  await expect(tip('Orders with this item, newest activity first')).toBeVisible()
+  await page.mouse.move(0, 0)
+  await expect(tip('Orders with this item')).toBeHidden()
+  await page.getByRole('button', { name: 'About Item Sets' }).click()
+  await expect(tip('Sets that add this item when applied in Create Order')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(tip('Sets that add this item')).toBeHidden()
+  // Each order at the price it was placed at: the paper order at the new one. Orders opens from its heading, which counts them.
+  await expect(page.getByRole('button', { name: /^Orders\s*\d+$/ })).toHaveText(/^Orders\s*2$/)
+  await openSection(/^Orders\s*\d+$/)
   await expect(page.getByText('2 orders: 2 given, 0 on order.')).toBeVisible()
-  await expect(page.getByRole('row', { name: new RegExp(paperRecord) })).toContainText('€59.99')
-  await expect(page.getByRole('row', { name: new RegExp(recordNumber) })).toContainText('€49.99')
+  // Two lines an order, ruled apart: the record, status and price; then who, when, the size and how many.
+  const itemOrders = page.getByRole('list', { name: 'Orders' }).getByRole('listitem')
+  await expect(itemOrders.filter({ hasText: paperRecord })).toContainText('€59.99')
+  await expect(itemOrders.filter({ hasText: recordNumber })).toContainText('€49.99')
+  await expect(itemOrders.filter({ hasText: recordNumber })).toContainText('Ona Kazlauskienė')
+  await expect(itemOrders.filter({ hasText: recordNumber })).toContainText('Size 42')
+  await expect(itemOrders.filter({ hasText: recordNumber })).toContainText('× 1')
   await page.getByRole('link', { name: `Receipt ${recordNumber}` }).click()
   await expect(page).toHaveURL(new RegExp(`/orders/[^/]+/record$`))
 })
@@ -949,10 +1111,22 @@ test('Audit log: who changed a price, when and where; the item\'s Changes say th
   // The item's own page lists its changes, newest first, once its closed Changes are opened.
   await openTab('Item Catalogue')
   await page.getByRole('link', { name: 'Safety shoes' }).click()
-  const toggle = page.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
+  const region = page.getByRole('region', { name: 'Changes' })
+  const toggle = region.getByRole('button', { name: 'Changes', exact: true })
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
-  const changes = page.getByRole('region', { name: 'Changes' }).getByRole('listitem')
+  // What Changes are is behind the ⓘ beside the heading, not under it: pointing at it, or a click, opens it.
+  await expect(region.getByText('Who changed this record and when').filter({ visible: true })).toHaveCount(0)
+  const aboutChanges = page.locator('[data-slot=popover-content]').filter({ hasText: 'Who changed this record and when, newest first.' })
+  await region.getByRole('button', { name: 'About Changes' }).hover()
+  await expect(aboutChanges).toBeVisible()
+  await page.mouse.move(0, 0)
+  await expect(aboutChanges).toBeHidden()
+  await region.getByRole('button', { name: 'About Changes' }).click()
+  await expect(aboutChanges).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(aboutChanges).toBeHidden()
+  const changes = region.getByRole('listitem')
   await expect(changes.first()).toContainText('Price changed')
   await expect(changes.first()).toContainText('€49.99 → €59.99')
   await expect(changes.first()).toContainText(admin.name)
@@ -1285,12 +1459,17 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page.locator('dl').filter({ hasText: 'Preferred language' }).first()).toContainText('Русский')
   // Her Changes are closed at first and open to list what was recorded.
   const herChanges = page.getByRole('region', { name: 'Changes' })
-  const toggle = herChanges.getByRole('button', { name: 'Changes' })
+  const toggle = herChanges.getByRole('button', { name: 'Changes', exact: true })
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await expect(herChanges.getByRole('listitem')).toHaveCount(0)
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   await expect(herChanges.getByRole('listitem').first()).toBeVisible()
+  // What Changes are is behind the ⓘ beside the heading: a click opens it.
+  await expect(herChanges.getByText('Who changed this record and when').filter({ visible: true })).toHaveCount(0)
+  await herChanges.getByRole('button', { name: 'About Changes' }).click()
+  await expect(page.locator('[data-slot=popover-content]').filter({ hasText: 'Who changed this record and when, newest first.' })).toBeVisible()
+  await page.keyboard.press('Escape')
   // The page holds her actions: Delete, as in the table, is under ⋯.
   await page.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
@@ -1479,6 +1658,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
+  // Its Not Activated badge says why it cannot be given and what to do (a tooltip in the register's row).
+  await expect(card.getByText('Not Activated', { exact: true })).toHaveAccessibleDescription(
+    'This card is not activated. Email your provider, then change its status to Active.',
+  )
   await expect(card).toContainText('Office')
   // No tiles here: the tabs count instead.
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
@@ -1531,10 +1714,11 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   // The card's Changes are closed at first; open them (they stay open on its page).
   const openChanges = async () => {
-    const toggle = pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })
+    const toggle = pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes', exact: true })
     if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
   }
-  await expect(pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes' })).toHaveAttribute('aria-expanded', 'false')
+  await expect(pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'Changes', exact: true })).toHaveAttribute('aria-expanded', 'false')
+  await expect(pane.getByRole('region', { name: 'Changes' }).getByRole('button', { name: 'About Changes' })).toBeVisible()
   // So are its Assignments, with their count; giving opens them, so the new one shows.
   await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveAttribute('aria-expanded', 'false')
   await expect(pane.getByRole('button', { name: /^Assignments/ })).toHaveText(/^Assignments\s*0$/)
@@ -2079,6 +2263,23 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const helmetRow = page.getByRole('row', { name: /Safety helmet/ })
   await expect(helmetRow).toContainText('Incomplete')
   await expect(helmetRow.getByRole('button')).toHaveCount(0)
+  // On the item's own page a tap on Incomplete opens its issues, as touch screens have no hover.
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  await page.getByRole('button', { name: 'Incomplete (2)', exact: true }).click()
+  const helmetIssues = page.locator('[data-slot=popover-content]').filter({ hasText: 'Incomplete (2)' })
+  await expect(helmetIssues.getByText('Service period is missing.', { exact: false })).toBeVisible()
+  expect(await fits(), 'the open issues scroll the item page sideways').toBe(true)
+  await page.keyboard.press('Escape')
+  // A tap on the ⓘ beside Orders opens what the section holds.
+  await page.getByRole('button', { name: 'About Orders' }).click()
+  await expect(page.locator('[data-slot=popover-content]').filter({ hasText: 'Orders with this item' })).toBeVisible()
+  expect(await fits(), 'the open ⓘ scrolls the item page sideways').toBe(true)
+  await page.keyboard.press('Escape')
+  // So does a tap on the ⓘ beside Changes.
+  await page.getByRole('button', { name: 'About Changes' }).click()
+  await expect(page.locator('[data-slot=popover-content]').filter({ hasText: 'Who changed this record and when' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await openTab('Item Catalogue')
   expect((await page.getByRole('row', { name: /Safety shoes/ }).boundingBox())!.height, 'a Catalogue row on a phone').toBeLessThan(80)
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė' }).click()

@@ -383,7 +383,10 @@ export function giveBlock(
   if (!a) return kind === 'SIM' ? t.assets.chooseCardReason : t.assets.chooseItemReason
   if (a.open_assignment) return t.assets.alreadyGivenReason
   if (a.kind === 'SIM') {
-    if (a.connection_status !== 'ACTIVE') return a.connection_status === 'BLOCKED' ? t.assets.blockedReason : t.assets.notActivatedReason
+    if (a.connection_status !== 'ACTIVE') {
+      const issue = t.assets.statusIssue[a.connection_status ?? 'NOT_ACTIVATED']
+      return `${issue.title} ${issue.detail}`
+    }
   }
   if (!d.employeeId) return t.assets.chooseEmployeeReason
   if (!d.givenDate) return t.assets.givenDateReason

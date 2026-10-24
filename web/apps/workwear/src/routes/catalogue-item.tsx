@@ -3,15 +3,17 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { InfoTip } from '@ppe/ui/components/info-tip'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { InactiveItemBadge, InactiveSetBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemTile } from '@/components/item-icon'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
@@ -26,7 +28,8 @@ import { useOpenKey } from '@/lib/open-sections'
 import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
 
 /** How many of the item's orders the page lists, newest activity first. */
-const ORDERS_SHOWN = 100
+/** The most orders one request reads (the API's limit). */
+const ORDERS_PAGE = 100
 
 /**
  * One catalogue item (/catalogue/<id>), opened from the Item Catalogue: beside
@@ -51,11 +54,15 @@ export function CatalogueItemDetail({
   const { client } = useApi()
   const canManageItems = useSession().can('catalogue.manage')
   const changesKey = useOpenKey('item.changes')
+  const pricesKey = useOpenKey('item.price-history')
   const item = useLoad(() => client.catalogue.get(id), [id])
   const sets = useLoad(() => client.itemSets.list())
   const settings = useLoad(() => client.settings())
   const prices = useLoad(() => client.catalogue.priceHistory(id), [id])
-  const orders = useLoad(() => client.orders.list({ catalogue_item_id: id, page_size: ORDERS_SHOWN }), [id])
+  // Only the count: the orders themselves load when their section opens (AllItemOrders).
+  const orderCount = useLoad(() => client.orders.list({ catalogue_item_id: id, page_size: 1 }), [id])
+  const ordersKey = useOpenKey('item.orders')
+  const setsKey = useOpenKey('item.item-sets')
   const [editing, setEditing] = useState(false)
   const [actionError, setActionError] = useState<unknown>()
 
@@ -69,7 +76,6 @@ export function CatalogueItemDetail({
   )
   const tz = settings.data?.timezone
   const i = item.data
-  const incomplete = i ? i.accounting_price_cents === null || i.service_period_months === null : false
 
   const toggle = async () => {
     if (!i || !confirmActiveChange(i)) return
@@ -124,18 +130,14 @@ export function CatalogueItemDetail({
           </header>
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
+          {/* An incomplete item's issues are in the Incomplete badge's tooltip only. */}
           <div className="mb-3 flex flex-wrap gap-1">
-            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <Badge variant="outline">{t.catalogue.inactive}</Badge>}
-            {incomplete ? <Badge variant="warning">{t.catalogue.incomplete}</Badge> : null}
+            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <InactiveItemBadge opens />}
+            <IncompleteBadge item={i} opens />
           </div>
-          {incomplete ? (
-            <p role="note" className="mb-4 text-sm text-warning">
-              {t.catalogue.incompleteNote}
-            </p>
-          ) : null}
-          {!i.active ? <p className="mb-4 text-sm text-muted-foreground">{t.catalogue.inactiveNote}</p> : null}
 
-          <dl aria-label={t.catalogue.itemDetails} className="mb-8 grid grid-cols-2 gap-4 rounded-lg border border-border p-4 text-sm @lg:grid-cols-3">
+          {/* The pane is flat: its facts and lists sit between thin rules, no boxes. */}
+          <dl aria-label={t.catalogue.itemDetails} className="mb-4 grid grid-cols-2 gap-x-6 gap-y-3 border-y border-border py-3 text-sm @lg:grid-cols-3">
             <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
             <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
             <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
@@ -145,13 +147,14 @@ export function CatalogueItemDetail({
             <Fact label={t.catalogue.lastChanged}>{formatDateTime(i.updated_at, tz)}</Fact>
           </dl>
 
-          <section aria-labelledby="price-history" className="mb-8">
-            <h2 id="price-history" className="mb-1 text-lg font-semibold">
-              {t.catalogue.priceHistory}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {t.catalogue.priceHistoryIntro}
-            </p>
+          {/* Closed at first, as Changes are; the count says how many steps it holds, the title's tooltip what they are. */}
+          <DisclosureSection
+            id="price-history"
+            title={t.catalogue.priceHistory}
+            count={prices.data?.length}
+            description={t.catalogue.priceHistoryIntro}
+            rememberAs={pricesKey}
+          >
             {prices.error ? (
               <ErrorState error={prices.error} onRetry={prices.reload} />
             ) : !prices.data ? (
@@ -159,37 +162,32 @@ export function CatalogueItemDetail({
             ) : prices.data.length === 0 ? (
               <EmptyState>{t.catalogue.noPriceHistory}</EmptyState>
             ) : (
-              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border rounded-lg border border-border">
+              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border">
                 {prices.data.map((p, n) => (
                   <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
                 ))}
               </ol>
             )}
-          </section>
+          </DisclosureSection>
 
-          <section aria-labelledby="item-orders" className="mb-8">
-            <h2 id="item-orders" className="mb-1 text-lg font-semibold">
-              {t.catalogue.orders}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {t.catalogue.ordersIntro(tz)}
-            </p>
-            {orders.error ? (
-              <ErrorState error={orders.error} onRetry={orders.reload} />
-            ) : !orders.data ? (
-              <Loading />
-            ) : orders.data.orders.length === 0 ? (
-              <EmptyState>{t.catalogue.notOrdered}</EmptyState>
-            ) : (
-              <ItemOrders itemId={id} orders={orders.data.orders} total={orders.data.total} tz={tz} navigate={navigate} />
-            )}
-          </section>
+          {/* Orders and Item Sets closed at first, as Price history is; each counts what it holds. */}
+          <DisclosureSection
+            id="item-orders"
+            title={t.catalogue.orders}
+            count={orderCount.data?.total}
+            action={<InfoTip label={t.catalogue.aboutSection(t.catalogue.orders)}>{t.catalogue.ordersIntro(tz)}</InfoTip>}
+            rememberAs={ordersKey}
+          >
+            <AllItemOrders itemId={id} tz={tz} navigate={navigate} />
+          </DisclosureSection>
 
-          <section aria-labelledby="item-sets" className="mb-8">
-            <h2 id="item-sets" className="mb-1 text-lg font-semibold">
-              {t.catalogue.itemSets}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">{t.catalogue.itemSetsIntro}</p>
+          <DisclosureSection
+            id="item-sets"
+            title={t.catalogue.itemSets}
+            count={sets.data ? holding.length : undefined}
+            action={<InfoTip label={t.catalogue.aboutSection(t.catalogue.itemSets)}>{t.catalogue.itemSetsIntro}</InfoTip>}
+            rememberAs={setsKey}
+          >
             {sets.error ? (
               <ErrorState error={sets.error} onRetry={sets.reload} />
             ) : !sets.data ? (
@@ -197,15 +195,15 @@ export function CatalogueItemDetail({
             ) : holding.length === 0 ? (
               <EmptyState>{t.catalogue.noSetHolds}</EmptyState>
             ) : (
-              <ul className="divide-y divide-border rounded-lg border border-border">
+              <ul aria-label={t.catalogue.itemSets} className="divide-y divide-border">
                 {holding.map(({ set, quantity }) => (
-                  <li key={set.id} className={cn('flex items-center justify-between gap-3 px-4 py-2.5', !set.active && 'text-muted-foreground')}>
+                  <li key={set.id} className={cn('flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0', !set.active && 'text-muted-foreground')}>
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{set.name}</span>
                       {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
-                      {set.active ? null : <Badge variant="outline">{t.common.inactive}</Badge>}
+                      {set.active ? null : <InactiveSetBadge opens />}
                       <span className="text-sm tabular-nums">× {quantity}</span>
                     </span>
                   </li>
@@ -218,7 +216,7 @@ export function CatalogueItemDetail({
             >
               {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
             </a>
-          </section>
+          </DisclosureSection>
 
           <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
 
@@ -273,7 +271,7 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
             ? t.catalogue.purchasePriceChanged
             : t.catalogue.periodChanged
   return (
-    <li className="flex items-start justify-between gap-3 px-4 py-2.5">
+    <li className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
       <div className="min-w-0">
         <span className="block font-medium">{title}</span>
         <span className="block text-xs text-muted-foreground tabular-nums">
@@ -303,6 +301,23 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
   )
 }
 
+/** Every order holding the item, read page by page when its section opens. */
+function AllItemOrders({ itemId, tz, navigate }: { itemId: string; tz: string | undefined; navigate: (to: Route) => void }) {
+  const { client } = useApi()
+  const orders = useLoad(async () => {
+    const first = await client.orders.list({ catalogue_item_id: itemId, page_size: ORDERS_PAGE })
+    const all = [...first.orders]
+    for (let page = 2; all.length < first.total && page <= Math.ceil(first.total / ORDERS_PAGE); page++) {
+      all.push(...(await client.orders.list({ catalogue_item_id: itemId, page_size: ORDERS_PAGE, page })).orders)
+    }
+    return all
+  }, [itemId])
+  if (orders.error) return <ErrorState error={orders.error} onRetry={orders.reload} />
+  if (!orders.data) return <Loading />
+  if (orders.data.length === 0) return <EmptyState>{t.catalogue.notOrdered}</EmptyState>
+  return <ItemOrders itemId={itemId} orders={orders.data} tz={tz} navigate={navigate} />
+}
+
 /**
  * The orders holding the item, one row per order with its line for the item:
  * the size, quantity and accounting price it was ordered at. A GIVEN order links to
@@ -311,13 +326,11 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
 function ItemOrders({
   itemId,
   orders,
-  total,
   tz,
   navigate,
 }: {
   itemId: string
   orders: ListedOrder[]
-  total: number
   tz: string | undefined
   navigate: (to: Route) => void
 }) {
@@ -328,29 +341,13 @@ function ItemOrders({
   const sum = (status: string) => rows.reduce((n, r) => n + (r.o.status === status ? r.line.quantity : 0), 0)
   return (
     <>
-      {total <= orders.length ? (
-        <p className="mb-3 text-sm">
-          {t.catalogue.ordersSummary(total, sum('GIVEN'), sum('ORDERED'))}
-        </p>
-      ) : (
-        <p className="mb-3 text-sm">{t.catalogue.latestShown(total, orders.length)}</p>
-      )}
-      <Table stack stackBelow="lg">
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t.catalogue.colRecord}</TableHead>
-            <TableHead>{t.catalogue.colEmployee}</TableHead>
-            <TableHead>{t.catalogue.colStatus}</TableHead>
-            <TableHead>{t.catalogue.colDate}</TableHead>
-            <TableHead>{t.catalogue.colSize}</TableHead>
-            <TableHead className="text-right">{t.catalogue.colQuantity}</TableHead>
-            <TableHead className="text-right">{t.catalogue.accountingPrice}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map(({ o, line }) => (
-            <TableRow key={o.id}>
-              <TableCell className="stacked:order-1 stacked:mb-1">
+      <p className="mb-2 text-sm text-muted-foreground">{t.catalogue.ordersSummary(orders.length, sum('GIVEN'), sum('ORDERED'))}</p>
+      {/* Two lines an order: the record, its status and the price it was ordered at; then who, when, the size and how many. */}
+      <ul aria-label={t.catalogue.orders} className="divide-y divide-border">
+        {rows.map(({ o, line }) => (
+          <li key={o.id} className="py-2 first:pt-0 last:pb-0">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-2">
                 {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
                 {o.status === 'GIVEN' ? (
                   <RecordPreview
@@ -373,28 +370,31 @@ function ItemOrders({
                     {o.record_number}
                   </RecordPreview>
                 )}
-              </TableCell>
-              <TableCell label={t.catalogue.colEmployee} className="stacked:order-2">
-                <a
-                  {...linkTo({ name: 'employee', id: o.employee_id }, navigate)}
-                  className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {o.employee_first_name} {o.employee_last_name}
-                </a>
-              </TableCell>
-              <TableCell label={t.catalogue.colStatus} className="stacked:order-2">
                 <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
-              </TableCell>
-              <TableCell label={t.catalogue.colDate} className="tabular-nums stacked:order-2">
-                <RelativeDate iso={activityAt(o)} timeZone={tz} time />
-              </TableCell>
-              <TableCell label={t.catalogue.colSize} className="stacked:order-2">{line.size ?? '–'}</TableCell>
-              <TableCell label={t.catalogue.colQuantity} className="text-right tabular-nums stacked:order-2">{line.quantity}</TableCell>
-              <TableCell label={t.catalogue.accountingPrice} className="text-right tabular-nums stacked:order-2">{formatEuro(line.accounting_price_cents)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </span>
+              <span className="shrink-0 text-sm font-medium tabular-nums">{formatEuro(line.accounting_price_cents)}</span>
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground tabular-nums">
+              <a
+                {...linkTo({ name: 'employee', id: o.employee_id }, navigate)}
+                className="rounded-sm text-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {o.employee_first_name} {o.employee_last_name}
+              </a>
+              <span aria-hidden>·</span>
+              <RelativeDate iso={activityAt(o)} timeZone={tz} time />
+              {line.size ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{t.catalogue.orderSize(line.size)}</span>
+                </>
+              ) : null}
+              <span aria-hidden>·</span>
+              <span>{t.catalogue.orderQuantity(line.quantity)}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
     </>
   )
 }

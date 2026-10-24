@@ -584,7 +584,7 @@ function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: A
                   {(sim ? [a.provider, a.plan] : [a.category ? categoryLabel(a.category) : null, a.serial_no]).filter(Boolean).join(' · ')}
                 </span>
               </span>
-              {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
+              {a.connection_status ? <StatusBadge status={a.connection_status} opens /> : null}
               {sim && !a.phone_no ? <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span> : null}
             </button>
           )
@@ -604,7 +604,7 @@ function CardLine({ asset }: { asset: Asset }) {
       ) : (
         <span className="text-muted-foreground">{[asset.name, asset.category ? categoryLabel(asset.category) : null].filter(Boolean).join(' · ')}</span>
       )}
-      {asset.connection_status ? <StatusBadge status={asset.connection_status} /> : null}
+      {asset.connection_status ? <StatusBadge status={asset.connection_status} opens /> : null}
     </p>
   )
 }

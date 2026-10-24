@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/size"
@@ -28,6 +30,7 @@ func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	rt.restricted("POST /api/v1/catalogue/{id}/activate", h.activate, role.CatalogueManage)
 	rt.restricted("POST /api/v1/catalogue/{id}/deactivate", h.deactivate, role.CatalogueManage)
 	rt.restricted("DELETE /api/v1/catalogue/{id}", h.delete, role.CatalogueManage)
+	rt.restricted("POST /api/v1/catalogue/{id}/move", h.move, role.CatalogueManage)
 }
 
 // catalogueRequest has no size_group: an item's is its picture's, so a body
@@ -42,6 +45,12 @@ type catalogueRequest struct {
 	DisplayRank          *int   `json:"display_rank"`
 	// Icon is the picture, optional: omitted is "other".
 	Icon catalogue.Icon `json:"icon"`
+}
+
+// moveRequest puts the item in front of before_id in the display order, or
+// last when before_id is null or left out.
+type moveRequest struct {
+	BeforeID *uuid.UUID `json:"before_id"`
 }
 
 type pictureRequest struct {
@@ -213,6 +222,32 @@ func (h *catalogueHandler) setActive(w http.ResponseWriter, r *http.Request, act
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
+}
+
+// move changes the item's place in the display order and answers every live
+// item in the new order.
+func (h *catalogueHandler) move(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req moveRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	items, err := h.items.Move(r.Context(), id, req.BeforeID, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
 }
 
 func (h *catalogueHandler) delete(w http.ResponseWriter, r *http.Request) {

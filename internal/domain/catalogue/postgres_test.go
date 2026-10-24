@@ -161,6 +161,14 @@ func TestPostgresCatalogue(t *testing.T) {
 	if len(active) != 1 || active[0].ID != i.ID {
 		t.Errorf("active = %+v", active)
 	}
+	// Move writes the ranks it changes and reads the new order back.
+	order, err := svc.Move(ctx, draft.ID, &i.ID, actor)
+	if err != nil || len(order) != 2 || order[0].ID != draft.ID || order[0].DisplayRank >= order[1].DisplayRank {
+		t.Fatalf("order after Move = %+v, err %v", order, err)
+	}
+	if all, _ := svc.List(ctx); all[0].ID != draft.ID {
+		t.Errorf("the moved item is not first when read again: %+v", all)
+	}
 	if _, err := svc.Create(ctx, Params{Name: "WORK TROUSERS"}, actor); !errors.Is(err, ErrNameTaken) {
 		t.Errorf("duplicate err = %v", err)
 	}

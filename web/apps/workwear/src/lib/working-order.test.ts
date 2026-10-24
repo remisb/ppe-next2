@@ -182,7 +182,23 @@ describe('validate', () => {
     expect(v.valid).toBe(false)
     expect([...v.lineProblems.keys()]).toEqual(['ok', 'shoes', 'draft', 'gone'])
     expect(v.lineProblems.get('shoes')).toEqual(['Choose a size.'])
+    expect(v.lineProblems.get('draft')).toEqual(['Price is missing. An authorised user must specify the price in the Item Catalogue.'])
     expect(o.lines).toHaveLength(4)
+  })
+
+  it('names each missing catalogue value on its own', () => {
+    const o = addLines({ employee: ona, lines: [] }, [
+      line('both', { accounting_price_cents: null, service_period_months: null, price_missing: true }),
+      line('period', { service_period_months: null, price_missing: true }),
+    ])
+    const v = validate(o)
+    expect(v.lineProblems.get('both')).toEqual([
+      'Price is missing. An authorised user must specify the price in the Item Catalogue.',
+      'Service period is missing. An authorised user must specify the service period in the Item Catalogue.',
+    ])
+    expect(v.lineProblems.get('period')).toEqual([
+      'Service period is missing. An authorised user must specify the service period in the Item Catalogue.',
+    ])
   })
 
   it('accepts a complete order', () => {

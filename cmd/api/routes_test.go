@@ -463,6 +463,9 @@ func (stubCatalogue) PriceHistory(context.Context, uuid.UUID) ([]catalogue.Price
 func (stubCatalogue) Update(context.Context, uuid.UUID, catalogue.Mutation) (catalogue.Item, error) {
 	return catalogue.Item{}, catalogue.ErrNotFound
 }
+func (stubCatalogue) Reorder(context.Context, catalogue.OrderMutation) ([]catalogue.Item, error) {
+	return nil, catalogue.ErrNotFound
+}
 func (stubCatalogue) Pictures(context.Context) ([]catalogue.Picture, error) {
 	return []catalogue.Picture{}, nil
 }
@@ -782,6 +785,7 @@ var policy = map[string]rule{
 	"POST /api/v1/catalogue/{id}/activate":     {role.CatalogueManage, "managers"},
 	"POST /api/v1/catalogue/{id}/deactivate":   {role.CatalogueManage, "managers"},
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
+	"POST /api/v1/catalogue/{id}/move":         {role.CatalogueManage, "managers"},
 
 	"GET /api/v1/item-sets":                                                     {"", "any"},
 	"GET /api/v1/item-sets/active":                                              {"", "any"},

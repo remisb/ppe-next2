@@ -237,7 +237,7 @@ function Actions({
           )}
           <div id={linkId} className="empty:hidden">
             {link && linkOpen ? (
-              <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+              <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 border-y border-border py-3">
                 <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
               </section>
             ) : null}

@@ -301,6 +301,12 @@ Rules for using it:
 
 ### Display order
 - **Brief:** where an item sorts in Add Item; lower comes first.
+- **Detail:** the Item Catalogue lists items in it until a column is sorted; managers change
+  it there by an item's move handle (or its Display order field in Edit Item). A move changes
+  only the moved item's number when its new neighbours leave room, else numbers every item
+  again 10, 20, 30…; each changed number is in the item's Changes. Not "Reorder", which is a
+  new order for an item due for replacement.
+- **Code:** `display_rank`; `catalogue.Service.Move`. **UI:** Display order; Move <item>.
 
 ### Picture (icon)
 - **Brief:** the category a catalogue item belongs to: a pictogram from a fixed set (shoes,

@@ -10,19 +10,21 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronRight, Plus } from 'lucide-react'
-import { type FormEvent, Fragment, useEffect, useMemo, useState } from 'react'
+import { ChevronRight, GripVertical, Plus } from 'lucide-react'
+import { type FormEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
+import { InactiveItemBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { t } from '@/i18n'
 import { guessIcon } from '@/lib/items'
+import { moveBefore } from '@/lib/catalogue-order'
 import { type ItemStatus, itemStatus } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { isTyping } from '@/lib/shortcuts'
+import { useRowDrag } from '@/lib/use-row-drag'
 import { formatEuro, formatMonths, parseEuro } from '@/lib/utils'
 
 import { CatalogueItemDetail } from './catalogue-item'
@@ -134,6 +136,38 @@ export function Catalogue({
     [items.data, sort, status],
   )
 
+  // Moving an item: in the display order only (no column sorted), by those who manage items.
+  const canMove = canManageItems && sort === null
+  // The order a move left, shown until the list is read again; and what a screen reader hears of it.
+  const [pending, setPending] = useState<{ shown: string[]; all: string[] } | null>(null)
+  const [moved, setMoved] = useState('')
+  useEffect(() => setPending(null), [items.data])
+  // Moves are sent one after another, each from the order the one before left.
+  const moves = useRef(Promise.resolve())
+  const shownIds = useMemo(() => pending?.shown.filter((id) => shown.some((i) => i.id === id)) ?? shown.map((i) => i.id), [pending, shown])
+  const move = (order: string[], id: string) => {
+    const all = pending?.all ?? (items.data ?? []).map((i) => i.id)
+    const before = moveBefore(all, order, id)
+    const rest = all.filter((x) => x !== id)
+    const at = before === null ? rest.length : rest.indexOf(before)
+    setPending({ shown: order, all: [...rest.slice(0, at), id, ...rest.slice(at)] })
+    const name = shown.find((i) => i.id === id)?.name ?? ''
+    moves.current = moves.current.then(async () => {
+      try {
+        await client.catalogue.move(id, before)
+        setMoved(t.catalogue.movedTo(name, order.indexOf(id) + 1, order.length))
+      } catch (err) {
+        setActionError(err)
+      }
+      items.reload()
+    })
+  }
+  const drag = useRowDrag(shownIds, move)
+  const rows = useMemo(() => {
+    const byId = new Map(shown.map((i) => [i.id, i]))
+    return (drag.order ?? shownIds).flatMap((id) => byId.get(id) ?? [])
+  }, [shown, drag.order, shownIds])
+
   const openItem = (id: string) => navigate({ name: 'catalogue', item: id }, { scroll: !wide() })
   const close = () => navigate({ name: 'catalogue' }, { scroll: false })
 
@@ -225,6 +259,9 @@ export function Catalogue({
             </div>
           ) : null}
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
+          <p aria-live="polite" className="sr-only">
+            {moved}
+          </p>
           {items.error ? (
             <ErrorState error={items.error} onRetry={items.reload} />
           ) : items.loading && !items.data ? (
@@ -248,7 +285,7 @@ export function Catalogue({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shown.map((i, n, list) => {
+                {rows.map((i, n, list) => {
                   const incomplete = i.accounting_price_cents === null || i.service_period_months === null
                   // Sorted by size group, a heading starts each group: the way sizes are resolved.
                   const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
@@ -256,10 +293,13 @@ export function Catalogue({
                     <Fragment key={i.id}>
                       {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
                       <TableRow
+                        data-row-id={i.id}
                         data-state={selected === i.id ? 'selected' : undefined}
                         aria-current={selected === i.id ? 'true' : undefined}
                         className={cn(
                           'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                          // The row being moved stands out where it will land.
+                          drag.dragging === i.id && 'relative z-10 bg-accent shadow-md outline-2 -outline-offset-2 outline-primary hover:bg-accent',
                           !i.active && 'text-muted-foreground',
                         )}
                         // The whole row opens the item; the name is the real link, for keyboards,
@@ -271,6 +311,18 @@ export function Catalogue({
                       >
                         <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
                           <span className="flex items-center gap-3">
+                            {canMove ? (
+                              // The handle: press and move, or the arrow keys. Not on a stacked row, which only opens the item.
+                              <button
+                                type="button"
+                                aria-label={t.catalogue.moveItem(i.name)}
+                                title={t.catalogue.moveHint}
+                                className="-mx-1.5 flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing pointer-coarse:size-11 stacked:hidden"
+                                {...drag.handleProps(i.id)}
+                              >
+                                <GripVertical aria-hidden className="size-4" />
+                              </button>
+                            ) : null}
                             <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
                             <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
                               {i.name}
@@ -299,19 +351,9 @@ export function Catalogue({
                               {t.catalogue.active}
                             </Badge>
                           ) : (
-                            <Badge variant="outline">{t.catalogue.inactive}</Badge>
+                            <InactiveItemBadge />
                           )}
-                          {incomplete ? (
-                            <HelpTooltip
-                              title={t.catalogue.incomplete}
-                              help={{
-                                body: t.catalogue.incompleteReason(i.accounting_price_cents === null, i.service_period_months === null),
-                                note: t.catalogue.incompleteNote,
-                              }}
-                            >
-                              <Badge variant="warning">{t.catalogue.incomplete}</Badge>
-                            </HelpTooltip>
-                          ) : null}
+                          <IncompleteBadge item={i} />
                         </TableCell>
                         <TableCell aria-hidden className="hidden stacked:col-start-4 stacked:flex stacked:[grid-row:1/span_2]">
                           <ChevronRight className="size-4 text-muted-foreground" />

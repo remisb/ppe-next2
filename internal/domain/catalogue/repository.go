@@ -12,6 +12,10 @@ import (
 // the audit events to record (none for none). See employee.Mutation.
 type Mutation func(cur Item) (Item, []audit.Event, error)
 
+// OrderMutation computes, from every live item in display order (locked), the
+// items whose display rank changes and the events to record.
+type OrderMutation func(cur []Item) (changed []Item, evs []audit.Event, err error)
+
 // PictureMutation is Mutation for a picture.
 type PictureMutation func(cur Picture) (Picture, []audit.Event, error)
 
@@ -26,6 +30,9 @@ type Repository interface {
 	// Update returns the item as read back after the write, so a changed
 	// picture brings its size group.
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Item, error)
+	// Reorder locks every live item, applies m and writes the items it changed
+	// with their events, then returns every live item in display order.
+	Reorder(ctx context.Context, m OrderMutation) ([]Item, error)
 	// PriceHistory returns the item's created and price-changed audit events
 	// as PriceEntry values, newest first.
 	PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error)

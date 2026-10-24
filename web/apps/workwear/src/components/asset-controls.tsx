@@ -1,5 +1,4 @@
 import type { Asset, ConnectionStatus } from '@ppe/api-client'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { ChevronDown, Copy } from 'lucide-react'
 import type { ComponentProps } from 'react'
@@ -21,9 +21,14 @@ import { canMarkNotReturned, statusLabel, statusVariant } from '@/lib/assets'
 
 const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
 
-/** A SIM card's connection status as a badge. */
-export function StatusBadge({ status }: { status: ConnectionStatus }) {
-  return <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
+/**
+ * A SIM card's connection status as a badge. Not Activated and Blocked say why
+ * the card cannot be given and what to do (IssueBadge); opens on a page or a
+ * pane, a tooltip in the register's rows.
+ */
+export function StatusBadge({ status, opens = false }: { status: ConnectionStatus; opens?: boolean }) {
+  const issues = status === 'ACTIVE' ? [] : [t.assets.statusIssue[status]]
+  return <IssueBadge label={statusLabel(status)} variant={statusVariant(status)} issues={issues} opens={opens} />
 }
 
 /**

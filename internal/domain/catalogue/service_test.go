@@ -145,6 +145,23 @@ func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Item, er
 	return f.withGroup(next), nil
 }
 
+func (f *fakeRepo) Reorder(_ context.Context, m OrderMutation) ([]Item, error) {
+	f.mu.Lock()
+	cur := f.list(false)
+	f.mu.Unlock()
+	changed, evs, err := m(cur)
+	if err != nil {
+		return nil, err
+	}
+	f.mu.Lock()
+	for _, i := range changed {
+		f.rows[i.ID] = i
+	}
+	f.events = append(f.events, evs...)
+	f.mu.Unlock()
+	return f.List(context.Background())
+}
+
 func (f *fakeRepo) Pictures(context.Context) ([]Picture, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -445,6 +462,89 @@ func TestUpdatePicture(t *testing.T) {
 		want := ErrInvalid
 		if name == "unknown picture" {
 			want = ErrPictureNotFound
+		}
+		if !errors.Is(err, want) {
+			t.Errorf("%s: err = %v, want %v", name, err, want)
+		}
+	}
+}
+
+func names(items []Item) string {
+	var out []string
+	for _, i := range items {
+		out = append(out, i.Name)
+	}
+	return strings.Join(out, ",")
+}
+
+// Move changes only the moved item's display rank when its neighbours leave
+// room, else numbers every item again; each changed rank is an event.
+func TestMove(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	mk := func(name string, rank int) Item {
+		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, testActor)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return i
+	}
+	a, b, c := mk("A", 10), mk("B", 20), mk("C", 30)
+	repo.events = nil
+
+	// C in front of B: only C changes, to 15, one event.
+	got, err := svc.Move(ctx, c.ID, &b.ID, testActor)
+	if err != nil || names(got) != "A,C,B" {
+		t.Fatalf("order %s, err %v", names(got), err)
+	}
+	if r, _ := svc.Get(ctx, c.ID); r.DisplayRank != 15 || len(repo.events) != 1 ||
+		string(repo.events[0].Before) != `{"display_rank":30}` || string(repo.events[0].After) != `{"display_rank":15}` {
+		t.Errorf("rank %d, events %+v", r.DisplayRank, repo.events)
+	}
+	// A last (no before): after B, 30.
+	got, _ = svc.Move(ctx, a.ID, nil, testActor)
+	if names(got) != "C,B,A" {
+		t.Errorf("order %s", names(got))
+	}
+	// A first: below C's 15.
+	got, _ = svc.Move(ctx, a.ID, &c.ID, testActor)
+	if r, _ := svc.Get(ctx, a.ID); names(got) != "A,C,B" || r.DisplayRank != 5 {
+		t.Errorf("order %s, A's rank %d", names(got), r.DisplayRank)
+	}
+	// Moving an item to where it is changes nothing.
+	repo.events = nil
+	if got, _ := svc.Move(ctx, c.ID, &b.ID, testActor); names(got) != "A,C,B" || len(repo.events) != 0 {
+		t.Errorf("order %s, events %d", names(got), len(repo.events))
+	}
+
+	// No room between equal ranks: every item is numbered again, 10, 20, 30…
+	d := mk("D", 1000)
+	e := mk("E", 1000)
+	repo.events = nil
+	got, _ = svc.Move(ctx, a.ID, &e.ID, testActor)
+	if names(got) != "C,B,D,A,E" {
+		t.Fatalf("order %s", names(got))
+	}
+	for n, i := range got {
+		if i.DisplayRank != (n+1)*10 {
+			t.Errorf("%s rank %d, want %d", i.Name, i.DisplayRank, (n+1)*10)
+		}
+	}
+	// B kept its 20: four ranks changed.
+	if len(repo.events) != 4 {
+		t.Errorf("%d events, want one per changed rank (4)", len(repo.events))
+	}
+	_ = d
+
+	for name, err := range map[string]error{
+		"unknown item":   func() error { _, err := svc.Move(ctx, uuid.New(), nil, testActor); return err }(),
+		"unknown before": func() error { x := uuid.New(); _, err := svc.Move(ctx, a.ID, &x, testActor); return err }(),
+		"before itself":  func() error { _, err := svc.Move(ctx, a.ID, &a.ID, testActor); return err }(),
+		"no actor":       func() error { _, err := svc.Move(ctx, a.ID, nil, uuid.Nil); return err }(),
+	} {
+		want := ErrInvalid
+		if name == "unknown item" {
+			want = ErrNotFound
 		}
 		if !errors.Is(err, want) {
 			t.Errorf("%s: err = %v, want %v", name, err, want)

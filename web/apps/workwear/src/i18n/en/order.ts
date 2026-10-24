@@ -123,7 +123,9 @@ export const order = {
   itemUnavailable: 'This item is no longer available. Remove it from the order.',
   quantityInvalid: 'Quantity must be a whole number of at least 1.',
   selectSize: 'Choose a size.',
-  priceMissing: 'No price or service period in the Item Catalogue. An authorised user must complete it.',
+  // One per missing catalogue value, each on its own line under the item.
+  priceMissing: 'Price is missing. An authorised user must specify the price in the Item Catalogue.',
+  periodMissing: 'Service period is missing. An authorised user must specify the service period in the Item Catalogue.',
 
   // The employee's saved sizes
   heightCm: (cm: number) => `${cm} cm`,

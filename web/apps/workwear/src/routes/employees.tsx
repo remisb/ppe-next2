@@ -1,6 +1,6 @@
 import type { Employee, Sizes } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Badge } from '@ppe/ui/components/badge'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
@@ -188,9 +188,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     ) : null}
                     {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
                     {flag ? (
-                      <Badge variant="destructive" title={t.employees.missingTitle} className="hidden shrink-0 stacked:inline-flex">
-                        {flag}
-                      </Badge>
+                      <IssueBadge label={flag} variant="destructive" issues={[t.employees.missingTitle]} className="hidden shrink-0 stacked:inline-flex" />
                     ) : null}
                   </TableCell>
                   <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
@@ -254,14 +252,13 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
   )
 }
 
-/** A size Create Order will flag: set it before ordering clothing or shoes. */
-/** A size Create Order will ask for; `optional`, one it can do without (a height beside a saved clothing size). */
-export function MissingBadge({ optional = false }: { optional?: boolean }) {
-  return (
-    <Badge variant={optional ? 'secondary' : 'destructive'} title={optional ? undefined : t.employees.missingTitle}>
-      {t.employees.missing}
-    </Badge>
-  )
+/**
+ * A size Create Order will ask for, saying so (IssueBadge); `optional`, one it
+ * can do without (a height beside a saved clothing size), a plain badge. opens
+ * on the employee's page; a tooltip in the list's rows.
+ */
+export function MissingBadge({ optional = false, opens = false }: { optional?: boolean; opens?: boolean }) {
+  return <IssueBadge label={t.employees.missing} variant={optional ? 'secondary' : 'destructive'} issues={optional ? [] : [t.employees.missingTitle]} opens={opens} />
 }
 
 /**

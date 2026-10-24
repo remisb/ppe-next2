@@ -197,8 +197,11 @@ export const assets = {
   paperFormSigned: 'The employee has signed the printed form',
   changedAfterPrint: 'The form changed after printing, so the signature tick was cleared. Print the updated form and have it signed again.',
   alreadyGivenReason: 'Someone already holds it. Register its return first.',
-  notActivatedReason: 'This card is not activated. Email your provider, then change its status to Active.',
-  blockedReason: 'This card is blocked. Have the provider unblock it, then change its status to Active.',
+  // A SIM that cannot be given, and what to do: its status badge's list, and why Give is refused.
+  statusIssue: {
+    NOT_ACTIVATED: { title: 'This card is not activated.', detail: 'Email your provider, then change its status to Active.' },
+    BLOCKED: { title: 'This card is blocked.', detail: 'Have the provider unblock it, then change its status to Active.' },
+  },
   chooseEmployeeReason: 'Choose the employee.',
   givenDateReason: 'Enter the given date.',
   valueReason: 'Fill in the non-return value: the form needs it.',
