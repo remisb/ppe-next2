@@ -20,6 +20,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { t } from '@/i18n'
 import { percentChange } from '@/lib/dashboard'
 import { formatDateTime } from '@ppe/ui/lib/dates'
+import { linkVariants } from '@ppe/ui/components/link'
 import { activityAt, statusLabel } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
@@ -208,7 +209,7 @@ export function CatalogueItemDetail({
             )}
             <a
               {...linkTo({ name: 'itemSets' }, navigate)}
-              className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+              className={linkVariants({ weight: 'medium', className: 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0' })}
             >
               {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
             </a>
@@ -344,7 +345,7 @@ function ItemOrders({
                     timeZone={tz}
                     {...linkTo({ name: 'record', id: o.id }, navigate)}
                     aria-label={t.catalogue.receipt(o.record_number)}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                    className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1.5 md:min-h-0' })}
                   >
                     <FileText aria-hidden className="size-4" />
                     {o.record_number}
@@ -354,7 +355,7 @@ function ItemOrders({
                     orderId={o.id}
                     timeZone={tz}
                     {...linkTo({ name: 'history', order: o.id }, navigate)}
-                    className="inline-flex min-h-11 items-center rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                    className={linkVariants({ weight: 'medium', className: 'inline-flex min-h-11 items-center md:min-h-0' })}
                   >
                     {o.record_number}
                   </RecordPreview>
@@ -366,7 +367,7 @@ function ItemOrders({
             <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground tabular-nums">
               <a
                 {...linkTo({ name: 'employee', id: o.employee_id }, navigate)}
-                className="rounded-sm text-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                className={linkVariants({ className: 'text-foreground' })}
               >
                 {o.employee_first_name} {o.employee_last_name}
               </a>

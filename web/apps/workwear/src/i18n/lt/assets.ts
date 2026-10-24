@@ -11,6 +11,16 @@ export const assets: AssetsText = {
   inOffice: 'Biure',
   withEmployees: 'Pas darbuotojus',
   notReturned: 'Negrąžinta',
+  notReturnedIssue: {
+    SIM: {
+      title: 'Gavėjas jos negrąžino.',
+      detail: 'Kortelė lieka susieta su gavėju ir neįtraukiama į biuro likutį. Spauskite „Paruošti blokavimo laišką“, kad tiekėjas ją užblokuotų, o jei ji grąžinama, užregistruokite grąžinimą.',
+    },
+    item: {
+      title: 'Gavėjas jo negrąžino.',
+      detail: 'Daiktas lieka susietas su gavėju ir neįtraukiamas į biuro likutį. Jei jis grąžinamas, užregistruokite grąžinimą.',
+    },
+  },
   tilesOverlap: 'Rodikliai persidengia: negrąžinta kortelė taip pat yra pas darbuotoją.',
   tileHelp: {
     SIM: {
@@ -256,6 +266,8 @@ export const assets: AssetsText = {
   item: 'Daiktas',
   searchOfficeItems: 'Ieškoti biure esančių daiktų',
   noOfficeItems: 'Biure tokių daiktų nėra.',
+  moreInOffice: (n: number) =>
+    plural(n, { one: 'Biure yra dar #: ieškokite, kad sąrašas būtų trumpesnis.', few: 'Biure yra dar #: ieškokite, kad sąrašas būtų trumpesnis.', other: 'Biure yra dar #: ieškokite, kad sąrašas būtų trumpesnis.' }),
   equipmentSection: 'Įranga',
   equipmentIntro: 'Įranga ir baldai, kuriuos darbuotojas turi, o po jų – turėti anksčiau.',
   noEquipmentGiven: (name: string) => `${name} įrangos neišduota.`,

@@ -21,6 +21,7 @@ export const audit: AuditText = {
   allRecords: 'Все записи',
   when: 'Когда',
   who: 'Кто',
+  onlyBy: (name: string) => `Показать только изменения пользователя ${name}`,
   what: 'Изменение',
   where: 'Где сделано',
   noChanges: 'Изменений пока не записано.',

@@ -19,7 +19,16 @@ export const roles: RolesText = {
   viewRoleLabel: (name: string) => `Peržiūrėti: ${name}`,
   editRole: (name: string) => `Redaguoti rolę: ${name}`,
   viewRole: (name: string) => `Rolė: ${name}`,
-  editDescription: 'Pakeitimas rolę turinčius naudotojus pasieks per kelias minutes.',
+  editDescription: (users: number) =>
+    users === 0
+      ? 'Šios rolės kol kas niekas neturi.'
+      : plural(users, {
+          one: 'Pakeitimas per kelias minutes pasieks # šią rolę turintį naudotoją.',
+          few: 'Pakeitimas per kelias minutes pasieks # šią rolę turinčius naudotojus.',
+          other: 'Pakeitimas per kelias minutes pasieks # šią rolę turinčių naudotojų.',
+        }),
+  confirmRemovePermissions: (permissions: number, users: number) =>
+    `Atimti ${plural(permissions, { one: '# teisę', few: '# teises', other: '# teisių' })} iš ${plural(users, { one: '# naudotojo', few: '# naudotojų', other: '# naudotojų' })}? Jie nebegalės daryti to, ką ji leidžia, nebent tai leidžia kita jų rolė.`,
   addDescription: 'Paskui skirkite ją naudotojams skiltyje Naudotojai.',
   lockedNote: 'Administratorius gali viską Administravime ir jo pakeisti negalima, kad kas nors visada galėtų tvarkyti naudotojus ir roles.',
   builtInFixed: 'Įtaisytos rolės pavadinimas ir aprašymas nesikeičia.',

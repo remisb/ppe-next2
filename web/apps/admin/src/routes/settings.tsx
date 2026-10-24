@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ppe/
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ExternalLink, X } from 'lucide-react'
 import { type FormEvent, useEffect, useId, useState } from 'react'
 
@@ -108,7 +109,7 @@ function SupplierChatCard({ settings, onSaved }: { settings: Settings; onSaved: 
           {done === 'saved' ? `${t.settings.saved} ` : done === 'cleared' ? `${t.settings.cleared} ` : null}
           {done !== 'cleared' ? (chat ? t.settings.current(chat.name) : t.settings.notSet) : null}{' '}
           {chat ? (
-            <a href={chat.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 font-medium underline underline-offset-4">
+            <a href={chat.link} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex items-center gap-0.5' })}>
               {t.settings.tryIt} <ExternalLink aria-hidden className="size-3" />
             </a>
           ) : null}

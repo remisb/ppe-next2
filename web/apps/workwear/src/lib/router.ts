@@ -2,6 +2,7 @@ import type { OrderStatus, Permission } from '@ppe/api-client'
 import { type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
 import { adminHref, basePath, stripBase } from '@ppe/routing'
 import { type MouseEvent, useEffect } from 'react'
+import type { ItemStatus } from './records'
 
 export type Route =
   /** The root: the signed-in user's start screen (see startRoute). */
@@ -43,7 +44,7 @@ export type Route =
    * item sets and Changes) beside the list, or on its own on a narrow screen,
    * as Orders opens an order.
    */
-  | { name: 'catalogue'; item?: string }
+  | { name: 'catalogue'; item?: string; status?: ItemStatus }
   | { name: 'itemSets' }
   /**
    * An old address of a screen that moved to Administration (/users,
@@ -122,6 +123,11 @@ export function parsePath(pathname: string, search = ''): Route {
     return { name: equipment ? 'equipment' : 'simCards', ...(tile ? { tile } : {}) }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
+  // The catalogue opens on a status tab from a link (the Manager Dashboard's readiness: Incomplete).
+  if (path === fixed.catalogue) {
+    const status = query.get('status')
+    return status === 'active' || status === 'incomplete' || status === 'inactive' ? { name: 'catalogue', status } : { name: 'catalogue' }
+  }
   if (movedToAdministration.includes(path)) return { name: 'administration', path }
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
@@ -199,7 +205,8 @@ export function pathOf(route: Route): string {
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
     case 'catalogue':
-      return route.item ? `${fixed.catalogue}/${encodeURIComponent(route.item)}` : fixed.catalogue
+      if (route.item) return `${fixed.catalogue}/${encodeURIComponent(route.item)}`
+      return route.status ? `${fixed.catalogue}?status=${route.status}` : fixed.catalogue
     case 'simCards':
     case 'equipment': {
       const base = route.asset ? `${fixed[route.name]}/${encodeURIComponent(route.asset)}` : fixed[route.name]

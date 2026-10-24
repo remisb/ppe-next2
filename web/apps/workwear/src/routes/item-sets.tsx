@@ -5,7 +5,7 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
@@ -169,6 +169,7 @@ function SetForm({
   const [lines, setLines] = useState<DraftLine[]>([])
   const [adding, setAdding] = useState('')
   const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     setName(existing?.name ?? '')
@@ -194,19 +195,22 @@ function SetForm({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (qtyInvalid) return
+    if (busy || qtyInvalid) return
     const input = {
       name,
       description,
       active,
       lines: lines.map((l) => ({ catalogue_item_id: l.catalogue_item_id, default_quantity: Number(l.default_quantity) })),
     }
+    setBusy(true)
     try {
       if (existing) await client.itemSets.update(existing.id, input)
       else await client.itemSets.create(input)
       onSaved()
     } catch (err) {
       setError(err instanceof ApiError && err.isConflict ? t.catalogue.setNameTaken : errorText(err))
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -215,16 +219,7 @@ function SetForm({
       open={set !== null}
       onClose={onClose}
       title={existing ? t.catalogue.editItemSet : t.catalogue.addItemSet}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="set-form" disabled={!name.trim() || lines.length === 0 || qtyInvalid}>
-            {t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="set-form" onCancel={onClose} busy={busy} disabled={!name.trim() || lines.length === 0 || qtyInvalid} />}
     >
       <form id="set-form" onSubmit={submit} className="flex flex-col gap-4">
         <Field label={t.catalogue.setName} required>{(p) => <Input {...controlProps(p)} value={name} onChange={(e) => setName(e.target.value)} />}</Field>

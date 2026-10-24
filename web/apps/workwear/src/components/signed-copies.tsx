@@ -6,13 +6,14 @@ import { Button } from '@ppe/ui/components/button'
 import { formatDate } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 import { FileDown, Upload } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
 import { SIGNED_COPY_ACCEPT, signedCopyProblem, uploadRefusal } from '@/lib/assets'
 
-const link = 'inline-flex min-h-11 items-center gap-1 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0'
+const link = linkVariants({ weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1 md:min-h-0' })
 
 /**
  * An assignment's signed copies (§9): Signed Copy Uploaded with the newest to

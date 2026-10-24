@@ -73,6 +73,13 @@ describe('router', () => {
     expect(parsePath('/employees', '?missing=1')).toEqual({ name: 'employees', missing: true })
     expect(parsePath('/employees', '?missing=yes')).toEqual({ name: 'employees' })
   })
+  it('opens the Item Catalogue on a status tab', () => {
+    expect(pathOf({ name: 'catalogue', status: 'incomplete' })).toBe('/catalogue?status=incomplete')
+    expect(parsePath('/catalogue', '?status=incomplete')).toEqual({ name: 'catalogue', status: 'incomplete' })
+    expect(parsePath('/catalogue', '?status=draft')).toEqual({ name: 'catalogue' })
+    // An open item's address wins over a tab.
+    expect(pathOf({ name: 'catalogue', item: 'i1', status: 'inactive' })).toBe('/catalogue/i1')
+  })
   it('carries a reorder in the Create Order address', () => {
     const prefill = { employeeId: 'e1', items: [{ id: 'gloves', quantity: 10 }, { id: 'shoes', quantity: 1 }] }
     const path = pathOf({ name: 'createOrder', prefill })

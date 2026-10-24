@@ -12,13 +12,15 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { formatDateTime } from '@ppe/ui/lib/dates'
-import { Check, CheckCircle2, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
+import { linkVariants } from '@ppe/ui/components/link'
+import { Check, CheckCircle2, Handshake, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ConfirmationLinkView, ConfirmationSheet } from '@/components/confirmation-sheet'
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { EmployeePicker } from '@/components/employee-picker'
+import { HandOver } from '@/components/hand-over'
 import { ItemTile } from '@/components/item-icon'
 import { ItemPicker } from '@/components/item-picker'
 import { OrderLinesTable } from '@/components/order-lines'
@@ -29,6 +31,7 @@ import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
 import { type Due, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { type ClothingBand, clothingBandValue, clothingBands, clothingSizeLabel, formatEuro, formatMonths } from '@/lib/utils'
+import { HAND_OVER_NOW } from '@/lib/history'
 import { formatWhatsApp, messageFromWorkingOrder } from '@/lib/whatsapp'
 import {
   type SizeConflict,
@@ -592,7 +595,7 @@ function OrderSummary({
             {last ? (
               <p className="text-xs text-muted-foreground">
                 {t.order.lastOrder}{' '}
-                <a {...linkTo({ name: 'history', order: last.id }, navigate)} className="font-medium text-foreground underline-offset-4 hover:underline">
+                <a {...linkTo({ name: 'history', order: last.id }, navigate)} className={linkVariants({ weight: 'medium', className: 'text-foreground' })}>
                   {last.record_number}
                 </a>{' '}
                 · {formatDate(last.ordered_at, tz)} · {last.status === 'GIVEN' ? t.common.given : t.common.ordered}
@@ -780,6 +783,7 @@ function OrderedPanel({
 }) {
   const { order, link } = placed
   const [confirming, setConfirming] = useState(false)
+  const [handingOver, setHandingOver] = useState(false)
   const [given, setGiven] = useState(false)
   const name = `${order.employee_first_name} ${order.employee_last_name}`
   return (
@@ -808,7 +812,7 @@ function OrderedPanel({
                 : t.order.nextConfirm(name)}
           </p>
           {link && !given ? (
-            <section aria-label={t.order.employeeConfirmation} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <section aria-label={t.order.employeeConfirmation} className="flex flex-col gap-2 border-y border-border py-3">
               <ConfirmationLinkView link={link} name={name} recordNumber={order.record_number} />
             </section>
           ) : null}
@@ -821,6 +825,12 @@ function OrderedPanel({
                 <LinkIcon aria-hidden /> {t.order.sendConfirmationLink}
               </Button>
             )}
+            {/* The employee is often standing there: confirm on this device, as the order pane offers (while hand-over mode is on). */}
+            {HAND_OVER_NOW && !given ? (
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setHandingOver(true)}>
+                <Handshake aria-hidden /> {t.history.handOverNow}
+              </Button>
+            ) : null}
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate({ name: 'record', id: order.id, print: true })}>
               <Printer aria-hidden /> {t.order.printRecord}
             </Button>
@@ -839,6 +849,16 @@ function OrderedPanel({
         }}
         onPrint={(id) => navigate({ name: 'record', id, print: true })}
       />
+      {handingOver ? (
+        <HandOver
+          orderId={order.id}
+          onGiven={() => {
+            setHandingOver(false)
+            setGiven(true)
+          }}
+          onClose={() => setHandingOver(false)}
+        />
+      ) : null}
     </>
   )
 }

@@ -1,16 +1,16 @@
 import type { AssetKind, HeldAsset } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
-import { StatusBadge } from '@/components/asset-controls'
+import { NotReturnedBadge, StatusBadge } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import type { PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
@@ -18,7 +18,7 @@ import { categoryLabel, documentsText, formatDay, todayIn } from '@/lib/assets'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
 
-const link = 'rounded-sm font-mono font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+const link = linkVariants({ weight: 'medium', className: 'font-mono' })
 
 /**
  * Given SIM and Equipment on an employee's page (assets brief §1, §18): the
@@ -135,7 +135,7 @@ function HeldRow({ held: h, navigate }: { held: HeldAsset; navigate: (to: Route)
           </>
         )}
         {h.asset.connection_status ? <StatusBadge status={h.asset.connection_status} /> : null}
-        {h.not_returned_at && open ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+        {h.not_returned_at && open ? <NotReturnedBadge kind={h.asset.kind} /> : null}
       </div>
       <div className="text-xs text-muted-foreground">
         {t.assets.givenOnDate(formatDay(h.given_date))} ·{' '}

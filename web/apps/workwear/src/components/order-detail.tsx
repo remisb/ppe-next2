@@ -16,6 +16,7 @@ import { HandOver } from '@/components/hand-over'
 import { OrderLinesTable } from '@/components/order-lines'
 import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
+import { linkVariants } from '@ppe/ui/components/link'
 import { LONG_WAIT_DAYS, deleteQuestion, historyActions, statusLabel, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
@@ -135,7 +136,7 @@ function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: str
         )}
       </div>
       <p className="font-medium">
-        <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className="underline-offset-4 hover:underline">
+        <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className={linkVariants()}>
           {o.employee_first_name} {o.employee_last_name}
         </a>
         {o.employee_code ? <span className="font-normal text-muted-foreground"> · {o.employee_code}</span> : null}

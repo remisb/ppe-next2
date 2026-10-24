@@ -8,6 +8,8 @@ export const history: HistoryText = {
   filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
   employee: 'Darbuotojas',
+  recordNumber: 'Įrašo numeris',
+  recordInvalid: 'Įveskite įrašo numerį, pvz., WE-000004 arba 4.',
   from: 'Nuo',
   to: 'Iki',
   period: 'Data',

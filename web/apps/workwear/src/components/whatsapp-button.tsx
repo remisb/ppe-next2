@@ -2,6 +2,7 @@ import type { SupplierChat } from '@ppe/api-client'
 import { Button } from '@ppe/ui/components/button'
 import { Textarea } from '@ppe/ui/components/field'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { Check, ExternalLink, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 
@@ -59,7 +60,7 @@ export function WhatsAppButton({
       ) : state === 'copied' && !disabled ? (
         <p role="status" className="text-xs text-muted-foreground">
           {t.order.copied}{' '}
-          <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground underline underline-offset-4">
+          <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex items-center gap-0.5 text-foreground' })}>
             {t.order.openWhatsApp} <ExternalLink aria-hidden className="size-3" />
           </a>
         </p>
@@ -74,7 +75,7 @@ export function WhatsAppButton({
           ) : (
           <p role="status" className="text-xs text-muted-foreground">
             {t.order.copyBlockedBefore}
-            <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-4">
+            <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'text-foreground' })}>
               {t.order.copyBlockedLink}
             </a>
             {t.order.copyBlockedAfter}
@@ -90,7 +91,7 @@ export function WhatsAppButton({
 /** Opens the group by its invite link: WhatsApp on a phone, WhatsApp Web or the app on a computer. */
 function ChatLink({ chat }: { chat: SupplierChat }) {
   return (
-    <a href={chat.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 font-medium text-foreground underline underline-offset-4">
+    <a href={chat.link} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex items-center gap-0.5 text-foreground' })}>
       {t.order.openChat(chat.name)} <ExternalLink aria-hidden className="size-3" />
     </a>
   )

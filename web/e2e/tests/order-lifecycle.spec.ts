@@ -864,6 +864,15 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
 
 test('Orders: the Date filter\'s periods; Custom range opens From and To over it, taking only real dates in the language\'s one form', async () => {
   const filters = page.getByRole('region', { name: 'Filters' })
+  // A record number read out on the phone finds its order, however it is typed; anything else is refused on the field.
+  const recordField = filters.getByRole('textbox', { name: 'Record number' })
+  await recordField.fill(String(Number(recordNumber.slice(3))))
+  await expect(page.getByRole('row').filter({ hasText: /WE-\d{6}/ })).toHaveCount(1)
+  await expect(page.getByRole('row', { name: new RegExp(recordNumber) })).toBeVisible()
+  await recordField.fill('abc')
+  await expect(filters.getByText('Type a record number, such as WE-000004 or 4.')).toBeVisible()
+  await recordField.fill('')
+  await expect(filters.getByText('Type a record number, such as WE-000004 or 4.')).toHaveCount(0)
   const period = filters.getByRole('combobox', { name: 'Date' })
   const panel = page.getByRole('dialog', { name: 'Custom range' })
   const from = panel.getByRole('textbox', { name: 'From' })
@@ -1271,6 +1280,11 @@ test('Overview and System: what needs attention, an error the app reports, and t
   const attention = page.getByRole('region', { name: 'Needs attention' })
   await expect(attention.getByRole('listitem').first()).toContainText('Backups are not running')
   await expect(page.getByRole('list', { name: 'Key figures' })).toContainText('Active users')
+  // A figure opens the rows it counts: Active users opens Users.
+  await page.getByRole('list', { name: 'Key figures' }).getByRole('button', { name: /^Active users/ }).click()
+  await expect(page).toHaveURL(/\/admin\/users$/)
+  await page.goBack()
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
   // The API connects as the least-privilege role, as in production: no warning about owner rights.
   await expect(page.getByText('The API connects as the database owner')).toHaveCount(0)
 
@@ -2529,8 +2543,16 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await page.getByRole('button', { name: `Edit ${mia.name}` }).click()
   dialog = page.getByRole('dialog')
   await dialog.getByRole('checkbox', { name: /^Active/ }).uncheck()
+  // Deactivating asks first; the status line then says what it did.
+  let asked = ''
+  page.once('dialog', (d) => {
+    asked = d.message()
+    void d.accept()
+  })
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(row).toContainText('Inactive')
+  expect(asked).toContain(`Deactivate ${mia.name}?`)
+  await expect(page.getByRole('status').filter({ hasText: `${mia.name} saved. They can no longer sign in.` })).toBeVisible()
   await miaPhone.reload()
   await expect(miaPhone.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await miaPhone.context().close()

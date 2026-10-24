@@ -21,6 +21,7 @@ export const audit: AuditText = {
   allRecords: 'Visi įrašai',
   when: 'Kada',
   who: 'Kas',
+  onlyBy: (name: string) => `Rodyti tik ${name} pakeitimus`,
   what: 'Pakeitimas',
   where: 'Kur atlikta',
   noChanges: 'Pakeitimų dar neužfiksuota.',

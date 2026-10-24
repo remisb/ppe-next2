@@ -1,9 +1,8 @@
 import type { Employee, EmployeeInput, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { type FormEvent, useEffect, useState } from 'react'
 
@@ -101,16 +100,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       onClose={onClose}
       title={employee ? t.employees.editEmployee : t.employees.addNew}
       description={t.employees.formDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="employee-form" disabled={busy || !d.first_name.trim() || !d.last_name.trim()}>
-            {busy ? t.common.saving : (submitLabel ?? t.common.save)}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="employee-form" onCancel={onClose} busy={busy} disabled={!d.first_name.trim() || !d.last_name.trim()} submitLabel={submitLabel} />}
     >
       <form id="employee-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label={t.employees.firstName} required>

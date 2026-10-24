@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -449,7 +450,7 @@ export function Assets({
                             {/* The phone number over the SIM No., the card's link; the card copies both (the Copy button there). */}
                             <a
                               {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))}
-                              className="flex flex-col items-start rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                              className={linkVariants({ className: 'flex flex-col items-start' })}
                             >
                               <span className="font-mono text-xs font-medium tabular-nums stacked:hidden">
                                 {a.phone_no ?? <span className="font-sans font-normal text-muted-foreground">{t.assets.noPhoneNo}</span>}
@@ -461,7 +462,7 @@ export function Assets({
                           </TableCell>
                         ) : (
                           <TableCell className="font-mono font-medium stacked:col-start-1 stacked:row-start-1">
-                            <a {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                            <a {...linkTo({ name: register, ...at, asset: a.id }, () => openAsset(a.id))} className={linkVariants()}>
                               {a.inventory_no}
                             </a>
                           </TableCell>
@@ -473,7 +474,7 @@ export function Assets({
                               {a.location === 'WITH_EMPLOYEE' && open ? (
                                 <a
                                   {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
-                                  className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                                  className={linkVariants()}
                                 >
                                   {open.employee_name}
                                 </a>

@@ -5,7 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, Tab
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ChevronRight, GripVertical, Plus } from 'lucide-react'
 import { type FormEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -91,10 +92,13 @@ function Kbd({ children }: { children: string }) {
  */
 export function Catalogue({
   item: selected,
+  status: initialStatus,
   navigate,
 }: {
   /** The item open beside the list. */
   item?: string | undefined
+  /** The tab to open on, from the address (the Manager Dashboard's Incomplete); later tab changes stay on the screen. */
+  status?: ItemStatus | undefined
   navigate: (to: Route, options?: NavigateOptions) => void
 }) {
   const { client } = useApi()
@@ -106,7 +110,7 @@ export function Catalogue({
   // null is the catalogue's display order, the order Add Item lists items in.
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
-  const [status, setStatus] = useState<ItemStatus | 'all'>('all')
+  const [status, setStatus] = useState<ItemStatus | 'all'>(initialStatus ?? 'all')
   const counts = useMemo(() => {
     const c: Record<ItemStatus | 'all', number> = { all: 0, active: 0, incomplete: 0, inactive: 0 }
     for (const i of items.data ?? []) {
@@ -329,7 +333,7 @@ export function Catalogue({
                               </button>
                             ) : null}
                             <ItemTile icon={i.icon} className="size-8 compact:size-7 stacked:hidden" />
-                            <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                            <a {...linkTo({ name: 'catalogue', item: i.id }, () => openItem(i.id))} className={linkVariants()}>
                               {i.name}
                             </a>
                           </span>
@@ -432,6 +436,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   // A new item's picture follows its name until someone picks one.
   const [iconPicked, setIconPicked] = useState(false)
   const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
   // The picture gives the item its size group; read afresh each time the form opens.
   const pictures = useLoad(() => (item === null ? Promise.resolve(undefined) : client.catalogue.pictures()), [item !== null])
   const pictureGroup = pictures.data?.find((p) => p.icon === icon)?.size_group
@@ -460,7 +465,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (purchaseError || priceError || periodError || rankError) return
+    if (busy || purchaseError || priceError || periodError || rankError) return
     const input: CatalogueItemInput = {
       name,
       details,
@@ -471,12 +476,15 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       display_rank: rankNum,
       icon,
     }
+    setBusy(true)
     try {
       if (existing) await client.catalogue.update(existing.id, input)
       else await client.catalogue.create(input)
       onSaved()
     } catch (err) {
       setError(err instanceof ApiError && err.isConflict ? t.catalogue.itemNameTaken : errorText(err))
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -486,16 +494,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       onClose={onClose}
       title={existing ? t.catalogue.editItem : t.catalogue.addItem}
       description={t.catalogue.formDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="item-form" disabled={!name.trim()}>
-            {t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="item-form" onCancel={onClose} busy={busy} disabled={!name.trim()} />}
     >
       <form id="item-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label={t.catalogue.itemName} required>
@@ -577,14 +576,19 @@ export function PicturesSheet({ open, onClose, onSaved }: { open: boolean; onClo
 
   const changed = (pictures.data ?? []).filter((p) => chosen[p.icon] !== undefined && chosen[p.icon] !== p.size_group)
 
+  const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (busy) return
+    setBusy(true)
     try {
       for (const p of changed) await client.catalogue.updatePicture(p.icon, { size_group: chosen[p.icon]! })
       onSaved()
     } catch (err) {
       setError(errorText(err))
       pictures.reload()
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -594,16 +598,7 @@ export function PicturesSheet({ open, onClose, onSaved }: { open: boolean; onClo
       onClose={onClose}
       title={t.catalogue.pictures}
       description={t.catalogue.picturesDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="pictures-form" disabled={changed.length === 0}>
-            {t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="pictures-form" onCancel={onClose} busy={busy} disabled={changed.length === 0} />}
     >
       {pictures.error ? (
         <ErrorState error={pictures.error} onRetry={pictures.reload} />

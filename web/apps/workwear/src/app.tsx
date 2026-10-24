@@ -7,6 +7,7 @@ import { Loading } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
@@ -483,7 +484,7 @@ export function App() {
             onBack={back({ name: 'asset', id: route.id })}
           />
         ) : null}
-        {route.name === 'catalogue' ? <Catalogue item={route.item} navigate={navigate} /> : null}
+        {route.name === 'catalogue' ? <Catalogue item={route.item} status={route.status} navigate={navigate} /> : null}
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
@@ -518,7 +519,7 @@ export function App() {
               setHelpOpen(false)
               link({ name: 'help' }).onClick(e)
             }}
-            className="inline-flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
+            className={linkVariants({ weight: 'medium', className: 'inline-flex items-center gap-2 text-sm' })}
           >
             <BookOpen aria-hidden className="size-4" />
             {t.shell.userGuide}

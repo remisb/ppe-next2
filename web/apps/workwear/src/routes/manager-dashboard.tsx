@@ -14,6 +14,7 @@ import { BarList, MonthChart, formatDate, inlineLink, jumpTo } from '@/component
 import { t } from '@/i18n'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
 import { formatTime } from '@ppe/ui/lib/dates'
+import { linkVariants } from '@ppe/ui/components/link'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
 
@@ -337,8 +338,8 @@ function ReadinessCard({ d, navigate }: { d: Data; navigate: Navigate }) {
           title={t.dashboard.withoutPriceOrPeriodTitle}
           empty={t.dashboard.everyItemPriced}
           alert
-          items={c.unpriced.map((i) => ({ key: i.id, label: i.name }))}
-          to={{ name: 'catalogue' }}
+          items={c.unpriced.map((i) => ({ key: i.id, label: i.name, to: { name: 'catalogue', item: i.id } }))}
+          to={{ name: 'catalogue', status: 'incomplete' }}
           openLabel={t.dashboard.openCatalogue}
           navigate={navigate}
         />
@@ -360,7 +361,7 @@ function ReadinessCard({ d, navigate }: { d: Data; navigate: Navigate }) {
         <Check
           title={t.dashboard.notOrdered12}
           empty={t.dashboard.everyItemOrdered}
-          items={c.not_ordered.map((i) => ({ key: i.id, label: i.name }))}
+          items={c.not_ordered.map((i) => ({ key: i.id, label: i.name, to: { name: 'catalogue', item: i.id } }))}
           to={{ name: 'catalogue' }}
           openLabel={t.dashboard.openCatalogue}
           navigate={navigate}
@@ -386,7 +387,8 @@ function Check({
 }: {
   title: string
   empty: string
-  items: { key: string; label: string; note?: string }[]
+  /** Each opens where it is fixed, when it has its own place (an item's pane). */
+  items: { key: string; label: string; note?: string; to?: Route }[]
   alert?: boolean
   to: Route
   /** The link to where the list is fixed: "Open Item Catalogue". */
@@ -410,7 +412,13 @@ function Check({
           <ul className="flex flex-col gap-1 text-sm">
             {items.slice(0, 6).map((i) => (
               <li key={i.key} className="min-w-0">
-                <span className="block truncate">{i.label}</span>
+                {i.to ? (
+                  <a {...linkTo(i.to, navigate)} className={linkVariants({ className: 'block truncate' })}>
+                    {i.label}
+                  </a>
+                ) : (
+                  <span className="block truncate">{i.label}</span>
+                )}
                 {i.note ? <span className="block text-xs text-muted-foreground">{i.note}</span> : null}
               </li>
             ))}

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedB
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ArrowLeft, X } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 
@@ -52,7 +53,7 @@ export function SystemPage({ route, navigate }: { route: SystemRoute; navigate: 
           ))}
         </nav>
       ) : null}
-      {route.tab === 'status' ? <StatusTab timeZone={tz} /> : null}
+      {route.tab === 'status' ? <StatusTab timeZone={tz} navigate={navigate} /> : null}
       {route.tab === 'errors' ? <ErrorsTab selected={route.error} timeZone={tz} navigate={navigate} /> : null}
       {route.tab === 'backups' ? <BackupsTab /> : null}
     </>
@@ -62,7 +63,7 @@ export function SystemPage({ route, navigate }: { route: SystemRoute; navigate: 
 const number = (n: number) => new Intl.NumberFormat(intlLocale()).format(n)
 const percentOf = (part: number, whole: number) => (whole > 0 ? Math.round((1000 * part) / whole) / 10 : 0)
 
-function StatusTab({ timeZone }: { timeZone: string | undefined }) {
+function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navigate: Navigate }) {
   const { client } = useApi()
   const loaded = useLoad(() => client.system.status())
   const s = loaded.data
@@ -79,7 +80,7 @@ function StatusTab({ timeZone }: { timeZone: string | undefined }) {
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
           <Service s={s} timeZone={timeZone} />
-          <Requests s={s} timeZone={timeZone} />
+          <Requests s={s} timeZone={timeZone} onErrors={() => navigate({ name: 'system', tab: 'errors' })} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <Database s={s} className="lg:col-span-2" />
             <Retention s={s} timeZone={timeZone} />
@@ -148,7 +149,7 @@ function hourly(points: RequestPoint[], now: number = Date.now()): { at: string;
   return out
 }
 
-function Requests({ s, timeZone }: { s: SystemStatus; timeZone: string | undefined }) {
+function Requests({ s, timeZone, onErrors }: { s: SystemStatus; timeZone: string | undefined; onErrors: () => void }) {
   const r = s.requests
   const hours = hourly(r.series)
   const max = Math.max(1, ...hours.map((h) => h.requests))
@@ -157,7 +158,15 @@ function Requests({ s, timeZone }: { s: SystemStatus; timeZone: string | undefin
       <div className="flex flex-col gap-5">
         <KeyFigures>
           <Kpi label={t.system.total} value={number(r.requests)} detail={formatDateTime(r.since, timeZone)} />
-          <Kpi label={t.system.failed} value={number(r.errors)} detail={t.system.failedShare(percentOf(r.errors, r.requests))} alert={r.errors > 0} />
+          <Kpi
+            label={t.system.failed}
+            value={number(r.errors)}
+            detail={t.system.failedShare(percentOf(r.errors, r.requests))}
+            alert={r.errors > 0}
+            help={{ body: t.overview.figureHelp.requests }}
+            onOpen={onErrors}
+            openHint={t.overview.openFigure.requests}
+          />
           <Kpi label={t.system.median} value={`${r.p50_ms} ms`} detail={t.system.overMs(r.p50_ms)} />
           <Kpi label={t.system.p95} value={`${r.p95_ms} ms`} detail={t.system.overMs(r.p95_ms)} />
         </KeyFigures>
@@ -389,7 +398,7 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
                     <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
                       <a
                         {...linkTo({ name: 'system', tab: 'errors', error: e.id }, () => open(e.id))}
-                        className="line-clamp-2 rounded-sm font-medium break-words underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                        className={linkVariants({ weight: 'medium', className: 'line-clamp-2 break-words' })}
                       >
                         {e.message}
                       </a>

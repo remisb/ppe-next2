@@ -219,8 +219,10 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
   (`pointer-coarse:`). Small things such as a badge get an invisible 44px tap area around them.
 - **Every opener**: Enter or Space opens, and Escape closes and returns focus. Escape during a
   drag cancels the drag before anything else hears it (closing a pane).
-- **Focus ring**: the shared button style (`buttonVariants`). Do not hand-write
-  `focus-visible:` classes on a new control.
+- **Focus ring**: the shared button style (`buttonVariants`), and for text links
+  `linkVariants`. Do not hand-write `focus-visible:` classes on a new control.
+- **No second submit**: a form's Save is disabled and reads "Saving…" while it saves
+  (`FormSheetActions`, `busy`).
 - **Names**: an icon-only button has a name ("About Orders", "Move Safety shoes", "Close
   item"), and a heading's name is only its words.
 - **Live results**: a change that moves something on screen is announced in a polite live
@@ -273,6 +275,8 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | Moving rows by a handle | `useRowDrag`; `moveTo`, `moveBefore`, `placeBefore`, `sameOrder` | `apps/workwear/src/lib/use-row-drag.ts`, `lib/list-order.ts` |
 | Every order for a filter | `loadAllOrders` | `apps/workwear/src/lib/employee-items.ts` |
 | An icon button | `buttonVariants({ variant: 'ghost', size: 'icon-sm' })` | `@ppe/ui/components/button` |
+| A text link, or a button that reads as one (with its focus ring) | `linkVariants({ underline, weight, className })` | `@ppe/ui/components/link` |
+| A form sheet's Cancel and Save, Save disabled and "Saving…" while busy | `FormSheetActions` | `@ppe/ui/components/form-sheet` |
 
 ---
 

@@ -24,6 +24,7 @@ export const security: SecurityText = {
   when: 'Kada',
   what: 'Įvykis',
   who: 'Paskyra',
+  onlyFor: (name: string) => `Rodyti tik ${name} prisijungimus`,
   where: 'Adresas',
   kinds: {
     sign_in: 'Prisijungė',

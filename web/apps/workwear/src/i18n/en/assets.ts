@@ -12,6 +12,17 @@ export const assets = {
   inOffice: 'In Office',
   withEmployees: 'With Employees',
   notReturned: 'Not Returned',
+  // A Not Returned badge's issue: what it means and what to do, for a SIM and for other items.
+  notReturnedIssue: {
+    SIM: {
+      title: 'The holder has not returned it.',
+      detail: 'It stays with them and out of office stock. Prepare Blocking Email to have the provider block it, and register its return if it comes back.',
+    },
+    item: {
+      title: 'The holder has not returned it.',
+      detail: 'It stays with them and out of office stock. Register its return if it comes back.',
+    },
+  },
   tilesOverlap: 'The figures overlap: a card not returned is also with an employee.',
   // The tiles' tooltips: what each figure counts and how the figures overlap (§3), per register.
   tileHelp: {
@@ -274,6 +285,8 @@ export const assets = {
   item: 'Item',
   searchOfficeItems: 'Search the items in the office',
   noOfficeItems: 'No items in the office match.',
+  // The give sheet lists the first cards and items; this says more match.
+  moreInOffice: (n: number) => plural(n, { one: '# more in the office: search to narrow the list.', other: '# more in the office: search to narrow the list.' }),
   equipmentSection: 'Equipment',
   equipmentIntro: 'The equipment and furniture this employee holds, then those held before.',
   noEquipmentGiven: (name: string) => `${name} has not been given any equipment.`,

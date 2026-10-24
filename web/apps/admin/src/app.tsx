@@ -180,7 +180,7 @@ export function App() {
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
         {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
-        {route.name === 'usage' ? <UsagePage /> : null}
+        {route.name === 'usage' ? <UsagePage navigate={navigate} /> : null}
       </main>
       <ConfirmPassword prompt={passwordPrompt} />
     </div>

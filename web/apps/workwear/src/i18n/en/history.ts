@@ -7,6 +7,9 @@ export const history = {
   filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
   employee: 'Employee',
+  // The record-number filter: the one order with that number, as typed (WE-000004, we4, 4).
+  recordNumber: 'Record number',
+  recordInvalid: 'Type a record number, such as WE-000004 or 4.',
   from: 'From',
   to: 'To',
   // Orders' date filter: the periods it offers; Custom range opens From and To over it, and the range applied becomes its choice.

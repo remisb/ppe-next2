@@ -1,4 +1,4 @@
-import type { Asset, ConnectionStatus } from '@ppe/api-client'
+import type { Asset, AssetKind, ConnectionStatus } from '@ppe/api-client'
 import { Button } from '@ppe/ui/components/button'
 import {
   DropdownMenu,
@@ -20,6 +20,21 @@ import { t } from '@/i18n'
 import { canMarkNotReturned, statusLabel, statusVariant } from '@/lib/assets'
 
 const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
+
+/**
+ * Not Returned, saying what that means and what to do (IssueBadge): for a SIM,
+ * Prepare Blocking Email; for any asset, register its return if it comes back.
+ * open is false for a giving that has since ended: then it is only a record.
+ */
+export function NotReturnedBadge({ kind, open = true }: { kind: AssetKind; open?: boolean }) {
+  return (
+    <IssueBadge
+      label={t.assets.notReturned}
+      variant="destructive"
+      issues={open ? [t.assets.notReturnedIssue[kind === 'SIM' ? 'SIM' : 'item']] : []}
+    />
+  )
+}
 
 /**
  * A SIM card's connection status as a badge. Not Activated and Blocked say why

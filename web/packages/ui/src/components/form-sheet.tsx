@@ -108,3 +108,35 @@ export function FormSheet({ open, onClose, title, description, children, footer 
     </dialog>
   )
 }
+
+/**
+ * A form sheet's footer: Cancel, then the button that submits the form (by
+ * its id). While the form is saving (busy) the submit button is disabled and
+ * reads "Saving…", so a second tap cannot send it twice. submitLabel names the
+ * action when Save would not (Add user, Download).
+ */
+export function FormSheetActions({
+  form,
+  onCancel,
+  busy = false,
+  disabled = false,
+  submitLabel,
+}: {
+  form: string
+  onCancel: () => void
+  busy?: boolean
+  disabled?: boolean
+  submitLabel?: ReactNode
+}) {
+  const t = uiText()
+  return (
+    <>
+      <Button variant="outline" onClick={onCancel}>
+        {t.cancel}
+      </Button>
+      <Button type="submit" form={form} disabled={busy || disabled}>
+        {busy ? t.saving : (submitLabel ?? t.save)}
+      </Button>
+    </>
+  )
+}

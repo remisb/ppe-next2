@@ -1,11 +1,11 @@
 import type { Asset } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -118,7 +118,7 @@ export function SimCardForm({
         {taken.existingId ? (
           <button
             type="button"
-            className="cursor-pointer font-medium underline underline-offset-4 pointer-coarse:min-h-11"
+            className={linkVariants({ underline: 'always', weight: 'medium', className: 'cursor-pointer pointer-coarse:min-h-11' })}
             onClick={() => onOpenExisting(taken.existingId!)}
           >
             {field === 'simNo' ? t.assets.openExisting : t.assets.openExistingItem}
@@ -127,7 +127,7 @@ export function SimCardForm({
         {field === 'inventoryNo' && !existing ? (
           <button
             type="button"
-            className="cursor-pointer font-medium underline underline-offset-4 pointer-coarse:min-h-11"
+            className={linkVariants({ underline: 'always', weight: 'medium', className: 'cursor-pointer pointer-coarse:min-h-11' })}
             onClick={() => {
               setTaken(undefined)
               numberTyped.current = false
@@ -146,16 +146,7 @@ export function SimCardForm({
       onClose={onClose}
       title={existing ? t.assets.editSimCard : t.assets.addSimCard}
       description={t.assets.formDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="sim-card-form" disabled={saving}>
-            {saving ? t.common.saving : t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="sim-card-form" onCancel={onClose} busy={saving} />}
     >
       <form id="sim-card-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">

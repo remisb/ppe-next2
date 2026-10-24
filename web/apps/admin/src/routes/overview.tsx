@@ -4,7 +4,7 @@ import { formatBytes } from '@ppe/backups'
 import { buttonVariants } from '@ppe/ui/components/button'
 import { KeyFigures, Kpi, RefreshButton } from '@ppe/ui/components/panel'
 import { ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
-import { capitalize, formatRelative } from '@ppe/ui/lib/dates'
+import { capitalize, formatRelative, isoDay } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
@@ -72,7 +72,7 @@ export function OverviewPage({ navigate }: { navigate: (to: Route) => void }) {
               </ul>
             )}
           </section>
-          <Figures o={o} timeZone={tz} />
+          <Figures o={o} timeZone={tz} navigate={navigate} />
         </div>
       )}
     </>
@@ -110,12 +110,36 @@ function AttentionRow({ item, navigate }: { item: AttentionItem; navigate: (to: 
   )
 }
 
-/** The figures of the areas the reader may see. */
-function Figures({ o, timeZone }: { o: Overview; timeZone: string | undefined }) {
+/**
+ * The figures of the areas the reader may see. Each says what it counts (its
+ * tooltip) and opens the rows behind it.
+ */
+function Figures({ o, timeZone, navigate }: { o: Overview; timeZone: string | undefined; navigate: (to: Route) => void }) {
+  const today = isoDay(new Date(), timeZone)
+  const h = t.overview.figureHelp
+  const open = t.overview.openFigure
   const tiles = [
-    o.users ? <Kpi key="users" label={t.overview.activeUsers} value={String(o.users.active)} detail={t.overview.inactiveUsers(o.users.inactive)} /> : null,
+    o.users ? (
+      <Kpi
+        key="users"
+        label={t.overview.activeUsers}
+        value={String(o.users.active)}
+        detail={t.overview.inactiveUsers(o.users.inactive)}
+        help={{ body: h.users }}
+        onOpen={() => navigate({ name: 'users' })}
+        openHint={open.users}
+      />
+    ) : null,
     o.security ? (
-      <Kpi key="signed-in" label={t.overview.signedIn} value={String(o.security.signed_in)} detail={t.overview.signedInDetail(o.security.devices)} />
+      <Kpi
+        key="signed-in"
+        label={t.overview.signedIn}
+        value={String(o.security.signed_in)}
+        detail={t.overview.signedInDetail(o.security.devices)}
+        help={{ body: h.signedIn }}
+        onOpen={() => navigate({ name: 'security', tab: 'devices', filter: {} })}
+        openHint={open.signedIn}
+      />
     ) : null,
     o.security ? (
       <Kpi
@@ -124,6 +148,9 @@ function Figures({ o, timeZone }: { o: Overview; timeZone: string | undefined })
         value={String(o.security.sign_ins_today)}
         detail={t.overview.failedToday(o.security.failed_today)}
         alert={o.security.failed_today > 0}
+        help={{ body: h.signIns }}
+        onOpen={() => navigate({ name: 'security', tab: 'sign-ins', filter: { from: today, to: today } })}
+        openHint={open.signIns}
       />
     ) : null,
     o.requests ? (
@@ -133,9 +160,22 @@ function Figures({ o, timeZone }: { o: Overview; timeZone: string | undefined })
         value={new Intl.NumberFormat(intlLocale()).format(o.requests.requests)}
         detail={t.overview.requestErrors(o.requests.errors)}
         alert={o.requests.errors > 0}
+        help={{ body: h.requests }}
+        onOpen={() => navigate({ name: 'system', tab: 'errors' })}
+        openHint={open.requests}
       />
     ) : null,
-    o.requests ? <Kpi key="db" label={t.overview.database} value={formatBytes(o.requests.database_bytes)} detail={t.overview.databaseDetail} /> : null,
+    o.requests ? (
+      <Kpi
+        key="db"
+        label={t.overview.database}
+        value={formatBytes(o.requests.database_bytes)}
+        detail={t.overview.databaseDetail}
+        help={{ body: h.database }}
+        onOpen={() => navigate({ name: 'system', tab: 'status' })}
+        openHint={open.database}
+      />
+    ) : null,
     o.backups ? (
       <Kpi
         key="backup"
@@ -143,6 +183,9 @@ function Figures({ o, timeZone }: { o: Overview; timeZone: string | undefined })
         value={o.backups.last_success_at ? capitalize(formatRelative(o.backups.last_success_at, new Date(), timeZone, { time: true })) : t.overview.noBackup}
         detail={t.backups.title}
         alert={o.backups.stale || o.backups.agent_offline || o.backups.last_run_failed}
+        help={{ body: h.backup }}
+        onOpen={() => navigate({ name: 'system', tab: 'backups' })}
+        openHint={open.backup}
       />
     ) : null,
   ].filter(Boolean)

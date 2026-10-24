@@ -3,6 +3,10 @@ import { localized, plural } from '@ppe/i18n'
 /** The words the shared components draw, in each language. */
 const en = {
   close: 'Close',
+  // A form sheet's footer (components/form-sheet.tsx).
+  cancel: 'Cancel',
+  save: 'Save',
+  saving: 'Saving…',
   loading: 'Loading…',
   couldNotLoad: 'Could not load',
   retry: 'Retry',
@@ -51,6 +55,9 @@ export type UiText = typeof en
 
 const lt: UiText = {
   close: 'Uždaryti',
+  cancel: 'Atšaukti',
+  save: 'Išsaugoti',
+  saving: 'Saugoma…',
   loading: 'Įkeliama…',
   couldNotLoad: 'Nepavyko įkelti',
   retry: 'Bandyti dar kartą',
@@ -91,6 +98,9 @@ const lt: UiText = {
 
 const ru: UiText = {
   close: 'Закрыть',
+  cancel: 'Отмена',
+  save: 'Сохранить',
+  saving: 'Сохранение…',
   loading: 'Загрузка…',
   couldNotLoad: 'Не удалось загрузить',
   retry: 'Повторить',

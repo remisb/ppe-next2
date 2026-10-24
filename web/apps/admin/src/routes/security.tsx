@@ -23,6 +23,7 @@ import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -250,7 +251,19 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
                     ) : null}
                   </TableCell>
                   <TableCell className="whitespace-normal stacked:order-3 stacked:w-auto stacked:text-xs">
-                    {accountName(e)}
+                    {/* The account filters the list to its sign-ins. */}
+                    {e.user_id && filter.user !== e.user_id ? (
+                      <a
+                        {...linkTo({ name: 'security', tab: 'sign-ins', filter: clean({ ...filter, user: e.user_id }) }, () => setFilter('user', e.user_id!))}
+                        aria-label={t.security.onlyFor(accountName(e))}
+                        title={t.security.onlyFor(accountName(e))}
+                        className={linkVariants()}
+                      >
+                        {accountName(e)}
+                      </a>
+                    ) : (
+                      accountName(e)
+                    )}
                     {e.user_email && e.user_name ? <span className="block text-xs break-all text-muted-foreground">{e.user_email}</span> : null}
                     {e.actor_name && e.actor_id !== e.user_id ? (
                       <span className="block text-xs text-muted-foreground">{t.security.by(e.actor_name)}</span>
@@ -469,7 +482,7 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
           {last ? (
             <>
               <span className="font-medium">{t.security.lastReviewed}</span>{' '}
-              <a {...linkTo({ name: 'audit', filter: { area: 'security' }, event: last.event_id }, navigate)} className="underline-offset-4 hover:underline">
+              <a {...linkTo({ name: 'audit', filter: { area: 'security' }, event: last.event_id }, navigate)} className={linkVariants()}>
                 <RelativeDate iso={last.at} timeZone={timeZone} time sentence />
               </a>
               {last.by_name ? ` ${t.security.reviewedBy(last.by_name)}` : null}

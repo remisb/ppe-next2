@@ -39,6 +39,13 @@ export const users = {
   confirmPassword: 'Confirm password',
   cannotDeactivateOwn: 'You cannot deactivate your own account.',
   inactiveExplained: 'An inactive user cannot sign in, and is signed out on every device within minutes.',
+  // Asked first: an account that stops signing in, or loses Administrator.
+  confirmDeactivate: (name: string) => `Deactivate ${name}? They will no longer be able to sign in, and are signed out on every device. Their past changes stay.`,
+  confirmRemoveAdmin: (name: string) => `Take Administrator away from ${name}? They lose everything it allows, unless another of their roles allows it.`,
+  // The status line after a save.
+  savedUser: (name: string) => `${name} saved.`,
+  addedUser: (name: string) => `${name} added.`,
+  deactivatedUser: (name: string) => `${name} saved. They can no longer sign in.`,
   enterName: 'Enter a name.',
   nameTooLong: 'Use at most 200 characters.',
   enterEmail: 'Enter an email address.',

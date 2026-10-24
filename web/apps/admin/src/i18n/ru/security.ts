@@ -24,6 +24,7 @@ export const security: SecurityText = {
   when: 'Когда',
   what: 'Событие',
   who: 'Учётная запись',
+  onlyFor: (name: string) => `Показать только входы пользователя ${name}`,
   where: 'Адрес',
   kinds: {
     sign_in: 'Вход',

@@ -6,7 +6,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -183,6 +183,9 @@ function RoleForm({
     setErrors(v)
     setServerError(undefined)
     if (Object.keys(v).length > 0) return
+    // Ask first before taking a permission away from people who hold the role.
+    const removed = role ? role.permissions.filter((p) => !d.permissions.includes(p)).length : 0
+    if (role && removed > 0 && role.user_count > 0 && !window.confirm(t.roles.confirmRemovePermissions(removed, role.user_count))) return
     setBusy(true)
     try {
       const input = { name: d.name.trim(), description: d.description.trim(), permissions: d.permissions }
@@ -203,21 +206,14 @@ function RoleForm({
       open={open}
       onClose={onClose}
       title={title}
-      description={locked ? t.roles.lockedNote : role ? t.roles.editDescription : t.roles.addDescription}
+      description={locked ? t.roles.lockedNote : role ? t.roles.editDescription(role.user_count) : t.roles.addDescription}
       footer={
         locked ? (
           <Button variant="outline" onClick={onClose}>
             {t.common.close}
           </Button>
         ) : (
-          <>
-            <Button variant="outline" onClick={onClose}>
-              {t.common.cancel}
-            </Button>
-            <Button type="submit" form="role-form" disabled={busy}>
-              {busy ? t.common.saving : role ? t.common.save : t.roles.addRole}
-            </Button>
-          </>
+          <FormSheetActions form="role-form" onCancel={onClose} busy={busy} submitLabel={role ? undefined : t.roles.addRole} />
         )
       }
     >

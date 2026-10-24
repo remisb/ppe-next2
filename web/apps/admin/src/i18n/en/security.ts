@@ -25,6 +25,8 @@ export const security = {
   when: 'When',
   what: 'Event',
   who: 'Account',
+  // An account's name in the list filters it to that account's sign-ins.
+  onlyFor: (name: string) => `Show only ${name}’s sign-ins`,
   where: 'Address',
   kinds: {
     sign_in: 'Signed in',

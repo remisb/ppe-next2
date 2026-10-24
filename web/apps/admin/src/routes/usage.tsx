@@ -1,14 +1,17 @@
 import type { UsageReport } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { areaLabel, sourceLabel } from '@ppe/audit'
+import { staffHref } from '@ppe/routing'
 import { BarChart, type Column, HeatStrip, Sparkline } from '@ppe/ui/components/charts'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { formatDay } from '@ppe/ui/lib/dates'
 import { deviceName } from '@ppe/ui/lib/devices'
 import { useLoad } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 
 import { intlLocale, t } from '@/i18n'
+import { type Route, linkTo } from '@/lib/router'
 import { roleName } from '@/lib/users'
 
 const number = (n: number) => new Intl.NumberFormat(intlLocale()).format(n)
@@ -27,8 +30,9 @@ const dayColumns = (days: string[]): Column[] => days.map((d) => ({ key: d, shor
  * changes over time, the confirmation-link funnel and the data's quality,
  * from what the API records anyway (docs/specs/usage-service.md).
  */
-export function UsagePage() {
+export function UsagePage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
+  const session = useSession()
   const loaded = useLoad(() => client.usage())
   const r = loaded.data
   return (
@@ -41,13 +45,13 @@ export function UsagePage() {
       ) : (
         <div className="flex flex-col gap-4 md:gap-6">
           <p className="-mt-2 text-sm text-muted-foreground">{t.usage.timesIn(r.timezone)}</p>
-          <Figures r={r} />
+          <Figures r={r} onSignIns={session.can('security.read') ? (day) => navigate({ name: 'security', tab: 'sign-ins', filter: { from: day, to: day } }) : undefined} />
           <Active r={r} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
             <SignIns r={r} />
             <Funnel r={r} />
           </div>
-          <Changes r={r} />
+          <Changes r={r} navigate={session.can('audit.read') ? navigate : undefined} />
           <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             <Devices r={r} />
             <Languages r={r} />
@@ -59,8 +63,9 @@ export function UsagePage() {
   )
 }
 
-function Figures({ r }: { r: UsageReport }) {
+function Figures({ r, onSignIns }: { r: UsageReport; onSignIns: ((day: string) => void) | undefined }) {
   const last = r.days.length - 1
+  const today = r.days[last]
   return (
     <KeyFigures>
       <Kpi label={t.usage.activeToday} value={number(r.active.total[last] ?? 0)} detail={t.usage.ofAccounts(r.active.users)} />
@@ -71,6 +76,9 @@ function Figures({ r }: { r: UsageReport }) {
         value={number(r.sign_ins[last] ?? 0)}
         detail={t.usage.failed(r.failed_sign_ins[last] ?? 0)}
         alert={(r.failed_sign_ins[last] ?? 0) > 0}
+        help={{ body: t.overview.figureHelp.signIns }}
+        onOpen={onSignIns && today ? () => onSignIns(today) : undefined}
+        openHint={t.overview.openFigure.signIns}
       />
     </KeyFigures>
   )
@@ -179,7 +187,8 @@ function Funnel({ r }: { r: UsageReport }) {
   )
 }
 
-function Changes({ r }: { r: UsageReport }) {
+/** navigate, for a reader who may open the Audit log: each person's name opens their changes there. */
+function Changes({ r, navigate }: { r: UsageReport; navigate: ((to: Route) => void) | undefined }) {
   const columns: Column[] = r.weeks.map((w) => ({ key: w, short: dayText(w), long: t.usage.weekOf(dayText(w, true)) }))
   const rows = r.changes.map((c) => ({ key: c.area, label: areaLabel(c.area), values: c.counts }))
   const max = Math.max(1, ...r.top_people.map((p) => p.changes))
@@ -198,7 +207,13 @@ function Changes({ r }: { r: UsageReport }) {
               {r.top_people.map((p) => (
                 <li key={p.id} className="text-sm">
                   <div className="flex justify-between gap-3">
-                    <span className="truncate">{p.name}</span>
+                    {navigate ? (
+                      <a {...linkTo({ name: 'audit', filter: { actor: p.id } }, navigate)} className={linkVariants({ className: 'truncate' })}>
+                        {p.name}
+                      </a>
+                    ) : (
+                      <span className="truncate">{p.name}</span>
+                    )}
                     <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{t.usage.changesCount(p.changes)}</span>
                   </div>
                   <div aria-hidden className="mt-1 h-1.5 rounded-full bg-muted">
@@ -298,10 +313,13 @@ function Quality({ r }: { r: UsageReport }) {
   const q = r.quality
   const last = q[q.length - 1]
   const first = q[0]
-  const trend = (label: string, values: number[], part: number, total: number) => (
+  // Each opens where it is fixed, in the staff app: Employees missing a size, the catalogue's Incomplete items.
+  const trend = (label: string, href: string, values: number[], part: number, total: number) => (
     <div>
       <div className="flex justify-between gap-3 text-sm">
-        <span>{label}</span>
+        <a href={href} className={linkVariants()}>
+          {label}
+        </a>
         <span className="tabular-nums text-muted-foreground">{t.usage.ofTotal(part, total)}</span>
       </div>
       <Sparkline values={values} label={`${label}: ${t.usage.trend(values[0] ?? 0, values[values.length - 1] ?? 0)}`} className="mt-1" />
@@ -313,8 +331,8 @@ function Quality({ r }: { r: UsageReport }) {
         <p className="text-sm text-muted-foreground">{t.usage.noSamples}</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {trend(t.usage.missingSizes, q.map((s) => s.employees_missing_sizes), last.employees_missing_sizes, last.employees)}
-          {trend(t.usage.unpriced, q.map((s) => s.catalogue_unpriced), last.catalogue_unpriced, last.catalogue_active)}
+          {trend(t.usage.missingSizes, staffHref('/employees?missing=1'), q.map((s) => s.employees_missing_sizes), last.employees_missing_sizes, last.employees)}
+          {trend(t.usage.unpriced, staffHref('/catalogue?status=incomplete'), q.map((s) => s.catalogue_unpriced), last.catalogue_unpriced, last.catalogue_active)}
         </div>
       )}
     </Panel>

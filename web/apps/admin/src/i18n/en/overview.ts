@@ -94,6 +94,23 @@ export const overview = {
   databaseDetail: 'its size on disk',
   lastBackup: 'Last backup',
   noBackup: 'None yet',
+  // Each figure: what it counts (its tooltip) and where it opens.
+  figureHelp: {
+    users: 'Accounts that can sign in. Inactive ones cannot, and their past changes stay.',
+    signedIn: 'People whose sign-in has not ended, and on how many devices.',
+    signIns: 'Sign-ins since midnight in the organisation’s time zone, with the failed attempts among them.',
+    requests: 'What the API answered in the last 24 hours. Failed are the answers the server could not give.',
+    database: 'The database’s size on disk. Backups are kept apart.',
+    backup: 'When the last backup finished well. Backups lists every run, a failed one too.',
+  },
+  openFigure: {
+    users: 'Open Users',
+    signedIn: 'Open signed-in devices',
+    signIns: 'Open today’s sign-ins',
+    requests: 'Open the error list',
+    database: 'Open System',
+    backup: 'Open Backups',
+  },
 }
 
 export type OverviewText = typeof overview

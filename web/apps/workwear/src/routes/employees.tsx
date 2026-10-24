@@ -4,7 +4,7 @@ import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ChevronRight, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -177,7 +178,7 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
                     <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
                   </TableCell>
                   <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
-                    <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className="rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                    <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
                       {e.full_name}
                     </a>
                     {/* The note on one line under the name, in full on hover and on the employee's page. */}
@@ -270,6 +271,7 @@ export function useSizesDraft(employee: Employee | null, onSaved: () => void) {
   const [clothing, setClothing] = useState('')
   const [shoe, setShoe] = useState('')
   const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     setHeight(employee?.height_cm?.toString() ?? '')
@@ -280,21 +282,24 @@ export function useSizesDraft(employee: Employee | null, onSaved: () => void) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!employee) return
+    if (!employee || busy) return
     const h = height.trim() === '' ? null : Number(height)
     if (h !== null && (!Number.isInteger(h) || h < 100 || h > 250)) {
       setError(t.employees.heightRange)
       return
     }
+    setBusy(true)
     try {
       await client.employees.updateSizes(employee.id, { height_cm: h, clothing_size: clothing ? Number(clothing) : null, shoe_size: shoe || null })
       onSaved()
     } catch (err) {
       setError(errorText(err))
+    } finally {
+      setBusy(false)
     }
   }
 
-  return { height, setHeight, clothing, setClothing, shoe, setShoe, error, submit }
+  return { height, setHeight, clothing, setClothing, shoe, setShoe, error, busy, submit }
 }
 
 export type SizesDraft = ReturnType<typeof useSizesDraft>
@@ -370,16 +375,7 @@ export function EditSizes({
       onClose={onClose}
       title={t.employees.editSizesTitle(employee?.full_name ?? '')}
       description={t.employees.futureOnly}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="sizes-form">
-            {t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="sizes-form" onCancel={onClose} busy={draft.busy} />}
     >
       <form id="sizes-form" onSubmit={draft.submit} className="grid gap-4 sm:grid-cols-3">
         <SizeFields draft={draft} sizes={sizes} />

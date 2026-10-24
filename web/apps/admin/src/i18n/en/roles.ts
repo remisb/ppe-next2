@@ -20,7 +20,13 @@ export const roles = {
   // Add Role / Edit Role
   editRole: (name: string) => `Edit Role: ${name}`,
   viewRole: (name: string) => `Role: ${name}`,
-  editDescription: 'A change reaches the users who hold the role within minutes.',
+  editDescription: (users: number) =>
+    users === 0
+      ? 'No one holds this role yet.'
+      : plural(users, { one: 'A change reaches the # user who holds this role, within minutes.', other: 'A change reaches the # users who hold this role, within minutes.' }),
+  // Asked first when a permission is taken away from people who hold the role.
+  confirmRemovePermissions: (permissions: number, users: number) =>
+    `${plural(permissions, { one: 'Take # permission', other: 'Take # permissions' })} away from ${plural(users, { one: '# user', other: '# users' })}? They can no longer do what it allows, unless another of their roles allows it.`,
   addDescription: 'Then give it to users on Users.',
   lockedNote: 'Administrator can do everything in Administration and cannot be changed, so someone can always manage users and roles.',
   builtInFixed: 'A built-in role keeps its name and description.',

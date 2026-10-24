@@ -96,4 +96,20 @@ export const overview: OverviewText = {
   databaseDetail: 'dydis diske',
   lastBackup: 'Paskutinė kopija',
   noBackup: 'Dar nėra',
+  figureHelp: {
+    users: 'Paskyros, kuriomis galima prisijungti. Neaktyviomis negalima, o jų ankstesni pakeitimai lieka.',
+    signedIn: 'Žmonės, kurių prisijungimas nesibaigė, ir keliuose įrenginiuose.',
+    signIns: 'Prisijungimai nuo vidurnakčio organizacijos laiko juostoje ir nepavykę bandymai tarp jų.',
+    requests: 'Ką API atsakė per pastarąsias 24 valandas. Nepavykę – atsakymai, kurių serveris negalėjo pateikti.',
+    database: 'Duomenų bazės dydis diske. Atsarginės kopijos laikomos atskirai.',
+    backup: 'Kada paskutinė atsarginė kopija baigta sėkmingai. Skiltyje „Atsarginės kopijos“ matyti visi bandymai, ir nepavykę.',
+  },
+  openFigure: {
+    users: 'Atidaryti naudotojus',
+    signedIn: 'Atidaryti prisijungusius įrenginius',
+    signIns: 'Atidaryti šiandienos prisijungimus',
+    requests: 'Atidaryti klaidų sąrašą',
+    database: 'Atidaryti sistemą',
+    backup: 'Atidaryti atsargines kopijas',
+  },
 }

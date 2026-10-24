@@ -122,7 +122,9 @@ instance).
 
 1. **Defects** D1–D4, all in one change (about a day).
 2. **Quick wins in the guidelines' direction** (S each): S3, S4, S10, S12, S15, S16, A1, A2,
-   A8, A10, A11, plus X5 (the links without a focus ring) and X7 (double submit).
+   A8, A10, A11, plus X5 (the links without a focus ring) and X7 (double submit). **Done.**
+   S12's Hand over now follows `HAND_OVER_NOW`, which keeps hand-over mode switched off for
+   now.
 3. **Shared pieces, then use them**: X3, X4, X2, X6, X9, X11, X14. Then S2/A5 (the ⓘ on
    `Panel` and `PageHeader`), which moves every hint in both apps at once.
 4. **Panes to the item pane's anatomy**: X13 and X10, then S1 (order pane), S5, S6

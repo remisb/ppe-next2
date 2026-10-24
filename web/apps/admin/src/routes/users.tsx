@@ -5,7 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, PasswordInput, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -43,6 +43,8 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
   const allRoles = roleList.data ?? []
   const [filter, setFilter] = useState('')
   const [editing, setEditing] = useState<User | 'new' | null>(null)
+  // What the last save did, as a status line (a screen reader hears it too).
+  const [saved, setSaved] = useState('')
   const [resetting, setResetting] = useState<User | null>(null)
 
   const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
@@ -97,6 +99,9 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
           data-shortcut="search"
         />
       </div>
+      <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
+        {saved}
+      </p>
       {users.error || roleList.error ? (
         <ErrorState error={users.error ?? roleList.error} onRetry={() => (users.error ? users.reload() : roleList.reload())} />
       ) : (users.loading && !users.data) || (roleList.loading && !roleList.data) ? (
@@ -167,8 +172,9 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
         user={editing === 'new' || editing === null ? undefined : editing}
         roles={allRoles}
         onClose={() => setEditing(null)}
-        onSaved={() => {
+        onSaved={(message) => {
           setEditing(null)
+          setSaved(message)
           users.reload()
         }}
       />
@@ -189,7 +195,7 @@ function UserForm({
   user: User | undefined
   roles: readonly Role[]
   onClose: () => void
-  onSaved: () => void
+  onSaved: (message: string) => void
 }) {
   const { client } = useApi()
   const session = useSession()
@@ -227,12 +233,19 @@ function UserForm({
     setErrors(v)
     setServerError(undefined)
     if (Object.keys(v).length > 0) return
+    const name = d.name.trim()
+    // Ask first before an account stops signing in, or loses Administrator.
+    const deactivating = user?.is_active === true && !d.isActive
+    const admin = roles.find((r) => r.key === 'admin')?.id
+    const losingAdmin = admin !== undefined && user?.role_ids.includes(admin) === true && !d.roleIds.includes(admin)
+    if (deactivating && !window.confirm(t.users.confirmDeactivate(name))) return
+    if (losingAdmin && !window.confirm(t.users.confirmRemoveAdmin(name))) return
     setBusy(true)
     try {
-      const profile = { name: d.name.trim(), email: d.email.trim(), role_ids: d.roleIds }
+      const profile = { name, email: d.email.trim(), role_ids: d.roleIds }
       if (user) await client.users.update(user.id, { ...profile, is_active: d.isActive })
       else await client.users.create({ ...profile, password: d.password })
-      onSaved()
+      onSaved(!user ? t.users.addedUser(name) : deactivating ? t.users.deactivatedUser(name) : t.users.savedUser(name))
     } catch (err) {
       if (err instanceof ApiError && err.isConflict) setErrors({ email: t.users.emailTaken })
       else setServerError(errorText(err))
@@ -247,16 +260,7 @@ function UserForm({
       onClose={onClose}
       title={user ? t.users.editUser(user.name) : t.users.addUser}
       description={user ? t.users.editDescription : t.users.addDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="user-form" disabled={busy}>
-            {busy ? t.common.saving : user ? t.common.save : t.users.addUser}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="user-form" onCancel={onClose} busy={busy} submitLabel={user ? undefined : t.users.addUser} />}
     >
       <form id="user-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
         <Field label={t.users.name} required error={errors.name}>
@@ -387,14 +391,7 @@ function ResetPassword({ user, onClose }: { user: User | null; onClose: () => vo
         done ? (
           <Button onClick={onClose}>{t.users.done}</Button>
         ) : (
-          <>
-            <Button variant="outline" onClick={onClose}>
-              {t.common.cancel}
-            </Button>
-            <Button type="submit" form="reset-password-form" disabled={busy}>
-              {busy ? t.common.saving : t.users.setPassword}
-            </Button>
-          </>
+          <FormSheetActions form="reset-password-form" onCancel={onClose} busy={busy} submitLabel={t.users.setPassword} />
         )
       }
     >

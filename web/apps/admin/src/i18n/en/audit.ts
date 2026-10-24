@@ -20,6 +20,8 @@ export const audit = {
   allRecords: 'All records',
   when: 'When',
   who: 'Who',
+  // A person's name in the list filters it to their changes.
+  onlyBy: (name: string) => `Show only changes by ${name}`,
   what: 'Change',
   where: 'Made in',
   noChanges: 'No changes have been recorded yet.',

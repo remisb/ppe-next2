@@ -23,6 +23,7 @@ import { EmployeeForm } from '@/components/employee-form'
 import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
+import { linkVariants } from '@ppe/ui/components/link'
 import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
@@ -193,7 +194,9 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                     <Button type="button" variant="outline" onClick={closeInPlace}>
                       {t.common.cancel}
                     </Button>
-                    <Button type="submit">{t.common.save}</Button>
+                    <Button type="submit" disabled={draft.busy}>
+                      {draft.busy ? t.common.saving : t.common.save}
+                    </Button>
                   </div>
                 </form>
               ) : (
@@ -464,7 +467,7 @@ function ItemsTable({
                   timeZone={tz}
                   {...linkTo({ name: 'record', id: i.orderId }, navigate)}
                   aria-label={t.employees.receiptNumber(i.recordNumber)}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                  className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1.5 md:min-h-0' })}
                 >
                   <FileText aria-hidden className="size-4" />
                   {i.recordNumber}
@@ -475,7 +478,7 @@ function ItemsTable({
                     orderId={i.orderId}
                     timeZone={tz}
                     {...linkTo({ name: 'history', order: i.orderId }, navigate)}
-                    className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
+                    className={linkVariants({ className: 'inline-flex min-h-11 items-center md:min-h-0' })}
                   >
                     {i.recordNumber}
                   </RecordPreview>

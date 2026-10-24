@@ -1,7 +1,6 @@
 import type { AssetAssignment, AssetKind, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
@@ -13,10 +12,11 @@ import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { formatEuro } from '@ppe/i18n'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ArrowLeft, FileDown, Printer, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, CopyButton, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
+import { AssetMoreActions, CopyButton, NotReturnedBadge, StatusBadge, StatusMenu, ReturnButton } from '@/components/asset-controls'
 import { AssignmentFormDocument } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -28,7 +28,7 @@ import { categoryLabel, formatDay, locationText, primaryAction, simCopyText, sta
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
-const link = 'rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+const link = linkVariants({ weight: 'medium' })
 
 /**
  * Where the asset is shown: on its own page (/assets/<id>), whose way out is
@@ -209,7 +209,7 @@ export function AssetDetail({
             <Fact title={t.assets.where}>
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{locationText(a)}</span>
-                {a.open_assignment?.not_returned_at ? <Badge variant="destructive">{t.assets.notReturned}</Badge> : null}
+                {a.open_assignment?.not_returned_at ? <NotReturnedBadge kind={a.kind} /> : null}
               </span>
             </Fact>
             <Fact title={t.assets.heldBy} className="pl-4">
@@ -227,11 +227,6 @@ export function AssetDetail({
               )}
             </Fact>
           </div>
-          {a.connection_status === 'NOT_ACTIVATED' ? (
-            <p role="note" className="my-3 rounded-md bg-muted px-3 py-2 text-sm">
-              {t.assets.activateNote}
-            </p>
-          ) : null}
 
           <dl aria-label={t.assets.details} className="mb-4 grid grid-cols-2 gap-4 border-b border-border py-3 text-sm @lg:grid-cols-3">
             {sim ? (
@@ -276,6 +271,7 @@ export function AssetDetail({
                   <AssignmentItem
                     key={s.id}
                     assetId={a.id}
+                    kind={a.kind}
                     inventoryNo={a.inventory_no}
                     assignment={s}
                     canManage={canManage}
@@ -375,6 +371,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 /** One giving: who, from when to when, its form and what happened to it. */
 function AssignmentItem({
   assetId,
+  kind,
   inventoryNo,
   assignment: s,
   canManage,
@@ -383,6 +380,7 @@ function AssignmentItem({
   onUploaded,
 }: {
   assetId: string
+  kind: AssetKind
   inventoryNo: string
   assignment: AssetAssignment
   canManage: boolean
@@ -404,7 +402,7 @@ function AssignmentItem({
       {s.comment ? <p className="mt-1 whitespace-pre-line">{s.comment}</p> : null}
       {s.not_returned_at ? (
         <p className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge variant="destructive">{t.assets.notReturned}</Badge>
+          <NotReturnedBadge kind={kind} open={!s.returned_date} />
           <span>
             {t.assets.markedNotReturned(formatDate(s.not_returned_at, timeZone))}
             {s.whereabouts ? ` · ${t.assets.whereaboutsLabel[s.whereabouts]}` : ''}

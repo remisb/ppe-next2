@@ -6,6 +6,7 @@ import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { InControl } from '@ppe/ui/components/tooltip'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -560,6 +561,7 @@ function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: A
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
+      {cards.error ? <ErrorState error={cards.error} onRetry={cards.reload} /> : !cards.data ? <Loading /> : null}
       <div role="radiogroup" aria-label={sim ? t.assets.simCard : t.assets.item} className="grid max-h-60 gap-1.5 overflow-y-auto">
         {cards.data?.assets.length === 0 ? <p className="text-sm text-muted-foreground">{sim ? t.assets.noOfficeCards : t.assets.noOfficeItems}</p> : null}
         {(cards.data?.assets ?? []).map((a) => {
@@ -592,6 +594,10 @@ function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: A
           )
         })}
       </div>
+      {/* The first few are listed: say how many more match, so the search is the way to them. */}
+      {cards.data && cards.data.total > cards.data.assets.length ? (
+        <p className="text-xs text-muted-foreground">{t.assets.moreInOffice(cards.data.total - cards.data.assets.length)}</p>
+      ) : null}
     </fieldset>
   )
 }

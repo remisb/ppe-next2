@@ -2,6 +2,7 @@ import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { type Help, HelpTooltip } from '@ppe/ui/components/tooltip'
@@ -18,8 +19,9 @@ import { PeriodFilter } from '@/components/period-filter'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isoDay } from '@ppe/ui/lib/dates'
+import { linkVariants } from '@ppe/ui/components/link'
 import { t } from '@/i18n'
-import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, monthOf, periodRange, statusLabel, waitingDays } from '@/lib/history'
+import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, looksLikeRecord, monthOf, periodRange, statusLabel, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { isTyping } from '@/lib/shortcuts'
 import { formatEuro } from '@/lib/utils'
@@ -28,6 +30,8 @@ const PAGE_SIZE = 20
 
 interface Filters {
   employee: PickedEmployee | null
+  /** A record number as typed; it filters once it reads as one (looksLikeRecord). */
+  record: string
   status: OrderStatus | ''
   /** All dates at first; From and To filter only under Custom range. */
   period: DatePeriod
@@ -35,7 +39,7 @@ interface Filters {
   to: string
 }
 
-const noFilters: Filters = { employee: null, status: '', period: 'all', from: '', to: '' }
+const noFilters: Filters = { employee: null, record: '', status: '', period: 'all', from: '', to: '' }
 
 /**
  * The status tabs, All first as the screen opens on it, then Ordered and Given, in the order's own sequence,
@@ -66,7 +70,7 @@ const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
  */
 const leftForRecord = new Map<string, { filters: Filters; page: number; sort: SortState<HistorySort> }>()
 
-const recordLink = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+const recordLink = linkVariants()
 
 function Kbd({ children }: { children: string }) {
   return <kbd className="rounded border border-border px-1 font-mono">{children}</kbd>
@@ -115,8 +119,11 @@ export function History({
   // A period's days count from today in the organisation timezone; Custom range takes From and To as typed.
   const today = isoDay(new Date(), settings.data?.timezone)
   const range = periodRange(filters.period, today) ?? (filters.period === 'custom' ? filters : { from: '', to: '' })
+  const record = filters.record.trim()
+  const recordValid = record === '' || looksLikeRecord(record)
   const scope: HistoryQuery = {
     ...(filters.employee ? { employee_id: filters.employee.id } : {}),
+    ...(record && recordValid ? { record } : {}),
     ...(range.from ? { from: range.from } : {}),
     ...(range.to ? { to: range.to } : {}),
   }
@@ -156,8 +163,18 @@ export function History({
 
   const clearFilters = () => {
     setFilters((f) => ({ ...noFilters, status: f.status }))
+    setRecordText('')
     setPage(1)
   }
+
+  // The record number as typed, applied a moment after typing stops, so each key does not ask the server.
+  const [recordText, setRecordText] = useState(filters.record)
+  useEffect(() => {
+    const later = setTimeout(() => {
+      if (recordText !== filters.record) setFilter('record', recordText)
+    }, 300)
+    return () => clearTimeout(later)
+  }, [recordText])
 
   const open = (id: string) => navigate({ name: 'history', order: id }, { scroll: !wide() })
   const close = () => navigate({ name: 'history' }, { scroll: false })
@@ -200,7 +217,7 @@ export function History({
   const shownColumns = beside ? columns.filter((c) => c.key !== 'usage') : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
-  const activeFilters = [filters.employee, filters.period !== 'all'].filter(Boolean).length
+  const activeFilters = [filters.employee, record, filters.period !== 'all'].filter(Boolean).length
 
   // What Filters folds away on a phone, and so counts there: the employee search stays in view.
   const folded = !showFilters && 'max-md:hidden'
@@ -247,7 +264,7 @@ export function History({
           className={cn(
             'mb-4 grid gap-3 sm:grid-cols-2',
             // Beside an open order the list is narrow: two columns there, three on their own.
-            !selected && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)_auto]',
+            !selected && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto]',
           )}
         >
           {/* On a phone the employee search stays in view, without its heading (its placeholder
@@ -261,6 +278,19 @@ export function History({
               onClear={() => setFilter('employee', null)}
             />
           </div>
+          {/* A record number read out on the phone finds its order: typed, it filters once it reads as one. */}
+          <Field label={t.history.recordNumber} error={recordValid ? undefined : t.history.recordInvalid}>
+            {(p) => (
+              <Input
+                {...controlProps(p)}
+                value={recordText}
+                onChange={(e) => setRecordText(e.target.value)}
+                placeholder="WE-000004"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            )}
+          </Field>
           {/* The date filter: a period, or Custom range, whose From and To open over it. */}
           <PeriodFilter
             id="history-period"

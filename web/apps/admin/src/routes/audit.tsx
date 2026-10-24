@@ -14,6 +14,7 @@ import { formatDateTime, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ArrowLeft, Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
@@ -43,7 +44,7 @@ const areaEvents: Record<AuditArea, readonly string[]> = {
 const eventsOf = (area: string | undefined) =>
   AUDIT_EVENTS.filter((e) => !area || (areaEvents[area as AuditArea] ?? []).some((prefix) => e.startsWith(prefix)))
 
-const recordLinkClass = 'rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+const recordLinkClass = linkVariants()
 
 /**
  * The Audit log (/audit): every recorded change, newest first, filtered by
@@ -288,7 +289,19 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
                       <span className="block text-xs text-muted-foreground">{recordName(e)}</span>
                     </TableCell>
                     <TableCell className="whitespace-normal stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-                      {changedBy(e)}
+                      {/* The person filters the list to their changes, as the record's chip does to its record. */}
+                      {e.actor_id && filter.actor !== e.actor_id ? (
+                        <a
+                          {...linkTo({ name: 'audit', filter: clean({ ...filter, actor: e.actor_id }) }, () => setFilter('actor', e.actor_id!))}
+                          aria-label={t.audit.onlyBy(changedBy(e))}
+                          title={t.audit.onlyBy(changedBy(e))}
+                          className={linkVariants()}
+                        >
+                          {changedBy(e)}
+                        </a>
+                      ) : (
+                        changedBy(e)
+                      )}
                     </TableCell>
                     {beside ? null : (
                       <TableCell className="whitespace-normal text-muted-foreground stacked:hidden">{sourceLabel(e.source)}</TableCell>

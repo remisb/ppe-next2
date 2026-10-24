@@ -1,10 +1,10 @@
 import type { Asset, AssetCategory } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
+import { linkVariants } from '@ppe/ui/components/link'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -98,16 +98,7 @@ export function EquipmentForm({
       onClose={onClose}
       title={existing ? t.assets.editAsset : t.assets.addAsset}
       description={t.assets.equipmentFormDescription}
-      footer={
-        <>
-          <Button variant="outline" onClick={onClose}>
-            {t.common.cancel}
-          </Button>
-          <Button type="submit" form="equipment-form" disabled={saving}>
-            {saving ? t.common.saving : t.common.save}
-          </Button>
-        </>
-      }
+footer={<FormSheetActions form="equipment-form" onCancel={onClose} busy={saving} />}
     >
       <form id="equipment-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
@@ -157,14 +148,14 @@ export function EquipmentForm({
             <div role="alert" className="flex flex-wrap items-center gap-x-2 text-xs text-destructive">
               {t.assets.inventoryNoTakenItem}
               {taken ? (
-                <button type="button" className="cursor-pointer font-medium underline underline-offset-4 pointer-coarse:min-h-11" onClick={() => onOpenExisting(taken)}>
+                <button type="button" className={linkVariants({ underline: 'always', weight: 'medium', className: 'cursor-pointer pointer-coarse:min-h-11' })} onClick={() => onOpenExisting(taken)}>
                   {t.assets.openExistingItem}
                 </button>
               ) : null}
               {!existing && draft.category ? (
                 <button
                   type="button"
-                  className="cursor-pointer font-medium underline underline-offset-4 pointer-coarse:min-h-11"
+                  className={linkVariants({ underline: 'always', weight: 'medium', className: 'cursor-pointer pointer-coarse:min-h-11' })}
                   onClick={() => {
                     setTaken(null)
                     numberTyped.current = false
