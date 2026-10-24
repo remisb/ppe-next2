@@ -60,13 +60,15 @@ export const history = {
   notDeleted: 'The order was not deleted',
   waitingToday: 'Waiting today',
   waitingFor: (n: number) => plural(n, { one: 'Waiting # day', other: 'Waiting # days' }),
-  orderedBy: (date: string, name: string) => `Ordered ${date} by ${name}`,
-  given: (date: string) => `given ${date}`,
-  givenConfirmed: {
-    ELECTRONIC: (date: string) => `given ${date}, confirmed electronically`,
-    PAPER: (date: string) => `given ${date}, confirmed on paper`,
-    IN_PERSON: (date: string) => `given ${date}, confirmed in person on a staff device`,
-  },
+  // The order pane's: a wait past LONG_WAIT_DAYS is an issue on its badge, what to do under it.
+  longWait: (days: number) => ({
+    title: `Waiting more than ${days} days.`,
+    detail: 'Remind the employee to confirm by the link, in person or on the signed paper.',
+  }),
+  orderDetails: 'Order details',
+  preparedByLabel: 'Prepared by',
+  confirmedLabel: 'Confirmed',
+  confirmedHow: { ELECTRONIC: 'Electronically', PAPER: 'On paper', IN_PERSON: 'In person, on a staff device' },
   openConfirmation: 'Open Employee Confirmation',
   handOverNow: 'Hand over now',
   // The order pane's: they open and print the order's Items Given Record.
@@ -90,7 +92,6 @@ export const history = {
   recordPaper: 'Record signed paper confirmation',
   // The order's paper step: Mark as Signed & Given while it waits (saying what it does), Signed once given.
   sign: 'Mark as Signed & Given',
-  signed: 'Signed',
   recordPaperQuestion: (name: string, record: string) =>
     `Record that ${name} signed the paper record for ${record}? The order becomes Given.`,
   confirmationLink: 'Confirmation link',

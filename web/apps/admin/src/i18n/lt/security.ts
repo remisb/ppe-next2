@@ -92,6 +92,11 @@ export const security: SecurityText = {
   administrator: 'Administratorius',
   noSignIn: 'Prisijungimas neužfiksuotas',
   dormant: (days: number) => `Nesinaudota ${days} d.`,
+  inactiveIssue: { title: 'Negali prisijungti.', detail: 'Kad vėl galėtų prisijungti, skiltyje Naudotojai atidarykite Redaguoti ir pažymėkite Aktyvus.' },
+  dormantIssue: (days: number) => ({
+    title: `Neprisijungė ${days} d.`,
+    detail: 'Jei prieigos nebereikia, skiltyje Naudotojai išjunkite paskyrą arba atimkite nereikalingus vaidmenis.',
+  }),
   noMarked: 'Pažymėtų naudotojų nėra.',
   unusedRoles: 'Rolės, kurių niekas neturi',
   unusedRolesHint: 'Nereikalingą rolę ištrinkite skiltyje „Rolės ir teisės“.',

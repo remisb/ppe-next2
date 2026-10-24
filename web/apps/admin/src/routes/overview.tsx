@@ -6,7 +6,8 @@ import { KeyFigures, Kpi, RefreshButton } from '@ppe/ui/components/panel'
 import { Loaded, PageHeader } from '@ppe/ui/components/states'
 import { capitalize, formatRelative, isoDay } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { cn } from '@ppe/ui/lib/utils'
+import { StatusLine } from '@ppe/ui/components/status-line'
+import { RuleList } from '@ppe/ui/components/rule-list'
 import { formatNumber } from '@ppe/i18n'
 import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 
@@ -29,9 +30,9 @@ const resolveAt: Record<AttentionKey, Route> = {
 }
 
 const severityStyle = {
-  critical: { icon: AlertOctagon, className: 'border-destructive/40 bg-destructive/10', iconClass: 'text-destructive' },
-  warning: { icon: AlertTriangle, className: 'border-warning/40 bg-warning/10', iconClass: 'text-warning' },
-  info: { icon: Info, className: 'border-border bg-card', iconClass: 'text-muted-foreground' },
+  critical: { icon: AlertOctagon, tone: 'danger' },
+  warning: { icon: AlertTriangle, tone: 'warning' },
+  info: { icon: Info, tone: 'muted' },
 } as const
 
 /**
@@ -54,19 +55,17 @@ export function OverviewPage({ navigate }: { navigate: (to: Route) => void }) {
                 {t.overview.attention}
               </h2>
               {o.attention.length === 0 ? (
-                <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm">
-                  <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
-                  <span>
-                    <span className="block font-medium">{t.overview.allClear}</span>
-                    <span className="text-muted-foreground">{t.overview.allClearHint}</span>
-                  </span>
-                </div>
+                <StatusLine role="status" icon={<CheckCircle2 aria-hidden />} tone="success">
+                  <span className="block font-medium">{t.overview.allClear}</span>
+                  <span className="text-muted-foreground">{t.overview.allClearHint}</span>
+                </StatusLine>
               ) : (
-                <ul className="flex flex-col gap-3">
+                // Flat rows between rules, worst first; the icon's colour and the words say how bad.
+                <RuleList className="border-y border-border py-3">
                   {o.attention.map((item) => (
                     <AttentionRow key={item.key} item={item} navigate={navigate} />
                   ))}
-                </ul>
+                </RuleList>
               )}
             </section>
             <Figures o={o} timeZone={tz} navigate={navigate} />
@@ -83,27 +82,32 @@ function AttentionRow({ item, navigate }: { item: AttentionItem; navigate: (to: 
   if (!isAttentionKey(item.key)) {
     // An item a newer API raises that this app has no words for yet.
     return (
-      <li className={cn('rounded-xl border p-4 text-sm', style.className)}>
-        <span className="font-medium">{item.key}</span>
+      <li>
+        <StatusLine ruled={false}>
+          <span className="font-medium">{item.key}</span>
+        </StatusLine>
       </li>
     )
   }
   const words = t.overview.items[item.key]
   return (
-    <li className={cn('flex flex-col gap-3 rounded-xl border p-4 text-sm sm:flex-row sm:items-center', style.className)}>
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <Icon aria-hidden className={cn('mt-0.5 size-5 shrink-0', style.iconClass)} />
-        <div className="min-w-0">
-          <p className="font-medium">
-            <span className="sr-only">{t.overview.severity[item.severity]}: </span>
-            {words.title}
-          </p>
-          <p className="text-muted-foreground">{words.detail({ count: item.count ?? 0, percent: item.percent ?? 0, days: item.days ?? 0 })}</p>
-        </div>
-      </div>
-      <a {...linkTo(resolveAt[item.key], navigate)} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0 self-start sm:self-center')}>
-        {words.action}
-      </a>
+    <li>
+      <StatusLine
+        ruled={false}
+        icon={<Icon aria-hidden />}
+        tone={style.tone}
+        action={
+          <a {...linkTo(resolveAt[item.key], navigate)} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            {words.action}
+          </a>
+        }
+      >
+        <p className="font-medium">
+          <span className="sr-only">{t.overview.severity[item.severity]}: </span>
+          {words.title}
+        </p>
+        <p className="text-muted-foreground">{words.detail({ count: item.count ?? 0, percent: item.percent ?? 0, days: item.days ?? 0 })}</p>
+      </StatusLine>
     </li>
   )
 }

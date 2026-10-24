@@ -133,7 +133,16 @@ instance).
    count with the plain muted number. Left: Administration's tab hints, and four lists whose
    empty state has an action (guidelines §12).
 4. **Panes to the item pane's anatomy**: X13 and X10, then S1 (order pane), S5, S6
-   (employee page), A3, A6 and A12 (Administration's badges and panes).
+   (employee page), A3, A6 and A12 (Administration's badges and panes). **Done**, as
+   `RecordHeader`/`RecordTitle` (the item, asset, order, change and error panes),
+   `OrderStatusBadge`/`OrderWait` (Given green, the long wait an `IssueBadge`, no separate
+   Signed badge), the order's facts grid with its actions above the lines, the employee page
+   flat (sizes between rules, a ruled replacement callout, Given SIM and Equipment as
+   `RuleList` rows), `IssueBadge`s for an inactive user, a dormant account, Not ready, the
+   owner connection and a failed backup, and `StatusLine` for Overview's attention rows,
+   Backups' verdict, System's service, the access review and the audit seals (A12, with an
+   ⓘ for the details). A table row now makes its help a tooltip only when the row opens its
+   record (`onClick`).
 5. **The list-and-detail view** X1. Then S17 (Employees beside the list) and the admin panes
    on it.
 6. **New capabilities that need the API or bigger flows**: S11 (link state), S13, S14, S18,
@@ -141,8 +150,8 @@ instance).
 
 ### Decisions for you
 
-- **Given as a `success` (green) badge** instead of the filled default (S5, X10). The
-  guidelines say green means done. Today Given is black, and Signed is the green one.
+- **Given as a `success` (green) badge** (S5, X10): decided, Given is green and the separate
+  Signed badge is gone.
 - **Employees beside the list** (S17): the employee page becomes a pane on wide screens, like
   Orders and the catalogue.
 - **Replacing a confirmation link** (S11): keep it silent, or ask first and show the old link's

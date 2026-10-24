@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -134,14 +135,12 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
                       ))}
                       {/* Stacked, an inactive account says so beside its roles; an active one needs no word. */}
                       {u.is_active ? null : (
-                        <Badge variant="outline" className="hidden stacked:inline-flex">
-                          {t.common.inactive}
-                        </Badge>
+                        <IssueBadge label={t.common.inactive} variant="outline" issues={[t.users.inactiveIssue]} className="hidden stacked:inline-flex" />
                       )}
                     </span>
                   </TableCell>
                   <TableCell className="stacked:hidden">
-                    <Badge variant={u.is_active ? 'secondary' : 'outline'}>{u.is_active ? t.common.active : t.common.inactive}</Badge>
+                    {u.is_active ? <Badge variant="secondary">{t.common.active}</Badge> : <IssueBadge label={t.common.inactive} variant="outline" issues={[t.users.inactiveIssue]} />}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
                     <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>

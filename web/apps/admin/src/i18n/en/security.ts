@@ -96,6 +96,11 @@ export const security = {
   administrator: 'Administrator',
   noSignIn: 'No sign-in recorded',
   dormant: (days: number) => `Not used for ${days} days`,
+  inactiveIssue: { title: 'Cannot sign in.', detail: 'To let them sign in again, open Edit on Users and tick Active.' },
+  dormantIssue: (days: number) => ({
+    title: `No sign-in for ${days} days.`,
+    detail: 'If they no longer need access, deactivate the account on Users, or take away the roles they do not need.',
+  }),
   noMarked: 'No user is marked.',
   unusedRoles: 'Roles no one holds',
   unusedRolesHint: 'Delete a role no one needs on Roles & permissions.',

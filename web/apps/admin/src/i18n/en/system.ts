@@ -16,6 +16,16 @@ export const system = {
   ready: 'Ready',
   notReady: 'Not ready',
   problems: { database: 'The database does not answer.', migrations: 'The database is missing migrations this version needs.' },
+  // What to do about a problem, under its words on the Not ready badge.
+  problemFix: {
+    database: 'Check that the database is running; the API’s log says why it does not answer.',
+    migrations: 'Deploy again: make prod-up applies the migrations before the API starts.',
+  },
+  ownerBadge: 'Owner',
+  ownerIssue: {
+    title: 'Connected as the owner: it could switch the trails’ protection off.',
+    detail: 'Set API_DB_USER=ppe_app and API_DB_PASSWORD on the server, then deploy again.',
+  },
   version: 'Version',
   started: 'Started',
   goVersion: 'Go',
@@ -53,7 +63,6 @@ export const system = {
   signInRecords: 'Sign-ins and failed attempts',
   auditRecords: 'Changes (Audit log)',
   connectedAs: 'The API connects as',
-  ownerWarning: 'the owner: it could switch the trails’ protection off. Set API_DB_USER=ppe_app and API_DB_PASSWORD on the server.',
   leastPrivilege: 'least privilege: it cannot change or delete the trails',
   upkeepSealed: (days: number) => plural(days, { one: 'sealed # day', other: 'sealed # days' }),
   errorRecords: 'Errors',

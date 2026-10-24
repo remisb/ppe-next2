@@ -1,7 +1,6 @@
 import { ApiError, type Employee } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
@@ -18,6 +17,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { type FormEvent, useMemo, useRef, useState } from 'react'
 
+import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
 import { HeldAssets } from '@/components/held-assets'
@@ -162,9 +162,10 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
               }
             />
             {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
-            <div className={cn('mb-8 rounded-lg border border-border text-sm transition-shadow sm:max-w-2xl', inPlace && 'border-ring ring-3 ring-ring/20')}>
+            {/* Flat, between two rules, as a pane's facts; while one part is edited in place, its rules are the focus colour. */}
+            <div className={cn('mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
               <section aria-labelledby="sizes-heading">
-                <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-2">
+                <div className="flex min-h-12 items-center justify-between gap-3 pt-2">
                   <h2 id="sizes-heading" className="font-semibold">
                     {t.employees.sizes}
                   </h2>
@@ -183,7 +184,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                     onKeyDown={(ev) => {
                       if (ev.key === 'Escape') closeInPlace()
                     }}
-                    className="grid gap-3 px-4 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
+                    className="grid gap-3 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
                   >
                     <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
                     {draft.error ? (
@@ -201,7 +202,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                     </div>
                   </form>
                 ) : (
-                  <FactGrid ruled={false} className="grid-cols-3 px-4 pt-2 pb-4">
+                  <FactGrid ruled={false} className="grid-cols-3 pt-2 pb-4">
                     {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
                     <Fact label={t.employees.height}>
                       {e.height_cm ? (
@@ -223,7 +224,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
                   </FactGrid>
                 )}
               </section>
-              <div className="grid gap-4 border-t border-border p-4">
+              <div className="grid gap-4 border-t border-border py-4">
                 {inPlace === 'language' ? (
                   <form
                     aria-label={t.employees.editLanguage}
@@ -280,30 +281,35 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             </div>
 
             {reorder.length > 0 ? (
-              <Alert className="mb-6">
-                <RotateCcw aria-hidden />
-                <AlertTitle>{t.employees.dueForReplacement(reorder.length)}</AlertTitle>
-                <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-                  <span>
-                    {reorder
-                      .map((d) =>
-                        d.overdue ? t.employees.dueItemOverdue(d.item.itemName) : t.employees.dueItemOn(d.item.itemName, formatDate(d.dueAt.toISOString(), tz ?? 'UTC')),
-                      )
-                      .join(', ')}
-                  </span>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      navigate({
-                        name: 'createOrder',
-                        prefill: { employeeId: e.id, items: reorder.map((d) => ({ id: d.item.catalogueItemId, quantity: d.item.quantity })) },
-                      })
-                    }
-                  >
-                    {reorder.length === 1 ? t.employees.reorderIt : t.employees.reorderAll(reorder.length)}
-                  </Button>
-                </AlertDescription>
-              </Alert>
+              // A ruled callout, not a box: what is due, and Reorder beside it.
+              <section aria-labelledby="due-heading" className="mb-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3 text-sm sm:max-w-2xl">
+                <div className="flex min-w-0 items-start gap-3">
+                  <RotateCcw aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+                  <div className="min-w-0">
+                    <h2 id="due-heading" className="font-medium">
+                      {t.employees.dueForReplacement(reorder.length)}
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {reorder
+                        .map((d) =>
+                          d.overdue ? t.employees.dueItemOverdue(d.item.itemName) : t.employees.dueItemOn(d.item.itemName, formatDate(d.dueAt.toISOString(), tz ?? 'UTC')),
+                        )
+                        .join(', ')}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    navigate({
+                      name: 'createOrder',
+                      prefill: { employeeId: e.id, items: reorder.map((d) => ({ id: d.item.catalogueItemId, quantity: d.item.quantity })) },
+                    })
+                  }
+                >
+                  {reorder.length === 1 ? t.employees.reorderIt : t.employees.reorderAll(reorder.length)}
+                </Button>
+              </section>
             ) : null}
             <ActionError error={action.error} />
 
@@ -471,7 +477,7 @@ function ItemsTable({
                   >
                     {i.recordNumber}
                   </RecordPreview>
-                  <Badge variant="secondary">{t.common.ordered}</Badge>
+                  <OrderStatusBadge status="ORDERED" />
                 </span>
               )}
             </TableCell>

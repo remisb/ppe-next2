@@ -58,13 +58,14 @@ export const history: HistoryText = {
   waitingToday: 'Ожидает с сегодняшнего дня',
   waitingFor: (n: number) =>
     plural(n, { one: 'Ожидает # день', few: 'Ожидает # дня', many: 'Ожидает # дней', other: 'Ожидает # дня' }),
-  orderedBy: (date: string, name: string) => `Заказано ${date}, оформил(а) ${name}`,
-  given: (date: string) => `выдано ${date}`,
-  givenConfirmed: {
-    ELECTRONIC: (date: string) => `выдано ${date}, подтверждено электронно`,
-    PAPER: (date: string) => `выдано ${date}, подтверждено на бумаге`,
-    IN_PERSON: (date: string) => `выдано ${date}, подтверждено лично на устройстве сотрудника склада`,
-  },
+  longWait: (days: number) => ({
+    title: `Ожидает больше ${days} дн.`,
+    detail: 'Напомните сотруднику подтвердить по ссылке, лично или подписав бумажную запись.',
+  }),
+  orderDetails: 'Данные заказа',
+  preparedByLabel: 'Оформил(а)',
+  confirmedLabel: 'Подтверждено',
+  confirmedHow: { ELECTRONIC: 'Электронно', PAPER: 'На бумаге', IN_PERSON: 'Лично, на устройстве сотрудника склада' },
   openConfirmation: 'Открыть подтверждение сотрудника',
   handOverNow: 'Выдать сейчас',
   viewOrder: 'Открыть заказ',
@@ -85,7 +86,6 @@ export const history: HistoryText = {
   paperSteps: 'Распечатайте запись, дайте сотруднику подписать её, затем отметьте, что подписанный экземпляр получен.',
   recordPaper: 'Отметить подписанное подтверждение на бумаге',
   sign: 'Отметить как подписанный и выданный',
-  signed: 'Подписано',
   recordPaperQuestion: (name: string, record: string) =>
     `Отметить, что ${name} подписал(а) бумажную запись ${record}? Заказ получит статус «Выдано».`,
   confirmationLink: 'Ссылка для подтверждения',

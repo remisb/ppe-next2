@@ -1,14 +1,13 @@
 import { PreviewCard } from '@base-ui/react/preview-card'
 import { useApi } from '@ppe/app-shell'
-import { Badge } from '@ppe/ui/components/badge'
 import { Skeleton } from '@ppe/ui/components/skeleton'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import type { ComponentProps, ReactNode } from 'react'
 
+import { OrderStatusBadge } from '@/components/order-status'
 import { t } from '@/i18n'
 import { formatShortDate } from '@ppe/ui/lib/dates'
-import { statusLabel } from '@/lib/history'
 import { formatEuro, formatSize } from '@/lib/utils'
 
 /** How many lines the card lists before "and N more". */
@@ -72,7 +71,7 @@ function OrderSummary({ id, timeZone }: { id: string; timeZone: string | undefin
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <span className="font-semibold">{o.record_number}</span>
-        <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
+        <OrderStatusBadge status={o.status} />
       </div>
       <p className="text-xs text-muted-foreground">
         {o.employee_first_name} {o.employee_last_name} ·{' '}

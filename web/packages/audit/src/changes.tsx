@@ -5,6 +5,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { Loaded } from '@ppe/ui/components/states'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { useLoad } from '@ppe/ui/lib/use-load'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import type { ReactNode } from 'react'
 
 import { type DescribeOptions, type FieldChange, auditChanges, auditTitle, deviceText, sourceLabel } from './describe.ts'
@@ -97,18 +98,16 @@ export function ChangeDetail({
   facts.push([t.event, <span className="font-mono text-xs break-all">{entry.event}</span>])
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
+      {/* Flat, as a pane's facts: between two rules, then what changed below them, no box. */}
+      <FactGrid layout="rows" ruled>
         {facts.map(([label, value]) => (
-          <div key={label} className="contents">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 break-words">{value}</dd>
-          </div>
+          <Fact key={label} label={label}>
+            {value}
+          </Fact>
         ))}
-      </dl>
+      </FactGrid>
       {changes.length > 0 ? (
-        <div className="rounded-lg border border-border p-3">
-          <ChangedFields changes={changes} />
-        </div>
+        <ChangedFields changes={changes} />
       ) : (
         <p className="text-sm text-muted-foreground">{t.noDetails}</p>
       )}

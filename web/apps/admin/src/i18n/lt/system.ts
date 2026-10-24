@@ -15,6 +15,15 @@ export const system: SystemText = {
   ready: 'Veikia',
   notReady: 'Neveikia',
   problems: { database: 'Duomenų bazė neatsako.', migrations: 'Duomenų bazėje trūksta migracijų, kurių reikia šiai versijai.' },
+  problemFix: {
+    database: 'Patikrinkite, ar duomenų bazė veikia; API žurnale parašyta, kodėl ji neatsako.',
+    migrations: 'Įdiekite dar kartą: make prod-up pritaiko migracijas prieš paleisdamas API.',
+  },
+  ownerBadge: 'Savininkas',
+  ownerIssue: {
+    title: 'Prisijungta kaip savininkas: galėtų išjungti įrašų apsaugą.',
+    detail: 'Serveryje nustatykite API_DB_USER=ppe_app ir API_DB_PASSWORD, tada įdiekite dar kartą.',
+  },
   version: 'Versija',
   started: 'Paleista',
   goVersion: 'Go',
@@ -52,7 +61,6 @@ export const system: SystemText = {
   signInRecords: 'Prisijungimai ir nesėkmingi bandymai',
   auditRecords: 'Pakeitimai (audito žurnalas)',
   connectedAs: 'API jungiasi kaip',
-  ownerWarning: 'savininkas: ji galėtų išjungti įrašų apsaugą. Serveryje nustatykite API_DB_USER=ppe_app ir API_DB_PASSWORD.',
   leastPrivilege: 'mažiausios teisės: ji negali keisti ar trinti įrašų',
   upkeepSealed: (days: number) => plural(days, { one: 'užantspauduota # diena', few: 'užantspauduotos # dienos', other: 'užantspauduota # dienų' }),
   errorRecords: 'Klaidos',

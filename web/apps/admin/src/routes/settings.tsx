@@ -228,9 +228,9 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
         {draft.providers.length > 0 ? (
           <fieldset>
             <legend className="mb-1.5 text-sm font-medium">{t.settings.defaultProvider}</legend>
-            <ul className="divide-y rounded-lg border">
+            <ul className="divide-y divide-border border-y border-border">
               {draft.providers.map((p) => (
-                <li key={p} className="flex items-center gap-2 pr-1 pl-3">
+                <li key={p} className="flex items-center gap-2">
                   <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
                     <input
                       type="radio"

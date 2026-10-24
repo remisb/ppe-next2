@@ -15,6 +15,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { FileDown, Printer, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -116,25 +117,30 @@ export function AssetDetail({
       <Loaded load={asset}>
         {(a) => (
           <>
-            <header className={cn('mb-5 md:mb-6', !place.page && 'mb-4 md:mb-4 lg:pr-10')}>
-              {/*
-                What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
-                tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
-                The action stays in the top right corner: the phone number (or the title) shares its row, and where the
-                two do not fit (a long action on a phone) the number moves under it, never the action down (wrap-reverse).
-              */}
-              <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-1">
-                {!sim ? (
-                  <Title className={cn('min-w-0 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', place.page && 'md:text-2xl')}>{a.inventory_no}</Title>
+            {/*
+              What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
+              tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
+              The action stays in the top right corner (RecordHeader).
+            */}
+            <RecordHeader
+              beside={!place.page}
+              className={cn(place.page && 'mb-5 md:mb-6')}
+              title={
+                !sim ? (
+                  <RecordTitle as={place.page ? 'h1' : 'h2'} className={cn(place.page && 'md:text-2xl')}>
+                    {a.inventory_no}
+                  </RecordTitle>
                 ) : a.phone_no ? (
                   <SimNumber as={Title} label={t.assets.phoneNo} className={simNumber}>
                     {a.phone_no}
                   </SimNumber>
                 ) : (
                   <p className="text-muted-foreground">{t.assets.noPhoneNo}</p>
-                )}
-                {canManage ? (
-                  <div className="ml-auto flex shrink-0 gap-2">
+                )
+              }
+              actions={
+                canManage ? (
+                  <>
                     {primaryAction(a) === 'give' ? (
                       <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
                     ) : null}
@@ -148,9 +154,10 @@ export function AssetDetail({
                       onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
                       onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
                     />
-                  </div>
-                ) : null}
-              </div>
+                  </>
+                ) : undefined
+              }
+            >
               {sim && a.sim_no ? (
                 // One button copying both numbers, beside the second of them; it takes no more height than the number,
                 // so the two numbers stay close.
@@ -171,7 +178,7 @@ export function AssetDetail({
               <p className="mt-1 max-w-prose text-sm text-muted-foreground empty:hidden">
                 {(sim ? [a.provider, a.plan] : [a.name, a.category ? categoryLabel(a.category) : null]).filter(Boolean).join(' · ')}
               </p>
-            </header>
+            </RecordHeader>
             <p role="status" className="mb-2 text-sm text-muted-foreground empty:hidden">
               {message}
             </p>

@@ -1,6 +1,5 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
@@ -13,6 +12,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
 import { Fragment, useEffect, useState } from 'react'
 
+import { OrderStatusBadge } from '@/components/order-status'
 import { EmployeePicker, type PickedEmployee } from '@/components/employee-picker'
 import { OrderDetail } from '@/components/order-detail'
 import { PeriodFilter } from '@/components/period-filter'
@@ -23,7 +23,7 @@ import { linkVariants } from '@ppe/ui/components/link'
 import { Kbd } from '@ppe/ui/components/kbd'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { t } from '@/i18n'
-import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, looksLikeRecord, monthOf, periodRange, statusLabel, waitingDays } from '@/lib/history'
+import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, looksLikeRecord, monthOf, periodRange, waitingDays } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { isTyping } from '@/lib/shortcuts'
 import { formatEuro } from '@/lib/utils'
@@ -406,9 +406,7 @@ export function History({
                       <TableCell className="stacked:order-1 stacked:w-auto">
                         <span className="inline-flex items-center gap-2">
                           {/* In a row an aging chip says Ordered by itself. */}
-                          <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'} className={cn(o.status === 'ORDERED' && (beside ? 'hidden' : 'stacked:hidden'))}>
-                            {statusLabel[o.status]}
-                          </Badge>
+                          <OrderStatusBadge status={o.status} className={cn(o.status === 'ORDERED' && (beside ? 'hidden' : 'stacked:hidden'))} />
                           {o.status === 'ORDERED' ? (
                             <span
                               className={cn(

@@ -36,6 +36,7 @@ export const backups: BackupsText = {
   dbVersion: 'Duomenų bazės versija',
   succeeded: 'Pavyko',
   failed: 'Nepavyko',
+  failedFix: 'Agentas bandys dar kartą kito paleidimo metu. Jei vis nepavyksta, ką tikrinti, rašoma docs/backups.md.',
   deleted: 'Ištrinta pasibaigus laikymo laikui',
   empty: 'Atsarginių kopijų dar nėra. Čia rodoma kiekviena tarnybos padaryta kopija.',
 }

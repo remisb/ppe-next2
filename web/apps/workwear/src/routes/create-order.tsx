@@ -17,6 +17,7 @@ import { Kbd } from '@ppe/ui/components/kbd'
 import { Check, CheckCircle2, Handshake, Link as LinkIcon, Plus, Printer, RotateCcw, X } from 'lucide-react'
 import { Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
+import { OrderStatusBadge } from '@/components/order-status'
 import { ConfirmationLinkView, ConfirmationSheet } from '@/components/confirmation-sheet'
 import { formatDate } from '@/components/dashboard'
 import { EmployeeForm } from '@/components/employee-form'
@@ -795,7 +796,7 @@ function OrderedPanel({
           <CardTitle className="flex flex-wrap items-center gap-2">
             <CheckCircle2 aria-hidden className="size-5 text-primary" />
             {t.order.orderIsOrdered(order.record_number)}
-            {given ? <Badge>{t.common.given}</Badge> : <Badge variant="secondary">{t.common.ordered}</Badge>}
+            <OrderStatusBadge status={given ? 'GIVEN' : 'ORDERED'} />
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {name}

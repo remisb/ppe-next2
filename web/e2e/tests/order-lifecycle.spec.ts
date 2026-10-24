@@ -748,7 +748,9 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
     await expect(order.getByRole('button', { name, exact: true })).toBeVisible()
   }
   await expect(order.getByRole('button', { name: 'Hand over now' })).toHaveCount(HAND_OVER_NOW ? 1 : 0)
-  await expect(order.locator('header').getByText('Signed', { exact: true })).toHaveCount(0)
+  // Ordered, not yet Given: no Confirmed fact, and the status badge says Ordered.
+  await expect(order.locator('header').getByText('Ordered', { exact: true })).toBeVisible()
+  await expect(order.getByRole('definition').filter({ hasText: 'Electronically' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Order' })).toHaveCount(0)
   // The supplier message is Create Order's review's, not the order's.
@@ -838,14 +840,13 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await expect(row).toContainText('Given')
   await expect(row).toContainText('0.0 months')
   order = await openOrder(recordNumber)
-  await expect(order).toContainText('confirmed electronically')
+  await expect(order.getByRole('definition').filter({ hasText: 'Electronically' })).toBeVisible()
   for (const name of ['Create confirmation link', 'Hand over now', 'Mark as Signed & Given']) {
     await expect(order.getByRole('button', { name, exact: true })).toHaveCount(0)
   }
-  // Signed in Sign's place, done and so not pressable, however it was confirmed.
-  // Signed beside the status at the top, however it was confirmed; no button for it.
-  await expect(order.locator('header').getByText('Signed', { exact: true })).toBeVisible()
-  await expect(order.getByRole('button', { name: 'Signed', exact: true })).toHaveCount(0)
+  // Given, done, a green badge at the top however it was confirmed; no button for it.
+  await expect(order.locator('header').getByText('Given', { exact: true })).toBeVisible()
+  await expect(order.getByRole('button', { name: 'Given', exact: true })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Order' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Print Order' })).toBeVisible()
   // No WhatsApp on a given order: the supplier message is Create Order's review's.
@@ -1077,8 +1078,8 @@ test('paper confirmation: a second order signed on paper', async () => {
   const order = await openOrder(paperRecord)
   page.once('dialog', (d) => void d.accept())
   await order.getByRole('button', { name: 'Mark as Signed & Given' }).click()
-  await expect(order).toContainText('confirmed on paper')
-  await expect(order.locator('header').getByText('Signed', { exact: true })).toBeVisible()
+  await expect(order.getByRole('definition').filter({ hasText: 'On paper' })).toBeVisible()
+  await expect(order.locator('header').getByText('Given', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ordered 0' })).toBeVisible()
 })
 
@@ -1401,7 +1402,7 @@ test('hand-over: the employee confirms on this device, recorded in person', asyn
   await expect(screen.getByText(/Please hand the device back\./)).toBeVisible()
   await screen.getByRole('button', { name: 'Done' }).click()
 
-  await expect(order).toContainText('confirmed in person on a staff device')
+  await expect(order.getByRole('definition').filter({ hasText: 'In person, on a staff device' })).toBeVisible()
   await order.getByRole('button', { name: 'View Order' }).click()
   await expect(page.getByText(/Confirmed in person on a staff device by Ona Kazlauskienė/)).toBeVisible()
 })

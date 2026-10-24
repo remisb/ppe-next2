@@ -2,7 +2,6 @@ import { type ErrorEvent, type ErrorKind, type ErrorPage, type RequestPoint, typ
 import { useApi, useSession } from '@ppe/app-shell'
 import { deviceText, sourceLabel } from '@ppe/audit'
 import { formatBytes } from '@ppe/backups'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Select } from '@ppe/ui/components/field'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
@@ -15,6 +14,9 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
+import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { formatNumber } from '@ppe/i18n'
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -94,15 +96,12 @@ function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navig
 function Service({ s, timeZone }: { s: SystemStatus; timeZone: string | undefined }) {
   const ok = s.service.ready
   return (
-    <div
-      role="status"
-      className={cn(
-        'flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border p-4 text-sm',
-        ok ? 'border-border bg-card' : 'border-destructive/40 bg-destructive/10',
-      )}
-    >
-      <Badge variant={ok ? 'secondary' : 'destructive'}>{ok ? t.system.ready : t.system.notReady}</Badge>
-      {s.service.problem ? <span className="text-destructive">{t.system.problems[s.service.problem]}</span> : null}
+    <div role="status" className="flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-border py-3 text-sm">
+      <IssueBadge
+        label={ok ? t.system.ready : t.system.notReady}
+        variant={ok ? 'secondary' : 'destructive'}
+        issues={s.service.problem ? [{ title: t.system.problems[s.service.problem], detail: t.system.problemFix[s.service.problem] }] : []}
+      />
       <span>
         <span className="text-muted-foreground">{t.system.version} </span>
         <code>{s.service.commit}</code>
@@ -235,9 +234,11 @@ function Database({ s, className }: { s: SystemStatus; className?: string }) {
         <Fact label={t.system.postgres}>{d.version}</Fact>
         <Fact label={t.system.connectedAs}>
           <code className="text-xs">{d.user}</code>
-          <span className={cn('block text-xs', d.owner_rights ? 'text-destructive' : 'text-muted-foreground')}>
-            {d.owner_rights ? t.system.ownerWarning : t.system.leastPrivilege}
-          </span>
+          {d.owner_rights ? (
+            <IssueBadge label={t.system.ownerBadge} variant="destructive" issues={[t.system.ownerIssue]} className="ml-2" />
+          ) : (
+            <span className="block text-xs text-muted-foreground">{t.system.leastPrivilege}</span>
+          )}
         </Fact>
         <Fact label={t.system.connections}>
           {t.system.connectionsDetail(d.connections['active'] ?? 0, d.connections['idle'] ?? 0, d.max_connections)}
@@ -443,13 +444,12 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
         <Loading />
       ) : (
         <>
-          <header className="lg:pr-10">
-            <h2 className="text-lg font-semibold break-words">{e.message}</h2>
+          <RecordHeader className="mb-0" title={<RecordTitle className="text-lg">{e.message}</RecordTitle>}>
             <p className="text-sm text-muted-foreground">
               {kindLabel(e.kind)} · {t.system.times(e.count)}
             </p>
-          </header>
-          <FactGrid layout="rows">
+          </RecordHeader>
+          <FactGrid layout="rows" ruled>
             <Fact label={t.system.route}>
               <code className="text-xs break-all">{e.route}</code>
             </Fact>
@@ -467,10 +467,9 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
             ) : null}
           </FactGrid>
           {e.stack ? (
-            <details>
-              <summary className="cursor-pointer text-sm font-medium">{t.system.stack}</summary>
-              <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre">{e.stack}</pre>
-            </details>
+            <DisclosureSection id="error-stack" title={t.system.stack} className="mb-0">
+              <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre">{e.stack}</pre>
+            </DisclosureSection>
           ) : null}
         </>
       )}

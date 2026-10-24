@@ -169,23 +169,30 @@ Rules:
 
 ### Order pane
 - **Brief:** an order opened from Orders.
-- **Detail:** its heading is the record number, the status badge, and either the wait
-  ("Waiting 4 days") or **Signed**, a success badge with a tick. Its actions by status:
-  - **Ordered**: **Create confirmation link** on its own row; once pressed the link shows
-    below it and the button becomes **Confirmation link**, a disclosure with a chevron that
-    hides and shows that link (Copy link, Open on this device, Share link via WhatsApp).
-    Then **Print Order** and **Mark as Signed & Given**. (**Hand over now** is hidden for
-    now.) No Open Employee Confirmation here: only Create Order's Send confirmation link
-    opens it.
-  - **Given**: **View Order** and **Print Order**, both the Items Given Record.
+- **Detail:** laid out as the item pane ([Record header](#record-header)): its heading is the
+  record number, with the main action and ⋯ in the corner; under it the employee, then the
+  status badge (**Ordered**, or **Given** in green, done) and, while Ordered, the wait
+  ("Waiting 4 days"; past 14 days a red badge that says what to do). Then its facts
+  (Ordered, Prepared by, Given, Confirmed), its other actions, and only then its lines.
+  Its actions by status:
+  - **Ordered**: **Create confirmation link** is the main action; once pressed the link shows
+    below the header and the button becomes **Confirmation link**, a disclosure with a
+    chevron that hides and shows that link (Copy link, Open on this device, Share link via
+    WhatsApp). Then **Print Order** and **Mark as Signed & Given**. (**Hand over now** is
+    hidden for now.) No Open Employee Confirmation here: only Create Order's Send
+    confirmation link opens it.
+  - **Given**: **View Order** is the main action, then **Print Order**, both the Items Given
+    Record.
   - Manager role: ⋯ → **Delete order…**.
-  - Below the actions, the collapsible **Changes**.
+  - Below the lines, the collapsible **Changes**.
 
 ### Record header
 - **Brief:** a record page's title (the record's name or number, with its picture or
   avatar), its badges, and its actions: at most one primary, then ⋯.
 - **Detail:** a record's ⋯ is on its page as well as on its list row: on a phone the page is
-  the only place that reaches it.
+  the only place that reaches it. Where the title and the actions do not fit one row, the
+  title moves under them, never the actions down.
+- **Code:** `RecordHeader`, `RecordTitle` (`@ppe/ui`).
 
 ### Facts
 - **Brief:** label-and-value rows that describe a record ("Connection", "Where", "Held by"
@@ -222,7 +229,7 @@ Rules:
 
 ### Card
 - **Brief:** a bordered box grouping settings or facts on a settings screen or record page
-  (Language, Theme, Signed-in devices; the employee's Sizes card).
+  (Language, Theme, Signed-in devices).
 - **Detail:** not a stacked list row (those are rows, [§5](#5-lists)) and not a panel.
 - **Code:** `Card` and its parts.
 

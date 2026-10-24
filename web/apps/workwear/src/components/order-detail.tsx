@@ -1,14 +1,15 @@
 import type { ConfirmationLink, Order } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown, CircleCheck, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
+import { ChevronDown, FileText, Handshake, Link2, PenLine, Printer, X } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
@@ -19,7 +20,8 @@ import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
 import { BackButton } from '@ppe/ui/components/back-button'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { LONG_WAIT_DAYS, deleteQuestion, historyActions, statusLabel, waitingDays } from '@/lib/history'
+import { OrderStatusBadge, OrderWait } from '@/components/order-status'
+import { deleteQuestion, historyActions, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
@@ -65,7 +67,7 @@ export function OrderDetail({
     )
 
   return (
-    <article aria-label={o ? t.history.orderLabel(o.record_number) : t.history.order} className="flex flex-col gap-4">
+    <article aria-label={o ? t.history.orderLabel(o.record_number) : t.history.order} className="@container flex flex-col gap-4">
       {/* Narrow: the detail is the whole screen, so the way out is Back to the list, on its own row. */}
       <div className="flex items-center lg:contents">
         <BackButton className="lg:hidden" onClick={onClose}>{t.history.title}</BackButton>
@@ -77,12 +79,12 @@ export function OrderDetail({
       <Loaded load={order}>
         {(o) => (
           <>
-            <Summary order={o} timeZone={timeZone} navigate={navigate} />
-            <OrderLinesTable order={o} />
-            <Actions
+            <OrderBody
               // A link is shown once, for the order it was created for.
               key={o.id}
               order={o}
+              timeZone={timeZone}
+              navigate={navigate}
               onHandOver={() => setHandingOver(true)}
               onOpenRecord={(print) => onOpenRecord(o.id, print)}
               onGiven={() => {
@@ -93,6 +95,7 @@ export function OrderDetail({
               onDelete={session.can('orders.delete') ? () => void remove(o) : undefined}
             />
             <ActionError title={t.history.notDeleted} error={deleting.error} />
+            <OrderLinesTable order={o} />
             {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
                 the order is (after a confirmation), so its new step shows. */}
             <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} rememberAs={changesKey} className="mb-0" />
@@ -113,57 +116,32 @@ export function OrderDetail({
   )
 }
 
-function Summary({ order: o, timeZone, navigate }: { order: Order; timeZone: string | undefined; navigate: (to: Route) => void }) {
-  const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, new Date(), timeZone) : 0
-  return (
-    <header className="flex flex-col gap-1 lg:pr-10">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-xl font-semibold">{o.record_number}</h2>
-        <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
-        {o.status === 'ORDERED' ? (
-          <span className={cn('text-sm', days > LONG_WAIT_DAYS ? 'font-medium text-destructive' : 'text-muted-foreground')}>
-            {days === 0 ? t.history.waitingToday : t.history.waitingFor(days)}
-          </span>
-        ) : (
-          // Where an ordered order says how long it has waited: done, a green badge with its tick.
-          <Badge variant="success">
-            <CircleCheck aria-hidden /> {t.history.signed}
-          </Badge>
-        )}
-      </div>
-      <p className="font-medium">
-        <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className={linkVariants()}>
-          {o.employee_first_name} {o.employee_last_name}
-        </a>
-        {o.employee_code ? <span className="font-normal text-muted-foreground"> · {o.employee_code}</span> : null}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        {t.history.orderedBy(formatDateTime(o.ordered_at, timeZone), o.prepared_by_name)}
-        {o.given_at
-          ? ` · ${o.confirmation_method ? t.history.givenConfirmed[o.confirmation_method](formatDateTime(o.given_at, timeZone)) : t.history.given(formatDateTime(o.given_at, timeZone))}`
-          : ''}
-      </p>
-    </header>
-  )
-}
-
 /**
- * ORDERED: Create confirmation link on its own row (electronic; the link
- * then shows right below it, and the button becomes Confirmation link, which
- * collapses and expands it), Hand over now (the employee confirms on this device, at the counter),
- * Print Order (prints the record) and Mark as Signed & Given (records the signed paper copy); the supplier
- * message is Create Order's, not here. GIVEN: View Order and Print Order (both the record);
- * Signed, with a green tick, is beside its status at the top (Summary).
- * The items (View Items in the manual) are always shown above.
+ * The order as the item pane shows an item (guidelines, "The detail pane"): its
+ * record number with the main action and ⋯ in the corner, who it is for, its
+ * status, its facts between rules, then the rest of its actions, all above
+ * the lines, so a long order never pushes them off a phone's screen.
+ *
+ * ORDERED: Create confirmation link is the main action (electronic; the link
+ * then shows right below the header, and the button becomes Confirmation
+ * link, which collapses and expands it), then Hand over now (the employee
+ * confirms on this device, at the counter), Print Order (prints the record)
+ * and Mark as Signed & Given (records the signed paper copy); the supplier
+ * message is Create Order's, not here. GIVEN: View Order is the main action,
+ * then Print Order (both the record). Delete order, a manager's, is under ⋯.
  */
-function Actions({
+function OrderBody({
   order: o,
+  timeZone,
+  navigate,
   onHandOver,
   onOpenRecord,
   onGiven,
   onDelete,
 }: {
   order: Order
+  timeZone: string | undefined
+  navigate: (to: Route) => void
   onHandOver: () => void
   onOpenRecord: (print: boolean) => void
   /** A signed paper confirmation was recorded: the order is Given. */
@@ -178,6 +156,7 @@ function Actions({
   const action = useAction()
   const actions = historyActions(o.status)
   const name = `${o.employee_first_name} ${o.employee_last_name}`
+  const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, new Date(), timeZone) : 0
 
   const sign = () =>
     void action.run(
@@ -188,77 +167,97 @@ function Actions({
       { confirm: t.history.recordPaperQuestion(name, o.record_number) },
     )
 
+  // Create confirmation link makes the link and opens it below the header; the button then becomes
+  // Confirmation link, a disclosure (chevron, aria-expanded) that hides and shows that same link,
+  // never making another, which would replace it.
+  const main = actions.includes('createLink') ? (
+    link ? (
+      <Button variant="outline" aria-expanded={linkOpen} aria-controls={linkId} onClick={() => setLinkOpen((v) => !v)}>
+        <Link2 aria-hidden /> {t.history.confirmationLink}
+        <ChevronDown aria-hidden className={cn('transition-transform motion-reduce:transition-none', linkOpen && 'rotate-180')} />
+      </Button>
+    ) : (
+      <Button
+        disabled={action.pending}
+        onClick={() =>
+          void action.run(async () => {
+            setLink(await client.orders.createConfirmationLink(o.id))
+            setLinkOpen(true)
+          })
+        }
+      >
+        <Link2 aria-hidden /> {t.history.createLink}
+      </Button>
+    )
+  ) : actions.includes('viewRecord') ? (
+    <Button variant="outline" onClick={() => onOpenRecord(false)}>
+      <FileText aria-hidden /> {t.history.viewOrder}
+    </Button>
+  ) : null
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Electronic first, on its own. Create confirmation link makes the link and opens it right
-          below; the button then becomes Confirmation link, a disclosure (chevron, aria-expanded)
-          that hides and shows that same link, never making another, which would replace it. */}
-      {actions.includes('createLink') ? (
-        <div className="flex flex-col gap-2">
-          {link ? (
-            <Button
-              variant="outline"
-              className="w-full sm:w-fit"
-              aria-expanded={linkOpen}
-              aria-controls={linkId}
-              onClick={() => setLinkOpen((v) => !v)}
-            >
-              <Link2 aria-hidden /> {t.history.confirmationLink}
-              <ChevronDown aria-hidden className={cn('transition-transform motion-reduce:transition-none', linkOpen && 'rotate-180')} />
-            </Button>
-          ) : (
-            <Button
-              className="w-full sm:w-fit"
-              disabled={action.pending}
-              onClick={() =>
-                void action.run(async () => {
-                  setLink(await client.orders.createConfirmationLink(o.id))
-                  setLinkOpen(true)
-                })
-              }
-            >
-              <Link2 aria-hidden /> {t.history.createLink}
-            </Button>
-          )}
-          <div id={linkId} className="empty:hidden">
-            {link && linkOpen ? (
-              <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 border-y border-border py-3">
-                <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
-              </section>
+    <>
+      <RecordHeader
+        className="mb-0"
+        title={<RecordTitle>{o.record_number}</RecordTitle>}
+        actions={
+          <>
+            {main}
+            {onDelete ? (
+              <MoreActions label={t.common.moreActions(o.record_number)}>
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                  {t.history.deleteOrder}
+                </DropdownMenuItem>
+              </MoreActions>
             ) : null}
-          </div>
+          </>
+        }
+      >
+        <p className="mt-1 font-medium">
+          <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className={linkVariants()}>
+            {name}
+          </a>
+          {o.employee_code ? <span className="font-normal text-muted-foreground"> · {o.employee_code}</span> : null}
+        </p>
+        {/* A long wait says what to do from its badge (IssueBadge), not in words under it. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <OrderStatusBadge status={o.status} />
+          {o.status === 'ORDERED' ? <OrderWait days={days} /> : null}
         </div>
-      ) : null}
-      <div className="grid gap-2 sm:flex sm:flex-wrap">
-        {actions.includes('handOver') ? (
-          <Button variant="outline" onClick={onHandOver}>
-            <Handshake aria-hidden /> {t.history.handOverNow}
-          </Button>
-        ) : null}
-        {actions.includes('viewRecord') ? (
-          <Button variant="outline" onClick={() => onOpenRecord(false)}>
-            <FileText aria-hidden /> {t.history.viewOrder}
-          </Button>
-        ) : null}
-        {actions.includes('printRecord') ? (
-          <Button variant="outline" onClick={() => onOpenRecord(true)}>
-            <Printer aria-hidden /> {t.history.printOrder}
-          </Button>
-        ) : null}
-        {actions.includes('sign') ? (
-          <Button variant="outline" disabled={action.pending} onClick={sign}>
-            <PenLine aria-hidden className="text-warning" /> {t.history.sign}
-          </Button>
-        ) : null}
-        {onDelete ? (
-          <MoreActions label={t.common.moreActions(o.record_number)} className="justify-self-start">
-            <DropdownMenuItem variant="destructive" onClick={onDelete}>
-              {t.history.deleteOrder}
-            </DropdownMenuItem>
-          </MoreActions>
+      </RecordHeader>
+      <div id={linkId} className="empty:hidden">
+        {link && linkOpen ? (
+          <section aria-label={t.history.confirmationLink} className="flex flex-col gap-2 border-y border-border py-3">
+            <ConfirmationLinkView link={link} name={name} recordNumber={o.record_number} />
+          </section>
         ) : null}
       </div>
       <ActionError error={action.error} />
-    </div>
+      <FactGrid aria-label={t.history.orderDetails}>
+        <Fact label={t.common.ordered}>{formatDateTime(o.ordered_at, timeZone)}</Fact>
+        <Fact label={t.history.preparedByLabel}>{o.prepared_by_name}</Fact>
+        {o.given_at ? <Fact label={t.common.given}>{formatDateTime(o.given_at, timeZone)}</Fact> : null}
+        {o.confirmation_method ? <Fact label={t.history.confirmedLabel}>{t.history.confirmedHow[o.confirmation_method]}</Fact> : null}
+      </FactGrid>
+      {actions.some((a) => a === 'handOver' || a === 'printRecord' || a === 'sign') ? (
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
+          {actions.includes('handOver') ? (
+            <Button variant="outline" onClick={onHandOver}>
+              <Handshake aria-hidden /> {t.history.handOverNow}
+            </Button>
+          ) : null}
+          {actions.includes('printRecord') ? (
+            <Button variant="outline" onClick={() => onOpenRecord(true)}>
+              <Printer aria-hidden /> {t.history.printOrder}
+            </Button>
+          ) : null}
+          {actions.includes('sign') ? (
+            <Button variant="outline" disabled={action.pending} onClick={sign}>
+              <PenLine aria-hidden className="text-warning" /> {t.history.sign}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </>
   )
 }

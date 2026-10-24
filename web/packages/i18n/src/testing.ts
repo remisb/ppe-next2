@@ -3,14 +3,18 @@
  * has every English text, none empty and none left in English.
  */
 
-/** Every text in a dictionary, by its path, with functions called on sample values. */
+/**
+ * Every text in a dictionary, by its path, with functions called on sample
+ * values; a function that returns words in parts ({ title, detail }) gives
+ * each part its own path.
+ */
 export function texts(dict: object, prefix = ''): Map<string, string> {
   const out = new Map<string, string>()
   for (const [k, v] of Object.entries(dict)) {
     const path = prefix ? `${prefix}.${k}` : k
-    if (typeof v === 'string') out.set(path, v)
-    else if (typeof v === 'function') out.set(path, String((v as (...a: unknown[]) => unknown)(...Array.from({ length: v.length }, () => 7))))
-    else if (v && typeof v === 'object') for (const [p, s] of texts(v, path)) out.set(p, s)
+    const value: unknown = typeof v === 'function' ? (v as (...a: unknown[]) => unknown)(...Array.from({ length: v.length }, () => 7)) : v
+    if (value && typeof value === 'object') for (const [p, s] of texts(value, path)) out.set(p, s)
+    else out.set(path, String(value))
   }
   return out
 }

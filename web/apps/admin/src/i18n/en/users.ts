@@ -39,6 +39,8 @@ export const users = {
   confirmPassword: 'Confirm password',
   cannotDeactivateOwn: 'You cannot deactivate your own account.',
   inactiveExplained: 'An inactive user cannot sign in, and is signed out on every device within minutes.',
+  // An inactive account's badge: what it means, then how to undo it.
+  inactiveIssue: { title: 'Cannot sign in.', detail: 'To let them sign in again, open Edit and tick Active.' },
   // Asked first: an account that stops signing in, or loses Administrator.
   confirmDeactivate: (name: string) => `Deactivate ${name}? They will no longer be able to sign in, and are signed out on every device. Their past changes stay.`,
   confirmRemoveAdmin: (name: string) => `Take Administrator away from ${name}? They lose everything it allows, unless another of their roles allows it.`,

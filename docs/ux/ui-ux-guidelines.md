@@ -50,16 +50,17 @@ If a rule here and either of those disagree, fix the one that is out of date in 
 
 ## 2. The detail pane
 
-A record opened beside a list (the item pane, the order pane, the asset pane) or on its own
-page below `lg`. Names are in [ui-language.md › Detail pane](../ui-language.md#detail-pane).
+A record opened beside a list (the item pane, the order pane, the asset pane, and Administration's
+change and error panes) or on its own page below `lg`. Names are in [ui-language.md › Detail pane](../ui-language.md#detail-pane).
 
 ### Anatomy, top to bottom
 
 | Part | What it holds | Look |
 |---|---|---|
-| **Header** | The record's picture or icon, its name or number (the pane's heading), and its actions (**Edit**, ⋯). Below them, one muted line of details (manufacturer and model). | `h2` `text-xl font-semibold`; header `mb-4 lg:pr-10`, so the ✕ never covers it |
+| **Header** | The record's picture or icon, its name or number (the pane's heading), and its main action and ⋯ in the corner (**Edit**, **Create confirmation link**, **Give SIM**). Below them, one muted line of details (manufacturer and model, who an order is for). | `RecordHeader` with a `RecordTitle` (`h2` `text-xl font-semibold`); `mb-4 lg:pr-10`, so the ✕ never covers it. Where both do not fit one row, the title moves under the actions |
 | **Status badges** | The record's state: Active, Inactive, Incomplete (2)… Each badge with issues opens them (§5). | one row, `mb-3 flex flex-wrap gap-1` |
 | **Facts** | The record's current values as label/value pairs. | `<dl>` in a grid, 2 columns (3 from the pane's `@lg`), `gap-x-6 gap-y-3`, between two rules `border-y py-3`, `mb-4`; label muted, value `font-medium tabular-nums` |
+| **Other actions** | What the record allows beyond the main action, as outline buttons in one row (the order's Print Order, Mark as Signed & Given). Always above long content such as an order's lines, so a phone never scrolls to reach them. | `grid gap-2 sm:flex sm:flex-wrap` |
 | **Sections** | History, related records and their counts (Price history, Orders, Item Sets, Assignments…). | `DisclosureSection`, closed at first (§4) |
 | **Changes** | Who changed what, last. | `RecordChanges` |
 
@@ -181,7 +182,8 @@ explanation:
   list, and Escape or a click elsewhere closes it. On touch screens it has a 44px tap area
   around the small badge.
 - **Inside a control that takes the click itself it is a tooltip**, because a button may not
-  hold a button. Table rows set this for everything in them (`InControl`, set by `TableRow`).
+  hold a button. A table row that opens its record (`onClick`) sets this for everything in it
+  (`InControl`, set by `TableRow`); in any other row the badge stays a button.
   A choice button or a button that holds a badge sets it with `<InControl value>` (the give
   sheet's card choice, the employee page's size button). On a phone, the user taps the row
   and reads the issues on the record.
@@ -269,7 +271,7 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | Help a tap opens, behind any trigger | `HelpPopover` | `@ppe/ui/components/tooltip` |
 | Help on pointing only (tabs, tiles) | `HelpTooltip` | `@ppe/ui/components/tooltip` |
 | The body of any help: paragraph, numbered issues, note | `HelpContent`, `HelpBody`, `HelpNote`, `helpText` | `@ppe/ui/components/tooltip` |
-| Inside a clickable row or choice: help becomes a tooltip | `InControl` (set by `TableRow`) | `@ppe/ui/components/tooltip` |
+| Inside a clickable row or choice: help becomes a tooltip | `InControl` (set by a `TableRow` with `onClick`) | `@ppe/ui/components/tooltip` |
 | A status badge with issues | `IssueBadge`, `issueLabel` | `@ppe/ui/components/issue-badge` |
 | The catalogue's badges | `IncompleteBadge`, `InactiveItemBadge`, `InactiveSetBadge` | `apps/workwear/src/components/status-badges.tsx` |
 | A SIM's status badge | `StatusBadge` | `apps/workwear/src/components/asset-controls.tsx` |
@@ -278,6 +280,9 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | Every order for a filter | `loadAllOrders` | `apps/workwear/src/lib/employee-items.ts` |
 | An icon button | `buttonVariants({ variant: 'ghost', size: 'icon-sm' })` | `@ppe/ui/components/button` |
 | A text link, or a button that reads as one (with its focus ring) | `linkVariants({ underline, weight, className })` | `@ppe/ui/components/link` |
+| A record's header: title, main action and ⋯ in the corner, details under it | `RecordHeader`, `RecordTitle` | `@ppe/ui/components/record-header` |
+| A ruled status line: an icon by tone, what it says, an action at its end (Overview's attention rows, the audit seals, Backups' verdict) | `StatusLine` (`tone`: `muted`, `success`, `warning`, `danger`) | `@ppe/ui/components/status-line` |
+| An order's status, and an Ordered one's wait (an `IssueBadge` past 14 days) | `OrderStatusBadge`, `OrderWait` | `apps/workwear/src/components/order-status.tsx` |
 | A form sheet's Cancel and Save, Save disabled and "Saving…" while busy | `FormSheetActions` | `@ppe/ui/components/form-sheet` |
 | A record's facts, label over value (`FactGrid`, ruled), or a panel's, one per line (`layout="rows"`) | `FactGrid`, `Fact` (`wide` for a comment) | `@ppe/ui/components/facts` |
 | Status tabs that filter a list (with counts and tooltips), and choices such as Language or Theme | `Segmented` (`layout`: `fill`, `fit`, `scroll`, `grid`) | `@ppe/ui/components/segmented` |
@@ -323,8 +328,6 @@ Fix these with the screen they are on. Do not copy them.
 - **Four lists keep their own load states**: Orders and the asset registers (an empty state with
   Clear filters), System's error list and hand-over mode (its own words). `Loaded` does not
   take an empty state's action yet.
-- **The employee page's Given SIM and Equipment lists** are rounded cards
-  (`held-assets.tsx`). They should be `RuleList` rows.
 - **The order pane's lines** are a stacked table, already ruled, not a `RuleList`. That is
   acceptable while they keep the same look.
 - **List rows carry one tooltip each.** Base UI could share one tooltip per list

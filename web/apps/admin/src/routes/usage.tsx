@@ -166,13 +166,13 @@ function Funnel({ r }: { r: UsageReport }) {
               </li>
             ))}
           </ol>
-          <dl className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
+          <dl className="mt-4 grid grid-cols-3 divide-x divide-border border-y border-border py-2 text-center text-xs text-muted-foreground">
             {[
               [t.usage.waiting, f.waiting],
               [t.usage.expired, f.expired],
               [t.usage.replaced, f.replaced],
             ].map(([label, value]) => (
-              <div key={String(label)} className="rounded-lg border border-border p-2">
+              <div key={String(label)} className="px-2">
                 <dd className="text-base font-semibold text-foreground tabular-nums">{formatNumber(Number(value))}</dd>
                 <dt>{label}</dt>
               </div>

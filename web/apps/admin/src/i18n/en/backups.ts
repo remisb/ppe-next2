@@ -39,6 +39,7 @@ export const backups = {
   dbVersion: 'Database version',
   succeeded: 'Succeeded',
   failed: 'Failed',
+  failedFix: 'The agent tries again at its next run. If it keeps failing, docs/backups.md says what to check.',
   deleted: 'Deleted after the retention period',
   empty: 'No backups yet. Each one the backup service takes is listed here.',
 }

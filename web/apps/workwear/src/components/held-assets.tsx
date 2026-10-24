@@ -2,6 +2,7 @@ import type { AssetKind, HeldAsset } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
+import { RuleList } from '@ppe/ui/components/rule-list'
 import { Loaded } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -89,11 +90,11 @@ export function HeldAssets({
       </p>
       <Loaded load={held} empty={rows.length === 0} emptyState={sim ? t.assets.noGivenSim(employee.full_name) : t.assets.noEquipmentGiven(employee.full_name)}>
         {() => (
-          <ul className="grid gap-2">
+          <RuleList>
             {rows.map((h) => (
               <HeldRow key={h.id} held={h} navigate={navigate} />
             ))}
-          </ul>
+          </RuleList>
         )}
       </Loaded>
       <AssetSheets
@@ -114,7 +115,7 @@ export function HeldAssets({
 function HeldRow({ held: h, navigate }: { held: HeldAsset; navigate: (to: Route) => void }) {
   const open = h.returned_date === null
   return (
-    <li className={cn('rounded-lg border border-border px-3 py-2 text-sm', !open && 'text-muted-foreground')}>
+    <li className={cn('text-sm', !open && 'text-muted-foreground')}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <a {...linkTo({ name: 'asset', id: h.asset.id }, navigate)} className={link}>
           {h.asset.inventory_no}

@@ -13,6 +13,8 @@ import { t } from '@/i18n'
 import { backupHealth, describeSchedule, formatBytes, formatDuration, healthText, isLocalTarget } from '@ppe/backups'
 import { capitalize, formatDateTime, formatRelative } from '@ppe/ui/lib/dates'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
+import { StatusLine } from '@ppe/ui/components/status-line'
 
 /**
  * Backups (System's Backups tab, /system/backups; backups.read): whether the
@@ -51,31 +53,16 @@ function Verdict({ s }: { s: BackupStatus }) {
   const health = backupHealth(s)
   const ok = health === 'ok'
   return (
-    <div className="flex flex-col gap-2">
-      <div
-        role="status"
-        className={cn(
-          'flex items-start gap-3 rounded-xl border p-4 text-sm',
-          ok ? 'border-border bg-card' : 'border-destructive/40 bg-destructive/5',
-        )}
-      >
-        {ok ? (
-          <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-        ) : (
-          <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />
-        )}
-        <div className="min-w-0">
-          <p className="font-medium">{healthText(s, new Date())}</p>
-          {health === 'failed' && s.runs[0] ? (
-            <p className="mt-1 font-mono text-xs break-words text-muted-foreground">{s.runs[0].error}</p>
-          ) : null}
-        </div>
-      </div>
+    // Ruled lines, not boxes: the verdict, and under it where backups would be lost with the server.
+    <div className="divide-y divide-border border-y border-border">
+      <StatusLine role="status" ruled={false} className="py-3" icon={ok ? <CheckCircle2 aria-hidden /> : <AlertTriangle aria-hidden />} tone={ok ? 'muted' : 'danger'}>
+        <p className="font-medium">{healthText(s, new Date())}</p>
+        {health === 'failed' && s.runs[0] ? <p className="mt-1 font-mono text-xs break-words text-muted-foreground">{s.runs[0].error}</p> : null}
+      </StatusLine>
       {s.agent && isLocalTarget(s.agent.target) ? (
-        <p className="flex items-start gap-3 rounded-xl border border-border p-4 text-sm text-muted-foreground">
-          <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0" />
+        <StatusLine ruled={false} className="py-3 text-muted-foreground" icon={<AlertTriangle aria-hidden />} tone="warning">
           {t.backups.localOnly}
-        </p>
+        </StatusLine>
       ) : null}
     </div>
   )
@@ -131,12 +118,12 @@ function RecentRuns({ s, className }: { s: BackupStatus; className?: string }) {
                   <RelativeDate iso={r.started_at} timeZone={s.timezone} time />
                 </TableCell>
                 <TableCell label={t.backups.result} className="whitespace-normal">
-                  <Badge variant={r.status === 'succeeded' ? 'secondary' : 'destructive'}>
-                    {r.status === 'succeeded' ? t.backups.succeeded : t.backups.failed}
-                  </Badge>
-                  {r.status === 'failed' && r.error ? (
-                    <span className="mt-1 block max-w-md font-mono text-xs break-words text-muted-foreground">{r.error}</span>
-                  ) : null}
+                  {r.status === 'succeeded' ? (
+                    <Badge variant="secondary">{t.backups.succeeded}</Badge>
+                  ) : (
+                    // The agent's own words are what is wrong; what to do is the same for every failure.
+                    <IssueBadge label={t.backups.failed} variant="destructive" issues={[{ title: r.error || t.backups.failed, detail: t.backups.failedFix }]} />
+                  )}
                   {r.pruned ? <span className="mt-1 block text-xs">{t.backups.deleted}</span> : null}
                 </TableCell>
                 <TableCell label={t.backups.size} className="text-right tabular-nums">

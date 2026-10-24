@@ -13,6 +13,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { ArrowDown, ArrowRight, ArrowUp, FileText, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { OrderStatusBadge } from '@/components/order-status'
 import { InactiveItemBadge, InactiveSetBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemTile } from '@/components/item-icon'
 import { RecordPreview } from '@/components/record-preview'
@@ -24,7 +25,8 @@ import { linkVariants } from '@ppe/ui/components/link'
 import { BackButton } from '@ppe/ui/components/back-button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { activityAt, statusLabel } from '@/lib/history'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { activityAt } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
 import { loadAllOrders } from '@/lib/employee-items'
@@ -103,14 +105,11 @@ export function CatalogueItemDetail({
         {(i) => (
           <>
             {/* The list's title is the screen's h1; the item's is the pane's heading, as an order's beside Orders. */}
-            <header className="mb-4 lg:pr-10">
-              <div className="flex flex-wrap-reverse items-center justify-between gap-x-3 gap-y-2">
-                <h2 className="flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]">
-                  <ItemTile icon={i.icon} className="size-10 shrink-0" />
-                  {i.name}
-                </h2>
-                {canManageItems ? (
-                  <div className="ml-auto flex shrink-0 gap-2">
+            <RecordHeader
+              title={<RecordTitle icon={<ItemTile icon={i.icon} className="size-10 shrink-0" />}>{i.name}</RecordTitle>}
+              actions={
+                canManageItems ? (
+                  <>
                     <Button variant="outline" onClick={() => setEditing(true)}>
                       {t.common.edit}
                     </Button>
@@ -119,11 +118,12 @@ export function CatalogueItemDetail({
                         {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
                       </DropdownMenuItem>
                     </MoreActions>
-                  </div>
-                ) : null}
-              </div>
+                  </>
+                ) : undefined
+              }
+            >
               {i.details ? <p className="mt-1 text-sm text-muted-foreground">{i.details}</p> : null}
-            </header>
+            </RecordHeader>
             <ActionError error={action.error} />
 
             {/* What is wrong with the item opens from its badges (IssueBadge), not written under them. */}
@@ -342,7 +342,7 @@ function ItemOrders({
                     {o.record_number}
                   </RecordPreview>
                 )}
-                <Badge variant={o.status === 'GIVEN' ? 'default' : 'secondary'}>{statusLabel[o.status]}</Badge>
+                <OrderStatusBadge status={o.status} />
               </span>
               <span className="shrink-0 text-sm font-medium tabular-nums">{formatEuro(line.accounting_price_cents)}</span>
             </div>

@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedB
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -473,7 +474,7 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
         <p className="max-w-prose text-sm text-muted-foreground">{t.security.reviewHint(days)}</p>
         <RefreshButton loading={review.loading} onClick={reload} />
       </div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
         <p className="text-sm">
           {last ? (
             <>
@@ -563,14 +564,12 @@ function ReviewRow({ user: u, days, timeZone, you }: { user: ReviewUser; days: n
         ) : null}
         <span className="block text-xs break-all text-muted-foreground">{u.email}</span>
         <span className="mt-1 flex flex-wrap gap-1">
-          {u.is_active ? null : <Badge variant="outline">{t.security.inactive}</Badge>}
+          {u.is_active ? null : <IssueBadge label={t.security.inactive} variant="outline" issues={[t.security.inactiveIssue]} />}
           {/* Administrators show by their role, and no sign-in in its column. */}
           {u.flags
             .filter((f) => f === 'dormant')
             .map((f) => (
-              <Badge key={f} variant="destructive">
-                {flagLabel(f, days)}
-              </Badge>
+              <IssueBadge key={f} label={flagLabel(f, days)} variant="destructive" issues={[t.security.dormantIssue(days)]} />
             ))}
         </span>
       </TableCell>

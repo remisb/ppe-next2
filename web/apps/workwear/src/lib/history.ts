@@ -50,7 +50,7 @@ export const statusLabel: Readonly<Record<OrderStatus, string>> = {
 /**
  * How receipt was confirmed, as it completes the Items Given Record's English
  * "Confirmed … by". English only: the record keeps its own English / Russian.
- * The staff screens word it through t.history.givenConfirmed.
+ * The staff screens word it through t.history.confirmedHow.
  */
 export const methodText: Record<ConfirmationMethod, string> = {
   ELECTRONIC: 'electronically',

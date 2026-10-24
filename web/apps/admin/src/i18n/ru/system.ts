@@ -15,6 +15,15 @@ export const system: SystemText = {
   ready: 'Работает',
   notReady: 'Не работает',
   problems: { database: 'База данных не отвечает.', migrations: 'В базе данных нет миграций, нужных этой версии.' },
+  problemFix: {
+    database: 'Проверьте, что база данных запущена; в журнале API указано, почему она не отвечает.',
+    migrations: 'Разверните ещё раз: make prod-up применяет миграции до запуска API.',
+  },
+  ownerBadge: 'Владелец',
+  ownerIssue: {
+    title: 'Подключение от имени владельца: он мог бы отключить защиту записей.',
+    detail: 'Задайте на сервере API_DB_USER=ppe_app и API_DB_PASSWORD, затем разверните ещё раз.',
+  },
   version: 'Версия',
   started: 'Запущена',
   goVersion: 'Go',
@@ -53,7 +62,6 @@ export const system: SystemText = {
   signInRecords: 'Входы и неудачные попытки',
   auditRecords: 'Изменения (журнал аудита)',
   connectedAs: 'API подключается как',
-  ownerWarning: 'владелец: он мог бы отключить защиту записей. Задайте на сервере API_DB_USER=ppe_app и API_DB_PASSWORD.',
   leastPrivilege: 'минимальные права: он не может изменять или удалять записи',
   upkeepSealed: (days: number) => plural(days, { one: 'опечатан # день', few: 'опечатано # дня', many: 'опечатано # дней', other: 'опечатано # дня' }),
   errorRecords: 'Ошибки',

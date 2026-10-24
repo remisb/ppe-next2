@@ -36,6 +36,7 @@ export const users: UsersText = {
   confirmPassword: 'Pakartokite slaptažodį',
   cannotDeactivateOwn: 'Savo paskyros deaktyvuoti negalite.',
   inactiveExplained: 'Neaktyvus naudotojas prisijungti negali ir per kelias minutes atjungiamas visuose įrenginiuose.',
+  inactiveIssue: { title: 'Negali prisijungti.', detail: 'Kad vėl galėtų prisijungti, atidarykite Redaguoti ir pažymėkite Aktyvus.' },
   confirmDeactivate: (name: string) => `Deaktyvuoti ${name}? Šis naudotojas nebegalės prisijungti ir bus atjungtas visuose įrenginiuose. Ankstesni pakeitimai lieka.`,
   confirmRemoveAdmin: (name: string) => `Atimti administratoriaus rolę iš ${name}? Bus prarasta viskas, ką ji leidžia, nebent tai leidžia kita šio naudotojo rolė.`,
   savedUser: (name: string) => `${name}: išsaugota.`,

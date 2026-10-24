@@ -107,13 +107,14 @@ const stackedListRow =
 const stackedBreak = "stacked:after:order-2 stacked:after:basis-full stacked:after:content-['']"
 
 /**
- * A row. A list's row opens its record, so help inside it is a tooltip, not a
- * button (InControl, IssueBadge).
+ * A row. A row that opens its record (onClick) takes the click itself, so
+ * help inside it is a tooltip, not a button (InControl, IssueBadge); in any
+ * other row a status badge opens its issues on a tap too.
  */
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   const stack = React.use(StackContext)
   return (
-    <InControl value>
+    <InControl value={props.onClick !== undefined}>
     <tr
       data-slot="table-row"
       className={cn(

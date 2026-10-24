@@ -16,6 +16,10 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { BackButton } from '@ppe/ui/components/back-button'
+import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { InfoTip } from '@ppe/ui/components/info-tip'
+import { IssueBadge } from '@ppe/ui/components/issue-badge'
+import { StatusLine } from '@ppe/ui/components/status-line'
 import { Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
@@ -453,10 +457,9 @@ function ChangePane({
         <Loading />
       ) : (
         <>
-          <header className="lg:pr-10">
-            <h2 className="text-xl font-semibold">{auditTitle(e.event)}</h2>
-            <p className="text-sm text-muted-foreground">{auditText().areas[e.area as keyof ReturnType<typeof auditText>['areas']] ?? e.area}</p>
-          </header>
+          <RecordHeader className="mb-0" title={<RecordTitle>{auditTitle(e.event)}</RecordTitle>}>
+            <p className="text-sm text-muted-foreground">{areaLabel(e.area)}</p>
+          </RecordHeader>
           <ChangeDetail entry={e} timeZone={timeZone} record={record} options={options} />
         </>
       )}
@@ -495,72 +498,64 @@ function Seals({ timeZone }: { timeZone: string | undefined }) {
     }
   }
   const bad = v?.mismatch ?? null
+  // What the seals and stamps are, and how long the log is kept: in the line's ⓘ, out of the way.
+  const about = [
+    i.tsa ? (i.last_stamped ? t.audit.timestampedThrough(dayText(i.last_stamped), hostOf(i.tsa)) : t.audit.noStampYet(hostOf(i.tsa))) : t.audit.timestampsOff,
+    i.tsa && v && v.stamps_waiting > 0 ? t.audit.stampsWaiting(v.stamps_waiting) : '',
+    i.retention_days > 0 ? t.audit.keptFor(Math.round(i.retention_days / 365)) : '',
+    t.audit.sealsHint,
+    i.tsa ? t.audit.stampsHint : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  // One ruled line (A12): the state, a mismatch as a badge that says what to do, when it was checked, and Verify.
   return (
-    <section
+    <StatusLine
+      role="region"
       aria-label={t.audit.seals}
-      className={cn(
-        'mb-4 flex flex-col gap-2 rounded-xl border p-4 text-sm sm:flex-row sm:items-start',
-        bad ? 'border-destructive/40 bg-destructive/10' : 'border-border bg-card',
-      )}
+      className="mb-4"
+      icon={bad ? <ShieldAlert aria-hidden /> : <ShieldCheck aria-hidden />}
+      tone={bad ? 'danger' : 'muted'}
+      action={
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void verify()}>
+          {busy ? t.audit.verifying : t.audit.verify}
+        </Button>
+      }
     >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {bad ? (
-          <ShieldAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-destructive" />
+          <span role="alert">
+            <IssueBadge
+              label={t.audit.mismatch}
+              variant="destructive"
+              issues={[{ title: `${dayText(bad.day)}: ${t.audit.problems[bad.problem]}.`, detail: t.audit.mismatchHint }]}
+            />
+          </span>
+        ) : i.last_sealed ? (
+          <span>
+            <span className="font-medium">
+              {t.audit.sealedThrough} {dayText(i.last_sealed)}.
+            </span>{' '}
+            {v ? t.audit.allMatch(v.days) : t.audit.notChecked} {v && v.unsealed > 0 ? t.audit.unsealed(v.unsealed) : null}
+          </span>
         ) : (
-          <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+          <span>{t.audit.notSealedYet}</span>
         )}
-        <div className="min-w-0">
-          {bad ? (
-            <>
-              <p role="alert" className="font-medium text-destructive">
-                {t.audit.mismatch}: {dayText(bad.day)}, {t.audit.problems[bad.problem]}.
-              </p>
-              <p className="text-muted-foreground">{t.audit.mismatchHint}</p>
-            </>
-          ) : (
-            <p>
-              {i.last_sealed ? (
-                <>
-                  <span className="font-medium">
-                    {t.audit.sealedThrough} {dayText(i.last_sealed)}.
-                  </span>{' '}
-                  {v ? t.audit.allMatch(v.days) : t.audit.notChecked} {v && v.unsealed > 0 ? t.audit.unsealed(v.unsealed) : null}
-                </>
-              ) : (
-                t.audit.notSealedYet
-              )}
-            </p>
-          )}
-          {!bad ? (
-            <p className="text-muted-foreground">
-              {i.tsa
-                ? i.last_stamped
-                  ? t.audit.timestampedThrough(dayText(i.last_stamped), hostOf(i.tsa))
-                  : t.audit.noStampYet(hostOf(i.tsa))
-                : t.audit.timestampsOff}{' '}
-              {i.tsa && v && v.stamps_waiting > 0 ? t.audit.stampsWaiting(v.stamps_waiting) : null}
-            </p>
-          ) : null}
-          <p className="text-xs text-muted-foreground">
-            {v ? (
-              <>
-                {capitalize(t.audit.lastChecked)} {formatDateTime(v.checked_at, timeZone)}.{' '}
-              </>
-            ) : null}
-            {i.retention_days > 0 ? t.audit.keptFor(Math.round(i.retention_days / 365)) : null} <span className="max-md:hidden">{t.audit.sealsHint}</span>
-            {i.tsa ? <span className="max-md:hidden"> {t.audit.stampsHint}</span> : null}
-          </p>
-          {error ? (
-            <p role="alert" className="text-xs text-destructive">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      </div>
-      <Button size="sm" variant="outline" className="shrink-0 self-start" disabled={busy} onClick={() => void verify()}>
-        {busy ? t.audit.verifying : t.audit.verify}
-      </Button>
-    </section>
+        {v ? (
+          <span className="text-xs text-muted-foreground">
+            {capitalize(t.audit.lastChecked)} {formatDateTime(v.checked_at, timeZone)}.
+          </span>
+        ) : null}
+        <span className="-my-1">
+          <InfoTip section={t.audit.seals}>{about}</InfoTip>
+        </span>
+      </p>
+      {error ? (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </StatusLine>
   )
 }
 
