@@ -1513,8 +1513,8 @@ test('Employees: a row opens the employee at its own address, with the items giv
   const givenToggle = given.getByRole('button', { name: /^Items given/ })
   await expect(givenToggle).toHaveAttribute('aria-expanded', 'false')
   await expect(givenToggle).toHaveText(/^Items given\s*\d+$/)
-  // What it is shows over the title, not as a line of its own.
-  await expect(givenToggle).toHaveAttribute('title', /^As recorded on each receipt/)
+  // What it is is behind the ⓘ beside the title, not a line of its own.
+  await expect(given.getByRole('button', { name: 'About Items given' })).toHaveAccessibleDescription(/^As recorded on each receipt/)
   await expect(givenToggle).toHaveAccessibleDescription(/^As recorded on each receipt/)
   await expect(given.getByRole('row')).toHaveCount(0)
   await givenToggle.click()
@@ -1875,11 +1875,11 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await openTab('Employees')
   await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
   const givenSim = page.getByRole('region', { name: /^Given SIM/ })
-  // Closed at first, with its count, what it is over the title, and Give SIM beside it.
+  // Closed at first, with its count, what it is behind its ⓘ, and Give SIM beside it.
   const givenSimToggle = givenSim.getByRole('button', { name: /^Given SIM/ })
   await expect(givenSimToggle).toHaveAttribute('aria-expanded', 'false')
   await expect(givenSimToggle).toHaveText(/^Given SIM\s*1$/)
-  await expect(givenSimToggle).toHaveAttribute('title', 'The SIMs this employee holds, then those held before.')
+  await expect(givenSim.getByRole('button', { name: 'About Given SIM' })).toHaveAccessibleDescription('The SIMs this employee holds, then those held before.')
   await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toHaveCount(0)
   await givenSimToggle.click()
   await expect(givenSim.getByRole('link', { name: 'SIM-000001' })).toBeVisible()

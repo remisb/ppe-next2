@@ -25,7 +25,7 @@ import { QuantityStepper } from '@/components/quantity-stepper'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { intlLocale, t } from '@/i18n'
 import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
-import { type Due, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
+import { type Due, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { type ClothingBand, clothingBandValue, clothingBands, clothingSizeLabel, formatEuro, formatMonths } from '@/lib/utils'
 import { formatWhatsApp, messageFromWorkingOrder } from '@/lib/whatsapp'
@@ -195,7 +195,7 @@ export function CreateOrder({
   // What the employee is due to have replaced (overdue or within 30 days), from
   // their order history, and not already on this order or on another one.
   const employeeId = order.employee?.id
-  const history = useLoad(() => (employeeId ? loadEmployeeOrders(client, employeeId) : Promise.resolve([])), [employeeId])
+  const history = useLoad(() => (employeeId ? loadAllOrders(client, { employee_id: employeeId }) : Promise.resolve([])), [employeeId])
   const settings = useLoad(() => client.settings())
   const tz = settings.data?.timezone ?? 'UTC'
   const dueAll = useMemo<DueItem[]>(() => {

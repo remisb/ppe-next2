@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { cn } from '../lib/utils.ts'
+import { InControl } from './tooltip.tsx'
 
 /*
  * `stack`: when the table has under 48rem of room (the `stacked:` variant, a
@@ -105,9 +106,14 @@ const stackedListRow =
  */
 const stackedBreak = "stacked:after:order-2 stacked:after:basis-full stacked:after:content-['']"
 
+/**
+ * A row. A list's row opens its record, so help inside it is a tooltip, not a
+ * button (InControl, IssueBadge).
+ */
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   const stack = React.use(StackContext)
   return (
+    <InControl value>
     <tr
       data-slot="table-row"
       className={cn(
@@ -118,6 +124,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       )}
       {...props}
     />
+    </InControl>
   )
 }
 

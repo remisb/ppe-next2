@@ -159,8 +159,8 @@ Rules:
   the list" (desktop), "open it" (phone, tablet).
 - **Layout:** flat. Facts sit between thin rules, and every list in it (price steps, orders,
   item sets, assignments, Changes) has a rule between consecutive items and no box around
-  them or round each item; an item is a title line, then its details in small muted text.
-  Changes are drawn so on every record's page too (`ChangeList`).
+  them or round each item (`RuleList`); an item is a title line, then its details in small
+  muted text. Changes are drawn so on every record's page too (`ChangeList`).
 - **Names:** the **order pane** (Orders), the **asset pane** (SIM Cards, Equipment), the
   **item pane** (Item Catalogue), the **change pane** (Audit log), the **error pane**
   (System's Errors).
@@ -401,12 +401,12 @@ Lithuanian or Russian label wraps rather than overflow.
 - **Detail:** if the browser refuses, it says so and how to copy by hand.
 
 ### Info button
-- **Brief:** the ⓘ beside a section's heading that holds what the section is, kept out of
-  the way (every record's Changes, `RecordChanges`; the item pane's Orders and Item Sets),
-  beside their closed sections' toggles: pointing at it opens it, and a click, a tap
+- **Brief:** the ⓘ beside a closed section's heading that holds what the section is, kept
+  out of the way (every collapsible section with a description: Changes, Price history,
+  Orders, Item Sets, Items given, Assignments…): pointing at it opens it, and a click, a tap
   or Enter opens it and keeps it open until Escape or a click elsewhere. Its label is "About
   <section>"; it sits beside the heading, not in it, so the heading keeps its own name.
-- **Code:** `InfoTip` (`@ppe/ui/components/info-tip`).
+- **Code:** `DisclosureSection`'s `description` draws it (`InfoTip`, on `HelpPopover`).
 
 ### Move handle
 - **Brief:** the ⠿ grip at the start of a row whose place in a list can change (the Item
@@ -417,7 +417,7 @@ Lithuanian or Russian label wraps rather than overflow.
   those who may change it, and never on a stacked row, which only opens its record. Its
   label is "Move <name>", never "Reorder" (a new order for an item due). Pointer events, so
   a finger moves rows too.
-- **Code:** `useRowDrag` (`lib/use-row-drag.ts`), `moveBefore` (`lib/catalogue-order.ts`).
+- **Code:** `useRowDrag` (`lib/use-row-drag.ts`), `moveBefore` and `placeBefore` (`lib/list-order.ts`).
 
 ### Badge
 - **Brief:** a short label for a state or a marker.
@@ -425,11 +425,12 @@ Lithuanian or Russian label wraps rather than overflow.
   (Incomplete, an item's or a set's Inactive, a SIM's Not Activated and Blocked, Missing)
   lists it: each issue a numbered row, one issue too, what is wrong then what to do, a rule
   between rows, any note below with its ⓘ in the numbers' column, so the text of every row
-  and of the note starts at the same place however many issues there are; the badge counts them when there are several, "Incomplete (2)". On a page
-  or pane it is a button: pointing at it, a tap, a click or Enter opens the list. In a list
-  row it is a tooltip, since a stacked row only opens its record. Nothing about its state is
-  written under the badges. A badge that only names a state (Ordered, Given, a role) stays
-  plain.
+  and of the note starts at the same place however many issues there are; the badge counts
+  them when there are several, "Incomplete (2)". On a page or pane it is a button: pointing
+  at it, a tap, a click or Enter opens the list (`HelpPopover`). Inside a control that takes
+  the click itself (a table row, a choice button: `InControl`, which `TableRow` sets) it is a
+  tooltip, since a button may not hold a button. Nothing about its state is written under
+  the badges. A badge that only names a state (Ordered, Given, a role) stays plain.
 - **Variants and meanings:**
   - `default` (filled): the final state of a record's lifecycle (Given) and the
     Administrator role;

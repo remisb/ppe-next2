@@ -74,7 +74,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
               <CardHeader>
                 <CardTitle className="flex flex-wrap items-center gap-2">
                   {s.name}
-                  {s.active ? null : <InactiveSetBadge opens />}
+                  {s.active ? null : <InactiveSetBadge />}
                 </CardTitle>
                 {s.description ? <p className="text-sm text-muted-foreground">{s.description}</p> : null}
                 <p className="text-sm font-medium tabular-nums">

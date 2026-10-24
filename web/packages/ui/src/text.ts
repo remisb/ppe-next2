@@ -43,6 +43,8 @@ const en = {
   needsAttention: 'Needs attention',
   // Charts (components/charts.tsx).
   scale: (value: string) => `Scale ${value}`,
+  // A section's ⓘ (components/info-tip.tsx), named by the section.
+  aboutSection: (section: string) => `About ${section}`,
 }
 
 export type UiText = typeof en
@@ -84,6 +86,7 @@ const lt: UiText = {
   keyFigures: 'Pagrindiniai rodikliai',
   needsAttention: 'Reikia dėmesio',
   scale: (value: string) => `Skalė ${value}`,
+  aboutSection: (section: string) => `Apie skiltį „${section}“`,
 }
 
 const ru: UiText = {
@@ -123,6 +126,7 @@ const ru: UiText = {
   keyFigures: 'Основные показатели',
   needsAttention: 'Требует внимания',
   scale: (value: string) => `Шкала ${value}`,
+  aboutSection: (section: string) => `О разделе «${section}»`,
 }
 
 export const dictionaries = { en, lt, ru }

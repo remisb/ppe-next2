@@ -1,4 +1,4 @@
-import type { Client, ListedOrder, OrderStatus, SizeGroup } from '@ppe/api-client'
+import type { Client, HistoryQuery, ListedOrder, OrderStatus, SizeGroup } from '@ppe/api-client'
 
 /** One order line as it appears on an employee's page, with the order it belongs to. */
 export interface EmployeeItem {
@@ -51,14 +51,21 @@ export function employeeItems(orders: readonly ListedOrder[]): { given: Employee
   return { given, ordered }
 }
 
-/** Every stored order of one employee; History pages hold at most 100. */
-export async function loadEmployeeOrders(client: Client, employeeId: string): Promise<ListedOrder[]> {
-  const orders: ListedOrder[] = []
-  for (let page = 1; ; page++) {
-    const res = await client.orders.list({ employee_id: employeeId, page, page_size: 100 })
-    orders.push(...res.orders)
-    if (res.orders.length === 0 || orders.length >= res.total) return orders
-  }
+/** The most orders one request reads (the API's limit). */
+const ORDERS_PAGE = 100
+
+/**
+ * Every stored order matching filter (an employee's, an item's), however many
+ * pages they fill: the first page says how many there are, the rest are read
+ * at once.
+ */
+export async function loadAllOrders(client: Client, filter: Omit<HistoryQuery, 'page' | 'page_size'>): Promise<ListedOrder[]> {
+  const first = await client.orders.list({ ...filter, page: 1, page_size: ORDERS_PAGE })
+  const pages = Math.ceil(first.total / ORDERS_PAGE)
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, n) => client.orders.list({ ...filter, page: n + 2, page_size: ORDERS_PAGE })),
+  )
+  return [first, ...rest].flatMap((p) => p.orders)
 }
 
 /** A replacement counts as due soon this many days ahead, as on the dashboards. */

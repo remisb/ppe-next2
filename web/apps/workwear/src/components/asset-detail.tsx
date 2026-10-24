@@ -6,6 +6,7 @@ import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
+import { RuleList } from '@ppe/ui/components/rule-list'
 import { formatDate } from '@ppe/ui/lib/dates'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { saveFile } from '@ppe/ui/lib/save-file'
@@ -198,7 +199,7 @@ export function AssetDetail({
             {sim ? (
               <Fact title={t.assets.connection} inline className="col-span-2">
                 <span className="flex flex-wrap items-center gap-2">
-                  {a.connection_status ? <StatusBadge status={a.connection_status} opens /> : null}
+                  {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
                   {canManage && a.connection_status ? (
                     <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving} onChange={(next) => void changeStatus(next)} />
                   ) : null}
@@ -270,7 +271,7 @@ export function AssetDetail({
               <p className="text-sm text-muted-foreground">{t.assets.noAssignments}</p>
             ) : (
               // Flat, as the rest of the pane: a rule between givings, no boxes.
-              <ol className="divide-y divide-border">
+              <RuleList ordered>
                 {a.assignments.map((s) => (
                   <AssignmentItem
                     key={s.id}
@@ -286,11 +287,11 @@ export function AssetDetail({
                     }}
                   />
                 ))}
-              </ol>
+              </RuleList>
             )}
           </DisclosureSection>
 
-          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
+          <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
           <AssetSheets
             sheet={sheet}
@@ -390,7 +391,7 @@ function AssignmentItem({
   onUploaded: (message: string) => void
 }) {
   return (
-    <li className="py-3 text-sm first:pt-0 last:pb-0">
+    <li className="text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <a {...linkTo({ name: 'employee', id: s.employee_id }, navigate)} className={link}>
           {s.employee_name}

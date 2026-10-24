@@ -1,8 +1,10 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { Info } from 'lucide-react'
-import { type ComponentProps, type ReactElement, useId } from 'react'
+import { type ComponentProps, type ReactElement, type ReactNode, createContext, useId } from 'react'
 
 import { cn } from '../lib/utils.ts'
+import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx'
+import { RuleList } from './rule-list.tsx'
 
 /**
  * An explanation shown while the pointer rests on, or keyboard focus is in,
@@ -16,8 +18,11 @@ function Tooltip(props: TooltipPrimitive.Root.Props) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
 }
 
-/** Opens after a short rest (300 ms), so a pointer passing over a row of tiles opens none. */
-function TooltipTrigger({ delay = 300, ...props }: TooltipPrimitive.Trigger.Props) {
+/** How long the pointer rests before help opens, so a pointer passing over a row of tiles opens none. */
+const HELP_DELAY = 300
+
+/** Opens after a short rest (HELP_DELAY). */
+function TooltipTrigger({ delay = HELP_DELAY, ...props }: TooltipPrimitive.Trigger.Props) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" delay={delay} {...props} />
 }
 
@@ -72,15 +77,13 @@ export type HelpItem = string | { title: string; detail?: string }
 
 /** What a figure or a choice means (body) and, set apart below it, a note such as how it relates to the others. */
 export interface Help {
-  /** Several items are listed one per row, numbered (one per problem, say). */
-  body: string | readonly HelpItem[]
-  note?: string
   /**
-   * A list of issues (a status badge's): always numbered rows, one item too,
-   * and the note's text in line with theirs, so every badge's list starts its
-   * text at the same place however many issues it holds.
+   * A string is a paragraph (a tab's or a tile's explanation); a list (a status
+   * badge's issues) is numbered rows, one item too, so every list starts its
+   * text at the same place however many items it holds.
    */
-  list?: boolean
+  body: string | readonly HelpItem[]
+  note?: string | undefined
 }
 
 /** The words of help as one sentence run, for a screen reader (the trigger's description). */
@@ -90,6 +93,13 @@ export function helpText(help: Help): string {
     .filter(Boolean)
     .join(' ')
 }
+
+/**
+ * True inside a control that takes the click itself, such as a table row that
+ * opens its record or a choice button: help there is a tooltip, never a button
+ * of its own, since a button may not hold a button (IssueBadge). TableRow sets it.
+ */
+export const InControl = createContext(false)
 
 function HelpItemText({ item, className }: { item: HelpItem; className?: string }) {
   if (typeof item === 'string') return <p className={cn('text-muted-foreground', className)}>{item}</p>
@@ -102,42 +112,46 @@ function HelpItemText({ item, className }: { item: HelpItem; className?: string 
 }
 
 /**
- * Help's body under its title. One item reads as a paragraph; several, or any
- * number with list, are a numbered list with a rule between consecutive items
- * only (none above the first or below the last), so how many there are and
- * where each starts and ends show at a glance. The same in a tooltip and in a
- * panel opened from a badge, so every badge's help looks alike.
+ * Help's body under its title: a string a paragraph; a list numbered rows with
+ * a rule between consecutive rows only (RuleList), so how many there are and
+ * where each starts and ends show at a glance.
  */
-export function HelpBody({ body, list = false }: { body: Help['body']; list?: boolean | undefined }) {
-  const items = typeof body === 'string' ? [body] : body
-  if (items.length === 1 && !list) return <HelpItemText item={items[0]!} className="mt-1" />
+export function HelpBody({ body }: { body: Help['body'] }) {
+  if (typeof body === 'string') return <HelpItemText item={body} className="mt-1" />
   return (
-    <ol className="mt-2 divide-y divide-border">
-      {items.map((item, n) => (
-        <li key={n} className="flex gap-2 py-2 first:pt-0 last:pb-0">
+    <RuleList ordered className="mt-2">
+      {body.map((item, n) => (
+        <li key={n} className="flex gap-2">
           <span aria-hidden className={cn(MARKER, 'rounded-full bg-muted text-xs font-medium text-foreground tabular-nums')}>
             {n + 1}
           </span>
           <HelpItemText item={item} className="min-w-0" />
         </li>
       ))}
-    </ol>
+    </RuleList>
   )
 }
 
-/** Help's note, set apart below its body by a rule; with list, its ⓘ in the numbers' column, so its text lines up with the items'. */
-export function HelpNote({ note, list = false }: { note: string; list?: boolean | undefined }) {
+/** Help's note, set apart below its body by a rule, its ⓘ in the numbers' column so its text lines up with a list's. */
+export function HelpNote({ note }: { note: string }) {
   return (
     <p className="mt-2.5 flex gap-2 border-t border-border pt-2.5 text-xs text-muted-foreground">
-      {list ? (
-        <span aria-hidden className={MARKER}>
-          <Info className="size-3.5 text-foreground" />
-        </span>
-      ) : (
-        <Info aria-hidden className="mt-px size-3.5 shrink-0 text-foreground" />
-      )}
+      <span aria-hidden className={MARKER}>
+        <Info className="size-3.5 text-foreground" />
+      </span>
       <span>{note}</span>
     </p>
+  )
+}
+
+/** Help as a tooltip or a panel shows it: the title, the body, the note below a rule. */
+function HelpContent({ title, help }: { title?: string | undefined; help: Help }) {
+  return (
+    <>
+      {title ? <p className="font-medium">{title}</p> : null}
+      <HelpBody body={help.body} />
+      {help.note ? <HelpNote note={help.note} /> : null}
+    </>
   )
 }
 
@@ -146,6 +160,7 @@ export function HelpNote({ note, list = false }: { note: string; list?: boolean 
  * below a rule. Screen readers get the same words as children's description,
  * from a hidden element beside it. children must take a ref and props (a
  * button, a div); it opens below by default, as such controls head a screen.
+ * Hover and focus only: where a tap must open it too, use HelpPopover.
  */
 function HelpTooltip({
   title,
@@ -164,9 +179,7 @@ function HelpTooltip({
       <Tooltip>
         <TooltipTrigger render={children} aria-describedby={id} />
         <TooltipContent aria-hidden side={side}>
-          <p className="font-medium">{title}</p>
-          <HelpBody body={help.body} list={help.list} />
-          {help.note ? <HelpNote note={help.note} list={help.list} /> : null}
+          <HelpContent title={title} help={help} />
         </TooltipContent>
       </Tooltip>
       <span id={id} hidden>
@@ -176,4 +189,49 @@ function HelpTooltip({
   )
 }
 
-export { HelpTooltip, Tooltip, TooltipContent, TooltipTrigger }
+/**
+ * Help a tap opens too: a button (children are its face, className its look)
+ * opening a panel with the help below it. Pointing at it opens it as a tooltip
+ * would (after the tooltip's 300 ms), and a click, a tap or Enter opens it and
+ * keeps it open until Escape or a click elsewhere: a Popover that also opens
+ * on hover, as a Tooltip never shows on touch. A screen reader hears the help
+ * as the button's description. The status badges on a page (IssueBadge) and
+ * a section's ⓘ (InfoTip) are made of it.
+ */
+function HelpPopover({
+  title,
+  help,
+  label,
+  describedBy,
+  className,
+  children,
+}: {
+  title?: string | undefined
+  help: Help
+  /** The button's name, when its face is an icon. */
+  label?: string | undefined
+  /** An element on the page that already holds the help's words, to describe the button by instead of a copy. */
+  describedBy?: string | undefined
+  className?: string | undefined
+  children: ReactNode
+}) {
+  const ownId = useId()
+  const id = describedBy ?? ownId
+  return (
+    <Popover>
+      <PopoverTrigger openOnHover delay={HELP_DELAY} aria-label={label} aria-describedby={id} className={className}>
+        {children}
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="start" className="max-w-[calc(100vw-2rem)] gap-0 px-3 py-2.5">
+        <HelpContent title={title} help={help} />
+      </PopoverContent>
+      {describedBy ? null : (
+        <span id={id} hidden>
+          {helpText(help)}
+        </span>
+      )}
+    </Popover>
+  )
+}
+
+export { HelpPopover, HelpTooltip, Tooltip, TooltipContent, TooltipTrigger }

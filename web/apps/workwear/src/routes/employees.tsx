@@ -254,11 +254,10 @@ export function Employees({ missing = false, navigate }: { missing?: boolean; na
 
 /**
  * A size Create Order will ask for, saying so (IssueBadge); `optional`, one it
- * can do without (a height beside a saved clothing size), a plain badge. opens
- * on the employee's page; a tooltip in the list's rows.
+ * can do without (a height beside a saved clothing size), a plain badge.
  */
-export function MissingBadge({ optional = false, opens = false }: { optional?: boolean; opens?: boolean }) {
-  return <IssueBadge label={t.employees.missing} variant={optional ? 'secondary' : 'destructive'} issues={optional ? [] : [t.employees.missingTitle]} opens={opens} />
+export function MissingBadge({ optional = false }: { optional?: boolean }) {
+  return <IssueBadge label={t.employees.missing} variant={optional ? 'secondary' : 'destructive'} issues={optional ? [] : [t.employees.missingTitle]} />
 }
 
 /**

@@ -1,6 +1,7 @@
 /*
- * Moving an item in the Item Catalogue's display order (the order Add Item
- * lists items in). Pure, so the screen only wires the drag handle to it.
+ * Moving one id within an ordered list of ids: a dragged row (useRowDrag), and
+ * an item in the Item Catalogue's display order. Pure, so screens only wire
+ * events to it.
  */
 
 /** ids with the one at from put at to. */
@@ -9,6 +10,18 @@ export function moveTo(ids: readonly string[], from: number, to: number): string
   const [id] = out.splice(from, 1)
   if (id !== undefined) out.splice(to, 0, id)
   return out
+}
+
+/** all with id put in front of before, or last when before is null. */
+export function placeBefore(all: readonly string[], id: string, before: string | null): string[] {
+  const rest = all.filter((x) => x !== id)
+  const at = before === null ? rest.length : rest.indexOf(before)
+  return [...rest.slice(0, at), id, ...rest.slice(at)]
+}
+
+/** Whether two orders hold the same ids in the same places. */
+export function sameOrder(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, n) => id === b[n])
 }
 
 /**

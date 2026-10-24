@@ -5,6 +5,7 @@ import { Button } from '@ppe/ui/components/button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { InControl } from '@ppe/ui/components/tooltip'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -584,7 +585,8 @@ function CardPicker({ kind, selected, onSelect }: { kind: AssetKind; selected: A
                   {(sim ? [a.provider, a.plan] : [a.category ? categoryLabel(a.category) : null, a.serial_no]).filter(Boolean).join(' · ')}
                 </span>
               </span>
-              {a.connection_status ? <StatusBadge status={a.connection_status} opens /> : null}
+              {/* The choice takes the click: the badge inside is a tooltip, not a button of its own. */}
+              <InControl value>{a.connection_status ? <StatusBadge status={a.connection_status} /> : null}</InControl>
               {sim && !a.phone_no ? <span className="text-xs text-muted-foreground">{t.assets.noPhoneNo}</span> : null}
             </button>
           )
@@ -604,7 +606,7 @@ function CardLine({ asset }: { asset: Asset }) {
       ) : (
         <span className="text-muted-foreground">{[asset.name, asset.category ? categoryLabel(asset.category) : null].filter(Boolean).join(' · ')}</span>
       )}
-      {asset.connection_status ? <StatusBadge status={asset.connection_status} opens /> : null}
+      {asset.connection_status ? <StatusBadge status={asset.connection_status} /> : null}
     </p>
   )
 }

@@ -5,7 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
-import { InfoTip } from '@ppe/ui/components/info-tip'
+import { RuleList } from '@ppe/ui/components/rule-list'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { EmptyState, ErrorState, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -23,13 +23,10 @@ import { formatDateTime } from '@ppe/ui/lib/dates'
 import { activityAt, statusLabel } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro, formatMonths } from '@/lib/utils'
+import { loadAllOrders } from '@/lib/employee-items'
 import { useOpenKey } from '@/lib/open-sections'
 
 import { ItemForm, confirmActiveChange, sizeGroupLabel } from './catalogue'
-
-/** How many of the item's orders the page lists, newest activity first. */
-/** The most orders one request reads (the API's limit). */
-const ORDERS_PAGE = 100
 
 /**
  * One catalogue item (/catalogue/<id>), opened from the Item Catalogue: beside
@@ -130,10 +127,10 @@ export function CatalogueItemDetail({
           </header>
           {actionError ? <ErrorState title={t.common.actionFailed} error={actionError} /> : null}
 
-          {/* An incomplete item's issues are in the Incomplete badge's tooltip only. */}
+          {/* What is wrong with the item opens from its badges (IssueBadge), not written under them. */}
           <div className="mb-3 flex flex-wrap gap-1">
-            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <InactiveItemBadge opens />}
-            <IncompleteBadge item={i} opens />
+            {i.active ? <Badge variant="secondary">{t.catalogue.active}</Badge> : <InactiveItemBadge />}
+            <IncompleteBadge item={i} />
           </div>
 
           {/* The pane is flat: its facts and lists sit between thin rules, no boxes. */}
@@ -147,7 +144,7 @@ export function CatalogueItemDetail({
             <Fact label={t.catalogue.lastChanged}>{formatDateTime(i.updated_at, tz)}</Fact>
           </dl>
 
-          {/* Closed at first, as Changes are; the count says how many steps it holds, the title's tooltip what they are. */}
+          {/* Its sections are closed at first, each counting what it holds, with what it is behind an ⓘ (description). */}
           <DisclosureSection
             id="price-history"
             title={t.catalogue.priceHistory}
@@ -162,20 +159,19 @@ export function CatalogueItemDetail({
             ) : prices.data.length === 0 ? (
               <EmptyState>{t.catalogue.noPriceHistory}</EmptyState>
             ) : (
-              <ol aria-label={t.catalogue.priceHistory} className="divide-y divide-border">
+              <RuleList ordered aria-label={t.catalogue.priceHistory}>
                 {prices.data.map((p, n) => (
                   <PriceStep key={`${p.at}-${n}`} p={p} tz={tz} />
                 ))}
-              </ol>
+              </RuleList>
             )}
           </DisclosureSection>
 
-          {/* Orders and Item Sets closed at first, as Price history is; each counts what it holds. */}
           <DisclosureSection
             id="item-orders"
             title={t.catalogue.orders}
             count={orderCount.data?.total}
-            action={<InfoTip label={t.catalogue.aboutSection(t.catalogue.orders)}>{t.catalogue.ordersIntro(tz)}</InfoTip>}
+            description={t.catalogue.ordersIntro(tz)}
             rememberAs={ordersKey}
           >
             <AllItemOrders itemId={id} tz={tz} navigate={navigate} />
@@ -185,7 +181,7 @@ export function CatalogueItemDetail({
             id="item-sets"
             title={t.catalogue.itemSets}
             count={sets.data ? holding.length : undefined}
-            action={<InfoTip label={t.catalogue.aboutSection(t.catalogue.itemSets)}>{t.catalogue.itemSetsIntro}</InfoTip>}
+            description={t.catalogue.itemSetsIntro}
             rememberAs={setsKey}
           >
             {sets.error ? (
@@ -195,20 +191,20 @@ export function CatalogueItemDetail({
             ) : holding.length === 0 ? (
               <EmptyState>{t.catalogue.noSetHolds}</EmptyState>
             ) : (
-              <ul aria-label={t.catalogue.itemSets} className="divide-y divide-border">
+              <RuleList aria-label={t.catalogue.itemSets}>
                 {holding.map(({ set, quantity }) => (
-                  <li key={set.id} className={cn('flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0', !set.active && 'text-muted-foreground')}>
+                  <li key={set.id} className={cn('flex items-center justify-between gap-3', !set.active && 'text-muted-foreground')}>
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{set.name}</span>
                       {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
-                      {set.active ? null : <InactiveSetBadge opens />}
+                      {set.active ? null : <InactiveSetBadge />}
                       <span className="text-sm tabular-nums">× {quantity}</span>
                     </span>
                   </li>
                 ))}
-              </ul>
+              </RuleList>
             )}
             <a
               {...linkTo({ name: 'itemSets' }, navigate)}
@@ -218,7 +214,7 @@ export function CatalogueItemDetail({
             </a>
           </DisclosureSection>
 
-          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
+          <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
           <ItemForm
             item={editing ? i : null}
@@ -271,7 +267,7 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
             ? t.catalogue.purchasePriceChanged
             : t.catalogue.periodChanged
   return (
-    <li className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+    <li className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <span className="block font-medium">{title}</span>
         <span className="block text-xs text-muted-foreground tabular-nums">
@@ -301,17 +297,10 @@ function PriceStep({ p, tz }: { p: PriceEntry; tz: string | undefined }) {
   )
 }
 
-/** Every order holding the item, read page by page when its section opens. */
+/** Every order holding the item, read when its section opens. */
 function AllItemOrders({ itemId, tz, navigate }: { itemId: string; tz: string | undefined; navigate: (to: Route) => void }) {
   const { client } = useApi()
-  const orders = useLoad(async () => {
-    const first = await client.orders.list({ catalogue_item_id: itemId, page_size: ORDERS_PAGE })
-    const all = [...first.orders]
-    for (let page = 2; all.length < first.total && page <= Math.ceil(first.total / ORDERS_PAGE); page++) {
-      all.push(...(await client.orders.list({ catalogue_item_id: itemId, page_size: ORDERS_PAGE, page })).orders)
-    }
-    return all
-  }, [itemId])
+  const orders = useLoad(() => loadAllOrders(client, { catalogue_item_id: itemId }), [itemId])
   if (orders.error) return <ErrorState error={orders.error} onRetry={orders.reload} />
   if (!orders.data) return <Loading />
   if (orders.data.length === 0) return <EmptyState>{t.catalogue.notOrdered}</EmptyState>
@@ -343,9 +332,9 @@ function ItemOrders({
     <>
       <p className="mb-2 text-sm text-muted-foreground">{t.catalogue.ordersSummary(orders.length, sum('GIVEN'), sum('ORDERED'))}</p>
       {/* Two lines an order: the record, its status and the price it was ordered at; then who, when, the size and how many. */}
-      <ul aria-label={t.catalogue.orders} className="divide-y divide-border">
+      <RuleList aria-label={t.catalogue.orders}>
         {rows.map(({ o, line }) => (
-          <li key={o.id} className="py-2 first:pt-0 last:pb-0">
+          <li key={o.id}>
             <div className="flex items-center justify-between gap-3">
               <span className="flex min-w-0 items-center gap-2">
                 {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
@@ -394,7 +383,7 @@ function ItemOrders({
             </div>
           </li>
         ))}
-      </ul>
+      </RuleList>
     </>
   )
 }

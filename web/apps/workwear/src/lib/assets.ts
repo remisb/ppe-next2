@@ -4,6 +4,7 @@
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
 import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
+import { helpText } from '@ppe/ui/components/tooltip'
 import { isoDay } from '@ppe/ui/lib/dates'
 
 import { t } from '@/i18n'
@@ -383,10 +384,7 @@ export function giveBlock(
   if (!a) return kind === 'SIM' ? t.assets.chooseCardReason : t.assets.chooseItemReason
   if (a.open_assignment) return t.assets.alreadyGivenReason
   if (a.kind === 'SIM') {
-    if (a.connection_status !== 'ACTIVE') {
-      const issue = t.assets.statusIssue[a.connection_status ?? 'NOT_ACTIVATED']
-      return `${issue.title} ${issue.detail}`
-    }
+    if (a.connection_status !== 'ACTIVE') return helpText({ body: [t.assets.statusIssue[a.connection_status ?? 'NOT_ACTIVATED']] })
   }
   if (!d.employeeId) return t.assets.chooseEmployeeReason
   if (!d.givenDate) return t.assets.givenDateReason

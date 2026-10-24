@@ -1,6 +1,6 @@
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
 
-import { moveTo } from './catalogue-order'
+import { moveTo, sameOrder } from './list-order'
 
 interface Drag {
   id: string
@@ -23,6 +23,8 @@ interface Drag {
  */
 export function useRowDrag(ids: readonly string[], onDrop: (order: string[], moved: string) => void) {
   const [drag, setDrag] = useState<Drag | null>(null)
+  // The rows on screen, found once when a row is picked up: only their places are read as it moves.
+  const rows = useRef(new Map<string, Element>())
   const latest = useRef({ drag, ids, onDrop })
   latest.current = { drag, ids, onDrop }
   const active = drag !== null
@@ -33,14 +35,13 @@ export function useRowDrag(ids: readonly string[], onDrop: (order: string[], mov
       const d = latest.current.drag
       if (!d || e.pointerId !== d.pointerId) return
       // The row lands below every other row whose middle is above the pointer.
-      const rest = d.order.filter((x) => x !== d.id)
       let at = 0
-      for (const other of rest) {
-        const box = document.querySelector(`[data-row-id="${CSS.escape(other)}"]`)?.getBoundingClientRect()
+      for (const other of d.order) {
+        const box = other === d.id ? undefined : rows.current.get(other)?.getBoundingClientRect()
         if (box && e.clientY > box.top + box.height / 2) at++
       }
-      const order = [...rest.slice(0, at), d.id, ...rest.slice(at)]
-      if (order.join() !== d.order.join()) setDrag({ ...d, order })
+      const order = moveTo(d.order, d.order.indexOf(d.id), at)
+      if (!sameOrder(order, d.order)) setDrag({ ...d, order })
       // Near the window's top or bottom edge the page scrolls, so a long list can be crossed.
       if (e.clientY < 48) window.scrollBy(0, -12)
       else if (e.clientY > window.innerHeight - 48) window.scrollBy(0, 12)
@@ -49,7 +50,7 @@ export function useRowDrag(ids: readonly string[], onDrop: (order: string[], mov
       const { drag: d, ids: start, onDrop: drop } = latest.current
       if (!d || e.pointerId !== d.pointerId) return
       setDrag(null)
-      if (d.order.join() !== start.join()) drop(d.order, d.id)
+      if (!sameOrder(d.order, start)) drop(d.order, d.id)
     }
     const cancel = () => setDrag(null)
     // Escape while dragging puts the row back, before anything else hears it (closing a pane).
@@ -78,6 +79,7 @@ export function useRowDrag(ids: readonly string[], onDrop: (order: string[], mov
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
       if (e.button !== 0 || latest.current.drag) return
       e.preventDefault()
+      rows.current = new Map([...document.querySelectorAll('[data-row-id]')].map((row) => [row.getAttribute('data-row-id')!, row]))
       setDrag({ id, pointerId: e.pointerId, order: [...ids] })
     },
     onKeyDown: (e: KeyboardEvent<HTMLElement>) => {

@@ -11,6 +11,7 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { InControl } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -23,7 +24,7 @@ import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isLang, languages, t } from '@/i18n'
-import { type Due, type EmployeeItem, employeeItems, loadEmployeeOrders, replacementsDue } from '@/lib/employee-items'
+import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
 import { missingSizes } from '@/lib/missing-sizes'
 import { useOpenKey } from '@/lib/open-sections'
@@ -45,7 +46,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
   const { client } = useApi()
   const session = useSession()
   const employee = useLoad(() => client.employees.get(id), [id])
-  const orders = useLoad(() => loadEmployeeOrders(client, id), [id])
+  const orders = useLoad(() => loadAllOrders(client, { employee_id: id }), [id])
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
@@ -338,7 +339,7 @@ export function EmployeePage({ id, navigate, onBack }: { id: string; navigate: (
             <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
           ) : null}
 
-          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} collapsible rememberAs={changesKey} className="mb-0" />
+          <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
           <EmployeeForm
             open={editing}
@@ -522,7 +523,10 @@ function SetMissing({ label, optional = false, onClick }: { label: string; optio
       onClick={onClick}
       className="-m-1 inline-flex rounded-md p-1 outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50 pointer-coarse:min-h-11 pointer-coarse:items-center"
     >
-      <MissingBadge optional={optional} opens />
+      {/* The button takes the click: the badge inside is a tooltip, not a button of its own. */}
+      <InControl value>
+        <MissingBadge optional={optional} />
+      </InControl>
     </button>
   )
 }

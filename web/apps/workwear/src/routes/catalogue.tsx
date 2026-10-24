@@ -2,7 +2,7 @@ import type { CatalogueIcon, CatalogueItem, CatalogueItemInput, SizeGroup } from
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
-import { Button } from '@ppe/ui/components/button'
+import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
@@ -20,7 +20,7 @@ import { InactiveItemBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { t } from '@/i18n'
 import { guessIcon } from '@/lib/items'
-import { moveBefore } from '@/lib/catalogue-order'
+import { moveBefore, placeBefore } from '@/lib/list-order'
 import { type ItemStatus, itemStatus } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { isTyping } from '@/lib/shortcuts'
@@ -138,28 +138,33 @@ export function Catalogue({
 
   // Moving an item: in the display order only (no column sorted), by those who manage items.
   const canMove = canManageItems && sort === null
-  // The order a move left, shown until the list is read again; and what a screen reader hears of it.
-  const [pending, setPending] = useState<{ shown: string[]; all: string[] } | null>(null)
+  // The whole display order moves left, shown until the list is read again; and what a screen reader hears of it.
+  const [pending, setPending] = useState<string[] | null>(null)
   const [moved, setMoved] = useState('')
   useEffect(() => setPending(null), [items.data])
-  // Moves are sent one after another, each from the order the one before left.
-  const moves = useRef(Promise.resolve())
-  const shownIds = useMemo(() => pending?.shown.filter((id) => shown.some((i) => i.id === id)) ?? shown.map((i) => i.id), [pending, shown])
+  const shownIds = useMemo(() => {
+    const ids = shown.map((i) => i.id)
+    if (!pending) return ids
+    const visible = new Set(ids)
+    return pending.filter((id) => visible.has(id))
+  }, [pending, shown])
+  // Moves are sent one after another, each from the order the one before left; the list is read again once, after the last.
+  const moves = useRef({ queue: Promise.resolve(), waiting: 0 })
   const move = (order: string[], id: string) => {
-    const all = pending?.all ?? (items.data ?? []).map((i) => i.id)
+    const all = pending ?? (items.data ?? []).map((i) => i.id)
     const before = moveBefore(all, order, id)
-    const rest = all.filter((x) => x !== id)
-    const at = before === null ? rest.length : rest.indexOf(before)
-    setPending({ shown: order, all: [...rest.slice(0, at), id, ...rest.slice(at)] })
+    setPending(placeBefore(all, id, before))
     const name = shown.find((i) => i.id === id)?.name ?? ''
-    moves.current = moves.current.then(async () => {
+    const m = moves.current
+    m.waiting++
+    m.queue = m.queue.then(async () => {
       try {
         await client.catalogue.move(id, before)
         setMoved(t.catalogue.movedTo(name, order.indexOf(id) + 1, order.length))
       } catch (err) {
         setActionError(err)
       }
-      items.reload()
+      if (--m.waiting === 0) items.reload()
     })
   }
   const drag = useRowDrag(shownIds, move)
@@ -317,7 +322,7 @@ export function Catalogue({
                                 type="button"
                                 aria-label={t.catalogue.moveItem(i.name)}
                                 title={t.catalogue.moveHint}
-                                className="-mx-1.5 flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing pointer-coarse:size-11 stacked:hidden"
+                                className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), '-mx-1.5 size-8 cursor-grab touch-none text-muted-foreground active:cursor-grabbing stacked:hidden')}
                                 {...drag.handleProps(i.id)}
                               >
                                 <GripVertical aria-hidden className="size-4" />
@@ -428,7 +433,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   const [iconPicked, setIconPicked] = useState(false)
   const [error, setError] = useState<string>()
   // The picture gives the item its size group; read afresh each time the form opens.
-  const pictures = useLoad(() => client.catalogue.pictures(), [item])
+  const pictures = useLoad(() => (item === null ? Promise.resolve(undefined) : client.catalogue.pictures()), [item !== null])
   const pictureGroup = pictures.data?.find((p) => p.icon === icon)?.size_group
 
   useEffect(() => {
@@ -560,7 +565,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
  */
 export function PicturesSheet({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
   const { client } = useApi()
-  const pictures = useLoad(() => client.catalogue.pictures(), [open])
+  const pictures = useLoad(() => (open ? client.catalogue.pictures() : Promise.resolve(undefined)), [open])
   // The size groups chosen here, by picture, until saved.
   const [chosen, setChosen] = useState<Partial<Record<CatalogueIcon, SizeGroup>>>({})
   const [error, setError] = useState<string>()

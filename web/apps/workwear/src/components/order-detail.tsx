@@ -99,7 +99,7 @@ export function OrderDetail({
           {deleteError ? <ErrorState title={t.history.notDeleted} error={deleteError} /> : null}
           {/* Closed at first, so the actions stay near the top; once open, loaded again whenever
               the order is (after a confirmation), so its new step shows. */}
-          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} collapsible rememberAs={changesKey} className="mb-0" />
+          <RecordChanges load={() => client.audit.history('orders', id)} deps={[id, o]} timeZone={timeZone} rememberAs={changesKey} className="mb-0" />
           {handingOver ? (
             <HandOver
               orderId={o.id}

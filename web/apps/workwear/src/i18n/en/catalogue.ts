@@ -120,18 +120,11 @@ export const catalogue = {
   notOrdered: 'This item has not been ordered yet.',
   ordersSummary: (total: number, given: number, onOrder: number) =>
     plural(total, { one: `# order: ${given} given, ${onOrder} on order.`, other: `# orders: ${given} given, ${onOrder} on order.` }),
-  colRecord: 'Record',
-  colEmployee: 'Employee',
-  colDate: 'Date',
-  colSize: 'Size',
   /** An order's line on the item pane: its size, and how many. */
   orderSize: (size: string) => `Size ${size}`,
   orderQuantity: (n: number) => `× ${n}`,
-  colQuantity: 'Quantity',
   receipt: (record: string) => `Receipt ${record}`,
   itemSets: 'Item Sets',
-  /** The ⓘ beside a section's heading. */
-  aboutSection: (section: string) => `About ${section}`,
   itemSetsIntro: 'Sets that add this item when applied in Create Order, with their default quantity.',
   noSetHolds: 'No item set holds this item.',
   openItemSets: 'Open Item Sets',

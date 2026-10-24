@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { IssueBadge, issueLabel } from './issue-badge.tsx'
-import { HelpBody } from './tooltip.tsx'
+import { HelpBody, InControl } from './tooltip.tsx'
 
 // React warns unless it is told this is a test environment for act().
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -37,21 +37,25 @@ describe('issueLabel', () => {
 
 describe('IssueBadge', () => {
   it('is a plain badge without issues', () => {
-    const c = render(<IssueBadge label="Active" issues={[]} opens />)
+    const c = render(<IssueBadge label="Active" issues={[]} />)
     expect(c.querySelector('[data-slot=badge]')?.textContent).toBe('Active')
     expect(c.querySelector('button')).toBeNull()
   })
 
   it('in a page, is a button that counts its issues and describes them', () => {
-    const c = render(<IssueBadge label="Incomplete" variant="warning" issues={two} note="It cannot be ordered." opens />)
+    const c = render(<IssueBadge label="Incomplete" variant="warning" issues={two} note="It cannot be ordered." />)
     const button = c.querySelector('button')!
     expect(button.textContent).toBe('Incomplete (2)')
     const description = document.getElementById(button.getAttribute('aria-describedby')!)
     expect(description?.textContent).toBe('Price is missing. Set it in Edit Item. Service period is missing. Set it in Edit Item. It cannot be ordered.')
   })
 
-  it('in a list row, is a badge with a tooltip, not a button', () => {
-    const c = render(<IssueBadge label="Inactive" issues={['Not offered in Add Item.']} />)
+  it('inside a control (a list row), is a badge with a tooltip, not a button', () => {
+    const c = render(
+      <InControl value>
+        <IssueBadge label="Inactive" issues={['Not offered in Add Item.']} />
+      </InControl>,
+    )
     expect(c.querySelector('button')).toBeNull()
     // The tooltip's trigger is the badge itself.
     const badge = c.querySelector('[data-slot=tooltip-trigger]')!
@@ -62,16 +66,16 @@ describe('IssueBadge', () => {
 })
 
 describe('HelpBody', () => {
-  it('as a list, numbers one item as it numbers several, so their text starts at the same place', () => {
-    const one = render(<HelpBody body={['Not offered in Add Item.']} list />)
+  it('numbers a list of one as it numbers several, so their text starts at the same place', () => {
+    const one = render(<HelpBody body={['Not offered in Add Item.']} />)
     expect(one.querySelectorAll('ol > li')).toHaveLength(1)
     expect(one.querySelector('li > span')?.textContent).toBe('1')
     unmount()
-    const two = render(<HelpBody body={['A.', 'B.']} list />)
+    const two = render(<HelpBody body={['A.', 'B.']} />)
     expect([...two.querySelectorAll('li > span')].map((s) => s.textContent)).toEqual(['1', '2'])
   })
 
-  it('otherwise keeps one item a paragraph (a tab\'s or a tile\'s explanation)', () => {
+  it('keeps a string a paragraph (a tab\'s or a tile\'s explanation)', () => {
     const c = render(<HelpBody body="SIMs the provider has switched on." />)
     expect(c.querySelector('ol')).toBeNull()
     expect(c.querySelector('p')?.textContent).toBe('SIMs the provider has switched on.')

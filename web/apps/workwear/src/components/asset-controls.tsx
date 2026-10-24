@@ -23,12 +23,11 @@ const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
 
 /**
  * A SIM card's connection status as a badge. Not Activated and Blocked say why
- * the card cannot be given and what to do (IssueBadge); opens on a page or a
- * pane, a tooltip in the register's rows.
+ * the card cannot be given and what to do (IssueBadge).
  */
-export function StatusBadge({ status, opens = false }: { status: ConnectionStatus; opens?: boolean }) {
+export function StatusBadge({ status }: { status: ConnectionStatus }) {
   const issues = status === 'ACTIVE' ? [] : [t.assets.statusIssue[status]]
-  return <IssueBadge label={statusLabel(status)} variant={statusVariant(status)} issues={issues} opens={opens} />
+  return <IssueBadge label={statusLabel(status)} variant={statusVariant(status)} issues={issues} />
 }
 
 /**
