@@ -247,8 +247,10 @@ export function History({
         aria-label={t.history.filters}
         className={cn(
           'mb-4 grid items-start gap-3 sm:grid-cols-2',
-          // Beside an open order the list is narrow: two columns there, three on their own.
-          !selected && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto]',
+          // Employee and Record number share what the dates and Clear filters leave; beside an open order that is one line from lg, on their own from xl.
+          selected
+            ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_10.5rem_auto]'
+            : 'xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_10.5rem_auto]',
         )}
       >
         {/* On a phone the employee search stays in view, without its heading (its placeholder
