@@ -44,7 +44,6 @@ export const history = {
   colEmployee: 'Employee',
   colDate: 'Date',
   colStatus: 'Status',
-  colUsage: 'Usage time',
   colTotal: 'Total value',
   pages: 'Pages',
   pageOf: (page: number, pages: number) => `Page ${page} of ${pages}`,

@@ -1633,7 +1633,7 @@ test('Orders beside an open order: one line a row; J and K move through it, Esca
   await expect(page).toHaveURL(opened)
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(/\/orders$/)
-  await expect(page.getByRole('columnheader', { name: 'Usage time' })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
 })
 
 test('desktop power layer: relative dates, a record previewed on hover, Compact rows kept per user', async () => {

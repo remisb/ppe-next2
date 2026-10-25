@@ -24,7 +24,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { t } from '@/i18n'
-import { type DatePeriod, LONG_WAIT_DAYS, activityAt, formatUsage, formatWaiting, looksLikeRecord, monthOf, periodRange, waitingDays } from '@/lib/history'
+import { type DatePeriod, LONG_WAIT_DAYS, activityAt, looksLikeRecord, monthOf, periodRange } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
 
@@ -59,7 +59,6 @@ const historyColumns = (): SortColumn<HistorySort>[] => [
   { key: 'employee', label: t.history.colEmployee, kind: 'text' },
   { key: 'date', label: t.history.colDate, firstDir: 'desc', kind: 'date' },
   { key: 'status', label: t.history.colStatus },
-  { key: 'usage', label: t.history.colUsage, kind: 'duration' },
   { key: 'total', label: t.history.colTotal, kind: 'number' },
 ]
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
@@ -181,12 +180,9 @@ export function History({
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
 
   const tz = settings.data?.timezone
-  const now = new Date()
   // An order is open beside the list (from lg): the list keeps its short columns.
   const beside = selected !== undefined
   const columns = historyColumns()
-  // Beside an open order the list keeps the columns that find the next one to chase: one line a row.
-  const shownColumns = beside ? columns.filter((c) => c.key !== 'usage') : columns
   const pages = orders.data ? Math.max(1, Math.ceil(orders.data.total / PAGE_SIZE)) : 1
   // The status tabs are not counted: they are always in view.
   const activeFilters = [filters.employee, record, filters.period !== 'all'].filter(Boolean).length
@@ -250,7 +246,7 @@ export function History({
         id="history-filters"
         aria-label={t.history.filters}
         className={cn(
-          'mb-4 grid gap-3 sm:grid-cols-2',
+          'mb-4 grid items-start gap-3 sm:grid-cols-2',
           // Beside an open order the list is narrow: two columns there, three on their own.
           !selected && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.4fr)_auto]',
         )}
@@ -258,7 +254,6 @@ export function History({
         {/* On a phone the employee search stays in view, without its heading (its placeholder
             says what it is), and Filters folds away only the dates, Clear filters and the sort. */}
         <div>
-          <p className="mb-1.5 text-sm font-medium max-md:hidden">{t.history.employee}</p>
           <EmployeePicker
             label={t.history.employee}
             selected={filters.employee}
@@ -267,7 +262,7 @@ export function History({
           />
         </div>
         {/* A record number read out on the phone finds its order: typed, it filters once it reads as one. */}
-        <Field label={t.history.recordNumber} error={recordValid ? undefined : t.history.recordInvalid}>
+        <Field label={t.history.recordNumber} hideLabel error={recordValid ? undefined : t.history.recordInvalid}>
           {(p) => (
             <Input
               {...controlProps(p)}
@@ -290,16 +285,13 @@ export function History({
             setPage(1)
           }}
         />
-        <div className={cn('flex items-end', folded)}>
-          <Button
-            variant="ghost"
-            className="w-full sm:w-auto"
-            disabled={activeFilters === 0}
-            onClick={clearFilters}
-          >
-            {t.history.clearFilters}
-          </Button>
-        </div>
+        {activeFilters > 0 && (
+          <div className={cn(folded)}>
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={clearFilters}>
+              {t.history.clearFilters}
+            </Button>
+          </div>
+        )}
         {/* On a phone the sort order folds away with the filters; wider, it sits above the rows. */}
         <div className={cn('md:hidden', folded)}>
           <SortControl columns={columns} {...sortProps} />
@@ -331,11 +323,11 @@ export function History({
         <>
           {/*
             A row opens its order, where its actions are. Where the table is
-            narrow the orders are one list of two-line rows: who and how long
-            it has waited, then the record, date and value; sorted by date,
-            under a heading per month. Beside an open order the table drops
-            Usage time, the Ordered badge and the time of day, so it stays
-            one line a row down to 30rem of room (a desktop from about 1200px).
+            narrow the orders are one list of two-line rows: who and the status,
+            then the record, date and value; sorted by date, under a heading
+            per month. Beside an open order the table drops the time of day
+            and the employee code, so it stays one line a row down to 30rem
+            of room (a desktop from about 1200px).
           */}
           <Table
             stack="list"
@@ -348,20 +340,19 @@ export function History({
           >
             <TableHeader>
               <TableRow>
-                {shownColumns.map((c) => (
+                {columns.map((c) => (
                   <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} {...sortProps} />
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.data.orders.map((o, i, list) => {
-                const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, now, tz) : 0
                 const month = monthOf(activityAt(o), tz)
                 const prev = list[i - 1]
                 const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                 return (
                   <Fragment key={o.id}>
-                  {newMonth ? <TableGroupRow colSpan={shownColumns.length}>{month.label}</TableGroupRow> : null}
+                  {newMonth ? <TableGroupRow colSpan={columns.length}>{month.label}</TableGroupRow> : null}
                   <TableRow
                     data-state={selected === o.id ? 'selected' : undefined}
                     aria-current={selected === o.id ? 'true' : undefined}
@@ -401,35 +392,8 @@ export function History({
                       <RelativeDate iso={activityAt(o)} timeZone={tz} className={cn(!beside && 'hidden stacked:inline')} />
                     </TableCell>
                     <TableCell className="stacked:order-1 stacked:w-auto">
-                      <span className="inline-flex items-center gap-2">
-                        {/* In a row an aging chip says Ordered by itself. */}
-                        <OrderStatusBadge status={o.status} className={cn(o.status === 'ORDERED' && (beside ? 'hidden' : 'stacked:hidden'))} />
-                        {o.status === 'ORDERED' ? (
-                          <span
-                            className={cn(
-                              'text-xs whitespace-nowrap',
-                              // Beside an order, and stacked, the wait is a pill: it stands for the Ordered badge.
-                              beside ? 'rounded-full px-2 py-0.5 tabular-nums' : 'stacked:rounded-full stacked:px-2 stacked:py-0.5 stacked:tabular-nums',
-                              days > LONG_WAIT_DAYS
-                                ? cn('font-medium text-destructive', beside ? 'bg-destructive/10' : 'stacked:bg-destructive/10')
-                                : cn('text-muted-foreground', beside ? 'bg-muted' : 'stacked:bg-muted'),
-                            )}
-                          >
-                            {formatWaiting(days)}
-                          </span>
-                        ) : null}
-                      </span>
+                      <OrderStatusBadge status={o.status} />
                     </TableCell>
-                    {beside ? null : (
-                      <TableCell
-                        className={cn(
-                          "stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']",
-                          o.usage_months === null && 'stacked:hidden',
-                        )}
-                      >
-                        {formatUsage(o.usage_months) || '–'}
-                      </TableCell>
-                    )}
                     <TableCell className="text-right font-medium tabular-nums stacked:order-3 stacked:w-auto stacked:text-xs stacked:font-normal stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
                       {formatEuro(o.total_cents)}
                     </TableCell>

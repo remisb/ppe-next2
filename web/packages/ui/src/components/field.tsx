@@ -40,13 +40,15 @@ interface FieldProps {
   error?: string | undefined
   hint?: string | undefined
   required?: boolean
+  /** Keep the label for screen readers only, as where the control says what it is. */
+  hideLabel?: boolean
   /** Added to the wrapper, e.g. to put the label beside the control on a phone. */
   className?: string | undefined
   children: (props: { id: string; describedBy: string | undefined; invalid: boolean }) => ReactNode
 }
 
 /** A labelled control with its error and hint wired up for screen readers. */
-export function Field({ label, error, hint, required, className, children }: FieldProps) {
+export function Field({ label, error, hint, required, hideLabel, className, children }: FieldProps) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
@@ -54,7 +56,7 @@ export function Field({ label, error, hint, required, className, children }: Fie
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className={cn('text-sm font-medium', hideLabel && 'sr-only')}>
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
       </label>

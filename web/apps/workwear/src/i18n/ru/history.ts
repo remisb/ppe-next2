@@ -42,7 +42,6 @@ export const history: HistoryText = {
   colEmployee: 'Сотрудник',
   colDate: 'Дата',
   colStatus: 'Статус',
-  colUsage: 'Срок использования',
   colTotal: 'Общая сумма',
   pages: 'Страницы',
   pageOf: (page: number, pages: number) => `Страница ${page} из ${pages}`,

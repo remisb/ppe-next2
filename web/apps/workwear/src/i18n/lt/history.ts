@@ -42,7 +42,6 @@ export const history: HistoryText = {
   colEmployee: 'Darbuotojas',
   colDate: 'Data',
   colStatus: 'Būsena',
-  colUsage: 'Naudojimo trukmė',
   colTotal: 'Bendra vertė',
   pages: 'Puslapiai',
   pageOf: (page: number, pages: number) => `${page} psl. iš ${pages}`,

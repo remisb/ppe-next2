@@ -2,7 +2,6 @@ import { Button } from '@ppe/ui/components/button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Popover, PopoverContent } from '@ppe/ui/components/popover'
 import { formatDay } from '@ppe/ui/lib/dates'
-import { cn } from '@ppe/ui/lib/utils'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
 
@@ -132,8 +131,8 @@ export function PeriodFilter({
 
   return (
     <div className={className}>
-      {/* On a phone without its heading, as the employee search: its choice ("All dates") says what it is. Still its name. */}
-      <label id={labelId} htmlFor={id} className="text-sm font-medium max-md:hidden">
+      {/* Without a visible heading: its choice ("All dates") says what it is. Still its name. */}
+      <label id={labelId} htmlFor={id} className="sr-only">
         {t.history.period}
       </label>
       <button
@@ -151,7 +150,7 @@ export function PeriodFilter({
             openList()
           }
         }}
-        className={cn(control, 'md:mt-1.5')}
+        className={control}
       >
         <span className="truncate">{currentLabel}</span>
         <ChevronDown aria-hidden className="size-4 shrink-0 opacity-60" />
