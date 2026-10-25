@@ -2,7 +2,7 @@ import type { Permission } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
 import { adminHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList } from '@ppe/ui/components/main-nav'
+import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList, railTip } from '@ppe/ui/components/main-nav'
 import { Loading } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -302,7 +302,7 @@ export function App() {
             )}
           >
             <span className={navIcon}>
-              <Search aria-hidden className="size-5 xl:size-4" />
+              <Search aria-hidden className="size-5 md:size-4" />
             </span>
             <span className="xl:hidden">{t.common.search}</span>
             <span className="hidden flex-1 text-left xl:inline">{t.shell.searchEllipsis}</span>
@@ -316,7 +316,7 @@ export function App() {
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             // On a short window the sections scroll, so the foot (Help, Account, Sign out) stays in reach.
-            'md:static md:flex md:min-h-0 md:flex-col md:gap-1 md:overflow-y-auto md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
+            'md:static md:flex md:min-h-0 md:flex-col md:gap-0.5 md:overflow-y-auto xl:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
           {/* The rail and sidebar's New order, above Dashboard; on a phone it is the raised button in the middle of the bar. */}
@@ -408,13 +408,13 @@ export function App() {
             </div>
           </div>
         </nav>
-        <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex xl:p-3">
+        <div className="mt-auto hidden flex-col gap-0.5 border-t border-border p-2 md:flex xl:gap-1 xl:p-3">
           {administration ? (
             <a href={adminHref('/')} title={t.shell.administration} className={navItem}>
               <span className={navIcon}>
-                <ShieldCheck aria-hidden className="size-5 xl:size-4" />
+                <ShieldCheck aria-hidden className="size-5 md:size-4" />
               </span>
-              <span aria-hidden className="xl:hidden">
+              <span aria-hidden className={cn(railTip, 'xl:hidden')}>
                 {t.shell.shortAdministration}
               </span>
               <span className="sr-only xl:not-sr-only">{t.shell.administration}</span>
@@ -422,15 +422,15 @@ export function App() {
           ) : null}
           <a {...link({ name: 'help' })} aria-current={route.name === 'help' ? 'page' : undefined} title={t.shell.userGuide} className={navItem}>
             <span className={navIcon}>
-              <BookOpen aria-hidden className="size-5 xl:size-4" />
+              <BookOpen aria-hidden className="size-5 md:size-4" />
             </span>
-            {t.shell.help}
+            <span className={railTip}>{t.shell.help}</span>
           </a>
           <button type="button" onClick={() => setHelpOpen(true)} className={cn(navItem, 'w-full cursor-pointer pointer-coarse:hidden')}>
             <span className={navIcon}>
-              <Keyboard aria-hidden className="size-5 xl:size-4" />
+              <Keyboard aria-hidden className="size-5 md:size-4" />
             </span>
-            <span className="xl:hidden">{t.shell.shortKeys}</span>
+            <span className={cn(railTip, 'xl:hidden')}>{t.shell.shortKeys}</span>
             <span className="hidden xl:inline">{t.shell.keyboardShortcuts}</span>
           </button>
           <a
@@ -440,16 +440,16 @@ export function App() {
             className={navItem}
           >
             <span className={navIcon}>
-              <UserRound aria-hidden className="size-5 xl:size-4" />
+              <UserRound aria-hidden className="size-5 md:size-4" />
             </span>
-            <span className="xl:hidden">{t.shell.shortAccount}</span>
+            <span className={cn(railTip, 'xl:hidden')}>{t.shell.shortAccount}</span>
             <span className="hidden truncate xl:inline">{session.name}</span>
           </a>
           <button type="button" onClick={signOut} className={cn(navItem, 'w-full cursor-pointer')}>
             <span className={navIcon}>
-              <LogOut aria-hidden className="size-5 xl:size-4" />
+              <LogOut aria-hidden className="size-5 md:size-4" />
             </span>
-            {t.shell.signOut}
+            <span className={railTip}>{t.shell.signOut}</span>
           </button>
         </div>
       </aside>
@@ -573,7 +573,7 @@ function NavLink({
   return (
     <a {...link(r)} aria-current={current === 'section' ? 'true' : current ? 'page' : undefined} className={cn(item, className)}>
       <span className={cn(icon, 'relative')}>
-        <Icon aria-hidden className="size-5 xl:size-4" />
+        <Icon aria-hidden className="size-5 md:size-4" />
         {/* On the icon in the tab bar and rail; at the end of the row in the sidebar. */}
         {badge > 0 ? <Count n={badge} className="absolute -top-1 left-[calc(50%+0.25rem)] xl:hidden" /> : null}
       </span>

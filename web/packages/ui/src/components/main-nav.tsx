@@ -20,15 +20,24 @@ import { cn } from '../lib/utils.ts'
  */
 export const navItem = cn(
   'group relative flex flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors',
-  'h-16 focus-visible:ring-2 focus-visible:ring-ring md:h-auto md:rounded-lg md:py-2',
+  'h-16 focus-visible:ring-2 focus-visible:ring-ring md:h-auto md:rounded-lg md:gap-0.5 md:py-1.5',
   'xl:flex-row xl:justify-start xl:gap-3 xl:px-3 xl:py-2.5 xl:text-sm',
   'hover:text-foreground aria-[current=page]:text-foreground aria-[current=true]:text-foreground data-[active=true]:text-foreground xl:hover:bg-accent xl:aria-[current=page]:bg-accent',
 )
 /** The icon's pill is the phone and rail's active marker; the sidebar highlights the whole row. */
 export const navIcon = cn(
-  'flex h-8 w-full max-w-14 items-center justify-center rounded-full transition-colors xl:h-auto xl:w-auto xl:max-w-none',
+  'flex h-8 w-full max-w-14 md:h-6 items-center justify-center rounded-full transition-colors xl:h-auto xl:w-auto xl:max-w-none',
   'group-hover:bg-accent/60 group-aria-[current=page]:bg-accent group-aria-[current=true]:bg-accent group-data-[active=true]:bg-accent',
   'xl:group-hover:bg-transparent xl:group-aria-[current=page]:bg-transparent xl:group-aria-[current=true]:bg-transparent',
+)
+/**
+ * A label the rail leaves out until the pointer (or the keyboard) reaches its item: a tooltip beside
+ * the icon from md to xl. The sidebar and the phone's panel show it as ordinary text.
+ */
+export const railTip = cn(
+  'md:max-xl:pointer-events-none md:max-xl:absolute md:max-xl:top-1/2 md:max-xl:left-full md:max-xl:z-50 md:max-xl:ml-2 md:max-xl:-translate-y-1/2',
+  'md:max-xl:rounded-md md:max-xl:bg-foreground md:max-xl:px-2 md:max-xl:py-1 md:max-xl:text-xs md:max-xl:whitespace-nowrap md:max-xl:text-background',
+  'md:max-xl:opacity-0 md:max-xl:transition-opacity md:max-xl:group-hover:opacity-100 md:max-xl:group-focus-visible:opacity-100',
 )
 /** A section under More: a full-width row in the phone's panel, a normal item in the rail and sidebar. */
 export const moreItem = cn(

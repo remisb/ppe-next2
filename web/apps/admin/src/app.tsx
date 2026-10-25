@@ -1,7 +1,7 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
 import { staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { Brand, moreIcon, moreItem, navIcon, navItem } from '@ppe/ui/components/main-nav'
+import { Brand, moreIcon, moreItem, navIcon, navItem, railTip } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
 import { Activity, ArrowLeft, BarChart3, Ellipsis, Gauge, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
@@ -109,7 +109,7 @@ export function App() {
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
             phoneColumns[inBar.length],
-            'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
+            'md:static md:flex md:flex-col md:gap-0.5 md:border-0 xl:gap-1 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
           {shown.map((s) => (
@@ -120,7 +120,7 @@ export function App() {
               className={cn(navItem, s.inMore && 'max-md:hidden')}
             >
               <span className={navIcon}>
-                <s.icon aria-hidden className="size-5 xl:size-4" />
+                <s.icon aria-hidden className="size-5 md:size-4" />
               </span>
               <span aria-hidden className="max-w-full truncate px-0.5 xl:hidden">
                 {s.short}
@@ -163,7 +163,7 @@ export function App() {
             <FootLinks name={session.name} onSignOut={signOut} item={moreItem} icon={moreIcon} />
           </div>
         </nav>
-        <div className="mt-auto hidden flex-col gap-1 border-t border-border p-2 md:flex xl:p-3">
+        <div className="mt-auto hidden flex-col gap-0.5 border-t border-border p-2 md:flex xl:gap-1 xl:p-3">
           <FootLinks name={session.name} onSignOut={signOut} item={navItem} icon={navIcon} />
         </div>
       </aside>
@@ -194,25 +194,25 @@ function FootLinks({ name, onSignOut, item, icon }: { name: string; onSignOut: (
     <>
       <a href={staffHref('/')} title={t.shell.workwear} className={item}>
         <span className={icon}>
-          <ArrowLeft aria-hidden className="size-5 xl:size-4" />
+          <ArrowLeft aria-hidden className="size-5 md:size-4" />
         </span>
-        <span aria-hidden className={cn('xl:hidden', phoneRow && 'max-md:hidden')}>
+        <span aria-hidden className={cn(railTip, 'xl:hidden', phoneRow && 'max-md:hidden')}>
           {t.shell.shortWorkwear}
         </span>
         <span className={cn('sr-only xl:not-sr-only', phoneRow && 'max-md:not-sr-only')}>{t.shell.workwear}</span>
       </a>
       <a href={staffHref('/account')} title={t.shell.accountAndPassword} className={item}>
         <span className={icon}>
-          <UserRound aria-hidden className="size-5 xl:size-4" />
+          <UserRound aria-hidden className="size-5 md:size-4" />
         </span>
-        <span className={cn('xl:hidden', phoneRow && 'max-md:hidden')}>{t.shell.shortAccount}</span>
+        <span className={cn(railTip, 'xl:hidden', phoneRow && 'max-md:hidden')}>{t.shell.shortAccount}</span>
         <span className={cn('hidden truncate xl:inline', phoneRow && 'max-md:inline')}>{name}</span>
       </a>
       <button type="button" onClick={onSignOut} className={cn(item, 'w-full cursor-pointer')}>
         <span className={icon}>
-          <LogOut aria-hidden className="size-5 xl:size-4" />
+          <LogOut aria-hidden className="size-5 md:size-4" />
         </span>
-        {t.shell.signOut}
+        <span className={railTip}>{t.shell.signOut}</span>
       </button>
     </>
   )
