@@ -15,7 +15,6 @@ export const order: OrderText = {
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. Įgaliotas naudotojas turi ją papildyti arba vėl aktyvuoti Prekių kataloge; kitaip pašalinkite eilutę.`,
   assignedTo: 'Kam skirta',
-  savedSizesOf: (name: string) => `Išsaugoti dydžiai: ${name}`,
   addItem: 'Pridėti prekę',
   itemSet: 'Prekių rinkinys',
   applySr: 'Taikyti ',
@@ -118,14 +117,6 @@ export const order: OrderText = {
   selectSize: 'Pasirinkite dydį.',
   priceMissing: 'Trūksta kainos. Įgaliotas naudotojas turi nurodyti kainą prekių kataloge.',
   periodMissing: 'Trūksta naudojimo laikotarpio. Įgaliotas naudotojas turi nurodyti naudojimo laikotarpį prekių kataloge.',
-
-  // The employee's saved sizes
-  heightCm: (cm: number) => `${cm} cm`,
-  clothingSize: (size: string) => `Drabužiai ${size}`,
-  clothingFromHeight: 'Drabužiai pagal ūgį',
-  noClothingSize: 'Nėra drabužių dydžio',
-  shoeSize: (size: string) => `Avalynė ${size}`,
-  noShoeSize: 'Nėra avalynės dydžio',
 
   // Pickers and quantity
   addAnItem: 'Pridėti prekę…',

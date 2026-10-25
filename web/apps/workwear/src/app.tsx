@@ -87,14 +87,12 @@ const homeTab = (name: 'dashboard' | 'managerDashboard' | 'employeeDashboard'): 
 /**
  * A record belongs to Orders (History in the code), an employee to Employees
  * and an item to Item Catalogue, so those stay the current section; so does
- * Orders for Create Order, which the rail and sidebar reach through it; so does a user's one Dashboard tab for another role's
- * dashboard opened from it.
+ * a user's one Dashboard tab for another role's dashboard opened from it.
  */
 function isCurrent(current: Route['name'], tab: Route['name']): boolean {
   return (
     current === tab ||
     (current === 'record' && tab === 'history') ||
-    (current === 'createOrder' && tab === 'history') ||
     (current === 'employee' && tab === 'employees') ||
     // Company Assets' link is the SIM cards'; Equipment and an asset's page are in the section too.
     ((current === 'equipment' || current === 'asset' || current === 'assetForm') && tab === 'simCards') ||
@@ -317,9 +315,17 @@ export function App() {
           aria-label={t.shell.mainNav}
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
-            'md:static md:flex md:flex-col md:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
+            // On a short window the sections scroll, so the foot (Help, Account, Sign out) stays in reach.
+            'md:static md:flex md:min-h-0 md:flex-col md:gap-1 md:overflow-y-auto md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}
         >
+          {/* The rail and sidebar's New order, above Dashboard; on a phone it is the raised button in the middle of the bar. */}
+          <NavLink
+            tab={{ route: { name: 'createOrder' }, label: t.shell.newOrderButton, short: t.shell.newOrderButton, icon: Plus }}
+            current={route.name === 'createOrder'}
+            link={link}
+            className="max-md:hidden"
+          />
           {primary.map((tab) =>
             tab.route.name === 'createOrder' ? (
               <NewOrderLink key={tab.route.name} tab={tab} current={isCurrent(route.name, tab.route.name)} link={link} draftLines={draftLines} />
@@ -655,7 +661,7 @@ function SidebarGroup({
  * Create Order. On a phone it is the raised button in the middle of the tab
  * bar, labelled New order, or Draft with its line count when a draft is
  * saved: the button reopens it, as Create Order always does. The rail and
- * sidebar leave it out: there it is Orders' Create Order button (and ⌘K, G O).
+ * sidebar have their own New order link instead, first, above Dashboard.
  */
 function NewOrderLink({
   tab: { route: r, label, short, icon: Icon },

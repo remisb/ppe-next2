@@ -69,10 +69,9 @@ async function openTab(name: string) {
   if (!administrationTabs.includes(name) && inAdministration) await switchApp('Workwear & Equipment')
   const nav = page.getByRole('navigation', { name: 'Main' })
   const link = nav.getByRole('link', { name })
-  // The rail and sidebar have no Create Order: it is Orders' Create Order button there.
+  // The rail and sidebar's Create Order is their New order link.
   if (name === 'Create Order' && !(await link.isVisible())) {
-    await openTab('Orders')
-    await page.getByRole('main').getByRole('link', { name: 'Create Order' }).click()
+    await nav.getByRole('link', { name: 'New order' }).click()
     return
   }
   // In the sidebar a section with screens of its own shows or hides them: open it, then its first screen.
@@ -549,8 +548,6 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await dialog.getByLabel('Height (cm)').fill('170')
   await dialog.getByRole('button', { name: 'Save and Select Employee' }).click()
   await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
-  // Her saved sizes explain how the lines resolve: clothing from height, no shoe size.
-  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toHaveText(/^170 cm\W+Clothing from height\W+No shoe size$/)
   const summary = page.getByRole('complementary', { name: 'Order summary' })
   await expect(summary).toContainText('Ona Kazlauskienė')
   await expect(summary).toContainText('No earlier orders')
@@ -562,12 +559,11 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
   await page.getByRole('button', { name: 'Apply Starter kit (on this order)' }).click()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 
-  // Clothing: 50 suggested from 170 cm. Shoes: never inferred, so missing.
-  await expect(page.getByLabel('Size of Work jacket')).toHaveValue('50')
+  // Clothing: 50 suggested from 170 cm, the M band. Shoes: never inferred, so missing.
+  await expect(sizeOf('Work jacket')).toHaveText('M (48–50)')
   // Clothing sizes are picked by letter band; a pick stores the band's larger EU size.
-  await expect(page.getByLabel('Size of Work jacket').locator('option:checked')).toHaveText('M (48–50)')
-  await expect(page.getByLabel('Size of Work jacket').locator('option')).toHaveText([
-    'Choose a size…',
+  await sizeOf('Work jacket').click()
+  await expect(page.getByRole('listbox').getByRole('option')).toHaveText([
     'S (44–46)',
     'M (48–50)',
     'L (52–54)',
@@ -575,8 +571,12 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
     '2XL (60–62)',
     '3XL (64–66)',
   ])
+  await expect(page.getByRole('option', { name: 'M (48–50)' })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('listbox')).toBeHidden()
   await expect(page.getByText('Suggested from height')).toBeVisible()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('')
+  await expect(sizeOf('Safety shoes')).toHaveText('Choose a size…')
+  await expect(sizeOf('Safety shoes')).toHaveAttribute('aria-invalid', 'true')
   await expect(page.getByRole('alert').filter({ hasText: 'Choose a size.' })).toBeVisible()
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
   // §7: a missing size keeps the work and blocks the order.
@@ -584,26 +584,32 @@ test('Create Order: add a new employee from Assigned to and apply the set', asyn
 })
 
 const sizeChanged = () => page.getByRole('dialog', { name: 'Different size selected. Save it to employee profile?' })
+/** A line's size picker on Create Order: a Select, its list opened by a click. */
+const sizeOf = (item: string) => page.getByRole('combobox', { name: `Size of ${item}` })
+async function chooseSize(item: string, size: string) {
+  await sizeOf(item).click()
+  await page.getByRole('listbox').getByRole('option', { name: size, exact: true }).click()
+}
 
 test('missing size: choose it and Save it to the employee profile', async () => {
-  await page.getByLabel('Size of Safety shoes').selectOption('42')
+  await chooseSize('Safety shoes', '42')
   await expect(sizeChanged()).toBeVisible()
   await expect(sizeChanged()).toContainText('Ona Kazlauskienė has no saved shoe size.')
   await sizeChanged().getByRole('button', { name: 'Save', exact: true }).click()
   await expect(sizeChanged()).toBeHidden()
-  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toContainText('Shoes 42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
   await expect(reviewButton()).toBeEnabled()
 })
 
 test('a size other than the saved one asks again; Skip size update keeps it on this order only', async () => {
-  await page.getByLabel('Size of Safety shoes').selectOption('43')
+  // The question names the size Save kept.
+  await chooseSize('Safety shoes', '43')
   await expect(sizeChanged()).toContainText('saved shoe size: 42')
   await sizeChanged().getByRole('button', { name: 'Skip size update' }).click()
   await expect(sizeChanged()).toBeHidden()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('43')
-  await expect(page.getByLabel('Saved sizes of Ona Kazlauskienė')).toContainText('Shoes 42')
-  // Back to the saved size: nothing to ask.
-  await page.getByLabel('Size of Safety shoes').selectOption('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('43')
+  // Back to the saved size, which Skip left as it was: nothing to ask.
+  await chooseSize('Safety shoes', '42')
   await expect(sizeChanged()).toBeHidden()
 })
 
@@ -651,7 +657,7 @@ test('network error keeps the form and offers Retry', async () => {
 
 test('the draft survives a reload', async () => {
   await page.reload()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 })
 
@@ -690,7 +696,7 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   // Nothing to choose about the confirmation link: every new order gets one.
   await expect(review.getByRole('checkbox')).toHaveCount(0)
   await review.getByRole('button', { name: 'Close' }).click()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
 
   await markAsOrdered()
   const heading = page.getByText(/Order WE-\d{6} is ordered/)
@@ -712,8 +718,14 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
 
 test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await openTab('Orders')
-  // The sidebar has no Create Order: the screen once called History has it, as Employees has Add New Employee.
-  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /^Create Order/ })).toBeHidden()
+  // The sidebar's first link is New order, above Dashboard; the screen once called History has Create Order too, as Employees has Add New Employee.
+  const sidebarLinks = page.getByRole('navigation', { name: 'Main' }).getByRole('link')
+  await expect(sidebarLinks.first()).toHaveAccessibleName('New order')
+  await expect(sidebarLinks.nth(1)).toHaveAccessibleName('Dashboard')
+  await sidebarLinks.first().click()
+  await expect(page).toHaveURL(/\/orders\/new$/)
+  await expect(sidebarLinks.first()).toHaveAttribute('aria-current', 'page')
+  await page.goBack()
   const create = page.getByRole('main').getByRole('link', { name: 'Create Order' })
   await create.click()
   await expect(page).toHaveURL(/\/orders\/new$/)
@@ -1063,7 +1075,7 @@ test('paper confirmation: a second order signed on paper', async () => {
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   // The shoe size saved earlier is now her default.
   await addItem('shoes', /^Safety shoes/)
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
   await expect(page.getByRole('complementary', { name: 'Order summary' })).toContainText(`Last order ${recordNumber}`)
   // It gets its confirmation link like every new order, though it is signed on paper below.
   await markAsOrdered()
@@ -2336,7 +2348,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await page.getByRole('combobox', { name: 'Assigned to' }).fill('Kazlausk')
   await page.getByRole('option', { name: /Ona Kazlauskienė/ }).click()
   await page.getByRole('button', { name: 'Apply Starter kit' }).click()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
   await expect(reviewButton()).toBeInViewport()
   expect(await fits()).toBe(true)
   // Away from Create Order, the button says a draft is waiting, with its line count, and reopens it.
@@ -2344,7 +2356,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(newOrder).toHaveAccessibleName(/^Create Order \(draft, \d+ lines?\)$/)
   await expect(newOrder).toHaveText(/Draft/)
   await newOrder.click()
-  await expect(page.getByLabel('Size of Safety shoes')).toHaveValue('42')
+  await expect(sizeOf('Safety shoes')).toHaveText('42')
   // Left ORDERED, so Orders has a row waiting for confirmation.
   await markAsOrdered()
   await page.getByRole('button', { name: 'Start a new order' }).click()

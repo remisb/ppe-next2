@@ -35,7 +35,7 @@ export const shell = {
   help: 'Help',
   userGuide: 'User guide',
   shortcutsHint: 'Letters work anywhere except while typing in a field.',
-  /** The phone's raised Create Order button, without and with a saved draft. */
+  /** Create Order's link: the phone's raised button, without and with a saved draft, and the first link in the rail and sidebar. */
   newOrderButton: 'New order',
   draft: 'Draft',
   draftLines: (n: number) => plural(n, { one: '(draft, # line)', other: '(draft, # lines)' }),

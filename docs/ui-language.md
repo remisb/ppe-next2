@@ -108,7 +108,8 @@ Rules:
   - **Rail** (tablet, `md` to `xl`): icons over short labels; a section's own screens are
     short centred links under its icon (SIM Cards, Equipment), a long word hyphenated.
   - **Sidebar** (desktop, from `xl`): icons beside full labels, a section's screens listed
-    under it, **Search…** at the top. In the staff app, Orders, Item Catalogue and Item Sets
+    under it, **Search…** at the top. In the rail and sidebar the staff app's first link is
+    **New order** (a +), above Dashboard. In the staff app, Orders, Item Catalogue and Item Sets
     are listed under **Workwear** there, and Employees comes below Company Assets. A click on Workwear or Company Assets shows or
     hides its list (a chevron says which), remembered per user on the device; closed,
     Workwear shows Orders' count of orders waiting for confirmation.
@@ -125,7 +126,8 @@ Rules:
 - **UI:** More.
 
 ### New order button
-- **Brief:** the phone's raised Create Order button in the middle of the bottom bar.
+- **Brief:** the phone's raised Create Order button in the middle of the bottom bar; in the
+  rail and sidebar, the first link, above Dashboard, with a +.
 - **UI:** "New order"; "Draft" with the line count while a working order is kept.
 
 ### Page header

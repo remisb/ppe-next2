@@ -15,7 +15,6 @@ export const order: OrderText = {
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. Уполномоченный пользователь должен дополнить или снова активировать его в каталоге предметов, либо удалите строку.`,
   assignedTo: 'Для кого',
-  savedSizesOf: (name: string) => `Сохранённые размеры: ${name}`,
   addItem: 'Добавить предмет',
   itemSet: 'Набор предметов',
   applySr: 'Применить ',
@@ -118,14 +117,6 @@ export const order: OrderText = {
   selectSize: 'Выберите размер.',
   priceMissing: 'Не указана цена. Уполномоченный пользователь должен указать цену в каталоге предметов.',
   periodMissing: 'Не указан срок службы. Уполномоченный пользователь должен указать срок службы в каталоге предметов.',
-
-  // The employee's saved sizes
-  heightCm: (cm: number) => `${cm} см`,
-  clothingSize: (size: string) => `Одежда ${size}`,
-  clothingFromHeight: 'Одежда по росту',
-  noClothingSize: 'Нет размера одежды',
-  shoeSize: (size: string) => `Обувь ${size}`,
-  noShoeSize: 'Нет размера обуви',
 
   // Pickers and quantity
   addAnItem: 'Добавить предмет…',

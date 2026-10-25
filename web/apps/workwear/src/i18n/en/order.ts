@@ -19,7 +19,6 @@ export const order = {
   conflictHelp: (serverMessage: string) =>
     `${serverMessage}. An authorised user must complete or reactivate it in the Item Catalogue, or remove the line.`,
   assignedTo: 'Assigned to',
-  savedSizesOf: (name: string) => `Saved sizes of ${name}`,
   addItem: 'Add Item',
   itemSet: 'Item Set',
   /** Visually hidden, before an item set's name on its button. */
@@ -126,14 +125,6 @@ export const order = {
   // One per missing catalogue value, each on its own line under the item.
   priceMissing: 'Price is missing. An authorised user must specify the price in the Item Catalogue.',
   periodMissing: 'Service period is missing. An authorised user must specify the service period in the Item Catalogue.',
-
-  // The employee's saved sizes
-  heightCm: (cm: number) => `${cm} cm`,
-  clothingSize: (size: string) => `Clothing ${size}`,
-  clothingFromHeight: 'Clothing from height',
-  noClothingSize: 'No clothing size',
-  shoeSize: (size: string) => `Shoes ${size}`,
-  noShoeSize: 'No shoe size',
 
   // Pickers and quantity
   addAnItem: 'Add an item…',

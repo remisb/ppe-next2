@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
-import { Select } from '@ppe/ui/components/field'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
@@ -29,7 +29,7 @@ import { OrderLinesTable } from '@/components/order-lines'
 import { QuantityStepper } from '@/components/quantity-stepper'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
-import { lastOrder, linesText, setOnOrder, sizeParts } from '@/lib/composer'
+import { lastOrder, linesText, setOnOrder } from '@/lib/composer'
 import { type Due, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { type NavigateOptions, type Prefill, type Route, linkTo } from '@/lib/router'
 import { type ClothingBand, clothingBandValue, clothingBands, clothingSizeLabel, formatEuro, formatMonths } from '@/lib/utils'
@@ -341,17 +341,6 @@ export function CreateOrder({
             onSelect={(e) => void selectEmployee(e.id)}
             onAddNew={() => setAddingEmployee(true)}
           />
-          {/* The saved sizes explain how each line's size was resolved. */}
-          {order.employee ? (
-            <p aria-label={t.order.savedSizesOf(order.employee.full_name)} className="mt-1.5 flex flex-wrap gap-x-2 text-sm text-muted-foreground">
-              {sizeParts(order.employee, bands).map((part, i) => (
-                <span key={part.label} className={cn(part.missing && 'font-medium text-destructive')}>
-                  {i > 0 ? <span aria-hidden>· </span> : null}
-                  {part.label}
-                </span>
-              ))}
-            </p>
-          ) : null}
         </div>
         <div>
           <p className="mb-1.5 text-sm font-medium">{t.order.addItem}</p>
@@ -992,21 +981,30 @@ function SizeControl({ line, sizes, onChange }: { line: WorkingLine; sizes: Size
   const bands = clothingBands(sizes?.clothing ?? [])
   const options = clothing ? bands : (sizes?.shoes ?? []).map((s) => ({ value: s.code, label: s.code }))
   const missing = line.size === null
+  const value = (clothing ? clothingBandValue(bands, line.size) : line.size) || null
   return (
     <div className="flex flex-col gap-1">
-      <Select
-        aria-label={t.order.sizeOf(line.itemName)}
-        className="h-9 w-40 pointer-coarse:h-11 stacked:w-auto stacked:max-w-40"
-        invalid={missing}
-        value={clothing ? clothingBandValue(bands, line.size) : (line.size ?? '')}
-        onChange={(e) => onChange(e.target.value || null)}
+      <Select<string | null>
+        items={options}
+        value={value}
+        onValueChange={(v) => onChange(v)}
       >
-        <option value="">{t.order.selectSizeOption}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
+        <SelectTrigger
+          aria-label={t.order.sizeOf(line.itemName)}
+          aria-invalid={missing || undefined}
+          // text-sm on a phone too: a button, unlike a field, is not zoomed into, and "Choose a size…" then fits beside the quantity.
+          className={cn('h-9 w-40 text-sm pointer-coarse:h-11', missing && 'border-destructive focus-visible:ring-destructive')}
+        >
+          <SelectValue placeholder={t.order.selectSizeOption} />
+        </SelectTrigger>
+        {/* The list's head repeats the choice, or the placeholder while there is none, in the trigger's text size. */}
+        <SelectContent head={<span className="text-sm">{options.find((o) => o.value === value)?.label ?? value ?? t.order.selectSizeOption}</span>}>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
       {line.sizeSource === 'suggested' ? (
         <Badge variant="outline" className="w-fit">

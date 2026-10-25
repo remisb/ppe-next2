@@ -190,7 +190,7 @@ Rules for using it:
   Changing them affects future orders only; order lines snapshot the size they used. There
   is deliberately no glove size.
 - **Code:** `size.Defaults`, `employee.SizesParams`. **UI:** **Edit Sizes** (a sheet from the Employees
-  list; on the employee page, the **Sizes** card's **Edit**, in place), "Saved sizes of …", "Affects future orders only."
+  list; on the employee page, the **Sizes** card's **Edit**, in place), "Affects future orders only."
 
 ### Size group
 - **Brief:** which size dimension a catalogue item uses: Clothing, Shoes or No size.
@@ -371,7 +371,8 @@ Rules for using it:
 - **Brief:** the screen where a working order is prepared.
 - **Detail:** pick the employee in **Assigned to**, add lines with **Add Item** or an
   **Item Set**, resolve sizes, then **Review**. Reached from Orders' **Create Order** button,
-  the phone's **New order** button, or "New order for …" in Search.
+  **New order** in the navigation (the phone's raised button; the first link in the rail and
+  sidebar), or "New order for …" in Search.
 - **Code:** route `createOrder`, `routes/create-order.tsx`. **UI:** Create Order, New order;
   **Clear order** in its header empties the order in progress (asking first).
 

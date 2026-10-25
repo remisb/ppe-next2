@@ -142,9 +142,10 @@ The workwear app is the reference.
   above it with the rest (Company Assets, Item Catalogue, Item Sets), Administration, the account and Sign out.
   Create Order is the raised New order button in the middle of that bar (Draft, with the
   line count, while a draft is saved); the bar reorders with `max-md:order-*`, so the markup
-  keeps one order for the rail and sidebar. The rail and sidebar leave Create Order out
-  (`md:hidden`): there it is the Create Order button on Orders, which stays the current
-  section while Create Order is open, and ⌘K or G then O. From
+  keeps one order for the rail and sidebar. The rail and sidebar have a New order link of
+  their own instead (`max-md:hidden`, the phone's button `md:hidden`), first, above
+  Dashboard, current while Create Order is open; Orders also has its Create Order button,
+  and ⌘K or G then O open it too. From
   `md` those links flow on in the rail (`md:contents`), never a second list. A section
   with screens of its own (`screens` on its tab: Company Assets' SIM Cards and Equipment,
   when the user may open both) lists them under it in the rail, as short centred links under its icon, and in the
@@ -163,7 +164,7 @@ The workwear app is the reference.
   section, and highlighted so while closed, when it also shows its screens' count
   (Orders' waiting, under Workwear). An
   administrator, a manager or the employee role has six sections on a phone (their
-  Dashboard first); the rail and sidebar show one fewer, without Create Order. Whoever may
+  Dashboard first); the rail and sidebar show the same six, New order first. Whoever may
   open a screen in Administration also has its link, under More on a phone and at the foot
   of the rail and sidebar. Administration's navigation (`@ppe/ui/components/main-nav`
   styles, the same three shapes) holds the screens the user's permissions open; on a phone
