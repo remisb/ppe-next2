@@ -3,6 +3,7 @@ package asset
 import (
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -113,5 +114,57 @@ func TestImportSIMsRefusesTheWholeFile(t *testing.T) {
 				t.Errorf("kept %d assets, %d events", len(f.repo.assets), len(f.repo.events))
 			}
 		})
+	}
+}
+
+// A SIM card held since the import has no stored form: Print Form builds one
+// from the card and the holder now, dated ImportedFormDate, and stores nothing.
+func TestImportedSIMFormIsBuiltWhenPrinted(t *testing.T) {
+	f := newFixture(t)
+	res, err := f.svc.ImportSIMs(f.ctx, ImportParams{Comment: "Imported", Commit: true, SIMs: []ImportSIM{
+		importSIM("1237002240500235267F", "+370 603 27629", StatusActive, &f.emp.ID),
+	}}, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	card, _ := f.svc.Get(f.ctx, res.SIMs[0].ID)
+	as := card.Open.Assignment
+	// The form needs the non-return value, which the import leaves empty.
+	if _, err := f.svc.Form(f.ctx, card.ID, as.ID); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "non_return_value_cents") {
+		t.Fatalf("form without a value: %v", err)
+	}
+	if _, err := f.svc.Update(f.ctx, card.ID, Params{InventoryNo: card.InventoryNo, SimNo: card.SimNo, Provider: card.Provider, PhoneNo: card.PhoneNo,
+		NonReturnValueCents: ip(2500), ReceivedDate: card.ReceivedDate}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	form, err := f.svc.Form(f.ctx, card.ID, as.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"given_date":"` + ImportedFormDate + `"`, `"first_name":"Jonas"`, `"non_return_value_cents":2500`, `"inventory_no":"` + card.InventoryNo + `"`} {
+		if !strings.Contains(string(form.Form), want) {
+			t.Errorf("form %s lacks %s", form.Form, want)
+		}
+	}
+	again, _ := f.svc.Form(f.ctx, card.ID, as.ID)
+	if again.DocumentHash != form.DocumentHash {
+		t.Error("the same card and holder built another form")
+	}
+	// Printing it is recorded and stores nothing: the giving stays as imported.
+	if err := f.svc.RecordFormReprinted(f.ctx, card.ID, as.ID, OutputPrint, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if ev := f.repo.events[len(f.repo.events)-1]; ev.Event != EventFormPrinted || !strings.Contains(string(ev.After), form.DocumentHash) {
+		t.Errorf("printed: %s %s", ev.Event, ev.After)
+	}
+	if got, _ := f.svc.Get(f.ctx, card.ID); got.Open.Assignment.Form != nil || got.Open.Assignment.PaperFormSigned {
+		t.Errorf("printing stored a form: %+v", got.Open.Assignment)
+	}
+	// Once returned, the holding is a record: no form is built for it.
+	if _, err := f.svc.Return(f.ctx, card.ID, ReturnParams{ReturnedDate: "2026-10-09"}, testActor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.Form(f.ctx, card.ID, as.ID); !errors.Is(err, ErrNoForm) {
+		t.Errorf("returned: %v, want ErrNoForm", err)
 	}
 }

@@ -683,10 +683,12 @@ func (s *Service) MarkNotReturned(ctx context.Context, id uuid.UUID, p NotReturn
 	return s.assignmentView(a), nil
 }
 
-// Form is an assignment's stored form, for reprinting; ErrNoForm when the
-// asset needed none.
+// Form is an assignment's stored form, for reprinting; for a SIM card held
+// since the import, which stored none, a form built now (importedForm);
+// ErrNoForm when the asset needed none.
 func (s *Service) Form(ctx context.Context, assetID, assignmentID uuid.UUID) (FormResult, error) {
-	if _, err := s.repo.Get(ctx, assetID); err != nil {
+	r, err := s.repo.Get(ctx, assetID)
+	if err != nil {
 		return FormResult{}, err
 	}
 	as, err := s.repo.Assignments(ctx, assetID)
@@ -698,7 +700,7 @@ func (s *Service) Form(ctx context.Context, assetID, assignmentID uuid.UUID) (Fo
 			continue
 		}
 		if a.Form == nil || a.DocumentHash == nil {
-			return FormResult{}, ErrNoForm
+			return s.importedForm(ctx, r.Asset, a)
 		}
 		// The database keeps the form as JSONB, which reorders its keys: decode
 		// and encode it again for the bytes that were hashed, and check them.
@@ -713,6 +715,29 @@ func (s *Service) Form(ctx context.Context, assetID, assignmentID uuid.UUID) (Fo
 		return FormResult{Form: b, DocumentHash: hash}, nil
 	}
 	return FormResult{}, ErrNotFound
+}
+
+// ImportedFormDate is the given date on the form of a SIM card held since
+// the import (its assignment keeps the date the import gave it).
+const ImportedFormDate = "2026-08-03"
+
+// importedForm builds the form of a SIM card still held on an assignment
+// with none: only the import gives a SIM without one. It is built from the
+// card and the holder as they are now, dated ImportedFormDate, and never
+// stored: printing it is not giving (§8), and the giving stays as imported.
+func (s *Service) importedForm(ctx context.Context, a Asset, as Assignment) (FormResult, error) {
+	if a.Kind != KindSIM || !as.Open() {
+		return FormResult{}, ErrNoForm
+	}
+	emp, err := s.repo.Employee(ctx, as.EmployeeID)
+	if err != nil {
+		return FormResult{}, err
+	}
+	if a, err = fill(a, FormParams{}); err != nil {
+		return FormResult{}, err
+	}
+	b, hash := formOf(a, emp, ImportedFormDate).encode()
+	return FormResult{Form: b, DocumentHash: hash}, nil
 }
 
 // Output is how a form left the app: printed from the browser, or

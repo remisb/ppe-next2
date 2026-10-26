@@ -202,6 +202,7 @@ export const assets: AssetsText = {
   chooseEmployeeReason: 'Выберите сотрудника.',
   givenDateReason: 'Введите дату выдачи.',
   valueReason: 'Заполните стоимость при невозврате: она нужна для акта.',
+  editValueReason: 'Заполните стоимость при невозврате (Изменить): она нужна для акта.',
   printFirstReason: 'Напечатайте акт и дайте его подписать.',
   tickSignedReason: 'Отметьте, что сотрудник подписал напечатанный акт.',
   givenTo: (name: string) => `SIM выдана: ${name}.`,

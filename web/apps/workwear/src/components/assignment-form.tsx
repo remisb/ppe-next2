@@ -1,10 +1,11 @@
-import type { AssignmentForm } from '@ppe/api-client'
+import type { Asset, AssignmentForm } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { printDay } from '@ppe/ui/lib/dates'
 import { formatDocumentEuro } from '@ppe/i18n'
 import type { ReactNode } from 'react'
 
 import { usePrintInPlace } from '@/components/print-in-place'
+import { t } from '@/i18n'
 
 // The form reads the same whatever the staff member's interface language, as
 // the Items Given Record does: English / Russian words, the amount as printed.
@@ -62,12 +63,19 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
 }
 
 /**
- * Prints an assignment's stored form again, as often as asked: fetched from the
- * API, recorded as the user's activity (asset.form_printed, printing goes ahead
- * if that fails) and printed in place. printForm throws when the form cannot be
+ * Prints an assignment's form again, as often as asked: fetched from the API,
+ * recorded as the user's activity (asset.form_printed, printing goes ahead if
+ * that fails) and printed in place. The form is the stored one, or, for a SIM
+ * card held since the import, one the API builds now (and never stores).
+ * printHeldForm prints the holder's, and says first when the card lacks the
+ * Non-return Value such a form needs. Each throws when the form cannot be
  * fetched. Render `printing` anywhere in the component.
  */
-export function usePrintStoredForm(): { printForm: (assetId: string, assignmentId: string) => Promise<void>; printing: ReactNode } {
+export function usePrintStoredForm(): {
+  printForm: (assetId: string, assignmentId: string) => Promise<void>
+  printHeldForm: (asset: Asset) => Promise<void>
+  printing: ReactNode
+} {
   const { client } = useApi()
   const { print, printing } = usePrintInPlace()
   const printForm = async (assetId: string, assignmentId: string) => {
@@ -75,7 +83,13 @@ export function usePrintStoredForm(): { printForm: (assetId: string, assignmentI
     await client.assets.recordFormReprinted(assetId, assignmentId).catch(() => {})
     print(<AssignmentFormDocument form={f.form} documentHash={f.document_hash} />)
   }
-  return { printForm, printing }
+  const printHeldForm = async (a: Asset) => {
+    const held = a.open_assignment
+    if (!held) return
+    if (!held.paper_form_signed && a.non_return_value_cents === null) throw new Error(t.assets.editValueReason)
+    await printForm(a.id, held.id)
+  }
+  return { printForm, printHeldForm, printing }
 }
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {

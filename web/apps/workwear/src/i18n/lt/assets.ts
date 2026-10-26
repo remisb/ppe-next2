@@ -202,6 +202,7 @@ export const assets: AssetsText = {
   chooseEmployeeReason: 'Pasirinkite darbuotoją.',
   givenDateReason: 'Įveskite išdavimo datą.',
   valueReason: 'Įrašykite negrąžinimo vertę: jos reikia aktui.',
+  editValueReason: 'Įrašykite negrąžinimo vertę (Redaguoti): jos reikia aktui.',
   printFirstReason: 'Atspausdinkite aktą ir duokite jį pasirašyti.',
   tickSignedReason: 'Pažymėkite, kad darbuotojas pasirašė atspausdintą aktą.',
   givenTo: (name: string) => `SIM išduota: ${name}.`,

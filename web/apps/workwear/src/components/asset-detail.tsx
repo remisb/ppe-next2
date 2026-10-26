@@ -82,7 +82,7 @@ export function AssetDetail({
   const [editing, setEditing] = useState(false)
   const [message, setMessage] = useState('')
   const action = useAction()
-  const { printForm, printing } = usePrintStoredForm()
+  const { printHeldForm, printing } = usePrintStoredForm()
 
   const a = asset.data
   const sim = a?.kind !== 'EQUIPMENT'
@@ -152,7 +152,7 @@ export function AssetDetail({
                       onEdit={() => setEditing(true)}
                       onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
                       onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
-                      onPrintForm={(assignmentId) => void action.run(() => printForm(a.id, assignmentId))}
+                      onPrintForm={() => void action.run(() => printHeldForm(a))}
                     />
                   </>
                 ) : undefined

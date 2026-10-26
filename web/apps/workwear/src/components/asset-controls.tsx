@@ -163,8 +163,8 @@ export function AssetMoreActions({
   onEdit: () => void
   onNotReturned: () => void
   onBlockingEmail: () => void
-  /** Print Form: the holder's signed form, printed again (given with a form, still held). */
-  onPrintForm: (assignmentId: string) => void
+  /** Print Form: the holder's form, printed again; for a SIM held since the import, one built now. */
+  onPrintForm: () => void
 }) {
   const current = asset.connection_status
   const held = asset.open_assignment
@@ -184,7 +184,7 @@ export function AssetMoreActions({
         </>
       ) : null}
       <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
-      {held?.paper_form_signed ? <DropdownMenuItem onClick={() => onPrintForm(held.id)}>{t.assets.printForm}</DropdownMenuItem> : null}
+      {held && (held.paper_form_signed || asset.kind === 'SIM') ? <DropdownMenuItem onClick={onPrintForm}>{t.assets.printForm}</DropdownMenuItem> : null}
       {canMarkNotReturned(asset) ? <DropdownMenuItem onClick={onNotReturned}>{t.assets.markNotReturned}</DropdownMenuItem> : null}
       {current && current !== 'BLOCKED' ? <DropdownMenuItem onClick={onBlockingEmail}>{t.assets.prepareBlockingEmail}</DropdownMenuItem> : null}
     </MoreActions>

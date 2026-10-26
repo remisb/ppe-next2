@@ -1,8 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
-import { admin, webURL } from '../env.ts'
+import { admin, apiEnv, repoRoot, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -1093,7 +1094,8 @@ test('paper confirmation: a second order signed on paper', async () => {
   const order = await openOrder(paperRecord)
   page.once('dialog', (d) => void d.accept())
   await order.getByRole('button', { name: 'Mark as Signed & Given' }).click()
-  await expect(order.getByRole('definition').filter({ hasText: 'On paper' })).toBeVisible()
+  // In the details: Changes, left open by an earlier step, say On paper too once they load.
+  await expect(order.getByLabel('Order details').getByRole('definition').filter({ hasText: 'On paper' })).toBeVisible()
   await expect(order.locator('header').getByText('Given', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ordered 0' })).toBeVisible()
 })
@@ -1998,6 +2000,54 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await assetsCard.getByRole('link', { name: /Not Returned\s*0/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards$/)
   await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Any location/)
+})
+
+test('Company Assets: a SIM card held since the import prints a form built now, dated 2026 08 03', async () => {
+  // The go-live import gives a held card with no form (spec "Import SIM cards").
+  execFileSync('go', ['run', './cmd/api', '-import-sims', '-', '-commit'], {
+    cwd: repoRoot,
+    env: apiEnv(),
+    input: 'sim_no,phone_no,provider,employee_name,connection_status\n8937000000000000099,37060000099,Bitė,Ona Kazlauskienė,Active\n',
+    stdio: ['pipe', 'ignore', 'inherit'],
+  })
+  // The previous step left SIM Cards open: load it again for the imported card.
+  await openTab('Company Assets')
+  await page.reload()
+  await page.getByRole('row', { name: /\+370 600 00099/ }).click()
+  const card = page.getByRole('article').filter({ hasText: '+370 600 00099' })
+  const more = card.getByRole('button', { name: /^More actions for SIM-/ })
+  // The import leaves the Non-return Value empty, and the form needs it: Print Form says so.
+  await more.click()
+  await page.getByRole('menuitem', { name: 'Print Form' }).click()
+  await expect(card.getByText('Fill in the Non-return Value with Edit: the form needs it.')).toBeVisible()
+  await more.click()
+  await page.getByRole('menuitem', { name: 'Edit' }).click()
+  const edit = page.getByRole('dialog')
+  await edit.getByLabel('Non-return Value').fill('30.00')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(edit).toBeHidden()
+  // Then it prints, as often as asked: the holder, the value and the fixed date; nothing is stored.
+  const printed = () => page.evaluate(() => (window as unknown as { __printed?: number }).__printed ?? 0)
+  for (let i = 0; i < 2; i++) {
+    const was = await printed()
+    await more.click()
+    await page.getByRole('menuitem', { name: 'Print Form' }).click()
+    await expect.poll(printed).toBe(was + 1)
+    const paper = page.locator('#print-in-place')
+    await expect(paper.getByText('Ona Kazlauskienė')).toBeAttached()
+    await expect(paper.getByText('€30.00')).toBeAttached()
+    await expect(paper.getByText('2026 08 03').first()).toBeAttached()
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+    await expect(paper).toHaveCount(0)
+  }
+  await openSection(/^Assignments/)
+  const assignments = card.getByRole('region', { name: 'Assignments' })
+  await expect(assignments.getByText('Imported from the SIM card list: held before the app, no assignment form.')).toBeVisible()
+  await expect(assignments.getByText('Paper form signed')).toHaveCount(0)
+  // Back in the office, so the steps after this one see only their own holdings.
+  await card.getByRole('button', { name: 'Return', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
+  await expect(page.getByText(/is back in the office\./)).toBeVisible()
 })
 
 test('Equipment & Furniture is for the Equipment Assignments role alone, an administrator included', async () => {

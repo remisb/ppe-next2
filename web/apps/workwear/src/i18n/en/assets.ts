@@ -217,6 +217,7 @@ export const assets = {
   chooseEmployeeReason: 'Choose the employee.',
   givenDateReason: 'Enter the given date.',
   valueReason: 'Fill in the non-return value: the form needs it.',
+  editValueReason: 'Fill in the Non-return Value with Edit: the form needs it.',
   printFirstReason: 'Print the form, then have it signed.',
   tickSignedReason: 'Tick that the employee has signed the printed form.',
   givenTo: (name: string) => `SIM given to ${name}.`,

@@ -126,9 +126,9 @@ export function Assets({
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const action = useAction()
-  const { printForm, printing } = usePrintStoredForm()
+  const { printHeldForm, printing } = usePrintStoredForm()
   // A row's own `action` is its primary action, so the form is printed through this.
-  const reprint = (id: string, assignmentId: string) => void action.run(() => printForm(id, assignmentId))
+  const reprint = (a: Asset) => void action.run(() => printHeldForm(a))
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -538,7 +538,7 @@ export function Assets({
                             onEdit={() => setEditing(a)}
                             onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
                             onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
-                            onPrintForm={(assignmentId) => reprint(a.id, assignmentId)}
+                            onPrintForm={() => reprint(a)}
                           />
                         </TableCell>
                       ) : null}

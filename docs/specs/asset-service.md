@@ -162,7 +162,12 @@ included, prints each card's number, status and holder, and writes nothing.
 - Each card is numbered on from the SIM counter, received today, in the Office or, held, given
   to its employee today with **no form** (the comment says it was held before the app), Blocked
   ones too; it records `asset.registered` and, held, `asset.given` with no document hash.
-  A form for such a card is printed by Return and Give SIM.
+  A form for such a card is printed by Return and Give SIM. While it is still held, ⋯ →
+  **Print Form** prints one built from the card and the holder as they are then, dated
+  2026-08-03 (`asset.ImportedFormDate`; the assignment keeps the import's date) and never
+  stored: printing is not giving, so the giving stays as imported, with no Upload Signed
+  Form. It needs the Non-return Value, which the import leaves empty: until it is filled in
+  with Edit, Print Form says so. Each print is recorded as `asset.form_printed`.
 
 ### Edit
 
@@ -283,7 +288,7 @@ stays with its assignment when the asset later goes to someone else.
 | `POST /api/v1/assets/{id}/assignments` | `assets.manage` | Give (201) |
 | `POST /api/v1/assets/{id}/return` | `assets.manage` | Register Return, on the open assignment |
 | `POST /api/v1/assets/{id}/not-returned` | `assets.manage` | Mark as Not Returned, on the open assignment |
-| `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; 404 when the asset needed none |
+| `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; for a SIM card still held since the import, which stored none, a form built now (`asset.ImportedFormDate`), never stored; 404 when the asset needed none |
 | `POST /api/v1/assets/{id}/form-printed` | `assets.manage` | records `asset.form_printed` for the form Give would store (Preview's body, checked as Preview checks it); 204, writes nothing else |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed` | authenticated | records `asset.form_printed` for an assignment's stored form, printed again; 204 |
 | `GET /api/v1/assets/{id}/assignments/preview.pdf` | `assets.manage` | Download PDF on Give: the form Give would store as a PDF, from `?employee=&date=&plan=&value=` (cents), checked as Preview checks it; records `asset.form_printed` (format pdf) first; an attachment `assignment-form-<number>-<date>.pdf` |
@@ -398,7 +403,7 @@ their own address:
   (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
   a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
   Return while held, else Change Status) and ⋯ with the statuses, Edit, Print Form (while
-  held on a signed form), Mark as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
+  held on a signed form, or since the import), Mark as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
   buttons.
 - Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
   decision 4).
@@ -452,7 +457,8 @@ their own address:
   template is added (open decision 11). An assignment's **Print form again** prints its
   stored form in place and **Download PDF** saves it, each recorded. While the asset is held
   on a signed form, ⋯ → **Print Form** (on the card and its register row) prints the holder's
-  form the same way, with Assignments left closed; any number of times, each recorded. The page
+  form the same way, with Assignments left closed; any number of times, each recorded. A SIM
+  card held since the import has it too (Import SIM cards). The page
   `/assets/<id>/assignments/<assignmentId>/form` (and `/assets/<id>/form?…` for a new one),
   which printed in a tab of its own before, still answers old links; nothing opens it now.
 - **Return**: the return date (today, not before the given date, not later)
