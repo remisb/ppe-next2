@@ -1,6 +1,10 @@
 import type { AssignmentForm } from '@ppe/api-client'
+import { useApi } from '@ppe/app-shell'
 import { printDay } from '@ppe/ui/lib/dates'
 import { formatDocumentEuro } from '@ppe/i18n'
+import type { ReactNode } from 'react'
+
+import { usePrintInPlace } from '@/components/print-in-place'
 
 // The form reads the same whatever the staff member's interface language, as
 // the Items Given Record does: English / Russian words, the amount as printed.
@@ -55,6 +59,23 @@ export function AssignmentFormDocument({ form, documentHash }: { form: Assignmen
       </p>
     </article>
   )
+}
+
+/**
+ * Prints an assignment's stored form again, as often as asked: fetched from the
+ * API, recorded as the user's activity (asset.form_printed, printing goes ahead
+ * if that fails) and printed in place. printForm throws when the form cannot be
+ * fetched. Render `printing` anywhere in the component.
+ */
+export function usePrintStoredForm(): { printForm: (assetId: string, assignmentId: string) => Promise<void>; printing: ReactNode } {
+  const { client } = useApi()
+  const { print, printing } = usePrintInPlace()
+  const printForm = async (assetId: string, assignmentId: string) => {
+    const f = await client.assets.form(assetId, assignmentId)
+    await client.assets.recordFormReprinted(assetId, assignmentId).catch(() => {})
+    print(<AssignmentFormDocument form={f.form} documentHash={f.document_hash} />)
+  }
+  return { printForm, printing }
 }
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {

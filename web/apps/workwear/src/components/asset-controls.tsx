@@ -155,6 +155,7 @@ export function AssetMoreActions({
   onEdit,
   onNotReturned,
   onBlockingEmail,
+  onPrintForm,
 }: {
   asset: Asset
   status?: boolean
@@ -162,8 +163,11 @@ export function AssetMoreActions({
   onEdit: () => void
   onNotReturned: () => void
   onBlockingEmail: () => void
+  /** Print Form: the holder's signed form, printed again (given with a form, still held). */
+  onPrintForm: (assignmentId: string) => void
 }) {
   const current = asset.connection_status
+  const held = asset.open_assignment
   return (
     <MoreActions label={t.common.moreActions(asset.inventory_no)}>
       {status && current ? (
@@ -180,6 +184,7 @@ export function AssetMoreActions({
         </>
       ) : null}
       <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
+      {held?.paper_form_signed ? <DropdownMenuItem onClick={() => onPrintForm(held.id)}>{t.assets.printForm}</DropdownMenuItem> : null}
       {canMarkNotReturned(asset) ? <DropdownMenuItem onClick={onNotReturned}>{t.assets.markNotReturned}</DropdownMenuItem> : null}
       {current && current !== 'BLOCKED' ? <DropdownMenuItem onClick={onBlockingEmail}>{t.assets.prepareBlockingEmail}</DropdownMenuItem> : null}
     </MoreActions>

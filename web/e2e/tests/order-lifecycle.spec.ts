@@ -1772,6 +1772,8 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(pane.getByText('No one')).toBeVisible()
   // Edit adds the phone number (a card without one could be given all the same).
   await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  // Not given yet: no form to print again.
+  await expect(page.getByRole('menuitem', { name: 'Print Form' })).toHaveCount(0)
   await page.getByRole('menuitem', { name: 'Edit' }).click()
   const edit = page.getByRole('dialog')
   await edit.getByLabel('Phone No.').fill('+370 612 40118')
@@ -1852,6 +1854,16 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Download PDF' })).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
+  // Held, the signed form prints again from ⋯ as often as asked, without opening Assignments.
+  for (let i = 0; i < 2; i++) {
+    const was = await printed()
+    await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+    await page.getByRole('menuitem', { name: 'Print Form' }).click()
+    await expect.poll(printed).toBe(was + 1)
+    await expect(page.locator('#print-in-place').getByText('Ona Kazlauskienė')).toBeAttached()
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+    await expect(page.locator('#print-in-place')).toHaveCount(0)
+  }
 
   // Upload Signed Form (§9): Signed Copy Missing until a scan is in. A file that is
   // not what its name says is refused; the copy downloads as it was sent.

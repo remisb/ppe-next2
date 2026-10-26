@@ -22,10 +22,9 @@ import { FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
 import { AssetMoreActions, CopyButton, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
-import { AssignmentFormDocument } from '@/components/assignment-form'
+import { usePrintStoredForm } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
-import { usePrintInPlace } from '@/components/print-in-place'
 import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
@@ -83,6 +82,7 @@ export function AssetDetail({
   const [editing, setEditing] = useState(false)
   const [message, setMessage] = useState('')
   const action = useAction()
+  const { printForm, printing } = usePrintStoredForm()
 
   const a = asset.data
   const sim = a?.kind !== 'EQUIPMENT'
@@ -152,6 +152,7 @@ export function AssetDetail({
                       onEdit={() => setEditing(true)}
                       onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
                       onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                      onPrintForm={(assignmentId) => void action.run(() => printForm(a.id, assignmentId))}
                     />
                   </>
                 ) : undefined
@@ -280,6 +281,7 @@ export function AssetDetail({
 
             <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
+            {printing}
             <AssetSheets
               sheet={sheet}
               today={today}
@@ -414,7 +416,7 @@ function AssignmentItem({
  */
 function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignmentId: string }) {
   const { client } = useApi()
-  const { print, printing } = usePrintInPlace()
+  const { printForm, printing } = usePrintStoredForm()
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string>()
   const run = async (action: () => Promise<void>) => {
@@ -428,12 +430,7 @@ function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignm
       setBusy(false)
     }
   }
-  const reprint = () =>
-    run(async () => {
-      const f = await client.assets.form(assetId, assignmentId)
-      await client.assets.recordFormReprinted(assetId, assignmentId).catch(() => {})
-      print(<AssignmentFormDocument form={f.form} documentHash={f.document_hash} />)
-    })
+  const reprint = () => run(() => printForm(assetId, assignmentId))
   const download = () =>
     run(async () => {
       const { blob, filename } = await client.assets.storedFormPDF(assetId, assignmentId)

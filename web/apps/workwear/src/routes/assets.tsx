@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AssetDetail } from '@/components/asset-detail'
 import { AssetMoreActions, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
+import { usePrintStoredForm } from '@/components/assignment-form'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
@@ -125,6 +126,9 @@ export function Assets({
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const action = useAction()
+  const { printForm, printing } = usePrintStoredForm()
+  // A row's own `action` is its primary action, so the form is printed through this.
+  const reprint = (id: string, assignmentId: string) => void action.run(() => printForm(id, assignmentId))
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -534,6 +538,7 @@ export function Assets({
                             onEdit={() => setEditing(a)}
                             onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
                             onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                            onPrintForm={(assignmentId) => reprint(a.id, assignmentId)}
                           />
                         </TableCell>
                       ) : null}
@@ -560,6 +565,7 @@ export function Assets({
         )}
       </ListDetail>
 
+      {printing}
       <AssetSheets
         sheet={sheet}
         today={today}

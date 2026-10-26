@@ -397,8 +397,8 @@ their own address:
   with the same actions; a change in either loads the other again. The asset page
   (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
   a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
-  Return while held, else Change Status) and ⋯ with the statuses, Edit, Mark
-  as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
+  Return while held, else Change Status) and ⋯ with the statuses, Edit, Print Form (while
+  held on a signed form), Mark as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
   buttons.
 - Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
   decision 4).
@@ -450,7 +450,9 @@ their own address:
 - **The printed form** is English / Russian, like the Items Given Record: a plain layout of
   the form's data and signature lines, with no wording of terms, until the company's
   template is added (open decision 11). An assignment's **Print form again** prints its
-  stored form in place and **Download PDF** saves it, each recorded. The page
+  stored form in place and **Download PDF** saves it, each recorded. While the asset is held
+  on a signed form, ⋯ → **Print Form** (on the card and its register row) prints the holder's
+  form the same way, with Assignments left closed; any number of times, each recorded. The page
   `/assets/<id>/assignments/<assignmentId>/form` (and `/assets/<id>/form?…` for a new one),
   which printed in a tab of its own before, still answers old links; nothing opens it now.
 - **Return**: the return date (today, not before the given date, not later)
