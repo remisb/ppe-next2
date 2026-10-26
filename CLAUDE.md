@@ -96,7 +96,11 @@ the go-live import of the SIM card list (`api -import-sims`, `make prod-import-s
 a CSV checked in full, then written all or none, held cards given without a form; spec "Import SIM cards"), and
 signed copies (slice 5, migration 0030: Upload Signed Form on an assignment, a PDF, JPEG or PNG up to
 10 MB kept in object storage by `internal/files`, `API_FILES_TARGET`: a private Spaces bucket in
-production, the folder `.files` in development; `components/signed-copies.tsx`). Slice 8 (go-live
+production, the folder `.files` in development; `components/signed-copies.tsx`). Employees have **photos**
+(`internal/domain/employeephoto`, migration 0037, routes under `/api/v1/employee-photos/{employee}`,
+spec "Photos" in `employee-service.md`): any number each in the files store, one the default
+(`Employee.default_photo_id`, the avatar in the Employees list), each with optional uses from a
+fixed list (`PHOTO_USES`). Slice 8 (go-live
 tools) waits for the open decisions.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,

@@ -26,12 +26,13 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const columns = `id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes, preferred_language,
-	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id`
+	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id,
+	(SELECT p.id FROM employee_photos p WHERE p.employee_id = employees.id AND p.is_default AND p.deleted_at IS NULL) AS default_photo_id`
 
 func scan(row pgx.Row) (Employee, error) {
 	var e Employee
 	err := row.Scan(&e.ID, &e.FirstName, &e.LastName, &e.Code, &e.HeightCm, &e.ClothingSize, &e.ShoeSize, &e.Notes, &e.PreferredLanguage,
-		&e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.CreatedByUserID, &e.UpdatedByUserID, &e.DeletedByUserID)
+		&e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.CreatedByUserID, &e.UpdatedByUserID, &e.DeletedByUserID, &e.DefaultPhotoID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Employee{}, ErrNotFound
 	}

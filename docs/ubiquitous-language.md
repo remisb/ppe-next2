@@ -240,6 +240,18 @@ Rules for using it:
 - **UI:** set in Add / Edit employee, or with its own **Edit** on the employee page, in place
   ("Edit preferred language").
 
+### Photo, Default photo, Photo uses
+- **Brief:** pictures of an employee; one of them is the **default photo**, and each may have
+  **uses** saying what it is for.
+- **Detail:** an employee has any number of photos (JPEG or PNG, up to 10 MB). The first one
+  added becomes the default photo, the one shown as the employee's avatar in the Employees list;
+  **Make Default** moves it, and removing the default passes it to the oldest remaining photo.
+  Uses are optional and chosen from a fixed list: **Profile**, **ID badge**, **Sizing**,
+  **Receipt**; a photo may have several. Not to be confused with an **Employee Default**,
+  which is a saved size.
+- **UI:** the **Photos** section on the employee page: **Add Photo**, **Default**,
+  **Make Default**, **Used for**, **Remove**.
+
 ---
 
 ## 3. Catalogue and item sets
@@ -959,6 +971,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Edit Sizes | Keisti dydžius | Изменить размеры |
 | Save as Employee Default | Išsaugoti kaip numatytąjį | Сохранить как размер сотрудника |
 | Preferred language | Pageidaujama kalba | Предпочитаемый язык |
+| Photos / Add Photo / Remove | Nuotraukos / Pridėti nuotrauką / Pašalinti | Фото / Добавить фото / Удалить |
+| Default (photo) / Make Default | Pagrindinė / Padaryti pagrindine | Основное / Сделать основным |
+| Used for: Profile, ID badge, Sizing, Receipt | Naudojama: Profilis, Pažymėjimas, Dydžių matavimas, Gavimo patvirtinimas | Используется для: Профиль, Пропуск, Подбор размера, Получение |
 | Size group | Dydžių grupė | Группа размеров |
 | Picture / Pictures | Paveikslėlis / Paveikslėliai | Изображение / Изображения |
 | Clothing / Shoes / No size | Drabužiai / Avalynė / Be dydžio | Одежда / Обувь / Без размера |

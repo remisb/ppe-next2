@@ -1,3 +1,4 @@
+import type { PhotoUse } from './photo-uses.ts'
 // Wire types, mirroring the JSON the Go handlers write. Money is integer cents
 // (EUR); sizes are the vocabulary codes from GET /api/v1/sizes, except an
 // employee's clothing size, which is the EU number itself (44–66, even). An
@@ -122,8 +123,23 @@ export interface Employee {
   notes: string
   /** The language the employee prefers, of those the app speaks; null when not recorded. */
   preferred_language: Language | null
+  /** The employee's default photo (see EmployeePhoto); null when they have none. */
+  default_photo_id: string | null
   created_at: string
   updated_at: string
+}
+
+/** One photo of an employee; GET /employee-photos/{employee}/{id} sends the picture. */
+export interface EmployeePhoto {
+  id: string
+  employee_id: string
+  file_name: string
+  content_type: 'image/jpeg' | 'image/png'
+  size_bytes: number
+  sha256: string
+  uses: PhotoUse[]
+  is_default: boolean
+  uploaded_at: string
 }
 
 /** Body of POST /employees and PUT /employees/{id} (full replace). */

@@ -26,6 +26,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
+	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -82,7 +83,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		return err
 	}
 	if store == nil {
-		logger.Warn("no file storage (API_FILES_TARGET): signed copies cannot be uploaded")
+		logger.Warn("no file storage (API_FILES_TARGET): signed copies and employee photos cannot be uploaded")
 	} else {
 		logger.Info("file storage", slog.String("target", store.String()))
 	}
@@ -94,6 +95,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions}),
 			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
 		employee.NewPostgresRepository(pool),
+		employeephoto.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
@@ -187,6 +189,7 @@ type services struct {
 	roles     *role.Service
 	users     *user.Service
 	employees *employee.Service
+	photos    *employeephoto.Service
 	catalogue *catalogue.Service
 	itemSets  *itemset.Service
 	orders    *order.Service
@@ -211,7 +214,7 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -233,6 +236,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
 	s.employees = employee.NewService(employees, employee.WithHoldings(employeeHoldings{s.assets}))
+	s.photos = employeephoto.NewService(photos, employeephoto.WithFiles(store))
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
 	s.orders = order.NewService(orders, order.Readers{
 		Employees: orderEmployees{s.employees},
@@ -255,6 +259,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerUserRoutes(rt, svc.users, tok, sensitive)
 	registerRoleRoutes(rt, svc.roles, sensitive)
 	registerEmployeeRoutes(rt, svc.employees)
+	registerEmployeePhotoRoutes(rt, svc.photos)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)

@@ -1,4 +1,5 @@
 import { ApiError, NetworkError } from './errors.ts'
+import type { PhotoUse } from './photo-uses.ts'
 import type {
   AccessReview,
   Asset,
@@ -33,6 +34,7 @@ import type {
   ConfirmationLink,
   Dashboard,
   Employee,
+  EmployeePhoto,
   EmployeeDashboard,
   EmployeeInput,
   EmployeeSizesInput,
@@ -316,6 +318,27 @@ export function createClient(options: ClientOptions) {
       updateSizes: (id: string, input: EmployeeSizesInput) =>
         request<Employee>('PUT', `/api/v1/employees/${seg(id)}/sizes`, input),
       remove: (id: string) => request<void>('DELETE', `/api/v1/employees/${seg(id)}`),
+    },
+
+    /** Photos of an employee (JPEG or PNG, at most 10 MB); the first becomes the default. */
+    employeePhotos: {
+      /** The employee's photos, the default first. */
+      list: (employeeId: string) => request<EmployeePhoto[]>('GET', `/api/v1/employee-photos/${seg(employeeId)}`),
+      upload: (employeeId: string, file: File, uses: PhotoUse[] = []) => {
+        const body = new FormData()
+        body.append('file', file)
+        for (const u of uses) body.append('uses', u)
+        return request<EmployeePhoto>('POST', `/api/v1/employee-photos/${seg(employeeId)}`, body)
+      },
+      /** The picture itself. */
+      file: (employeeId: string, photoId: string) => download(`/api/v1/employee-photos/${seg(employeeId)}/${seg(photoId)}`),
+      /** Replaces the photo's uses; none clears them. */
+      setUses: (employeeId: string, photoId: string, uses: PhotoUse[]) =>
+        request<EmployeePhoto>('PUT', `/api/v1/employee-photos/${seg(employeeId)}/${seg(photoId)}`, { uses }),
+      setDefault: (employeeId: string, photoId: string) =>
+        request<EmployeePhoto>('PUT', `/api/v1/employee-photos/${seg(employeeId)}/${seg(photoId)}/default`),
+      remove: (employeeId: string, photoId: string) =>
+        request<void>('DELETE', `/api/v1/employee-photos/${seg(employeeId)}/${seg(photoId)}`),
     },
 
     catalogue: {

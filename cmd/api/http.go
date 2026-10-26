@@ -16,6 +16,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
+	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -85,6 +86,7 @@ var errorStatuses = []struct {
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
 	{role.ErrActorNotFound, http.StatusUnauthorized},
 	{asset.ErrActorNotFound, http.StatusUnauthorized},
+	{employeephoto.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
 	{role.ErrNotFound, http.StatusNotFound},
@@ -105,6 +107,11 @@ var errorStatuses = []struct {
 	{asset.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
 	{asset.ErrFileType, http.StatusUnsupportedMediaType},
 	{asset.ErrNoStorage, http.StatusServiceUnavailable},
+	{employeephoto.ErrNotFound, http.StatusNotFound},
+	{employeephoto.ErrEmployeeNotFound, http.StatusNotFound},
+	{employeephoto.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
+	{employeephoto.ErrFileType, http.StatusUnsupportedMediaType},
+	{employeephoto.ErrNoStorage, http.StatusServiceUnavailable},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -140,6 +147,7 @@ var errorStatuses = []struct {
 	{audit.ErrInvalid, http.StatusBadRequest},
 	{security.ErrInvalid, http.StatusBadRequest},
 	{asset.ErrInvalid, http.StatusBadRequest},
+	{employeephoto.ErrInvalid, http.StatusBadRequest},
 	{system.ErrNotFound, http.StatusNotFound},
 	{system.ErrInvalid, http.StatusBadRequest},
 }

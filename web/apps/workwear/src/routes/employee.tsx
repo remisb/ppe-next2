@@ -19,6 +19,8 @@ import { type FormEvent, useMemo, useRef, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
+import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
+import { useFileDrop } from '@/lib/photo-drop'
 import { EmployeeForm } from '@/components/employee-form'
 import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
@@ -71,6 +73,13 @@ export function EmployeePage({
   const givenKey = useOpenKey('employee.items-given')
   const orderedKey = useOpenKey('employee.items-ordered')
   const changesKey = useOpenKey('employee.changes')
+  const photosKey = useOpenKey('employee.photos')
+  // Photos are added from the Photos section or by dropping them anywhere on the employee.
+  const photos = useEmployeePhotos({ id, full_name: employee.data?.full_name ?? '' }, () => {
+    employee.reload()
+    onChanged()
+  })
+  const drop = useFileDrop((files) => void photos.add(files), employee.data !== undefined)
   // The card's Edit buttons turn its sizes, or the preferred language, into their fields in
   // place, one at a time. Closing gives focus back to the Edit the form hid.
   const [inPlace, setInPlace] = useState<'sizes' | 'language' | null>(null)
@@ -149,7 +158,13 @@ export function EmployeePage({
     )
 
   return (
-    <>
+    <div {...drop.props} className="relative">
+      {drop.over && employee.data ? (
+        // Over the whole employee while photos are dragged onto it; drops go to their Photos.
+        <div aria-hidden className="pointer-events-none absolute -inset-2 z-20 flex items-start justify-center rounded-lg border-2 border-dashed border-ring bg-background/80 pt-24">
+          <p className="rounded-md bg-background px-3 py-2 text-sm font-medium shadow-sm">{t.employees.photos.dropOn(employee.data.full_name)}</p>
+        </div>
+      ) : null}
       <PaneBar backLabel={t.employees.title} closeLabel={t.employees.closeEmployee} onClose={onClose} className="mb-2" />
       <Loaded load={employee}>
         {(e) => (
@@ -336,6 +351,8 @@ export function EmployeePage({
             ) : null}
             <ActionError error={action.error} />
 
+            <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} />
+
             {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
             <DisclosureSection
               id="items-given"
@@ -384,7 +401,7 @@ export function EmployeePage({
           </>
         )}
       </Loaded>
-    </>
+    </div>
   )
 }
 

@@ -44,6 +44,7 @@ type Format =
   | 'whereabouts'
   | 'output'
   | 'list'
+  | 'photoUses'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -123,10 +124,11 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['content_type', 'text'],
   ['size_bytes', 'text'],
   ['sha256', 'text'],
+  ['uses', 'photoUses'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
-const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'currency'])
+const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'photo_id', 'currency'])
 
 /** Events from before migration 0021 hold the accounting price under this key. */
 const legacyKeys: Record<string, string> = { unit_price_cents: 'accounting_price_cents' }
@@ -199,6 +201,9 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
     case 'list':
       if (!Array.isArray(value)) return String(value)
       return value.length === 0 ? t.none : value.map(String).join(', ')
+    case 'photoUses':
+      if (!Array.isArray(value)) return String(value)
+      return value.length === 0 ? t.none : value.map((u) => t.photoUses[String(u)] ?? String(u)).join(', ')
     case 'lines':
       return Array.isArray(value) ? t.items(value.length) : String(value)
     case 'date':

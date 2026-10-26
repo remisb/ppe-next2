@@ -24,6 +24,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
+	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -429,6 +430,19 @@ func (m *memSecurity) Purge(context.Context, time.Time) (int64, error) {
 
 // stubEmployees and stubCatalogue satisfy their repositories for tests that
 // only exercise routing and authorization: reads find nothing, writes succeed.
+// stubPhotos satisfies employeephoto.Repository: every employee is unknown.
+type stubPhotos struct{}
+
+func (stubPhotos) List(context.Context, uuid.UUID) ([]employeephoto.Photo, error) {
+	return nil, employeephoto.ErrEmployeeNotFound
+}
+func (stubPhotos) Photo(context.Context, uuid.UUID, uuid.UUID) (employeephoto.Photo, error) {
+	return employeephoto.Photo{}, employeephoto.ErrNotFound
+}
+func (stubPhotos) Apply(context.Context, uuid.UUID, employeephoto.Change) error {
+	return employeephoto.ErrEmployeeNotFound
+}
+
 type stubEmployees struct{}
 
 func (stubEmployees) Create(context.Context, employee.Employee, *audit.Event) error { return nil }
@@ -656,7 +670,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -773,6 +787,13 @@ var policy = map[string]rule{
 	"PUT /api/v1/employees/{id}":        {"", "any"},
 	"PUT /api/v1/employees/{id}/sizes":  {"", "any"},
 	"DELETE /api/v1/employees/{id}":     {role.EmployeesDelete, "managers"},
+
+	"GET /api/v1/employee-photos/{id}":                   {"", "any"},
+	"POST /api/v1/employee-photos/{id}":                  {"", "any"},
+	"GET /api/v1/employee-photos/{id}/{photoID}":         {"", "any"},
+	"PUT /api/v1/employee-photos/{id}/{photoID}":         {"", "any"},
+	"PUT /api/v1/employee-photos/{id}/{photoID}/default": {"", "any"},
+	"DELETE /api/v1/employee-photos/{id}/{photoID}":      {"", "any"},
 
 	"GET /api/v1/catalogue":                    {"", "any"},
 	"GET /api/v1/catalogue/active":             {"", "any"},

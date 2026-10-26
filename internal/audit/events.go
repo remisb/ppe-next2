@@ -52,6 +52,7 @@ var events = []string{
 	"user.password_changed", "user.password_reset", "user.deleted",
 	"role.created", "role.updated", "role.deleted",
 	"employee.created", "employee.updated", "employee.sizes_changed", "employee.deleted",
+	"employee.photo_added", "employee.photo_uses_changed", "employee.photo_default_changed", "employee.photo_removed",
 	"catalogue.created", "catalogue.updated", "catalogue.price_changed",
 	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted", "catalogue.picture_changed",
 	"item_set.created", "item_set.updated", "item_set.deleted",

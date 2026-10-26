@@ -35,13 +35,16 @@ type Employee struct {
 	ShoeSize     *string   `json:"shoe_size"`
 	Notes        string    `json:"notes"`
 	// PreferredLanguage is en, lt or ru, or nil when no one has recorded it.
-	PreferredLanguage *string    `json:"preferred_language"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
-	CreatedByUserID   uuid.UUID  `json:"created_by_user_id"`
-	UpdatedByUserID   uuid.UUID  `json:"updated_by_user_id"`
-	DeletedByUserID   *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	PreferredLanguage *string `json:"preferred_language"`
+	// DefaultPhotoID is the employee's default photo (internal/domain/employeephoto);
+	// reads fill it, nothing accepts it.
+	DefaultPhotoID  *uuid.UUID `json:"default_photo_id"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
+	CreatedByUserID uuid.UUID  `json:"created_by_user_id"`
+	UpdatedByUserID uuid.UUID  `json:"updated_by_user_id"`
+	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
 func (e Employee) Deleted() bool { return e.DeletedAt != nil }

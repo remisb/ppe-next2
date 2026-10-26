@@ -93,6 +93,29 @@ export const employees = {
   lastName: 'Last name',
   employeeCode: 'Employee code',
   codeTaken: 'Another employee already has this code.',
+  // Photos.
+  photos: {
+    title: 'Photos',
+    hint: 'JPEG or PNG, up to 10 MB. The default photo is the one shown beside the employee in lists. Uses are optional.',
+    add: 'Add Photo',
+    adding: 'Adding…',
+    added: (name: string) => `Photo added for ${name}.`,
+    dropHint: 'or drop photos here',
+    dropOn: (name: string) => `Drop to add photos of ${name}`,
+    addedMany: (n: number, name: string) => `${n} photos added for ${name}.`,
+    none: (name: string) => `No photos of ${name} yet.`,
+    alt: (name: string) => `Photo of ${name}`,
+    default: 'Default',
+    makeDefault: 'Make Default',
+    remove: 'Remove',
+    confirmRemove: 'Remove this photo?',
+    usesLabel: 'Used for',
+    fileEmpty: 'The file is empty.',
+    fileTooLarge: 'The photo is larger than 10 MB.',
+    fileType: 'Choose a JPEG or PNG image.',
+    noStorage: 'File storage is not set up, so photos cannot be added.',
+    uses: { profile: 'Profile', id_badge: 'ID badge', sizing: 'Sizing', receipt: 'Receipt' },
+  },
 }
 
 export type EmployeesText = typeof employees

@@ -23,7 +23,10 @@ import { EmployeePage } from '@/routes/employee'
 import { EmployeeForm } from '@/components/employee-form'
 import { t } from '@/i18n'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
-import { employeeFacts, initials, missingLabel } from '@/lib/records'
+import { cn } from '@ppe/ui/lib/utils'
+import { EmployeeAvatar } from '@/components/employee-photo'
+import { addPhotos, photoRefusal, useRowFileDrop } from '@/lib/photo-drop'
+import { employeeFacts, missingLabel } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
 
@@ -96,6 +99,24 @@ export function Employees({
       { confirm: t.employees.confirmDelete(e.full_name) },
     )
 
+  // A photo dropped on an employee's row is added to their photos; the first one becomes their avatar.
+  const [notice, setNotice] = useState<string>()
+  const [paneVersion, setPaneVersion] = useState(0)
+  const photoDrop = useRowFileDrop((id, files) => {
+    const emp = employees.data?.find((x) => x.id === id)
+    if (!emp) return
+    setNotice(undefined)
+    void action.run(
+      async () => {
+        setNotice(await addPhotos(client, emp, files))
+        employees.reload()
+        // The employee open beside the list shows the new photos too.
+        if (id === selected) setPaneVersion((v) => v + 1)
+      },
+      { mapError: photoRefusal },
+    )
+  })
+
   const open = (id: string) => navigate({ name: 'employee', id }, { scroll: !besideList() })
   const close = () => navigate({ name: 'employees' }, { scroll: false })
   // J and K: the next or previous employee in the list as shown, while one is open; Escape closes her beside the list.
@@ -109,7 +130,7 @@ export function Employees({
       pane={
         selected ? (
           <DetailPane label={t.employees.employee} next={t.employees.nextOrPrevious}>
-            <EmployeePage key={selected} id={selected} navigate={navigate} onClose={close} onChanged={employees.reload} />
+            <EmployeePage key={`${selected}.${paneVersion}`} id={selected} navigate={navigate} onClose={close} onChanged={employees.reload} />
           </DetailPane>
         ) : null
       }
@@ -149,6 +170,11 @@ export function Employees({
         ) : null}
       </div>
       <ActionError error={action.error} />
+      {notice ? (
+        <p role="status" className="mb-3 text-sm text-muted-foreground">
+          {notice}
+        </p>
+      ) : null}
       <Loaded
         load={employees}
         empty={shown.length === 0}
@@ -180,7 +206,12 @@ export function Employees({
                     key={e.id}
                     data-state={selected === e.id ? 'selected' : undefined}
                     aria-current={selected === e.id ? 'true' : undefined}
-                    className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
+                    {...photoDrop.rowProps(e.id)}
+                    className={cn(
+                      'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                      // Photos dragged over the row: dropping adds them to this employee.
+                      photoDrop.overId === e.id && 'bg-accent outline-2 -outline-offset-2 outline-ring outline-dashed',
+                    )}
                     // The whole row opens the employee; the name is the real link, for keyboards,
                     // screen readers and "open in new tab". The row's own buttons keep their action.
                     onClick={(ev) => {
@@ -189,18 +220,24 @@ export function Employees({
                     }}
                   >
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
-                      <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(e)}</span>
+                      <EmployeeAvatar employee={e} />
                     </TableCell>
                     <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
-                      <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
-                        {e.full_name}
-                      </a>
-                      {/* The note on one line under the name, in full on hover and on the employee's page. */}
-                      {e.notes ? (
-                        <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
-                          {e.notes}
-                        </p>
-                      ) : null}
+                      <div className="flex items-center gap-3 stacked:contents">
+                        {/* In the table the avatar leads the name; stacked, it has a cell of its own on the left. */}
+                        <EmployeeAvatar employee={e} className="stacked:hidden" />
+                        <div className="min-w-0 stacked:contents">
+                          <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
+                            {e.full_name}
+                          </a>
+                          {/* The note on one line under the name, in full on hover and on the employee's page. */}
+                          {e.notes ? (
+                            <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
+                              {e.notes}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
                       {/* Stacked, the sizes Create Order will ask for; the table flags them in their columns. */}
                       {flag ? (
                         <IssueBadge label={flag} variant="destructive" issues={[t.employees.missingTitle]} className="hidden shrink-0 stacked:inline-flex" />

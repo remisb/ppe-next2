@@ -50,3 +50,30 @@ changes, from either PUT), `employee.deleted`. One PUT that changes both details
 records both events. Each is written in the same transaction as the change, from the row read
 under `FOR UPDATE`. They read on the Audit log and the employee's Changes
 ([audit-service.md](audit-service.md)).
+
+## Photos
+
+An employee has any number of photos (`internal/domain/employeephoto`, migration 0037,
+`employee_photos`): a JPEG or PNG of at most 10 MB, its metadata removed but for orientation,
+kept in the files store (`API_FILES_TARGET`) under `employee-photos/<employee>/<photo>`.
+
+- **Default.** At most one photo per employee is the default (a partial unique index). The
+  first photo added becomes it; Make Default moves it; removing the default makes the oldest
+  remaining photo the default. `Employee.default_photo_id` carries it to the lists' avatars.
+- **Uses.** Each photo has none, one or several uses from a fixed list: `profile`, `id_badge`,
+  `sizing`, `receipt` (`PHOTO_USES` in `@ppe/api-client`). They are optional and replaced as a set.
+- **Removal** is a soft delete; the file stays in the store.
+- **Access.** Like the employee's other details: any signed-in user.
+- **Routes**, under `/api/v1/employee-photos/{employee id}` (under `/employees/{id}/…` they would
+  clash with `/employees/by-name/{q}`): `GET` lists (default first); `POST` multipart `file` and
+  any number of `uses`; `GET …/{photo}` the picture; `PUT …/{photo}` `{"uses": [...]}`;
+  `PUT …/{photo}/default`; `DELETE …/{photo}`. 413 too large, 415 not JPEG/PNG, 503 no storage.
+- **Audit** (on the employee): `employee.photo_added`, `photo_uses_changed`,
+  `photo_default_changed`, `photo_removed`.
+- **Adding by drag and drop** (web, `lib/photo-drop.ts`): JPEG or PNG files dropped on an
+  employee's row in the Employees list, anywhere on the open employee, or on the Photos section
+  are added as that employee's photos (several at once, one after another; a file that is not a
+  photo refuses the whole drop before anything is sent). Add Photo also takes several files.
+- The web shows photos in an employee's Photos section and the default as the avatar in the
+  Employees list; the pictures are fetched with the bearer token and shown from object URLs, so
+  the production CSP allows `img-src blob:`.
