@@ -234,9 +234,8 @@ export function Assets({
 
   /**
    * The tabs with their counts, always in sight, in place of tiles, each as wide as its words (Russian needs it).
-   * SIM Cards' three are one row everywhere and lead its filters' row, so tabs, search and filters are one line
-   * where it fits and wrap where it does not, beside an open SIM too. Equipment's four sit above its filters, two
-   * to a row on a phone and beside an open item, else one row.
+   * SIM Cards' three are one row, and its search and filters are one line below them (they shrink to stay on it).
+   * Equipment's four sit above its filters, two to a row on a phone and beside an open item, else one row.
    */
   const tabGroup = (
     <Segmented
@@ -292,13 +291,12 @@ export function Assets({
           }
         />
         <div className="mb-4 flex flex-col gap-3">
-          {sim ? null : tabGroup}
+          {tabGroup}
           {/*
             The search and the filters on one line, as wide as it lets them (on SIM Cards after the tabs), wrapping where it
             does not fit; on a phone the search stays in view and Filters folds away the rest.
           */}
-          <div id="asset-filters" role="region" aria-label={t.assets.filters} className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-            {sim ? tabGroup : null}
+          <div id="asset-filters" role="region" aria-label={t.assets.filters} className={cn('flex flex-col gap-3 md:flex-row md:items-center', sim ? 'md:flex-nowrap' : 'md:flex-wrap')}>
             <Input
               type="search"
               data-shortcut="search"
@@ -306,7 +304,7 @@ export function Assets({
               placeholder={sim ? t.assets.searchPlaceholder : t.assets.equipmentSearchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="md:max-w-md md:min-w-72 md:flex-1"
+              className={cn('md:flex-1', sim ? 'md:min-w-40' : 'md:min-w-72 md:max-w-md')}
             />
             {sim ? null : (
               <FilterSelect
@@ -617,7 +615,7 @@ function FilterSelect<V extends string>({
 }) {
   return (
     <Select items={items} value={value} onValueChange={(v) => v !== null && onChange(v)}>
-      <SelectTrigger aria-label={label} className={cn('md:w-48', className)}>
+      <SelectTrigger aria-label={label} className={cn('md:w-48 md:min-w-0 md:shrink', className)}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

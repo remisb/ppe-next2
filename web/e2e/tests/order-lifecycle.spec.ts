@@ -1713,7 +1713,7 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card).toContainText('Office')
   // No tiles here: the tabs count instead.
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
-  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^Not Activated\s*1/ })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
   // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
   await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
   await expect(page.getByText(/Email your provider to activate this SIM/)).toBeVisible()
@@ -1730,20 +1730,14 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await form.getByRole('button', { name: 'Open the existing SIM' }).click()
   await expect(page.getByLabel('Search SIMs')).toHaveValue('SIM-000001')
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
-  // Each tab counts what choosing it would list, under the search: the one card, Active. Only statuses: Location has the places.
+  // Each tab counts what choosing it would list, under the search: the one card, in the Office.
   const tabs = page.getByRole('group', { name: 'Status', exact: true })
-  await expect(tabs.getByRole('button')).toHaveText(['All1', 'Not Activated0', 'Active1'])
-  // One tab at a time.
-  await tabs.getByRole('button', { name: /^Not Activated/ }).click()
-  await tabs.getByRole('button', { name: /^Active/ }).click()
-  await expect(tabs.getByRole('button', { name: /^Not Activated/ })).toHaveAttribute('aria-pressed', 'false')
-  // Location keeps the status: Office with Not Activated is the cards not activated in the office (§3).
-  await tabs.getByRole('button', { name: /^Not Activated/ }).click()
-  // The register's filters are shadcn's Select, as Sort by: their own list, opened by a click.
-  await page.getByRole('combobox', { name: 'Location' }).click()
-  await page.getByRole('option', { name: 'Office', exact: true }).click()
-  await expect(tabs.getByRole('button', { name: /^Not Activated/ })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Office/)
+  await expect(tabs.getByRole('button')).toHaveText(['All1', 'In Office1', 'With Employees0'])
+  // One tab at a time; a tab sets Location.
+  await tabs.getByRole('button', { name: /^With Employees/ }).click()
+  await expect(tabs.getByRole('button', { name: /^With Employees/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(tabs.getByRole('button', { name: /^In Office/ })).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/With Employee/)
   await expect(page.getByText('No SIMs match these filters.')).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters' }).first().click()
   await expect(page.getByRole('row', { name: /SIM-000001/ })).toBeVisible()
