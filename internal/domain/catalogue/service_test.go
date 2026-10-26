@@ -196,6 +196,9 @@ func (f *fakeRepo) UpdatePicture(_ context.Context, icon Icon, m PictureMutation
 
 var testActor = uuid.New()
 
+// all may change everything, prices included.
+var all = Rights{Prices: true}
+
 func newTestService() (*Service, *fakeRepo) {
 	repo := newFakeRepo()
 	return NewService(repo, WithClock(func() time.Time { return time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC) })), repo
@@ -204,14 +207,14 @@ func newTestService() (*Service, *fakeRepo) {
 func TestCreate(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	i, err := svc.Create(ctx, Params{Name: "Safety shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, testActor)
+	i, err := svc.Create(ctx, Params{Name: "Safety shoes", AccountingPriceCents: i64(4999), ServicePeriodMonths: ip(12), Active: true}, all, testActor)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if i.Currency != CurrencyEUR || i.DisplayRank != DefaultDisplayRank || len(repo.events) != 1 || repo.events[0].Event != EventCreated {
 		t.Errorf("item %+v events %+v", i, repo.events)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "SAFETY SHOES"}, testActor); !errors.Is(err, ErrNameTaken) {
+	if _, err := svc.Create(ctx, Params{Name: "SAFETY SHOES"}, all, testActor); !errors.Is(err, ErrNameTaken) {
 		t.Errorf("duplicate name err = %v", err)
 	}
 }
@@ -220,20 +223,20 @@ func TestCreate(t *testing.T) {
 func TestIcon(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	i, err := svc.Create(ctx, Params{Name: "Ear plugs"}, testActor)
+	i, err := svc.Create(ctx, Params{Name: "Ear plugs"}, all, testActor)
 	if err != nil || i.Icon != IconOther {
 		t.Fatalf("default icon %q, err %v", i.Icon, err)
 	}
-	u, err := svc.Update(ctx, i.ID, Params{Name: "Ear plugs", Icon: " Ear "}, testActor)
+	u, err := svc.Update(ctx, i.ID, Params{Name: "Ear plugs", Icon: " Ear "}, all, testActor)
 	if err != nil || u.Icon != IconEar {
 		t.Fatalf("updated icon %q, err %v", u.Icon, err)
 	}
 	for _, icon := range []Icon{IconWeldingHelmet, IconInsulatedJacket} {
-		if w, err := svc.Create(ctx, Params{Name: "Item " + string(icon), Icon: icon}, testActor); err != nil || w.Icon != icon {
+		if w, err := svc.Create(ctx, Params{Name: "Item " + string(icon), Icon: icon}, all, testActor); err != nil || w.Icon != icon {
 			t.Errorf("icon %q: got %q, err %v", icon, w.Icon, err)
 		}
 	}
-	if _, err := svc.Create(ctx, Params{Name: "Boots", Icon: "boot"}, testActor); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.Create(ctx, Params{Name: "Boots", Icon: "boot"}, all, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("unknown icon err = %v", err)
 	}
 }
@@ -242,11 +245,11 @@ func TestPriceChangeAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	p := Params{Name: "Work jacket", AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
-	i, _ := svc.Create(ctx, p, testActor)
+	i, _ := svc.Create(ctx, p, all, testActor)
 	repo.events = nil
 
 	p.Details = "Model X"
-	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
+	if _, err := svc.Update(ctx, i.ID, p, all, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 || repo.events[0].Event != EventUpdated ||
@@ -256,7 +259,7 @@ func TestPriceChangeAudited(t *testing.T) {
 	repo.events = nil
 
 	p.AccountingPriceCents = i64(3500)
-	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
+	if _, err := svc.Update(ctx, i.ID, p, all, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 || repo.events[0].Event != EventPriceChanged ||
@@ -266,14 +269,14 @@ func TestPriceChangeAudited(t *testing.T) {
 	}
 
 	p.ServicePeriodMonths = ip(24)
-	svc.Update(ctx, i.ID, p, testActor)
+	svc.Update(ctx, i.ID, p, all, testActor)
 	if len(repo.events) != 2 || repo.events[1].Event != EventPriceChanged {
 		t.Errorf("service period change not recorded: %+v", repo.events)
 	}
 
 	// The purchase price is a price too: setting it alone records a change.
 	p.PurchasePriceCents = i64(2100)
-	svc.Update(ctx, i.ID, p, testActor)
+	svc.Update(ctx, i.ID, p, all, testActor)
 	if len(repo.events) != 3 || repo.events[2].Event != EventPriceChanged ||
 		!strings.Contains(string(repo.events[2].Before), `"purchase_price_cents":null`) ||
 		!strings.Contains(string(repo.events[2].After), `"purchase_price_cents":2100`) ||
@@ -282,11 +285,49 @@ func TestPriceChangeAudited(t *testing.T) {
 	}
 }
 
+// Without Rights.Prices an item is added without prices and edited with its
+// prices as they are; the service period is not a price.
+func TestPricesNeedRights(t *testing.T) {
+	svc, repo := newTestService()
+	ctx := context.Background()
+	if _, err := svc.Create(ctx, Params{Name: "Gloves", AccountingPriceCents: i64(500)}, Rights{}, testActor); !errors.Is(err, ErrNotPermitted) {
+		t.Errorf("create with a price: err = %v, want ErrNotPermitted", err)
+	}
+	if _, err := svc.Create(ctx, Params{Name: "Gloves", PurchasePriceCents: i64(300)}, Rights{}, testActor); !errors.Is(err, ErrNotPermitted) {
+		t.Errorf("create with a purchase price: err = %v, want ErrNotPermitted", err)
+	}
+	p := Params{Name: "Gloves", AccountingPriceCents: i64(500), ServicePeriodMonths: ip(6), Active: true}
+	i, err := svc.Create(ctx, p, all, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p.Details, p.ServicePeriodMonths = "Nitrile", ip(12)
+	if _, err := svc.Update(ctx, i.ID, p, Rights{}, testActor); err != nil {
+		t.Errorf("edit keeping the prices: %v", err)
+	}
+	for name, change := range map[string]func(*Params){
+		"price":          func(p *Params) { p.AccountingPriceCents = i64(600) },
+		"price removed":  func(p *Params) { p.AccountingPriceCents = nil },
+		"purchase price": func(p *Params) { p.PurchasePriceCents = i64(300) },
+	} {
+		q := p
+		change(&q)
+		repo.events = nil
+		if _, err := svc.Update(ctx, i.ID, q, Rights{}, testActor); !errors.Is(err, ErrNotPermitted) || len(repo.events) != 0 {
+			t.Errorf("%s changed without the right: err = %v, events %d", name, err, len(repo.events))
+		}
+	}
+	if got, _ := svc.Get(ctx, i.ID); *got.AccountingPriceCents != 500 || got.PurchasePriceCents != nil {
+		t.Errorf("prices = %v, %v; want unchanged", *got.AccountingPriceCents, got.PurchasePriceCents)
+	}
+}
+
 func TestActivationAndListActive(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	mk := func(name string, rank int) Item {
-		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, testActor)
+		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, all, testActor)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -323,14 +364,14 @@ func TestActivationAndListActive(t *testing.T) {
 func TestDelete(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	i, _ := svc.Create(ctx, Params{Name: "Gloves"}, testActor)
+	i, _ := svc.Create(ctx, Params{Name: "Gloves"}, all, testActor)
 	if err := svc.Delete(ctx, i.ID, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.Delete(ctx, i.ID, testActor); !errors.Is(err, ErrNotFound) {
 		t.Errorf("second delete err = %v", err)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "gloves"}, testActor); err != nil {
+	if _, err := svc.Create(ctx, Params{Name: "gloves"}, all, testActor); err != nil {
 		t.Errorf("name reuse after delete: %v", err)
 	}
 }
@@ -339,13 +380,13 @@ func TestPriceHistory(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
 	p := Params{Name: "Gloves", AccountingPriceCents: i64(200), ServicePeriodMonths: ip(1), Active: true}
-	i, _ := svc.Create(ctx, p, testActor)
+	i, _ := svc.Create(ctx, p, all, testActor)
 	p.AccountingPriceCents = i64(250)
-	svc.Update(ctx, i.ID, p, testActor)
+	svc.Update(ctx, i.ID, p, all, testActor)
 	p.PurchasePriceCents = i64(180)
-	svc.Update(ctx, i.ID, p, testActor)
+	svc.Update(ctx, i.ID, p, all, testActor)
 	p.Details = "Nitrile" // not a price change
-	svc.Update(ctx, i.ID, p, testActor)
+	svc.Update(ctx, i.ID, p, all, testActor)
 
 	h, err := svc.PriceHistory(ctx, i.ID)
 	if err != nil {
@@ -366,11 +407,11 @@ func TestOneSaveRecordsEachKindOfChange(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	p := Params{Name: "Work jacket", AccountingPriceCents: i64(3000), ServicePeriodMonths: ip(12), Active: true}
-	i, _ := svc.Create(ctx, p, testActor)
+	i, _ := svc.Create(ctx, p, all, testActor)
 	repo.events = nil
 
 	p.Name, p.AccountingPriceCents, p.Active = "Winter jacket", i64(4200), false
-	if _, err := svc.Update(ctx, i.ID, p, testActor); err != nil {
+	if _, err := svc.Update(ctx, i.ID, p, all, testActor); err != nil {
 		t.Fatal(err)
 	}
 	var got []string
@@ -390,17 +431,17 @@ func TestOneSaveRecordsEachKindOfChange(t *testing.T) {
 func TestSizeGroupFromPicture(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	shoes, err := svc.Create(ctx, Params{Name: "Safety shoes", Icon: IconShoes, Active: true}, testActor)
+	shoes, err := svc.Create(ctx, Params{Name: "Safety shoes", Icon: IconShoes, Active: true}, all, testActor)
 	if err != nil || shoes.SizeGroup != size.GroupShoes {
 		t.Fatalf("created size group %q, err %v", shoes.SizeGroup, err)
 	}
-	other, _ := svc.Create(ctx, Params{Name: "Ear plugs", Active: true}, testActor)
+	other, _ := svc.Create(ctx, Params{Name: "Ear plugs", Active: true}, all, testActor)
 	if other.SizeGroup != size.GroupNone {
 		t.Errorf("default picture's size group = %q", other.SizeGroup)
 	}
 	repo.events = nil
 
-	u, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconVest, Active: true}, testActor)
+	u, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconVest, Active: true}, all, testActor)
 	if err != nil || u.SizeGroup != size.GroupClothing {
 		t.Fatalf("new picture's size group %q, err %v", u.SizeGroup, err)
 	}
@@ -410,7 +451,7 @@ func TestSizeGroupFromPicture(t *testing.T) {
 	}
 	repo.events = nil
 	// Another picture with the same size group records the picture alone.
-	if _, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconJacket, Active: true}, testActor); err != nil {
+	if _, err := svc.Update(ctx, other.ID, Params{Name: "Ear plugs", Icon: IconJacket, Active: true}, all, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 || string(repo.events[0].After) != `{"icon":"jacket"}` {
@@ -421,8 +462,8 @@ func TestSizeGroupFromPicture(t *testing.T) {
 func TestUpdatePicture(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	gloves, _ := svc.Create(ctx, Params{Name: "Gloves", Icon: IconGloves, Active: true}, testActor)
-	svc.Create(ctx, Params{Name: "Winter gloves", Icon: IconGloves, Active: true}, testActor)
+	gloves, _ := svc.Create(ctx, Params{Name: "Gloves", Icon: IconGloves, Active: true}, all, testActor)
+	svc.Create(ctx, Params{Name: "Winter gloves", Icon: IconGloves, Active: true}, all, testActor)
 	repo.events = nil
 
 	p, err := svc.UpdatePicture(ctx, " Gloves ", PictureParams{SizeGroup: "clothing"}, testActor)
@@ -483,7 +524,7 @@ func TestMove(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
 	mk := func(name string, rank int) Item {
-		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, testActor)
+		i, err := svc.Create(ctx, Params{Name: name, Active: true, DisplayRank: ip(rank)}, all, testActor)
 		if err != nil {
 			t.Fatal(err)
 		}

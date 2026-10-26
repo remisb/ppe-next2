@@ -48,7 +48,11 @@ Administrator, Manager and Employee reproduce the old three roles; administrator
 change others on Roles & permissions. The token's `perms` claim carries what the user's
 roles allow. A fourth built-in, **Equipment Assignments** (migration 0032), alone grants
 `equipment.read`: Equipment & Furniture and who holds each item are hidden from everyone
-else, administrators included (`asset.Sight`; the API answers 404 for such an item). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
+else, administrators included (`asset.Sight`; the API answers 404 for such an item). Migration 0038 split two
+permissions off wider access, granting them to every role that had it: **See Item Sets**
+(`item_sets.read`; the active sets stay open for Create Order) and **Change Item prices**
+(`item_prices.manage`, needs `catalogue.manage`; `catalogue.Rights` refuses a price change
+without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
 Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration

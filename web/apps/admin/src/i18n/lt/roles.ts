@@ -74,7 +74,12 @@ export const roles: RolesText = {
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',
-      grants: 'Pridėti ir keisti prekes, jų kainas ir naudojimo laikotarpius; išjungti ir trinti jas.',
+      grants: 'Pridėti ir keisti prekes ir jų naudojimo laikotarpius; išjungti ir trinti jas. Kainoms reikia leidimo „Keisti prekių kainas“.',
+    },
+    'item_prices.manage': { label: 'Keisti prekių kainas', grants: 'Nustatyti ir keisti prekės kainą ir pirkimo kainą.' },
+    'item_sets.read': {
+      label: 'Matyti prekių rinkinius',
+      grants: 'Prekių rinkinių ekranas ir kurie rinkiniai turi prekę. Kuriant užsakymą aktyvūs rinkiniai siūlomi visiems.',
     },
     'item_sets.manage': { label: 'Tvarkyti prekių rinkinius', grants: 'Pridėti, keisti ir trinti prekių rinkinius.' },
     'orders.delete': { label: 'Trinti užsakymus', grants: 'Pašalinti demonstracinius ir bandomuosius užsakymus; įrašas ir jo istorija lieka.' },

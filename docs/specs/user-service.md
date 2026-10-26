@@ -40,7 +40,9 @@ roles did:
 | `security.read` | read Security: sign-ins, everyone's signed-in devices, the access review | ✓ | | |
 | `employees.delete` | delete employees | ✓ | ✓ | |
 | `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
-| `item_sets.manage` | add, edit, delete item sets | ✓ | ✓ | |
+| `item_prices.manage` | set and change an item's prices (needs `catalogue.manage`; migration 0038) | ✓ | ✓ | |
+| `item_sets.read` | see Item Sets (migration 0038; before it, every signed-in user) | ✓ | ✓ | ✓ |
+| `item_sets.manage` | add, edit, delete item sets (needs `item_sets.read`) | ✓ | ✓ | |
 | `orders.delete` | delete orders | | ✓ | |
 | `assets.manage` | add and edit Company Assets, Change Status, give, return, Mark as Not Returned (migration 0029; spec, open decision 5) | ✓ | ✓ | |
 | `dashboard.overview` | the Dashboard | ✓ | | |

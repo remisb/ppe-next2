@@ -50,6 +50,7 @@ export const catalogue: CatalogueText = {
   purchasePriceHint: 'Kiek mokame tiekėjui. Neprivaloma.',
   accountingPriceEuro: 'Kaina (€)',
   accountingPriceHint: 'Rodoma užsakymuose.',
+  pricesNeedPermission: 'Kainoms keisti reikia leidimo „Keisti prekių kainas“.',
   pricePlaceholder: '0,00',
   servicePeriodMonths: 'Naudojimo laikotarpis (mėn.)',
   displayOrderHint: 'Mažesnis skaičius rodomas pirmiau renkantis prekes.',

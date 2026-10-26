@@ -26,12 +26,12 @@ func TestRolesHTTP(t *testing.T) {
 		t.Fatalf("permissions = %d %s", rec.Code, rec.Body)
 	}
 
-	rec = api.do(t, "POST", "/api/v1/roles", adminTok, map[string]any{"name": "Storekeeper", "description": "Keeps the store", "permissions": []string{"catalogue.manage", "item_sets.manage"}})
+	rec = api.do(t, "POST", "/api/v1/roles", adminTok, map[string]any{"name": "Storekeeper", "description": "Keeps the store", "permissions": []string{"catalogue.manage", "item_sets.read", "item_sets.manage"}})
 	if rec.Code != http.StatusCreated || !strings.HasPrefix(rec.Header().Get("Location"), "/api/v1/roles/") {
 		t.Fatalf("create = %d %s", rec.Code, rec.Body)
 	}
 	store := decode[role.Role](t, rec.Body.Bytes())
-	if store.Key != nil || store.Locked || !slices.Equal(store.Permissions, []role.Permission{role.CatalogueManage, role.ItemSetsManage}) {
+	if store.Key != nil || store.Locked || !slices.Equal(store.Permissions, []role.Permission{role.CatalogueManage, role.ItemSetsRead, role.ItemSetsManage}) {
 		t.Errorf("created = %+v", store)
 	}
 	// Derived and server-set fields are refused in the body; a requirement left out is named.

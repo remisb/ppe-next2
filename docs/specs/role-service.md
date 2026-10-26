@@ -36,6 +36,10 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
   them back after a test or e2e run empties the tables, and `-seed-admin` calls it).
   Installed, the first three reproduce the access the three fixed roles gave (`builtin.go`;
   `TestSeededRolesKeepPolicy`, `TestPostgresBuiltinsMatchCode`), less Equipment & Furniture.
+- **Splitting a permission off** keeps every role's access: the migration that adds it grants
+  it to each role, custom ones too, that had what it splits from. Migration 0038 added
+  `item_sets.read` (every role but Equipment Assignments, since every signed-in user saw Item
+  Sets) and `item_prices.manage` (every role with `catalogue.manage`).
 - **Equipment Assignments** (key `equipment`, migration 0032) grants `equipment.read` alone:
   seeing Equipment & Furniture and who holds each item (`docs/specs/asset-service.md`).
   No other built-in role has it, Administrator included; an administrator gives it on Users,

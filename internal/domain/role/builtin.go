@@ -52,21 +52,22 @@ func BuiltinID(key string) uuid.UUID {
 
 // builtins are the built-in roles' permissions as installed. Together the
 // first three reproduce the access the three fixed roles had before
-// permissions existed, with Equipment & Furniture since taken from them;
+// permissions existed, with Equipment & Furniture since taken from them, and
+// hold what was split off later (item_sets.read, item_prices.manage: 0038);
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
 	KeyAdmin: {
 		UsersRead, UsersManage, RolesManage, SettingsManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead,
-		EmployeesDelete, CatalogueManage, ItemSetsManage, AssetsManage,
+		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage,
 		DashboardOverview,
 	},
 	KeyManager: {
 		UsersRead,
-		EmployeesDelete, CatalogueManage, ItemSetsManage, OrdersDelete, AssetsManage,
+		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, OrdersDelete, AssetsManage,
 		DashboardManager,
 	},
-	KeyEmployee: {DashboardEmployee},
+	KeyEmployee: {ItemSetsRead, DashboardEmployee},
 	// Not even Administrator sees Equipment & Furniture without this role.
 	KeyEquipment: {EquipmentRead},
 }

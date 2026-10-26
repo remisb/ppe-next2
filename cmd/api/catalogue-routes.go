@@ -15,7 +15,9 @@ type catalogueHandler struct {
 }
 
 // registerCatalogueRoutes mounts /api/v1/catalogue. Everyone reads; only
-// catalogue.manage ("Manage Items and Prices") writes, items and pictures.
+// catalogue.manage ("Manage Item Catalogue") writes, items and pictures, and
+// setting or changing an item's prices also needs item_prices.manage
+// ("Change Item prices"; rights).
 func registerCatalogueRoutes(rt *router, items *catalogue.Service) {
 	h := &catalogueHandler{items: items}
 	rt.authenticated("GET /api/v1/catalogue", h.list)
@@ -67,6 +69,12 @@ func (req catalogueRequest) params() (catalogue.Params, error) {
 		PurchasePriceCents: req.PurchasePriceCents, AccountingPriceCents: req.AccountingPriceCents,
 		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank, Icon: req.Icon,
 	}, nil
+}
+
+// rights is what the request's user may change on an item beyond what
+// catalogue.manage allows: its prices only with item_prices.manage.
+func rights(r *http.Request) catalogue.Rights {
+	return catalogue.Rights{Prices: holds(r, role.ItemPricesManage)}
 }
 
 func (h *catalogueHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +170,7 @@ func (h *catalogueHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	item, err := h.items.Create(r.Context(), p, actor)
+	item, err := h.items.Create(r.Context(), p, rights(r), actor)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -192,7 +200,7 @@ func (h *catalogueHandler) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	item, err := h.items.Update(r.Context(), id, p, actor)
+	item, err := h.items.Update(r.Context(), id, p, rights(r), actor)
 	if err != nil {
 		writeError(w, r, err)
 		return

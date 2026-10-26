@@ -68,7 +68,8 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
       : {}),
   },
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
-  { route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package },
+  // Item Sets take See Item Sets (item_sets.read); Create Order offers the active ones to everyone.
+  ...(can('item_sets.read') ? [{ route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package } satisfies Tab] : []),
 ]
 /**
  * The sections the desktop sidebar lists under Workwear, which shows or hides them;
@@ -148,7 +149,7 @@ export function App() {
       },
       newOrder: () => navigate({ name: 'createOrder' }),
       go: (k) => {
-        if (k !== 'u' || session?.can('users.manage')) navigate(goTo[k])
+        if ((k !== 'u' || session?.can('users.manage')) && (k !== 's' || session?.can('item_sets.read'))) navigate(goTo[k])
       },
       help: () => setHelpOpen(true),
     },

@@ -394,6 +394,8 @@ test('Item Catalogue: items with and without a price', async () => {
   await expect(order).toHaveText(['Safety shoes', 'Protective gloves', 'Work jacket', 'Safety helmet'])
   await page.keyboard.press('ArrowDown')
   await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
+  // The moves are sent one after another: the second is saved once it is announced, and only then kept on reload.
+  await expect(page.getByText('Protective gloves moved to place 3 of 4.')).toBeAttached()
   await page.reload()
   await expect(order).toHaveText(['Safety shoes', 'Work jacket', 'Protective gloves', 'Safety helmet'])
   // Dropped lower down (the moved row shifts in the page as it goes), one request, kept on reload.
@@ -749,7 +751,7 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(page.getByRole('button', { name: 'Given 0' })).toBeVisible()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Ordered')
-  await expect(row).toContainText('today') // days waiting for confirmation
+  await expect(row).toContainText(/Today|Yesterday/) // when it was ordered, relative (run across midnight, yesterday)
 
   // The row opens the order at its own address, beside the list, with its items and ORDERED actions.
   const order = await openOrder(recordNumber)
@@ -841,7 +843,7 @@ test('the employee confirms on the public page; a second confirmation is a no-op
   await ctx.close()
 })
 
-test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => {
+test('Orders shows it GIVEN with the GIVEN actions', async () => {
   // The order's address still opens it after a reload.
   await page.reload()
   let order = page.getByRole('complementary', { name: 'Order' })
@@ -850,7 +852,8 @@ test('Orders shows it GIVEN with usage time and the GIVEN actions', async () => 
   await page.getByRole('button', { name: /^Given/ }).click()
   const row = page.getByRole('row', { name: new RegExp(recordNumber) })
   await expect(row).toContainText('Given')
-  await expect(row).toContainText('0.0 months')
+  // Orders has no Usage time column; the employee's Items given shows it.
+  await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
   order = await openOrder(recordNumber)
   await expect(order.getByRole('definition').filter({ hasText: 'Electronically' })).toBeVisible()
   for (const name of ['Create confirmation link', 'Hand over now', 'Mark as Signed & Given']) {
@@ -1564,6 +1567,8 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await givenToggle.click()
   await expect(givenToggle).toHaveAttribute('aria-expanded', 'true')
   await expect(given.getByRole('row', { name: /Safety shoes/ })).toHaveCount(2)
+  // Usage time counts from the day given: this run's, so none yet.
+  await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: '0.0 months' }).first()).toBeVisible()
   await expect(given.getByText('As recorded on each receipt')).toBeHidden()
   // Each item's latest line shows when it is due for replacement; an older one is replaced.
   await expect(given.getByRole('row', { name: /Safety shoes/ }).filter({ hasText: 'Replaced' })).toHaveCount(1)
@@ -1962,20 +1967,20 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await page.getByRole('dialog').getByRole('button', { name: 'Register Return to Office' }).click()
   await expect(page.getByText('SIM-000001 is back in the office.')).toBeVisible()
 
-  // The Dashboard's Company Assets card opens the register on the figure's tab; SIM Cards' tabs are its statuses,
-  // so In Office and With Employees open it on Location's Office and With Employee, with All.
+  // The Dashboard's Company Assets card opens the register on the figure's tab: In Office and With Employees
+  // are SIM Cards' tabs too, each setting Location to Office or With Employee.
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs\s*1/ })).toBeVisible()
   await assetsCard.getByRole('link', { name: /In Office\s*1/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=in-office$/)
   await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Office/)
-  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^All/])
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^In Office/])
   await openTab('Dashboard')
   await assetsCard.getByRole('link', { name: /With Employees\s*0/ }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards\?show=with-employees$/)
   await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/With Employee/)
-  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^All/])
+  await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { pressed: true })).toHaveText([/^With Employees/])
   // SIM Cards has no Not Returned filter: that figure opens the whole register.
   await openTab('Dashboard')
   await assetsCard.getByRole('link', { name: /Not Returned\s*0/ }).click()
@@ -2265,8 +2270,9 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await expect(filters.getByRole('combobox', { name: 'Date' })).toBeHidden()
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(filters.getByRole('combobox', { name: 'Date' })).toBeVisible()
-  // Without its heading, as the employee search: its choice says what it is, and Date stays its name.
-  await expect(page.locator('#history-period-label')).toBeHidden()
+  // Without a heading in view, as the employee search: its choice says what it is, and Date stays its name
+  // (a label for screen readers only, taking no room).
+  expect((await page.locator('#history-period-label').boundingBox())!.width, 'the Date label above the field').toBeLessThanOrEqual(1)
   await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
   // Sort by is shadcn's Select in the Date filter's look: its own list over the field, the choice ticked; choosing re-sorts.
   // On a phone its label is inside the field, and the order is said in words; Sort by is still its name.
@@ -2401,13 +2407,16 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     expect(await fits(), `the item page scrolls sideways at ${width}px`).toBe(true)
     // A SIM open beside the register (from 1024px; on its own below): the register drops to its short columns.
     await openTab('Company Assets')
-    // SIM Cards' tabs, search and filters are one row: one line where it fits, as at 1920px with no SIM open.
+    // SIM Cards' tabs are a row of their own; the search and filters below them one line where it fits, as at 1920px with no SIM open.
     if (width === 1920) {
-      const middles = await page
-        .getByRole('region', { name: 'Filters' })
-        .evaluate((r) => [...r.children].map((c) => c.getBoundingClientRect()).filter((b) => b.width > 4 && b.height > 4).map((b) => b.top + b.height / 2))
-      expect(middles.length, 'tabs, search, Location, Provider, Documents').toBe(5)
-      expect(Math.max(...middles) - Math.min(...middles), "SIM Cards' tabs, search and filters on one line at 1920px").toBeLessThan(4)
+      const filterBar = page.getByRole('region', { name: 'Filters' })
+      const middles = await filterBar.evaluate((r) =>
+        [...r.children].map((c) => c.getBoundingClientRect()).filter((b) => b.width > 4 && b.height > 4).map((b) => b.top + b.height / 2),
+      )
+      expect(middles.length, 'search, Location, Provider, Documents').toBe(4)
+      expect(Math.max(...middles) - Math.min(...middles), "SIM Cards' search and filters on one line at 1920px").toBeLessThan(4)
+      const tabsBox = (await page.getByRole('group', { name: 'Status', exact: true }).boundingBox())!
+      expect(tabsBox.y + tabsBox.height, "SIM Cards' tabs above the search and filters").toBeLessThanOrEqual((await filterBar.boundingBox())!.y)
     }
     await page.getByRole('main').getByRole('link', { name: /612 40118/ }).click()
     await expect(page.getByRole('complementary', { name: 'SIM', exact: true }).getByRole('heading', { name: '+370 612 40118' })).toBeVisible()
@@ -2652,6 +2661,13 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await expect(other.getByRole('heading', { name: 'Employee Dashboard' })).toBeVisible()
   await other.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Item Catalogue' }).click()
   await expect(other.getByRole('button', { name: 'Add Item' })).toBeVisible()
+  // Prices take Change Item prices, which Storekeeper lacks: Add Item shows them, disabled.
+  await other.getByRole('button', { name: 'Add Item' }).click()
+  const itemForm = other.getByRole('dialog')
+  await expect(itemForm.getByLabel('Price (€)', { exact: true })).toBeDisabled()
+  await expect(itemForm.getByLabel('Purchase price (€)')).toBeDisabled()
+  await expect(itemForm.getByText('Changing prices takes the permission Change Item prices.').first()).toBeVisible()
+  await itemForm.getByRole('button', { name: 'Cancel' }).click()
   // Not an administrator, so no way to Administration.
   await expect(other.getByRole('link', { name: 'Administration' })).toHaveCount(0)
   await other.context().close()

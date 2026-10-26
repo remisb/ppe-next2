@@ -82,11 +82,32 @@ func (s *Service) eventOn(entity string, actor uuid.UUID, name string, id uuid.U
 	return &ev, nil
 }
 
-func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Item, error) {
+// Rights is what the actor may change beyond the item itself. The caller
+// decides it from the actor's permissions (item_prices.manage); the service
+// applies it to every write.
+type Rights struct {
+	// Prices: the price and the purchase price. Without it they stay as they
+	// are, and a new item has none.
+	Prices bool
+}
+
+// checkPrices is ErrNotPermitted when next's prices differ from cur's and the
+// actor may not change them.
+func (r Rights) checkPrices(cur, next Item) error {
+	if r.Prices || (eqPtr(cur.PurchasePriceCents, next.PurchasePriceCents) && eqPtr(cur.AccountingPriceCents, next.AccountingPriceCents)) {
+		return nil
+	}
+	return ErrNotPermitted
+}
+
+func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
 	}
 	if err := p.Validate(); err != nil {
+		return Item{}, err
+	}
+	if err := may.checkPrices(Item{}, Item{PurchasePriceCents: p.PurchasePriceCents, AccountingPriceCents: p.AccountingPriceCents}); err != nil {
 		return Item{}, err
 	}
 	now := s.now()
@@ -115,8 +136,8 @@ func (s *Service) ListActive(ctx context.Context) ([]Item, error) { return s.rep
 // period records catalogue.price_changed with the before and after values; an
 // active-flag change records activated/deactivated; a change to the name,
 // details, picture or order records catalogue.updated, a new picture with the
-// size group it brings.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid.UUID) (Item, error) {
+// size group it brings. A price change needs may.Prices.
+func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
 	}
@@ -136,6 +157,9 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 		next.PurchasePriceCents, next.AccountingPriceCents = p.PurchasePriceCents, p.AccountingPriceCents
 		next.ServicePeriodMonths = p.ServicePeriodMonths
 		next.Active, next.DisplayRank, next.Icon = p.Active, *p.DisplayRank, p.Icon
+		if err := may.checkPrices(cur, next); err != nil {
+			return Item{}, nil, err
+		}
 		return s.touch(cur, next, actor)
 	})
 }

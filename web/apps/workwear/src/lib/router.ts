@@ -284,5 +284,6 @@ export function startRoute(route: Route, can: (p: Permission) => boolean): Route
   if (route.name === 'employeeDashboard' && !can('dashboard.employee')) return home
   // Equipment is for the Equipment Assignments role (equipment.read); others get the SIM cards.
   if (route.name === 'equipment' && !can('equipment.read')) return { name: 'simCards', ...(route.tile ? { tile: route.tile } : {}) }
+  if (route.name === 'itemSets' && !can('item_sets.read')) return home
   return route
 }

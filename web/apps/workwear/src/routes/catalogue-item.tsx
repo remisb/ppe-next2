@@ -55,11 +55,14 @@ export function CatalogueItemDetail({
   onChanged: () => void
 }) {
   const { client } = useApi()
-  const canManageItems = useSession().can('catalogue.manage')
+  const { can } = useSession()
+  const canManageItems = can('catalogue.manage')
+  // The sets holding the item, for those who may see Item Sets (item_sets.read).
+  const canSeeSets = can('item_sets.read')
   const changesKey = useOpenKey('item.changes')
   const pricesKey = useOpenKey('item.price-history')
   const item = useLoad(() => client.catalogue.get(id), [id])
-  const sets = useLoad(() => client.itemSets.list())
+  const sets = useLoad(() => (canSeeSets ? client.itemSets.list() : Promise.resolve([])), [canSeeSets])
   const settings = useLoad(() => client.settings())
   const prices = useLoad(() => client.catalogue.priceHistory(id), [id])
   // Only the count: the orders themselves load when their section opens (AllItemOrders).
@@ -167,38 +170,40 @@ export function CatalogueItemDetail({
               <AllItemOrders itemId={id} tz={tz} navigate={navigate} />
             </DisclosureSection>
 
-            <DisclosureSection
-              id="item-sets"
-              title={t.catalogue.itemSets}
-              count={sets.data ? holding.length : undefined}
-              description={t.catalogue.itemSetsIntro}
-              rememberAs={setsKey}
-            >
-              <Loaded load={sets} empty={holding.length === 0} emptyState={t.catalogue.noSetHolds}>
-                {() => (
-                  <RuleList aria-label={t.catalogue.itemSets}>
-                    {holding.map(({ set, quantity }) => (
-                      <li key={set.id} className={cn('flex items-center justify-between gap-3', !set.active && 'text-muted-foreground')}>
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium">{set.name}</span>
-                          {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-2">
-                          {set.active ? null : <InactiveSetBadge />}
-                          <span className="text-sm tabular-nums">× {quantity}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </RuleList>
-                )}
-              </Loaded>
-              <a
-                {...linkTo({ name: 'itemSets' }, navigate)}
-                className={linkVariants({ weight: 'medium', className: 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0' })}
+            {canSeeSets ? (
+              <DisclosureSection
+                id="item-sets"
+                title={t.catalogue.itemSets}
+                count={sets.data ? holding.length : undefined}
+                description={t.catalogue.itemSetsIntro}
+                rememberAs={setsKey}
               >
-                {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
-              </a>
-            </DisclosureSection>
+                <Loaded load={sets} empty={holding.length === 0} emptyState={t.catalogue.noSetHolds}>
+                  {() => (
+                    <RuleList aria-label={t.catalogue.itemSets}>
+                      {holding.map(({ set, quantity }) => (
+                        <li key={set.id} className={cn('flex items-center justify-between gap-3', !set.active && 'text-muted-foreground')}>
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">{set.name}</span>
+                            {set.description ? <span className="block truncate text-xs text-muted-foreground">{set.description}</span> : null}
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            {set.active ? null : <InactiveSetBadge />}
+                            <span className="text-sm tabular-nums">× {quantity}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </RuleList>
+                  )}
+                </Loaded>
+                <a
+                  {...linkTo({ name: 'itemSets' }, navigate)}
+                  className={linkVariants({ weight: 'medium', className: 'mt-2 inline-flex min-h-11 items-center gap-1 text-sm md:min-h-0' })}
+                >
+                  {t.catalogue.openItemSets} <ArrowRight aria-hidden className="size-3.5" />
+                </a>
+              </DisclosureSection>
+            ) : null}
 
             <RecordChanges load={() => client.audit.history('catalogue', id)} deps={[id, i.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 

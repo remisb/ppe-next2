@@ -131,6 +131,12 @@ describe('router', () => {
     expect(startRoute({ name: 'employeeDashboard' }, managerEmployee)).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'history' }, employee)).toEqual({ name: 'history' })
   })
+  it('keeps Item Sets to See Item Sets: anyone else gets their start screen', () => {
+    const holding = (...perms: string[]) => (p: string) => perms.includes(p)
+    expect(startRoute({ name: 'itemSets' }, holding('item_sets.read', 'dashboard.employee'))).toEqual({ name: 'itemSets' })
+    expect(startRoute({ name: 'itemSets' }, holding('dashboard.employee'))).toEqual({ name: 'employeeDashboard' })
+    expect(startRoute({ name: 'itemSets' }, holding())).toEqual({ name: 'createOrder' })
+  })
   it('keeps Equipment to the Equipment Assignments role: anyone else gets the SIM cards, on the same tile', () => {
     const admin = (p: string) => p !== 'equipment.read'
     const assignments = (p: string) => p === 'equipment.read'

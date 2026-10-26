@@ -17,6 +17,8 @@ const (
 	RolesManage       Permission = "roles.manage"
 	EmployeesDelete   Permission = "employees.delete"
 	CatalogueManage   Permission = "catalogue.manage"
+	ItemPricesManage  Permission = "item_prices.manage"
+	ItemSetsRead      Permission = "item_sets.read"
 	ItemSetsManage    Permission = "item_sets.manage"
 	OrdersDelete      Permission = "orders.delete"
 	AssetsManage      Permission = "assets.manage"
@@ -64,7 +66,9 @@ var catalogue = []Info{
 	{UsageRead, GroupAdministration, nil},
 	{EmployeesDelete, GroupWorkwear, nil},
 	{CatalogueManage, GroupWorkwear, nil},
-	{ItemSetsManage, GroupWorkwear, nil},
+	{ItemPricesManage, GroupWorkwear, []Permission{CatalogueManage}},
+	{ItemSetsRead, GroupWorkwear, nil},
+	{ItemSetsManage, GroupWorkwear, []Permission{ItemSetsRead}},
 	{OrdersDelete, GroupWorkwear, nil},
 	{AssetsManage, GroupWorkwear, nil},
 	{EquipmentRead, GroupWorkwear, nil},

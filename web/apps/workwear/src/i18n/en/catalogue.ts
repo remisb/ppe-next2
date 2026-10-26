@@ -55,6 +55,7 @@ export const catalogue = {
   purchasePriceHint: 'What we pay the supplier. Optional.',
   accountingPriceEuro: 'Price (€)',
   accountingPriceHint: 'Shown on orders.',
+  pricesNeedPermission: 'Changing prices takes the permission Change Item prices.',
   pricePlaceholder: '0.00',
   servicePeriodMonths: 'Service period (months)',
   displayOrderHint: 'Lower comes first in Add Item.',

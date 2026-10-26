@@ -237,7 +237,7 @@ func (s *seeder) itemWith(p catalogue.Params) uuid.UUID {
 	if s.err != nil {
 		return uuid.Nil
 	}
-	it, err := s.items.Create(s.ctx, p, s.actor)
+	it, err := s.items.Create(s.ctx, p, catalogue.Rights{Prices: true}, s.actor)
 	s.fail("catalogue item "+p.Name, err)
 	return it.ID
 }

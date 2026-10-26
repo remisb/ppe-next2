@@ -51,15 +51,22 @@ An item missing an accounting price or service period is valid in the catalogue 
 | `GET /api/v1/catalogue/active` | any authenticated (Add Item selector) |
 | `GET /api/v1/catalogue/{id}` | any authenticated |
 | `GET /api/v1/catalogue/{id}/price-history` | any authenticated; the live item's `catalogue.created` and `catalogue.price_changed` events as `{at, event, by_name, purchase_price_cents, accounting_price_cents, service_period_months, before_purchase_cents, before_accounting_cents, before_service_months}`, newest first (404 for an unknown or deleted item) |
-| `POST /api/v1/catalogue` | `catalogue.manage` |
-| `PUT /api/v1/catalogue/{id}` | `catalogue.manage` (full replace) |
+| `POST /api/v1/catalogue` | `catalogue.manage`; a price or purchase price also needs `item_prices.manage` (403) |
+| `PUT /api/v1/catalogue/{id}` | `catalogue.manage` (full replace); changing either price also needs `item_prices.manage` (403) |
 | `POST /api/v1/catalogue/{id}/activate`, `/deactivate` | `catalogue.manage` |
 | `DELETE /api/v1/catalogue/{id}` | `catalogue.manage` (soft) |
 | `POST /api/v1/catalogue/{id}/move` | `catalogue.manage`; body `{"before_id": …}`: puts the item in front of that live item in the display order, or last when it is null or left out; answers every live item in the new order. 404 for an unknown item, 400 for an unknown `before_id` or the item itself |
 | `GET /api/v1/catalogue/pictures` | any authenticated; every picture in `catalogue.Icons` order |
 | `PUT /api/v1/catalogue/pictures/{icon}` | `catalogue.manage`; body `{"size_group": …}`; 404 for an unknown picture |
 
-`catalogue.manage` is held by the built-in Administrator and Manager roles.
+`catalogue.manage` is held by the built-in Administrator and Manager roles, and so is
+`item_prices.manage` (**Change Item prices**, migration 0038, which needs `catalogue.manage`).
+The handler passes `catalogue.Rights{Prices}` from it; without it `Create` refuses an item
+with a price or purchase price and `Update` refuses changing either
+(`catalogue.ErrNotPermitted`, under the row lock), so someone who only manages the catalogue
+adds items without prices and edits them with their prices as they are. The service period
+is not a price. In the app, Add Item and Edit Item show the two price fields disabled, with
+a hint naming the permission.
 
 **Move** changes as few display ranks as it can, under a lock on every live item: only the
 moved item's, to one strictly between its new neighbours' (10 below the next when it goes

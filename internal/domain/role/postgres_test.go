@@ -129,7 +129,7 @@ func TestPostgresRoles(t *testing.T) {
 	if n := len(builtinRoles); len(list) != n+1 || list[n].ID != r.ID || list[n].UserCount != 1 {
 		t.Errorf("list = %+v", list)
 	}
-	if perms, _ := svc.PermissionsOf(ctx, holder); !slices.Equal(perms, []Permission{CatalogueManage, OrdersDelete, DashboardEmployee}) {
+	if perms, _ := svc.PermissionsOf(ctx, holder); !slices.Equal(perms, []Permission{CatalogueManage, ItemSetsRead, OrdersDelete, DashboardEmployee}) {
 		t.Errorf("holder's permissions = %v", perms)
 	}
 	if err := svc.Delete(ctx, r.ID, admin); !errors.Is(err, ErrInUse) {
@@ -147,7 +147,7 @@ func TestPostgresRoles(t *testing.T) {
 	if missing, _ := svc.Missing(ctx, []uuid.UUID{r.ID, ManagerID}); !slices.Equal(missing, []uuid.UUID{r.ID}) {
 		t.Errorf("missing = %v", missing)
 	}
-	if perms, _ := svc.Permissions(ctx, []uuid.UUID{r.ID, EmployeeID}); !slices.Equal(perms, []Permission{DashboardEmployee}) {
+	if perms, _ := svc.Permissions(ctx, []uuid.UUID{r.ID, EmployeeID}); !slices.Equal(perms, []Permission{ItemSetsRead, DashboardEmployee}) {
 		t.Errorf("a deleted role grants %v", perms)
 	}
 	var events []string

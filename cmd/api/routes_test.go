@@ -808,9 +808,9 @@ var policy = map[string]rule{
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
 	"POST /api/v1/catalogue/{id}/move":         {role.CatalogueManage, "managers"},
 
-	"GET /api/v1/item-sets":                                                     {"", "any"},
+	"GET /api/v1/item-sets":                                                     {role.ItemSetsRead, "staff"},
 	"GET /api/v1/item-sets/active":                                              {"", "any"},
-	"GET /api/v1/item-sets/{id}":                                                {"", "any"},
+	"GET /api/v1/item-sets/{id}":                                                {role.ItemSetsRead, "staff"},
 	"POST /api/v1/item-sets":                                                    {role.ItemSetsManage, "managers"},
 	"PUT /api/v1/item-sets/{id}":                                                {role.ItemSetsManage, "managers"},
 	"DELETE /api/v1/item-sets/{id}":                                             {role.ItemSetsManage, "managers"},
@@ -880,9 +880,11 @@ var policy = map[string]rule{
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed
-// roles, and Equipment Assignments, which reaches what any signed-in user does.
+// roles, and Equipment Assignments, which reaches what any signed-in user does
+// but not "staff", what only the three fixed roles do (seeing Item Sets).
 var allowedRoles = map[string][]string{
 	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment},
+	"staff":    {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
 	"managers": {role.KeyAdmin, role.KeyManager},
 	"admins":   {role.KeyAdmin},
 	"manager":  {role.KeyManager},

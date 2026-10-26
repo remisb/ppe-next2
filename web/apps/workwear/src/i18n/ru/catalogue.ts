@@ -50,6 +50,7 @@ export const catalogue: CatalogueText = {
   purchasePriceHint: 'Сколько мы платим поставщику. Необязательно.',
   accountingPriceEuro: 'Цена (€)',
   accountingPriceHint: 'Показывается в заказах.',
+  pricesNeedPermission: 'Чтобы менять цены, нужно разрешение «Изменять цены предметов».',
   pricePlaceholder: '0,00',
   servicePeriodMonths: 'Срок службы (мес.)',
   displayOrderHint: 'Меньшее число показывается выше при добавлении в заказ.',

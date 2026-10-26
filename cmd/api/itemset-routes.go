@@ -13,13 +13,15 @@ type itemSetHandler struct {
 	sets *itemset.Service
 }
 
-// registerItemSetRoutes mounts /api/v1/item-sets. Everyone reads; admin and
-// manager maintain sets. Applying a set to an employee is in order-routes.go.
+// registerItemSetRoutes mounts /api/v1/item-sets. item_sets.read ("See Item
+// Sets") lists and reads them and item_sets.manage maintains them; the active
+// sets stay open to everyone, since Create Order offers them, and so does
+// applying one to an employee (order-routes.go).
 func registerItemSetRoutes(rt *router, sets *itemset.Service) {
 	h := &itemSetHandler{sets: sets}
-	rt.authenticated("GET /api/v1/item-sets", h.list)
+	rt.restricted("GET /api/v1/item-sets", h.list, role.ItemSetsRead)
 	rt.authenticated("GET /api/v1/item-sets/active", h.listActive)
-	rt.authenticated("GET /api/v1/item-sets/{id}", h.get)
+	rt.restricted("GET /api/v1/item-sets/{id}", h.get, role.ItemSetsRead)
 	rt.restricted("POST /api/v1/item-sets", h.create, role.ItemSetsManage)
 	rt.restricted("PUT /api/v1/item-sets/{id}", h.update, role.ItemSetsManage)
 	rt.restricted("DELETE /api/v1/item-sets/{id}", h.delete, role.ItemSetsManage)

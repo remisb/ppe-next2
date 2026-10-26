@@ -73,7 +73,12 @@ export const roles = {
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',
-      grants: 'Add and edit items, their prices and service periods; deactivate and delete them.',
+      grants: 'Add and edit items and their service periods; deactivate and delete them. Prices take Change Item prices.',
+    },
+    'item_prices.manage': { label: 'Change Item prices', grants: 'Set and change an item’s price and purchase price.' },
+    'item_sets.read': {
+      label: 'See Item Sets',
+      grants: 'The Item Sets screen, and which sets hold an item. Create Order offers the active sets to everyone.',
     },
     'item_sets.manage': { label: 'Manage Item Sets', grants: 'Add, edit and delete item sets.' },
     'orders.delete': { label: 'Delete orders', grants: 'Remove demo and test orders; the record and its history stay.' },

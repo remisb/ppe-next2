@@ -21,8 +21,13 @@ set can outlive an item's activation, and applying it flags that line instead.
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/item-sets`, `/active`, `/{id}` | any authenticated |
-| `POST`, `PUT /{id}` (full replace incl. lines), `DELETE /{id}` (soft) | admin, manager |
+| `GET /api/v1/item-sets`, `/{id}` | `item_sets.read` (**See Item Sets**, migration 0038): every built-in role but Equipment Assignments |
+| `GET /api/v1/item-sets/active` | any authenticated: Create Order offers the active sets to everyone |
+| `POST`, `PUT /{id}` (full replace incl. lines), `DELETE /{id}` (soft) | `item_sets.manage` (needs `item_sets.read`): Administrator, Manager |
+
+Without `item_sets.read` the staff app has no Item Sets screen (its address opens the start
+screen, and G S does nothing), no Item Sets section on an item, and no Item Sets row on the
+Dashboard or check on the Manager Dashboard; Create Order still offers and applies sets.
 
 ## Resolution (algorithm A)
 

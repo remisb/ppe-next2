@@ -329,6 +329,7 @@ function BackupCard({ navigate }: { navigate: Navigate }) {
 
 function SetupCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
   const s = d.setup
+  const canSeeSets = useSession().can('item_sets.read')
   const rows: { label: string; count: number; issue: string | null; to: Route }[] = [
     {
       label: t.dashboard.employees,
@@ -342,7 +343,7 @@ function SetupCard({ d, navigate }: { d: DashboardData; navigate: Navigate }) {
       issue: s.catalogue_unpriced > 0 ? t.dashboard.withoutPriceOrPeriod(s.catalogue_unpriced) : null,
       to: { name: 'catalogue' },
     },
-    { label: t.dashboard.itemSets, count: s.item_sets_active, issue: null, to: { name: 'itemSets' } },
+    ...(canSeeSets ? [{ label: t.dashboard.itemSets, count: s.item_sets_active, issue: null, to: { name: 'itemSets' } as Route }] : []),
     { label: t.dashboard.users, count: s.users, issue: s.admins === 1 ? t.dashboard.onlyOneAdmin : null, to: { name: 'administration', path: '/users' } },
   ]
   return (

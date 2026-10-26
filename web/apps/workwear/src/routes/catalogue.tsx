@@ -378,6 +378,8 @@ export function Catalogue({
 /** Add Item and Edit Item; also used in the item's pane. */
 export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'new' | null; onClose: () => void; onSaved: () => void }) {
   const { client } = useApi()
+  // Prices take Change Item prices: without it they are shown, not changed, and a new item has none.
+  const canPrice = useSession().can('item_prices.manage')
   const existing = item !== 'new' && item !== null ? item : undefined
   const [name, setName] = useState('')
   const [details, setDetails] = useState('')
@@ -423,8 +425,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     const input: CatalogueItemInput = {
       name,
       details,
-      purchase_price_cents: purchaseCents,
-      accounting_price_cents: priceCents,
+      purchase_price_cents: canPrice ? purchaseCents : (existing?.purchase_price_cents ?? null),
+      accounting_price_cents: canPrice ? priceCents : (existing?.accounting_price_cents ?? null),
       service_period_months: months,
       active,
       display_rank: rankNum,
@@ -464,11 +466,29 @@ footer={<FormSheetActions form="item-form" onCancel={onClose} busy={busy} disabl
           )}
         </Field>
         <Field label={t.catalogue.manufacturerModel}>{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
-        <Field label={t.catalogue.purchasePriceEuro} hint={t.catalogue.purchasePriceHint} error={purchaseError}>
-          {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={purchase} onChange={(e) => setPurchase(e.target.value)} />}
+        <Field label={t.catalogue.purchasePriceEuro} hint={canPrice ? t.catalogue.purchasePriceHint : t.catalogue.pricesNeedPermission} error={purchaseError}>
+          {(p) => (
+            <Input
+              {...controlProps(p)}
+              inputMode="decimal"
+              placeholder={t.catalogue.pricePlaceholder}
+              value={purchase}
+              disabled={!canPrice}
+              onChange={(e) => setPurchase(e.target.value)}
+            />
+          )}
         </Field>
-        <Field label={t.catalogue.accountingPriceEuro} hint={t.catalogue.accountingPriceHint} error={priceError}>
-          {(p) => <Input {...controlProps(p)} inputMode="decimal" placeholder={t.catalogue.pricePlaceholder} value={price} onChange={(e) => setPrice(e.target.value)} />}
+        <Field label={t.catalogue.accountingPriceEuro} hint={canPrice ? t.catalogue.accountingPriceHint : t.catalogue.pricesNeedPermission} error={priceError}>
+          {(p) => (
+            <Input
+              {...controlProps(p)}
+              inputMode="decimal"
+              placeholder={t.catalogue.pricePlaceholder}
+              value={price}
+              disabled={!canPrice}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          )}
         </Field>
         <Field label={t.catalogue.servicePeriodMonths} error={periodError}>{(p) => <Input {...controlProps(p)} inputMode="numeric" value={period} onChange={(e) => setPeriod(e.target.value)} />}</Field>
         <Field label={t.catalogue.displayOrder} hint={t.catalogue.displayOrderHint} error={rankError}>

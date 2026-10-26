@@ -712,6 +712,22 @@ func TestPostgresCatalogueHTTPFlow(t *testing.T) {
 		t.Errorf("update = %d %s", rec.Code, rec.Body)
 	}
 
+	// Prices take item_prices.manage on top of catalogue.manage: without it an
+	// item is edited with its prices as they are, and added without any.
+	editor := api.tokenWith(t, role.CatalogueManage)
+	item["details"] = "S3"
+	if rec := api.do(t, "PUT", "/api/v1/catalogue/"+id, editor, item); rec.Code != http.StatusOK {
+		t.Errorf("edit keeping the price = %d %s", rec.Code, rec.Body)
+	}
+	item["accounting_price_cents"] = 5999
+	if rec := api.do(t, "PUT", "/api/v1/catalogue/"+id, editor, item); rec.Code != http.StatusForbidden {
+		t.Errorf("price change without item_prices.manage = %d, want 403", rec.Code)
+	}
+	item["accounting_price_cents"] = 5499
+	if rec := api.do(t, "POST", "/api/v1/catalogue", editor, map[string]any{"name": "Visor", "icon": "other", "active": true, "purchase_price_cents": 100}); rec.Code != http.StatusForbidden {
+		t.Errorf("new item with a price without item_prices.manage = %d, want 403", rec.Code)
+	}
+
 	// Move: the helmet in front of the shoes; managers only; answers the new order.
 	helmetID := helmet["id"].(string)
 	before := map[string]any{"before_id": id}
@@ -1359,7 +1375,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "dashboard.employee"}) || claims.Roles != nil {
+	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "item_sets.read", "dashboard.employee"}) || claims.Roles != nil {
 		t.Errorf("k's token perms %v roles %v, %v", claims.Perms, claims.Roles, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {

@@ -53,7 +53,11 @@ Rules for using it:
 - **Brief:** one thing a role may allow, such as deleting orders or managing users.
 - **Detail:** a fixed catalogue in code (`resource.action` keys); a route requires one.
   Administrators bundle permissions into roles; they never grant a permission to a user
-  directly. Everything else a signed-in user does needs no permission.
+  directly. Everything else a signed-in user does needs no permission. Labels say what
+  they allow: **See …** to read a screen (**See Item Sets**), **Manage …** to add, edit and
+  delete (**Manage Item Catalogue**, **Manage Item Sets**), **Change …** for a part of a
+  record (**Change Item prices**: an item's price and purchase price), **Delete …** for
+  one action (**Delete employees**).
 - **Code:** `role.Permission`, `role.Catalogue()`; `web/packages/api-client/src/permissions.ts`.
   **UI:** Permission (on **Roles & permissions**).
 
@@ -945,6 +949,8 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Roles & permissions | Rolės ir teisės | Роли и права |
 | Role / Permission | Rolė / Teisė | Роль / Право |
 | Equipment Assignments (role) / See Equipment & Furniture (permission) | Įrangos išdavimai / Matyti įrangą ir baldus | Выдачи оборудования / Видеть оборудование и мебель |
+| See Item Sets (permission) | Matyti prekių rinkinius | Видеть наборы предметов |
+| Change Item prices (permission) | Keisti prekių kainas | Изменять цены предметов |
 | Settings | Nustatymai | Настройки |
 | Backups | Atsarginės kopijos | Резервные копии |
 | Audit log | Audito žurnalas | Журнал аудита |

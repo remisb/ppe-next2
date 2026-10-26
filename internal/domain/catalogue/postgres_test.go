@@ -48,14 +48,14 @@ func TestPostgresCatalogue(t *testing.T) {
 	}
 	p := Params{Name: "Work trousers", PurchasePriceCents: i64(1900), AccountingPriceCents: i64(2500),
 		ServicePeriodMonths: ip(12), Active: true, DisplayRank: ip(3)}
-	i, err := svc.Create(ctx, p, actor)
+	i, err := svc.Create(ctx, p, all, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := svc.Get(ctx, i.ID); *got.PurchasePriceCents != 1900 || *got.AccountingPriceCents != 2500 {
 		t.Errorf("prices read back = %v, %v", got.PurchasePriceCents, got.AccountingPriceCents)
 	}
-	draft, err := svc.Create(ctx, Params{Name: "Helmet", Active: true}, actor)
+	draft, err := svc.Create(ctx, Params{Name: "Helmet", Active: true}, all, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestPostgresCatalogue(t *testing.T) {
 		t.Errorf("draft item = %+v", got)
 	}
 	// The pictogram is stored and read back; the database refuses one the app cannot draw.
-	if _, err := svc.Update(ctx, draft.ID, Params{Name: "Helmet", Active: true, Icon: IconHelmet}, actor); err != nil {
+	if _, err := svc.Update(ctx, draft.ID, Params{Name: "Helmet", Active: true, Icon: IconHelmet}, all, actor); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := svc.Get(ctx, draft.ID); got.Icon != IconHelmet {
@@ -118,7 +118,7 @@ func TestPostgresCatalogue(t *testing.T) {
 	}
 
 	p.PurchasePriceCents, p.AccountingPriceCents = i64(2000), i64(2750)
-	if _, err := svc.Update(ctx, i.ID, p, actor); err != nil {
+	if _, err := svc.Update(ctx, i.ID, p, all, actor); err != nil {
 		t.Fatal(err)
 	}
 	if err := pool.QueryRow(ctx, `SELECT before->>'accounting_price_cents', after->>'accounting_price_cents' FROM audit_events
@@ -169,7 +169,7 @@ func TestPostgresCatalogue(t *testing.T) {
 	if all, _ := svc.List(ctx); all[0].ID != draft.ID {
 		t.Errorf("the moved item is not first when read again: %+v", all)
 	}
-	if _, err := svc.Create(ctx, Params{Name: "WORK TROUSERS"}, actor); !errors.Is(err, ErrNameTaken) {
+	if _, err := svc.Create(ctx, Params{Name: "WORK TROUSERS"}, all, actor); !errors.Is(err, ErrNameTaken) {
 		t.Errorf("duplicate err = %v", err)
 	}
 }

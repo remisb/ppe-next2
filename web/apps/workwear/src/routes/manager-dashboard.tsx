@@ -324,7 +324,9 @@ function PriceChangesCard({ d }: { d: Data }) {
 /** What in the catalogue and item sets holds up ordering, and where to fix it. */
 function ReadinessCard({ d, navigate }: { d: Data; navigate: Navigate }) {
   const c = d.catalogue
-  const ready = c.unpriced.length === 0 && d.item_sets.length === 0
+  // Item sets are listed only for those who may open them (See Item Sets).
+  const canSeeSets = useSession().can('item_sets.read')
+  const ready = c.unpriced.length === 0 && (!canSeeSets || d.item_sets.length === 0)
   return (
     <Panel
       title={t.dashboard.readiness}
@@ -340,21 +342,23 @@ function ReadinessCard({ d, navigate }: { d: Data; navigate: Navigate }) {
           openLabel={t.dashboard.openCatalogue}
           navigate={navigate}
         />
-        <Check
-          title={t.dashboard.setsWithFlaggedLines}
-          empty={t.dashboard.everySetClean}
-          alert
-          items={d.item_sets.map((s) => ({
-            key: s.id,
-            label: s.name,
-            note: [s.unpriced ? t.dashboard.withoutPrice(s.unpriced) : '', s.inactive ? t.dashboard.inactiveCount(s.inactive) : '']
-              .filter(Boolean)
-              .join(', '),
-          }))}
-          to={{ name: 'itemSets' }}
-          openLabel={t.dashboard.openItemSets}
-          navigate={navigate}
-        />
+        {canSeeSets ? (
+          <Check
+            title={t.dashboard.setsWithFlaggedLines}
+            empty={t.dashboard.everySetClean}
+            alert
+            items={d.item_sets.map((s) => ({
+              key: s.id,
+              label: s.name,
+              note: [s.unpriced ? t.dashboard.withoutPrice(s.unpriced) : '', s.inactive ? t.dashboard.inactiveCount(s.inactive) : '']
+                .filter(Boolean)
+                .join(', '),
+            }))}
+            to={{ name: 'itemSets' }}
+            openLabel={t.dashboard.openItemSets}
+            navigate={navigate}
+          />
+        ) : null}
         <Check
           title={t.dashboard.notOrdered12}
           empty={t.dashboard.everyItemOrdered}
