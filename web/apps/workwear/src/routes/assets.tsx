@@ -5,7 +5,7 @@ import { Button } from '@ppe/ui/components/button'
 import { Input } from '@ppe/ui/components/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
-import type { Help } from '@ppe/ui/components/tooltip'
+import { type Help, Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
@@ -16,7 +16,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, FilterX, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
@@ -336,9 +336,16 @@ export function Assets({
               className={folded}
             />
             {filtered ? (
-              <Button variant="ghost" className={folded} onClick={clear}>
-                {t.assets.clearFilters}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button variant="ghost" size="icon" className={cn('shrink-0', folded)} aria-label={t.assets.clearFilters} onClick={clear}>
+                      <FilterX aria-hidden />
+                    </Button>
+                  }
+                />
+                <TooltipContent aria-hidden>{t.assets.clearText}</TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
         </div>

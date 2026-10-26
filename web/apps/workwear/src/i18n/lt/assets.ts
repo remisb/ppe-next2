@@ -70,6 +70,7 @@ export const assets: AssetsText = {
   provider: 'Tiekėjas',
   allProviders: 'Visi tiekėjai',
   clearFilters: 'Išvalyti filtrus',
+  clearText: 'Išvalyti tekstą',
   sortBy: 'Rikiuoti pagal',
   colInventoryNo: 'Inventoriaus Nr.',
   colNumbers: 'Telefonas / SIM',

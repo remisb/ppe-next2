@@ -70,6 +70,7 @@ export const assets: AssetsText = {
   provider: 'Оператор',
   allProviders: 'Все операторы',
   clearFilters: 'Сбросить фильтры',
+  clearText: 'Очистить текст',
   sortBy: 'Сортировать по',
   colInventoryNo: 'Инвентарный №',
   colNumbers: 'Телефон / SIM',

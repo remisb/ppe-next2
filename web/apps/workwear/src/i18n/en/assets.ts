@@ -74,6 +74,7 @@ export const assets = {
   provider: 'Provider',
   allProviders: 'All providers',
   clearFilters: 'Clear filters',
+  clearText: 'Clear text',
   sortBy: 'Sort by',
   // The register.
   colInventoryNo: 'Inventory No.',
