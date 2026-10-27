@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Order State Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The same diagrams and tables as order-state-machine.md, drawn by Mermaid; styled like order-er-diagram.html. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb; --edge:#73758c;
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 48px}
+.wrap{max-width:1180px; margin:0 auto}
+header{padding:32px 0 8px}
+h1{font-size:26px; font-weight:600; margin:0 0 6px; color:var(--brand)}
+h2{font-size:18px; font-weight:600; margin:32px 0 12px}
+p{margin:0 0 12px; max-width:78ch}
+.lede{color:var(--muted)}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+a{color:var(--accent)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:16px}
+.diagram{overflow-x:auto; text-align:center; min-height:160px}
+.diagram svg{max-width:100%; height:auto}
+.diagram .status{color:var(--muted); padding:48px 0}
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); margin-bottom:16px}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line)}
+th{font-weight:500; color:var(--muted); background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+@media (max-width:640px){ th,td{padding:8px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Order state machine</h1>
+  <p class="lede">The states an order goes through, and the lifecycle of the confirmation link that moves it from
+  ORDERED to GIVEN. Built from <code>internal/domain/order</code> (<code>service.go</code>, <code>confirmation.go</code>);
+  the rules behind each step are in <a href="../specs/order-service.md">order-service.md</a>, the tables in
+  <a href="order-er-diagram.html">order-er-diagram.html</a>. The same diagrams in Markdown are
+  <a href="order-state-machine.md">order-state-machine.md</a>.</p>
+</header>
+
+<h2>Order</h2>
+<div class="card"><div class="diagram" id="order-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Route</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>—</td><td>Working order</td><td>Create Order</td><td>none</td><td>Client state (<code>working-order.ts</code>, a draft per user in localStorage); there is no draft row</td></tr>
+    <tr><td>Working order</td><td>ORDERED</td><td>Mark as Ordered</td><td><code>POST /api/v1/orders</code></td><td>One transaction: locks the employee and items, takes the record number, copies every value into the order and its lines, writes <code>order.ordered</code>. Refused (409) for an inactive item or one without a price or service period</td></tr>
+    <tr><td>ORDERED</td><td>GIVEN</td><td>Employee confirms by link</td><td><code>POST /api/v1/confirmations/confirm</code></td><td>Method <code>ELECTRONIC</code>; giver = the user who created the link; no actor on the event</td></tr>
+    <tr><td>ORDERED</td><td>GIVEN</td><td>Signed paper record</td><td><code>POST /api/v1/orders/{id}/confirm-paper</code></td><td>Method <code>PAPER</code>; the actor is the giver</td></tr>
+    <tr><td>ORDERED</td><td>GIVEN</td><td>Hand-over mode</td><td><code>POST /api/v1/orders/{id}/confirm-in-person</code></td><td>Method <code>IN_PERSON</code>; the actor is the giver</td></tr>
+    <tr><td>GIVEN</td><td>GIVEN</td><td>Any confirmation again</td><td>the three above</td><td>No-op: returns the existing record and writes nothing</td></tr>
+    <tr><td>ORDERED or GIVEN</td><td>Deleted</td><td>Delete</td><td><code>DELETE /api/v1/orders/{id}</code></td><td>Needs <code>orders.delete</code>. Soft delete: the status stays, <code>deleted_at</code> is set, unused links are revoked, <code>order.deleted</code> is written; every read then skips the order</td></tr>
+  </tbody>
+</table>
+</div>
+<p><code>ORDERED</code> and <code>GIVEN</code> are the only stored statuses (a CHECK). Deleted is not a status but
+<code>deleted_at</code>. Nothing moves an order back from GIVEN, and nothing changes its lines.</p>
+<p>Every move to GIVEN runs in one transaction under the order's row lock: the status and <code>given_*</code> fields,
+the confirmation evidence (employee name and the receipt's document hash), the revocation of the order's other unused
+links and the <code>order.given</code> event. A partial unique index allows one confirmation with evidence per order,
+so two concurrent confirmations cannot both succeed.</p>
+
+<h2>Confirmation link</h2>
+<div class="card"><div class="diagram" id="link-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>State</th><th>Stored as</th><th>What the public routes answer</th></tr></thead>
+  <tbody>
+    <tr><td>Usable</td><td><code>revoked_at</code>, <code>confirmed_at</code> null and <code>expires_at</code> in the future (<code>Confirmation.Usable</code>)</td><td>The locked record; the first view sets <code>first_opened_at</code> and writes <code>order.confirmation_link_opened</code></td></tr>
+    <tr><td>Confirmed</td><td><code>confirmed_at</code>, <code>confirmed_name</code>, <code>document_hash</code> set</td><td>The final record</td></tr>
+    <tr><td>Revoked</td><td><code>revoked_at</code> set</td><td>410 "request a new link" while the order is ORDERED; the final record once it is GIVEN</td></tr>
+    <tr><td>Expired</td><td><code>expires_at</code> past (derived, nothing written)</td><td>As Revoked</td></tr>
+  </tbody>
+</table>
+</div>
+<p>A link is created only for an ORDERED order (409 otherwise), and creating one revokes the order's earlier unused
+links, so at most one is usable. Only <code>sha256(token)</code> is stored; the token is shown once. A link to a deleted
+order, even a used one, answers 410.</p>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+
+const diagrams = {
+  'order-states': `stateDiagram-v2
+  direction TB
+  state "Working order (browser only, not stored)" as Working
+  state "Deleted (deleted_at set, status kept)" as Deleted
+  [*] --> Working : Create Order
+  Working --> ORDERED : Mark as Ordered (POST /api/v1/orders)
+  ORDERED --> GIVEN : Confirm receipt (link, paper or in person)
+  GIVEN --> GIVEN : Confirm again (no-op)
+  ORDERED --> Deleted : Delete (orders.delete)
+  GIVEN --> Deleted : Delete (orders.delete)
+  Deleted --> [*]`,
+  'link-states': `stateDiagram-v2
+  direction LR
+  [*] --> Usable : Open Employee Confirmation (ORDERED only)
+  Usable --> Usable : first opening recorded once
+  Usable --> Confirmed : employee ticks and confirms
+  Usable --> Revoked : new link, another confirmation, order deleted
+  Usable --> Expired : API_CONFIRM_TTL passes (7 days)
+  Confirmed --> [*]
+  Revoked --> [*]
+  Expired --> [*]`,
+};
+
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: v('--font'),
+  themeVariables: {
+    fontSize: '13px',
+    fontFamily: v('--font'),
+    background: v('--surface'),
+    primaryColor: v('--accent-soft'),
+    primaryTextColor: v('--fg'),
+    primaryBorderColor: v('--accent'),
+    lineColor: v('--edge'),
+    textColor: v('--fg'),
+    labelBackgroundColor: v('--surface'),
+    edgeLabelBackground: v('--surface'),
+  },
+});
+for (const [id, source] of Object.entries(diagrams)) {
+  const el = document.getElementById(id);
+  try {
+    const { svg } = await mermaid.render(id + '-svg', source);
+    el.innerHTML = svg;
+  } catch (err) {
+    el.innerHTML = '<div class="status">The diagram could not be drawn here (it needs cdn.jsdelivr.net). Its source is in order-state-machine.md.</div>';
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>

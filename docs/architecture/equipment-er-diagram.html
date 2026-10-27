@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Equipment ER Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The same diagram and rules as equipment-er-diagram.md, drawn by Mermaid; the staff app's neutrals and navy brand. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb; --edge:#73758c;
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 48px}
+.wrap{max-width:1180px; margin:0 auto}
+header{padding:32px 0 8px}
+h1{font-size:26px; font-weight:600; margin:0 0 6px; color:var(--brand)}
+h2{font-size:18px; font-weight:600; margin:32px 0 12px}
+p{margin:0 0 12px; max-width:78ch}
+.lede{color:var(--muted)}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+a{color:var(--accent)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px}
+#erd{overflow-x:auto; text-align:center; min-height:200px}
+#erd svg{max-width:100%; height:auto}
+#erd .status{color:var(--muted); padding:48px 0}
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line)}
+th{font-weight:500; color:var(--muted); background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap}
+@media (max-width:640px){ td:first-child{white-space:normal} th,td{padding:8px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Equipment ER diagram</h1>
+  <p class="lede">The tables behind Equipment &amp; Furniture in Company Assets (<code>internal/domain/asset</code>, ADR 0004): the item, its assignments and their signed copies, its inventory numbers, and the role that lets a user see it. An item is an <code>assets</code> row with <code>kind = 'EQUIPMENT'</code>; SIM cards share the tables (<a href="sim-card-er-diagram.html">sim-card-er-diagram.html</a>). Built from migrations <code>0029_company_assets</code>, <code>0030_asset_signed_copies</code> and <code>0032_equipment_assignments_role</code>. The rules behind the columns are in <a href="../specs/asset-service.md">asset-service.md</a> ("Equipment &amp; Furniture"); the same diagram in Markdown is <a href="equipment-er-diagram.md">equipment-er-diagram.md</a>.</p>
+  <p class="lede">Only the columns an item uses are shown: the SIM card's <code>sim_no</code>, <code>phone_no</code>, <code>provider</code>, <code>plan</code>, <code>connection_status</code> and <code>received_date</code> are always null for one, so equipment has no status. <code>employees</code> and <code>users</code> are shown by their keys only. Location, the holder and Days Held are not columns: they are derived from the open assignment. An item's Changes are <code>audit_events</code> rows with <code>entity_type = 'asset'</code> and its id, which no foreign key ties to it.</p>
+</header>
+
+<h2>Diagram</h2>
+<div class="card"><div id="erd"><div class="status">Drawing the diagram…</div></div></div>
+
+<h2>Rules the diagram does not show</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Table</th><th>Rule</th><th>Enforced by</th></tr></thead>
+  <tbody>
+    <tr><td><code>assets</code></td><td>an item has <code>category</code> and <code>name</code>, and none of a SIM card's columns</td><td>CHECK <code>assets_kind_fields</code></td></tr>
+    <tr><td><code>assets</code></td><td><code>inventory_no</code> is unique over every asset, case aside, deleted ones included</td><td>UNIQUE index <code>assets_inventory_no_idx</code></td></tr>
+    <tr><td><code>assets</code></td><td><code>deleted_at</code> and <code>deleted_by_user_id</code> are set together, as are <code>written_off_at</code> and <code>written_off_by_user_id</code>; reads leave both out. No route deletes or writes off an asset yet</td><td>CHECKs <code>assets_deleted</code>, <code>assets_written_off</code>, queries</td></tr>
+    <tr><td><code>assets</code></td><td><code>currency</code> is <code>EUR</code>; <code>non_return_value_cents</code> is not negative</td><td>CHECKs</td></tr>
+    <tr><td><code>assets</code></td><td>Computer, Phone and External Drive need a form, and so a value, to be given; Furniture and Other do not</td><td>service (<code>Asset.NeedsForm</code>, <code>Give</code>)</td></tr>
+    <tr><td><code>assets</code></td><td>only a user whose roles grant <code>equipment.read</code> sees an item: the register and Add Asset are 403 by kind, a single item 404, and search and the employee's assets leave it out</td><td><code>cmd/api</code> (<code>asset.Sight</code>, <code>Service.Seen</code>)</td></tr>
+    <tr><td><code>asset_numbers</code></td><td>a number used once is never used again, even after a correction</td><td>UNIQUE index <code>asset_numbers_number_idx</code>; <code>ppe_app</code> has no UPDATE or DELETE</td></tr>
+    <tr><td><code>asset_number_counters</code></td><td>one counter per category's prefix: <code>PC</code> Computer, <code>PH</code> Phone, <code>DRV</code> External Drive, <code>FUR</code> Furniture, <code>AST</code> Other; taking <code>PREFIX-NNNNNN</code> by hand raises <code>last</code> to it</td><td>CHECK, service (<code>Create</code>)</td></tr>
+    <tr><td><code>asset_assignments</code></td><td>at most one open assignment per item</td><td>partial UNIQUE index <code>asset_assignments_open_idx</code> (<code>WHERE returned_date IS NULL</code>)</td></tr>
+    <tr><td><code>asset_assignments</code></td><td>never deleted; the giving's columns never change; the Not Returned mark is set once; a returned assignment is closed</td><td>trigger <code>asset_assignments_guard</code>; <code>ppe_app</code> has no DELETE</td></tr>
+    <tr><td><code>asset_assignments</code></td><td><code>form</code>, <code>form_template_version</code> and <code>document_hash</code> are set together, and only with <code>paper_form_signed</code></td><td>CHECK <code>asset_assignments_form</code></td></tr>
+    <tr><td><code>asset_assignments</code></td><td>an item needing a form is given with one and <code>paper_form_signed</code>; one needing none with neither</td><td>service (<code>Give</code>)</td></tr>
+    <tr><td><code>asset_assignments</code></td><td>the printed form's hash must equal the form built at Give</td><td>service (<code>Give</code>, <code>ErrFormChanged</code>)</td></tr>
+    <tr><td><code>asset_assignments</code></td><td>the Not Returned fields and <code>whereabouts</code> are set together</td><td>CHECK <code>asset_assignments_not_returned</code></td></tr>
+    <tr><td><code>asset_assignments</code></td><td>the return fields are set together and <code>returned_date &gt;= given_date</code></td><td>CHECK <code>asset_assignments_returned</code></td></tr>
+    <tr><td><code>asset_assignments</code></td><td>neither date is in the future in the organisation timezone</td><td>service</td></tr>
+    <tr><td><code>asset_signed_copies</code></td><td>only an assignment with a form takes one (furniture's is <code>ErrNoForm</code>)</td><td>service</td></tr>
+    <tr><td><code>asset_signed_copies</code></td><td>never changed or deleted: uploading again adds a row, the newest shown</td><td>trigger <code>asset_signed_copies_guard</code>; <code>ppe_app</code> has no UPDATE or DELETE</td></tr>
+    <tr><td><code>asset_signed_copies</code></td><td>a PDF, JPEG or PNG of 1 byte to 10 MB, with a 64-hex SHA-256</td><td>CHECKs; the type read from the file's first bytes by the service</td></tr>
+    <tr><td><code>roles</code></td><td>Equipment Assignments is built in (fixed id, key <code>equipment</code>) and the only role granting <code>equipment.read</code>, which Administrator does not have</td><td>migration 0032, <code>role.builtinRoles</code></td></tr>
+    <tr><td><code>employees</code></td><td>an employee holding an item cannot be deleted</td><td>service (<code>employee.ErrHoldsAssets</code>)</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="lede" style="margin-top:16px">Indexes for reading: <code>assets_kind_idx</code> on <code>kind, upper(inventory_no)</code> for live assets, <code>asset_assignments_asset_idx</code> on <code>asset_id, given_date DESC</code> (an item's assignments, newest first), <code>asset_assignments_employee_idx</code> on <code>employee_id</code>, <code>asset_signed_copies_assignment_idx</code> on <code>assignment_id, uploaded_at DESC</code>, and <code>user_roles_role_idx</code> on <code>role_id</code>.</p>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+
+const source = `erDiagram
+  assets ||--o{ asset_assignments : "given in"
+  assets ||--o| asset_assignments : "held by (open)"
+  employees ||--o{ asset_assignments : "holds"
+  asset_assignments ||--o{ asset_signed_copies : "signed copies"
+  assets ||--|{ asset_numbers : "numbers used"
+  asset_number_counters ||..o{ assets : "suggests by category"
+  users ||--o{ assets : "created, updated, deleted, written off by"
+  users ||--o{ asset_assignments : "given, marked, returned by"
+  users ||--o{ asset_signed_copies : "uploaded by"
+  users ||--o{ user_roles : "holds"
+  roles ||--o{ user_roles : "granted to"
+  roles ||--|{ role_permissions : "bundles"
+
+  assets {
+    uuid id PK
+    text kind "EQUIPMENT"
+    text category "COMPUTER PHONE EXTERNAL_DRIVE FURNITURE OTHER"
+    text inventory_no UK "PC-000001, FUR-000001"
+    text name
+    text serial_no "null, not unique"
+    bigint non_return_value_cents "null, needed to give on a form"
+    text currency "EUR"
+    text comment
+    timestamptz written_off_at "reserved"
+    uuid written_off_by_user_id FK "reserved"
+    timestamptz created_at
+    uuid created_by_user_id FK
+    timestamptz updated_at
+    uuid updated_by_user_id FK
+    timestamptz deleted_at "soft delete"
+    uuid deleted_by_user_id FK
+  }
+
+  asset_assignments {
+    uuid id PK
+    uuid asset_id FK "one open per asset"
+    uuid employee_id FK
+    date given_date
+    uuid given_by_user_id FK
+    timestamptz created_at
+    text comment
+    jsonb form "snapshot, null for furniture and other"
+    text form_template_version
+    text document_hash "sha256 of the form"
+    boolean paper_form_signed
+    timestamptz not_returned_at "set once"
+    uuid not_returned_by_user_id FK
+    text not_returned_comment
+    text whereabouts "WITH_EMPLOYEE UNKNOWN"
+    date returned_date "null while open"
+    timestamptz returned_at
+    uuid returned_by_user_id FK
+    text return_comment
+  }
+
+  asset_signed_copies {
+    uuid id PK
+    uuid assignment_id FK "only with a form"
+    text object_key UK "in the files store"
+    text file_name
+    text content_type "PDF JPEG PNG"
+    bigint size_bytes "up to 10 MB"
+    text sha256
+    timestamptz uploaded_at
+    uuid uploaded_by_user_id FK
+  }
+
+  asset_numbers {
+    text number UK "every number ever used"
+    uuid asset_id FK
+    timestamptz created_at
+  }
+
+  asset_number_counters {
+    text prefix PK "PC PH DRV FUR AST"
+    bigint last
+  }
+
+  user_roles {
+    uuid user_id PK, FK
+    uuid role_id PK, FK
+  }
+
+  roles {
+    uuid id PK
+    text key UK "equipment, 0032"
+    text name "Equipment Assignments"
+  }
+
+  role_permissions {
+    uuid role_id PK, FK
+    text permission PK "equipment.read"
+  }
+
+  employees {
+    uuid id PK
+  }
+  users {
+    uuid id PK
+  }`;
+
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+const el = document.getElementById('erd');
+try {
+  await document.fonts.ready;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    fontFamily: v('--font'),
+    themeVariables: {
+      fontSize: '13px',
+      fontFamily: v('--font'),
+      background: v('--surface'),
+      primaryColor: v('--accent-soft'),
+      primaryTextColor: v('--fg'),
+      primaryBorderColor: v('--accent'),
+      lineColor: v('--edge'),
+      textColor: v('--fg'),
+      attributeBackgroundColorOdd: v('--surface'),
+      attributeBackgroundColorEven: v('--surface-2'),
+    },
+  });
+  const { svg } = await mermaid.render('equipment-erd', source);
+  el.innerHTML = svg;
+} catch (err) {
+  el.innerHTML = '<div class="status">The diagram could not be drawn here (it needs cdn.jsdelivr.net). Its source is in equipment-er-diagram.md.</div>';
+  console.error(err);
+}
+</script>
+</body>
+</html>

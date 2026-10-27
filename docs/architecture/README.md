@@ -4,6 +4,15 @@ How the system is divided and why.
 
 - [Context map](context-map.md): the bounded contexts, what each owns, and how they depend
   on each other.
+- [Order ER diagram](order-er-diagram.md) (and [`.html`](order-er-diagram.html)): the Order
+  aggregate's tables, their keys and the constraints the diagram cannot show.
+- [Order state machine](order-state-machine.md) (and [`.html`](order-state-machine.html)): an
+  order's statuses and transitions, and the confirmation link's lifecycle.
+- [SIM Card ER diagram](sim-card-er-diagram.md) (and [`.html`](sim-card-er-diagram.html)): a
+  SIM card's tables in Company Assets, with its assignments, signed copies, numbers and the
+  Settings defaults, and the constraints the diagram cannot show.
+- [Equipment ER diagram](equipment-er-diagram.md) (and [`.html`](equipment-er-diagram.html)):
+  the same tables for Equipment & Furniture, with the role that lets a user see them.
 - Architecture decision records (`adr/`), one decision each, numbered in order. A decision
   is changed by a new record that supersedes it, never by editing an accepted one.
 

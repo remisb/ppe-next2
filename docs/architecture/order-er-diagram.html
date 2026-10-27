@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Order ER Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The same diagram and rules as order-er-diagram.md, drawn by Mermaid; the staff app's neutrals and navy brand. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb; --edge:#73758c;
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 48px}
+.wrap{max-width:1180px; margin:0 auto}
+header{padding:32px 0 8px}
+h1{font-size:26px; font-weight:600; margin:0 0 6px; color:var(--brand)}
+h2{font-size:18px; font-weight:600; margin:32px 0 12px}
+p{margin:0 0 12px; max-width:78ch}
+.lede{color:var(--muted)}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+a{color:var(--accent)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px}
+#erd{overflow-x:auto; text-align:center; min-height:200px}
+#erd svg{max-width:100%; height:auto}
+#erd .status{color:var(--muted); padding:48px 0}
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line)}
+th{font-weight:500; color:var(--muted); background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap}
+@media (max-width:640px){ td:first-child{white-space:normal} th,td{padding:8px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Order ER diagram</h1>
+  <p class="lede">The tables of the Order aggregate (<code>internal/domain/order</code>): the order, its immutable
+  snapshot lines and its confirmations, with the live tables they point at. Built from migrations
+  <code>0006</code>, <code>0007</code>, <code>0009</code>, <code>0013</code>, <code>0015</code>, <code>0021</code> and
+  <code>0027</code>. The rules behind the columns are in <a href="../specs/order-service.md">order-service.md</a>;
+  the same diagram in Markdown is <a href="order-er-diagram.md">order-er-diagram.md</a>.</p>
+  <p class="lede"><code>employees</code>, <code>catalogue_items</code> and <code>users</code> are shown by their keys
+  only. Nothing an order or its record shows is read from them: names, prices and sizes are copied in at Mark as Ordered.</p>
+</header>
+
+<h2>Diagram</h2>
+<div class="card"><div id="erd"><div class="status">Drawing the diagram…</div></div></div>
+
+<h2>Rules the diagram does not show</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Table</th><th>Rule</th><th>Enforced by</th></tr></thead>
+  <tbody>
+    <tr><td><code>orders</code></td><td><code>status</code> is <code>ORDERED</code> or <code>GIVEN</code>; there is no draft row</td><td>CHECK</td></tr>
+    <tr><td><code>orders</code></td><td><code>given_at</code>, <code>given_by_user_id</code>, <code>given_by_name</code> and <code>confirmation_method</code> are all set exactly when <code>status = 'GIVEN'</code></td><td>CHECK <code>orders_given_fields</code></td></tr>
+    <tr><td><code>orders</code></td><td><code>deleted_at</code> and <code>deleted_by_user_id</code> are set together; every read filters <code>deleted_at IS NULL</code></td><td>CHECK <code>orders_deleted_fields</code>, queries</td></tr>
+    <tr><td><code>orders</code></td><td><code>record_seq</code> comes from <code>order_record_seq</code>; a rolled-back or deleted order leaves a gap, never reused</td><td>sequence, UNIQUE</td></tr>
+    <tr><td><code>order_lines</code></td><td>never updated, deleted or truncated</td><td>triggers <code>order_lines_no_update_delete</code>, <code>order_lines_no_truncate</code> (0026)</td></tr>
+    <tr><td><code>order_lines</code></td><td>one line per catalogue item and one per line number in an order</td><td>UNIQUE <code>(order_id, catalogue_item_id)</code>, <code>(order_id, line_no)</code></td></tr>
+    <tr><td><code>order_lines</code></td><td><code>size</code> is null exactly when <code>size_group = 'NONE'</code></td><td>CHECK <code>order_lines_size_matches_group</code></td></tr>
+    <tr><td><code>order_lines</code></td><td><code>catalogue_item_id</code> is for reporting only; every displayed value is copied</td><td>service (<code>MarkAsOrdered</code>)</td></tr>
+    <tr><td><code>order_confirmations</code></td><td><code>ELECTRONIC</code> has <code>token_hash</code> and <code>expires_at</code>; <code>PAPER</code> and <code>IN_PERSON</code> have neither</td><td>CHECK <code>order_confirmations_token_shape</code></td></tr>
+    <tr><td><code>order_confirmations</code></td><td><code>confirmed_at</code>, <code>confirmed_name</code> and <code>document_hash</code> are set together</td><td>CHECK <code>order_confirmations_evidence</code></td></tr>
+    <tr><td><code>order_confirmations</code></td><td>at most one confirmation per order carries evidence</td><td>partial UNIQUE index <code>order_confirmations_one_confirmed_idx</code></td></tr>
+    <tr><td><code>order_confirmations</code></td><td>only the SHA-256 of a link's token is stored</td><td>service (<code>HashToken</code>)</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="lede" style="margin-top:16px">Indexes for reading: <code>orders_activity_idx</code> on
+<code>coalesce(given_at, ordered_at) DESC, id</code> (newest activity first), <code>orders_employee_idx</code> on
+<code>employee_id</code>, and <code>order_confirmations_order_idx</code> on <code>order_id</code>.</p>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+
+const source = `erDiagram
+  employees ||--o{ orders : "ordered for"
+  users ||--o{ orders : "prepared, given, updated, deleted by"
+  orders ||--|{ order_lines : "has (immutable)"
+  catalogue_items ||--o{ order_lines : "copied from"
+  orders ||--o{ order_confirmations : "confirmed through"
+  users ||--o{ order_confirmations : "created by"
+
+  orders {
+    uuid id PK
+    bigint record_seq UK "order_record_seq, WE-000123"
+    uuid employee_id FK
+    text employee_first_name "snapshot"
+    text employee_last_name "snapshot"
+    text employee_code "snapshot, null"
+    text status "ORDERED or GIVEN"
+    timestamptz ordered_at
+    uuid prepared_by_user_id FK
+    text prepared_by_name "snapshot"
+    timestamptz given_at "set only when GIVEN"
+    uuid given_by_user_id FK "set only when GIVEN"
+    text given_by_name "set only when GIVEN"
+    text confirmation_method "ELECTRONIC PAPER IN_PERSON"
+    text receipt_text_version "wording, 0013"
+    timestamptz updated_at
+    uuid updated_by_user_id FK
+    timestamptz deleted_at "soft delete, 0015"
+    uuid deleted_by_user_id FK
+  }
+
+  order_lines {
+    uuid id PK
+    uuid order_id FK
+    int line_no "unique per order"
+    uuid catalogue_item_id FK "unique per order"
+    text item_name
+    text item_details
+    text size_group "CLOTHING SHOES NONE"
+    text size "null when NONE"
+    int quantity "at least 1"
+    bigint accounting_price_cents "shown and totalled"
+    bigint purchase_price_cents "null, 0021"
+    text currency "EUR"
+    int service_period_months "over 0"
+  }
+
+  order_confirmations {
+    uuid id PK
+    uuid order_id FK
+    text method "ELECTRONIC PAPER IN_PERSON"
+    text token_hash UK "sha256, ELECTRONIC only"
+    timestamptz expires_at "ELECTRONIC only"
+    timestamptz revoked_at
+    timestamptz first_opened_at "0027"
+    timestamptz confirmed_at "evidence"
+    text confirmed_name "evidence"
+    text document_hash "evidence"
+    timestamptz created_at
+    uuid created_by_user_id FK
+  }
+
+  employees {
+    uuid id PK
+  }
+  catalogue_items {
+    uuid id PK
+  }
+  users {
+    uuid id PK
+  }`;
+
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+const el = document.getElementById('erd');
+try {
+  await document.fonts.ready;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    fontFamily: v('--font'),
+    themeVariables: {
+      fontSize: '13px',
+      fontFamily: v('--font'),
+      background: v('--surface'),
+      primaryColor: v('--accent-soft'),
+      primaryTextColor: v('--fg'),
+      primaryBorderColor: v('--accent'),
+      lineColor: v('--edge'),
+      textColor: v('--fg'),
+      attributeBackgroundColorOdd: v('--surface'),
+      attributeBackgroundColorEven: v('--surface-2'),
+    },
+  });
+  const { svg } = await mermaid.render('order-erd', source);
+  el.innerHTML = svg;
+} catch (err) {
+  el.innerHTML = '<div class="status">The diagram could not be drawn here (it needs cdn.jsdelivr.net). Its source is in order-er-diagram.md.</div>';
+  console.error(err);
+}
+</script>
+</body>
+</html>

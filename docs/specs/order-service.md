@@ -4,6 +4,9 @@ The Order aggregate: `internal/domain/order` (orders, snapshot lines, confirmati
 routes in `cmd/api/order-routes.go`, tables from migrations `0006_orders` and
 `0007_order_confirmations` (`0015_order_soft_delete` for Delete). Manual §1, §3.1, algorithm B and algorithm E. Resolution
 (algorithm A) is described in [item-set-service.md](item-set-service.md).
+The tables and their constraints are drawn in
+[order-er-diagram.md](../architecture/order-er-diagram.md), the statuses and the confirmation
+link's lifecycle in [order-state-machine.md](../architecture/order-state-machine.md) (both also `.html`).
 
 ## Statuses
 
