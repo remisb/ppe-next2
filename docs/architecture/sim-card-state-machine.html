@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIM Card State Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The same diagrams and tables as sim-card-state-machine.md, drawn by Mermaid; styled like order-er-diagram.html. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb; --edge:#73758c;
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --edge:#8f92aa; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 48px}
+.wrap{max-width:1180px; margin:0 auto}
+header{padding:32px 0 8px}
+h1{font-size:26px; font-weight:600; margin:0 0 6px; color:var(--brand)}
+h2{font-size:18px; font-weight:600; margin:32px 0 12px}
+p{margin:0 0 12px; max-width:78ch}
+.lede{color:var(--muted)}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+a{color:var(--accent)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:16px}
+.diagram{overflow-x:auto; text-align:center; min-height:160px}
+.diagram svg{max-width:100%; height:auto}
+.diagram .status{color:var(--muted); padding:48px 0}
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); margin-bottom:16px}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line)}
+th{font-weight:500; color:var(--muted); background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+@media (max-width:640px){ th,td{padding:8px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>SIM card state machine</h1>
+  <p class="lede">The states a SIM card goes through in Company Assets. A card has two facts that change independently (asset-service.md, rule 2): its <strong>connection status</strong>, which is stored, and <strong>where it is and who holds it</strong>, which is derived from its open assignment. No action changes one as a side effect of the other: Change Status never moves a card, and giving or returning never changes its status. Each assignment then has a lifecycle of its own, and a signed copy may be added to it. Built from <code>internal/domain/asset</code> (<code>service.go</code>, <code>import.go</code>) and <code>cmd/api/import-sims.go</code>; the rules behind each step are in <a href="../specs/asset-service.md">asset-service.md</a>, the tables in <a href="sim-card-er-diagram.html">sim-card-er-diagram.html</a>. The same diagrams in Markdown are <a href="sim-card-state-machine.md">sim-card-state-machine.md</a>.</p>
+</header>
+
+<h2>Connection status</h2>
+
+<div class="card"><div class="diagram" id="connection-status-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Route</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>—</td><td>Not Activated</td><td>Add SIM</td><td><code>POST /api/v1/assets</code></td><td>The default; <code>asset.registered</code></td></tr>
+    <tr><td>—</td><td>Active</td><td>Add SIM with Active chosen</td><td><code>POST /api/v1/assets</code></td><td>For a card that arrives already active</td></tr>
+    <tr><td>—</td><td>any of the three</td><td>Go-live import</td><td><code>api -import-sims</code></td><td>Active and Available read as Active; Available with a holder is refused</td></tr>
+    <tr><td>any</td><td>any other</td><td>Change Status</td><td><code>PUT /api/v1/assets/{id}/status</code></td><td><code>assets.manage</code>; saved at once with no confirmation step; <code>asset.status_changed</code> with the old and new status</td></tr>
+    <tr><td>any</td><td>the same</td><td>Change Status</td><td>as above</td><td>No-op: writes nothing</td></tr>
+  </tbody>
+</table>
+</div>
+<p><code>connection_status</code> is stored on <code>assets</code> and limited to the three values by a CHECK. There is no final state: write-off is reserved (<code>written_off_at</code>) and not built, and no route deletes a card. The status never stops a card being returned or marked Not Returned; it matters only to Give SIM, which refuses anything but Active (409 <code>ErrNotActive</code>). A card marked Not Returned is usually then blocked: Prepare Blocking Email builds the provider's email, and the user sets Blocked by hand once the provider confirms. A returned blocked card must be unblocked and set Active before it can be given again.</p>
+
+<h2>Where the card is</h2>
+
+<div class="card"><div class="diagram" id="where-the-card-is-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Route</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>—</td><td>In the Office</td><td>Add SIM, or import with no holder</td><td><code>POST /api/v1/assets</code>, <code>api -import-sims</code></td><td>No assignment</td></tr>
+    <tr><td>—</td><td>With an employee</td><td>Import with a holder</td><td><code>api -import-sims</code></td><td>Given on the import's day with no form; <code>asset.registered</code> and <code>asset.given</code> with no document hash</td></tr>
+    <tr><td>In the Office</td><td>With an employee</td><td>Give SIM</td><td><code>POST /api/v1/assets/{id}/assignments</code></td><td>See the checks below; <code>asset.given</code>, and <code>asset.updated</code> first when a missing plan or value was filled in</td></tr>
+    <tr><td>With an employee</td><td>Not Returned, with the employee or unknown</td><td>Mark as Not Returned</td><td><code>POST /api/v1/assets/{id}/not-returned</code></td><td>The card stays with its holder and out of office stock; <code>asset.marked_not_returned</code></td></tr>
+    <tr><td>any held state</td><td>In the Office</td><td>Register Return</td><td><code>POST /api/v1/assets/{id}/return</code></td><td>Return date not before the given date or in the future; <code>asset.returned</code>. The status, the Not Returned mark, the form and the signed copies stay</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Location is derived, never stored: <strong>Office</strong> with no open assignment, <strong>With Employee</strong> with one, <strong>Unknown</strong> when that one is marked Not Returned with whereabouts <code>UNKNOWN</code>. The holder is the open assignment's employee, in every held state. Only Register Return brings a card back: not an employee leaving, not the Not Returned mark, not Blocked.</p>
+<p>Give SIM runs in one transaction with the card locked <code>FOR UPDATE</code> and the employee <code>FOR SHARE</code>, and answers the first check that fails:</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Check</th><th>Answer</th></tr></thead>
+  <tbody>
+    <tr><td>The card is live</td><td>404</td></tr>
+    <tr><td>The employee is live</td><td>404 <code>ErrEmployeeNotFound</code></td></tr>
+    <tr><td>No open assignment</td><td>409 <code>ErrAlreadyGiven</code></td></tr>
+    <tr><td>Status Active</td><td>409 <code>ErrNotActive</code></td></tr>
+    <tr><td>A Non-return Value (the phone number and plan may be blank)</td><td>400</td></tr>
+    <tr><td>Given date not in the future</td><td>400</td></tr>
+    <tr><td>Paper Form Signed ticked</td><td>400</td></tr>
+    <tr><td>The printed form's hash equals the form built now</td><td>409 <code>ErrFormChanged</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Refused moves: Give SIM on a held card is 409 <code>ErrAlreadyGiven</code>; Register Return or Mark as Not Returned on a card in the Office is 409 <code>ErrNotGiven</code>; marking a card already marked is 409 <code>ErrAlreadyMarked</code>, so whereabouts cannot be changed (open decision 7). A partial unique index allows one open assignment per card, so two people giving it at once cannot both succeed.</p>
+
+<h2>Assignment</h2>
+
+<div class="card"><div class="diagram" id="assignment-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>State</th><th>Stored as</th></tr></thead>
+  <tbody>
+    <tr><td>Open</td><td><code>returned_date</code> null, <code>not_returned_at</code> null</td></tr>
+    <tr><td>Open, marked Not Returned</td><td><code>returned_date</code> null; <code>not_returned_at</code>, <code>not_returned_by_user_id</code>, <code>not_returned_comment</code> and <code>whereabouts</code> set</td></tr>
+    <tr><td>Returned</td><td><code>returned_date</code>, <code>returned_at</code>, <code>returned_by_user_id</code> and <code>return_comment</code> set</td></tr>
+  </tbody>
+</table>
+</div>
+<p>An assignment is never deleted, its giving (employee, date, form, hash) never changes, the mark is set once and a returned assignment is closed: the trigger <code>asset_assignments_guard</code> refuses anything else, and <code>ppe_app</code> has no DELETE on the table. A card's earlier assignments are its history; a new giving is a new assignment.</p>
+
+<h2>Signed copy</h2>
+
+<div class="card"><div class="diagram" id="signed-copy-states"><div class="status">Drawing the diagram…</div></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>From</th><th>To</th><th>Trigger</th><th>Route</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Signed Copy Missing</td><td>Signed Copy Uploaded</td><td>Upload Signed Form</td><td><code>POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies</code></td><td>PDF, JPEG or PNG up to 10 MB; <code>asset.signed_copy_uploaded</code>. Allowed while open and after the return</td></tr>
+    <tr><td>Signed Copy Uploaded</td><td>Signed Copy Uploaded</td><td>Upload again</td><td>as above</td><td>Adds a row; the newest is shown, the earlier ones stay (<code>asset_signed_copies</code> is append-only)</td></tr>
+    <tr><td>No form</td><td>No form</td><td>Print Form, while the card is still held</td><td><code>GET …/assignments/{assignmentID}/form</code>, recorded by <code>POST …/assignments/{assignmentID}/form-printed</code></td><td>A form built from the card and holder as they are then, dated <code>asset.ImportedFormDate</code> and never stored; <code>asset.form_printed</code>. Needs the Non-return Value. No signed copy can be uploaded (404 <code>ErrNoForm</code>)</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The register's Documents column and its <code>signed_copy=missing</code> filter show the first two states for the cards held on a form. Printing a form, again or for the first time, is recorded (<code>asset.form_printed</code>) but changes no state, and so is Prepare Blocking Email (<code>asset.blocking_email_prepared</code>).</p>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+
+const diagrams = {
+  'connection-status-states': `stateDiagram-v2
+  direction LR
+  state "Not Activated" as NOT_ACTIVATED
+  state "Active" as ACTIVE
+  state "Blocked" as BLOCKED
+  [*] --> NOT_ACTIVATED : Add SIM (default), import "Not Activated"
+  [*] --> ACTIVE : Add SIM (Active chosen), import "Active" or "Available"
+  [*] --> BLOCKED : import "Blocked"
+  NOT_ACTIVATED --> ACTIVE : Change Status
+  ACTIVE --> NOT_ACTIVATED : Change Status
+  ACTIVE --> BLOCKED : Change Status
+  BLOCKED --> ACTIVE : Change Status (unblocked with the provider)
+  NOT_ACTIVATED --> BLOCKED : Change Status
+  BLOCKED --> NOT_ACTIVATED : Change Status
+  note right of ACTIVE : Give SIM only in this status`,
+  'where-the-card-is-states': `stateDiagram-v2
+  direction TB
+  state "In the Office" as Office
+  state "With an employee" as Held
+  state "Not Returned, still with the employee" as NRWith
+  state "Not Returned, whereabouts unknown" as NRUnknown
+  [*] --> Office : Add SIM, import without a holder
+  [*] --> Held : import with a holder (no form)
+  Office --> Held : Give SIM (Active, value, signed form)
+  Held --> NRWith : Mark as Not Returned (WITH_EMPLOYEE)
+  Held --> NRUnknown : Mark as Not Returned (UNKNOWN)
+  Held --> Office : Register Return
+  NRWith --> Office : Register Return
+  NRUnknown --> Office : Register Return`,
+  'assignment-states': `stateDiagram-v2
+  direction LR
+  state "Open" as Open
+  state "Open, marked Not Returned" as Marked
+  state "Returned" as Returned
+  [*] --> Open : Give SIM, import with a holder
+  Open --> Marked : Mark as Not Returned
+  Open --> Returned : Register Return
+  Marked --> Returned : Register Return (the mark stays)
+  Returned --> [*]`,
+  'signed-copy-states': `stateDiagram-v2
+  direction LR
+  state "No form (imported)" as NoForm
+  state "Signed Copy Missing" as Missing
+  state "Signed Copy Uploaded" as Uploaded
+  [*] --> Missing : Give SIM (form stored)
+  [*] --> NoForm : import with a holder
+  Missing --> Uploaded : Upload Signed Form
+  Uploaded --> Uploaded : Upload again (adds a copy)
+  NoForm --> NoForm : Print Form (built when printed, not stored)`,
+};
+
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: v('--font'),
+  themeVariables: {
+    fontSize: '13px',
+    fontFamily: v('--font'),
+    background: v('--surface'),
+    primaryColor: v('--accent-soft'),
+    primaryTextColor: v('--fg'),
+    primaryBorderColor: v('--accent'),
+    lineColor: v('--edge'),
+    textColor: v('--fg'),
+    labelBackgroundColor: v('--surface'),
+    edgeLabelBackground: v('--surface'),
+  },
+});
+for (const [id, source] of Object.entries(diagrams)) {
+  const el = document.getElementById(id);
+  try {
+    const { svg } = await mermaid.render(id + '-svg', source);
+    el.innerHTML = svg;
+  } catch (err) {
+    el.innerHTML = '<div class="status">The diagram could not be drawn here (it needs cdn.jsdelivr.net). Its source is in sim-card-state-machine.md.</div>';
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>

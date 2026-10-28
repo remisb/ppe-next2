@@ -13,6 +13,9 @@ How the system is divided and why.
   Settings defaults, and the constraints the diagram cannot show.
 - [Equipment ER diagram](equipment-er-diagram.md) (and [`.html`](equipment-er-diagram.html)):
   the same tables for Equipment & Furniture, with the role that lets a user see them.
+- [SIM card state machine](sim-card-state-machine.md) (and
+  [`.html`](sim-card-state-machine.html)): a card's connection status and where
+  it is, which change independently, and the lifecycles of its assignments and signed copies.
 - Architecture decision records (`adr/`), one decision each, numbered in order. A decision
   is changed by a new record that supersedes it, never by editing an accepted one.
 
