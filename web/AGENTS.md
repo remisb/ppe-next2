@@ -363,6 +363,9 @@ images and requests come from the app's own origin only. So:
 - A frame may show only the app's own origin or a `blob:` URL the page made (`frame-src
   'self' blob:`): the PDF preview (`PdfPreview`) shows a PDF the API sent that way. Never
   frame another host. `object-src 'none'` stays: the browser's PDF viewer in a frame needs
-  no `<object>` or `<embed>`.
+  no `<object>` or `<embed>`. `frame-ancestors` is `'self'`, not `'none'`: the `blob:`
+  frame inherits the page's policy and Safari applies its `frame-ancestors` to it, so
+  `'none'` left the preview blank in Safari (Chrome ignores it). Other sites still may not
+  frame the app.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 

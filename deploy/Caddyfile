@@ -65,8 +65,12 @@ import sites/*.caddy
 		# from running or sending data anywhere. The one inline script, the theme
 		# in index.html (the same in both apps), is allowed by its hash;
 		# web/apps/{workwear,admin}/src/csp.test.ts fail when they drift apart. Inline styles React sets through the DOM
-		# are not affected by style-src.
-		Content-Security-Policy "default-src 'self'; frame-src 'self' blob:; script-src 'self' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		# are not affected by style-src. frame-ancestors is 'self', not 'none': the
+		# PDF preview's blob: frame inherits this policy, and Safari applies the
+		# inherited frame-ancestors to it, so 'none' left the preview blank there.
+		# Other sites still may not frame the app; X-Frame-Options stays DENY for
+		# browsers without frame-ancestors.
+		Content-Security-Policy "default-src 'self'; frame-src 'self' blob:; script-src 'self' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
 		-Server
 	}
 }

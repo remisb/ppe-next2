@@ -45,7 +45,8 @@ describe('Content-Security-Policy', () => {
     expect(scripts).not.toContain("'unsafe-eval'")
     expect(scripts.filter((s) => !s.startsWith("'sha256-"))).toEqual(["'self'"])
     expect(directive('connect-src')).toEqual(["'self'"])
-    expect(directive('frame-ancestors')).toEqual(["'none'"])
+    // Only the app's own pages may frame it: Safari applies this to Preview PDF's blob: frame too, which 'none' left blank.
+    expect(directive('frame-ancestors')).toEqual(["'self'"])
     // Frames show only the app's own pages and files it made in memory (Preview PDF's blob: URL).
     expect(directive('frame-src')).toEqual(["'self'", 'blob:'])
   })
