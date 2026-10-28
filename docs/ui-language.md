@@ -262,7 +262,8 @@ Everything that opens over a screen. Reader words in brackets.
   scrolling body, a pinned **footer** with the buttons: **Cancel** on the left of the
   action, the action named as the sheet is (Add User → **Add User**; Edit Sizes → **Save**).
   A sheet that only shows something has **Close** alone. Escape closes; the page under it
-  does not scroll.
+  does not scroll. A **wide** sheet (`wide`) takes nearly the whole screen at a fixed height for
+  a document: **PDF Preview** shows the PDF with **Open in New Tab**, **Download PDF** and **Print**.
 - **Code:** `FormSheet` (`@ppe/ui/components/form-sheet`), on `<dialog>`. Not shadcn's
   `Sheet`, which slides from an edge and is not used.
 

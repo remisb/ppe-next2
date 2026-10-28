@@ -3,7 +3,20 @@
  * tabs and filters as one query, where a card is, and Add SIM's and
  * Edit's checks (docs/specs/asset-service.md). Screens only wire events.
  */
-import type { Asset, AssetAssignment, AssetCategory, AssetInput, AssetKind, AssetQuery, AssetSort, AssignmentFormInput, ConnectionStatus, CreateAssetInput, InventoryPrefix } from '@ppe/api-client'
+import type {
+  Asset,
+  AssetAssignment,
+  AssetCategory,
+  AssetInput,
+  AssetKind,
+  AssetQuery,
+  AssetSort,
+  AssignmentFormInput,
+  ConnectionStatus,
+  CreateAssetInput,
+  InventoryPrefix,
+  SimCardsReportQuery,
+} from '@ppe/api-client'
 import { helpText } from '@ppe/ui/components/tooltip'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { euroInput } from '@ppe/i18n'
@@ -78,6 +91,12 @@ export function assetQuery(kind: AssetKind, f: AssetFilters, sort: AssetSort, di
     page,
     page_size: ASSET_PAGE_SIZE,
   }
+}
+
+/** Preview PDF's query on SIM Cards: the register's filters and sort as they are, every page (the API picks the language). */
+export function simCardsReportQuery(f: AssetFilters, sort: AssetSort, dir: 'asc' | 'desc'): SimCardsReportQuery {
+  const { kind: _kind, category: _category, page: _page, page_size: _size, ...rest } = assetQuery('SIM', f, sort, dir, 1)
+  return rest
 }
 
 /**

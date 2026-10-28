@@ -280,6 +280,30 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 			t.Errorf("GET %s = %d %s %q", path, rec.Code, rec.Header().Get("Content-Type"), rec.Header().Get("Content-Disposition"))
 		}
 	}
+	// The register as a PDF list: anyone signed in, the list's filters, never a
+	// page, in the reader's own language (the Info title is plain text in English).
+	_, reader := api.userWith(t, role.KeyEmployee)
+	for path, want := range map[string]int{
+		"/api/v1/assets/sim-cards.pdf?held=true&provider=Telia&sort=holder&dir=desc": http.StatusOK,
+		"/api/v1/assets/sim-cards.pdf?page=2":                                        http.StatusBadRequest,
+		"/api/v1/assets/sim-cards.pdf?lang=lt":                                       http.StatusBadRequest,
+		"/api/v1/assets/sim-cards.pdf?status=LOST":                                   http.StatusBadRequest,
+	} {
+		rec := api.do(t, "GET", path, reader, nil)
+		if rec.Code != want || want == http.StatusOK && (rec.Header().Get("Content-Type") != "application/pdf" ||
+			!strings.HasPrefix(rec.Body.String(), "%PDF-") || !strings.Contains(rec.Header().Get("Content-Disposition"), "sim-cards-")) {
+			t.Errorf("GET %s = %d %q, want %d", path, rec.Code, rec.Header().Get("Content-Disposition"), want)
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/sim-cards.pdf", reader, nil); !strings.Contains(rec.Body.String(), "/Title (SIM Cards Printed ") {
+		t.Errorf("an English reader's PDF is not in English: %d", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/users/me/language", reader, map[string]any{"language": "lt"}); rec.Code != http.StatusOK {
+		t.Fatalf("set language = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/sim-cards.pdf", reader, nil); rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "/Title (SIM Cards Printed ") {
+		t.Errorf("a Lithuanian reader's PDF = %d, still in English", rec.Code)
+	}
 	if rec := api.do(t, "GET", "/api/v1/assets/"+id+"/assignments/preview.pdf?employee=nobody&date="+today, mgr, nil); rec.Code != http.StatusBadRequest {
 		t.Errorf("PDF without an employee = %d", rec.Code)
 	}

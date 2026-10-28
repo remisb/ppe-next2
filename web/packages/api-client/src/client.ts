@@ -8,6 +8,7 @@ import type {
   AssetKind,
   AssetPage,
   AssetQuery,
+  SimCardsReportQuery,
   AssetAssignment,
   AssetSummary,
   AssignmentFormInput,
@@ -403,6 +404,8 @@ export function createClient(options: ClientOptions) {
     assets: {
       /** The register: one kind's assets, a page at a time. */
       list: (query: AssetQuery) => request<AssetPage>('GET', `/api/v1/assets${historyQueryString(query)}`),
+      /** Preview PDF on SIM Cards: every card the register's filters match, in its sort, as a PDF list in the user's own language. */
+      simCardsPDF: (query: SimCardsReportQuery) => download(`/api/v1/assets/sim-cards.pdf${historyQueryString(query)}`),
       /** The register's tiles and its providers. */
       summary: (kind: AssetKind) => request<AssetSummary>('GET', `/api/v1/assets/summary/${seg(kind)}`),
       /** ⌘K Search: SIM, phone or inventory numbers containing q, spaces ignored. */
@@ -470,7 +473,7 @@ export function createClient(options: ClientOptions) {
 export type Client = ReturnType<typeof createClient>
 
 /** The query string for a list's filters (Orders, the Audit log, Security), with empty filters left out. */
-export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery | AssetQuery): string {
+export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery | AssetQuery | SimCardsReportQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))

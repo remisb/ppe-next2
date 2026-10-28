@@ -13,6 +13,8 @@ interface FormSheetProps {
   children: ReactNode
   /** Pinned to the bottom of the viewport on a phone so a long form saves without scrolling. */
   footer?: ReactNode
+  /** Nearly the whole screen, at a fixed height its body fills: for a document such as a PDF preview. */
+  wide?: boolean
 }
 
 /**
@@ -25,7 +27,7 @@ interface FormSheetProps {
  * platform gives modal semantics, focus containment, the top layer, and Escape
  * for free, and all four are easy to get subtly wrong by hand.
  */
-export function FormSheet({ open, onClose, title, description, children, footer }: FormSheetProps) {
+export function FormSheet({ open, onClose, title, description, children, footer, wide = false }: FormSheetProps) {
   const ref = useRef<HTMLDialogElement>(null)
   /*
    * Per instance, not a constant. `ResourceScreen` can mount two of these at
@@ -70,12 +72,14 @@ export function FormSheet({ open, onClose, title, description, children, footer 
         'motion-reduce:open:animate-none',
         // From md: a centred dialog of bounded width.
         'md:m-auto md:max-w-2xl md:rounded-lg md:max-h-[85dvh]',
+        // Wide: a fixed height, the grab handle above a column that fills the rest (flex only while open, so closed it stays hidden).
+        wide && 'h-[92dvh] open:flex open:flex-col md:h-[90dvh] md:max-h-[90dvh] md:max-w-[min(72rem,95vw)]',
       )}
     >
       {/* A grab handle: the phone's cue that this is a sheet over the page. */}
       <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30 md:hidden" />
       {/* h-full + min-h-0 so the body scrolls rather than the footer sliding off. */}
-      <div className="flex max-h-[inherit] flex-col">
+      <div className={cn('flex max-h-[inherit] flex-col', wide && 'min-h-0 flex-1')}>
         <header className="flex items-start justify-between gap-4 border-b border-border px-4 pt-2 pb-3 md:p-4">
           <div className="flex flex-col gap-1">
             <h2 id={titleId} className="text-lg font-semibold">

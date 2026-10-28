@@ -3,6 +3,7 @@ package asset
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +25,8 @@ const (
 	maxPageSize     = 100
 	maxPage         = 1_000_000 // keeps the offset far from overflowing
 	numberLimit     = 20
+	// maxReportRows bounds a printed register; more is a request to narrow it.
+	maxReportRows = 5000
 )
 
 // ListParams is a register query as the user states it. Empty fields do not
@@ -69,6 +72,14 @@ type ListResult struct {
 	Page     int    `json:"page"`
 	PageSize int    `json:"page_size"`
 	Total    int    `json:"total"`
+}
+
+// Report is the register as printed: every asset the filter matches, in its
+// order, not paged, and when it was printed in the organisation timezone.
+type Report struct {
+	Filter    ListFilter
+	Assets    []View
+	PrintedAt time.Time
 }
 
 // Summary is the register's tiles (§3). They overlap and are never summed:

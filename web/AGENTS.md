@@ -360,5 +360,9 @@ images and requests come from the app's own origin only. So:
   `CSPProvider disableStyleElements` and put its rule in `@ppe/ui`'s `styles.css`, as
   `components/select.tsx` does (`select.test.tsx` checks it).
 - Links to other sites (WhatsApp) are navigation and are not affected.
+- A frame may show only the app's own origin or a `blob:` URL the page made (`frame-src
+  'self' blob:`): the PDF preview (`PdfPreview`) shows a PDF the API sent that way. Never
+  frame another host. `object-src 'none'` stays: the browser's PDF viewer in a frame needs
+  no `<object>` or `<embed>`.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 

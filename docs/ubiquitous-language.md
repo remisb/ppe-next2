@@ -1039,6 +1039,7 @@ screens are built):
 | Total SIMs / In Office / With Employees | Iš viso SIM / Biure / Pas darbuotojus | Всего SIM / В офисе / У сотрудников |
 | Print Form / Paper Form Signed | Spausdinti aktą / Aktas pasirašytas | Печать акта / Акт подписан |
 | Download PDF / Print again | Atsisiųsti PDF / Spausdinti dar kartą | Скачать PDF / Напечатать ещё раз |
+| Preview PDF / PDF Preview / Print / Open in New Tab (SIM Cards' list) | Peržiūrėti PDF / PDF peržiūra / Spausdinti / Atidaryti naujame skirtuke | Просмотр PDF / Предпросмотр PDF / Печать / Открыть в новой вкладке |
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |

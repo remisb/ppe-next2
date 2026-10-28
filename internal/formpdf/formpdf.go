@@ -35,6 +35,15 @@ var fonts = sync.OnceValues(func() (*[2]*pdf.Font, error) {
 	return &[2]*pdf.Font{regular, bold}, nil
 })
 
+// Fonts are the regular and bold fonts every printed document uses.
+func Fonts() (regular, bold *pdf.Font, err error) {
+	fs, err := fonts()
+	if err != nil {
+		return nil, nil, err
+	}
+	return fs[0], fs[1], nil
+}
+
 var (
 	muted = pdf.Gray(0.35)
 	faint = pdf.Gray(0.5)
@@ -42,11 +51,10 @@ var (
 
 // Render draws form f with its document hash.
 func Render(f asset.Form, documentHash string) ([]byte, error) {
-	fs, err := fonts()
+	regular, bold, err := Fonts()
 	if err != nil {
 		return nil, err
 	}
-	regular, bold := fs[0], fs[1]
 	sim := f.Kind == asset.KindSIM
 	title := "Equipment Assignment Form / Акт выдачи оборудования"
 	if sim {

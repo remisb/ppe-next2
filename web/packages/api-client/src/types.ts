@@ -1304,6 +1304,13 @@ export interface AssetQuery {
   page_size?: number
 }
 
+/**
+ * The SIM card register as a PDF list: the register's filters and sort, never
+ * a page (every match is printed). It is in the reader's own language, which
+ * the API reads from their account.
+ */
+export type SimCardsReportQuery = Omit<AssetQuery, 'kind' | 'employee_id' | 'category' | 'page' | 'page_size'>
+
 export interface AssetPage {
   assets: Asset[]
   page: number

@@ -276,6 +276,7 @@ stays with its assignment when the asset later goes to someone else.
 | Route | Access | Kind |
 | --- | --- | --- |
 | `GET /api/v1/assets` | authenticated | paged search, query parameters (see below) |
+| `GET /api/v1/assets/sim-cards.pdf` | authenticated | Preview PDF on SIM Cards (shown in the app, then printed, downloaded or opened in a tab): every SIM card the register's filters match (`q`, `location`, `held`, `provider`, `status`, `not_returned`, `signed_copy`), in its `sort` and `dir`, never paged (more than 5000 is 400: narrow them), drawn by `internal/registerpdf` on A4 landscape in 7 pt; each page's header names the list, the print date and time in the organisation timezone, the filters and the sort; in the reader's own language (their account's `users.language`: English, Lithuanian or Russian; a `lang` parameter is refused); records nothing; an attachment `sim-cards-<YYYY-MM-DD-HHMM>.pdf` |
 | `GET /api/v1/assets/summary/{kind}` | authenticated | the four tile counts, and `providers`: the kind's providers in use, for the filter |
 | `GET /api/v1/assets/by-number/{q}` | authenticated | **filter** for ⌘K Search: SIM No., Phone No. or Inventory No. containing `q`, spaces ignored, max 20; no match is `200 []` |
 | `GET /api/v1/assets/by-employee/{id}` | authenticated | **filter**: the employee's assignments with their assets, open first; none is `200 []` |

@@ -277,6 +277,33 @@ func (s *Service) List(ctx context.Context, p ListParams, see Sight) (ListResult
 	return out, nil
 }
 
+// Report is the register to print: every one of the kind's assets matching p
+// (its page and page size are ignored), a kind see allows, at most
+// maxReportRows of them.
+func (s *Service) Report(ctx context.Context, p ListParams, see Sight) (Report, error) {
+	p.Page, p.PageSize = "", ""
+	f, _, _, err := p.filter()
+	if err != nil {
+		return Report{}, err
+	}
+	if err := see.Check(f.Kind); err != nil {
+		return Report{}, err
+	}
+	f.Limit, f.Offset = maxReportRows, 0
+	rs, total, err := s.repo.List(ctx, f)
+	if err != nil {
+		return Report{}, err
+	}
+	if total > maxReportRows {
+		return Report{}, fieldError("filters", fmt.Sprintf("match %d assets; at most %d are printed, so narrow them", total, maxReportRows))
+	}
+	out := Report{Filter: f, Assets: make([]View, len(rs)), PrintedAt: s.now().In(s.loc)}
+	for i, r := range rs {
+		out.Assets[i] = s.view(r)
+	}
+	return out, nil
+}
+
 // Summary is the register's tiles for kind, a kind see allows.
 func (s *Service) Summary(ctx context.Context, kind string, see Sight) (Summary, error) {
 	if !Kind(kind).valid() {

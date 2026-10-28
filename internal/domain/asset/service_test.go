@@ -983,6 +983,42 @@ func TestListParams(t *testing.T) {
 	}
 }
 
+// Report prints every match, not a page, and says when in the organisation's
+// timezone; Equipment needs its sight, and too many matches are refused.
+func TestReport(t *testing.T) {
+	f := newFixture(t)
+	f.sim(t, "SIM-000001", StatusActive, true)
+	v := f.sim(t, "SIM-000002", StatusActive, true)
+	if _, err := f.give(t, v.ID, f.emp, "2026-10-01"); err != nil {
+		t.Fatal(err)
+	}
+	r, err := f.svc.Report(f.ctx, ListParams{Kind: "SIM", Sort: "holder", Dir: "desc", Page: "7", PageSize: "1"}, Sight{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Assets) != 2 || r.Filter.Limit != maxReportRows || r.Filter.Offset != 0 || r.Filter.Sort != SortHolder || !r.Filter.Desc ||
+		!r.PrintedAt.Equal(testNow) || r.PrintedAt.Location() != vilnius {
+		t.Errorf("report = %+v", r)
+	}
+	if _, err := f.svc.Report(f.ctx, ListParams{Kind: "EQUIPMENT"}, Sight{}); !errors.Is(err, ErrNotPermitted) {
+		t.Errorf("equipment without the role = %v", err)
+	}
+	if _, err := f.svc.Report(f.ctx, ListParams{Kind: "SIM", Sort: "price"}, all); !errors.Is(err, ErrInvalid) {
+		t.Errorf("unknown sort = %v", err)
+	}
+	many := NewService(tooMany{f.repo}, WithClock(func() time.Time { return testNow }))
+	if _, err := many.Report(f.ctx, ListParams{Kind: "SIM"}, all); !errors.Is(err, ErrInvalid) {
+		t.Errorf("more than %d = %v, want ErrInvalid", maxReportRows, err)
+	}
+}
+
+// tooMany is a register with one more match than a report prints.
+type tooMany struct{ *fakeRepo }
+
+func (tooMany) List(context.Context, ListFilter) ([]Record, int, error) {
+	return nil, maxReportRows + 1, nil
+}
+
 func TestDaysHeldCountsCalendarDays(t *testing.T) {
 	for _, c := range []struct {
 		from, to string

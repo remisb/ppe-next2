@@ -16,7 +16,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, FilterX, Plus, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, FileText, FilterX, Plus, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
@@ -24,6 +24,7 @@ import { AssetMoreActions, ReturnButton, StatusBadge, StatusMenu, setStatus } fr
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { usePrintStoredForm } from '@/components/assignment-form'
 import { EquipmentForm } from '@/components/equipment-form'
+import { type PdfFile, PdfPreview } from '@/components/pdf-preview'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import {
@@ -33,6 +34,7 @@ import {
   chooseTile,
   registerTile,
   assetQuery,
+  simCardsReportQuery,
   documentsText,
   categories,
   categoryLabel,
@@ -151,6 +153,15 @@ export function Assets({
     [kind, JSON.stringify(counted), reloads],
   )
   const reload = () => setReloads((n) => n + 1)
+  // SIM Cards' Preview PDF: the server draws every card the filters match, in the register's sort and the language
+  // of the user's account; the preview shows it, to print, download or open in a tab.
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdf, setPdf] = useState<PdfFile | null>(null)
+  const previewPdf = async () => {
+    setPdfLoading(true)
+    await action.run(async () => setPdf(await client.assets.simCardsPDF(simCardsReportQuery(filters, sort.key, sort.dir))))
+    setPdfLoading(false)
+  }
 
   const update = (next: AssetFilters) => {
     setFilters(next)
@@ -283,6 +294,11 @@ export function Assets({
           title={sim ? t.assets.simCards : t.assets.equipment}
           actions={
             <>
+              {sim ? (
+                <Button variant="outline" disabled={pdfLoading} onClick={() => void previewPdf()}>
+                  <FileText aria-hidden /> {t.assets.previewPdf}
+                </Button>
+              ) : null}
               {canManage ? (
                 <Button onClick={() => setEditing('new')}>
                   <Plus aria-hidden /> {sim ? t.assets.addSimCard : t.assets.addAsset}
@@ -566,6 +582,7 @@ export function Assets({
       </ListDetail>
 
       {printing}
+      <PdfPreview file={pdf} label={t.assets.pdfPreviewLabel} onClose={() => setPdf(null)} />
       <AssetSheets
         sheet={sheet}
         today={today}

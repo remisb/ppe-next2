@@ -832,6 +832,7 @@ var policy = map[string]rule{
 	"DELETE /api/v1/orders/{id}":                                                {role.OrdersDelete, "manager"},
 	"GET /api/v1/assets":                                                        {"", "any"},
 	"GET /api/v1/assets/summary/{kind}":                                         {"", "any"},
+	"GET /api/v1/assets/sim-cards.pdf":                                          {"", "any"},
 	"GET /api/v1/assets/by-number/{q}":                                          {"", "any"},
 	"GET /api/v1/assets/by-employee/{id}":                                       {"", "any"},
 	"GET /api/v1/assets/next-number/{prefix}":                                   {role.AssetsManage, "managers"},

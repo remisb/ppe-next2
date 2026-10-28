@@ -199,6 +199,13 @@ export const assets = {
   changeDetails: 'Change',
   doneDetails: 'Done',
   downloadPdf: 'Download PDF',
+  // SIM Cards' list as a PDF: shown in the app, then printed, downloaded or opened in a tab.
+  previewPdf: 'Preview PDF',
+  pdfPreview: 'PDF Preview',
+  pdfPreviewLabel: 'The PDF of the SIM card list',
+  print: 'Print',
+  openInNewTab: 'Open in New Tab',
+  noInlinePdf: 'This browser cannot show a PDF here. Open it in a new tab or download it.',
   downloadingPdf: 'Downloading…',
   printAgain: 'Print again',
   readyToGive: 'Ready: give the SIM.',

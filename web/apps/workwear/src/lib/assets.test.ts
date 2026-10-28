@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simDraftOf, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simCardsReportQuery, simDraftOf, todayIn } from './assets'
 
 describe('tabs and filters', () => {
   it("a dashboard's tile sets the place and keeps the status: In Office + Blocked (§3)", () => {
@@ -13,6 +13,10 @@ describe('tabs and filters', () => {
     expect(tabPressed('EQUIPMENT', f, 'inOffice')).toBe(true)
     expect(tabPressed('EQUIPMENT', f, 'all')).toBe(false)
     expect(assetQuery('SIM', f, 'inventory', 'asc', 1)).toEqual({ kind: 'SIM', location: 'OFFICE', status: 'BLOCKED', sort: 'inventory', dir: 'asc', page: 1, page_size: 50 })
+  })
+  it("Preview PDF on SIM Cards prints the register's filters and sort, every page", () => {
+    const f = { ...chooseTile(noAssetFilters, 'withEmployees'), provider: 'Telia', signedCopyMissing: true, q: ' 612 ', category: 'PHONE' as const }
+    expect(simCardsReportQuery(f, 'holder', 'desc')).toEqual({ q: '612', held: true, provider: 'Telia', signed_copy: 'missing', sort: 'holder', dir: 'desc' })
   })
   it('With Employees is everyone holding a card, whereabouts known or not', () => {
     expect(assetQuery('SIM', chooseTile(noAssetFilters, 'withEmployees'), 'holder', 'desc', 2)).toMatchObject({ held: true, sort: 'holder', dir: 'desc', page: 2 })

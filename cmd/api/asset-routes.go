@@ -12,11 +12,15 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/formpdf"
+	"github.com/remisb/ppe-next2/internal/registerpdf"
 )
 
 type assetHandler struct {
 	assets *asset.Service
+	// users gives the SIM card list's PDF the reader's language.
+	users *user.Service
 }
 
 // registerAssetRoutes mounts Company Assets (docs/specs/asset-service.md).
@@ -25,10 +29,12 @@ type assetHandler struct {
 // route on one asset goes through seen, so without equipment.read an
 // equipment item is not found. The return and the Not Returned mark act on
 // the asset's open assignment, so they are the asset's routes.
-func registerAssetRoutes(rt *router, assets *asset.Service) {
-	h := &assetHandler{assets: assets}
+func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service) {
+	h := &assetHandler{assets: assets, users: users}
 	rt.authenticated("GET /api/v1/assets", h.list)
 	rt.authenticated("GET /api/v1/assets/summary/{kind}", h.summary)
+	// The SIM card register as a PDF list, with the register's filters and sort.
+	rt.authenticated("GET /api/v1/assets/sim-cards.pdf", h.simCardsPDF)
 	rt.authenticated("GET /api/v1/assets/by-number/{q}", h.byNumber)
 	rt.authenticated("GET /api/v1/assets/by-employee/{id}", h.byEmployee)
 	rt.restricted("GET /api/v1/assets/next-number/{prefix}", h.nextNumber, role.AssetsManage)
@@ -169,6 +175,54 @@ func (h *assetHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// simCardsPDFParams are the SIM register's filters and sort, as the list
+// takes them; never a page, as every match is printed.
+var simCardsPDFParams = map[string]bool{
+	"q": true, "location": true, "held": true, "provider": true, "status": true, "not_returned": true, "signed_copy": true,
+	"sort": true, "dir": true,
+}
+
+// simCardsPDF is Preview PDF on SIM Cards: every card the register's filters
+// match, in its order, as a PDF list in the reader's own language (their
+// account's, users.language), whatever the request asks.
+func (h *assetHandler) simCardsPDF(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	q := r.URL.Query()
+	for k, v := range q {
+		if !simCardsPDFParams[k] || len(v) > 1 {
+			writeErrorMessage(w, http.StatusBadRequest, "unknown or repeated query parameter "+k)
+			return
+		}
+	}
+	p := asset.ListParams{
+		Kind: string(asset.KindSIM), Q: q.Get("q"), Location: q.Get("location"), Held: q.Get("held"), Provider: q.Get("provider"), Status: q.Get("status"),
+		NotReturned: q.Get("not_returned"), SignedCopy: q.Get("signed_copy"), Sort: q.Get("sort"), Dir: q.Get("dir"),
+	}
+	reader, err := h.users.Get(r.Context(), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	report, err := h.assets.Report(r.Context(), p, sight(r))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	b, err := registerpdf.SIMCards(report, reader.Language)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": registerpdf.Filename(report)}))
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(b)
 }
 
 func (h *assetHandler) summary(w http.ResponseWriter, r *http.Request) {
