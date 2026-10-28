@@ -223,17 +223,20 @@ export const lt: Guide = {
         { p: 'Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, ji ir **SIM kortelės** išvardytos po **Įmonės turtas**: pasirinkite vieną, kad atidarytumėte. Pasirinkę **Įmonės turtas**, jas paslėpsite arba parodysite.', devices: ['desktop'] },
         { p: 'Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.', roles: ['admin', 'manager'] },
         {
-          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, kiekviena būsena (**Neaktyvuota**, **Aktyvi**, **Užblokuota**), **Biure**, **Pas darbuotojus** ir **Negrąžinta**; ekranas **Įranga** savo daiktus skaičiuoja skirtukais **Visos** ir paskutiniais trimis. Skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.',
+          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.',
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, kiekviena būsena, **Biure**, **Pas darbuotojus** ir **Negrąžinta**; ekranas **Įranga** savo daiktus skaičiuoja skirtukais **Visos** ir paskutiniais trimis. Skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; **SIM kortelės** ar **Įranga** jo viršuje grąžina į sąrašą.',
+          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; **SIM kortelės** ar **Įranga** jo viršuje grąžina į sąrašą.',
           devices: ['phone'],
         },
         {
           p: 'SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.',
         },
         { shots: [{ name: 'assets', alt: 'SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju' }] },
+        {
+          p: 'Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.',
+        },
         {
           p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ten nustatyta negrąžinimo vertė įrašoma iš anksto; ją galite pakeisti arba ištrinti. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
           roles: ['admin', 'manager'],

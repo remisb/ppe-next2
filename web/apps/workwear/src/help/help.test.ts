@@ -78,7 +78,9 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['admin']))).toContain('The employee has signed the printed form')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Mark as Not Returned')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Print Form')
-    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Download PDF')
+    // The forms' own Print form again is for those who manage assets; Preview PDF of the SIM list is for every reader.
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Print form again')
+    for (const roles of [['admin'], ['manager'], ['employee']] as const) expect(words(forRoles(guides.en, roles))).toContain('Preview PDF')
     expect(words(forRoles(guides.en, ['manager']))).toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Signed Copy Missing')

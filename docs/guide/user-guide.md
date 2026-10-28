@@ -171,11 +171,13 @@ Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, 
 
 The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.
 
-The tabs above the list count the SIMs: **All**, each status (**Not Activated**, **Active**, **Blocked**), **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.
+The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.
 
 A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
 
 ![SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
+
+**Preview PDF** on **SIM Cards** shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.
 
 *Administrators and managers only:*
 

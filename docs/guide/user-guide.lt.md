@@ -171,11 +171,13 @@ Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir 
 
 Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.
 
-Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, kiekviena būsena (**Neaktyvuota**, **Aktyvi**, **Užblokuota**), **Biure**, **Pas darbuotojus** ir **Negrąžinta**; ekranas **Įranga** savo daiktus skaičiuoja skirtukais **Visos** ir paskutiniais trimis. Skaičiai persidengia, nes negrąžinta kortelė vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.
+Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.
 
 SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.
 
 ![SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
+
+Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.
 
 *Tik administratoriams ir vadovams:*
 

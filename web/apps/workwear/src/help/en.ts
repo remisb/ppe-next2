@@ -220,17 +220,20 @@ export const en: Guide = {
         { p: 'Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under **Company Assets**: choose one to open it. Choosing **Company Assets** hides or shows them.', devices: ['desktop'] },
         { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.', roles: ['admin', 'manager'] },
         {
-          p: 'The tabs above the list count the SIMs: **All**, each status (**Not Activated**, **Active**, **Blocked**), **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.',
+          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.',
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'The tabs above the list count the SIMs: **All**, each status, **In Office**, **With Employees** and **Not Returned**; **Equipment** counts its items with **All** and the last three. The counts overlap, since a card not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; **SIM Cards** or **Equipment** at its top takes you back.',
+          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; **SIM Cards** or **Equipment** at its top takes you back.',
           devices: ['phone'],
         },
         {
           p: "A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.",
         },
         { shots: [{ name: 'assets', alt: 'SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder' }] },
+        {
+          p: "**Preview PDF** on **SIM Cards** shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.",
+        },
         {
           p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. The non-return value set there is filled in, and you can change or clear it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
           roles: ['admin', 'manager'],
