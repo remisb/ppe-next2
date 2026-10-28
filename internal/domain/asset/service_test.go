@@ -366,13 +366,6 @@ func (f *fakeRepo) UpdateOpen(_ context.Context, assetID uuid.UUID, fn OpenMutat
 	return next, nil
 }
 
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 // The organisation's day is 2026-10-09 in Vilnius, whatever UTC says.
 var (
 	testNow   = time.Date(2026, 10, 9, 9, 0, 0, 0, time.UTC)
@@ -758,16 +751,20 @@ func TestPrintingAndTheBlockingEmailAreRecorded(t *testing.T) {
 	}
 
 	// Prepare Blocking Email: a SIM card's numbers and its holder.
-	if err := f.svc.RecordBlockingEmail(f.ctx, v.ID, testActor); err != nil {
+	if err := f.svc.RecordEmail(f.ctx, v.ID, EmailBlocking, testActor); err != nil {
 		t.Fatal(err)
 	}
 	ev = f.repo.events[len(f.repo.events)-1]
 	if ev.Event != EventBlockingEmailPrepared || !strings.Contains(string(ev.After), `"sim_no"`) || !strings.Contains(string(ev.After), a.ID.String()) {
 		t.Errorf("blocking email: %s %s", ev.Event, ev.After)
 	}
+	if err := f.svc.RecordEmail(f.ctx, v.ID, EmailActivation, testActor); err != nil || f.repo.events[len(f.repo.events)-1].Event != EventActivationEmailPrepared {
+		t.Errorf("activation email: %v", err)
+	}
 	for name, err := range map[string]error{
-		"no actor":   f.svc.RecordBlockingEmail(f.ctx, v.ID, uuid.Nil),
-		"no asset":   f.svc.RecordBlockingEmail(f.ctx, uuid.New(), testActor),
+		"no actor":   f.svc.RecordEmail(f.ctx, v.ID, EmailBlocking, uuid.Nil),
+		"no asset":   f.svc.RecordEmail(f.ctx, uuid.New(), EmailBlocking, testActor),
+		"no kind":    f.svc.RecordEmail(f.ctx, v.ID, "fax", testActor),
 		"print, nil": f.svc.RecordFormPrinted(f.ctx, v.ID, fp, OutputPrint, uuid.Nil),
 		"no format":  f.svc.RecordFormPrinted(f.ctx, v.ID, fp, "fax", testActor),
 	} {

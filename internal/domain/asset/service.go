@@ -23,20 +23,23 @@ const (
 	EventReturned           = "asset.returned"
 	EventMarkedNotReturned  = "asset.marked_not_returned"
 	EventSignedCopyUploaded = "asset.signed_copy_uploaded"
-	// Printing a form and preparing the blocking email change nothing, but
-	// they are the user's activity on the asset, so they are recorded too.
-	EventFormPrinted           = "asset.form_printed"
-	EventBlockingEmailPrepared = "asset.blocking_email_prepared"
-	auditEntity                = "asset"
-	maxSuggestTries            = 1000
+	// Printing a form and preparing the activation or blocking email change
+	// nothing, but they are the user's activity on the asset, so they are
+	// recorded too.
+	EventFormPrinted             = "asset.form_printed"
+	EventActivationEmailPrepared = "asset.activation_email_prepared"
+	EventBlockingEmailPrepared   = "asset.blocking_email_prepared"
+	auditEntity                  = "asset"
+	maxSuggestTries              = 1000
 )
 
 type Service struct {
-	repo  Repository
-	files files.Store
-	now   func() time.Time
-	newID func() uuid.UUID
-	loc   *time.Location
+	repo   Repository
+	files  files.Store
+	mailer Mailer
+	now    func() time.Time
+	newID  func() uuid.UUID
+	loc    *time.Location
 }
 
 type Option func(*Service)
@@ -830,31 +833,6 @@ func (s *Service) RecordFormReprinted(ctx context.Context, assetID, assignmentID
 		}
 	}
 	ev, err := s.event(actor, EventFormPrinted, assetID, s.now(), nil, after)
-	if err != nil {
-		return err
-	}
-	return s.repo.Record(ctx, ev)
-}
-
-// RecordBlockingEmail records asset.blocking_email_prepared: the text asking
-// the provider to block a SIM card was copied (§14). Nothing is sent and the
-// status does not change.
-func (s *Service) RecordBlockingEmail(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
-	if actor == uuid.Nil {
-		return fieldError("actor", "is required")
-	}
-	r, err := s.repo.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if r.Asset.Kind != KindSIM {
-		return fieldError("kind", "must be SIM: only a SIM card is blocked by its provider")
-	}
-	after := map[string]any{"sim_no": r.Asset.SimNo, "phone_no": r.Asset.PhoneNo, "provider": r.Asset.Provider}
-	if r.Open != nil {
-		after["assignment_id"], after["employee_id"], after["employee_name"] = r.Open.ID, r.Open.EmployeeID, r.Open.EmployeeName
-	}
-	ev, err := s.event(actor, EventBlockingEmailPrepared, id, s.now(), nil, after)
 	if err != nil {
 		return err
 	}

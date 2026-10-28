@@ -10,6 +10,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
@@ -33,8 +34,9 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		order.EventOrdered, order.EventLinkCreated, order.EventLinkOpened, order.EventGiven, order.EventDeleted,
 		asset.EventRegistered, asset.EventUpdated, asset.EventStatusChanged, asset.EventGiven, asset.EventReturned,
 		asset.EventMarkedNotReturned,
-		asset.EventSignedCopyUploaded, asset.EventFormPrinted, asset.EventBlockingEmailPrepared,
-		settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
+		asset.EventSignedCopyUploaded, asset.EventFormPrinted, asset.EventActivationEmailPrepared, asset.EventBlockingEmailPrepared,
+		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
+		mailtemplate.EventChanged,
 		security.EventAccessReviewCompleted,
 		audit.EventExported, audit.EventPurged,
 	}

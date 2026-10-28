@@ -54,7 +54,11 @@ func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service)
 	// store, its details in the query as Preview takes them; or an assignment's.
 	rt.restricted("GET /api/v1/assets/{id}/assignments/preview.pdf", h.seen(h.formPDF), role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf", h.seen(h.storedFormPDF))
-	rt.restricted("POST /api/v1/assets/{id}/blocking-email", h.seen(h.blockingEmail), role.AssetsManage)
+	// A SIM card's emails to its provider ({kind} activation or blocking),
+	// from their mail templates: GET prepares one, POST …/copied records that
+	// it was copied. Nothing is sent.
+	rt.restricted("GET /api/v1/assets/{id}/emails/{kind}", h.seen(h.prepareEmail), role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/emails/{kind}/copied", h.seen(h.recordEmail), role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.seen(h.uploadSignedCopy), role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.seen(h.signedCopy))
 }
@@ -544,8 +548,9 @@ func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// blockingEmail records that Prepare Blocking Email's text was copied.
-func (h *assetHandler) blockingEmail(w http.ResponseWriter, r *http.Request) {
+// prepareEmail is Prepare Activation Email or Prepare Blocking Email: the
+// email from its template, {to, subject, body, missing}.
+func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
 		writeError(w, r, err)
@@ -556,7 +561,27 @@ func (h *assetHandler) blockingEmail(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	if err := h.assets.RecordBlockingEmail(r.Context(), id, actor); err != nil {
+	m, err := h.assets.PrepareEmail(r.Context(), id, asset.EmailKind(r.PathValue("kind")), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, m)
+}
+
+// recordEmail records that the activation or blocking email was copied.
+func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.assets.RecordEmail(r.Context(), id, asset.EmailKind(r.PathValue("kind")), actor); err != nil {
 		writeError(w, r, err)
 		return
 	}

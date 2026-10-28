@@ -1,4 +1,4 @@
-import type { AssetKind, HeldAsset } from '@ppe/api-client'
+import type { AssetKind, HeldAsset, SimProvider } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
@@ -32,15 +32,15 @@ export function HeldAssets({
   kind,
   employee,
   timeZone,
-  defaultPlan,
+  providers,
   navigate,
   onChanged,
 }: {
   kind: AssetKind
   employee: PickedEmployee
   timeZone: string | undefined
-  /** The plan Give SIM fills in for a card without one (Settings' default_sim_plan). */
-  defaultPlan?: string | null | undefined
+  /** The SIM providers on Settings: Give SIM fills in the card's provider's plan for a card without one. */
+  providers?: readonly SimProvider[] | undefined
   navigate: (to: Route) => void
   /** A card was given: the page's Changes may want reloading. */
   onChanged?: () => void
@@ -100,7 +100,7 @@ export function HeldAssets({
       <AssetSheets
         sheet={sheet}
         today={todayIn(timeZone)}
-        defaultPlan={defaultPlan}
+        providers={providers}
         onChange={setSheet}
         onDone={(m) => {
           setMessage(m)

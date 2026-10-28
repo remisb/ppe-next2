@@ -44,6 +44,27 @@ describe('auditChanges', () => {
     ])
   })
 
+  it('lists the SIM providers with their e-mail and plan, and those from before by name', () => {
+    expect(
+      auditChanges({
+        before: { providers: ['Telia'] },
+        after: { providers: [{ name: 'Telia', email: 'sim@telia.lt', default_plan: 'Biz 10 GB' }, { name: 'Bitė', email: '', default_plan: '' }] },
+      }),
+    ).toEqual([{ key: 'providers', label: 'Providers', before: 'Telia', after: 'Telia (sim@telia.lt, Biz 10 GB), Bitė' }])
+  })
+
+  it('shows a mail template’s parts', () => {
+    expect(
+      auditChanges({
+        before: { recipient: '{{provider.email}}', subject: 'Block', body: 'Hello' },
+        after: { recipient: 'sim@telia.lt', subject: 'Block', body: 'Hello there' },
+      }),
+    ).toEqual([
+      { key: 'recipient', label: 'Recipient', before: '{{provider.email}}', after: 'sim@telia.lt' },
+      { key: 'body', label: 'Message', before: 'Hello', after: 'Hello there' },
+    ])
+  })
+
   it('shows what a record was created with', () => {
     expect(auditChanges({ before: null, after: { height_cm: 180, clothing_size: 54, shoe_size: null } })).toEqual([
       { key: 'height_cm', label: 'Height', before: null, after: '180 cm' },

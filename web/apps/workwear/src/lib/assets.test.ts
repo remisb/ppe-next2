@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, blockingEmail, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, holderText, locationText, newSimInput, noAssetFilters, simCardsReportQuery, simDraftOf, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, providerPlan, withSimProvider, mailAddresses, mailtoHref, holderText, locationText, newSimInput, noAssetFilters, simCardsReportQuery, simDraftOf, todayIn } from './assets'
 
 describe('tabs and filters', () => {
   it("a dashboard's tile sets the place and keeps the status: In Office + Blocked (§3)", () => {
@@ -263,13 +263,44 @@ describe('a printed form survives a reload', () => {
   })
 })
 
-describe('Prepare Blocking Email', () => {
-  it('is the brief’s text with the card’s numbers; the company is left to fill in (§14)', () => {
-    const mail = blockingEmail({ phone_no: '+370 612 40118', sim_no: '0089370011' })
-    expect(mail.subject).toBe('SIM blocking request - +370 612 40118')
-    expect(mail.body).toContain('Phone number: +370 612 40118\nSIM number: 0089370011\nCompany: [Company Name]')
-    expect(mail.body).toMatch(/^Hello,/)
-    expect(mail.body).toMatch(/Thank you\.$/)
+describe('a provider’s plan', () => {
+  const providers = [
+    { name: 'Telia', email: 'sim@telia.lt', default_plan: 'Biz 10 GB' },
+    { name: 'Bitė', email: '', default_plan: '' },
+  ]
+
+  it('is the plan Settings gives the provider’s cards, whatever the case', () => {
+    expect(providerPlan(providers, ' telia ')).toBe('Biz 10 GB')
+    expect(providerPlan(providers, 'Bitė')).toBe('')
+    expect(providerPlan(providers, 'Tele2')).toBe('')
+    expect(providerPlan(providers, null)).toBe('')
+    expect(providerPlan(undefined, 'Telia')).toBe('')
+  })
+
+  it('follows the provider chosen on Add SIM, until a plan is typed', () => {
+    const today = '2026-10-28'
+    const d = withSimProvider(emptySimDraft(today), 'Telia', providers)
+    expect(d).toMatchObject({ provider: 'Telia', plan: 'Biz 10 GB' })
+    expect(withSimProvider(d, 'Bitė', providers)).toMatchObject({ provider: 'Bitė', plan: '' })
+    expect(withSimProvider({ ...d, plan: 'Unlimited' }, 'Bitė', providers)).toMatchObject({ provider: 'Bitė', plan: 'Unlimited' })
+  })
+})
+
+describe('Send Email', () => {
+  it('takes the addresses written as one, leaving a placeholder out', () => {
+    expect(mailAddresses(' sim@telia.lt ; ona@gavort.lt,[Provider E-mail], telia')).toEqual(['sim@telia.lt', 'ona@gavort.lt'])
+    expect(mailAddresses('')).toEqual([])
+  })
+
+  it('opens the mail app with To, Cc, Subject and Message filled in', () => {
+    const href = mailtoHref({ to: 'sim@telia.lt', cc: 'ona+sim@gavort.lt', subject: 'SIM blocking request - +370 612 40118', body: 'Hello,\n\nPlease block & confirm.' })
+    expect(href).toBe(
+      'mailto:sim@telia.lt?cc=ona%2Bsim%40gavort.lt&subject=SIM%20blocking%20request%20-%20%2B370%20612%2040118&body=Hello%2C%0D%0A%0D%0APlease%20block%20%26%20confirm.',
+    )
+  })
+
+  it('leaves To empty and Cc out when they hold no address', () => {
+    expect(mailtoHref({ to: '[Provider E-mail]', cc: '', subject: 'S', body: 'B' })).toBe('mailto:?subject=S&body=B')
   })
 })
 

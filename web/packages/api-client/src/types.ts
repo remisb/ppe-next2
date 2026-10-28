@@ -387,29 +387,80 @@ export interface HistoryQuery {
 export interface Settings {
   timezone: string
   currency: 'EUR'
+  /** The company's name, which mail templates write ({{company.name}}); null when not set. */
+  company_name: string | null
   /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
   supplier_chat: SupplierChat | null
   /** The SIM providers Add SIM offers, in the administrator's order; empty when none are listed. */
-  sim_providers: string[]
-  /** The one of sim_providers Add SIM chooses for a new card; null when there is none. */
+  sim_providers: SimProvider[]
+  /** The name of the one of sim_providers Add SIM chooses for a new card; null when there is none. */
   default_sim_provider: string | null
   /** The Non-return Value Add SIM fills in for a new card, in cents; null when there is none. */
   default_sim_non_return_value_cents: number | null
-  /** The plan Give SIM fills in for a card that has none of its own; null when there is none. */
-  default_sim_plan: string | null
 }
 
 /**
- * Replaces the SIM providers; default is one of them, or '' for none; the
- * default Non-return Value is in cents, or null for none; the default plan is
- * '' for none.
+ * A SIM card provider listed on Settings: its name as cards record it, the
+ * address its activation and blocking emails go to, and the plan Add SIM fills
+ * in for a new card of it and Give SIM for one of its cards without a plan.
+ * email and default_plan are '' when not set.
  */
-export interface SimProvidersInput {
-  providers: string[]
-  default: string
-  default_non_return_value_cents: number | null
+export interface SimProvider {
+  name: string
+  email: string
   default_plan: string
 }
+
+/**
+ * Replaces the SIM providers; default names one of them, or '' for none; the
+ * default Non-return Value is in cents, or null for none.
+ */
+export interface SimProvidersInput {
+  providers: SimProvider[]
+  default: string
+  default_non_return_value_cents: number | null
+}
+
+/** A mail template's parts; fields are written {{key}}. cc is '' for no one. */
+export interface MailText {
+  to: string
+  cc: string
+  subject: string
+  body: string
+}
+
+/** A value a mail template may write as {{key}}; label is what a missing one reads as ([label]), sample what the preview fills in. */
+export interface MailField {
+  key: string
+  label: string
+  sample: string
+}
+
+/** The keys of the use cases that prepare an email, each with one template. */
+export type MailTemplateKey = 'sim.activation' | 'sim.blocking'
+
+/**
+ * A use case's mail template: its text, the fields it may use, the default it
+ * is reset to, and the id its changes are recorded under (entity type
+ * mail_template). updated_at is null while it is the default never saved.
+ */
+export interface MailTemplate extends MailText {
+  key: MailTemplateKey
+  fields: MailField[]
+  default: MailText
+  is_default: boolean
+  entity_id: string
+  updated_at: string | null
+  updated_by_user_id: string | null
+}
+
+/** A prepared email, to copy into one's own: nothing is sent. missing lists the fields that had no value. */
+export interface MailMessage extends MailText {
+  missing: string[]
+}
+
+/** A SIM card's emails to its provider. */
+export type SimEmailKind = 'activation' | 'blocking'
 
 /** A WhatsApp group: its name as staff know it and its invite link (https://chat.whatsapp.com/<code>). */
 export interface SupplierChat {
@@ -749,7 +800,19 @@ export interface BackupRun {
 }
 
 /** The record types the API records changes to (entity_type). */
-export type AuditEntityType = 'user' | 'role' | 'employee' | 'catalogue_item' | 'catalogue_picture' | 'item_set' | 'order' | 'asset' | 'settings' | 'access_review' | 'audit_log'
+export type AuditEntityType =
+  | 'user'
+  | 'role'
+  | 'employee'
+  | 'catalogue_item'
+  | 'catalogue_picture'
+  | 'item_set'
+  | 'order'
+  | 'asset'
+  | 'settings'
+  | 'mail_template'
+  | 'access_review'
+  | 'audit_log'
 
 /** Where a change was made. */
 export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'

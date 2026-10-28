@@ -20,6 +20,8 @@ export const shell = {
   shortUsage: 'Usage',
   settings: 'Settings',
   shortSettings: 'Settings',
+  mailTemplates: 'Mail Templates',
+  shortMailTemplates: 'Mail',
   backups: 'Backups',
   shortBackups: 'Backups',
   /** Back to the staff app. */
@@ -29,7 +31,7 @@ export const shell = {
   shortAccount: 'Account',
   signOut: 'Sign out',
   notForYouTitle: 'Administration is for administrators',
-  notForYou: 'Your roles do not let you manage users, roles, settings or backups, or read the Audit log, Security or System. Ask an administrator if you need to.',
+  notForYou: 'Your roles do not let you manage users, roles, settings, mail templates or backups, or read the Audit log, Security or System. Ask an administrator if you need to.',
   backToWorkwear: 'Back to Workwear & Equipment',
 }
 

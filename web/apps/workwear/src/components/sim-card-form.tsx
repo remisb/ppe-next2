@@ -1,4 +1,4 @@
-import type { Asset } from '@ppe/api-client'
+import type { Asset, SimProvider } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { DateInput } from '@ppe/ui/components/date-input'
@@ -10,7 +10,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { type SimDraft, type SimErrors, checkSimDraft, emptySimDraft, newSimInput, providerOptions, simDraftOf } from '@/lib/assets'
+import { type SimDraft, type SimErrors, checkSimDraft, emptySimDraft, newSimInput, providerOptions, providerPlan, simDraftOf, withSimProvider } from '@/lib/assets'
 
 /** A number another card already has: which field, and the card, so the form can open it (§4). */
 interface Taken {
@@ -21,8 +21,8 @@ interface Taken {
 /**
  * Add SIM and Edit (§4): one card at a time, in one sheet. A new card
  * starts in the Office, Not Activated (or Active, chosen here), received
- * today, with the default provider chosen, the default Non-return Value and plan
- * filled in and the next free inventory number suggested. The provider is picked from those listed on Settings
+ * today, with the default provider chosen, the default Non-return Value and
+ * the provider's plan filled in and the next free inventory number suggested. The provider is picked from those listed on Settings
  * (Administration); with none listed it is typed. The phone number, plan and
  * value may wait until the card is given.
  */
@@ -33,7 +33,6 @@ export function SimCardForm({
   inUse = [],
   defaultProvider,
   defaultValueCents,
-  defaultPlan,
   onClose,
   onSaved,
   onOpenExisting,
@@ -42,16 +41,14 @@ export function SimCardForm({
   card: Asset | 'new' | null
   /** The organisation's day: the default and latest received date. */
   today: string
-  /** The providers listed on Settings (sim_providers), offered to choose from. */
-  providers: string[]
+  /** The providers listed on Settings (sim_providers), offered to choose from, each with the plan its new cards start with. */
+  providers: readonly SimProvider[]
   /** The providers already in use, offered as the provider is typed when none are listed. */
   inUse?: string[]
   /** The provider a new card starts with (Settings' default_sim_provider); Add SIM only. */
   defaultProvider?: string | null | undefined
   /** The Non-return Value a new card starts with (Settings' default_sim_non_return_value_cents); Add SIM only. */
   defaultValueCents?: number | null | undefined
-  /** The plan a new card starts with (Settings' default_sim_plan); Add SIM only. */
-  defaultPlan?: string | null | undefined
   onClose: () => void
   onSaved: (saved: Asset, added: boolean) => void
   /** Show the card that already has the number. */
@@ -67,7 +64,10 @@ export function SimCardForm({
   // The suggested inventory number fills the field unless someone typed their own, even before it came.
   const numberTyped = useRef(false)
   const providerList = useId()
-  const options = providerOptions(providers, existing?.provider)
+  const options = providerOptions(
+    providers.map((p) => p.name),
+    existing?.provider,
+  )
 
   const suggest = () =>
     client.assets.nextNumber('SIM').then(
@@ -79,7 +79,11 @@ export function SimCardForm({
 
   useEffect(() => {
     if (card === null) return
-    setDraft(existing ? simDraftOf(existing) : emptySimDraft(today, defaultProvider ?? '', defaultValueCents ?? null, defaultPlan ?? ''))
+    setDraft(
+      existing
+        ? simDraftOf(existing)
+        : emptySimDraft(today, defaultProvider ?? '', defaultValueCents ?? null, providerPlan(providers, defaultProvider)),
+    )
     setErrors({})
     setTaken(undefined)
     setFailure(undefined)
@@ -88,7 +92,8 @@ export function SimCardForm({
   }, [card])
 
   const set = <K extends keyof SimDraft>(k: K, v: SimDraft[K]) => {
-    setDraft((d) => ({ ...d, [k]: v }))
+    // On Add SIM the plan follows the provider chosen (Settings' plan for it); Edit keeps the card's.
+    setDraft((d) => (k === 'provider' && !existing ? withSimProvider(d, v as string, providers) : { ...d, [k]: v }))
     if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }))
     if (taken?.field === k) setTaken(undefined)
   }

@@ -1,7 +1,7 @@
-import type { Asset, AssetKind, AssignmentFormResult, Whereabouts } from '@ppe/api-client'
+import type { Asset, AssetKind, AssignmentFormResult, MailMessage, SimEmailKind, SimProvider, Whereabouts } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
+import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
@@ -10,8 +10,8 @@ import { ErrorState, Loading } from '@ppe/ui/components/states'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowRight, Check, Copy, FileDown, Printer } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { ArrowRight, Check, Copy, FileDown, Printer, Send } from 'lucide-react'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
 import { AssignmentFormDocument } from '@/components/assignment-form'
@@ -21,7 +21,6 @@ import { usePrintInPlace } from '@/components/print-in-place'
 import { t } from '@/i18n'
 import {
   type GiveDraft,
-  blockingEmail,
   cardBlock,
   categoryLabel,
   emptyGiveDraft,
@@ -30,6 +29,8 @@ import {
   formInput,
   formKey,
   giveBlock,
+  mailtoHref,
+  providerPlan,
   recallPrinted,
   rememberPrinted,
 } from '@/lib/assets'
@@ -40,7 +41,7 @@ import { formatEuro, parseEuro } from '@/lib/utils'
  * employee, started from their page, where the card is chosen on the sheet.
  */
 export type AssetSheet =
-  | { kind: 'give' | 'return' | 'notReturned' | 'email'; asset: Asset; note?: string }
+  | { kind: 'give' | 'return' | 'notReturned' | 'activationEmail' | 'blockingEmail'; asset: Asset; note?: string }
   | { kind: 'giveTo'; employee: PickedEmployee; assetKind: AssetKind }
   | null
 
@@ -52,15 +53,15 @@ export type AssetSheet =
 export function AssetSheets({
   sheet,
   today,
-  defaultPlan,
+  providers,
   onChange,
   onDone,
 }: {
   sheet: AssetSheet
   /** The organisation's day: the default and latest date. */
   today: string
-  /** The plan Give SIM fills in for a card without one (Settings' default_sim_plan). */
-  defaultPlan?: string | null | undefined
+  /** The SIM providers on Settings: Give SIM fills in the card's provider's plan for a card without one. */
+  providers?: readonly SimProvider[] | undefined
   onChange: (next: AssetSheet) => void
   onDone: (message: string) => void
 }) {
@@ -73,7 +74,7 @@ export function AssetSheets({
         employee={sheet?.kind === 'giveTo' ? sheet.employee : null}
         assetKind={sheet?.kind === 'giveTo' ? sheet.assetKind : sheet?.kind === 'give' ? sheet.asset.kind : 'SIM'}
         today={today}
-        defaultPlan={defaultPlan ?? ''}
+        providers={providers}
         onClose={close}
         onGiven={(m) => (close(), onDone(m))}
       />
@@ -85,10 +86,15 @@ export function AssetSheets({
           onDone(m)
           // The next step is offered at once: ask the provider to block the card, unless it already is.
           // Equipment has no provider to ask.
-          onChange(a.kind !== 'SIM' || a.connection_status === 'BLOCKED' ? null : { kind: 'email', asset: a, note: `${m} ${t.assets.nextStepBlock}` })
+          onChange(a.kind !== 'SIM' || a.connection_status === 'BLOCKED' ? null : { kind: 'blockingEmail', asset: a, note: `${m} ${t.assets.nextStepBlock}` })
         }}
       />
-      <BlockingEmailSheet asset={sheet?.kind === 'email' ? sheet.asset : null} note={sheet?.kind === 'email' ? sheet.note : undefined} onClose={close} />
+      <ProviderEmailSheet
+        kind={sheet?.kind === 'activationEmail' ? 'activation' : 'blocking'}
+        asset={sheet?.kind === 'activationEmail' || sheet?.kind === 'blockingEmail' ? sheet.asset : null}
+        note={sheet?.kind === 'activationEmail' || sheet?.kind === 'blockingEmail' ? sheet.note : undefined}
+        onClose={close}
+      />
     </>
   )
 }
@@ -115,7 +121,7 @@ function GiveSheet({
   employee,
   assetKind,
   today,
-  defaultPlan,
+  providers,
   onClose,
   onGiven,
 }: {
@@ -127,14 +133,14 @@ function GiveSheet({
   /** SIM cards or equipment: which to choose from, and the words. */
   assetKind: AssetKind
   today: string
-  /** The plan a card without one starts with; '' for none. */
-  defaultPlan: string
+  /** The SIM providers on Settings: a card without a plan starts with its provider's. */
+  providers: readonly SimProvider[] | undefined
   onClose: () => void
   onGiven: (message: string) => void
 }) {
   const { client } = useApi()
   const { userId } = useSession()
-  const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today, defaultPlan))
+  const [draft, setDraft] = useState<GiveDraft>(() => emptyGiveDraft(today, providerPlan(providers, fixed?.provider)))
   // The given date's text when it is not a date (DateInput), for its error.
   const [givenProblem, setGivenProblem] = useState<string>()
   // The form printed: its data's key, and its hash once known (null while it is fetched).
@@ -150,6 +156,8 @@ function GiveSheet({
   // A finished first step folds to one line; Change opens it again.
   const [editingDetails, setEditingDetails] = useState(false)
   const asset = fixed ?? picked
+  // The plan a card without one starts with: its provider's on Settings, '' for none.
+  const defaultPlan = providerPlan(providers, (fixed ?? picked)?.provider)
   // Which opening of the sheet and which form a fetched form answers: one that
   // arrives after the sheet closed or the form changed is dropped.
   const session = useRef(0)
@@ -160,7 +168,8 @@ function GiveSheet({
     if (!open) return
     setPicked(null)
     const base = {
-      ...emptyGiveDraft(today, defaultPlan),
+      // A card chosen on the sheet brings its plan when it is chosen (below).
+      ...emptyGiveDraft(today, providerPlan(providers, fixed?.provider)),
       assetId: fixed?.id ?? '',
       ...(employee ? { employeeId: employee.id, employeeName: employee.full_name } : {}),
     }
@@ -174,10 +183,14 @@ function GiveSheet({
     if (fixed) restorePrinted(fixed.id, base)
   }, [open, fixed?.id, employee?.id])
 
-  // The settings may arrive after the sheet opened: the default plan is then
-  // filled in while the plan is still empty and nothing is printed.
+  // The settings may arrive after the sheet opened, and a card chosen on it
+  // has a provider of its own: its plan is then filled in while nothing is
+  // printed and the plan is empty or still the one filled in before.
+  const filledPlan = useRef(defaultPlan)
   useEffect(() => {
-    if (open && defaultPlan && printed === null) setDraft((d) => (d.plan === '' ? { ...d, plan: defaultPlan } : d))
+    const before = filledPlan.current
+    filledPlan.current = defaultPlan
+    if (open && printed === null) setDraft((d) => (d.plan === '' || d.plan === before ? { ...d, plan: defaultPlan } : d))
   }, [defaultPlan])
 
   /**
@@ -769,46 +782,70 @@ function NotReturnedSheet({ asset, onClose, onMarked }: { asset: Asset | null; o
 }
 
 /**
- * Prepare Blocking Email (§14): the request to copy into the user's own
- * e-mail. Nothing is sent and the status does not change; the first copy of
- * each opening is recorded as the user's activity (asset.blocking_email_prepared).
+ * Prepare Activation Email and Prepare Blocking Email (§14): the email to the
+ * card's provider, from its mail template (Administration's Mail Templates),
+ * to copy into the user's own e-mail. Nothing is sent and the status does not
+ * change; the first copy of each opening is recorded as the user's activity
+ * (asset.activation_email_prepared, asset.blocking_email_prepared).
  */
-function BlockingEmailSheet({ asset, note, onClose }: { asset: Asset | null; note: string | undefined; onClose: () => void }) {
+function ProviderEmailSheet({ kind, asset, note, onClose }: { kind: SimEmailKind; asset: Asset | null; note: string | undefined; onClose: () => void }) {
   const { client } = useApi()
   const [copied, setCopied] = useState<string>()
   const recorded = useRef(false)
   useEffect(() => {
     setCopied(undefined)
     recorded.current = false
-  }, [asset?.id])
-  const mail = asset ? blockingEmail(asset) : null
-  const copy = (what: 'subject' | 'body', text: string) =>
+  }, [asset?.id, kind])
+  const mail = useLoad(() => (asset ? client.assets.email(asset.id, kind) : Promise.resolve(null)), [asset?.id, kind])
+  // The message has the focus once the email is there, rather than the sheet's first control.
+  const message = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!mail.data) return
+    const frame = requestAnimationFrame(() => {
+      message.current?.focus({ preventScroll: true })
+      message.current?.setSelectionRange(0, 0)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [mail.data])
+  // The first copy or Send Email of each opening is the user's activity; a
+  // failure to record it leaves the copy or the mail app as it is.
+  const record = () => {
+    if (!asset || recorded.current) return
+    recorded.current = true
+    client.assets.recordEmail(asset.id, kind).catch(() => {
+      recorded.current = false
+    })
+  }
+  const copy = (what: 'to' | 'cc' | 'subject' | 'body', text: string) =>
     (navigator.clipboard?.writeText(text) ?? Promise.reject(new Error('no clipboard'))).then(
       () => {
         setCopied(what)
-        if (asset && !recorded.current) {
-          recorded.current = true
-          // Recording is the user's activity, not the copy: a failure leaves the copy as it is.
-          client.assets.recordBlockingEmail(asset.id).catch(() => {
-            recorded.current = false
-          })
-        }
+        record()
       },
       () => setCopied('failed'),
     )
+  const m = mail.data
   return (
     <FormSheet
       open={asset !== null}
       onClose={onClose}
-      title={t.assets.prepareBlockingEmail}
-      description={t.assets.blockingDescription}
+      title={kind === 'activation' ? t.assets.prepareActivationEmail : t.assets.prepareBlockingEmail}
+      info={kind === 'activation' ? t.assets.activationDescription : t.assets.blockingDescription}
       footer={
-        <Button variant="outline" onClick={onClose}>
-          {t.assets.close}
-        </Button>
+        <>
+          <Button variant="outline" onClick={onClose}>
+            {t.assets.close}
+          </Button>
+          {m ? (
+            // The user's own mail app opens with the email filled in; they send it from there.
+            <a href={mailtoHref(m)} onClick={record} title={t.assets.sendEmailHint} className={buttonVariants()}>
+              <Send aria-hidden /> {t.assets.sendEmail}
+            </a>
+          ) : null}
+        </>
       }
     >
-      {asset && mail ? (
+      {asset ? (
         <div className="grid gap-4">
           {note ? (
             <p role="status" className="rounded-md bg-muted px-3 py-2 text-sm">
@@ -821,31 +858,82 @@ function BlockingEmailSheet({ asset, note, onClose }: { asset: Asset | null; not
               {t.assets.provider}: <span className="font-medium">{asset.provider}</span>
             </p>
           ) : null}
-          <Field label={t.assets.subject}>
-            {(p) => (
-              <div className="flex gap-2">
-                <Input {...controlProps(p)} readOnly value={mail.subject} className="font-mono" />
-                <Button variant="outline" onClick={() => void copy('subject', mail.subject)}>
-                  <Copy aria-hidden /> {t.assets.copy}
-                </Button>
-              </div>
-            )}
-          </Field>
-          <Field label={t.assets.message} hint={t.assets.companyReminder}>
-            {(p) => (
-              <div className="grid gap-2">
-                <Textarea {...controlProps(p)} readOnly rows={11} value={mail.body} className="font-mono text-xs" />
-                <Button variant="outline" className="justify-self-start" onClick={() => void copy('body', mail.body)}>
-                  <Copy aria-hidden /> {t.assets.copy}
-                </Button>
-              </div>
-            )}
-          </Field>
-          <p role="status" className="text-sm text-muted-foreground">
-            {copied === 'failed' ? t.assets.copyFailed : copied ? t.assets.copiedText : ''}
-          </p>
+          {!m && mail.error ? (
+            <ErrorState title={t.assets.emailFailed} error={mail.error} onRetry={mail.reload} />
+          ) : !m ? (
+            <Loading />
+          ) : (
+            <>
+              <MissingNote mail={m} />
+              <CopyField label={t.assets.emailTo} value={m.to} copied={copied === 'to'} onCopy={() => void copy('to', m.to)} />
+              {m.cc ? <CopyField label={t.assets.emailCc} value={m.cc} copied={copied === 'cc'} onCopy={() => void copy('cc', m.cc)} /> : null}
+              <CopyField label={t.assets.subject} value={m.subject} copied={copied === 'subject'} onCopy={() => void copy('subject', m.subject)} />
+              <Field label={t.assets.message}>
+                {(p) => (
+                  <div className="relative">
+                    <Textarea {...controlProps(p)} ref={message} readOnly rows={12} value={m.body} className="pr-12 font-mono text-xs" />
+                    <CopyInside label={t.assets.copyPart(t.assets.message)} copied={copied === 'body'} onCopy={() => void copy('body', m.body)} className="top-0 right-0 rounded-tr-md" />
+                  </div>
+                )}
+              </Field>
+              <p role="status" className="text-sm text-muted-foreground">
+                {copied === 'failed' ? t.assets.copyFailed : copied ? t.assets.copiedText : ''}
+              </p>
+            </>
+          )}
         </div>
       ) : null}
     </FormSheet>
+  )
+}
+
+/** A line of the email to copy, on one row: its label, and its value, read-only, with Copy inside it. */
+function CopyField({ label, value, copied, onCopy }: { label: string; value: string; copied: boolean; onCopy: () => void }) {
+  const id = useId()
+  return (
+    <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <div className="relative min-w-0">
+        <Input id={id} readOnly value={value} className="pr-11 font-mono" />
+        <CopyInside label={t.assets.copyPart(label)} copied={copied} onCopy={onCopy} className="inset-y-0 right-0 rounded-r-md" />
+      </div>
+    </div>
+  )
+}
+
+/** Copy, as an icon inside the control it copies (as Date's calendar is); a tick once copied. */
+function CopyInside({ label, copied, onCopy, className }: { label: string; copied: boolean; onCopy: () => void; className: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onCopy}
+      className={cn(
+        'absolute flex size-11 cursor-pointer items-center justify-center text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
+    >
+      {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
+    </button>
+  )
+}
+
+/**
+ * What the email lacks, which shows in brackets ([Provider E-mail]): where to
+ * set it once, for the provider's e-mail and the company, and otherwise to
+ * fill it in before sending.
+ */
+function MissingNote({ mail }: { mail: MailMessage }) {
+  if (mail.missing.length === 0) return null
+  const others = mail.missing.filter((k) => k !== 'provider.email' && k !== 'company.name')
+  return (
+    <ul role="note" className="grid gap-1 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+      {mail.missing.includes('provider.email') ? <li>{t.assets.missingProviderEmail}</li> : null}
+      {mail.missing.includes('company.name') ? <li>{t.assets.missingCompany}</li> : null}
+      {others.length > 0 ? <li>{t.assets.missingFields}</li> : null}
+    </ul>
   )
 }

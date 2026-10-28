@@ -86,40 +86,61 @@ func TestPostgresSIMProviders(t *testing.T) {
 		t.Fatalf("Get on an empty table = %#v, %v", s.SIMProviders, err)
 	}
 	value := int64(2500)
-	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: []string{"Telia", "Bitė"}, Default: "Telia", DefaultNonReturnValueCents: &value, DefaultPlan: "Biz 10 GB"}, actor); err != nil {
+	list := []SIMProvider{{Name: "Telia", Email: "sim@telia.lt", DefaultPlan: "Biz 10 GB"}, {Name: "Bitė"}}
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: list, Default: "Telia", DefaultNonReturnValueCents: &value}, actor); err != nil {
 		t.Fatal(err)
 	}
 	link := "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrStUv"
 	if _, err := svc.UpdateSupplierChat(ctx, SupplierChatParams{Name: "Supplier", Link: link}, actor); err != nil {
 		t.Fatal(err)
 	}
-	// Each save keeps the other setting.
+	if _, err := svc.UpdateCompany(ctx, CompanyParams{Name: "UAB Gavort"}, actor); err != nil {
+		t.Fatal(err)
+	}
+	// Each save keeps the other settings, and the providers' order.
 	s, err = svc.Get(ctx)
-	if err != nil || !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link ||
-		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 || s.DefaultSIMPlan != "Biz 10 GB" {
+	if err != nil || !slices.Equal(s.SIMProviders, list) || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link ||
+		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 || s.CompanyName != "UAB Gavort" {
 		t.Fatalf("Get = %+v, %v", s, err)
+	}
+	// Renamed, reordered and one removed: the list is what was saved.
+	renamed := []SIMProvider{{Name: "Tele2", DefaultPlan: "Basic"}, {Name: "TELIA", Email: "sim@telia.lt"}}
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: renamed, Default: "telia"}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if s, err = svc.Get(ctx); err != nil || !slices.Equal(s.SIMProviders, renamed) || s.DefaultSIMProvider != "TELIA" {
+		t.Fatalf("after renaming: %+v, %v", s, err)
 	}
 	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{}, actor); err != nil {
 		t.Fatal(err)
 	}
 	s, err = svc.Get(ctx)
-	if err != nil || len(s.SIMProviders) != 0 || s.DefaultSIMProvider != "" || s.DefaultSIMNonReturnValueCents != nil || s.DefaultSIMPlan != "" || s.SupplierChat.Link != link {
+	if err != nil || len(s.SIMProviders) != 0 || s.DefaultSIMProvider != "" || s.DefaultSIMNonReturnValueCents != nil || s.SupplierChat.Link != link {
 		t.Fatalf("after clearing: %+v, %v", s, err)
 	}
 	var events int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1`, EventSIMProvidersChanged).Scan(&events); err != nil || events != 2 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1`, EventSIMProvidersChanged).Scan(&events); err != nil || events != 3 {
 		t.Fatalf("events = %d, %v", events, err)
 	}
-	// The database keeps the default among the providers, whatever writes the row.
-	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_provider = 'Tele2'`); err == nil {
-		t.Fatal("a default that is not listed was stored")
-	}
-	// And the default Non-return Value within an asset's limit.
+	// The database keeps the default Non-return Value within an asset's limit.
 	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_non_return_value_cents = -1`); err == nil {
 		t.Fatal("a negative default value was stored")
 	}
-	// And the default plan within an asset's limit.
-	if _, err := pool.Exec(ctx, `UPDATE app_settings SET default_sim_plan = repeat('a', 101)`); err == nil {
+	// And a provider's plan within an asset's limit, and each name once whatever its case.
+	if _, err := pool.Exec(ctx, `INSERT INTO sim_providers (position, name, default_plan) VALUES (0, 'Telia', repeat('a', 101))`); err == nil {
 		t.Fatal("a default plan too long was stored")
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO sim_providers (position, name) VALUES (0, 'Telia'), (1, 'telia')`); err == nil {
+		t.Fatal("a provider was stored twice")
+	}
+	// The providers go with the settings row.
+	if _, err := svc.UpdateSIMProviders(ctx, SIMProvidersParams{Providers: list}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `DELETE FROM app_settings`); err != nil {
+		t.Fatal(err)
+	}
+	if s, err = svc.Get(ctx); err != nil || len(s.SIMProviders) != 0 {
+		t.Fatalf("after the row went: %+v, %v", s.SIMProviders, err)
 	}
 }

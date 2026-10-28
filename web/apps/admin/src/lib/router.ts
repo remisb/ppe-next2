@@ -1,4 +1,4 @@
-import type { AuditEntityType, Permission } from '@ppe/api-client'
+import type { AuditEntityType, MailTemplateKey, Permission } from '@ppe/api-client'
 import { ADMINISTRATION_PERMISSIONS, type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
 
 /**
@@ -61,14 +61,16 @@ export type Route =
   | { name: 'security'; tab: SecurityTab; filter: SecurityFilter }
   /** Who uses the system and how: activity, sign-ins, changes, devices, links, data quality. */
   | { name: 'usage' }
-  /** The organisation's settings (the supplier's WhatsApp group). */
+  /** The organisation's settings (the company, the supplier's WhatsApp group, the SIM providers). */
   | { name: 'settings' }
+  /** The templates of the emails the app prepares; key is the one open (/mail-templates/<key>). */
+  | { name: 'mailTemplates'; key?: MailTemplateKey }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
   | { name: 'system'; tab: SystemTab; error?: string }
 
 export type Screen = Exclude<Route['name'], 'home'>
 
-const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'home'>, string> = {
+const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'home'>, string> = {
   overview: '/',
   users: '/users',
   roles: '/roles',
@@ -86,7 +88,11 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'system', permissions: ['system.read', 'backups.read'] },
   { name: 'usage', permissions: ['usage.read'] },
   { name: 'settings', permissions: ['settings.manage'] },
+  { name: 'mailTemplates', permissions: ['mail_templates.manage'] },
 ]
+
+/** The mail templates' keys, as their addresses carry them. */
+const mailTemplateKeys: readonly MailTemplateKey[] = ['sim.activation', 'sim.blocking']
 
 /** Unknown paths land on the start screen, as the root does. */
 export function parsePath(pathname: string, search = ''): Route {
@@ -112,6 +118,12 @@ export function parsePath(pathname: string, search = ''): Route {
       }
     }
     return { name: 'security', tab: (security[1] as SecurityTab | undefined) ?? 'sign-ins', filter }
+  }
+  const mail = /^\/mail-templates(?:\/([^/]+))?$/.exec(path)
+  if (mail) {
+    if (!mail[1]) return { name: 'mailTemplates' }
+    const key = decodeURIComponent(mail[1]) as MailTemplateKey
+    return mailTemplateKeys.includes(key) ? { name: 'mailTemplates', key } : { name: 'mailTemplates' }
   }
   // Backups was a screen of its own before System.
   if (path === '/backups') return { name: 'system', tab: 'backups' }
@@ -143,6 +155,7 @@ export function pathOf(route: Route): string {
     return route.error ? `/system/errors/${encodeURIComponent(route.error)}` : `/system/${route.tab}`
   }
   if (route.name === 'home') return '/'
+  if (route.name === 'mailTemplates') return route.key ? `/mail-templates/${encodeURIComponent(route.key)}` : '/mail-templates'
   if (route.name !== 'audit') return paths[route.name]
   const query = new URLSearchParams()
   for (const key of auditFilterKeys) {

@@ -19,6 +19,7 @@ flowchart BT
         iam[Users & sign-in]
         audit[Audit log]
         files[Files]
+        mail[Mail templates]
         events[Events & jobs]
     end
 
@@ -34,6 +35,7 @@ flowchart BT
     workwear --> people
     assets --> people
     assets --> files
+    assets --> mail
     competence --> people
     personnel --> people
     projects --> people
@@ -63,6 +65,7 @@ extracted, on its own.
 | Users & sign-in | users, roles and permissions, sessions | `internal/platform/iam` | `iam` | credentials | exists (`user`, `session`) |
 | Audit log | append-only change (and, for Personnel files, read) events | `internal/platform/audit` | `audit` | metadata only | exists (`internal/audit`) |
 | Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` (the first part, a store and upload checks, is `internal/files`) | `files` | inherits the owner's | started: signed copies (ADR 0004) |
+| Mail templates | the templates of the emails the app prepares, one per use case, rendered to a recipient, subject and body; nothing is sent | `internal/domain/mailtemplate` (target `internal/platform/mail`) | `public` | none | exists ([spec](../specs/mail-template-service.md)) |
 | Events & jobs | transactional outbox, worker, reminders, purges | `internal/platform/outbox` | `outbox` | none | planned |
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
@@ -83,6 +86,7 @@ extracted, on its own.
 | Workwear | People | customer–supplier | the person an order is for; Workwear snapshots name and code on the order as it does today |
 | Company Assets | People | customer–supplier | the employee an asset is assigned to (`employee_id` foreign key); an employee leaving never ends an assignment |
 | Company Assets | Files | customer–supplier | the signed copy of an assignment form |
+| Company Assets | Mail templates, Settings | customer–supplier | a SIM card's activation and blocking emails (`asset.Mailer`, adapted in `cmd/api/checkers.go`): the card's values in, the email out, with the provider's e-mail and the company's name from Settings |
 | Competence | Files | customer–supplier | the evidence file of a certificate |
 | Personnel files | Files | customer–supplier | document scans, encrypted with keys Personnel files can destroy |
 | Projects & crew | Competence | customer–supplier | "valid certificates of type T for person P over period D", for eligibility |

@@ -378,7 +378,7 @@ export function EmployeePage({
               kind="SIM"
               employee={{ id: e.id, full_name: e.full_name, code: e.code }}
               timeZone={tz}
-              defaultPlan={settings.data?.default_sim_plan}
+              providers={settings.data?.sim_providers}
               navigate={navigate}
             />
             {session.can('equipment.read') ? (

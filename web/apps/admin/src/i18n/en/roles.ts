@@ -51,7 +51,8 @@ export const roles = {
       grants: 'Add, edit, deactivate and delete users, reset their passwords and give them roles.',
     },
     'roles.manage': { label: 'Manage roles', grants: 'Add, change and delete roles, and give any permission.' },
-    'settings.manage': { label: 'Change Settings', grants: 'The supplier’s WhatsApp group.' },
+    'settings.manage': { label: 'Change Settings', grants: 'The company, the supplier’s WhatsApp group and the SIM providers.' },
+    'mail_templates.manage': { label: 'Change Mail Templates', grants: 'The text of the emails the app prepares, such as the SIM activation and blocking emails.' },
     'backups.read': { label: 'See Backups', grants: 'Whether the database is backed up, and the recent backups.' },
     'audit.read': { label: 'See the Audit log', grants: 'Every recorded change, who made it and when, across all records.' },
     'audit.export': {

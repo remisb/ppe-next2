@@ -2,6 +2,7 @@ import { account } from './account'
 import { audit } from './audit'
 import { backups } from './backups'
 import { common } from './common'
+import { mailTemplates } from './mail-templates'
 import { overview } from './overview'
 import { roles } from './roles'
 import { security } from './security'
@@ -11,4 +12,4 @@ import { system } from './system'
 import { usage } from './usage'
 import { users } from './users'
 
-export const ru = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, backups }
+export const ru = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, mailTemplates, backups }

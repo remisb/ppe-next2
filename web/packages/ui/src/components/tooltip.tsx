@@ -1,6 +1,6 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { Info } from 'lucide-react'
-import { type ComponentProps, type ReactElement, type ReactNode, createContext, useId } from 'react'
+import { type ComponentProps, type ReactElement, type ReactNode, createContext, useId, useRef, useState } from 'react'
 
 import { cn } from '../lib/utils.ts'
 import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx'
@@ -203,6 +203,7 @@ function HelpPopover({
   help,
   label,
   describedBy,
+  focusable = true,
   className,
   children,
 }: {
@@ -212,17 +213,39 @@ function HelpPopover({
   label?: string | undefined
   /** An element on the page that already holds the help's words, to describe the button by instead of a copy. */
   describedBy?: string | undefined
+  /** False keeps the button out of the Tab order, where its words reach a screen reader another way (FormSheet's ⓘ). */
+  focusable?: boolean | undefined
   className?: string | undefined
   children: ReactNode
 }) {
   const ownId = useId()
   const id = describedBy ?? ownId
+  const trigger = useRef<HTMLButtonElement>(null)
+  // Inside a FormSheet's modal <dialog> the panel opens in it, or it would be beneath it (see Popover).
+  const [container, setContainer] = useState<HTMLElement | null>(null)
   return (
-    <Popover>
-      <PopoverTrigger openOnHover delay={HELP_DELAY} aria-label={label} aria-describedby={id} className={className}>
+    <Popover onOpenChange={(open) => open && setContainer(trigger.current?.closest('dialog') ?? null)}>
+      <PopoverTrigger
+        ref={trigger}
+        openOnHover
+        delay={HELP_DELAY}
+        aria-label={label}
+        aria-describedby={id}
+        tabIndex={focusable ? undefined : -1}
+        className={className}
+      >
         {children}
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="max-w-[calc(100vw-2rem)] gap-0 px-3 py-2.5">
+      <PopoverContent
+        container={container ?? undefined}
+        side="bottom"
+        align="start"
+        className="max-w-[calc(100vw-2rem)] gap-0 px-3 py-2.5"
+        // Escape closes the help only: kept from a FormSheet's <dialog>, whose cancel would close the sheet too.
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') e.preventDefault()
+        }}
+      >
         <HelpContent title={title} help={help} />
       </PopoverContent>
       {describedBy ? null : (

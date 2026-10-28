@@ -41,7 +41,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -259,7 +259,7 @@ test("Settings: an administrator sets the supplier's WhatsApp group", async () =
   await expect(card.getByRole('link', { name: 'Open the group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
 })
 
-test('Settings: an administrator lists the SIM providers, the default one, the default value and plan', async () => {
+test('Settings: an administrator lists the SIM providers, the default one, the default value, and each one’s e-mail and plan', async () => {
   await openTab('Settings')
   const card = page.getByRole('region', { name: 'SIM providers' })
   await expect(card.getByRole('status')).toContainText('None listed')
@@ -285,16 +285,69 @@ test('Settings: an administrator lists the SIM providers, the default one, the d
   await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByText('Type an amount in euros, such as 25.00.')).toBeVisible()
   await value.fill('25')
-  // And the plan Add SIM fills in, and Give SIM for a card without one, trimmed.
-  const plan = card.getByLabel('Default plan')
+  // Each provider's plan, which Add SIM fills in for its cards and Give SIM for one without a plan, trimmed;
+  // and its e-mail, where its activation and blocking emails go: one address or none.
+  const telia = card.getByRole('group', { name: 'Telia' })
+  const plan = telia.getByLabel('Default plan')
   await expect(plan).toHaveValue('')
   await plan.fill(' Biz 5 GB ')
+  const email = telia.getByLabel('E-mail')
+  await email.fill('telia')
+  await card.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(card.getByText('Type one e-mail address, such as sim@provider.lt, or leave it empty.')).toBeVisible()
+  await email.fill(' verslas@telia.lt ')
   await card.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(card.getByRole('status')).toHaveText('Saved. Add SIM chooses Telia first.')
   await expect(card.getByRole('radio')).toHaveCount(3)
   await expect(value).toHaveValue('25.00')
   await expect(plan).toHaveValue('Biz 5 GB')
+  await expect(email).toHaveValue('verslas@telia.lt')
+  await expect(card.getByRole('group', { name: 'Bitė' }).getByLabel('E-mail')).toHaveValue('')
   await expect(card.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+})
+
+test('Settings: an administrator sets the company’s name, which mail templates write', async () => {
+  const card = page.getByRole('region', { name: 'Company', exact: true })
+  await expect(card.getByRole('status')).toHaveText('Not set: emails show [Company Name] for you to fill in.')
+  await card.getByLabel('Company name').fill('  UAB   Gavort ')
+  await card.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(card.getByRole('status')).toHaveText('Saved. Emails write UAB Gavort.')
+  await expect(card.getByLabel('Company name')).toHaveValue('UAB Gavort')
+})
+
+test('Mail Templates: an administrator edits the SIM activation email, with its fields and a preview', async () => {
+  await openTab('Mail Templates')
+  await expect(page.getByRole('heading', { name: 'Mail Templates', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Edit SIM blocking' })).toContainText('Default text')
+  await page.getByRole('link', { name: 'Edit SIM activation' }).click()
+  await expect(page).toHaveURL(/\/admin\/mail-templates\/sim\.activation$/)
+  const preview = page.getByRole('region', { name: 'Preview' })
+  // The default text, and the preview with sample values.
+  await expect(page.getByLabel('To', { exact: true })).toHaveValue('{{provider.email}}')
+  await expect(preview).toContainText('SIM activation request - 8937 0011 2233 4455 667')
+  // A field the template does not have is named, and the preview says why it cannot show it.
+  const subject = page.getByLabel('Subject')
+  await subject.fill('Please activate {{sim.colour}}')
+  await expect(page.getByText('{{sim.colour}} is not a field of this template.')).toBeVisible()
+  await subject.fill('Please activate ')
+  // A field clicked goes where the cursor is.
+  await subject.press('End')
+  await page.getByRole('button', { name: 'Insert The card’s SIM number.' }).click()
+  await expect(subject).toHaveValue('Please activate {{sim.number}}')
+  await expect(preview).toContainText('Please activate 8937 0011 2233 4455 667')
+  // Cc may be empty; here a copy goes to whoever prepares the email.
+  await page.getByLabel('Cc', { exact: true }).fill('{{user.email}}')
+  await expect(preview).toContainText('ona.onaite@pavyzdys.lt')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Saved. The next email prepared uses it.')).toBeVisible()
+  await expect(page.getByText('Changed', { exact: true }).first()).toBeVisible()
+  // Use Default Text puts the default back in the form, for Save to keep; Discard changes leaves what is saved.
+  await page.getByRole('button', { name: 'Use Default Text' }).click()
+  await expect(subject).toHaveValue('SIM activation request - {{sim.number}}')
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(subject).toHaveValue('Please activate {{sim.number}}')
+  await page.getByRole('button', { name: 'Mail Templates', exact: true }).click()
+  await expect(page.getByRole('link', { name: 'Edit SIM activation' })).toContainText('Please activate {{sim.number}}')
 })
 
 test('Item Catalogue: items with and without a price', async () => {
@@ -1703,6 +1756,18 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByText('SIM-000001 added.')).toBeVisible()
   const card = page.getByRole('row', { name: /SIM-000001/ })
   await expect(card).toContainText('0089370011')
+  // Prepare Activation Email: the template edited on Mail Templates, to the provider's e-mail on Settings.
+  await card.getByRole('button', { name: 'More actions for SIM-000001' }).click()
+  await page.getByRole('menuitem', { name: 'Prepare Activation Email' }).click()
+  const activation = page.getByRole('dialog')
+  await expect(activation.getByLabel('To', { exact: true })).toHaveValue('verslas@telia.lt')
+  await expect(activation.getByLabel('Cc', { exact: true })).toHaveValue(admin.email)
+  await expect(activation.getByLabel('Subject', { exact: true })).toHaveValue('Please activate 0089370011')
+  // Send Email opens the user's mail app with it all filled in; nothing is sent from the app.
+  const send = activation.getByRole('link', { name: 'Send Email' })
+  await expect(send).toHaveAttribute('href', /^mailto:verslas@telia\.lt\?cc=e2e-admin%40example\.com&subject=Please%20activate%200089370011&body=Hello%2C%0D%0A/)
+  await activation.getByRole('button', { name: 'Close' }).last().click()
+  await expect(activation).toBeHidden()
   // The register copies nothing: the numbers are copied on the card.
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(0)
   // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it or where
@@ -1893,8 +1958,13 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await mark.getByRole('button', { name: 'Mark as Not Returned' }).click()
   const email = page.getByRole('dialog')
   await expect(email.getByText('SIM-000001 marked as not returned. Next: ask the provider to block the card.')).toBeVisible()
-  await expect(email.getByLabel('Subject')).toHaveValue('SIM blocking request - +370 612 40118')
-  await expect(email.getByLabel('Message')).toHaveValue(/SIM number: 0089370011/)
+  // From its mail template: to the provider's e-mail, with the company's name, both on Settings.
+  await expect(email.getByLabel('To', { exact: true })).toHaveValue('verslas@telia.lt')
+  await expect(email.getByLabel('Subject', { exact: true })).toHaveValue('SIM blocking request - +370 612 40118')
+  await expect(email.getByLabel('Message', { exact: true })).toHaveValue(/SIM number: 0089370011\nCompany: UAB Gavort/)
+  // No Cc in the default text; Send Email has the rest.
+  await expect(email.getByLabel('Cc', { exact: true })).toHaveCount(0)
+  await expect(email.getByRole('link', { name: 'Send Email' })).toHaveAttribute('href', /^mailto:verslas@telia\.lt\?subject=SIM%20blocking%20request%20-%20%2B370%20612%2040118&body=/)
   await email.getByRole('button', { name: 'Close' }).last().click()
   // Unknown, the last holder kept; still Active: preparing the email changes nothing.
   await expect(pane.getByText('Unknown', { exact: true }).first()).toBeVisible()
@@ -2886,6 +2956,8 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
     '/admin/roles',
     '/admin/audit',
     '/admin/settings',
+    '/admin/mail-templates',
+    '/admin/mail-templates/sim.blocking',
     '/admin/backups',
     '/account',
   ]) {

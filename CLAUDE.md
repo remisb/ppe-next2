@@ -29,7 +29,14 @@ Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/test
 which maps every manual §7 rule and status transition to its tests. Administrators set the
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
 at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
-the same row holds the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in, and the default plan Give SIM fills in (migrations 0031, 0033, 0034, 0035), listed on Settings.
+the same row holds the company's name (migration 0039), the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in (migrations 0031, 0033, 0034), listed on Settings; each provider is a row of `sim_providers` (migration 0039, going with the settings row) with the e-mail its SIM emails go to and the default plan Add SIM and Give SIM fill in (one plan for all until 0039).
+**Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
+`docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
+`sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
+**Mail Templates** (`mail_templates.manage`, Administrator); `Render` produces a recipient, Cc, subject and
+body and nothing is ever sent from the app (the sheet's **Send Email** is a `mailto:` link to the user's own mail app). Company Assets prepares Prepare Activation Email and Prepare Blocking
+Email through it (`GET /api/v1/assets/{id}/emails/{kind}`, `asset.Mailer` adapted in `cmd/api/checkers.go`
+with Settings' provider e-mail and company name).
 Database backups: the `backup` compose service is the agent from the separate library
 `github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
 Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
@@ -53,7 +60,7 @@ permissions off wider access, granting them to every role that had it: **See Ite
 (`item_sets.read`; the active sets stay open for Create Order) and **Change Item prices**
 (`item_prices.manage`, needs `catalogue.manage`; `catalogue.Rights` refuses a price change
 without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings) on the staff app's origin, sharing its sign-in and
+Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,

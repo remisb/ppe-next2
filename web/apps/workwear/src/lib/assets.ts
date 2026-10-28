@@ -15,7 +15,9 @@ import type {
   ConnectionStatus,
   CreateAssetInput,
   InventoryPrefix,
+  MailMessage,
   SimCardsReportQuery,
+  SimProvider,
 } from '@ppe/api-client'
 import { helpText } from '@ppe/ui/components/tooltip'
 import { isoDay } from '@ppe/ui/lib/dates'
@@ -428,29 +430,51 @@ export function cardBlock(a: Pick<Asset, 'kind' | 'connection_status'>): string 
 }
 
 /**
- * The blocking request to copy into the user's own e-mail (§14), in the
- * brief's English, which the providers read. Nothing is sent from the app.
- * The company's name is not in Settings yet (spec, open decision 3): the
- * placeholder stays for the user to replace.
+ * The plan Settings gives a provider's cards (its default plan), for Add SIM
+ * and Give SIM to fill in; '' for none, no provider or one not listed.
  */
-export function blockingEmail(a: Pick<Asset, 'phone_no' | 'sim_no'>, company = '[Company Name]'): { subject: string; body: string } {
-  const phone = a.phone_no ?? '[Phone Number]'
-  return {
-    subject: `SIM blocking request - ${phone}`,
-    body: [
-      'Hello,',
-      '',
-      'Please block the following SIM:',
-      '',
-      `Phone number: ${phone}`,
-      `SIM number: ${a.sim_no ?? ''}`,
-      `Company: ${company}`,
-      '',
-      'Please confirm once the SIM has been blocked.',
-      '',
-      'Thank you.',
-    ].join('\n'),
-  }
+export function providerPlan(providers: readonly SimProvider[] | null | undefined, provider: string | null | undefined): string {
+  const name = provider?.trim().toLowerCase()
+  if (!name) return ''
+  return providers?.find((p) => p.name.toLowerCase() === name)?.default_plan ?? ''
+}
+
+/**
+ * Add SIM's draft with another provider chosen: the plan follows the provider
+ * while it is empty or still the previous provider's plan; a plan typed in stays.
+ */
+export function withSimProvider(d: SimDraft, provider: string, providers: readonly SimProvider[] | null | undefined): SimDraft {
+  const plan = d.plan.trim() === '' || d.plan === providerPlan(providers, d.provider) ? providerPlan(providers, provider) : d.plan
+  return { ...d, provider, plan }
+}
+
+/**
+ * The addresses in an email's To or Cc line that a mail app can take: those
+ * written as one, separated by commas or semicolons. A placeholder such as
+ * [Provider E-mail] is left out, for the user to fill in there.
+ */
+export function mailAddresses(line: string): string[] {
+  return line
+    .split(/[,;]/)
+    .map((a) => a.trim())
+    .filter((a) => /^[^\s@,;<>"()[\]]+@[^\s@,;<>"()[\]]+\.[^\s@,;<>"()[\]]+$/.test(a))
+}
+
+/**
+ * Send Email: a mailto: link (RFC 6068) that opens the user's own mail app
+ * with To, Cc, Subject and Message filled in; nothing is sent from the app,
+ * the user sends it there. Line breaks are CRLF, as the RFC asks.
+ */
+export function mailtoHref(m: Pick<MailMessage, 'to' | 'cc' | 'subject' | 'body'>): string {
+  const to = mailAddresses(m.to)
+    .map((a) => encodeURIComponent(a).replace(/%40/g, '@'))
+    .join(',')
+  const fields = []
+  const cc = mailAddresses(m.cc)
+  if (cc.length > 0) fields.push(`cc=${cc.map(encodeURIComponent).join(',')}`)
+  fields.push(`subject=${encodeURIComponent(m.subject)}`)
+  fields.push(`body=${encodeURIComponent(m.body.replace(/\r?\n/g, '\r\n'))}`)
+  return `mailto:${to}?${fields.join('&')}`
 }
 
 /**

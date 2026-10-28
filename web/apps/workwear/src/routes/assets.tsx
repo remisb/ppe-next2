@@ -545,7 +545,13 @@ export function Assets({
                           ) : action === 'return' ? (
                             <ReturnButton kind={a.kind} size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })} />
                           ) : a.connection_status ? (
-                            <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={saving === a.id} onChange={(next) => void changeStatus(a, next)} />
+                            <StatusMenu
+                              number={a.inventory_no}
+                              status={a.connection_status}
+                              disabled={saving === a.id}
+                              onChange={(next) => void changeStatus(a, next)}
+                              onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
+                            />
                           ) : null}{' '}
                           <AssetMoreActions
                             asset={a}
@@ -553,7 +559,8 @@ export function Assets({
                             onStatus={(next) => void changeStatus(a, next)}
                             onEdit={() => setEditing(a)}
                             onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                            onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                            onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
+                            onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
                             onPrintForm={() => reprint(a)}
                           />
                         </TableCell>
@@ -586,7 +593,7 @@ export function Assets({
       <AssetSheets
         sheet={sheet}
         today={today}
-        defaultPlan={settings.data?.default_sim_plan}
+        providers={settings.data?.sim_providers}
         onChange={setSheet}
         onDone={(m) => {
           setMessage(m)
@@ -601,7 +608,6 @@ export function Assets({
           inUse={s?.providers ?? []}
           defaultProvider={settings.data?.default_sim_provider}
           defaultValueCents={settings.data?.default_sim_non_return_value_cents}
-          defaultPlan={settings.data?.default_sim_plan}
           onClose={() => setEditing(null)}
           onSaved={(saved, added) => {
             setEditing(null)

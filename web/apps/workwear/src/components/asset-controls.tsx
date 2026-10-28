@@ -61,12 +61,15 @@ export function StatusMenu({
   number,
   status,
   onChange,
+  onActivationEmail,
   disabled = false,
 }: {
   /** The card's inventory number, which names it for screen readers. */
   number: string
   status: ConnectionStatus
   onChange: (next: ConnectionStatus) => void
+  /** Prepare Activation Email, offered beside the note on a Not Activated card. */
+  onActivationEmail?: (() => void) | undefined
   disabled?: boolean
 }) {
   return (
@@ -81,6 +84,7 @@ export function StatusMenu({
       <DropdownMenuContent>
         <DropdownMenuNote>{t.assets.statusNote}</DropdownMenuNote>
         {status === 'NOT_ACTIVATED' ? <DropdownMenuNote className="text-foreground">{t.assets.activateNote}</DropdownMenuNote> : null}
+        {status === 'NOT_ACTIVATED' && onActivationEmail ? <DropdownMenuItem onClick={onActivationEmail}>{t.assets.prepareActivationEmail}</DropdownMenuItem> : null}
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={status}
@@ -154,6 +158,7 @@ export function AssetMoreActions({
   onStatus,
   onEdit,
   onNotReturned,
+  onActivationEmail,
   onBlockingEmail,
   onPrintForm,
 }: {
@@ -162,6 +167,7 @@ export function AssetMoreActions({
   onStatus: (next: ConnectionStatus) => void
   onEdit: () => void
   onNotReturned: () => void
+  onActivationEmail: () => void
   onBlockingEmail: () => void
   /** Print Form: the holder's form, printed again; for a SIM held since the import, one built now. */
   onPrintForm: () => void
@@ -186,6 +192,7 @@ export function AssetMoreActions({
       <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
       {held && (held.paper_form_signed || asset.kind === 'SIM') ? <DropdownMenuItem onClick={onPrintForm}>{t.assets.printForm}</DropdownMenuItem> : null}
       {canMarkNotReturned(asset) ? <DropdownMenuItem onClick={onNotReturned}>{t.assets.markNotReturned}</DropdownMenuItem> : null}
+      {current && current !== 'ACTIVE' ? <DropdownMenuItem onClick={onActivationEmail}>{t.assets.prepareActivationEmail}</DropdownMenuItem> : null}
       {current && current !== 'BLOCKED' ? <DropdownMenuItem onClick={onBlockingEmail}>{t.assets.prepareBlockingEmail}</DropdownMenuItem> : null}
     </MoreActions>
   )

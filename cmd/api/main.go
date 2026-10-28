@@ -28,6 +28,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
@@ -103,6 +104,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		store,
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
+		mailtemplate.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
@@ -196,6 +198,7 @@ type services struct {
 	assets    *asset.Service
 	dashboard *dashboard.Service
 	settings  *settings.Service
+	templates *mailtemplate.Service
 	backups   *backup.Service
 	audit     *audit.Service
 	// system is the error list and the database's status; window and
@@ -214,7 +217,7 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -225,6 +228,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
+		templates: mailtemplate.NewService(templates),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
 		audit:     audit.NewService(trail, audit.WithLocation(loc), audit.WithRetention(auditRetention)),
 		system:    system.NewService(sys, system.WithRecorded(func(k system.Kind) { metrics.ErrorRecorded(string(k)) })),
@@ -235,6 +239,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		jobs:      &jobRuns{},
 		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
+	asset.WithMailer(assetMailer{templates: s.templates, settings: s.settings, users: s.users})(s.assets)
 	s.employees = employee.NewService(employees, employee.WithHoldings(employeeHoldings{s.assets}))
 	s.photos = employeephoto.NewService(photos, employeephoto.WithFiles(store))
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
@@ -267,6 +272,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
+	registerMailTemplateRoutes(rt, svc.templates)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
 	registerSystemRoutes(rt, svc, cfg, tok)

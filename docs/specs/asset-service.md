@@ -230,13 +230,32 @@ Request: whereabouts (`WITH_EMPLOYEE` or `UNKNOWN`) and a comment. Sets the mark
 assignment once. The asset stays with its holder and out of office stock. Event
 `asset.marked_not_returned`.
 
-### Prepare Blocking Email (§14)
+### Prepare Activation Email and Prepare Blocking Email (§14)
 
-Built in the web app from the asset, its provider's contact and the company name; nothing is
-sent or changed. The first copy of each opening records `asset.blocking_email_prepared`
-(`POST /api/v1/assets/{id}/blocking-email`, `assets.manage`, 204): the SIM and phone numbers,
-the provider and, when held, the assignment and its holder. Subject `SIM blocking request - [Phone Number]`; body as
-§14 gives it.
+The emails asking a SIM card's provider to activate the card or to block it. Each is built
+by the API from its mail template, `sim.activation` or `sim.blocking`
+([mail-template-service.md](mail-template-service.md)), which administrators edit on Mail
+Templates.
+
+- `GET /api/v1/assets/{id}/emails/{activation|blocking}` (`assets.manage`) returns
+  `{to, cc, subject, body, missing}`. `asset.Service.PrepareEmail` gives the `asset.Mailer` the
+  card's numbers, plan and provider, its holder, the user and today.
+- The composition root adds the provider's e-mail, the provider's default plan for a card
+  without a plan of its own (the plan Give SIM fills in), and the company's name from Settings,
+  and the user's e-mail for a Cc to themself.
+- A field without a value shows in brackets, such as `[Provider E-mail]`, and is listed in
+  `missing`.
+- Nothing is sent, changed or recorded. Only SIM cards have these emails; another kind is
+  400.
+
+The first copy or **Send Email** of each opening records `asset.activation_email_prepared` or
+`asset.blocking_email_prepared` (`POST /api/v1/assets/{id}/emails/{kind}/copied`,
+`assets.manage`, 204). The event holds the SIM and phone numbers, the provider and, when the
+card is held, the assignment and its holder.
+
+The default blocking subject is `SIM blocking request - {{sim.phone_number}}`, and its body
+is the one §14 gives. Before mail templates, the web app built the blocking text itself, and
+the route `POST /api/v1/assets/{id}/blocking-email` recorded the copy.
 
 ### Upload Signed Form (§9, slice 5)
 
@@ -294,7 +313,8 @@ stays with its assignment when the asset later goes to someone else.
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed` | authenticated | records `asset.form_printed` for an assignment's stored form, printed again; 204 |
 | `GET /api/v1/assets/{id}/assignments/preview.pdf` | `assets.manage` | Download PDF on Give: the form Give would store as a PDF, from `?employee=&date=&plan=&value=` (cents), checked as Preview checks it; records `asset.form_printed` (format pdf) first; an attachment `assignment-form-<number>-<date>.pdf` |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf` | authenticated | Download PDF on an assignment: its stored form; recorded the same way |
-| `POST /api/v1/assets/{id}/blocking-email` | `assets.manage` | records `asset.blocking_email_prepared` (Prepare Blocking Email copied); 204, SIM cards only |
+| `GET /api/v1/assets/{id}/emails/{kind}` | `assets.manage` | Prepare Activation Email (`activation`) or Prepare Blocking Email (`blocking`): the email from its mail template, `{to, cc, subject, body, missing}`; SIM cards only, records nothing |
+| `POST /api/v1/assets/{id}/emails/{kind}/copied` | `assets.manage` | records `asset.activation_email_prepared` or `asset.blocking_email_prepared` (the email copied); 204, SIM cards only |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
 | `GET /api/v1/audit-events/assets/{id}` | authenticated | the asset's Changes, as for the other records |
@@ -391,7 +411,7 @@ their own address:
   administrator lists on Settings, the default one chosen; typed when none are listed;
   [settings-service.md](settings-service.md)) and inventory number (the next one
   suggested) and the received date (today) are required; the phone number, plan and value
-  can wait (Add SIM fills in Settings' default Non-return Value and default plan); a new card is Not Activated or Active. A number in use shows *This
+  can wait (Add SIM fills in Settings' default Non-return Value and the chosen provider's default plan); a new card is Not Activated or Active. A number in use shows *This
   SIM number is already registered.* with **Open the existing SIM card**, which finds it in
   the register; a taken inventory number offers another.
 - A row opens the card as Orders opens an order, at `/assets/sim-cards/<id>` (`?show=` kept
@@ -404,15 +424,14 @@ their own address:
   (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
   a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
   Return while held, else Change Status) and ⋯ with the statuses, Edit, Print Form (while
-  held on a signed form, or since the import), Mark as Not Returned and Prepare Blocking Email. On a phone a row is two lines and carries no
+  held on a signed form, or since the import), Mark as Not Returned, Prepare Activation Email (unless Active) and Prepare Blocking Email (unless Blocked). On a phone a row is two lines and carries no
   buttons.
-- Not yet: the provider's e-mail beside Not Activated waits for providers' contacts (open
-  decision 4).
+- A Not Activated card's Change Status offers Prepare Activation Email beside its note.
 
 ## The asset page and its actions (slice 4)
 
 `routes/asset.tsx`, the sheets in `components/asset-sheets.tsx`, the rules in
-`lib/assets.ts` (`primaryAction`, `giveBlock`, `formKey`, `blockingEmail`):
+`lib/assets.ts` (`primaryAction`, `giveBlock`, `formKey`, `providerPlan`):
 
 - **The page**: first the phone number over the SIM No., both large and unlabelled (each
   named by a tooltip on hover and to a screen reader; the first of them the heading), with
@@ -436,7 +455,7 @@ their own address:
   Give Asset is the same; an item needing no form has two steps. The checkbox reads "The
   employee has signed the printed form" (Paper Form Signed in records); Print Form becomes
   Print again once printed. The fields: the employee (search), the given date (today, not later),
-  the plan (optional, starting as Settings' default plan) and value only when the card lacks
+  the plan (optional, starting as the card's provider's default plan on Settings) and value only when the card lacks
   them, a comment. **Print Form** prints the form the API
   builds from the page itself, with no tab of its own
   (`components/print-in-place.tsx`): the form is drawn into a container only print shows,
@@ -466,9 +485,13 @@ their own address:
   and a comment; **Register Return to Office**.
 - **Mark as Not Returned**: where it is (still with the employee, or unknown) and a
   comment; then **Prepare Blocking Email** opens at once unless the card is already Blocked.
-- **Prepare Blocking Email**: the brief's English subject and message with the card's
-  numbers, each with Copy. The company's name is a `[Company Name]` placeholder until
-  Settings holds it (open decision 3). Nothing is sent and nothing changes.
+- **Prepare Activation Email** and **Prepare Blocking Email** (`ProviderEmailSheet`): To,
+  Cc (when there is one), Subject and Message from the mail template, each with Copy, and
+  **Send Email**, a `mailto:` link (`mailtoHref`) that opens the user's mail app with them
+  all filled in.
+  - A note says what is missing: the provider's e-mail or the company's name, set once on
+    Settings, or any other `[ … ]` to fill in before sending.
+  - Nothing is sent and nothing changes.
 
 ## The employee page, ⌘K and the dashboards (slice 6)
 
@@ -523,8 +546,8 @@ The same engine, screens and rules, with what differs by kind:
 | --- | --- | --- | --- |
 | 1 | Employees have no "no longer working" state; the brief assumes one. Add it? May an employee holding assets be deleted? | §2, §13 | No new state; Delete employee is refused (409 `employee.ErrHoldsAssets`) while they hold an open assignment, naming the assets. It checks under the employee's row lock, which Give share-locks |
 | 2 | Where signed copies are stored and backed up, and their size and type limits. The brief says "existing rules", but none exist | §9 | **Decided** (2026-10-09): a private Spaces bucket of their own with versioning; PDF, JPEG or PNG up to 10 MB, photo metadata removed; uploading again keeps the earlier copies |
-| 3 | Company name and details for forms and the blocking email | §8, §14 | A Settings field, set by `settings.manage` |
-| 4 | Providers' contacts and plans | §5, §14, §20 | Provider and plan are free text; a provider's e-mail is a Settings list |
+| 3 | Company name and details for forms and the blocking email | §8, §14 | **Name decided** (2026-10-28): Settings' Company name (`settings.manage`), which mail templates write; other details for forms still open |
+| 4 | Providers' contacts and plans | §5, §14, §20 | **Decided** (2026-10-28): each SIM provider on Settings has an e-mail (where its activation and blocking emails go) and a default plan (which Add SIM and Give SIM fill in); a card's provider and plan stay free text |
 | 5 | Which built-in roles get `assets.manage`; whether Change Status needs its own permission | §18 | Administrator and Manager; one permission |
 | 6 | Which equipment categories need a form; whether furniture does | §17 | Computer, Phone, External Drive need one; Furniture and Other do not |
 | 7 | Correcting a wrong Not Returned mark, status or whereabouts | none | Status: Change Status again. The Not Returned mark cannot be removed; Register Return ends it |

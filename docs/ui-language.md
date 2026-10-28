@@ -742,7 +742,8 @@ height (0 from `md`), which sticky bars sit above.
 | **Print …**, **View …**, **Preview …**, **Download PDF** | the document printed, on screen, shown before it is final, as a file |
 | **Upload …** | add a file (Upload Signed Form) |
 | **Copy …**, **Share … via WhatsApp** | to the clipboard; through WhatsApp |
-| **Prepare …** | make a text the user sends themself; nothing is sent (Prepare Blocking Email) |
+| **Prepare …** | make a text the user sends themself, from its mail template; nothing is sent (Prepare Activation Email, Prepare Blocking Email) |
+| **Send Email** | open the user's own mail app with the prepared email filled in (`mailto:`); they send it there |
 | **Create confirmation link**, **Send link** | make the link; offer the ways to give it |
 | **Open …**, **… →** | go to another screen or app |
 | **Apply** | make a popover's choice the filter |

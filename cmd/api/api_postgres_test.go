@@ -28,6 +28,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
@@ -95,6 +96,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		testFiles(t),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
+		mailtemplate.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
@@ -266,8 +268,48 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments/"+assignment["id"].(string)+"/form-printed", mgr, nil); rec.Code != http.StatusNoContent {
 		t.Errorf("form reprinted = %d %s", rec.Code, rec.Body)
 	}
-	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/blocking-email", mgr, nil); rec.Code != http.StatusNoContent {
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/emails/blocking/copied", mgr, nil); rec.Code != http.StatusNoContent {
 		t.Errorf("blocking email = %d %s", rec.Code, rec.Body)
+	}
+	// The blocking email from its template: Settings' provider e-mail and
+	// company, the card's numbers and the user's name; a field without a value in brackets.
+	rec = api.do(t, "GET", "/api/v1/assets/"+id+"/emails/blocking", mgr, nil)
+	if m := decode[asset.Email](t, rec.Body.Bytes()); rec.Code != http.StatusOK || m.To != "[Provider E-mail]" ||
+		m.Subject != "SIM blocking request - +370 612 40118" || !strings.Contains(m.Body, "SIM number: 0089370011") ||
+		!slices.Equal(m.Missing, []string{"provider.email", "company.name"}) {
+		t.Errorf("blocking email = %d %s", rec.Code, rec.Body)
+	}
+	_, templateAdmin := api.userWith(t, role.KeyAdmin)
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", templateAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia", "email": "sim@telia.lt"}}}); rec.Code != http.StatusOK {
+		t.Fatalf("providers = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/company", templateAdmin, map[string]any{"name": "UAB Gavort"}); rec.Code != http.StatusOK {
+		t.Fatalf("company = %d %s", rec.Code, rec.Body)
+	}
+	edited := map[string]any{"to": "{{provider.email}}", "cc": "{{user.email}}", "subject": "Block {{sim.number}} ({{employee.name}})", "body": "{{company.name}}: block {{sim.phone_number}}."}
+	if rec := api.do(t, "POST", "/api/v1/mail-templates/sim.blocking/preview", templateAdmin, edited); rec.Code != http.StatusOK ||
+		!strings.Contains(rec.Body.String(), `"subject":"Block 8937 0011 2233 4455 667 (Jonas Jonaitis)"`) {
+		t.Errorf("preview = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/mail-templates/sim.blocking", templateAdmin, edited); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"is_default":false`) {
+		t.Fatalf("save template = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/mail-templates/sim.blocking", templateAdmin, map[string]any{"to": "x", "subject": "y", "body": "{{sim.colour}}"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("an unknown field = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/mail-templates/sim.welcome", templateAdmin, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("an unknown template = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/assets/"+id+"/emails/blocking", mgr, nil)
+	if m := decode[asset.Email](t, rec.Body.Bytes()); m.To != "sim@telia.lt" || !strings.HasSuffix(m.CC, "@example.com") || m.Subject != "Block 0089370011 (Jonas Petraitis)" ||
+		m.Body != "UAB Gavort: block +370 612 40118." || len(m.Missing) != 0 {
+		t.Errorf("edited blocking email = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/"+id+"/emails/activation", mgr, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "SIM activation request - 0089370011") {
+		t.Errorf("activation email = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/"+id+"/emails/welcome", mgr, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("another kind of email = %d", rec.Code)
 	}
 	// The form as a PDF, the one Give would store and the assignment's: each recorded as printed.
 	for _, path := range []string{
@@ -525,7 +567,7 @@ func TestPostgresEquipmentNeedsTheRole(t *testing.T) {
 			t.Errorf("SIMs without the role = %d %s", rec.Code, rec.Body)
 		}
 	}
-	for _, path := range []string{"/return", "/not-returned", "/blocking-email"} {
+	for _, path := range []string{"/return", "/not-returned", "/emails/blocking/copied"} {
 		if rec := api.do(t, "POST", "/api/v1/assets/"+pc+path, mgr, map[string]any{}); rec.Code != http.StatusNotFound {
 			t.Errorf("POST %s without the role = %d %s", path, rec.Code, rec.Body)
 		}
@@ -1046,31 +1088,39 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 		t.Errorf("unknown item history = %d, want 404", rec.Code)
 	}
 	type settingsBody struct {
-		Timezone           string   `json:"timezone"`
-		SIMProviders       []string `json:"sim_providers"`
-		DefaultSIMProvider *string  `json:"default_sim_provider"`
-		DefaultValueCents  *int64   `json:"default_sim_non_return_value_cents"`
-		DefaultPlan        *string  `json:"default_sim_plan"`
+		Timezone           string                 `json:"timezone"`
+		CompanyName        *string                `json:"company_name"`
+		SIMProviders       []settings.SIMProvider `json:"sim_providers"`
+		DefaultSIMProvider *string                `json:"default_sim_provider"`
+		DefaultValueCents  *int64                 `json:"default_sim_non_return_value_cents"`
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil || s.DefaultPlan != nil {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil || s.CompanyName != nil {
 		t.Errorf("settings = %s", rec.Body)
 	}
 	// An administrator lists the SIM providers (as ppe_app); everyone reads them for Add SIM.
 	_, settingsAdmin := api.userWith(t, role.KeyAdmin)
-	providers := map[string]any{"providers": []string{" Telia ", "Bitė"}, "default": "Telia", "default_non_return_value_cents": 2500, "default_plan": "Biz 10 GB"}
+	providers := map[string]any{"providers": []map[string]any{{"name": " Telia ", "email": "sim@telia.lt", "default_plan": "Biz 10 GB"}, {"name": "Bitė"}},
+		"default": "Telia", "default_non_return_value_cents": 2500}
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, providers); rec.Code != http.StatusOK {
 		t.Fatalf("sim providers = %d %s", rec.Code, rec.Body)
 	}
-	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []string{"Telia"}, "default": "Tele2"}); rec.Code != http.StatusBadRequest {
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia"}}, "default": "Tele2"}); rec.Code != http.StatusBadRequest {
 		t.Errorf("an unlisted default = %d, want 400", rec.Code)
 	}
-	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []string{"Telia"}, "default_non_return_value_cents": -1}); rec.Code != http.StatusBadRequest {
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia"}}, "default_non_return_value_cents": -1}); rec.Code != http.StatusBadRequest {
 		t.Errorf("a negative default value = %d, want 400", rec.Code)
 	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia", "email": "telia"}}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a provider's e-mail that is none = %d, want 400", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/settings/company", settingsAdmin, map[string]any{"name": "UAB Gavort"}); rec.Code != http.StatusOK {
+		t.Errorf("company = %d %s", rec.Code, rec.Body)
+	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, []string{"Telia", "Bitė"}) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" ||
-		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 || s.DefaultPlan == nil || *s.DefaultPlan != "Biz 10 GB" {
+	want := []settings.SIMProvider{{Name: "Telia", Email: "sim@telia.lt", DefaultPlan: "Biz 10 GB"}, {Name: "Bitė"}}
+	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, want) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" ||
+		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 || s.CompanyName == nil || *s.CompanyName != "UAB Gavort" {
 		t.Errorf("settings = %s", rec.Body)
 	}
 }

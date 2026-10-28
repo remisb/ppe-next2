@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	EventCompanyChanged      = "settings.company_changed"
 	EventSupplierChatChanged = "settings.supplier_chat_changed"
 	EventSIMProvidersChanged = "settings.sim_providers_changed"
 	// EventDefaultSIMProviderChanged was recorded when Add SIM set the default
@@ -45,6 +46,33 @@ func NewService(repo Repository, opts ...Option) *Service {
 
 func (s *Service) Get(ctx context.Context) (Settings, error) { return s.repo.Get(ctx) }
 
+// UpdateCompany sets, changes or (empty) clears the company's name,
+// recording settings.company_changed when it differs.
+func (s *Service) UpdateCompany(ctx context.Context, p CompanyParams, actor uuid.UUID) (Settings, error) {
+	if actor == uuid.Nil {
+		return Settings{}, fieldError("actor", "is required")
+	}
+	if err := p.Validate(); err != nil {
+		return Settings{}, err
+	}
+	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
+		if p.Name == cur.CompanyName {
+			return cur, nil, nil
+		}
+		now := s.now()
+		next := cur
+		next.CompanyName, next.UpdatedAt, next.UpdatedByUserID = p.Name, now, actor
+		type value struct {
+			Name string `json:"name"`
+		}
+		ev, err := audit.New(s.newID(), &actor, EventCompanyChanged, auditEntity, AuditEntityID, now, value{cur.CompanyName}, value{p.Name})
+		if err != nil {
+			return Settings{}, nil, err
+		}
+		return next, &ev, nil
+	})
+}
+
 // UpdateSupplierChat sets, changes or (both fields empty) clears the
 // supplier's WhatsApp group, recording settings.supplier_chat_changed when it differs.
 func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, actor uuid.UUID) (Settings, error) {
@@ -70,8 +98,8 @@ func (s *Service) UpdateSupplierChat(ctx context.Context, p SupplierChatParams, 
 	})
 }
 
-// UpdateSIMProviders replaces the SIM providers, the default one, the
-// default Non-return Value and the default plan, recording
+// UpdateSIMProviders replaces the SIM providers, each with its e-mail and
+// plan, the default one and the default Non-return Value, recording
 // settings.sim_providers_changed when any differs. Cards already registered
 // keep their provider, value and plan.
 func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, actor uuid.UUID) (Settings, error) {
@@ -83,23 +111,23 @@ func (s *Service) UpdateSIMProviders(ctx context.Context, p SIMProvidersParams, 
 	}
 	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
 		if slices.Equal(p.Providers, cur.SIMProviders) && p.Default == cur.DefaultSIMProvider &&
-			sameCents(p.DefaultNonReturnValueCents, cur.DefaultSIMNonReturnValueCents) && p.DefaultPlan == cur.DefaultSIMPlan {
+			sameCents(p.DefaultNonReturnValueCents, cur.DefaultSIMNonReturnValueCents) {
 			return cur, nil, nil
 		}
 		now := s.now()
 		next := cur
 		next.SIMProviders, next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents = p.Providers, p.Default, p.DefaultNonReturnValueCents
-		next.DefaultSIMPlan = p.DefaultPlan
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
+		// Events from before migration 0039 list the providers by name, with
+		// one default_plan for all of them.
 		type value struct {
-			Providers []string `json:"providers"`
-			Default   string   `json:"default_provider"`
-			Value     *int64   `json:"default_non_return_value_cents"`
-			Plan      string   `json:"default_plan"`
+			Providers []SIMProvider `json:"providers"`
+			Default   string        `json:"default_provider"`
+			Value     *int64        `json:"default_non_return_value_cents"`
 		}
 		ev, err := audit.New(s.newID(), &actor, EventSIMProvidersChanged, auditEntity, AuditEntityID, now,
-			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider, cur.DefaultSIMNonReturnValueCents, cur.DefaultSIMPlan},
-			value{p.Providers, p.Default, p.DefaultNonReturnValueCents, p.DefaultPlan})
+			value{orEmpty(cur.SIMProviders), cur.DefaultSIMProvider, cur.DefaultSIMNonReturnValueCents},
+			value{p.Providers, p.Default, p.DefaultNonReturnValueCents})
 		if err != nil {
 			return Settings{}, nil, err
 		}
@@ -113,9 +141,9 @@ func sameCents(a, b *int64) bool {
 }
 
 // orEmpty keeps a list that was never set from reading as null in the event.
-func orEmpty(list []string) []string {
+func orEmpty(list []SIMProvider) []SIMProvider {
 	if list == nil {
-		return []string{}
+		return []SIMProvider{}
 	}
 	return list
 }

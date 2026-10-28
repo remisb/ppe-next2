@@ -796,20 +796,28 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
 ### Provider and Plan
 - **Brief:** the mobile operator a SIM card is from, and its tariff plan.
-- **Detail:** the provider's e-mail address is shown where staff must write to it
-  (activation, blocking). Nothing is sent from the app.
+- **Detail:** the provider's e-mail address, on Settings, is the To of the emails staff
+  write to it (activation, blocking). Nothing is sent from the app.
 
-### SIM providers, the default provider, the default Non-return Value and the default plan
+### SIM providers, the default provider, the default Non-return Value, a provider's e-mail and default plan
 - **Brief:** the providers Add SIM offers, listed by an administrator for the organisation,
-  the one of them Add SIM chooses first, the Non-return Value and plan it fills in, and the
-  plan Give SIM fills in for a card that has none.
-- **Code:** `settings.SIMProviders`, `sim_providers`; `settings.DefaultSIMProvider`,
+  the one of them Add SIM chooses first and the Non-return Value it fills in; each provider
+  with the e-mail its activation and blocking emails go to, and the plan Add SIM fills in
+  for its new cards and Give SIM for its cards that have none.
+- **Code:** `settings.SIMProviders` (`settings.SIMProvider{Name, Email, DefaultPlan}`),
+  `sim_providers` (`{name, email, default_plan}`); `settings.DefaultSIMProvider`,
   `default_sim_provider`; `settings.DefaultSIMNonReturnValueCents`,
-  `default_sim_non_return_value_cents`; `settings.DefaultSIMPlan`, `default_sim_plan`.
-  **UI:** **SIM providers** on Settings in Administration, with **Default provider**,
-  **No default**, **Default Non-return Value (€)** and **Default plan**.
+  `default_sim_non_return_value_cents`. **UI:** **SIM providers** on Settings in
+  Administration, with **Default provider**, **No default**, each provider's **E-mail** and
+  **Default plan**, and **Default Non-return Value (€)**.
 - **Detail:** changing them changes no card already registered; a card whose provider is no
-  longer listed keeps it, and a card's own plan is never replaced.
+  longer listed keeps it, and a card's own plan is never replaced. Until migration 0039 there
+  was one default plan for all providers.
+
+### Company name
+- **Brief:** the organisation's name as its emails write it, on Settings.
+- **Code:** `settings.CompanyName`, `company_name`; the mail template field
+  `{{company.name}}`. **UI:** **Company** on Settings, **Company name**.
 
 ### Connection status
 - **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
@@ -910,12 +918,27 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **UI:** **Upload Signed Form**, **Signed Copy Uploaded**, **Signed Copy Missing**; the
   register's **Documents** filter finds the missing ones.
 
-### Blocking email
-- **Brief:** a text to copy into the user's own e-mail, asking the provider to block a SIM
-  card.
-- **Detail:** preparing it changes nothing; staff set Blocked with Change Status once the
-  provider confirms (§14).
-- **UI:** **Prepare Blocking Email**.
+### Blocking email and Activation email
+- **Brief:** an email to copy into the user's own e-mail, asking the provider to block a SIM
+  card, or to activate one.
+- **Detail:** prepared from its mail template, to the provider's e-mail; preparing it
+  changes nothing; staff set Blocked or Active with Change Status once the provider confirms
+  (§14). A copy is recorded ("Blocking email prepared", "Activation email prepared").
+- **UI:** **Prepare Blocking Email** (a card not Blocked), **Prepare Activation Email** (a card
+  not Active); on the sheet, **Send Email** opens the user's own mail app with the email
+  filled in (a `mailto:` link): the user sends it from there, never the app.
+
+### Mail template
+- **Brief:** the text of an email the app prepares, one for each place that prepares one
+  (a **use case**: SIM activation, SIM blocking), which administrators edit.
+- **Detail:** four parts, **To**, **Cc** (optional), **Subject** and **Message**, writing **fields** as
+  `{{key}}` (`{{sim.number}}`, `{{provider.email}}`), filled in when the email is prepared; a
+  field without a value shows as its label in brackets, `[Phone Number]`. **Use Default Text**
+  puts the default back in the form. Nothing is sent from the app: the user copies the
+  email. Not "email template" in the code, and not a "notification".
+- **Code:** `internal/domain/mailtemplate` (`Template`, `UseCase`, `Field`, `Message`),
+  `mail_templates`, permission `mail_templates.manage`. **UI:** **Mail Templates** in
+  Administration, **Change Mail Templates** on Roles & permissions, **Fields**, **Preview**.
 
 ### Non-return Value
 - **Brief:** what the employee owes if the asset is not returned; printed on the form with
@@ -1026,6 +1049,8 @@ screens are built):
 | Default provider / No default | Numatytasis tiekėjas / Be numatytojo | Оператор по умолчанию / Без оператора по умолчанию |
 | Default Non-return Value | Numatytoji negrąžinimo vertė | Стоимость при невозврате по умолчанию |
 | Default plan | Numatytasis planas | Тариф по умолчанию |
+| E-mail (a provider's) | El. paštas | E-mail |
+| Company / Company name | Įmonė / Įmonės pavadinimas | Компания / Название компании |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |
@@ -1042,6 +1067,11 @@ screens are built):
 | Preview PDF / PDF Preview / Print / Open in New Tab (SIM Cards' list) | Peržiūrėti PDF / PDF peržiūra / Spausdinti / Atidaryti naujame skirtuke | Просмотр PDF / Предпросмотр PDF / Печать / Открыть в новой вкладке |
 | Upload Signed Form / Signed Copy Uploaded / Signed Copy Missing | Įkelti pasirašytą aktą / Pasirašyta kopija įkelta / Trūksta pasirašytos kopijos | Загрузить подписанный акт / Подписанная копия загружена / Нет подписанной копии |
 | Prepare Blocking Email | Paruošti blokavimo laišką | Подготовить письмо о блокировке |
+| Prepare Activation Email | Paruošti aktyvavimo laišką | Подготовить письмо об активации |
+| Mail Templates / Change Mail Templates | Laiškų šablonai / Keisti laiškų šablonus | Шаблоны писем / Изменять шаблоны писем |
+| To / Cc / Subject / Message (an email's) | Kam / Kopija / Tema / Laiškas | Кому / Копия / Тема / Текст письма |
+| Send Email | Siųsti laišką | Отправить письмо |
+| Fields / Preview / Use Default Text | Laukai / Peržiūra / Naudoti numatytąjį tekstą | Поля / Предпросмотр / Взять текст по умолчанию |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |
 | Add SIM / Add Asset | Pridėti SIM / Pridėti turtą | Добавить SIM / Добавить имущество |
 

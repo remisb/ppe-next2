@@ -4,13 +4,28 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem, railTip } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { Activity, ArrowLeft, BarChart3, Ellipsis, Gauge, KeyRound, LogOut, ScrollText, Settings as SettingsIcon, ShieldCheck, UserCog, UserRound } from 'lucide-react'
+import {
+  Activity,
+  ArrowLeft,
+  BarChart3,
+  Ellipsis,
+  Gauge,
+  KeyRound,
+  LogOut,
+  Mail,
+  ScrollText,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  UserCog,
+  UserRound,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
 import { type Route, type Screen, linkTo, screenRoute, screens, startRoute, useRouter } from '@/lib/router'
 
 import { AuditPage } from './routes/audit'
+import { MailTemplatesPage } from './routes/mail-templates'
 import { OverviewPage } from './routes/overview'
 import { RolesPage } from './routes/roles'
 import { SecurityPage } from './routes/security'
@@ -38,6 +53,7 @@ const sections = (): Record<Screen, Section> => ({
   system: { name: 'system', label: t.shell.system, short: t.shell.shortSystem, icon: Activity, inMore: true },
   usage: { name: 'usage', label: t.shell.usage, short: t.shell.shortUsage, icon: BarChart3, inMore: true },
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon, inMore: true },
+  mailTemplates: { name: 'mailTemplates', label: t.shell.mailTemplates, short: t.shell.shortMailTemplates, icon: Mail, inMore: true },
 })
 
 /** The phone bar's columns, by how many sections are in it (none to four): those, and More. */
@@ -47,7 +63,7 @@ const phoneColumns = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'
  * Administration's frame, the staff app's in look (@ppe/ui main-nav): a
  * bottom bar on a phone, a rail on a tablet, a sidebar on a desktop. Its
  * sections are the screens the user's permissions open; on a phone, Roles,
- * System, Usage and Settings are in More, so the bar holds at most four and More. More and the
+ * System, Usage, Settings and Mail Templates are in More, so the bar holds at most four and More. More and the
  * rail and sidebar's foot hold the way back to the staff app, Account (the
  * staff app's) and Sign out. Both apps share one sign-in, so signing in
  * or out here does so there too.
@@ -179,6 +195,7 @@ export function App() {
         {route.name === 'audit' ? <AuditPage route={route} navigate={navigate} /> : null}
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
+        {route.name === 'mailTemplates' ? <MailTemplatesPage route={route} navigate={navigate} /> : null}
         {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
         {route.name === 'usage' ? <UsagePage navigate={navigate} /> : null}
       </main>

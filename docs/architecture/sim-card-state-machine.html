@@ -67,7 +67,7 @@ tr:last-child td{border-bottom:0}
   </tbody>
 </table>
 </div>
-<p><code>connection_status</code> is stored on <code>assets</code> and limited to the three values by a CHECK. There is no final state: write-off is reserved (<code>written_off_at</code>) and not built, and no route deletes a card. The status never stops a card being returned or marked Not Returned; it matters only to Give SIM, which refuses anything but Active (409 <code>ErrNotActive</code>). A card marked Not Returned is usually then blocked: Prepare Blocking Email builds the provider's email, and the user sets Blocked by hand once the provider confirms. A returned blocked card must be unblocked and set Active before it can be given again.</p>
+<p><code>connection_status</code> is stored on <code>assets</code> and limited to the three values by a CHECK. There is no final state: write-off is reserved (<code>written_off_at</code>) and not built, and no route deletes a card. The status never stops a card being returned or marked Not Returned; it matters only to Give SIM, which refuses anything but Active (409 <code>ErrNotActive</code>). A card marked Not Returned is usually then blocked: Prepare Blocking Email prepares the provider's email from its mail template, and the user sets Blocked by hand once the provider confirms. A returned blocked card must be unblocked and set Active before it can be given again.</p>
 
 <h2>Where the card is</h2>
 
@@ -131,7 +131,7 @@ tr:last-child td{border-bottom:0}
   </tbody>
 </table>
 </div>
-<p>The register's Documents column and its <code>signed_copy=missing</code> filter show the first two states for the cards held on a form. Printing a form, again or for the first time, is recorded (<code>asset.form_printed</code>) but changes no state, and so is Prepare Blocking Email (<code>asset.blocking_email_prepared</code>).</p>
+<p>The register's Documents column and its <code>signed_copy=missing</code> filter show the first two states for the cards held on a form. Printing a form, again or for the first time, is recorded (<code>asset.form_printed</code>) but changes no state, and so are Prepare Activation Email and Prepare Blocking Email (<code>asset.activation_email_prepared</code>, <code>asset.blocking_email_prepared</code>).</p>
 </div>
 
 <script type="module">

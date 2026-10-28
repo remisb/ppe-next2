@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -10,8 +11,10 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/session"
+	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -117,4 +120,60 @@ var _ employee.Holdings = employeeHoldings{}
 
 func (e employeeHoldings) HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error) {
 	return e.assets.HeldBy(ctx, employeeID)
+}
+
+// assetMailer answers asset.Mailer: a SIM card's email from its mail
+// template, with the provider's e-mail, the provider's default plan for a card
+// without one, and the company's name from Settings, and the name and e-mail
+// of the user preparing it.
+type assetMailer struct {
+	templates *mailtemplate.Service
+	settings  *settings.Service
+	users     *user.Service
+}
+
+var _ asset.Mailer = assetMailer{}
+
+// simEmailKeys are the mail templates of a SIM card's emails.
+var simEmailKeys = map[asset.EmailKind]string{
+	asset.EmailActivation: mailtemplate.KeySIMActivation,
+	asset.EmailBlocking:   mailtemplate.KeySIMBlocking,
+}
+
+func (m assetMailer) SIMEmail(ctx context.Context, kind asset.EmailKind, card asset.EmailCard) (asset.Email, error) {
+	key, ok := simEmailKeys[kind]
+	if !ok {
+		return asset.Email{}, fmt.Errorf("no mail template for a SIM card's %s email", kind)
+	}
+	prefs, err := m.settings.Get(ctx)
+	if err != nil {
+		return asset.Email{}, err
+	}
+	provider, _ := prefs.Provider(card.Provider)
+	// A card without a plan of its own gets its provider's when it is given (Give SIM), so the email names that one.
+	plan := card.Plan
+	if plan == "" {
+		plan = provider.DefaultPlan
+	}
+	u, err := m.users.Get(ctx, card.Actor)
+	if err != nil && !errors.Is(err, user.ErrNotFound) {
+		return asset.Email{}, err
+	}
+	msg, err := m.templates.Render(ctx, key, map[string]string{
+		mailtemplate.FieldSIMNumber:       card.SIMNumber,
+		mailtemplate.FieldPhoneNumber:     card.PhoneNumber,
+		mailtemplate.FieldInventoryNumber: card.InventoryNumber,
+		mailtemplate.FieldPlan:            plan,
+		mailtemplate.FieldProviderName:    card.Provider,
+		mailtemplate.FieldProviderEmail:   provider.Email,
+		mailtemplate.FieldEmployeeName:    card.EmployeeName,
+		mailtemplate.FieldCompanyName:     prefs.CompanyName,
+		mailtemplate.FieldUserName:        u.Name,
+		mailtemplate.FieldUserEmail:       u.Email,
+		mailtemplate.FieldToday:           card.Today,
+	})
+	if err != nil {
+		return asset.Email{}, err
+	}
+	return asset.Email{To: msg.To, CC: msg.CC, Subject: msg.Subject, Body: msg.Body, Missing: msg.Missing}, nil
 }

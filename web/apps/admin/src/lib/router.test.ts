@@ -11,6 +11,13 @@ describe('router', () => {
     expect(parsePath('/nope')).toEqual({ name: 'home' })
   })
 
+  it('opens a mail template at its own address; an unknown one is the list', () => {
+    expect(parsePath('/mail-templates')).toEqual({ name: 'mailTemplates' })
+    expect(pathOf({ name: 'mailTemplates', key: 'sim.blocking' })).toBe('/mail-templates/sim.blocking')
+    expect(parsePath('/mail-templates/sim.blocking')).toEqual({ name: 'mailTemplates', key: 'sim.blocking' })
+    expect(parsePath('/mail-templates/sim.welcome')).toEqual({ name: 'mailTemplates' })
+  })
+
   it('keeps the System tab and the open error in its address; Backups moved there', () => {
     expect(parsePath('/system')).toEqual({ name: 'system', tab: 'status' })
     for (const tab of ['errors', 'backups'] as const) expect(parsePath(pathOf({ name: 'system', tab }))).toEqual({ name: 'system', tab })

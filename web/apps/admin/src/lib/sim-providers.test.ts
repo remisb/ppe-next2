@@ -1,42 +1,74 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_PROVIDERS, providerProblem, sameProviders, sameValue, valueProblem, valueText, withProvider, withoutProvider } from './sim-providers'
+import {
+  MAX_PROVIDERS,
+  badEmails,
+  emailOk,
+  providerProblem,
+  sameProviders,
+  sameValue,
+  tidyProviders,
+  valueProblem,
+  valueText,
+  withDetails,
+  withProvider,
+  withoutProvider,
+} from './sim-providers'
+
+const p = (name: string, email = '', default_plan = '') => ({ name, email, default_plan })
 
 describe('providerProblem', () => {
   it('takes a new name, trimmed', () => {
-    expect(providerProblem(['Telia'], ' Bitė ')).toBeUndefined()
+    expect(providerProblem([p('Telia')], ' Bitė ')).toBeUndefined()
   })
 
   it('refuses an empty name, one listed in any case, a long one and one too many', () => {
     expect(providerProblem([], '  ')).toBe('empty')
-    expect(providerProblem(['Telia'], ' telia')).toBe('duplicate')
+    expect(providerProblem([p('Telia')], ' telia')).toBe('duplicate')
     expect(providerProblem([], 'a'.repeat(101))).toBe('tooLong')
-    expect(providerProblem(Array.from({ length: MAX_PROVIDERS }, (_, i) => `P${i}`), 'Bitė')).toBe('tooMany')
+    expect(providerProblem(Array.from({ length: MAX_PROVIDERS }, (_, i) => p(`P${i}`)), 'Bitė')).toBe('tooMany')
   })
 })
 
 describe('withProvider and withoutProvider', () => {
   it('makes the first provider the default, and keeps the default after that', () => {
     const first = withProvider({ providers: [], default: '' }, ' Telia ')
-    expect(first).toEqual({ providers: ['Telia'], default: 'Telia' })
-    expect(withProvider(first, 'Bitė')).toEqual({ providers: ['Telia', 'Bitė'], default: 'Telia' })
+    expect(first).toEqual({ providers: [p('Telia')], default: 'Telia' })
+    expect(withProvider(first, 'Bitė')).toEqual({ providers: [p('Telia'), p('Bitė')], default: 'Telia' })
     // A list someone left without a default stays without one.
-    expect(withProvider({ providers: ['Telia'], default: '' }, 'Bitė')).toEqual({ providers: ['Telia', 'Bitė'], default: '' })
+    expect(withProvider({ providers: [p('Telia')], default: '' }, 'Bitė')).toEqual({ providers: [p('Telia'), p('Bitė')], default: '' })
   })
 
   it('removing the default leaves none', () => {
-    const s = { providers: ['Telia', 'Bitė'], default: 'Telia' }
-    expect(withoutProvider(s, 'Telia')).toEqual({ providers: ['Bitė'], default: '' })
-    expect(withoutProvider(s, 'Bitė')).toEqual({ providers: ['Telia'], default: 'Telia' })
+    const s = { providers: [p('Telia'), p('Bitė')], default: 'Telia' }
+    expect(withoutProvider(s, 'Telia')).toEqual({ providers: [p('Bitė')], default: '' })
+    expect(withoutProvider(s, 'Bitė')).toEqual({ providers: [p('Telia')], default: 'Telia' })
+  })
+})
+
+describe('a provider’s e-mail and plan', () => {
+  it('changes only that provider, and is saved trimmed', () => {
+    const s = { providers: [p('Telia'), p('Bitė')], default: 'Telia' }
+    const typed = withDetails(withDetails(s, 'Bitė', { email: ' sim@bite.lt ' }), 'Bitė', { default_plan: 'Verslas ' })
+    expect(typed.providers).toEqual([p('Telia'), p('Bitė', ' sim@bite.lt ', 'Verslas ')])
+    expect(tidyProviders(typed).providers[1]).toEqual(p('Bitė', 'sim@bite.lt', 'Verslas'))
+  })
+
+  it('takes one bare address or none', () => {
+    for (const ok of ['', ' ', 'sim@telia.lt', 'verslas.sim+lt@bite.co.uk']) expect(emailOk(ok)).toBe(true)
+    for (const bad of ['telia', 'sim@telia', 'Telia <sim@telia.lt>', 'a@telia.lt, b@telia.lt', 'a b@telia.lt']) expect(emailOk(bad)).toBe(false)
+    expect(badEmails({ providers: [p('Telia', 'telia'), p('Bitė', 'sim@bite.lt')], default: '' })).toEqual(['Telia'])
   })
 })
 
 describe('sameProviders', () => {
-  it('compares the list in order and the default', () => {
-    const s = { providers: ['Telia', 'Bitė'], default: 'Telia' }
-    expect(sameProviders(s, { providers: ['Telia', 'Bitė'], default: 'Telia' })).toBe(true)
-    expect(sameProviders(s, { providers: ['Bitė', 'Telia'], default: 'Telia' })).toBe(false)
-    expect(sameProviders(s, { providers: ['Telia', 'Bitė'], default: '' })).toBe(false)
+  it('compares the list in order, each one’s e-mail and plan as saved, and the default', () => {
+    const s = { providers: [p('Telia', 'sim@telia.lt'), p('Bitė')], default: 'Telia' }
+    expect(sameProviders(s, { providers: [p('Telia', ' sim@telia.lt'), p('Bitė')], default: 'Telia' })).toBe(true)
+    expect(sameProviders(s, { providers: [p('Bitė'), p('Telia', 'sim@telia.lt')], default: 'Telia' })).toBe(false)
+    expect(sameProviders(s, { providers: [p('Telia', 'sim@telia.lt'), p('Bitė')], default: '' })).toBe(false)
+    expect(sameProviders(s, { providers: [p('Telia'), p('Bitė')], default: 'Telia' })).toBe(false)
+    expect(sameProviders(s, { providers: [p('Telia', 'sim@telia.lt'), p('Bitė', '', 'Biz')], default: 'Telia' })).toBe(false)
   })
 })
 

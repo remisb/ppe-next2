@@ -151,7 +151,8 @@ export function AssetDetail({
                       onStatus={(next) => void changeStatus(next)}
                       onEdit={() => setEditing(true)}
                       onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                      onBlockingEmail={() => setSheet({ kind: 'email', asset: a })}
+                      onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
+                      onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
                       onPrintForm={() => void action.run(() => printHeldForm(a))}
                     />
                   </>
@@ -195,7 +196,13 @@ export function AssetDetail({
                   <span className="flex flex-wrap items-center gap-2">
                     {a.connection_status ? <StatusBadge status={a.connection_status} /> : null}
                     {canManage && a.connection_status ? (
-                      <StatusMenu number={a.inventory_no} status={a.connection_status} disabled={action.pending} onChange={(next) => void changeStatus(next)} />
+                      <StatusMenu
+                        number={a.inventory_no}
+                        status={a.connection_status}
+                        disabled={action.pending}
+                        onChange={(next) => void changeStatus(next)}
+                        onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
+                      />
                     ) : null}
                   </span>
                 </StateFact>
@@ -285,7 +292,7 @@ export function AssetDetail({
             <AssetSheets
               sheet={sheet}
               today={today}
-              defaultPlan={settings.data?.default_sim_plan}
+              providers={settings.data?.sim_providers}
               onChange={setSheet}
               onDone={(m) => {
                 setMessage(m)

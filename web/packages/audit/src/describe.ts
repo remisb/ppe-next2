@@ -44,6 +44,7 @@ type Format =
   | 'whereabouts'
   | 'output'
   | 'list'
+  | 'providers'
   | 'photoUses'
 
 /**
@@ -107,7 +108,7 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['sim_no', 'text'],
   ['phone_no', 'text'],
   ['provider', 'text'],
-  ['providers', 'list'],
+  ['providers', 'providers'],
   ['default_provider', 'text'],
   ['default_non_return_value_cents', 'money'],
   ['default_plan', 'text'],
@@ -125,6 +126,10 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['size_bytes', 'text'],
   ['sha256', 'text'],
   ['uses', 'photoUses'],
+  ['recipient', 'text'],
+  ['cc', 'text'],
+  ['subject', 'text'],
+  ['body', 'text'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
@@ -201,6 +206,10 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
     case 'list':
       if (!Array.isArray(value)) return String(value)
       return value.length === 0 ? t.none : value.map(String).join(', ')
+    case 'providers':
+      // Names, from before migration 0039; since then each with its e-mail and plan.
+      if (!Array.isArray(value)) return String(value)
+      return value.length === 0 ? t.none : value.map(providerText).join(', ')
     case 'photoUses':
       if (!Array.isArray(value)) return String(value)
       return value.length === 0 ? t.none : value.map((u) => t.photoUses[String(u)] ?? String(u)).join(', ')
@@ -213,6 +222,14 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
     case 'text':
       return value === '' ? null : typeof value === 'object' ? JSON.stringify(value) : String(value)
   }
+}
+
+/** A SIM provider as a change lists it: "Telia (sim@telia.lt, Biz 10 GB)". */
+function providerText(p: unknown): string {
+  if (typeof p !== 'object' || p === null) return String(p)
+  const { name, email, default_plan } = p as { name?: unknown; email?: unknown; default_plan?: unknown }
+  const extra = [email, default_plan].filter((x): x is string => typeof x === 'string' && x !== '')
+  return extra.length > 0 ? `${String(name)} (${extra.join(', ')})` : String(name)
 }
 
 /**

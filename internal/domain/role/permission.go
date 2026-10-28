@@ -12,27 +12,28 @@ import "slices"
 type Permission string
 
 const (
-	UsersRead         Permission = "users.read"
-	UsersManage       Permission = "users.manage"
-	RolesManage       Permission = "roles.manage"
-	EmployeesDelete   Permission = "employees.delete"
-	CatalogueManage   Permission = "catalogue.manage"
-	ItemPricesManage  Permission = "item_prices.manage"
-	ItemSetsRead      Permission = "item_sets.read"
-	ItemSetsManage    Permission = "item_sets.manage"
-	OrdersDelete      Permission = "orders.delete"
-	AssetsManage      Permission = "assets.manage"
-	EquipmentRead     Permission = "equipment.read"
-	SettingsManage    Permission = "settings.manage"
-	BackupsRead       Permission = "backups.read"
-	AuditRead         Permission = "audit.read"
-	AuditExport       Permission = "audit.export"
-	SecurityRead      Permission = "security.read"
-	SystemRead        Permission = "system.read"
-	UsageRead         Permission = "usage.read"
-	DashboardOverview Permission = "dashboard.overview"
-	DashboardManager  Permission = "dashboard.manager"
-	DashboardEmployee Permission = "dashboard.employee"
+	UsersRead           Permission = "users.read"
+	UsersManage         Permission = "users.manage"
+	RolesManage         Permission = "roles.manage"
+	EmployeesDelete     Permission = "employees.delete"
+	CatalogueManage     Permission = "catalogue.manage"
+	ItemPricesManage    Permission = "item_prices.manage"
+	ItemSetsRead        Permission = "item_sets.read"
+	ItemSetsManage      Permission = "item_sets.manage"
+	OrdersDelete        Permission = "orders.delete"
+	AssetsManage        Permission = "assets.manage"
+	EquipmentRead       Permission = "equipment.read"
+	SettingsManage      Permission = "settings.manage"
+	MailTemplatesManage Permission = "mail_templates.manage"
+	BackupsRead         Permission = "backups.read"
+	AuditRead           Permission = "audit.read"
+	AuditExport         Permission = "audit.export"
+	SecurityRead        Permission = "security.read"
+	SystemRead          Permission = "system.read"
+	UsageRead           Permission = "usage.read"
+	DashboardOverview   Permission = "dashboard.overview"
+	DashboardManager    Permission = "dashboard.manager"
+	DashboardEmployee   Permission = "dashboard.employee"
 )
 
 // Group is the heading a permission is listed under on Roles & permissions.
@@ -58,6 +59,7 @@ var catalogue = []Info{
 	{UsersManage, GroupAdministration, []Permission{UsersRead}},
 	{RolesManage, GroupAdministration, []Permission{UsersRead}},
 	{SettingsManage, GroupAdministration, nil},
+	{MailTemplatesManage, GroupAdministration, nil},
 	{BackupsRead, GroupAdministration, nil},
 	{AuditRead, GroupAdministration, nil},
 	{AuditExport, GroupAdministration, []Permission{AuditRead}},

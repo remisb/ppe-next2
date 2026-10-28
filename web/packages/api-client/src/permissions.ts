@@ -8,6 +8,7 @@ export const PERMISSIONS = [
   'users.manage',
   'roles.manage',
   'settings.manage',
+  'mail_templates.manage',
   'backups.read',
   'audit.read',
   'audit.export',

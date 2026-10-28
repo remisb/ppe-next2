@@ -3,7 +3,6 @@ import type {
   ComponentProps,
   InputHTMLAttributes,
   ReactNode,
-  TextareaHTMLAttributes,
 } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 
@@ -176,7 +175,7 @@ export function Textarea({
   invalid,
   rows = 4,
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
+}: ComponentProps<'textarea'> & { invalid?: boolean }) {
   return (
     <textarea
       rows={rows}

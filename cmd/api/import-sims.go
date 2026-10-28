@@ -84,8 +84,8 @@ func importSIMs(ctx context.Context, svc services, cfg config, out io.Writer) er
 		return err
 	}
 	for _, r := range rows {
-		if p := *r.SIM.Provider; len(prefs.SIMProviders) > 0 && !slices.Contains(prefs.SIMProviders, p) {
-			fmt.Fprintf(out, "line %d: note: provider %q is not among Settings' SIM providers %v\n", r.Line, p, prefs.SIMProviders)
+		if p := *r.SIM.Provider; len(prefs.SIMProviders) > 0 && !slices.Contains(prefs.ProviderNames(), p) {
+			fmt.Fprintf(out, "line %d: note: provider %q is not among Settings' SIM providers %v\n", r.Line, p, prefs.ProviderNames())
 		}
 	}
 

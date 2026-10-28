@@ -62,7 +62,12 @@ import type {
   RoleInput,
   SecurityPage,
   SecurityQuery,
+  MailMessage,
+  MailTemplate,
+  MailTemplateKey,
+  MailText,
   Settings,
+  SimEmailKind,
   SignedCopy,
   SignedInDevice,
   SimProvidersInput,
@@ -230,10 +235,21 @@ export function createClient(options: ClientOptions) {
     setOwnLanguage: (language: Language) => request<User>('PUT', '/api/v1/users/me/language', { language }),
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
+    /** Set or (empty) clear the company's name; administrators only. Returns the settings. */
+    updateCompany: (name: string) => request<Settings>('PUT', '/api/v1/settings/company', { name }),
     /** Set or clear the supplier's WhatsApp group; administrators only. Returns the settings. */
     updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
-    /** Replace the SIM providers and the default one; administrators only. Returns the settings. */
+    /** Replace the SIM providers, each with its e-mail and plan, and the default one; administrators only. Returns the settings. */
     updateSimProviders: (input: SimProvidersInput) => request<Settings>('PUT', '/api/v1/settings/sim-providers', input),
+    /** The templates of the emails the app prepares (mail_templates.manage). */
+    mailTemplates: {
+      list: () => request<MailTemplate[]>('GET', '/api/v1/mail-templates'),
+      get: (key: MailTemplateKey) => request<MailTemplate>('GET', `/api/v1/mail-templates/${seg(key)}`),
+      /** Saves a template's text; saving its default is Reset to Default. */
+      update: (key: MailTemplateKey, input: MailText) => request<MailTemplate>('PUT', `/api/v1/mail-templates/${seg(key)}`, input),
+      /** Renders unsaved text with the fields' samples; 400 names what cannot be saved. */
+      preview: (key: MailTemplateKey, input: MailText) => request<MailMessage>('POST', `/api/v1/mail-templates/${seg(key)}/preview`, input),
+    },
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),
     /** The database backups the backup agent recorded; admins only. */
@@ -436,8 +452,10 @@ export function createClient(options: ClientOptions) {
       /** Records that an assignment's stored form was printed again; any signed-in user. */
       recordFormReprinted: (id: string, assignmentId: string) =>
         request<void>('POST', `/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/form-printed`),
-      /** Records that Prepare Blocking Email's text was copied (asset.blocking_email_prepared); nothing is sent. */
-      recordBlockingEmail: (id: string) => request<void>('POST', `/api/v1/assets/${seg(id)}/blocking-email`),
+      /** Prepare Activation Email or Prepare Blocking Email: the SIM card's email from its mail template; nothing is sent. */
+      email: (id: string, kind: SimEmailKind) => request<MailMessage>('GET', `/api/v1/assets/${seg(id)}/emails/${seg(kind)}`),
+      /** Records that the email was copied (asset.activation_email_prepared, asset.blocking_email_prepared); nothing is sent. */
+      recordEmail: (id: string, kind: SimEmailKind) => request<void>('POST', `/api/v1/assets/${seg(id)}/emails/${seg(kind)}/copied`),
       /** Download PDF on Give: the form Give would store, as a PDF; recorded as printed (format pdf). */
       formPDF: (id: string, input: AssignmentFormInput) => {
         const q = new URLSearchParams({ employee: input.employee_id, date: input.given_date })

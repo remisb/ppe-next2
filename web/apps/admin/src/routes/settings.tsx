@@ -16,12 +16,16 @@ import {
   type ProviderProblem,
   type SimProviders,
   type ValueProblem,
+  MAX_EMAIL_LENGTH,
   MAX_PLAN_LENGTH,
+  badEmails,
   providerProblem,
   sameProviders,
   sameValue,
+  tidyProviders,
   valueProblem,
   valueText,
+  withDetails,
   withProvider,
   withoutProvider,
 } from '@/lib/sim-providers'
@@ -29,9 +33,10 @@ import { type SupplierChatErrors, checkSupplierChat } from '@/lib/supplier-chat'
 
 /**
  * Settings (/settings, administrators only): the organisation's settings. The
- * supplier's WhatsApp group, which Copy for WhatsApp opens for an order
- * message, and the SIM providers, which Add SIM offers, with the Non-return
- * Value it fills in.
+ * company's name, which mail templates write; the supplier's WhatsApp group,
+ * which Copy for WhatsApp opens for an order message; and the SIM providers,
+ * which Add SIM offers, with the Non-return Value it fills in, each with its
+ * e-mail and default plan.
  */
 export function SettingsPage() {
   const { client } = useApi()
@@ -43,12 +48,80 @@ export function SettingsPage() {
       <Loaded load={settings}>
         {(data) => (
           <div className="flex flex-col gap-6">
+            <CompanyCard settings={data} onSaved={settings.reload} />
             <SupplierChatCard settings={data} onSaved={settings.reload} />
             <SimProvidersCard settings={data} onSaved={settings.reload} />
           </div>
         )}
       </Loaded>
     </>
+  )
+}
+
+/** The company's name, as mail templates write it ({{company.name}}). Saving it empty removes it. */
+function CompanyCard({ settings, onSaved }: { settings: Settings; onSaved: () => void }) {
+  const { client } = useApi()
+  const titleId = useId()
+  const saved = settings.company_name ?? ''
+  const [name, setName] = useState(saved)
+  const [serverError, setServerError] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const dirty = name.trim().replace(/\s+/g, ' ') !== saved
+
+  // The form starts from what is saved, and again after each save.
+  useEffect(() => setName(saved), [saved])
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setServerError(undefined)
+    try {
+      await client.updateCompany(name.trim())
+      setDone(true)
+      onSaved()
+    } catch (err) {
+      setServerError(errorText(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card role="region" aria-labelledby={titleId} className="md:max-w-xl">
+      <CardHeader>
+        <CardTitle id={titleId}>{t.settings.company}</CardTitle>
+        <CardDescription>{t.settings.companyIntro}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4" noValidate>
+          <p role="status" className="text-sm">
+            {done && !dirty ? `${t.settings.saved} ` : null}
+            {saved ? t.settings.companyIs(saved) : t.settings.companyNotSet}
+          </p>
+          <Field label={t.settings.companyName} hint={t.settings.companyNameHint} error={serverError}>
+            {(p) => (
+              <Input
+                {...controlProps(p)}
+                autoComplete="organization"
+                maxLength={200}
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setDone(false)
+                  setServerError(undefined)
+                }}
+              />
+            )}
+          </Field>
+          <div>
+            <Button type="submit" disabled={busy || !dirty}>
+              {busy ? t.settings.saving : t.settings.save}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -148,11 +221,11 @@ function SupplierChatCard({ settings, onSaved }: { settings: Settings; onSaved: 
 }
 
 /**
- * The SIM providers Add SIM offers, the default one it chooses first, the
- * default Non-return Value it fills in, and the default plan Give SIM fills in
- * for a card without one. Added, removed, the default chosen, the value and
- * the plan typed as a draft, saved together; cards already registered keep
- * their provider, value and plan.
+ * The SIM providers Add SIM offers, the default one it chooses first and the
+ * default Non-return Value it fills in; each provider with the e-mail its
+ * activation and blocking emails go to and the plan Add SIM and Give SIM fill
+ * in. Added, removed, the default chosen and the rest typed as a draft, saved
+ * together; cards already registered keep their provider, value and plan.
  */
 function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: () => void }) {
   const { client } = useApi()
@@ -163,20 +236,19 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
   // The value as typed; it is checked on Save.
   const [value, setValue] = useState(savedValue)
   const [badValue, setBadValue] = useState<ValueProblem>()
-  const savedPlan = settings.default_sim_plan ?? ''
-  const [plan, setPlan] = useState(savedPlan)
+  // The providers whose e-mail Save found it cannot take.
+  const [badEmail, setBadEmail] = useState<string[]>([])
   const [name, setName] = useState('')
   const [problem, setProblem] = useState<ProviderProblem>()
   const [serverError, setServerError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
-  const dirty = !sameProviders(draft, saved) || !sameValue(value, savedValue) || plan.trim() !== savedPlan
+  const dirty = !sameProviders(draft, saved) || !sameValue(value, savedValue)
 
   // The draft starts from what is saved, and again after each save.
   const savedKey = JSON.stringify(saved)
   useEffect(() => setDraft(saved), [savedKey])
   useEffect(() => setValue(savedValue), [savedValue])
-  useEffect(() => setPlan(savedPlan), [savedPlan])
 
   const change = (next: SimProviders) => {
     setDraft(next)
@@ -195,12 +267,14 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
 
   const save = async () => {
     const problem = valueProblem(value)
+    const emails = badEmails(draft)
     setBadValue(problem)
-    if (problem) return
+    setBadEmail(emails)
+    if (problem || emails.length > 0) return
     setBusy(true)
     setServerError(undefined)
     try {
-      await client.updateSimProviders({ ...draft, default_non_return_value_cents: parseEuro(value), default_plan: plan.trim() })
+      await client.updateSimProviders({ ...tidyProviders(draft), default_non_return_value_cents: parseEuro(value) })
       setDone(true)
       onSaved()
     } catch (err) {
@@ -230,25 +304,70 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
             <legend className="mb-1.5 text-sm font-medium">{t.settings.defaultProvider}</legend>
             <ul className="divide-y divide-border border-y border-border">
               {draft.providers.map((p) => (
-                <li key={p} className="flex items-center gap-2">
-                  <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
-                    <input
-                      type="radio"
-                      name={`${titleId}-default`}
-                      className="size-5 shrink-0 accent-primary"
-                      checked={draft.default === p}
-                      onChange={() => change({ ...draft, default: p })}
-                    />
-                    <span className="min-w-0 truncate">{p}</span>
-                    {draft.default === p ? (
-                      <Badge variant="secondary" aria-hidden>
-                        {t.settings.defaultBadge}
-                      </Badge>
-                    ) : null}
-                  </label>
-                  <Button type="button" size="icon" variant="ghost" aria-label={t.settings.removeProvider(p)} onClick={() => change(withoutProvider(draft, p))}>
-                    <X aria-hidden />
-                  </Button>
+                <li key={p.name} className="grid gap-2 pb-3">
+                  <div className="flex items-center gap-2">
+                    <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
+                      <input
+                        type="radio"
+                        name={`${titleId}-default`}
+                        className="size-5 shrink-0 accent-primary"
+                        checked={draft.default === p.name}
+                        onChange={() => change({ ...draft, default: p.name })}
+                      />
+                      <span className="min-w-0 truncate font-medium">{p.name}</span>
+                      {draft.default === p.name ? (
+                        <Badge variant="secondary" aria-hidden>
+                          {t.settings.defaultBadge}
+                        </Badge>
+                      ) : null}
+                    </label>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      aria-label={t.settings.removeProvider(p.name)}
+                      onClick={() => change(withoutProvider(draft, p.name))}
+                    >
+                      <X aria-hidden />
+                    </Button>
+                  </div>
+                  {/* Level with the name, past the radio; named by the provider for a screen reader. */}
+                  <div role="group" aria-label={p.name} className="grid gap-3 pl-8 sm:grid-cols-2">
+                    <Field
+                      label={t.settings.providerEmail}
+                      hint={t.settings.providerEmailHint}
+                      error={badEmail.includes(p.name) ? t.settings.invalidEmail : undefined}
+                    >
+                      {(f) => (
+                        <Input
+                          {...controlProps(f)}
+                          type="email"
+                          inputMode="email"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          autoComplete="off"
+                          maxLength={MAX_EMAIL_LENGTH}
+                          value={p.email}
+                          onChange={(e) => {
+                            change(withDetails(draft, p.name, { email: e.target.value }))
+                            setBadEmail((names) => names.filter((n) => n !== p.name))
+                          }}
+                        />
+                      )}
+                    </Field>
+                    <Field label={t.settings.providerPlan} hint={t.settings.providerPlanHint}>
+                      {(f) => (
+                        <Input
+                          {...controlProps(f)}
+                          autoComplete="off"
+                          maxLength={MAX_PLAN_LENGTH}
+                          value={p.default_plan}
+                          onChange={(e) => change(withDetails(draft, p.name, { default_plan: e.target.value }))}
+                        />
+                      )}
+                    </Field>
+                  </div>
                 </li>
               ))}
               <li className="pl-3">
@@ -305,22 +424,6 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
             />
           )}
         </Field>
-        <Field label={t.settings.defaultPlan} hint={t.settings.defaultPlanHint}>
-          {(p) => (
-            <Input
-              {...controlProps(p)}
-              autoComplete="off"
-              maxLength={MAX_PLAN_LENGTH}
-              className="sm:max-w-xs"
-              value={plan}
-              onChange={(e) => {
-                setPlan(e.target.value)
-                setDone(false)
-                setServerError(undefined)
-              }}
-            />
-          )}
-        </Field>
         {serverError ? (
           <p role="alert" className="text-sm text-destructive">
             {serverError}
@@ -339,7 +442,7 @@ function SimProvidersCard({ settings, onSaved }: { settings: Settings; onSaved: 
                 change(saved)
                 setValue(savedValue)
                 setBadValue(undefined)
-                setPlan(savedPlan)
+                setBadEmail([])
               }}
             >
               {t.settings.discard}

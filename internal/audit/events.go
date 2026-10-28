@@ -38,7 +38,7 @@ var areas = []struct {
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
-	{AreaSettings, []string{"settings"}},
+	{AreaSettings, []string{"settings", "mail_template"}},
 	{AreaSecurity, []string{"access_review"}},
 	{AreaAudit, []string{EntityLog}},
 }
@@ -58,8 +58,9 @@ var events = []string{
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"asset.registered", "asset.updated", "asset.status_changed", "asset.given", "asset.returned", "asset.marked_not_returned",
-	"asset.signed_copy_uploaded", "asset.form_printed", "asset.blocking_email_prepared",
-	"settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
+	"asset.signed_copy_uploaded", "asset.form_printed", "asset.activation_email_prepared", "asset.blocking_email_prepared",
+	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
+	"mail_template.changed",
 	"access_review.completed",
 	EventExported, EventPurged,
 }

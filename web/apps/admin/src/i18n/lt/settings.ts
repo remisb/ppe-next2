@@ -3,6 +3,12 @@ import type { SettingsText } from '../en/settings'
 export const settings: SettingsText = {
   title: 'Nustatymai',
   description: 'Visai organizacijai. Juos keičia tik administratoriai.',
+  company: 'Įmonė',
+  companyIntro: 'Laiškų šablonai įrašo įmonės pavadinimą ten, kur naudoja {{company.name}}, pvz., SIM aktyvavimo ir blokavimo laiškuose.',
+  companyName: 'Įmonės pavadinimas',
+  companyNameHint: 'Kaip jį žino tiekėjai, pvz., UAB Gavort. Palikite tuščią, jei jo nėra.',
+  companyIs: (name: string) => `Laiškuose rašoma ${name}.`,
+  companyNotSet: 'Nenustatyta: laiškuose rodoma [Company Name], kurį įrašote patys.',
   supplierChat: 'Tiekėjo WhatsApp grupė',
   supplierChatIntro:
     'Kopijuoti į WhatsApp nukopijuoja užsakymo žinutę ir pasiūlo atidaryti šią grupę, kur ją įklijuojate. WhatsApp negali atidaryti grupės su jau įrašyta žinute.',
@@ -22,7 +28,7 @@ export const settings: SettingsText = {
   invalidLink: 'Įklijuokite grupės pakvietimo nuorodą iš WhatsApp: ji prasideda https://chat.whatsapp.com/',
   simProviders: 'SIM tiekėjai',
   simProvidersIntro:
-    '„Pridėti SIM“ siūlo šiuos tiekėjus, numatytasis pasirinktas iš anksto, ir įrašo numatytąją negrąžinimo vertę bei planą; „Išduoti SIM“ įrašo numatytąjį planą kortelei, kuri jo neturi. Kortelė savo tiekėjo, vertės ir plano nekeičia.',
+    '„Pridėti SIM“ siūlo šiuos tiekėjus, numatytasis pasirinktas iš anksto, ir įrašo numatytąją negrąžinimo vertę bei tiekėjo planą; „Išduoti SIM“ įrašo tiekėjo planą kortelei, kuri jo neturi. Kortelė savo tiekėjo, vertės ir plano nekeičia. SIM aktyvavimo ir blokavimo laiškai siunčiami tiekėjo el. paštu.',
   noProviders: 'Sąrašas tuščias: „Pridėti SIM“ prašo įrašyti tiekėją.',
   defaultProviderIs: (name: string) => `„Pridėti SIM“ iš anksto pasirenka „${name}“.`,
   noDefaultProvider: 'Numatytojo nėra: „Pridėti SIM“ klausia, kurį pasirinkti.',
@@ -45,8 +51,11 @@ export const settings: SettingsText = {
     invalid: 'Įrašykite sumą eurais, pvz., 25,00.',
     tooLarge: 'Ne daugiau kaip 100 000 000 €.',
   },
-  defaultPlan: 'Numatytasis planas',
-  defaultPlanHint: '„Pridėti SIM“ jį įrašo naujai kortelei, o „Išduoti SIM“ – kortelei, kuri dar neturi plano. Palikite tuščią, jei jo nėra.',
+  providerEmail: 'El. paštas',
+  providerEmailHint: 'Kur siunčiami jo aktyvavimo ir blokavimo laiškai.',
+  invalidEmail: 'Įrašykite vieną el. pašto adresą, pvz., sim@tiekejas.lt, arba palikite tuščią.',
+  providerPlan: 'Numatytasis planas',
+  providerPlanHint: '„Pridėti SIM“ ir „Išduoti SIM“ jį įrašo jo kortelėms.',
   saveProviders: 'Išsaugoti',
   discard: 'Atmesti pakeitimus',
 }

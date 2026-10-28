@@ -26,6 +26,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
@@ -634,6 +635,18 @@ func (s *stubSettings) Update(_ context.Context, m settings.Mutation) (settings.
 	return next, err
 }
 
+// stubTemplates has no saved template: each reads as its default.
+type stubTemplates struct{}
+
+func (stubTemplates) List(context.Context) ([]mailtemplate.Template, error) { return nil, nil }
+func (stubTemplates) Get(_ context.Context, key string) (mailtemplate.Template, error) {
+	return mailtemplate.Template{Key: key}, nil
+}
+func (stubTemplates) Update(_ context.Context, key string, m mailtemplate.Mutation) (mailtemplate.Template, error) {
+	next, _, err := m(mailtemplate.Template{Key: key})
+	return next, err
+}
+
 type stubBackups struct{}
 
 func (stubBackups) Read(context.Context, int) (backup.Status, error) { return backup.Status{}, nil }
@@ -670,7 +683,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, stubDashboard{}, &stubSettings{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, stubDashboard{}, &stubSettings{}, stubTemplates{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -820,6 +833,7 @@ var policy = map[string]rule{
 	"POST /api/v1/orders":                                                       {"", "any"},
 	"GET /api/v1/orders":                                                        {"", "any"},
 	"GET /api/v1/settings":                                                      {"", "any"},
+	"PUT /api/v1/settings/company":                                              {role.SettingsManage, "admins"},
 	"PUT /api/v1/settings/supplier-chat":                                        {role.SettingsManage, "admins"},
 	"PUT /api/v1/settings/sim-providers":                                        {role.SettingsManage, "admins"},
 	"POST /api/v1/orders/{id}/confirmation-link":                                {"", "any"},
@@ -842,7 +856,8 @@ var policy = map[string]rule{
 	"PUT /api/v1/assets/{id}/status":                                            {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/form-printed":                                     {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed":          {"", "any"},
-	"POST /api/v1/assets/{id}/blocking-email":                                   {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}/emails/{kind}":                                     {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/emails/{kind}/copied":                             {role.AssetsManage, "managers"},
 	"GET /api/v1/assets/{id}/assignments/preview.pdf":                           {role.AssetsManage, "managers"},
 	"GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf":               {"", "any"},
 	"POST /api/v1/assets/{id}/assignments/preview":                              {role.AssetsManage, "managers"},
@@ -858,6 +873,10 @@ var policy = map[string]rule{
 	"GET /api/v1/dashboard/employee":                                            {role.DashboardEmployee, "employee"},
 	"GET /api/v1/replacements":                                                  {"", "any"},
 	"GET /api/v1/backups":                                                       {role.BackupsRead, "admins"},
+	"GET /api/v1/mail-templates":                                                {role.MailTemplatesManage, "admins"},
+	"GET /api/v1/mail-templates/{key}":                                          {role.MailTemplatesManage, "admins"},
+	"PUT /api/v1/mail-templates/{key}":                                          {role.MailTemplatesManage, "admins"},
+	"POST /api/v1/mail-templates/{key}/preview":                                 {role.MailTemplatesManage, "admins"},
 	"GET /api/v1/audit-events":                                                  {role.AuditRead, "admins"},
 	"GET /api/v1/audit-events/{id}":                                             {role.AuditRead, "admins"},
 	"GET /api/v1/audit-events/integrity":                                        {role.AuditRead, "admins"},

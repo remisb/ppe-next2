@@ -1,7 +1,13 @@
-/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group, the SIM providers). */
+/** Settings: the organisation's settings an administrator changes (the company, the supplier's WhatsApp group, the SIM providers). */
 export const settings = {
   title: 'Settings',
   description: 'For the whole organisation. Only administrators change them.',
+  company: 'Company',
+  companyIntro: 'Mail templates write the company’s name where they use {{company.name}}, as in the SIM activation and blocking emails.',
+  companyName: 'Company name',
+  companyNameHint: 'As the providers know it, e.g. UAB Gavort. Leave it empty for none.',
+  companyIs: (name: string) => `Emails write ${name}.`,
+  companyNotSet: 'Not set: emails show [Company Name] for you to fill in.',
   supplierChat: "Supplier's WhatsApp group",
   supplierChatIntro:
     'Copy for WhatsApp copies an order message and offers to open this group, where you paste it. WhatsApp cannot open a group with the message already typed in.',
@@ -21,7 +27,7 @@ export const settings = {
   invalidLink: 'Paste the group invite link from WhatsApp: it starts with https://chat.whatsapp.com/',
   simProviders: 'SIM providers',
   simProvidersIntro:
-    'Add SIM offers these providers, the default one chosen first, and fills in the default Non-return Value and plan; Give SIM fills in the default plan for a card without one. A card keeps its own provider, value and plan.',
+    'Add SIM offers these providers, the default one chosen first, and fills in the default Non-return Value and the provider’s plan; Give SIM fills in the provider’s plan for a card without one. A card keeps its own provider, value and plan. The SIM activation and blocking emails go to the provider’s e-mail.',
   noProviders: 'None listed: Add SIM asks for the provider to be typed.',
   defaultProviderIs: (name: string) => `Add SIM chooses ${name} first.`,
   noDefaultProvider: 'No default: Add SIM asks which one.',
@@ -44,8 +50,11 @@ export const settings = {
     invalid: 'Type an amount in euros, such as 25.00.',
     tooLarge: 'At most €100,000,000.',
   },
-  defaultPlan: 'Default plan',
-  defaultPlanHint: 'Add SIM fills it in for a new card, and Give SIM for a card that has no plan yet. Leave it empty for none.',
+  providerEmail: 'E-mail',
+  providerEmailHint: 'Where its activation and blocking emails go.',
+  invalidEmail: 'Type one e-mail address, such as sim@provider.lt, or leave it empty.',
+  providerPlan: 'Default plan',
+  providerPlanHint: 'Add SIM and Give SIM fill it in for its cards.',
   saveProviders: 'Save',
   discard: 'Discard changes',
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
@@ -85,6 +86,7 @@ var errorStatuses = []struct {
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
+	{mailtemplate.ErrActorNotFound, http.StatusUnauthorized},
 	{role.ErrActorNotFound, http.StatusUnauthorized},
 	{asset.ErrActorNotFound, http.StatusUnauthorized},
 	{employeephoto.ErrActorNotFound, http.StatusUnauthorized},
@@ -100,6 +102,7 @@ var errorStatuses = []struct {
 	{order.ErrEmployeeNotFound, http.StatusNotFound},
 	{order.ErrItemSetNotFound, http.StatusNotFound},
 	{audit.ErrNotFound, http.StatusNotFound},
+	{mailtemplate.ErrNotFound, http.StatusNotFound},
 	{security.ErrNotFound, http.StatusNotFound},
 	{asset.ErrNotFound, http.StatusNotFound},
 	{asset.ErrEmployeeNotFound, http.StatusNotFound},
@@ -145,6 +148,7 @@ var errorStatuses = []struct {
 	{order.ErrInvalid, http.StatusBadRequest},
 	{dashboard.ErrInvalid, http.StatusBadRequest},
 	{settings.ErrInvalid, http.StatusBadRequest},
+	{mailtemplate.ErrInvalid, http.StatusBadRequest},
 	{audit.ErrInvalid, http.StatusBadRequest},
 	{security.ErrInvalid, http.StatusBadRequest},
 	{asset.ErrInvalid, http.StatusBadRequest},

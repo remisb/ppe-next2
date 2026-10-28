@@ -1,4 +1,13 @@
-import { AUDIT_AREAS, AUDIT_EVENTS, type AuditArea, type AuditEntry, type AuditPage as AuditPageData, type AuditVerification, isPermission } from '@ppe/api-client'
+import {
+  AUDIT_AREAS,
+  AUDIT_EVENTS,
+  type AuditArea,
+  type AuditEntry,
+  type AuditPage as AuditPageData,
+  type AuditVerification,
+  type MailTemplateKey,
+  isPermission,
+} from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { type DescribeOptions, ChangeDetail, areaLabel, auditText, auditTitle, changedBy, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
@@ -42,7 +51,7 @@ const areaEvents: Record<AuditArea, readonly string[]> = {
   item_sets: ['item_set.'],
   orders: ['order.'],
   assets: ['asset.'],
-  settings: ['settings.'],
+  settings: ['settings.', 'mail_template.'],
   security: ['access_review.'],
   audit: ['audit.'],
 }
@@ -370,6 +379,8 @@ function recordName(e: AuditEntry): string {
   const name =
     // A picture is named by its icon, in the language in use.
     (e.entity_type === 'catalogue_picture' && e.entity_label ? (auditText().icons[e.entity_label] ?? e.entity_label) : null) ??
+    // A mail template is named by its use case, in the language in use.
+    (e.entity_type === 'mail_template' && e.entity_label ? (t.mailTemplates.names[e.entity_label as MailTemplateKey] ?? e.entity_label) : null) ??
     e.entity_label ??
     (e.entity_type === 'settings'
       ? areaLabel('settings')
@@ -381,7 +392,7 @@ function recordName(e: AuditEntry): string {
   return e.entity_deleted ? `${name} (${t.audit.deleted})` : name
 }
 
-/** Where a record opens: the staff app's page for it, Roles here, or nowhere (users, settings, deleted records). */
+/** Where a record opens: the staff app's page for it, Roles or the mail template here, or nowhere (users, settings, deleted records). */
 function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: string; onClick?: (ev: React.MouseEvent) => void } | null {
   if (e.entity_deleted) return null
   const id = encodeURIComponent(e.entity_id)
@@ -402,6 +413,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return linkTo({ name: 'roles' }, navigate)
     case 'access_review':
       return linkTo({ name: 'security', tab: 'review', filter: {} }, navigate)
+    case 'mail_template':
+      return e.entity_label ? linkTo({ name: 'mailTemplates', key: e.entity_label as MailTemplateKey }, navigate) : null
     default:
       return null
   }

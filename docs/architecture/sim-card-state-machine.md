@@ -43,8 +43,8 @@ stateDiagram-v2
 is no final state: write-off is reserved (`written_off_at`) and not built, and no route
 deletes a card. The status never stops a card being returned or marked Not Returned; it
 matters only to Give SIM, which refuses anything but Active (409 `ErrNotActive`). A card
-marked Not Returned is usually then blocked: Prepare Blocking Email builds the provider's
-email, and the user sets Blocked by hand once the provider confirms. A returned blocked card
+marked Not Returned is usually then blocked: Prepare Blocking Email prepares the provider's
+email from its mail template, and the user sets Blocked by hand once the provider confirms. A returned blocked card
 must be unblocked and set Active before it can be given again.
 
 ## Where the card is
