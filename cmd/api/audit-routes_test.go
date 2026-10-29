@@ -35,6 +35,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		asset.EventRegistered, asset.EventUpdated, asset.EventStatusChanged, asset.EventGiven, asset.EventReturned,
 		asset.EventMarkedNotReturned,
 		asset.EventSignedCopyUploaded, asset.EventFormPrinted, asset.EventActivationEmailPrepared, asset.EventBlockingEmailPrepared,
+		asset.EventSIMCodesChanged, asset.EventSIMCodesShown,
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
 		mailtemplate.EventChanged,
 		security.EventAccessReviewCompleted,

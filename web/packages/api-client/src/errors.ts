@@ -8,13 +8,16 @@ export class ApiError extends Error {
   readonly reference: string | undefined
   /** On a 409, the record the conflict is with: the asset that already has the SIM or inventory number. */
   readonly existingId: string | undefined
+  /** On a refused batch (Scan SIMs), the refused row, counted from 0. */
+  readonly index: number | undefined
 
-  constructor(status: number, message: string, reference?: string, existingId?: string) {
+  constructor(status: number, message: string, reference?: string, existingId?: string, index?: number) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.reference = reference
     this.existingId = existingId
+    this.index = index
   }
 
   /** The reference as people quote it: its first 8 characters, enough to grep the log. */

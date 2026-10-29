@@ -36,6 +36,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/monitor"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/tsa"
@@ -88,6 +89,10 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	} else {
 		logger.Info("file storage", slog.String("target", store.String()))
 	}
+	codes, err := simCodesBox(cfg.SIMCodesKey)
+	if err != nil {
+		return err
+	}
 	svc := newServices(
 		loc, cfg.ConfirmTTL, cfg.AuditRetention,
 		sessions,
@@ -101,7 +106,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
-		store,
+		store, codes,
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
@@ -217,14 +222,14 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, codes asset.Sealer, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
 		security:  sec,
 		roles:     roles,
 		users:     users,
-		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithFiles(store)),
+		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithFiles(store), asset.WithSealer(codes)),
 		catalogue: catalogue.NewService(items),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
@@ -269,7 +274,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
-	registerAssetRoutes(rt, svc.assets, svc.users)
+	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)
@@ -372,4 +377,14 @@ func seedAdmin(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg
 	}
 	logger.Info("seed admin created", slog.String("id", u.ID.String()), slog.String("email", u.Email))
 	return nil
+}
+
+// simCodesBox seals SIM cards' PIN and PUK under API_SIM_CODES_KEY, which
+// validate has checked.
+func simCodesBox(hexKey string) (*sealbox.Box, error) {
+	key, err := sealbox.ParseKey(hexKey)
+	if err != nil {
+		return nil, fmt.Errorf("API_SIM_CODES_KEY %w", err)
+	}
+	return sealbox.New(key)
 }

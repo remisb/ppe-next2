@@ -7,13 +7,15 @@
   "scripts": {
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "guide": "for d in phone tablet desktop; do for l in en lt ru; do GUIDE_DEVICE=$d GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done; done"
+    "guide": "for d in phone tablet desktop; do for l in en lt ru; do GUIDE_DEVICE=$d GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done; done",
+    "sim-cards": "node --experimental-strip-types --no-warnings fixtures/sim-cards/make.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
     "pg": "^8.23.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "zxing-wasm": "3.1.5"
   }
 }

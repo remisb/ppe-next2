@@ -88,6 +88,10 @@ export const roles: RolesText = {
       label: 'Tvarkyti įmonės turtą',
       grants: 'Pridėti SIM ir įrangą, keisti SIM būseną, išduoti turtą darbuotojams ir registruoti grąžinimą. Įrangai dar reikia leidimo „Matyti įrangą ir baldus“.',
     },
+    'sim_codes.read': {
+      label: 'Rodyti PIN ir PUK',
+      grants: 'Matyti SIM PIN ir PUK, patvirtinus slaptažodį; kiekvienas kartas užfiksuojamas. Reikia leidimo „Tvarkyti įmonės turtą“.',
+    },
     'equipment.read': {
       label: 'Matyti įrangą ir baldus',
       grants: 'Kiekvieną daiktą ir pas ką jis yra: įmonės turte, darbuotojų puslapiuose ir paieškoje. Be šio leidimo jų nemato net administratorius.',

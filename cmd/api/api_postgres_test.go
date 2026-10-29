@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -93,7 +94,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
-		testFiles(t),
+		testFiles(t), testCodes(t),
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
@@ -1813,5 +1814,86 @@ func TestPostgresAuditExportHTTP(t *testing.T) {
 	in := decode[Integrity](t, rec.Body.Bytes())
 	if rec.Code != 200 || in.Verification == nil || !in.Verification.OK || in.Purges == nil {
 		t.Errorf("integrity = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// Scan SIMs over HTTP: the batch checked, then added; Show PIN and PUK for
+// a recent sign-in only, never cached, recorded without the codes.
+func TestPostgresScanSIMsHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, admin := api.userWith(t, role.KeyAdmin)
+	const a, b = "8937099000000000015", "8937099000000000023"
+	body := map[string]any{"provider": "Bitė", "plan": "Business", "non_return_value_cents": 5000,
+		"cards": []map[string]string{{"sim_no": a, "pin": "0306", "puk": "93691381"}, {"sim_no": b}, {"sim_no": b + "F"}}}
+	rec := api.do(t, "POST", "/api/v1/assets/sim-cards/batch/check", mgr, body)
+	problems := decode[map[string][]map[string]any](t, rec.Body.Bytes())["problems"]
+	if rec.Code != http.StatusOK || len(problems) != 1 || problems[0]["index"] != float64(2) || problems[0]["code"] != "duplicate" || problems[0]["other"] != float64(1) {
+		t.Fatalf("check = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets/sim-cards/batch", mgr, body)
+	if rec.Code != http.StatusConflict || decode[map[string]any](t, rec.Body.Bytes())["index"] != float64(2) {
+		t.Errorf("add with a duplicate = %d %s", rec.Code, rec.Body)
+	}
+	body["cards"] = body["cards"].([]map[string]string)[:2]
+	rec = api.do(t, "POST", "/api/v1/assets/sim-cards/batch", mgr, body)
+	sims := decode[map[string][]map[string]string](t, rec.Body.Bytes())["sims"]
+	if rec.Code != http.StatusCreated || len(sims) != 2 || sims[0]["inventory_no"] != "SIM-000001" || sims[1]["sim_no"] != b {
+		t.Fatalf("add = %d %s", rec.Code, rec.Body)
+	}
+	id := sims[0]["id"]
+	rec = api.do(t, "POST", "/api/v1/assets/sim-cards/batch/check", mgr, map[string]any{"provider": "Bitė", "cards": []map[string]string{{"sim_no": a + "F"}}})
+	if problems := decode[map[string][]map[string]any](t, rec.Body.Bytes())["problems"]; len(problems) != 1 || problems[0]["code"] != "registered" || problems[0]["existing_id"] != id {
+		t.Errorf("check against the register = %s", rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil); strings.Contains(rec.Body.String(), "93691381") {
+		t.Errorf("the asset answer holds the PUK: %s", rec.Body)
+	}
+
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", mgr, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager's Show = %d", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", admin, nil)
+	if c := decode[map[string]string](t, rec.Body.Bytes()); rec.Code != http.StatusOK || c["pin"] != "0306" || c["puk"] != "93691381" ||
+		rec.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("Show = %d %s %v", rec.Code, rec.Body, rec.Header())
+	}
+	claims, err := api.tokens.parse(admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims.AuthTime = jwt.NewNumericDate(time.Now().Add(-13 * time.Hour))
+	stale := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), claims)
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", stale, nil); rec.Code != http.StatusForbidden ||
+		!strings.Contains(rec.Body.String(), "recent sign-in required") {
+		t.Errorf("Show with a stale sign-in = %d %s", rec.Code, rec.Body)
+	}
+	other := sims[1]["id"]
+	if rec := api.do(t, "POST", "/api/v1/assets/"+other+"/sim-codes/show", admin, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("Show without codes = %d", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+other+"/sim-codes", mgr, map[string]string{"pin": "8134", "puk": "906517"}); rec.Code != http.StatusBadRequest ||
+		strings.Contains(rec.Body.String(), "906517") {
+		t.Errorf("a short PUK = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+other+"/sim-codes", mgr, map[string]string{"pin": "8134", "puk": "90651799"}); rec.Code != http.StatusNoContent {
+		t.Errorf("Set = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/assets/"+other+"/sim-codes", mgr, nil); rec.Code != http.StatusNoContent {
+		t.Errorf("Clear = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/assets/"+other+"/sim-codes", mgr, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("Clear twice = %d %s", rec.Code, rec.Body)
+	}
+
+	rec = api.do(t, "GET", "/api/v1/audit-events/assets/"+id, mgr, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "asset.sim_codes_shown") ||
+		strings.Contains(rec.Body.String(), "0306") || strings.Contains(rec.Body.String(), "93691381") {
+		t.Errorf("the card's changes = %d %s", rec.Code, rec.Body)
+	}
+	var plain int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM asset_sim_codes
+		WHERE position('93691381'::bytea in sealed) > 0`).Scan(&plain); err != nil || plain != 0 {
+		t.Errorf("rows holding the PUK in plain: %d, %v", plain, err)
 	}
 }

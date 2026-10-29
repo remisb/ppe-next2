@@ -14,6 +14,7 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
 type config struct {
@@ -25,7 +26,10 @@ type config struct {
 
 	JWTSecret string
 	JWTIssuer string
-	JWTTTL    time.Duration
+	// SIMCodesKey seals SIM cards' PIN and PUK (internal/sealbox): 64 hex
+	// characters, kept apart from the database and its backups (ADR 0005).
+	SIMCodesKey string
+	JWTTTL      time.Duration
 	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
 	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
@@ -114,6 +118,7 @@ func loadConfig(args []string) (config, error) {
 		DBDSN:            env("API_DB_DSN", ""),
 		JWTSecret:        env("API_JWT_SECRET", ""),
 		JWTIssuer:        env("API_JWT_ISSUER", "ppe-next2"),
+		SIMCodesKey:      env("API_SIM_CODES_KEY", ""),
 		SeedUserEmail:    env("API_SEED_USER_EMAIL", ""),
 		SeedUserPassword: env("API_SEED_USER_PASSWORD", ""),
 		SeedUserName:     env("API_SEED_USER_NAME", "Administrator"),
@@ -216,6 +221,11 @@ func (c config) validate() error {
 	// HS256 with a short secret is brute-forceable offline from any issued token.
 	if len(c.JWTSecret) < 32 {
 		errs = append(errs, errors.New("API_JWT_SECRET must be at least 32 bytes"))
+	}
+	if _, err := sealbox.ParseKey(c.SIMCodesKey); err != nil {
+		errs = append(errs, fmt.Errorf("API_SIM_CODES_KEY %w", err))
+	} else if c.SIMCodesKey == c.JWTSecret {
+		errs = append(errs, errors.New("API_SIM_CODES_KEY must not be API_JWT_SECRET"))
 	}
 	if c.JWTTTL < time.Minute || c.JWTTTL > 24*time.Hour {
 		errs = append(errs, errors.New("API_JWT_TTL must be between 1m and 24h"))

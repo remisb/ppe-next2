@@ -28,6 +28,9 @@ var (
 	ErrNoStorage          = errors.New("file storage is not set up, so signed copies cannot be kept")
 	ErrFileType           = errors.New("a signed copy must be a PDF, JPEG or PNG file")
 	ErrFileTooLarge       = errors.New("a signed copy may be at most 10 MB")
+	// PIN and PUK (Scan SIMs).
+	ErrNoSIMCodes          = errors.New("no PIN and PUK are recorded for this SIM")
+	ErrSIMCodesUnavailable = errors.New("PIN and PUK cannot be kept or shown: the API has no API_SIM_CODES_KEY")
 )
 
 func fieldError(field, problem string) error {

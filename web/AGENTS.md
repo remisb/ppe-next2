@@ -25,10 +25,14 @@ web/
     app-shell/           the sign-in and session (permissions, can()), Sign in, Confirm
                          your password, theme, density, password rules, the router
     backups/             how backups read, for Backups and the Dashboard's card
+    sim-scan/            Scan SIMs: reading SIM carriers (barcode, PIN and PUK), pairing,
+                         the review list and its rules; the readers' files' Vite plugin
   apps/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,
                          Settings, Backups
+    sim-scan/            Scan SIMs, a trial at /sim-scan/ (ADR 0005); moves into the
+                         staff app once it passes
 ```
 
 **Two apps, one origin, one sign-in.** Administration is a separate app (ADR 0002) on the
@@ -39,7 +43,11 @@ both) and the device's `workwear.theme`, `workwear.language`, `workwear.keepSign
 `workwear.density.*`. Never rename these per app. A link from one app to the other is a
 plain `<a href>` (`staffHref`, `adminHref`), a full page load. In development open
 Administration through the staff app's server, `http://localhost:5180/admin/`, which
-proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`).
+proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`). The Scan SIMs
+trial is a third app on the same terms, at `/sim-scan/` (`simScanHref`; port 5184,
+`pnpm --dir apps/sim-scan dev`, proxied from 5180). A phone's camera needs a secure address:
+`VITE_HTTPS=1 pnpm --dir apps/sim-scan dev` serves it on the LAN over https with a throwaway
+certificate.
 
 **Shared code lives in a package; an app keeps only its own screens and words.** A package
 is TypeScript source like `api-client` (explicit `.ts` imports, no build step). Import a
@@ -367,5 +375,15 @@ images and requests come from the app's own origin only. So:
   frame inherits the page's policy and Safari applies its `frame-ancestors` to it, so
   `'none'` left the preview blank in Safari (Chrome ignores it). Other sites still may not
   frame the app.
+- **Scan SIMs alone** (`/sim-scan/`, ADR 0005) gets the same policy plus `'wasm-unsafe-eval'`
+  in `script-src` (its barcode and text readers are WebAssembly; still no `eval`) and
+  `worker-src 'self'` (the text reader's worker, from its own file, `workerBlobURL: false`),
+  and `Permissions-Policy: camera=(self)`. Caddy sends it on `@simscan` and the others' on
+  `@notsimscan`, outside the global `header` block (whose `-Server` defers it, so it would
+  overwrite a per-path policy). Keep the staff app's line first: the staff and
+  Administration `csp.test.ts` read the first policy; `apps/sim-scan/src/csp.test.ts` checks
+  that its policy is the staff one with exactly those two additions. Its readers' files
+  (WebAssembly, the worker, the cores and the English data) are served from
+  `/sim-scan/readers/` by `@ppe/sim-scan/reader-files`, never from a CDN.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 

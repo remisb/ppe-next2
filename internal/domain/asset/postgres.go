@@ -182,6 +182,11 @@ func importOne(ctx context.Context, tx pgx.Tx, it Imported) error {
 	if err := insertAsset(ctx, tx, it.Asset, it.Bump, it.Registered); err != nil {
 		return err
 	}
+	if it.Codes != nil {
+		if err := putCodes(ctx, tx, *it.Codes); err != nil {
+			return err
+		}
+	}
 	if it.Assignment == nil {
 		return nil
 	}
@@ -508,10 +513,76 @@ func (r *PostgresRepository) NumberOwner(ctx context.Context, number string) (uu
 	return id, err
 }
 
+// simKeySQL is simKey in SQL, the expression of assets_sim_no_live_idx.
+const simKeySQL = `regexp_replace(upper(replace(sim_no, ' ', '')), 'F$', '')`
+
+func (r *PostgresRepository) SIMOwners(ctx context.Context, keys []string) (map[string]uuid.UUID, error) {
+	out := map[string]uuid.UUID{}
+	if len(keys) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `SELECT `+simKeySQL+`, id FROM assets
+		WHERE deleted_at IS NULL AND sim_no IS NOT NULL AND `+simKeySQL+` = ANY($1)`, keys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key string
+		var id uuid.UUID
+		if err := rows.Scan(&key, &id); err != nil {
+			return nil, err
+		}
+		out[key] = id
+	}
+	return out, rows.Err()
+}
+
+func (r *PostgresRepository) SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error) {
+	c := SealedCodes{AssetID: assetID}
+	err := r.pool.QueryRow(ctx, `SELECT sealed, key_id, updated_at, updated_by_user_id FROM asset_sim_codes WHERE asset_id = $1`,
+		assetID).Scan(&c.Sealed, &c.KeyID, &c.UpdatedAt, &c.UpdatedByUserID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return SealedCodes{}, ErrNoSIMCodes
+	}
+	return c, err
+}
+
+func (r *PostgresRepository) PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if err := putCodes(ctx, tx, c); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
+}
+
+func putCodes(ctx context.Context, tx pgx.Tx, c SealedCodes) error {
+	_, err := tx.Exec(ctx, `INSERT INTO asset_sim_codes (asset_id, sealed, key_id, updated_at, updated_by_user_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (asset_id) DO UPDATE SET sealed = excluded.sealed, key_id = excluded.key_id,
+			updated_at = excluded.updated_at, updated_by_user_id = excluded.updated_by_user_id`,
+		c.AssetID, c.Sealed, c.KeyID, c.UpdatedAt, c.UpdatedByUserID)
+	return err
+}
+
+func (r *PostgresRepository) DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `DELETE FROM asset_sim_codes WHERE asset_id = $1`, assetID)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNoSIMCodes
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
+}
+
 func (r *PostgresRepository) SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT id FROM assets
-		WHERE deleted_at IS NULL AND sim_no IS NOT NULL AND upper(replace(sim_no, ' ', '')) = $1`, compactSIM(simNo)).Scan(&id)
+		WHERE deleted_at IS NULL AND sim_no IS NOT NULL AND `+simKeySQL+` = $1`, simKey(simNo)).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return uuid.Nil, ErrNotFound
 	}

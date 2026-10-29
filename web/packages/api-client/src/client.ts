@@ -15,6 +15,10 @@ import type {
   AssignmentFormResult,
   ConnectionStatus,
   CreateAssetInput,
+  AddedSim,
+  SimBatchInput,
+  SimCodes,
+  SimProblem,
   GiveAssetInput,
   HeldAsset,
   InventoryPrefix,
@@ -202,7 +206,7 @@ export function createClient(options: ClientOptions) {
     if (res.status === 204) return undefined as T
     if (!res.ok) {
       if (res.status === 401 && handling.signOut) options.onUnauthenticated?.()
-      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), errorField(text, 'existing_id'))
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), errorField(text, 'existing_id'), errorIndex(text))
     }
     return (text ? JSON.parse(text) : undefined) as T
   }
@@ -434,6 +438,18 @@ export function createClient(options: ClientOptions) {
       get: (id: string) => request<AssetDetail>('GET', `/api/v1/assets/${seg(id)}`),
       /** Add SIM / Add Asset. A number in use is a 409 whose existingId names the asset that has it. */
       create: (input: CreateAssetInput) => request<Asset>('POST', '/api/v1/assets', input),
+      /** Scan SIMs' check: every problem of every card, nothing written; a problem with what the cards share is a 400. */
+      checkSimCards: (input: SimBatchInput) =>
+        request<{ problems: SimProblem[] }>('POST', '/api/v1/assets/sim-cards/batch/check', input).then((r) => r.problems),
+      /** Scan SIMs' Add: the batch registered all or none, Not Activated; a refused card is named by its index. */
+      addSimCards: (input: SimBatchInput) =>
+        request<{ sims: AddedSim[] }>('POST', '/api/v1/assets/sim-cards/batch', input).then((r) => r.sims),
+      /** Show PIN and PUK (sim_codes.read, a recent sign-in): recorded as asset.sim_codes_shown; 404 when the card has none. */
+      showSimCodes: (id: string) => request<SimCodes>('POST', `/api/v1/assets/${seg(id)}/sim-codes/show`),
+      /** Keeps a SIM card's PIN and PUK in place of any it had. */
+      setSimCodes: (id: string, codes: SimCodes) => request<void>('PUT', `/api/v1/assets/${seg(id)}/sim-codes`, codes),
+      /** Forgets a SIM card's PIN and PUK; 404 when it has none. */
+      clearSimCodes: (id: string) => request<void>('DELETE', `/api/v1/assets/${seg(id)}/sim-codes`),
       update: (id: string, input: AssetInput) => request<Asset>('PUT', `/api/v1/assets/${seg(id)}`, input),
       /** Change Status: saved at once; never moves the card or changes its holder. */
       setStatus: (id: string, status: ConnectionStatus) =>
@@ -510,6 +526,16 @@ function errorField(text: string, key: 'reference' | 'existing_id'): string | un
     const parsed: unknown = JSON.parse(text)
     const v = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>)[key] : undefined
     return typeof v === 'string' && v !== '' ? v : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function errorIndex(text: string): number | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text)
+    const v = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>).index : undefined
+    return typeof v === 'number' ? v : undefined
   } catch {
     return undefined
   }

@@ -25,3 +25,4 @@ How the system is divided and why.
 | [0002](adr/0002-permissions-and-administration-app.md) | Editable roles of permissions; Administration as its own app | accepted |
 | [0003](adr/0003-audit-integrity-and-retention.md) | Security events apart from the audit trail; retention | accepted |
 | [0004](adr/0004-company-assets.md) | Company Assets: individual items, one open assignment each; register-first UI | accepted |
+| [0005](adr/0005-sim-codes-and-scan-sims-trial.md) | SIM cards' PIN and PUK sealed by the app; Scan SIMs as a trial app with its own CSP | accepted |

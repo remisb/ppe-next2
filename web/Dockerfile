@@ -1,4 +1,4 @@
-# The staff app and Administration, built and baked into the Caddy image that
+# The staff app, Administration and the Scan SIMs trial, built and baked into the Caddy image that
 # serves them, so a deploy replaces the files and the proxy config in one step.
 # Build context: the web/ directory.
 FROM node:22-alpine AS build
@@ -13,9 +13,10 @@ COPY . .
 # Linked from the store fetched above, so offline and quick. vite build only:
 # CI's web job typechecks (`pnpm typecheck`, `pnpm build`), so tsc is not run
 # again on the droplet.
-RUN pnpm install --offline --frozen-lockfile --filter @ppe/workwear... --filter @ppe/admin... \
- && pnpm --filter @ppe/workwear --filter @ppe/admin exec vite build
+RUN pnpm install --offline --frozen-lockfile --filter @ppe/workwear... --filter @ppe/admin... --filter @ppe/sim-scan-app... \
+ && pnpm --filter @ppe/workwear --filter @ppe/admin --filter @ppe/sim-scan-app exec vite build
 
 FROM caddy:2-alpine
 COPY --from=build /web/apps/workwear/dist /srv/workwear/dist
 COPY --from=build /web/apps/admin/dist /srv/admin/dist
+COPY --from=build /web/apps/sim-scan/dist /srv/sim-scan/dist

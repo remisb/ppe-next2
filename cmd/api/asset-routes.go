@@ -28,8 +28,10 @@ type assetHandler struct {
 // equipment.read too (asset.Sight), and every write needs assets.manage. Each
 // route on one asset goes through seen, so without equipment.read an
 // equipment item is not found. The return and the Not Returned mark act on
-// the asset's open assignment, so they are the asset's routes.
-func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service) {
+// the asset's open assignment, so they are the asset's routes. Showing a SIM
+// card's PIN and PUK is sensitive: a recent sign-in, and sim_codes.read
+// still granted now.
+func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &assetHandler{assets: assets, users: users}
 	rt.authenticated("GET /api/v1/assets", h.list)
 	rt.authenticated("GET /api/v1/assets/summary/{kind}", h.summary)
@@ -40,6 +42,13 @@ func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service)
 	rt.restricted("GET /api/v1/assets/next-number/{prefix}", h.nextNumber, role.AssetsManage)
 	rt.authenticated("GET /api/v1/assets/{id}", h.seen(h.get))
 	rt.restricted("POST /api/v1/assets", h.create, role.AssetsManage)
+	// Scan SIMs: a batch of received SIM cards checked (every problem at
+	// once, nothing written), then added all or none.
+	rt.restricted("POST /api/v1/assets/sim-cards/batch/check", h.checkSIMs, role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/sim-cards/batch", h.addSIMs, role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/{id}/sim-codes/show", sensitive(role.SIMCodesRead, h.seen(h.showSIMCodes)), role.SIMCodesRead)
+	rt.restricted("PUT /api/v1/assets/{id}/sim-codes", h.seen(h.setSIMCodes), role.AssetsManage)
+	rt.restricted("DELETE /api/v1/assets/{id}/sim-codes", h.seen(h.clearSIMCodes), role.AssetsManage)
 	rt.restricted("PUT /api/v1/assets/{id}", h.seen(h.update), role.AssetsManage)
 	rt.restricted("PUT /api/v1/assets/{id}/status", h.seen(h.changeStatus), role.AssetsManage)
 	rt.restricted("POST /api/v1/assets/{id}/assignments/preview", h.seen(h.preview), role.AssetsManage)

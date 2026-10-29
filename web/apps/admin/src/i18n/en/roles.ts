@@ -87,6 +87,10 @@ export const roles = {
       label: 'Manage Company Assets',
       grants: 'Add SIMs and equipment, change a SIM’s status, give assets to employees and register their return. Equipment also needs See Equipment & Furniture.',
     },
+    'sim_codes.read': {
+      label: 'Show PIN and PUK',
+      grants: 'See a SIM’s PIN and PUK, after confirming the password; each time is recorded. Needs Manage Company Assets.',
+    },
     'equipment.read': {
       label: 'See Equipment & Furniture',
       grants: 'Each item and who holds it: in Company Assets, on employee pages and in search. Without it, not even an administrator sees them.',

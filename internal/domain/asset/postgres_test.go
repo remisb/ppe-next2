@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -14,8 +15,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
 // newTestPool connects to API_TEST_DB_DSN (skipping when unset), empties the
@@ -502,5 +505,97 @@ func TestPostgresImportSIMs(t *testing.T) {
 	}
 	if a, o, e := count(); a != 3 || o != 1 || e != 4 {
 		t.Errorf("a refused import kept rows: %d assets, %d assignments, %d events", a, o, e)
+	}
+}
+
+// A batch is written all or none with its sealed codes; the database holds
+// only ciphertext, bound to its card; and the SIM No. index takes 8937…5 and
+// 8937…5F for the same card (migration 0041).
+func TestPostgresScanSIMs(t *testing.T) {
+	app, owner, actor, _ := newTestPool(t)
+	ctx := context.Background()
+	box, err := sealbox.New(bytes.Repeat([]byte{3}, sealbox.KeySize))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(box))
+	p := AddSIMsParams{Provider: sp("Bitė"), Cards: []ScannedSIM{{SimNo: scanA, PIN: "0306", PUK: "93691381"}, {SimNo: scanB + "F"}}}
+	added, err := svc.AddSIMs(ctx, p, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sealed []byte
+	if err := owner.QueryRow(ctx, `SELECT sealed FROM asset_sim_codes WHERE asset_id = $1`, added[0].ID).Scan(&sealed); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(sealed, []byte("0306")) || bytes.Contains(sealed, []byte("93691381")) {
+		t.Errorf("the database holds the codes: %x", sealed)
+	}
+	if c, err := svc.ShowSIMCodes(ctx, added[0].ID, actor); err != nil || c != (SIMCodes{PIN: "0306", PUK: "93691381"}) {
+		t.Errorf("Show = %+v, %v", c, err)
+	}
+	var shown int
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event = $1 AND entity_id = $2
+		AND position('0306' in after::text) = 0`, EventSIMCodesShown, added[0].ID).Scan(&shown); err != nil || shown != 1 {
+		t.Errorf("asset.sim_codes_shown recorded %d times, %v", shown, err)
+	}
+	if _, err := svc.ShowSIMCodes(ctx, added[1].ID, actor); !errors.Is(err, ErrNoSIMCodes) {
+		t.Errorf("Show without codes = %v", err)
+	}
+	// Ciphertext copied to the other card does not open there.
+	if _, err := owner.Exec(ctx, `INSERT INTO asset_sim_codes (asset_id, sealed, key_id, updated_at, updated_by_user_id)
+		VALUES ($1, $2, 1, now(), $3)`, added[1].ID, sealed, actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ShowSIMCodes(ctx, added[1].ID, actor); err == nil || errors.Is(err, ErrNoSIMCodes) {
+		t.Errorf("moved codes opened: %v", err)
+	}
+	if err := svc.ClearSIMCodes(ctx, added[1].ID, actor); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetSIMCodes(ctx, added[1].ID, SIMCodes{PIN: "8134", PUK: "90651799"}, actor); err != nil {
+		t.Fatal(err)
+	}
+	if c, err := svc.ShowSIMCodes(ctx, added[1].ID, actor); err != nil || c.PIN != "8134" {
+		t.Errorf("after Set = %+v, %v", c, err)
+	}
+
+	// The register has scanB with its F: the same card without it is refused
+	// by the database too, and the whole batch, its codes included, is not kept.
+	var cards, codes int
+	count := func() {
+		t.Helper()
+		if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM assets), (SELECT count(*) FROM asset_sim_codes)`).Scan(&cards, &codes); err != nil {
+			t.Fatal(err)
+		}
+	}
+	count()
+	before := [2]int{cards, codes}
+	repo := NewPostgresRepository(app)
+	a, _ := svc.Get(ctx, added[1].ID)
+	twin := a.Asset
+	twin.ID, twin.InventoryNo, twin.SimNo = uuid.New(), "SIM-000777", sp(scanB)
+	first := a.Asset
+	first.ID, first.InventoryNo, first.SimNo = uuid.New(), "SIM-000776", sp(scanC)
+	seal, _ := svc.seal(first.ID, SIMCodes{PIN: "1111", PUK: "22222222"}, actor, time.Now())
+	ev := func(a Asset) audit.Event {
+		e, _ := svc.event(actor, EventRegistered, a.ID, time.Now(), nil, facts(a))
+		return e
+	}
+	err = repo.ImportSIMs(ctx, []Imported{{Asset: first, Registered: ev(first), Codes: &seal}, {Asset: twin, Registered: ev(twin)}}, true)
+	var row *ImportRowError
+	if !errors.As(err, &row) || row.Index != 1 || !errors.Is(err, ErrSIMNoTaken) {
+		t.Errorf("the same card without its F = %v", err)
+	}
+	count()
+	if [2]int{cards, codes} != before {
+		t.Errorf("a refused batch kept %d cards and %d codes", cards-before[0], codes-before[1])
+	}
+	if id, err := repo.SIMOwner(ctx, scanB); err != nil || id != added[1].ID {
+		t.Errorf("SIMOwner without the F = %s, %v", id, err)
+	}
+	owners, err := repo.SIMOwners(ctx, []string{simKey(scanA), simKey(scanB + "F"), simKey(scanC)})
+	if err != nil || len(owners) != 2 || owners[simKey(scanA)] != added[0].ID || owners[simKey(scanB)] != added[1].ID {
+		t.Errorf("SIMOwners = %v, %v", owners, err)
 	}
 }

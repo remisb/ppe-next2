@@ -20,7 +20,7 @@ export function texts(dict: object, prefix = ''): Map<string, string> {
 }
 
 /** The same in every language: names of things that are not translated. */
-export const sameEverywhere = new Set(['WhatsApp', 'SIM', 'Email', 'E-mail', '⌘K', 'OK', 'API', 'PostgreSQL', 'SHA-256'])
+export const sameEverywhere = new Set(['WhatsApp', 'SIM', 'PIN', 'PUK', 'Email', 'E-mail', '⌘K', 'OK', 'API', 'PostgreSQL', 'SHA-256'])
 
 export interface DictionaryProblems {
   /** Paths in one dictionary and not the other. */

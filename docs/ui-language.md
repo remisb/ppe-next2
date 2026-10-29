@@ -619,6 +619,13 @@ field.
 An action that creates something that can never be changed shows a **review sheet** of what
 it will store, and only that sheet carries the action. Mark as Ordered.
 
+### Check a batch first
+Many records added at once from what a reader took (a camera, photos) are a **review list**
+first: one row per record, every field editable, each marked as the API would refuse it
+(problems, which keep the action dimmed with how many need fixing) or worth knowing (notes,
+which do not), checked against the server as the list changes. Its one action adds them all
+or none, and names a refused row. Scan SIMs.
+
 ### Ask first
 An action that deletes, ends, or locks something, or takes it out of other people's work,
 asks a **confirm question** first: Delete …, Deactivate item…, Mark as Signed & Given, Clear

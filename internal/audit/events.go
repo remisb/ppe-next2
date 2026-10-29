@@ -59,6 +59,7 @@ var events = []string{
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"asset.registered", "asset.updated", "asset.status_changed", "asset.given", "asset.returned", "asset.marked_not_returned",
 	"asset.signed_copy_uploaded", "asset.form_printed", "asset.activation_email_prepared", "asset.blocking_email_prepared",
+	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
 	"mail_template.changed",
 	"access_review.completed",

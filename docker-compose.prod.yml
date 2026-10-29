@@ -84,6 +84,7 @@ services:
       # are set in .env.prod (docs/monitoring.md); the owner until then.
       API_DB_DSN: postgres://${API_DB_USER:-${POSTGRES_USER}}:${API_DB_PASSWORD:-${POSTGRES_PASSWORD}}@db:5432/${POSTGRES_DB}?sslmode=disable
       API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
+      API_SIM_CODES_KEY: ${API_SIM_CODES_KEY:?set API_SIM_CODES_KEY in .env.prod (openssl rand -hex 32)}
       API_JWT_TTL: ${API_JWT_TTL:-15m}
       API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
       API_SESSION_KEEP_MAX_AGE: ${API_SESSION_KEEP_MAX_AGE:-720h}

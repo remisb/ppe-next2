@@ -1,0 +1,9 @@
+@import '@ppe/ui/styles.css';
+/*
+ * Tailwind scans this app's own files and @ppe/ui; every other package with
+ * components of its own is named here, or its classes are silently missing
+ * (app-shell: Sign in, Confirm your password, the checking and offline gates;
+ * sim-scan: the review list).
+ */
+@source '../../../packages/app-shell/src';
+@source '../../../packages/sim-scan/src';

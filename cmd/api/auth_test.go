@@ -11,9 +11,22 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
 const testSecret = "test-secret-test-secret-test-secret-0123"
+
+// testCodesKey seals the tests' SIM codes (API_SIM_CODES_KEY).
+const testCodesKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+func testCodes(t *testing.T) *sealbox.Box {
+	t.Helper()
+	box, err := simCodesBox(testCodesKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return box
+}
 
 func testTokens(now time.Time) *tokens {
 	return &tokens{secret: []byte(testSecret), issuer: "ppe-next2", ttl: 15 * time.Minute, leeway: 30 * time.Second, now: func() time.Time { return now }}

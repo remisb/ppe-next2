@@ -37,6 +37,7 @@ type Service struct {
 	repo   Repository
 	files  files.Store
 	mailer Mailer
+	sealer Sealer
 	now    func() time.Time
 	newID  func() uuid.UUID
 	loc    *time.Location

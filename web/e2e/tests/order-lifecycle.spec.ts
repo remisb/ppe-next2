@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
@@ -3183,12 +3184,70 @@ test('Sign in: too many failed attempts for one account are refused for a while'
   await other.context().close()
 })
 
+test('Scan SIMs: photos of the cards read into a list, checked, added at once, then Show PIN and PUK', async () => {
+  // The trial app at /sim-scan/, on the staff app's sign-in. The cards are made up (fixtures/sim-cards/make.ts).
+  await page.goto('/sim-scan/')
+  await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
+  // What every card of the batch shares, from Settings: the default provider, its plan and the default value.
+  await expect(page.getByLabel('Provider')).toHaveValue('Telia')
+  await expect(page.getByLabel('Plan')).toHaveValue('Biz 5 GB')
+  await expect(page.getByLabel('Non-return Value (€)')).toHaveValue('25.00')
+  // Front, back, front, back: each front's barcode is its SIM No. (never the product code), each back its PIN and PUK.
+  const photo = (name: string) => join(repoRoot, 'web/e2e/fixtures/sim-cards', name)
+  await page.getByLabel('Choose Photos').setInputFiles(['card-1-front.png', 'card-1-back.png', 'card-2-front.png', 'card-2-back.png'].map(photo))
+  const rows = page.getByTestId('scan-row')
+  await expect(rows).toHaveCount(2, { timeout: 90_000 })
+  await expect(rows.nth(0).getByLabel('SIM No.')).toHaveValue('8937099000000000049')
+  await expect(rows.nth(0).getByLabel('PIN')).toHaveValue('4826')
+  await expect(rows.nth(0).getByLabel('PUK')).toHaveValue('31597264')
+  await expect(rows.nth(1).getByLabel('SIM No.')).toHaveValue('8937099000000000056')
+  await expect(rows.nth(1).getByLabel('PIN')).toHaveValue('7051')
+  await expect(rows.nth(1).getByLabel('PUK')).toHaveValue('68203915')
+  // A digit typed wrong fails the check digit, and Add waits for it.
+  await rows.nth(1).getByLabel('SIM No.').fill('8937099000000000057')
+  await expect(rows.nth(1).getByText('The last digit does not check')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add 2 SIMs' })).toBeDisabled()
+  await rows.nth(1).getByLabel('SIM No.').fill('8937099000000000056')
+  await page.getByRole('button', { name: 'Add 2 SIMs' }).click()
+  await expect(page.getByText('2 SIMs added, Not Activated:')).toBeVisible()
+  await expect(rows).toHaveCount(0)
+  // The same card again is already in SIM Cards, named with a link to it.
+  await page.getByLabel('Choose Photos').setInputFiles([photo('card-1-front.png')])
+  await expect(rows.nth(0).getByText('Already in SIM Cards.')).toBeVisible({ timeout: 60_000 })
+  await expect(rows.nth(0).getByRole('link', { name: 'Open' })).toHaveAttribute('href', /^\/assets\/sim-cards\/[0-9a-f-]{36}$/)
+  await expect(page.getByRole('button', { name: 'Add 1 SIM' })).toBeDisabled()
+  await expect(rows.nth(0).getByText('No back: added without PIN and PUK.')).toBeVisible()
+  await page.getByRole('button', { name: 'Clear List' }).click()
+
+  // Show PIN and PUK: found by part of its number, shown, and recorded without the codes.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'PIN and PUK' }).click()
+  await page.getByLabel('SIM No. or phone number').fill('0000000049')
+  const found = page.getByRole('listitem').filter({ hasText: '8937099000000000049' })
+  await found.getByRole('button', { name: 'Show PIN and PUK' }).click()
+  await expect(found.getByText('4826', { exact: true })).toBeVisible()
+  await expect(found.getByText('31597264', { exact: true })).toBeVisible()
+  await expect(found.getByText('Shown and recorded in the Audit log.')).toBeVisible()
+
+  // In SIM Cards, the two cards as any SIM added: Not Activated, in the Office, the provider and plan chosen once.
+  await page.goto('/assets/sim-cards')
+  const added = page.getByRole('row', { name: /8937099000000000049/ })
+  await expect(added.getByText('Not Activated', { exact: true })).toBeVisible()
+  await expect(added).toContainText('Office')
+  await expect(page.getByRole('row', { name: /8937099000000000056/ })).toBeVisible()
+  await added.getByRole('link').first().click()
+  await openSection(/^Changes/)
+  await expect(page.getByText('PIN and PUK shown')).toBeVisible()
+  await expect(page.getByText('4826')).toHaveCount(0)
+})
+
 test('no screen broke the Content-Security-Policy', async () => {
   // Behind Caddy (E2E_WEB_SERVER=caddy, as in CI) every step above ran under the policy.
   if (process.env['E2E_WEB_SERVER'] === 'caddy') {
-    for (const path of ['/', '/admin/', '/admin/users']) {
+    for (const path of ['/', '/admin/', '/admin/users', '/sim-scan/']) {
       const res = await page.request.get(path)
       expect(res.headers()['content-security-policy'], path).toContain("default-src 'self'")
+      // Only Scan SIMs may compile its readers' WebAssembly (ADR 0005).
+      expect(res.headers()['content-security-policy']?.includes("'wasm-unsafe-eval'"), path).toBe(path.startsWith('/sim-scan/'))
     }
   }
   expect(cspViolations).toEqual([])

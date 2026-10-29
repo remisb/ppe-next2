@@ -89,6 +89,17 @@ this bucket.
 A database restore does not touch the bucket. Signed copies uploaded after the backup being
 restored stay in the bucket, named by no row; nothing reads them, and they can be left there.
 
+### The SIM codes key (`API_SIM_CODES_KEY`)
+
+SIM cards' PIN and PUK are sealed by the API under `API_SIM_CODES_KEY` (ADR 0005,
+`asset_sim_codes`), which is in `.env.prod` and nowhere in the database: a backup holds only
+their ciphertext. So the key must be kept **apart from the backups**, as the age key is: a copy
+in a password manager, off the server. A restore on a new server needs the same key in its
+`.env.prod`; with another key the API starts, but Show PIN and PUK fails for every card. Lost,
+the codes are gone (the cards' carriers still have them; Add PIN and PUK keeps them again).
+Generate it once with `openssl rand -hex 32`, never reuse `API_JWT_SECRET`, and do not
+change it: there is no rotation yet (each row's `key_id` leaves room for one).
+
 ### Encryption (optional)
 
 On your own computer: `age-keygen -o ppe-backup.key` prints `Public key: age1...`. Put

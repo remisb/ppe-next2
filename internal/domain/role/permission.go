@@ -22,6 +22,7 @@ const (
 	ItemSetsManage      Permission = "item_sets.manage"
 	OrdersDelete        Permission = "orders.delete"
 	AssetsManage        Permission = "assets.manage"
+	SIMCodesRead        Permission = "sim_codes.read"
 	EquipmentRead       Permission = "equipment.read"
 	SettingsManage      Permission = "settings.manage"
 	MailTemplatesManage Permission = "mail_templates.manage"
@@ -73,6 +74,7 @@ var catalogue = []Info{
 	{ItemSetsManage, GroupWorkwear, []Permission{ItemSetsRead}},
 	{OrdersDelete, GroupWorkwear, nil},
 	{AssetsManage, GroupWorkwear, nil},
+	{SIMCodesRead, GroupWorkwear, []Permission{AssetsManage}},
 	{EquipmentRead, GroupWorkwear, nil},
 	{DashboardOverview, GroupDashboards, nil},
 	{DashboardManager, GroupDashboards, nil},

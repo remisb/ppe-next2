@@ -316,6 +316,11 @@ func numberOf(prefix, number string) int64 {
 // ICCID may end in a hex digit, typed either way).
 func compactSIM(s string) string { return strings.ToUpper(strings.ReplaceAll(s, " ", "")) }
 
+// simKey is the card a SIM number names, as assets_sim_no_live_idx compares
+// it: compacted, without a 20-character ICCID's filler F, which a barcode or a
+// typed number may leave out (migration 0041).
+func simKey(s string) string { return strings.TrimSuffix(compactSIM(s), "F") }
+
 func isDate(s string) bool {
 	_, err := time.Parse(time.DateOnly, s)
 	return err == nil

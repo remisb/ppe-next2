@@ -11,6 +11,8 @@ export const apiPort = 18090
 export const webPort = 5181
 /** Administration's Vite server; the staff app's proxies /admin to it, so tests open it at webURL/admin/. */
 export const adminPort = 5183
+/** Scan SIMs' Vite server; the staff app's proxies /sim-scan to it, so tests open it at webURL/sim-scan/. */
+export const simScanPort = 5185
 export const webURL = `http://localhost:${webPort}`
 
 // A test-only account created by global setup; not a real credential.
@@ -66,6 +68,7 @@ export function apiEnv(): Record<string, string> {
     API_ADDR: `:${apiPort}`,
     API_DB_DSN: appDSN(),
     API_JWT_SECRET: 'e2e-secret-e2e-secret-e2e-secret-e2e',
+    API_SIM_CODES_KEY: 'e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0',
     API_JWT_TTL: '1h',
     API_PUBLIC_BASE_URL: webURL,
     API_ORG_TIMEZONE: 'Europe/Vilnius',

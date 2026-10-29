@@ -8,7 +8,7 @@ import (
 
 func TestConfigValidate(t *testing.T) {
 	ok := config{
-		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), JWTTTL: 15 * time.Minute, SessionMaxAge: 12 * time.Hour,
+		DBDSN: "postgres://x", DBMaxConns: 1, JWTSecret: strings.Repeat("s", 32), SIMCodesKey: strings.Repeat("ab", 32), JWTTTL: 15 * time.Minute, SessionMaxAge: 12 * time.Hour,
 		SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, LoginEmailFailures: 10, LoginEmailInterval: 15 * time.Minute,
 		AuthEventsRetention: 180 * 24 * time.Hour, AuditRetention: 3653 * 24 * time.Hour, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
@@ -20,6 +20,9 @@ func TestConfigValidate(t *testing.T) {
 	for name, mutate := range map[string]func(*config){
 		"no dsn":                       func(c *config) { c.DBDSN = "" },
 		"short secret":                 func(c *config) { c.JWTSecret = "short" },
+		"no SIM codes key":             func(c *config) { c.SIMCodesKey = "" },
+		"SIM codes key not hex":        func(c *config) { c.SIMCodesKey = strings.Repeat("s", 64) },
+		"SIM codes key is the secret":  func(c *config) { c.SIMCodesKey, c.JWTSecret = strings.Repeat("ab", 32), strings.Repeat("ab", 32) },
 		"ttl too long":                 func(c *config) { c.JWTTTL = 48 * time.Hour },
 		"session shorter than a token": func(c *config) { c.SessionMaxAge = 5 * time.Minute },
 		"session too long":             func(c *config) { c.SessionMaxAge = 31 * 24 * time.Hour },
@@ -100,6 +103,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
 	t.Setenv("API_JWT_SECRET", strings.Repeat("s", 32))
+	t.Setenv("API_SIM_CODES_KEY", strings.Repeat("ab", 32))
 	c, err := loadConfig(nil)
 	if err != nil {
 		t.Fatal(err)

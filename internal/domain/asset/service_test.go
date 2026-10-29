@@ -33,11 +33,13 @@ type fakeRepo struct {
 	assignments []Assignment
 	employees   map[uuid.UUID]EmployeeView
 	copies      []SignedCopy
+	codes       map[uuid.UUID]SealedCodes
 	events      []audit.Event
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{assets: map[uuid.UUID]Asset{}, numbers: map[string]uuid.UUID{}, counters: map[string]int64{}, employees: map[uuid.UUID]EmployeeView{}}
+	return &fakeRepo{assets: map[uuid.UUID]Asset{}, numbers: map[string]uuid.UUID{}, counters: map[string]int64{}, employees: map[uuid.UUID]EmployeeView{},
+		codes: map[uuid.UUID]SealedCodes{}}
 }
 
 func (f *fakeRepo) simTaken(a Asset) bool {
@@ -45,7 +47,7 @@ func (f *fakeRepo) simTaken(a Asset) bool {
 		return false
 	}
 	for _, x := range f.assets {
-		if x.ID != a.ID && !x.Deleted() && x.SimNo != nil && compactSIM(*x.SimNo) == compactSIM(*a.SimNo) {
+		if x.ID != a.ID && !x.Deleted() && x.SimNo != nil && simKey(*x.SimNo) == simKey(*a.SimNo) {
 			return true
 		}
 	}
@@ -256,11 +258,52 @@ func (f *fakeRepo) SIMOwner(_ context.Context, simNo string) (uuid.UUID, error) 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, a := range f.assets {
-		if !a.Deleted() && a.SimNo != nil && compactSIM(*a.SimNo) == compactSIM(simNo) {
+		if !a.Deleted() && a.SimNo != nil && simKey(*a.SimNo) == simKey(simNo) {
 			return a.ID, nil
 		}
 	}
 	return uuid.Nil, ErrNotFound
+}
+
+func (f *fakeRepo) SIMOwners(_ context.Context, keys []string) (map[string]uuid.UUID, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := map[string]uuid.UUID{}
+	for _, a := range f.assets {
+		if !a.Deleted() && a.SimNo != nil && slices.Contains(keys, simKey(*a.SimNo)) {
+			out[simKey(*a.SimNo)] = a.ID
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeRepo) SIMCodes(_ context.Context, assetID uuid.UUID) (SealedCodes, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	c, ok := f.codes[assetID]
+	if !ok {
+		return SealedCodes{}, ErrNoSIMCodes
+	}
+	return c, nil
+}
+
+func (f *fakeRepo) PutSIMCodes(_ context.Context, c SealedCodes, ev audit.Event) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.codes[c.AssetID] = c
+	f.events = append(f.events, ev)
+	return nil
+}
+
+func (f *fakeRepo) DeleteSIMCodes(_ context.Context, assetID uuid.UUID, ev audit.Event) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if _, ok := f.codes[assetID]; !ok {
+		return ErrNoSIMCodes
+	}
+	delete(f.codes, assetID)
+	f.events = append(f.events, ev)
+	return nil
 }
 
 func (f *fakeRepo) Update(_ context.Context, id uuid.UUID, m Mutation) (Record, error) {
@@ -319,7 +362,7 @@ func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	next := &fakeRepo{assets: maps.Clone(f.assets), numbers: maps.Clone(f.numbers), counters: maps.Clone(f.counters),
-		assignments: slices.Clone(f.assignments), employees: f.employees, copies: f.copies, events: slices.Clone(f.events)}
+		assignments: slices.Clone(f.assignments), employees: f.employees, copies: f.copies, codes: maps.Clone(f.codes), events: slices.Clone(f.events)}
 	for i, it := range items {
 		if next.simTaken(it.Asset) {
 			return &ImportRowError{Index: i, Err: ErrSIMNoTaken}
@@ -332,6 +375,9 @@ func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) 
 		}
 		next.assets[it.Asset.ID] = it.Asset
 		next.events = append(next.events, it.Registered)
+		if it.Codes != nil {
+			next.codes[it.Asset.ID] = *it.Codes
+		}
 		if it.Assignment != nil {
 			if _, ok := next.employees[it.Assignment.EmployeeID]; !ok {
 				return &ImportRowError{Index: i, Err: ErrEmployeeNotFound}
@@ -341,7 +387,7 @@ func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) 
 		}
 	}
 	if commit {
-		f.assets, f.numbers, f.counters, f.assignments, f.events = next.assets, next.numbers, next.counters, next.assignments, next.events
+		f.assets, f.numbers, f.counters, f.assignments, f.codes, f.events = next.assets, next.numbers, next.counters, next.assignments, next.codes, next.events
 	}
 	return nil
 }

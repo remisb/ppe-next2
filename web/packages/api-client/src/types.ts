@@ -1344,6 +1344,50 @@ export interface CreateAssetInput extends AssetInput {
   connection_status?: ConnectionStatus
 }
 
+/** One card of a Scan SIMs batch: its SIM No. and, when its back was read, its PIN and PUK (both or neither; empty for none). */
+export interface ScannedSimInput {
+  sim_no: string
+  pin: string
+  puk: string
+}
+
+/** A Scan SIMs batch: what the cards share, chosen once, then the cards (at most 100). */
+export interface SimBatchInput {
+  provider: string
+  plan?: string
+  non_return_value_cents?: number
+  received_date?: string
+  comment: string
+  cards: ScannedSimInput[]
+}
+
+/** What is wrong with a card of a batch; the apps word it. */
+export type SimProblemCode = 'not_sim_no' | 'check_digit' | 'duplicate' | 'registered' | 'codes_incomplete' | 'pin' | 'puk'
+
+/** One problem of one card, by its index in the batch. */
+export interface SimProblem {
+  index: number
+  field: 'sim_no' | 'pin' | 'puk'
+  code: SimProblemCode
+  /** The SIM card in the register, for registered. */
+  existing_id?: string
+  /** The batch's other card with the same SIM No., for duplicate. */
+  other?: number
+}
+
+/** One card a batch added. */
+export interface AddedSim {
+  id: string
+  inventory_no: string
+  sim_no: string
+}
+
+/** A SIM card's PIN and PUK, as printed on its carrier. */
+export interface SimCodes {
+  pin: string
+  puk: string
+}
+
 /** The register's sorts. */
 export type AssetSort = 'inventory' | 'name' | 'phone' | 'status' | 'holder' | 'given'
 

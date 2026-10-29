@@ -52,6 +52,8 @@ export const AUDIT_EVENTS = [
   'asset.form_printed',
   'asset.activation_email_prepared',
   'asset.blocking_email_prepared',
+  'asset.sim_codes_changed',
+  'asset.sim_codes_shown',
   'settings.company_changed',
   'settings.supplier_chat_changed',
   'settings.default_sim_provider_changed',

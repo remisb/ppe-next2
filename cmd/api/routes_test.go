@@ -588,6 +588,16 @@ func (stubAssets) NumberOwner(context.Context, string) (uuid.UUID, error) {
 func (stubAssets) SIMOwner(context.Context, string) (uuid.UUID, error) {
 	return uuid.Nil, asset.ErrNotFound
 }
+func (stubAssets) SIMOwners(context.Context, []string) (map[string]uuid.UUID, error) {
+	return map[string]uuid.UUID{}, nil
+}
+func (stubAssets) SIMCodes(context.Context, uuid.UUID) (asset.SealedCodes, error) {
+	return asset.SealedCodes{}, asset.ErrNoSIMCodes
+}
+func (stubAssets) PutSIMCodes(context.Context, asset.SealedCodes, audit.Event) error { return nil }
+func (stubAssets) DeleteSIMCodes(context.Context, uuid.UUID, audit.Event) error {
+	return asset.ErrNoSIMCodes
+}
 func (stubAssets) Update(context.Context, uuid.UUID, asset.Mutation) (asset.Record, error) {
 	return asset.Record{}, asset.ErrNotFound
 }
@@ -656,7 +666,7 @@ var testLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 func testConfig() config {
 	return config{
 		LoginRateLimit: 100, LoginRateInterval: time.Minute, RequestTimeout: 5 * time.Second, OrgTimezone: "Europe/Vilnius", PublicBaseURL: "https://work.example.com",
-		JWTSecret: testSecret, SessionMaxAge: 12 * time.Hour, SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
+		JWTSecret: testSecret, SIMCodesKey: testCodesKey, SessionMaxAge: 12 * time.Hour, SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
 	}
 }
 
@@ -683,7 +693,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, stubDashboard{}, &stubSettings{}, stubTemplates{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -852,6 +862,11 @@ var policy = map[string]rule{
 	"GET /api/v1/assets/next-number/{prefix}":                                   {role.AssetsManage, "managers"},
 	"GET /api/v1/assets/{id}":                                                   {"", "any"},
 	"POST /api/v1/assets":                                                       {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/sim-cards/batch/check":                                 {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/sim-cards/batch":                                       {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/sim-codes/show":                                   {role.SIMCodesRead, "admins"},
+	"PUT /api/v1/assets/{id}/sim-codes":                                         {role.AssetsManage, "managers"},
+	"DELETE /api/v1/assets/{id}/sim-codes":                                      {role.AssetsManage, "managers"},
 	"PUT /api/v1/assets/{id}":                                                   {role.AssetsManage, "managers"},
 	"PUT /api/v1/assets/{id}/status":                                            {role.AssetsManage, "managers"},
 	"POST /api/v1/assets/{id}/form-printed":                                     {role.AssetsManage, "managers"},

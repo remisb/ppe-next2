@@ -169,6 +169,69 @@ included, prints each card's number, status and holder, and writes nothing.
   Form. It needs the Non-return Value, which the import leaves empty: until it is filled in
   with Edit, Print Form says so. Each print is recorded as `asset.form_printed`.
 
+### Scan SIM cards (a trial, ADR 0005)
+
+Newly received SIM cards are added in a batch from their carriers, so no SIM No. is typed:
+**Scan SIMs**, the trial app at `/sim-scan/` (`web/apps/sim-scan`, on the package
+`@ppe/sim-scan`). If the trial passes, its screens move into the staff app beside SIM Cards
+(Scan SIMs beside Add SIM, Show PIN and PUK on a SIM's page); the API stays as it is.
+
+- **Reading.** A carrier's front has the SIM No. as a Code 128 barcode, beside a product code
+  (EAN-13, the same on every card, never taken). Its back has the PIN, the PUK and the
+  provider's customer service number, and no SIM No. Both are read in the browser, with the
+  phone's camera (front, then back, card after card; a reading is taken once it is the same
+  twice in a row) or from photos (front and back, in the order taken; a photo's side is what
+  is read on it, a back pairing with the front before it, or after it when the first photo is
+  a back). zxing-wasm reads the barcode, tesseract.js the PIN and PUK: each the number on its
+  label's line, after it (`codesFromWords`). Their files are the app's own
+  (`/sim-scan/readers/`), and nothing read leaves the browser but the batch itself.
+- **The batch** shares what Add SIM asks per card, chosen once and filled in from Settings
+  (the default provider, its plan, the default Non-return Value, today): provider (required),
+  plan, Non-return Value, Received Date (not later than today) and comment. Each card is its
+  SIM No. and its PIN and PUK, both or neither.
+- **The review list** shows each card with its pictures, every field editable, and marks it as
+  `POST …/sim-cards/batch/check` does: a SIM No. that is not an ICCID (`89` and 17 more digits,
+  the filler `F` allowed) or whose 19th digit does not check (Luhn), the same card twice in the
+  batch, a card already in the register (with a link to it), a PIN not 4 to 8 digits, a PUK not
+  8, only one of them. A card without its back (added without codes) or without its front is a
+  note, not a problem. **Add N SIMs** waits until no card has a problem. Add and Edit SIM keep
+  their own rules: only a scanned card must be an ICCID.
+- **Add** (`asset.Service.AddSIMs`, the import's core): all or none, in one transaction, at most
+  100 cards; each numbered on from the SIM counter, Not Activated, in the Office, recording
+  `asset.registered` (with `"sim_codes": "set"` when it has codes, never the codes) and its
+  sealed PIN and PUK. A card refused there is a 400 or 409 with its `index`; one already in the
+  register names it (`existing_id`).
+- **One card, one SIM No.** A 20-character ICCID ends in the filler `F`, which a barcode or a
+  typed number may leave out, so `…5135` and `…5135F` are the same card everywhere: the unique
+  index (migration 0041) and `simKey` compare without it. Add SIM refuses the other form too.
+- **The trial reports as the staff app** (`X-App: workwear`), so the Audit log's sources and
+  Usage's apps are unchanged until it is merged. Its batch settings are its own small logic,
+  not the staff app's helpers (a recorded deviation from "shared code is in packages" for the
+  trial; the merge uses the staff app's).
+- **In the browser** pictures and codes live in the screen's memory only (never localStorage,
+  sessionStorage or IndexedDB), go when the screen is left or the batch is added, and leaving
+  with cards not yet added asks first. Nothing read is ever put in an error, since browser
+  errors reach System's error list.
+
+### PIN and PUK
+
+A SIM card's PIN and PUK, as printed on its carrier, are kept **sealed** (ADR 0005): AES-256-GCM
+under `API_SIM_CODES_KEY` (`internal/sealbox`), which the database and its backups never
+hold, together in one value bound to the card's id, in `asset_sim_codes` (one row per card that
+has them). They are never in an asset's JSON, an event, an error or a log line.
+
+- **Show PIN and PUK** needs `sim_codes.read` (which needs `assets.manage`; the Administrator's
+  alone when installed), checked against the user's roles as they are now, and a **recent
+  sign-in** (`API_RECENT_SIGN_IN`): otherwise the app asks Confirm your password. Each Show
+  records `asset.sim_codes_shown` (the SIM No., never the codes) before it answers, and the
+  answer is `Cache-Control: no-store`. A card without codes is 404, recorded nothing.
+- **Set** (`PUT …/sim-codes`, `{pin, puk}`) keeps them in place of any, and **clear**
+  (`DELETE`) forgets them, each recording `asset.sim_codes_changed` with `{"sim_codes":
+  "set"|"cleared"}`; both need `assets.manage`, on SIM cards only. In the trial, Show PIN and
+  PUK finds a SIM by part of its number and offers **Add PIN and PUK** to one without them.
+- Without the key the API does not start; losing it loses the codes (`docs/backups.md`), which
+  are still on the cards' carriers.
+
 ### Edit
 
 Details only: numbers, provider, plan, value, name, serial, comment. Never status, location or
@@ -302,6 +365,11 @@ stays with its assignment when the asset later goes to someone else.
 | `GET /api/v1/assets/next-number/{prefix}` | `assets.manage` | `{"inventory_no": "SIM-000002"}` |
 | `GET /api/v1/assets/{id}` | authenticated | the asset with `location`, `open_assignment`, `needs_form` and every assignment, newest first; 404 |
 | `POST /api/v1/assets` | `assets.manage` | Add SIM, Add Asset (201) |
+| `POST /api/v1/assets/sim-cards/batch/check` | `assets.manage` | Scan SIMs' check: `{provider, plan?, non_return_value_cents?, received_date?, comment, cards: [{sim_no, pin, puk}]}`; `200 {problems: [{index, field, code, existing_id?, other?}]}`, every problem of every card, `[]` for none (codes `not_sim_no`, `check_digit`, `duplicate`, `registered`, `codes_incomplete`, `pin`, `puk`); a problem with what the cards share is a 400; writes nothing |
+| `POST /api/v1/assets/sim-cards/batch` | `assets.manage` | Scan SIMs' Add, the same body: `201 {sims: [{id, inventory_no, sim_no}]}`, all or none; a refused card is a 400 or 409 with its `index` |
+| `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read`, a recent sign-in | Show PIN and PUK: `{pin, puk}`, `no-store`, records `asset.sim_codes_shown`; 404 without codes |
+| `PUT /api/v1/assets/{id}/sim-codes` | `assets.manage` | keeps `{pin, puk}` (204), records `asset.sim_codes_changed` |
+| `DELETE /api/v1/assets/{id}/sim-codes` | `assets.manage` | forgets them (204); 404 without codes |
 | `PUT /api/v1/assets/{id}` | `assets.manage` | Edit, full replace of the details |
 | `PUT /api/v1/assets/{id}/status` | `assets.manage` | Change Status, `{"connection_status"}` |
 | `POST /api/v1/assets/{id}/assignments/preview` | `assets.manage` | the form and its hash, no write |
@@ -345,7 +413,9 @@ Entity type `asset`, entity id the asset's, so an asset's Changes show its whole
 `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`,
 `asset.marked_not_returned`, `asset.signed_copy_uploaded`, and two that change nothing but are
 the user's activity: `asset.form_printed` (employee, given date and document hash; on a
-reprint also the assignment) and `asset.blocking_email_prepared`. Assignment
+reprint also the assignment) and `asset.blocking_email_prepared`; and, for PIN and PUK,
+`asset.sim_codes_changed` (`{"sim_codes": "set"|"cleared"}`) and `asset.sim_codes_shown`
+(the SIM No.), never the codes. Assignment
 events name the assignment and employee ids, the employee's name and the dates. They are in
 `audit.Events()`, `AUDIT_EVENTS` and the Audit log's area **Company Assets** (`assets`),
 with their words in `@ppe/audit`; the Audit log names an asset by its inventory number.

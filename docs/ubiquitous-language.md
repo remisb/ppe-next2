@@ -782,6 +782,24 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   Lithuanian and Russian also say "SIM" (not "SIM kortelė", "SIM-карта"). The one exception
   is the screen's name, **SIM Cards** (SIM kortelės, SIM-карты), since 2026-10-17.
 
+### PIN and PUK
+- **Brief:** a SIM card's PIN and PUK, as printed on the back of its **carrier** (the plastic
+  card the SIM is snapped out of).
+- **Detail:** kept sealed (ADR 0005), never shown until someone with **Show PIN and PUK**
+  (`sim_codes.read`) asks, each time recorded. The SIM No. is an **ICCID** in the code and the
+  docs: 89 and 17 more digits, sometimes the filler F; the screens say **SIM No.**, never ICCID.
+- **UI:** **Show PIN and PUK**, **Hide**, **Add PIN and PUK**, **Save PIN and PUK**. "PIN" and
+  "PUK" are the same in every language.
+
+### Scan SIMs
+- **Brief:** adding newly received SIM cards in a batch by reading their carriers: the
+  **front** (the SIM No.'s barcode) and the **back** (PIN and PUK), with the **Camera** or from
+  photos (**Choose Photos**), checked in a list, then **Add N SIMs**.
+- **Detail:** a trial app at `/sim-scan/` for now (ADR 0005); what the batch shares is **For
+  every SIM**. A card read without its back is added without PIN and PUK (**No Back**).
+- **UI:** **Scan SIMs**, **Camera**, **Stop Camera**, **Choose Photos**, **No Back**, **Clear
+  List**, **Add N SIMs**.
+
 ### Equipment & Furniture
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
   Drive, Furniture or Other.
@@ -1074,6 +1092,11 @@ screens are built):
 | Fields / Preview / Use Default Text | Laukai / Peržiūra / Naudoti numatytąjį tekstą | Поля / Предпросмотр / Взять текст по умолчанию |
 | Non-return Value / Received Date | Negrąžinimo vertė / Gavimo data | Стоимость при невозврате / Дата получения |
 | Add SIM / Add Asset | Pridėti SIM / Pridėti turtą | Добавить SIM / Добавить имущество |
+| Scan SIMs / Camera / Stop Camera / Choose Photos | Skenuoti SIM / Kamera / Išjungti kamerą / Pasirinkti nuotraukas | Сканировать SIM / Камера / Выключить камеру / Выбрать фото |
+| Front / Back (a carrier's) / No Back | Priekis / Nugarėlė / Be nugarėlės | Лицевая / Обратная / Без обратной стороны |
+| For every SIM / Clear List / Add N SIMs | Visoms SIM / Išvalyti sąrašą / Pridėti N SIM | Для всех SIM / Очистить список / Добавить N SIM |
+| PIN / PUK | PIN / PUK | PIN / PUK |
+| Show PIN and PUK / Add PIN and PUK / Save PIN and PUK | Rodyti PIN ir PUK / Pridėti PIN ir PUK / Išsaugoti PIN ir PUK | Показать PIN и PUK / Добавить PIN и PUK / Сохранить PIN и PUK |
 
 ---
 
@@ -1082,6 +1105,7 @@ screens are built):
 | Avoid | Say instead | Why |
 |---|---|---|
 | SIM card, SIM Card (in the UI), SIM kortelė, SIM-карта | **SIM**, **SIMs** | Since 2026-10-10 the screens say SIM; the code and these docs may still say SIM card. |
+| ICCID (on screen) | **SIM No.** | The code checks an ICCID; people know the number on the card. |
 | "employee" for a user | **user**, **staff member**, **the employee role** | An Employee receives workwear and never signs in. |
 | draft order, pending, partial, outstanding (as statuses) | **working order**; **Ordered** | Only ORDERED and GIVEN exist; a working order is not stored. |
 | delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. A SIM card's **Received Date** (from the provider) is the one exception. |

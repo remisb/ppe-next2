@@ -12,12 +12,13 @@ import (
 )
 
 // ImportSIM is one SIM card of an import: Add SIM's details without an
-// inventory number (the import numbers it), its status, and the employee who
-// already holds it, if anyone.
+// inventory number (the import numbers it), its status, the employee who
+// already holds it, if anyone, and its PIN and PUK, when known (Scan SIMs).
 type ImportSIM struct {
 	Params
 	Status   Status
 	HolderID *uuid.UUID
+	Codes    *SIMCodes
 }
 
 // ImportParams are SIM cards the company had before the app, from its SIM
@@ -31,12 +32,13 @@ type ImportParams struct {
 }
 
 // Imported is one SIM card as the import writes it: the asset, its
-// asset.registered event, and, when someone holds it, the open assignment
-// and its asset.given event.
+// asset.registered event, its sealed PIN and PUK, if any, and, when someone
+// holds it, the open assignment and its asset.given event.
 type Imported struct {
 	Asset      Asset
 	Bump       *Bump
 	Registered audit.Event
+	Codes      *SealedCodes
 	Assignment *Assignment
 	Given      *audit.Event
 }
@@ -65,6 +67,7 @@ type ImportRowError struct {
 
 func (e *ImportRowError) Error() string { return e.Err.Error() }
 func (e *ImportRowError) Unwrap() error { return e.Err }
+func (e *ImportRowError) RowIndex() int { return e.Index }
 
 // ImportSIMs registers SIM cards that were in use before the app, all or
 // none, in one transaction: each numbered on from the SIM counter, received
@@ -83,65 +86,95 @@ func (s *Service) ImportSIMs(ctx context.Context, p ImportParams, actor uuid.UUI
 	if len(p.SIMs) == 0 {
 		return ImportResult{}, fieldError("sims", "are required")
 	}
-	last, err := s.repo.LastNumber(ctx, PrefixSIM)
+	items, sims, err := s.registerSIMs(ctx, p.SIMs, p.Comment, actor)
 	if err != nil {
 		return ImportResult{}, err
 	}
+	if err := s.writeSIMs(ctx, items, p.Commit); err != nil {
+		return ImportResult{}, err
+	}
+	return ImportResult{SIMs: sims, Committed: p.Commit}, nil
+}
+
+// registerSIMs builds what ImportSIMs and AddSIMs write: each card numbered on
+// from the SIM counter, checked as Add SIM checks it, its codes sealed, and,
+// for a held one, its assignment with comment. Nothing is written yet.
+func (s *Service) registerSIMs(ctx context.Context, list []ImportSIM, comment string, actor uuid.UUID) ([]Imported, []ImportedSIM, error) {
+	last, err := s.repo.LastNumber(ctx, PrefixSIM)
+	if err != nil {
+		return nil, nil, err
+	}
 	seen := map[string]int{}
 	holders := map[uuid.UUID]EmployeeView{}
-	items := make([]Imported, len(p.SIMs))
-	out := ImportResult{SIMs: make([]ImportedSIM, len(p.SIMs)), Committed: p.Commit}
-	for i, sim := range p.SIMs {
+	items := make([]Imported, len(list))
+	out := make([]ImportedSIM, len(list))
+	for i, sim := range list {
 		rowErr := func(err error) error { return &ImportRowError{Index: i, Err: err} }
 		if sim.InventoryNo != "" {
-			return ImportResult{}, rowErr(fieldError("inventory_no", "is given by the import"))
+			return nil, nil, rowErr(fieldError("inventory_no", "is given by the import"))
 		}
 		sim.InventoryNo = FormatNumber(PrefixSIM, last+int64(i)+1)
 		status := sim.Status
 		a, err := s.newAsset(CreateParams{Params: sim.Params, Kind: KindSIM, ConnectionStatus: &status}, actor)
 		if err != nil {
-			return ImportResult{}, rowErr(err)
+			return nil, nil, rowErr(err)
 		}
-		if j, ok := seen[compactSIM(*a.SimNo)]; ok {
-			return ImportResult{}, rowErr(fmt.Errorf("%w: sim_no is also on SIM card %d of the import", ErrSIMNoTaken, j+1))
+		if j, ok := seen[simKey(*a.SimNo)]; ok {
+			return nil, nil, rowErr(fmt.Errorf("%w: sim_no is also on SIM card %d of the import", ErrSIMNoTaken, j+1))
 		}
-		seen[compactSIM(*a.SimNo)] = i
-		reg, err := s.event(actor, EventRegistered, a.ID, a.CreatedAt, nil, facts(a))
+		seen[simKey(*a.SimNo)] = i
+		f := facts(a)
+		if sim.Codes != nil {
+			sealed, err := s.seal(a.ID, *sim.Codes, actor, a.CreatedAt)
+			if err != nil {
+				return nil, nil, err
+			}
+			items[i].Codes = &sealed
+			f["sim_codes"] = "set"
+		}
+		reg, err := s.event(actor, EventRegistered, a.ID, a.CreatedAt, nil, f)
 		if err != nil {
-			return ImportResult{}, err
+			return nil, nil, err
 		}
-		items[i] = Imported{Asset: a, Bump: BumpOf(a), Registered: reg}
-		out.SIMs[i] = ImportedSIM{ID: a.ID, InventoryNo: a.InventoryNo, SimNo: *a.SimNo, Status: *a.ConnectionStatus}
+		items[i].Asset, items[i].Bump, items[i].Registered = a, BumpOf(a), reg
+		out[i] = ImportedSIM{ID: a.ID, InventoryNo: a.InventoryNo, SimNo: *a.SimNo, Status: *a.ConnectionStatus}
 		if sim.HolderID == nil {
 			continue
 		}
 		emp, ok := holders[*sim.HolderID]
 		if !ok {
 			if emp, err = s.repo.Employee(ctx, *sim.HolderID); err != nil {
-				return ImportResult{}, rowErr(err)
+				return nil, nil, rowErr(err)
 			}
 			holders[emp.ID] = emp
 		}
 		as := Assignment{
 			ID: s.newID(), AssetID: a.ID, EmployeeID: emp.ID, GivenDate: *a.ReceivedDate, GivenByUserID: actor,
-			CreatedAt: a.CreatedAt, Comment: p.Comment, EmployeeName: emp.FullName(),
+			CreatedAt: a.CreatedAt, Comment: comment, EmployeeName: emp.FullName(),
 		}
 		given, err := s.event(actor, EventGiven, a.ID, a.CreatedAt, nil, map[string]any{
 			"assignment_id": as.ID, "employee_id": emp.ID, "employee_name": emp.FullName(),
 			"given_date": as.GivenDate, "document_hash": nil,
 		})
 		if err != nil {
-			return ImportResult{}, err
+			return nil, nil, err
 		}
 		items[i].Assignment, items[i].Given = &as, &given
-		out.SIMs[i].Holder = emp.FullName()
+		out[i].Holder = emp.FullName()
 	}
-	if err := s.repo.ImportSIMs(ctx, items, p.Commit); err != nil {
+	return items, out, nil
+}
+
+// writeSIMs writes items all or none, kept when commit is set; a card the
+// database refuses keeps its index, and a duplicate names the card it
+// duplicates.
+func (s *Service) writeSIMs(ctx context.Context, items []Imported, commit bool) error {
+	if err := s.repo.ImportSIMs(ctx, items, commit); err != nil {
 		var row *ImportRowError
 		if errors.As(err, &row) {
-			return ImportResult{}, &ImportRowError{Index: row.Index, Err: s.duplicate(ctx, row.Err, items[row.Index].Asset)}
+			return &ImportRowError{Index: row.Index, Err: s.duplicate(ctx, row.Err, items[row.Index].Asset)}
 		}
-		return ImportResult{}, err
+		return err
 	}
-	return out, nil
+	return nil
 }

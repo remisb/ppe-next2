@@ -75,8 +75,18 @@ type Repository interface {
 	// NumberOwner is the asset that used number, compared case-insensitively,
 	// or ErrNotFound when no asset ever did.
 	NumberOwner(ctx context.Context, number string) (uuid.UUID, error)
-	// SIMOwner is the live asset with SIM number simNo, spaces ignored, or ErrNotFound.
+	// SIMOwner is the live asset with SIM number simNo, as simKey compares
+	// it, or ErrNotFound.
 	SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error)
+	// SIMOwners are the live assets whose SIM numbers have the simKeys keys, by key.
+	SIMOwners(ctx context.Context, keys []string) (map[string]uuid.UUID, error)
+	// SIMCodes are the asset's sealed PIN and PUK, or ErrNoSIMCodes.
+	SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error)
+	// PutSIMCodes keeps c in place of the asset's codes, and ev, in one transaction.
+	PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error
+	// DeleteSIMCodes forgets the asset's codes and writes ev, or is
+	// ErrNoSIMCodes when it has none.
+	DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error
 	// Update locks the asset and its open assignment, applies m and writes the
 	// asset (recording a new inventory number as used) and its events.
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Record, error)
@@ -84,8 +94,8 @@ type Repository interface {
 	// employee (ErrEmployeeNotFound), calls fn, and writes the asset, the new
 	// assignment and the events. A second open assignment is ErrAlreadyGiven.
 	Give(ctx context.Context, assetID, employeeID uuid.UUID, fn GiveFunc) (Assignment, error)
-	// ImportSIMs writes each item as Create does and its assignment, the
-	// holder share-locked as Give does, in one transaction, kept only when
+	// ImportSIMs writes each item as Create does, its codes and its
+	// assignment, the holder share-locked as Give does, in one transaction, kept only when
 	// commit is set. An item's failure is an *ImportRowError with its index.
 	ImportSIMs(ctx context.Context, items []Imported, commit bool) error
 	// UpdateOpen locks the asset and its open assignment, calls fn and writes

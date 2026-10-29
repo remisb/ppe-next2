@@ -111,6 +111,8 @@ var errorStatuses = []struct {
 	{asset.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
 	{asset.ErrFileType, http.StatusUnsupportedMediaType},
 	{asset.ErrNoStorage, http.StatusServiceUnavailable},
+	{asset.ErrNoSIMCodes, http.StatusNotFound},
+	{asset.ErrSIMCodesUnavailable, http.StatusServiceUnavailable},
 	{employeephoto.ErrNotFound, http.StatusNotFound},
 	{employeephoto.ErrEmployeeNotFound, http.StatusNotFound},
 	{employeephoto.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
@@ -167,13 +169,19 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 			if m.status == http.StatusUnauthorized {
 				msg = "unauthenticated"
 			}
+			body := errorBody{Error: msg}
 			// A conflict with an existing record names it, so the app can open it.
 			var existing interface{ ExistingID() uuid.UUID }
 			if errors.As(err, &existing) {
-				writeJSON(w, m.status, errorBody{Error: msg, ExistingID: existing.ExistingID().String()})
-				return
+				body.ExistingID = existing.ExistingID().String()
 			}
-			writeErrorMessage(w, m.status, msg)
+			// A refused row of a batch is named by its index.
+			var row interface{ RowIndex() int }
+			if errors.As(err, &row) {
+				i := row.RowIndex()
+				body.Index = &i
+			}
+			writeJSON(w, m.status, body)
 			return
 		}
 	}
@@ -197,6 +205,8 @@ type errorBody struct {
 	// ExistingID is the record a conflict is with: the asset that already
 	// has the SIM or inventory number.
 	ExistingID string `json:"existing_id,omitempty"`
+	// Index is the refused row of a batch (Scan SIMs), counted from 0.
+	Index *int `json:"index,omitempty"`
 }
 
 // parseUUIDPath reads path wildcard key as a UUID; a malformed one is a 400.

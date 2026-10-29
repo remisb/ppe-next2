@@ -18,6 +18,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "web/apps/admin", "dev"],
       "port": 5182
+    },
+    {
+      "name": "sim-scan",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/sim-scan", "dev"],
+      "port": 5184
     }
   ]
 }
