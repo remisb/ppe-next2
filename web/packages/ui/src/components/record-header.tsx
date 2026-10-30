@@ -65,7 +65,8 @@ export function RecordHeader({
           '-mx-4 sticky top-[env(safe-area-inset-top)] z-40 bg-background px-4 md:-mx-6 md:z-20 md:px-6',
           beside
             ? // Beside the list: the top of the pane's card, in its own scroll (-top-4: sticking keeps out of the card's padding otherwise).
-              'lg:-top-4 lg:-mx-4 lg:-mt-[calc(1rem+1px)] lg:min-h-0 lg:bg-card lg:px-4 lg:pt-3 lg:pb-2'
+              // As tall as the screen's header beside it (less the card's border), so the titles and the rules line up.
+              'lg:-top-4 lg:-mx-4 lg:-mt-[calc(1rem+1px)] lg:min-h-[calc(var(--page-header)-1px)] lg:bg-card lg:px-4 lg:py-0'
             : undefined,
           'border-b border-transparent transition-[border-color,box-shadow] data-stuck:border-border data-stuck:shadow-sm',
           '[@media(height<30rem)]:static print:static print:mx-0 print:px-0',
