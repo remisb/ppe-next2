@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>App Launcher Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a control bar over a grey stage holding one scaled device (phone, tablet, desktop); the flows panel beside it, below on narrow screens.
+   The page chrome uses --c-*; the mocked launcher inside the device uses --a-* (the staff app's neutrals and navy brand). Tiles carry their own app colour, white text, in both themes. */
+:root{
+  --c-bg:#f3f3f7; --c-panel:#ffffff; --c-fg:#15162a; --c-mut:#5b5e74; --c-line:#dfe0e9; --c-stage:#e5e6ee;
+  --c-acc:#3341a8; --c-acc-soft:#e8eafb; --c-ok:#23703f; --c-hint:#e8590c;
+  --a-bg:#f6f6f9; --a-surface:#ffffff; --a-surface-2:#eff0f5; --a-fg:#15162a; --a-mut:#5b5e74; --a-line:#e1e2ea;
+  --a-brand:#1c2060; --a-brand-fg:#ffffff; --a-acc:#3341a8; --a-acc-soft:#e8eafb;
+  --a-ok:#23703f; --a-ok-bg:#e4f3ea; --a-warn:#9a5a08; --a-warn-bg:#fcf0de; --a-poc:#7a3fa0; --a-poc-bg:#f3e8fa; --a-dev:#5b6475; --a-dev-bg:#eceef3;
+  --a-chrome:#e9eaf0; --a-chrome-fg:#4a4d63; --a-scrim:rgb(15 16 30 / .38);
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 10px 30px rgb(20 22 50 / .10);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --c-bg:#0d0e15; --c-panel:#161824; --c-fg:#eceef7; --c-mut:#9b9eb5; --c-line:#2a2d3f; --c-stage:#08090e;
+  --c-acc:#909cff; --c-acc-soft:#252a52; --c-ok:#6fd49a; --c-hint:#ff9a52;
+  --a-bg:#0e0f16; --a-surface:#161824; --a-surface-2:#1e2130; --a-fg:#eceef7; --a-mut:#9b9eb5; --a-line:#2a2d3f;
+  --a-brand:#c9cdf6; --a-brand-fg:#13153d; --a-acc:#909cff; --a-acc-soft:#252a52;
+  --a-ok:#6fd49a; --a-ok-bg:#15301f; --a-warn:#f2b45e; --a-warn-bg:#382811; --a-poc:#d4a6f0; --a-poc-bg:#2e1f3a; --a-dev:#aab1c2; --a-dev-bg:#24273a;
+  --a-chrome:#1b1d2a; --a-chrome-fg:#b4b7cc; --a-scrim:rgb(0 0 0 / .55);
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .4); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --c-bg:#0d0e15; --c-panel:#161824; --c-fg:#eceef7; --c-mut:#9b9eb5; --c-line:#2a2d3f; --c-stage:#08090e;
+  --c-acc:#909cff; --c-acc-soft:#252a52; --c-ok:#6fd49a; --c-hint:#ff9a52;
+  --a-bg:#0e0f16; --a-surface:#161824; --a-surface-2:#1e2130; --a-fg:#eceef7; --a-mut:#9b9eb5; --a-line:#2a2d3f;
+  --a-brand:#c9cdf6; --a-brand-fg:#13153d; --a-acc:#909cff; --a-acc-soft:#252a52;
+  --a-ok:#6fd49a; --a-ok-bg:#15301f; --a-warn:#f2b45e; --a-warn-bg:#382811; --a-poc:#d4a6f0; --a-poc-bg:#2e1f3a; --a-dev:#aab1c2; --a-dev-bg:#24273a;
+  --a-chrome:#1b1d2a; --a-chrome-fg:#b4b7cc; --a-scrim:rgb(0 0 0 / .55);
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 10px 30px rgb(0 0 0 / .4); color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--c-bg); color:var(--c-fg); font-family:var(--font); font-size:14.5px; line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 32px}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--c-acc); outline-offset:2px; border-radius:6px}
+code,.mono{font-family:var(--mono); font-size:.92em}
+
+/* control bar */
+.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding:10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  background:color-mix(in oklab, var(--c-bg) 90%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--c-line)}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:31; background:var(--c-bg)}
+.bar-row{display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; max-width:1500px; margin:0 auto}
+.brand{display:flex; gap:10px; align-items:center; margin-right:auto; min-width:0}
+.brand .mark{width:30px; height:30px; border-radius:8px; background:var(--a-brand); color:var(--a-brand-fg); display:grid; place-items:center; flex:none}
+.brand b{display:block; font-size:14.5px}
+.brand span{display:block; font-size:12px; color:var(--c-mut)}
+.ctl{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--c-mut)}
+.seg{display:inline-flex; border:1px solid var(--c-line); border-radius:9px; padding:2px; background:var(--c-panel)}
+.seg button{border:0; background:none; padding:5px 10px; border-radius:7px; font-size:12.5px; font-weight:550; color:var(--c-mut); cursor:pointer; min-height:30px}
+.seg button[aria-pressed="true"]{background:var(--c-acc-soft); color:var(--c-fg)}
+select.sel{border:1px solid var(--c-line); background:var(--c-panel); border-radius:9px; padding:5px 8px; font-size:13px; min-height:34px}
+
+/* stage + flows */
+.layout{display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:18px; max-width:1500px; margin:16px auto 0; align-items:start}
+@media (max-width: 980px){ .layout{grid-template-columns:minmax(0,1fr)} }
+.stage{background:var(--c-stage); border-radius:14px; padding:18px; min-width:0; overflow:hidden; display:flex; justify-content:center}
+.dev-wrap{position:relative; flex:none}
+.device{position:absolute; top:0; left:0; transform-origin:0 0; border-radius:22px; overflow:hidden; box-shadow:var(--shadow); background:var(--a-bg); border:10px solid #14151f}
+.device.phone{border-radius:44px; border-width:12px}
+.device.desktop{border-radius:12px; border-width:1px; border-color:var(--c-line)}
+.flows{background:var(--c-panel); border:1px solid var(--c-line); border-radius:14px; padding:16px; display:grid; gap:14px; min-width:0; position:sticky; top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (max-width: 980px){ .flows{position:static} }
+.flows h2{font-size:15px; margin:0}
+.flows p{margin:0}
+.flow-list{display:grid; gap:6px}
+.flow-btn{display:grid; grid-template-columns:26px 1fr; gap:8px; align-items:start; text-align:left; border:1px solid var(--c-line); background:var(--c-bg); border-radius:10px; padding:9px 10px; cursor:pointer}
+.flow-btn:hover{border-color:var(--c-acc)}
+.flow-btn[aria-current="true"]{border-color:var(--c-acc); background:var(--c-acc-soft)}
+.flow-btn .n{width:24px; height:24px; border-radius:50%; background:var(--c-panel); border:1px solid var(--c-line); display:grid; place-items:center; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums}
+.flow-btn b{display:block; font-size:13.5px}
+.flow-btn span{display:block; font-size:12.5px; color:var(--c-mut)}
+.steps{display:grid; gap:6px; margin:0; padding:0; list-style:none; counter-reset:s}
+.steps li{display:grid; grid-template-columns:22px 1fr; gap:8px; font-size:13.5px; color:var(--c-mut)}
+.steps li::before{counter-increment:s; content:counter(s); width:20px; height:20px; border-radius:50%; border:1px solid var(--c-line); display:grid; place-items:center; font-size:11px; font-weight:600}
+.steps li.now{color:var(--c-fg); font-weight:550}
+.steps li.now::before{border-color:var(--c-hint); color:var(--c-hint)}
+.steps li.done{color:var(--c-ok)}
+.steps li.done::before{content:"✓"; border-color:var(--c-ok); background:color-mix(in oklab, var(--c-ok) 14%, transparent)}
+.why{font-size:12.5px; color:var(--c-mut); border-left:3px solid var(--c-acc); padding:6px 10px; background:var(--c-acc-soft); border-radius:0 8px 8px 0}
+.link-btn{border:0; background:none; color:var(--c-acc); padding:0; cursor:pointer; font-size:13px; font-weight:550}
+.note{font-size:12px; color:var(--c-mut)}
+.hint{outline:3px solid var(--c-hint) !important; outline-offset:2px; animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{outline-color:color-mix(in oklab, var(--c-hint) 35%, transparent)}}
+@media (prefers-reduced-motion: reduce){ .hint{animation:none} .sheet,.scrim{animation:none !important} }
+
+/* ===== the mocked launcher (device pixels) ===== */
+.screen{position:relative; width:100%; height:100%; display:flex; flex-direction:column; background:var(--a-bg); color:var(--a-fg); font-size:15px; overflow:hidden}
+.urlbar{flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--a-chrome); color:var(--a-chrome-fg); font-size:13px; border-bottom:1px solid var(--a-line)}
+.phone .urlbar{padding-top:38px}
+.urlbar .addr{flex:1; min-width:0; background:var(--a-surface); border-radius:8px; padding:5px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--mono); font-size:12.5px}
+.urlbar .addr b{color:var(--a-fg); font-weight:500}
+.urlbar .tabs-ct{font-size:11.5px; border:1.5px solid currentColor; border-radius:5px; padding:0 5px; font-weight:600}
+.body{flex:1; min-height:0; display:flex}
+.scroll{flex:1; min-width:0; overflow:auto}
+.top{display:flex; align-items:center; gap:10px; padding:14px 18px 6px}
+.top .mk{width:34px; height:34px; border-radius:9px; background:var(--a-brand); color:var(--a-brand-fg); display:grid; place-items:center; flex:none}
+.top h1{font-size:19px; margin:0; letter-spacing:-.01em}
+.top .sp{flex:1}
+.avatar{width:36px; height:36px; border-radius:50%; background:var(--a-acc-soft); color:var(--a-acc); display:grid; place-items:center; font-size:13px; font-weight:650; flex:none}
+.greet{padding:0 18px; color:var(--a-mut); font-size:14px}
+.search{margin:12px 18px 4px; display:flex; align-items:center; gap:8px; background:var(--a-surface); border:1px solid var(--a-line); border-radius:12px; padding:0 12px; min-height:46px}
+.search input{border:0; background:none; outline:none; flex:1; min-width:0; font-size:15px; padding:10px 0}
+.search kbd{font-family:var(--mono); font-size:11px; border:1px solid var(--a-line); border-radius:5px; padding:1px 5px; color:var(--a-mut)}
+.labs-row{margin:8px 18px 0; display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--a-mut)}
+.switch{position:relative; width:44px; height:26px; border-radius:13px; border:0; background:var(--a-line); cursor:pointer; flex:none}
+.switch::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s}
+.switch[aria-checked="true"]{background:var(--a-acc)}
+.switch[aria-checked="true"]::after{left:21px}
+.sec{padding:14px 18px 4px}
+.sec h2{font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--a-mut); margin:0 0 10px; font-weight:600; display:flex; align-items:center; gap:8px}
+.sec h2 .ct{font-weight:500; letter-spacing:0}
+.grid{display:grid; gap:12px; grid-template-columns:repeat(3, minmax(0,1fr))}
+.tablet .grid{grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px}
+.desktop .grid{grid-template-columns:repeat(6, minmax(0,1fr)); gap:14px}
+.pins{display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none}
+.pins .tile{width:104px; flex:none}
+.tile{position:relative; display:flex; flex-direction:column; justify-content:space-between; gap:8px; aspect-ratio:1/1; border-radius:18px; padding:12px; color:#fff; border:0; text-align:left; cursor:pointer;
+  background:var(--tc); box-shadow:0 1px 0 rgb(255 255 255 / .18) inset, 0 6px 14px -8px var(--tc); user-select:none; -webkit-touch-callout:none; min-width:0}
+.tablet .tile{border-radius:20px; padding:16px}
+.tile:active{transform:scale(.97)}
+.tile .ic{width:30px; height:30px}
+.tablet .tile .ic{width:38px; height:38px}
+.tile .nm{font-size:13.5px; font-weight:600; line-height:1.2; overflow-wrap:anywhere; text-wrap:balance}
+.tablet .tile .nm{font-size:16px}
+.tile .meta{display:flex; flex-wrap:wrap; gap:4px}
+.badge{display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:650; letter-spacing:.03em; text-transform:uppercase; padding:2px 6px; border-radius:6px; background:rgb(255 255 255 / .22); color:#fff; white-space:nowrap}
+.tile .more{position:absolute; top:4px; right:4px; width:36px; height:36px; border:0; border-radius:10px; background:transparent; color:#fff; display:grid; place-items:center; cursor:pointer; opacity:.9}
+.tile .more:hover{background:rgb(255 255 255 / .16)}
+.tile .ext{position:absolute; top:13px; right:42px; opacity:.85}
+.tile.ghost{background:var(--a-surface); color:var(--a-mut); border:1.5px dashed var(--a-line); box-shadow:none}
+.recent{display:flex; flex-wrap:wrap; gap:8px}
+.chip{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--a-line); background:var(--a-surface); border-radius:999px; padding:6px 12px 6px 6px; font-size:13.5px; cursor:pointer; min-height:40px}
+.chip .dot{width:26px; height:26px; border-radius:8px; background:var(--tc); color:#fff; display:grid; place-items:center}
+.chip .dot svg{width:15px; height:15px}
+.chip small{color:var(--a-mut); font-family:var(--mono); font-size:11px}
+.empty{padding:28px 18px; color:var(--a-mut); text-align:center}
+
+/* tablet rail (POS categories) */
+.rail{flex:none; width:230px; border-right:1px solid var(--a-line); background:var(--a-surface); padding:14px 10px; display:flex; flex-direction:column; gap:4px; overflow:auto}
+.rail .r-head{display:flex; align-items:center; gap:10px; padding:4px 8px 14px}
+.rail button.cat{display:flex; align-items:center; gap:10px; border:0; background:none; text-align:left; padding:10px 12px; border-radius:12px; cursor:pointer; font-size:15px; font-weight:550; min-height:48px; color:var(--a-fg)}
+.rail button.cat .sw{width:14px; height:14px; border-radius:4px; background:var(--sw); flex:none}
+.rail button.cat .ct{margin-left:auto; font-size:12.5px; color:var(--a-mut); font-variant-numeric:tabular-nums}
+.rail button.cat[aria-current="true"]{background:var(--a-acc-soft); color:var(--a-acc)}
+.rail .r-foot{margin-top:auto; padding:10px 8px 0; border-top:1px solid var(--a-line); display:grid; gap:10px}
+
+/* desktop side panel */
+.side{flex:none; width:360px; border-left:1px solid var(--a-line); background:var(--a-surface); overflow:auto}
+.side .pad{padding:18px; display:grid; gap:14px}
+
+/* sheets */
+.scrim{position:absolute; inset:0; background:var(--a-scrim); z-index:5; animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{position:absolute; z-index:6; background:var(--a-surface); color:var(--a-fg); display:flex; flex-direction:column; max-height:86%; box-shadow:var(--shadow)}
+.phone .sheet{left:0; right:0; bottom:0; border-radius:22px 22px 0 0; animation:up .2s ease-out; padding-bottom:20px}
+.tablet .sheet{left:50%; top:50%; width:520px; transform:translate(-50%,-50%); border-radius:18px}
+@keyframes up{from{transform:translateY(40%); opacity:.4}}
+.grab{width:40px; height:5px; border-radius:3px; background:var(--a-line); margin:8px auto 0}
+.sh-head{display:flex; gap:12px; align-items:center; padding:14px 18px 10px}
+.sh-head .tl{width:52px; height:52px; border-radius:14px; background:var(--tc); color:#fff; display:grid; place-items:center; flex:none}
+.sh-head .tl svg{width:28px; height:28px}
+.sh-head h3{margin:0; font-size:17px}
+.sh-head p{margin:0; font-size:13px; color:var(--a-mut)}
+.x{margin-left:auto; width:40px; height:40px; border:0; background:var(--a-surface-2); border-radius:50%; cursor:pointer; display:grid; place-items:center; flex:none}
+.stabs{display:flex; gap:4px; padding:0 14px; border-bottom:1px solid var(--a-line)}
+.stabs button{border:0; background:none; padding:10px 10px 11px; font-size:14px; font-weight:550; color:var(--a-mut); border-bottom:2px solid transparent; cursor:pointer; min-height:44px}
+.stabs button[aria-selected="true"]{color:var(--a-fg); border-bottom-color:var(--a-acc)}
+.sh-body{padding:14px 18px; overflow:auto; display:grid; gap:10px}
+.opt{display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start; border:1px solid var(--a-line); border-radius:12px; padding:12px; cursor:pointer; background:var(--a-surface)}
+.opt[aria-checked="true"]{border-color:var(--a-acc); background:var(--a-acc-soft)}
+.opt .rd{width:20px; height:20px; border-radius:50%; border:2px solid var(--a-line); margin-top:1px}
+.opt[aria-checked="true"] .rd{border:6px solid var(--a-acc)}
+.opt b{font-size:14.5px}
+.opt .v{font-family:var(--mono); font-size:12px; color:var(--a-mut)}
+.opt p{margin:4px 0 0; font-size:13px; color:var(--a-mut)}
+.row{display:flex; gap:8px; flex-wrap:wrap}
+.btn{border:1px solid var(--a-line); background:var(--a-surface); border-radius:10px; padding:0 14px; min-height:44px; font-size:14.5px; font-weight:550; cursor:pointer; display:inline-flex; align-items:center; gap:8px; justify-content:center}
+.btn.pri{background:var(--a-brand); color:var(--a-brand-fg); border-color:var(--a-brand)}
+.btn.sm{min-height:34px; font-size:13px; padding:0 10px; border-radius:8px}
+.btn.full{width:100%}
+.kv{display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13.5px}
+.kv dt{color:var(--a-mut)}
+.kv dd{margin:0; min-width:0; overflow-wrap:anywhere}
+.stage-b{display:inline-flex; font-size:11px; font-weight:650; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:6px}
+.st-live{background:var(--a-ok-bg); color:var(--a-ok)} .st-pilot{background:var(--a-warn-bg); color:var(--a-warn)}
+.st-poc{background:var(--a-poc-bg); color:var(--a-poc)} .st-dev{background:var(--a-dev-bg); color:var(--a-dev)}
+textarea.ta{width:100%; min-height:90px; border:1px solid var(--a-line); border-radius:10px; padding:10px; background:var(--a-surface); resize:vertical}
+.rate{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.rate button{border:1px solid var(--a-line); background:var(--a-surface); border-radius:10px; min-height:44px; cursor:pointer; font-size:13.5px}
+.rate button[aria-pressed="true"]{border-color:var(--a-acc); background:var(--a-acc-soft); color:var(--a-acc); font-weight:600}
+.toast{position:absolute; left:50%; bottom:28px; transform:translateX(-50%); z-index:9; background:var(--a-fg); color:var(--a-bg); padding:10px 16px; border-radius:12px; font-size:14px; max-width:86%; box-shadow:var(--shadow)}
+.callout{border-left:3px solid var(--a-acc); background:var(--a-acc-soft); padding:10px 12px; border-radius:0 10px 10px 0; font-size:13.5px}
+.callout.warn{border-color:var(--a-warn); background:var(--a-warn-bg)}
+
+/* an opened app */
+.app-head{display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--tc); color:#fff}
+.app-head .apps-btn{display:inline-flex; align-items:center; gap:6px; border:0; background:rgb(255 255 255 / .18); color:#fff; border-radius:10px; padding:0 12px; min-height:40px; cursor:pointer; font-weight:600; font-size:14px}
+.app-head h2{font-size:16px; margin:0; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.app-body{padding:18px; display:grid; gap:14px; align-content:start}
+.app-top{flex:none; display:flex; align-items:center; gap:10px; padding:8px 14px; min-height:58px; background:var(--a-surface); border-bottom:1px solid var(--a-line)}
+.app-top .mk{width:32px; height:32px; border-radius:9px; background:var(--tc); color:#fff; display:grid; place-items:center; flex:none}
+.app-top .mk svg{width:19px; height:19px}
+.app-top h2{font-size:16px; margin:0; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.stripe{flex:none; height:3px; background:var(--ch)}
+.icon-btn{position:relative; width:44px; height:44px; border:0; border-radius:12px; background:var(--a-surface-2); display:grid; place-items:center; cursor:pointer; flex:none}
+.cdot{position:absolute; top:6px; right:calc(50% - 20px); width:9px; height:9px; border-radius:50%; background:var(--ch); box-shadow:0 0 0 2px var(--a-surface)}
+.icon-btn .cdot,.fab .cdot{right:6px}
+.app-frame{flex:1; min-height:0; display:flex}
+.app-main{flex:1; min-width:0; min-height:0; overflow:auto; display:flex; flex-direction:column}
+.app-main > .app-body{flex:none}
+.app-side{width:220px; flex:none; background:var(--a-surface); border-right:1px solid var(--a-line); padding:10px; display:flex; flex-direction:column; gap:2px; overflow:auto}
+.app-side .it,.menu .it{position:relative; display:flex; align-items:center; gap:10px; padding:0 10px; min-height:44px; border-radius:10px; border:0; background:none; text-align:left; font-size:14.5px; cursor:pointer; color:var(--a-fg)}
+.app-side .it .cdot,.menu .it .cdot{position:static; margin-left:auto; box-shadow:none}
+.app-side .it.on{background:var(--a-acc-soft); color:var(--a-acc); font-weight:600}
+.app-side .foot{margin-top:auto; border-top:1px solid var(--a-line); padding-top:8px; display:grid; gap:2px}
+.menu{display:grid; gap:2px}
+.ver{font-size:11.5px; color:var(--a-mut); padding:4px 10px; font-family:var(--mono)}
+.tabbar{flex:none; display:grid; border-top:1px solid var(--a-line); background:var(--a-surface); padding-bottom:16px}
+.tabbar .it{position:relative; display:grid; justify-items:center; align-content:center; gap:2px; border:0; background:none; font-size:11.5px; color:var(--a-mut); cursor:pointer; min-height:58px}
+.tabbar .it svg{width:22px; height:22px}
+.tabbar .it.on{color:var(--a-acc); font-weight:600}
+.fab{position:absolute; right:16px; bottom:92px; width:56px; height:56px; border-radius:50%; border:0; background:var(--a-brand); color:var(--a-brand-fg); display:grid; place-items:center; box-shadow:var(--shadow); cursor:pointer; z-index:4}
+.tablet .fab,.desktop .fab{bottom:24px}
+.browser-tabs{flex:none; display:flex; gap:4px; padding:6px 10px 0; background:var(--a-chrome)}
+.phone .browser-tabs{padding-top:38px}
+.phone .browser-tabs + .urlbar{padding-top:8px}
+.btab{display:inline-flex; align-items:center; gap:6px; border:0; background:none; color:var(--a-chrome-fg); font-size:12.5px; padding:6px 12px; border-radius:8px 8px 0 0; cursor:pointer; min-height:34px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.btab.on{background:var(--a-surface); color:var(--a-fg); font-weight:600; cursor:default}
+.skel{height:14px; border-radius:7px; background:var(--a-surface-2)}
+.card{background:var(--a-surface); border:1px solid var(--a-line); border-radius:14px; padding:16px; display:grid; gap:10px; min-width:0}
+.signin{max-width:360px; margin:24px auto; width:100%}
+.field{display:grid; gap:4px; font-size:13px; color:var(--a-mut)}
+.field input,.field select{border:1px solid var(--a-line); background:var(--a-surface); color:var(--a-fg); border-radius:10px; padding:0 10px; min-height:42px; font-size:14.5px}
+
+/* manage apps */
+.adm{display:flex; flex:1; min-height:0}
+.adm-list{width:300px; flex:none; border-right:1px solid var(--a-line); overflow:auto; background:var(--a-surface)}
+.phone .adm-list{width:100%; border-right:0}
+.adm-item{display:flex; align-items:center; gap:10px; width:100%; border:0; border-bottom:1px solid var(--a-line); background:none; text-align:left; padding:10px 14px; cursor:pointer; min-height:56px}
+.adm-item[aria-current="true"]{background:var(--a-acc-soft)}
+.adm-item .dot{width:32px; height:32px; border-radius:9px; background:var(--tc); color:#fff; display:grid; place-items:center; flex:none}
+.adm-item .dot svg{width:18px; height:18px}
+.adm-item b{display:block; font-size:14px}
+.adm-item small{display:block; color:var(--a-mut); font-size:12px}
+.adm-detail{flex:1; min-width:0; overflow:auto; padding:16px 18px; display:grid; gap:14px; align-content:start}
+table.t{width:100%; border-collapse:collapse; font-size:13px}
+table.t th{text-align:left; font-weight:600; color:var(--a-mut); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; padding:6px 8px; border-bottom:1px solid var(--a-line)}
+table.t td{padding:8px; border-bottom:1px solid var(--a-line); vertical-align:middle}
+.ptr{display:inline-flex; gap:4px; flex-wrap:wrap}
+.ptr span{font-size:11px; font-weight:650; padding:1px 6px; border-radius:6px; background:var(--a-acc-soft); color:var(--a-acc); text-transform:uppercase}
+.aud{display:flex; flex-wrap:wrap; gap:6px}
+.aud button{border:1px solid var(--a-line); background:var(--a-surface); border-radius:999px; padding:0 12px; min-height:34px; cursor:pointer; font-size:13px}
+.aud button[aria-pressed="true"]{background:var(--a-acc-soft); border-color:var(--a-acc); color:var(--a-acc); font-weight:600}
+pre.cmd{margin:0; background:var(--a-surface-2); border-radius:10px; padding:10px 12px; font-family:var(--mono); font-size:12px; white-space:pre-wrap; overflow-wrap:anywhere}
+.tiers{display:grid; gap:8px}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-row">
+    <div class="brand">
+      <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+      <div><b>App Launcher prototype</b><span>Sample data · nothing is saved or sent · <a href="../app-launcher.html" id="guide-link" style="color:inherit">decision guide</a></span></div>
+    </div>
+    <label class="ctl" for="persona">Signed in as
+      <select class="sel" id="persona"></select>
+    </label>
+    <div class="ctl"><span>Device</span><div class="seg" id="device-seg" role="group" aria-label="Device"></div></div>
+    <div class="ctl"><span>Language</span><div class="seg" id="lang-seg" role="group" aria-label="Language"></div></div>
+    <div class="ctl"><span>Way back</span><div class="seg" id="way-seg" role="group" aria-label="Way back to the launcher"></div></div>
+    <button class="link-btn" id="reset" type="button">Reset</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="stage" id="stage"><div class="dev-wrap" id="dev-wrap"><div class="device" id="device"><div class="screen" id="screen"></div></div></div></div>
+  <aside class="flows" aria-label="Flows">
+    <div><h2>Try a flow</h2><p class="note">Each flow sets up the person and device, then highlights the next thing to press. Or explore freely: right-click or long-press a tile, or press its ⋯.</p></div>
+    <div class="flow-list" id="flow-list"></div>
+    <div id="flow-now"></div>
+  </aside>
+</main>
+
+<script>
+(() => {
+'use strict'
+const ORIGIN = 'workwear.gavort.nl'
+
+/* ---------- icons (24px stroke) ---------- */
+const P = {
+  shirt:'<path d="M20.4 3.5 16 2a4 4 0 0 1-8 0L3.6 3.5a2 2 0 0 0-1.3 2.2l.6 3.5a1 1 0 0 0 1 .8H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.2a1 1 0 0 0 1-.8l.6-3.5a2 2 0 0 0-1.4-2.2z"/>',
+  order:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6M9 14h6"/>',
+  gauge:'<path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
+  sim:'<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><rect x="8.5" y="11" width="7" height="6" rx="1"/>',
+  scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  hat:'<path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5M4 15v-3a6 6 0 0 1 6-6M14 6a6 6 0 0 1 6 6v3"/>',
+  ruler:'<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  check:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  pen:'<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/>',
+  help:'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  more:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  pin:'<path d="M12 17v5M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  ext:'<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  flask:'<path d="M10 2v7.3M14 9.3V2M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0M5.5 16h13"/>',
+  back:'<path d="m15 18-6-6 6-6"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  box:'<path d="M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+}
+const ic = (k, s = 24) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || P.box}</svg>`
+
+/* ---------- words (EN / LT / RU) ---------- */
+const T = {
+  en:{ apps:'Apps', search:'Search apps and screens', pinned:'Pinned', recent:'Recent', all:'All apps',
+    hello:'Good morning, {n}', labs:'Show apps in testing', none:'No app or screen matches “{q}”.',
+    g:{ workwear:'Workwear & PPE', assets:'Company Assets', people:'People & Crew', admin:'Administration', labs:'Labs · in testing' },
+    st:{ live:'Live', pilot:'Pilot', poc:'POC', dev:'In development' },
+    ch:{ stable:'Stable', beta:'Beta', preview:'Preview' },
+    tabs:{ versions:'Versions', about:'About', feedback:'Feedback' },
+    open:'Open', openCh:'Open {c}', pin:'Pin', unpin:'Unpin', close:'Close', back:'Apps',
+    shortcut:'Shortcut', opensIn:'Opens in {a}', newTab:'Opens in a new tab',
+    about:{ stage:'Stage', tier:'Hosting', addr:'Address', owner:'Owner', who:'Who sees it', needs:'What you can do inside' },
+    tier:{ here:'Built here · shares your sign-in', sandbox:'Sandbox · cannot use your sign-in', linked:'Linked site · its own sign-in' },
+    fb:{ ask:'How did {a} {c} work for you?', works:'Works well', confusing:'Confusing', broken:'Something broke', ph:'What were you trying to do?', send:'Send feedback', sent:'Thanks. The {a} team gets it with the version you used.' },
+    chosen:'{a} will open in {c} from now on.', pinned1:'{a} pinned.', unpinned:'{a} unpinned.',
+    only:'You have one app, so signing in opens it straight away.', showAnyway:'Show the launcher anyway',
+    manage:'Manage apps', register:'Register app', channels:'Channels', versions:'Versions', moves:'Channel moves', audience:'Who sees it',
+    makeStable:'Make stable', makeBeta:'Make beta', rollback:'Roll back', publish:'Simulate CI publish',
+    noVersion:'No version published yet.', moved:'{c} now points to {v}.', rolled:'{c} rolled back to {v}.',
+    registered:'{a} registered at {u}. No DNS or Caddy change needed.', published:'{v} published to Preview.',
+  },
+  lt:{ apps:'Programos', search:'Ieškoti programų ir ekranų', pinned:'Prisegtos', recent:'Neseniai atidarytos', all:'Visos programos',
+    hello:'Labas rytas, {n}', labs:'Rodyti bandomas programas', none:'Nėra programos ar ekrano „{q}“.',
+    g:{ workwear:'Darbo drabužiai ir AAP', assets:'Įmonės turtas', people:'Žmonės ir brigados', admin:'Administravimas', labs:'Bandomosios' },
+    st:{ live:'Veikia', pilot:'Bandoma', poc:'POC', dev:'Kuriama' },
+    ch:{ stable:'Stabili', beta:'Beta', preview:'Peržiūra' },
+    tabs:{ versions:'Versijos', about:'Apie', feedback:'Atsiliepimas' },
+    open:'Atidaryti', openCh:'Atidaryti: {c}', pin:'Prisegti', unpin:'Atsegti', close:'Uždaryti', back:'Programos',
+    shortcut:'Nuoroda', opensIn:'Atsidaro programoje {a}', newTab:'Atsidaro naujame skirtuke',
+    about:{ stage:'Etapas', tier:'Talpinimas', addr:'Adresas', owner:'Atsakingas', who:'Kas mato', needs:'Ką galite daryti viduje' },
+    tier:{ here:'Sukurta čia · naudoja jūsų prisijungimą', sandbox:'Smėlio dėžė · be jūsų prisijungimo', linked:'Susieta svetainė · savas prisijungimas' },
+    fb:{ ask:'Kaip jums sekėsi su {a} ({c})?', works:'Veikia gerai', confusing:'Neaišku', broken:'Kažkas sugedo', ph:'Ką bandėte padaryti?', send:'Siųsti atsiliepimą', sent:'Ačiū. {a} komanda jį gaus su jūsų naudota versija.' },
+    chosen:'{a} nuo šiol atsidarys: {c}.', pinned1:'{a} prisegta.', unpinned:'{a} atsegta.',
+    only:'Turite vieną programą, todėl prisijungus ji atsidaro iš karto.', showAnyway:'Vis tiek rodyti programų sąrašą',
+    manage:'Tvarkyti programas', register:'Registruoti programą', channels:'Kanalai', versions:'Versijos', moves:'Kanalų pakeitimai', audience:'Kas mato',
+    makeStable:'Padaryti stabilia', makeBeta:'Padaryti beta', rollback:'Atšaukti', publish:'Imituoti CI paskelbimą',
+    noVersion:'Dar nepaskelbta jokia versija.', moved:'{c} dabar rodo į {v}.', rolled:'{c} grąžinta į {v}.',
+    registered:'{a} užregistruota adresu {u}. DNS ir Caddy keisti nereikia.', published:'{v} paskelbta kanale „Peržiūra“.',
+  },
+  ru:{ apps:'Приложения', search:'Поиск приложений и экранов', pinned:'Закреплённые', recent:'Недавние', all:'Все приложения',
+    hello:'Доброе утро, {n}', labs:'Показывать приложения на испытании', none:'Нет приложения или экрана «{q}».',
+    g:{ workwear:'Спецодежда и СИЗ', assets:'Имущество компании', people:'Люди и бригады', admin:'Администрирование', labs:'На испытании' },
+    st:{ live:'Работает', pilot:'Пилот', poc:'POC', dev:'В разработке' },
+    ch:{ stable:'Стабильная', beta:'Бета', preview:'Предпросмотр' },
+    tabs:{ versions:'Версии', about:'О приложении', feedback:'Отзыв' },
+    open:'Открыть', openCh:'Открыть: {c}', pin:'Закрепить', unpin:'Открепить', close:'Закрыть', back:'Приложения',
+    shortcut:'Ярлык', opensIn:'Открывается в {a}', newTab:'Открывается в новой вкладке',
+    about:{ stage:'Этап', tier:'Размещение', addr:'Адрес', owner:'Ответственный', who:'Кто видит', needs:'Что можно делать внутри' },
+    tier:{ here:'Сделано здесь · общий вход', sandbox:'Песочница · без вашего входа', linked:'Связанный сайт · свой вход' },
+    fb:{ ask:'Как вам {a} ({c})?', works:'Работает хорошо', confusing:'Непонятно', broken:'Что-то сломалось', ph:'Что вы пытались сделать?', send:'Отправить отзыв', sent:'Спасибо. Команда {a} получит отзыв вместе с версией.' },
+    chosen:'{a} теперь открывается: {c}.', pinned1:'{a} закреплено.', unpinned:'{a} откреплено.',
+    only:'У вас одно приложение, поэтому после входа оно открывается сразу.', showAnyway:'Всё равно показать список приложений',
+    manage:'Управление приложениями', register:'Зарегистрировать приложение', channels:'Каналы', versions:'Версии', moves:'Перемещения каналов', audience:'Кто видит',
+    makeStable:'Сделать стабильной', makeBeta:'Сделать бетой', rollback:'Откатить', publish:'Имитировать публикацию CI',
+    noVersion:'Версия ещё не опубликована.', moved:'{c} теперь указывает на {v}.', rolled:'{c} откатан к {v}.',
+    registered:'{a} зарегистрировано: {u}. DNS и Caddy менять не нужно.', published:'{v} опубликована в «Предпросмотр».',
+  },
+}
+const fmt = (s, o = {}) => s.replace(/\{(\w)\}/g, (_, k) => o[k] ?? '')
+
+/* ---------- people (roles) ---------- */
+const PERSONAS = {
+  admin:  { name:'Aistė', full:'Aistė K.', label:'Administrator', roles:['admin'] },
+  manager:{ name:'Tomas', full:'Tomas V.', label:'Manager', roles:['manager'] },
+  staff:  { name:'Rūta',  full:'Rūta P.',  label:'Staff (employee role)', roles:['employee'] },
+  tester: { name:'Darius',full:'Darius M.',label:'Manager + Testers', roles:['manager','testers'] },
+  dev:    { name:'Lina',  full:'Lina S.',  label:'Developer', roles:['developer','testers'] },
+}
+const ROLE_LABEL = { admin:'Administrator', manager:'Manager', employee:'Employee role', testers:'Testers', developer:'Developer' }
+
+/* ---------- the registry (sample) ---------- */
+const nm = (en, lt, ru) => ({ en, lt, ru })
+const freshApps = () => [
+  { id:'workwear', name:nm('Workwear & Equipment','Darbo drabužiai ir įranga','Спецодежда и снаряжение'), group:'workwear', icon:'shirt', color:'#1c2060', stage:'live', tier:'here', path:'/',
+    aud:['admin','manager','employee','testers','developer'], owner:'Workwear team', needs:'Orders, Employees, Item Catalogue, Company Assets: by your role\'s permissions.',
+    channels:{ stable:'2026.10.30-7d26056' }, versions:[['2026.10.30-7d26056','30 Oct'],['2026.10.29-2ca2869','29 Oct']] },
+  { id:'create-order', kind:'shortcut', parent:'workwear', name:nm('Create Order','Sukurti užsakymą','Создать заказ'), group:'workwear', icon:'order', color:'#3341a8', path:'/orders/new',
+    aud:['admin','manager','employee','testers'] },
+  { id:'dashboard', kind:'shortcut', parent:'workwear', name:nm('Dashboard','Suvestinė','Сводка'), group:'workwear', icon:'gauge', color:'#23703f', path:'/',
+    aud:['admin','manager','testers'] },
+  { id:'sim-cards', kind:'shortcut', parent:'workwear', name:nm('SIM Cards','SIM kortelės','SIM-карты'), group:'assets', icon:'sim', color:'#0e7f72', path:'/assets/sim-cards',
+    aud:['admin','manager','testers'] },
+  { id:'sim-scan', name:nm('Scan SIMs','Skenuoti SIM','Сканировать SIM'), group:'assets', icon:'scan', color:'#0f5f8a', stage:'pilot', tier:'here', path:'/apps/sim-scan/',
+    aud:['admin','manager','testers','developer'], owner:'Company Assets', needs:'Add SIMs in batches (assets.manage); Show PIN and PUK (sim_codes.read).',
+    channels:{ stable:'2026.10.29-7d26056', beta:'2026.10.30-b41c2e9', photos:'2026.10.30-c07f1aa' },
+    chMeta:{ beta:{ aud:['testers','developer'], note:'Review list grouped by box; reads the PUK on worn carriers.' },
+             photos:{ aud:['testers','developer'], variant:true, label:nm('Photos first','Pirmiausia nuotraukos','Сначала фото'), note:'Variant: pick photos from the gallery first, camera second.' },
+             stable:{ note:'The trial as merged on 29 Oct: camera or photos, review list, add all or none.' } },
+    versions:[['2026.10.30-c07f1aa','30 Oct'],['2026.10.30-b41c2e9','30 Oct'],['2026.10.29-7d26056','29 Oct'],['2026.10.24-1e7eeb0','24 Oct']] },
+  { id:'crew', name:nm('PPE Crew','PPE Crew','PPE Crew'), group:'people', icon:'hat', color:'#a4540a', stage:'pilot', tier:'linked', url:'https://crew.167.71.68.195.sslip.io',
+    aud:['admin','manager','testers','developer'], owner:'Crew planning', needs:'Its own roles: you get in once PPE Crew gives you one.' },
+  { id:'admin', name:nm('Administration','Administravimas','Администрирование'), group:'admin', icon:'shield', color:'#3b4256', stage:'live', tier:'here', path:'/admin/',
+    aud:['admin','developer'], owner:'Administrators', needs:'Users, Roles & permissions, Audit log, Security, System, Usage, Settings.',
+    channels:{ stable:'2026.10.30-7d26056' }, versions:[['2026.10.30-7d26056','30 Oct']] },
+  { id:'manage', kind:'manage', name:nm('Manage apps','Tvarkyti programas','Управление приложениями'), group:'admin', icon:'grid', color:'#52307c', path:'/admin/apps',
+    aud:['admin','developer'] },
+  { id:'help', kind:'shortcut', parent:'workwear', name:nm('Help','Pagalba','Справка'), group:'workwear', icon:'help', color:'#5b6475', path:'/help',
+    aud:['admin','manager','employee','testers','developer'] },
+  { id:'size-helper', name:nm('Size Helper','Dydžių pagalbininkas','Помощник по размерам'), group:'labs', icon:'ruler', color:'#a33a7c', stage:'poc', tier:'sandbox', host:'size-helper.apps.gavort.nl',
+    aud:['testers','developer'], owner:'Outside contractor', needs:'Nothing in Workwear: it cannot use your sign-in. Sample sizes only.',
+    channels:{ preview:'2026.10.27-poc3' }, versions:[['2026.10.27-poc3','27 Oct']] },
+  { id:'office-check', name:nm('Office Check','Biuro patikra','Проверка офиса'), group:'labs', icon:'check', color:'#6d4bb3', stage:'dev', tier:'here', path:'/apps/office-check/',
+    aud:['developer'], owner:'Company Assets', needs:'Walk the office and tick each asset In Office (assets.manage).',
+    channels:{ preview:'2026.10.28-9f02d1c' }, versions:[['2026.10.28-9f02d1c','28 Oct']] },
+]
+
+/* ---------- state ---------- */
+let S
+const reset = (keepView) => {
+  S = { way:'nav', more:false, persona:'manager', device: window.innerWidth >= 1100 ? 'tablet' : 'phone', lang:'en', view:'home', q:'', cat:'all', labs:false,
+        pins:{ admin:['workwear','admin'], manager:['workwear','create-order'], staff:[], tester:['workwear','sim-scan'], dev:['manage','sim-scan'] },
+        recents:{}, choice:{}, sheet:null, tab:'versions', open:null, sel:null, admSel:'sim-scan', adm:'list', reg:null, toast:null, forceLaunch:false,
+        fb:null, moves:[], apps:freshApps(), flow:null, step:0 }
+  if (keepView) Object.assign(S, keepView)
+}
+reset()
+
+const t = () => T[S.lang]
+const me = () => PERSONAS[S.persona]
+const app = id => S.apps.find(a => a.id === id)
+const sees = aud => (aud || []).some(r => me().roles.includes(r))
+const isTester = () => me().roles.includes('testers')
+const canManage = () => me().roles.some(r => r === 'admin' || r === 'developer')
+const inLabs = a => a.stage === 'poc' || a.stage === 'dev' || a.group === 'labs'
+const name = a => a.name[S.lang] || a.name.en
+const visible = () => S.apps.filter(a => sees(a.aud) && (!inLabs(a) || S.labs))
+const realApps = () => visible().filter(a => !a.kind || a.kind === 'manage')
+const chOf = a => {
+  if (!a.channels) return null
+  const want = S.choice[a.id]
+  if (want && a.channels[want] && chVisible(a, want)) return want
+  return a.channels.stable ? 'stable' : Object.keys(a.channels)[0]
+}
+const chVisible = (a, c) => { const m = a.chMeta?.[c]; return !m?.aud || sees(m.aud) }
+const chLabel = (a, c) => a.chMeta?.[c]?.label ? (a.chMeta[c].label[S.lang] || a.chMeta[c].label.en) : (t().ch[c] || c)
+const addrOf = (a, c) => {
+  if (a.kind === 'shortcut') return `https://${ORIGIN}${a.path}`
+  if (a.kind === 'manage') return `https://${ORIGIN}/admin/apps`
+  if (a.tier === 'linked') return a.url
+  if (a.tier === 'sandbox') return `https://${a.host}/`
+  const base = `https://${ORIGIN}${a.path}`
+  if (!c || c === 'stable' || !a.path.startsWith('/apps/')) return base
+  return `${base}${c}/`
+}
+
+/* ---------- flows ---------- */
+const FLOWS = [
+  { id:'f1', title:'Sign in, land where you work', sub:'One app: straight in. More: the launcher.',
+    setup:{ persona:'staff' }, why:'Fewer choices for people who only ever use one app. The launcher is still at /apps/ for them.',
+    steps:[ { text:'Rūta (employee role) has one app, so sign-in opens Workwear straight away. Press “Show the launcher anyway”.', done:'force', target:'[data-act="force"]' },
+            { text:'Now sign in as someone with more apps: choose Manager in “Signed in as”.', done:'persona:manager', target:'#persona' } ] },
+  { id:'f2', title:'Find and open, POS style', sub:'Search, open a screen, come back, pin.',
+    setup:{ persona:'manager' }, why:'Shortcuts open a screen inside an app (SIM Cards is a Workwear screen), so the launcher doubles as a home of big buttons.',
+    steps:[ { text:'Type “sim” in the search box.', done:'search', target:'#q' },
+            { text:'Open SIM Cards.', done:'open:sim-cards', target:'[data-open="sim-cards"]' },
+            { text:'Come back: “Apps” is in the app’s own menu (More on a phone, the sidebar on larger screens).', done:'back', target:'[data-act="app-more"], [data-act="back"]' },
+            { text:'Pin Scan SIMs: press its ⋯, then Pin.', done:'pin:sim-scan', target:'[data-more="sim-scan"]' } ] },
+  { id:'f3', title:'Try a beta, then go back', sub:'A tester switches versions and sends feedback.',
+    setup:{ persona:'tester', labs:true }, why:'Channels let testers try the next version on the real data while everyone else stays on Stable.',
+    steps:[ { text:'Press ⋯ on Scan SIMs to see its versions.', done:'sheet:sim-scan', target:'[data-more="sim-scan"]' },
+            { text:'Choose Beta.', done:'ch:sim-scan:beta', target:'[data-ch="beta"]' },
+            { text:'Open it. Note the address: /apps/sim-scan/beta/.', done:'open:sim-scan', target:'[data-act="open-sheet"]' },
+            { text:'Note the orange stripe and dot: you are on Beta. Come back through the menu’s “Apps”.', done:'back', target:'[data-act="app-more"], [data-act="back"]' },
+            { text:'Open its ⋯ again and switch back to Stable.', done:'ch:sim-scan:stable', target:'[data-more="sim-scan"], [data-ch="stable"]' },
+            { text:'On the Feedback tab, rate it and send.', done:'feedback', target:'[data-tab="feedback"], [data-act="send-fb"]' } ] },
+  { id:'f4', title:'Promote a beta, then roll back', sub:'An administrator moves a channel.',
+    setup:{ persona:'admin' }, why:'A version never changes once published; promoting is moving the Stable pointer, so rolling back is instant and needs no rebuild.',
+    steps:[ { text:'Open Manage apps.', done:'open:manage', target:'[data-open="manage"]' },
+            { text:'Pick Scan SIMs.', done:'adm:sim-scan', target:'[data-adm="sim-scan"]' },
+            { text:'Make the beta version (…b41c2e9) stable.', done:'promote', target:'[data-promote="2026.10.30-b41c2e9"]' },
+            { text:'Something is wrong: roll the move back.', done:'rollback', target:'[data-act="rollback"]' } ] },
+  { id:'f5', title:'Add a POC: no DNS, no Caddy', sub:'A developer registers, CI publishes, testers see it.',
+    setup:{ persona:'dev' }, why:'The address comes from the registry (/apps/<slug>/). One Caddy rule sends /apps/* to the API, which serves the bundle with the CSP its manifest asks for.',
+    steps:[ { text:'Open Manage apps.', done:'open:manage', target:'[data-open="manage"]' },
+            { text:'Press Register app.', done:'reg-open', target:'[data-act="reg-open"]' },
+            { text:'Keep “Built here” and press Register.', done:'register', target:'[data-act="register"]' },
+            { text:'Simulate CI publishing its first version.', done:'publish', target:'[data-act="publish"]' },
+            { text:'Back to Apps, turn on “Show apps in testing”, open the new app.', done:'open:new', target:'[data-act="app-more"], [data-act="back"], #labs' } ] },
+  { id:'f6', title:'An outside POC in the sandbox', sub:'Unreviewed code never sees the sign-in.',
+    setup:{ persona:'dev', labs:true }, why:'Anything on workwear.gavort.nl can get a full sign-in token. Outside code runs on <slug>.apps.gavort.nl: one wildcard DNS record, set once.',
+    steps:[ { text:'Open Size Helper, a contractor’s POC.', done:'open:size-helper', target:'[data-open="size-helper"]' },
+            { text:'It opened in its own tab. Read the banner, then switch back to the Apps tab.', done:'back', target:'[data-act="back"]' } ] },
+  { id:'f7', title:'Open PPE Crew, a linked site', sub:'Its own address and sign-in.',
+    setup:{ persona:'manager' }, why:'PPE Crew is a separate system on the same droplet. The launcher links to it until it merges in (ADR 0001) or shares sign-in.',
+    steps:[ { text:'Open PPE Crew.', done:'open:crew', target:'[data-open="crew"]' },
+            { text:'It opened in a new tab with its own sign-in. Switch back to the Apps tab.', done:'back', target:'[data-act="back"]' } ] },
+  { id:'f8', title:'Choose the way back', sub:'Menu only, or a header icon, floating button or bar.',
+    setup:{ persona:'tester', labs:true, way:'nav', choice:{ 'sim-scan':'beta' } }, why:'The launcher adds no row to any app. “Apps” is an entry in each app’s own menu, and ⌘K finds apps too. A person, an app or a device may add one quick way back (decision D12). Off Stable, a thin stripe and a dot say so; on Stable, nothing shows.',
+    steps:[ { text:'Open Scan SIMs. You are on Beta: see the thin stripe under the address and the dot on More (on the sidebar’s Apps elsewhere).', done:'open:sim-scan', target:'[data-open="sim-scan"]' },
+            { text:'Come back through the app’s own menu.', done:'back', target:'[data-act="app-more"], [data-act="back"]' },
+            { text:'In the bar above, set “Way back” to “+ Header icon”.', done:'way:icon', target:'#way-seg' },
+            { text:'Open Scan SIMs again and come back with the icon in its header. Try “+ Floating” and “+ Bar” too.', done:'back', target:'[data-open="sim-scan"], .icon-btn[data-act="back"]' } ] },
+]
+const emit = ev => {
+  const f = FLOWS.find(x => x.id === S.flow)
+  if (!f) return
+  const st = f.steps[S.step]
+  if (!st) return
+  const ok = st.done === ev || (st.done === 'open:new' && ev.startsWith('open:') && S.newId && ev === 'open:' + S.newId)
+  if (ok) { S.step++; renderFlows() }
+}
+const startFlow = id => {
+  const f = FLOWS.find(x => x.id === id)
+  const keep = { device:S.device, lang:S.lang, way:S.way }
+  reset(keep)
+  Object.assign(S, JSON.parse(JSON.stringify(f.setup)), { flow:id, step:0 })
+  syncControls(); render(); renderFlows()
+}
+
+/* ---------- rendering ---------- */
+const scr = document.getElementById('screen')
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c])
+const urlHTML = (u, tabs = 2) => {
+  const m = u.match(/^https:\/\/([^/]+)(.*)$/)
+  return `<div class="urlbar"><span aria-hidden="true">🔒</span><div class="addr">${m ? `<b>${esc(m[1])}</b>${esc(m[2])}` : esc(u)}</div><span class="tabs-ct" title="Open tabs">${tabs}</span></div>`
+}
+const tileHTML = a => {
+  const c = chOf(a)
+  const badges = []
+  if (a.stage && a.stage !== 'live') badges.push(t().st[a.stage])
+  if (c && c !== 'stable' && a.channels?.stable) badges.push(chLabel(a, c))
+  if (a.kind === 'shortcut') badges.push(t().shortcut)
+  return `<div class="tile" role="button" tabindex="0" style="--tc:${a.color}" data-open="${a.id}" aria-label="${esc(name(a))}">
+    ${ic(a.icon)}
+    ${a.tier === 'linked' || a.tier === 'sandbox' ? `<span class="ext">${ic('ext', 15)}</span>` : ''}
+    <button class="more" type="button" data-more="${a.id}" aria-label="More for ${esc(name(a))}">${ic('more', 20)}</button>
+    <div><div class="nm">${esc(name(a))}</div>${badges.length ? `<div class="meta" style="margin-top:6px">${badges.map(b => `<span class="badge">${esc(b)}</span>`).join('')}</div>` : ''}</div>
+  </div>`
+}
+const groupsOrder = ['workwear','assets','people','admin','labs']
+const filtered = () => {
+  const q = S.q.trim().toLowerCase()
+  let list = visible()
+  if (q) list = list.filter(a => Object.values(a.name).some(n => n.toLowerCase().includes(q)) || (t().g[a.group] || '').toLowerCase().includes(q))
+  return list
+}
+
+function homeHTML() {
+  const L = t(), p = me()
+  const list = filtered()
+  const pins = (S.pins[S.persona] || []).map(app).filter(a => a && sees(a.aud) && (!inLabs(a) || S.labs))
+  const rec = (S.recents[S.persona] || []).map(app).filter(Boolean)
+  const searching = S.q.trim() !== ''
+  const head = `
+    <div class="top"><div class="mk">${ic('grid', 20)}</div><h1>${L.apps}</h1><div class="sp"></div><div class="avatar" title="${esc(p.full)}">${esc(p.full.split(' ').map(x => x[0]).join(''))}</div></div>
+    <div class="greet">${esc(fmt(L.hello, { n:p.name }))}</div>
+    <label class="search">${ic('search', 18)}<input id="q" type="search" placeholder="${esc(L.search)}" value="${esc(S.q)}" autocomplete="off">${S.device === 'desktop' ? '<kbd>⌘K</kbd>' : ''}</label>
+    ${isTester() ? `<div class="labs-row"><button class="switch" id="labs" role="switch" aria-checked="${S.labs}" aria-label="${esc(L.labs)}"></button><span>${ic('flask', 16)} ${esc(L.labs)}</span></div>` : ''}`
+  const groups = groupsOrder.filter(g => S.device !== 'tablet' || S.cat === 'all' || S.cat === g || S.cat === 'pinned')
+  let body = ''
+  if (searching) {
+    body = list.length ? `<div class="sec"><div class="grid">${list.map(tileHTML).join('')}</div></div>` : `<div class="empty">${esc(fmt(L.none, { q:S.q }))}</div>`
+  } else if (S.device === 'tablet' && S.cat === 'pinned') {
+    body = `<div class="sec"><div class="grid">${pins.map(tileHTML).join('')}</div></div>`
+  } else {
+    if (S.device !== 'tablet' && pins.length) body += `<div class="sec"><h2>${ic('pin', 13)} ${L.pinned}</h2><div class="pins">${pins.map(tileHTML).join('')}</div></div>`
+    if (S.device === 'phone' && rec.length) body += `<div class="sec"><h2>${L.recent}</h2><div class="recent">${rec.map(chipHTML).join('')}</div></div>`
+    for (const g of groups) {
+      const items = list.filter(a => a.group === g)
+      if (!items.length) continue
+      body += `<div class="sec"><h2>${g === 'labs' ? ic('flask', 13) : ''} ${esc(L.g[g])} <span class="ct">${items.length}</span></h2><div class="grid">${items.map(tileHTML).join('')}</div></div>`
+    }
+  }
+  const main = `<div class="scroll">${head}${body}<div style="height:24px"></div></div>`
+  if (S.device === 'tablet') return `<div class="body">${railHTML(list, pins)}${main}</div>`
+  if (S.device === 'desktop') return `<div class="body">${main}<aside class="side">${S.sheet ? sheetInner(app(S.sheet), true) : sideIdle(rec)}</aside></div>`
+  return `<div class="body">${main}</div>`
+}
+const chipHTML = a => `<button class="chip" type="button" data-open="${a.id}" style="--tc:${a.color}"><span class="dot">${ic(a.icon)}</span>${esc(name(a))}${chOf(a) && chOf(a) !== 'stable' && a.channels?.stable ? ` <small>${esc(chLabel(a, chOf(a)))}</small>` : ''}</button>`
+function railHTML(list, pins) {
+  const L = t()
+  const cats = [['all', L.all, list.length, '#8a8fa8'], ['pinned', L.pinned, pins.length, '#c08a10'],
+    ...groupsOrder.map(g => [g, L.g[g], list.filter(a => a.group === g).length, { workwear:'#1c2060', assets:'#0e7f72', people:'#a4540a', admin:'#3b4256', labs:'#a33a7c' }[g]])].filter(c => c[2] > 0 || c[0] === 'all')
+  return `<nav class="rail" aria-label="Groups"><div class="r-head"><div class="top" style="padding:0"><div class="mk">${ic('grid', 20)}</div><h1>${L.apps}</h1></div></div>
+    ${cats.map(([k, label, n, sw]) => `<button class="cat" type="button" data-cat="${k}" aria-current="${S.cat === k}" style="--sw:${sw}"><span class="sw"></span>${esc(label)}<span class="ct">${n}</span></button>`).join('')}
+    <div class="r-foot">${(S.recents[S.persona] || []).slice(0, 3).map(app).filter(Boolean).map(chipHTML).join('')}</div></nav>`
+}
+function sideIdle(rec) {
+  const L = t()
+  const testing = visible().filter(a => a.channels && Object.keys(a.channels).some(c => c !== 'stable' && chVisible(a, c)))
+  return `<div class="pad"><h3 style="margin:0;font-size:15px">${L.recent}</h3>${rec.length ? `<div class="recent">${rec.map(chipHTML).join('')}</div>` : '<p class="note" style="color:var(--a-mut);margin:0">Apps you open appear here.</p>'}
+    ${testing.length ? `<h3 style="margin:8px 0 0;font-size:15px">${ic('flask', 15)} In testing for you</h3>${testing.map(a => `<button class="chip" type="button" data-more="${a.id}" style="--tc:${a.color}"><span class="dot">${ic(a.icon)}</span>${esc(name(a))} <small>${Object.keys(a.channels).filter(c => c !== 'stable' && chVisible(a, c)).map(c => chLabel(a, c)).join(', ')}</small></button>`).join('')}` : ''}
+    <div class="callout">Press ⋯ on a tile, or right-click it, to see its versions, details and feedback here.</div></div>`
+}
+
+function sheetInner(a, inline) {
+  const L = t()
+  if (!a) return ''
+  const c = chOf(a)
+  const tabs = a.kind ? ['about'] : (a.channels ? ['versions', 'about', 'feedback'] : ['about', 'feedback'])
+  const tab = tabs.includes(S.tab) ? S.tab : tabs[0]
+  const pinned = (S.pins[S.persona] || []).includes(a.id)
+  let body = ''
+  if (tab === 'versions') {
+    const chs = Object.keys(a.channels).filter(k => chVisible(a, k))
+    body = chs.map(k => `<div class="opt" role="radio" tabindex="0" aria-checked="${k === c}" data-ch="${k}">
+      <span class="rd"></span><div><b>${esc(chLabel(a, k))}</b> ${a.chMeta?.[k]?.variant ? '<span class="stage-b st-poc">Variant</span>' : ''} <span class="v">${esc(a.channels[k])}</span>
+      ${a.chMeta?.[k]?.note ? `<p>${esc(a.chMeta[k].note)}</p>` : ''}<p class="v">${esc(addrOf(a, k).replace('https://', ''))}</p></div></div>`).join('')
+    if (chs.length === 1) body += `<p class="note" style="color:var(--a-mut);margin:0">Only Stable is open to you. Testers see more channels here.</p>`
+  } else if (tab === 'about') {
+    const parent = a.parent ? app(a.parent) : null
+    body = `<dl class="kv">
+      ${a.stage ? `<dt>${L.about.stage}</dt><dd><span class="stage-b st-${a.stage}">${esc(L.st[a.stage])}</span></dd>` : ''}
+      ${parent ? `<dt>${L.shortcut}</dt><dd>${esc(fmt(L.opensIn, { a:name(parent) }))}</dd>` : ''}
+      ${a.tier ? `<dt>${L.about.tier}</dt><dd>${esc(L.tier[a.tier])}</dd>` : ''}
+      <dt>${L.about.addr}</dt><dd class="mono">${esc(addrOf(a, c))}</dd>
+      ${a.owner ? `<dt>${L.about.owner}</dt><dd>${esc(a.owner)}</dd>` : ''}
+      <dt>${L.about.who}</dt><dd>${a.aud.map(r => ROLE_LABEL[r]).join(', ')}</dd>
+      ${a.needs ? `<dt>${L.about.needs}</dt><dd>${esc(a.needs)}</dd>` : ''}
+    </dl>
+    ${a.tier === 'sandbox' ? '<div class="callout warn">Runs on its own address. It cannot read your Workwear sign-in or data.</div>' : ''}`
+  } else {
+    const fb = S.fb || {}
+    body = `<p style="margin:0">${esc(fmt(L.fb.ask, { a:name(a), c:c ? chLabel(a, c) : '' }))}</p>
+      <div class="rate" role="group">${['works', 'confusing', 'broken'].map(k => `<button type="button" data-rate="${k}" aria-pressed="${fb.rate === k}">${esc(L.fb[k])}</button>`).join('')}</div>
+      <textarea class="ta" id="fb-text" placeholder="${esc(L.fb.ph)}">${esc(fb.text || '')}</textarea>
+      <p class="note" style="color:var(--a-mut);margin:0">Sent with: ${esc(name(a))} ${c ? esc(a.channels[c]) : ''} · ${S.device} · ${S.lang.toUpperCase()}</p>
+      <button class="btn pri" type="button" data-act="send-fb">${esc(L.fb.send)}</button>`
+  }
+  return `${inline ? '' : '<div class="grab"></div>'}
+    <div class="sh-head"><div class="tl" style="--tc:${a.color}">${ic(a.icon)}</div><div style="min-width:0"><h3>${esc(name(a))}</h3><p>${a.stage ? esc(L.st[a.stage]) : esc(L.shortcut)}${c ? ' · ' + esc(chLabel(a, c)) : ''}</p></div>
+      <button class="x" type="button" data-act="close" aria-label="${esc(L.close)}">${ic('x', 18)}</button></div>
+    ${tabs.length > 1 ? `<div class="stabs" role="tablist">${tabs.map(k => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === tab}">${esc(L.tabs[k])}</button>`).join('')}</div>` : ''}
+    <div class="sh-body">${body}
+      ${tab !== 'feedback' ? `<div class="row" style="margin-top:4px"><button class="btn pri" type="button" data-act="open-sheet" style="flex:1">${a.tier === 'linked' || a.tier === 'sandbox' ? ic('ext', 18) : ''}${esc(c && a.channels?.stable && c !== 'stable' ? fmt(L.openCh, { c:chLabel(a, c) }) : L.open)}</button>
+        <button class="btn" type="button" data-act="pin">${ic('pin', 18)}${esc(pinned ? L.unpin : L.pin)}</button></div>` : ''}
+    </div>`
+}
+
+/* An opened app draws its own header and menu. The launcher adds no row of its own:
+   "Apps" is an entry in the app's menu (More on a phone, the sidebar elsewhere), and
+   S.way adds one optional quick way back on top: a header icon, a floating button or a bar. */
+const APP_NAV = {
+  workwear:[['order', 'Create Order'], ['shirt', 'Orders'], ['hat', 'Employees'], ['sim', 'Company Assets']],
+  'sim-scan':[['scan', 'Scan'], ['search', 'Find']],
+  admin:[['shield', 'Overview'], ['hat', 'Users'], ['grid', 'Manage apps']],
+}
+const ACTIVE = { 'create-order':'Create Order', 'sim-cards':'Company Assets', manage:'Manage apps' }
+const CH_COLOR = { beta:'#e8590c', preview:'#6d4bb3', photos:'#a33a7c' }
+const initials = () => me().full.split(' ').map(x => x[0]).join('')
+
+function chrome({ host, label, c, active, content }) {
+  const L = t()
+  const off = !!(c && host.channels?.stable && c !== 'stable')
+  const chc = off ? (CH_COLOR[c] || '#e8590c') : ''
+  const dot = off ? `<span class="cdot" style="--ch:${chc}" title="${esc(chLabel(host, c))}"></span>` : ''
+  const ver = c && host.channels?.[c] ? `${chLabel(host, c)} · ${host.channels[c]}` : ''
+  const nav = APP_NAV[host.id] || [['box', 'Home']]
+  const on = active || nav[0][1]
+  const item = ([i, l]) => `<button class="it ${l === on ? 'on' : ''}" type="button">${ic(i, 20)}<span>${esc(l)}</span></button>`
+  const appsItem = `<button class="it" type="button" data-act="back">${ic('grid', 20)}<span>${esc(L.back)}</span>${dot}</button>`
+  const way = S.way
+  let top
+  if (way === 'bar') {
+    const chip = ver ? `<span class="badge">${esc(ver)}</span>` : ''
+    top = `<div class="app-head" style="--tc:${host.color}"><button class="apps-btn" type="button" data-act="back">${ic('grid', 18)} ${esc(L.back)}</button><h2>${esc(label)}</h2>${chip}</div>`
+  } else {
+    top = `${off ? `<div class="stripe" style="--ch:${chc}"></div>` : ''}<div class="app-top" style="--tc:${host.color}"><div class="mk">${ic(host.icon)}</div><h2>${esc(label)}</h2>
+      ${way === 'icon' ? `<button class="icon-btn" type="button" data-act="back" aria-label="${esc(L.back)}" title="${esc(L.back)}">${ic('grid', 20)}${dot}</button>` : ''}<div class="avatar">${esc(initials())}</div></div>`
+  }
+  const phone = S.device === 'phone'
+  const side = phone ? '' : `<nav class="app-side">${nav.map(item).join('')}<div class="foot">${appsItem}${ver ? `<div class="ver">${esc(ver)}</div>` : ''}</div></nav>`
+  const tabs = nav.slice(0, 3)
+  const tabbar = phone ? `<nav class="tabbar" style="grid-template-columns:repeat(${tabs.length + 1},1fr)">${tabs.map(item).join('')}<button class="it ${S.more ? 'on' : ''}" type="button" data-act="app-more">${ic('more', 22)}<span>More</span>${dot}</button></nav>` : ''
+  const fab = way === 'fab' ? `<button class="fab" type="button" data-act="back" aria-label="${esc(L.back)}" title="${esc(L.back)} · hides while you scroll down">${ic('grid', 24)}${dot}</button>` : ''
+  const more = phone && S.more ? `<div class="scrim" data-act="app-more"></div><div class="sheet" role="dialog" aria-label="More"><div class="grab"></div><div class="sh-body" style="gap:2px">
+      <div class="menu">${appsItem}${nav.slice(3).map(item).join('')}<button class="it" type="button">${ic('help', 20)}<span>Help</span></button><button class="it" type="button"><span class="avatar" style="width:26px;height:26px;font-size:11px">${esc(initials())}</span><span>Account</span></button></div>
+      ${ver ? `<div class="ver">${esc(ver)}</div>` : ''}</div></div>` : ''
+  return `${top}<div class="app-frame">${side}<div class="app-main">${content}</div></div>${tabbar}${fab}${more}`
+}
+
+function openHTML() {
+  const L = t(), a = app(S.open.id), c = S.open.ch
+  const u = addrOf(a, c)
+  if (a.tier === 'linked' || a.tier === 'sandbox') {
+    // Another site in another browser tab: the way back is the launcher's tab.
+    const tabs = `<div class="browser-tabs"><button class="btab" type="button" data-act="back">${ic('grid', 14)} ${esc(L.apps)} · ${ORIGIN}</button><span class="btab on">${esc(name(a))}</span></div>`
+    const body = a.tier === 'linked'
+      ? `<div class="app-body"><div class="callout">${esc(L.newTab)}: <span class="mono">${esc(u.replace('https://', ''))}</span>. PPE Crew is a separate system on the same droplet, with its own session and roles. The launcher stays open in the first tab.</div>
+        <div class="card signin"><div style="display:flex;gap:10px;align-items:center"><div class="tl" style="width:40px;height:40px;border-radius:10px;background:${a.color};color:#fff;display:grid;place-items:center">${ic('hat', 22)}</div><b style="font-size:17px">PPE Crew · Sign in</b></div>
+          <label class="field">Email<input value="tomas@example.com" readonly></label><label class="field">Password<input type="password" value="••••••••" readonly></label>
+          <p class="note" style="color:var(--a-mut);margin:0">Same email and password as Workwear, but a second sign-in. A shared sign-in is decision D8 in the guide.</p>
+          <button class="btn pri" type="button" disabled>Sign in</button></div></div>`
+      : `<div class="app-body"><div class="callout warn"><b>Sandbox.</b> This POC runs on <span class="mono">${esc(a.host)}</span>, outside workwear.gavort.nl, in its own tab. It cannot read your Workwear sign-in, and uses sample data only.</div>
+        <div class="card"><b>Size Helper (POC)</b><label class="field">Height, cm<input value="182" readonly></label><label class="field">Chest, cm<input value="104" readonly></label>
+        <div class="callout">Suggested: jacket 52, trousers 52. Sample data.</div></div>
+        <div class="card"><div class="skel" style="width:70%"></div><div class="skel" style="width:45%"></div></div></div>`
+    return tabs + urlHTML(u, 2) + `<div class="app-main">${body}</div>`
+  }
+  const host = a.kind === 'shortcut' ? app(a.parent) : a
+  const hc = a.kind === 'shortcut' ? chOf(host) : c
+  const content = `<div class="app-body">
+      ${hc && hc !== 'stable' && host.channels?.stable ? `<div class="callout">You are on <b>${esc(chLabel(host, hc))}</b>. Everyone else is on Stable (${esc(host.channels.stable)}). Same data, same sign-in; switch back from the tile's ⋯.</div>` : ''}
+      ${a.kind === 'shortcut' ? `<div class="callout">A shortcut: it opened the ${esc(name(a))} screen inside ${esc(name(host))}.</div>` : ''}
+      <div class="card"><div class="skel" style="width:40%;height:18px"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:70%"></div></div>
+      <div class="card"><div class="skel" style="width:60%"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:30%"></div></div>
+      <p class="note" style="color:var(--a-mut);margin:0">(The app itself is not mocked here: only its header and menu, where the way back to the launcher lives.)</p>
+    </div>`
+  return urlHTML(u) + chrome({ host, label:name(host), c:hc, active:ACTIVE[a.id], content })
+}
+
+function skipHTML() {
+  const L = t(), a = app('workwear')
+  return urlHTML(addrOf(a)) + `<div class="app-head" style="--tc:${a.color}"><h2>${esc(name(a))}</h2></div>
+    <div class="scroll"><div class="app-body"><div class="callout">${esc(L.only)}</div>
+      <div class="card"><div class="skel" style="width:40%;height:18px"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:70%"></div></div>
+      <button class="btn" type="button" data-act="force">${ic('grid', 18)} ${esc(L.showAnyway)}</button></div></div>`
+}
+
+function manageHTML() {
+  const L = t()
+  const list = S.apps.filter(a => !a.kind)
+  const sel = app(S.admSel)
+  const listHTML = `<div class="adm-list">${list.map(a => `<button class="adm-item" type="button" data-adm="${a.id}" aria-current="${a.id === S.admSel && S.adm !== 'reg'}" style="--tc:${a.color}"><span class="dot">${ic(a.icon)}</span><span style="min-width:0"><b>${esc(name(a))}</b><small>${esc(L.st[a.stage] || '')} · ${a.tier}${a.channels ? ' · ' + Object.keys(a.channels).length + ' ch' : ''}</small></span></button>`).join('')}
+    <div style="padding:12px"><button class="btn full" type="button" data-act="reg-open">${ic('plus', 18)} ${esc(L.register)}</button></div></div>`
+  let detail = ''
+  if (S.adm === 'reg') detail = regHTML()
+  else if (sel) {
+    const vers = sel.versions || []
+    const ptrs = v => Object.entries(sel.channels || {}).filter(([, x]) => x === v).map(([k]) => `<span>${esc(chLabel(sel, k))}</span>`).join('')
+    const last = [...S.moves].reverse().find(m => m.app === sel.id && !m.undone)
+    detail = `<div style="display:flex;gap:10px;align-items:center">${S.device === 'phone' ? `<button class="x" type="button" data-act="adm-back" aria-label="Back">${ic('back', 18)}</button>` : ''}<div class="tl" style="width:44px;height:44px;border-radius:12px;background:${sel.color};color:#fff;display:grid;place-items:center">${ic(sel.icon)}</div>
+        <div style="min-width:0"><b style="font-size:17px">${esc(name(sel))}</b><div class="note" style="color:var(--a-mut)">${esc(L.tier[sel.tier])}</div></div></div>
+      <dl class="kv"><dt>Address</dt><dd class="mono">${esc(addrOf(sel, 'stable'))}</dd><dt>Stage</dt><dd><span class="stage-b st-${sel.stage}">${esc(L.st[sel.stage])}</span></dd></dl>
+      ${sel.tier === 'linked' ? '<div class="callout">A linked site: no versions here. Its own deploy decides what runs.</div>' : `
+      <div class="card"><b>${esc(L.versions)}</b>${vers.length ? `<div style="overflow-x:auto"><table class="t"><thead><tr><th>Version</th><th>Published</th><th>Channels</th><th></th></tr></thead><tbody>
+        ${vers.map(([v, d]) => `<tr><td class="mono">${esc(v)}</td><td>${esc(d)}</td><td><span class="ptr">${ptrs(v)}</span></td><td style="white-space:nowrap">${sel.channels?.stable !== v && sel.channels ? `<button class="btn sm" type="button" data-promote="${v}">${esc(L.makeStable)}</button>` : ''}</td></tr>`).join('')}
+        </tbody></table></div>` : `<p class="note" style="color:var(--a-mut);margin:0">${esc(L.noVersion)}</p>`}
+        ${sel.isNew && !vers.length ? `<pre class="cmd">make app-publish SLUG=${esc(sel.id)} \\\n  VERSION=$(git describe --always) \\\n  DIR=web/apps/${esc(sel.id)}/dist</pre><button class="btn pri" type="button" data-act="publish">${esc(L.publish)}</button>` : ''}
+      </div>
+      <div class="card"><b>${esc(L.moves)}</b>${S.moves.filter(m => m.app === sel.id).length ? S.moves.filter(m => m.app === sel.id).map(m => `<div class="note" style="color:var(--a-mut)">${m.undone ? '<s>' : ''}${esc(chLabel(sel, m.ch))}: ${esc(m.from)} → ${esc(m.to)} · ${esc(me().full)}${m.undone ? '</s> (rolled back)' : ''}</div>`).join('') : '<div class="note" style="color:var(--a-mut)">None yet. Every move is an audit event.</div>'}
+        ${last ? `<button class="btn" type="button" data-act="rollback">${esc(L.rollback)}: ${esc(chLabel(sel, last.ch))} → ${esc(last.from)}</button>` : ''}</div>`}
+      <div class="card"><b>${esc(L.audience)}</b><div class="aud">${Object.keys(ROLE_LABEL).map(r => `<button type="button" data-aud="${r}" aria-pressed="${sel.aud.includes(r)}">${esc(ROLE_LABEL[r])}</button>`).join('')}</div>
+        <p class="note" style="color:var(--a-mut);margin:0">Who sees the tile. What they can do inside is still decided by their permissions.</p></div>`
+  }
+  const showList = S.device !== 'phone' || (S.adm === 'list' && !S.admPicked)
+  const showDetail = S.device !== 'phone' || S.adm === 'reg' || S.admPicked
+  return urlHTML(`https://${ORIGIN}/admin/apps`) + chrome({ host:app('admin'), label:name(app('admin')), c:null, active:'Manage apps',
+    content:`<div class="adm">${showList ? listHTML : ''}${showDetail ? `<div class="adm-detail">${detail}</div>` : ''}</div>` })
+}
+function regHTML() {
+  const L = t(), r = S.reg
+  const slug = r.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-app'
+  const u = r.tier === 'here' ? `https://${ORIGIN}/apps/${slug}/` : r.tier === 'sandbox' ? `https://${slug}.apps.gavort.nl/` : (r.url || 'https://…')
+  return `<div style="display:flex;gap:10px;align-items:center">${S.device === 'phone' ? `<button class="x" type="button" data-act="adm-back" aria-label="Back">${ic('back', 18)}</button>` : ''}<b style="font-size:17px">${esc(L.register)}</b></div>
+    <label class="field">Name<input id="reg-name" value="${esc(r.name)}"></label>
+    <div class="field">Hosting<div class="tiers">${['here', 'sandbox', 'linked'].map(k => `<div class="opt" role="radio" tabindex="0" aria-checked="${r.tier === k}" data-tier="${k}"><span class="rd"></span><div><b>${esc(L.tier[k])}</b><p>${{ here:'Built and reviewed in this repo. Served at /apps/<slug>/ on this origin.', sandbox:'Outside or unreviewed code. Served at <slug>.apps.gavort.nl; certificate on first visit.', linked:'A site with its own address and deploy, such as PPE Crew.' }[k]}</p></div></div>`).join('')}</div></div>
+    ${r.tier === 'linked' ? `<label class="field">Address<input id="reg-url" value="${esc(r.url || '')}" placeholder="https://"></label>` : ''}
+    <label class="field">Group<select id="reg-group">${groupsOrder.map(g => `<option value="${g}" ${r.group === g ? 'selected' : ''}>${esc(L.g[g])}</option>`).join('')}</select></label>
+    <div class="card" style="background:var(--a-surface-2)"><span class="note" style="color:var(--a-mut)">It will be at</span><span class="mono" style="font-size:14px">${esc(u)}</span><span class="note" style="color:var(--a-mut)">Stage POC · seen by Developer and Testers until you change it.</span></div>
+    <button class="btn pri" type="button" data-act="register">${esc(L.register)}</button>`
+}
+
+function render() {
+  const d = S.device
+  scr.className = 'screen ' + d
+  let html = ''
+  const staffSkip = realApps().length <= 1 && !S.forceLaunch
+  if (S.view === 'open') html = openHTML()
+  else if (S.view === 'manage') html = manageHTML()
+  else if (staffSkip) html = skipHTML()
+  else html = urlHTML(`https://${ORIGIN}/apps/`, 1) + homeHTML()
+  if (S.sheet && S.view === 'home' && d !== 'desktop') html += `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="${esc(name(app(S.sheet)))}">${sheetInner(app(S.sheet))}</div>`
+  if (S.toast) html += `<div class="toast" role="status">${esc(S.toast)}</div>`
+  // keep the search box's focus and caret through a re-render
+  const active = document.activeElement
+  const focusQ = active && active.id === 'q', pos = focusQ ? active.selectionStart : 0
+  scr.innerHTML = html
+  if (focusQ) { const q = document.getElementById('q'); if (q) { q.focus(); q.setSelectionRange(pos, pos) } }
+  hint()
+  fit()
+}
+function hint() {
+  document.querySelectorAll('.hint').forEach(e => e.classList.remove('hint'))
+  const f = FLOWS.find(x => x.id === S.flow)
+  const st = f?.steps[S.step]
+  if (!st?.target) return
+  for (const sel of st.target.split(',').map(s => s.trim()).reverse()) {
+    const el = document.querySelector(sel)
+    if (el) { el.classList.add('hint'); break }
+  }
+}
+let toastTimer
+const toast = m => { S.toast = m; clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = null; render() }, 2600) }
+
+/* ---------- device scaling ---------- */
+const SIZES = { phone:[390, 844], tablet:[1180, 820], desktop:[1440, 900] }
+const dev = document.getElementById('device'), wrap = document.getElementById('dev-wrap'), stage = document.getElementById('stage')
+function fit() {
+  const [w, h] = SIZES[S.device]
+  const bw = S.device === 'phone' ? 24 : S.device === 'tablet' ? 20 : 2
+  const W = w + bw, H = h + bw
+  const avail = stage.clientWidth - 36
+  const maxH = Math.max(420, window.innerHeight - 130)
+  const s = Math.min(1, avail / W, maxH / H)
+  dev.className = 'device ' + S.device
+  dev.style.width = W + 'px'; dev.style.height = H + 'px'
+  dev.style.transform = `scale(${s})`
+  wrap.style.width = W * s + 'px'; wrap.style.height = H * s + 'px'
+}
+new ResizeObserver(() => fit()).observe(stage)
+
+/* ---------- actions ---------- */
+function openApp(id) {
+  const a = app(id)
+  S.more = false
+  if (a.kind === 'manage') { S.view = 'manage'; S.adm = 'list'; S.admPicked = false; S.sheet = null; emit('open:manage'); render(); return }
+  S.open = { id, ch: chOf(a) }
+  S.view = 'open'; S.sheet = null; S.q = ''
+  const r =S.recents[S.persona] = (S.recents[S.persona] || []).filter(x => x !== id)
+  r.unshift(id); r.length = Math.min(r.length, 5)
+  emit('open:' + id)
+  render()
+}
+function openSheet(id) { S.sheet = id; S.tab = app(id).channels ? 'versions' : 'about'; S.fb = null; emit('sheet:' + id); render() }
+
+scr.addEventListener('click', e => {
+  const el = e.target.closest('[data-act],[data-open],[data-more],[data-ch],[data-tab],[data-rate],[data-cat],[data-adm],[data-promote],[data-aud],[data-tier],#labs')
+  if (!el) return
+  const L = t(), d = el.dataset
+  if (d.more) { e.stopPropagation(); openSheet(d.more); return }
+  if (el.id === 'labs') { S.labs = !S.labs; emit('labs'); render(); return }
+  if (d.open) { if (suppressClick) { suppressClick = false; return } openApp(d.open); return }
+  if (d.cat) { S.cat = d.cat; render(); return }
+  if (d.tab) { S.tab = d.tab; render(); return }
+  if (d.rate) { S.fb = { ...(S.fb || {}), rate:d.rate }; render(); return }
+  if (d.ch) { S.choice[S.sheet] = d.ch; const a = app(S.sheet); toast(fmt(L.chosen, { a:name(a), c:chLabel(a, d.ch) })); emit(`ch:${S.sheet}:${d.ch}`); render(); return }
+  if (d.adm) { S.admSel = d.adm; S.adm = 'list'; S.admPicked = true; emit('adm:' + d.adm); render(); return }
+  if (d.aud) { const a = app(S.admSel); a.aud = a.aud.includes(d.aud) ? a.aud.filter(r => r !== d.aud) : [...a.aud, d.aud]; render(); return }
+  if (d.tier) { S.reg.tier = d.tier; render(); return }
+  if (d.promote) {
+    const a = app(S.admSel), from = a.channels.stable
+    a.channels.stable = d.promote
+    S.moves.push({ app:a.id, ch:'stable', from, to:d.promote })
+    toast(fmt(L.moved, { c:t().ch.stable, v:d.promote })); emit('promote'); render(); return
+  }
+  switch (d.act) {
+    case 'close': S.sheet = null; render(); break
+    case 'force': S.forceLaunch = true; emit('force'); render(); break
+    case 'back': S.view = 'home'; S.open = null; S.more = false; emit('back'); render(); break
+    case 'app-more': S.more = !S.more; render(); break
+    case 'open-sheet': openApp(S.sheet); break
+    case 'pin': {
+      const id = S.sheet, list = S.pins[S.persona] = S.pins[S.persona] || []
+      const on = list.includes(id)
+      S.pins[S.persona] = on ? list.filter(x => x !== id) : [...list, id]
+      toast(fmt(on ? L.unpinned : L.pinned1, { a:name(app(id)) })); if (!on) emit('pin:' + id); render(); break
+    }
+    case 'send-fb': S.fb = { ...(S.fb || {}), text:document.getElementById('fb-text')?.value || '' }; toast(fmt(L.fb.sent, { a:name(app(S.sheet)) })); S.sheet = null; emit('feedback'); render(); break
+    case 'rollback': {
+      const a = app(S.admSel), m = [...S.moves].reverse().find(x => x.app === a.id && !x.undone)
+      if (m) { a.channels[m.ch] = m.from; m.undone = true; toast(fmt(L.rolled, { c:chLabel(a, m.ch), v:m.from })); emit('rollback') }
+      render(); break
+    }
+    case 'reg-open': S.adm = 'reg'; S.reg = { name:'Signature Pad', tier:'here', group:'labs', url:'' }; emit('reg-open'); render(); break
+    case 'adm-back': S.adm = 'list'; S.admPicked = false; render(); break
+    case 'register': {
+      const r = S.reg
+      const id = r.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-app'
+      if (app(id)) { toast('That name is taken.'); break }
+      const a = { id, isNew:true, name:nm(r.name, r.name, r.name), group:r.group, icon:'pen', color:'#8a3b12', stage:'poc', tier:r.tier, aud:['developer', 'testers'], owner:me().full,
+        needs:'Whatever its permissions allow.', versions:[] }
+      if (r.tier === 'here') { a.path = `/apps/${id}/`; a.channels = null }
+      if (r.tier === 'sandbox') { a.host = `${id}.apps.gavort.nl`; a.channels = { preview:'2026.10.30-poc1' }; a.versions = [['2026.10.30-poc1', '30 Oct']] }
+      if (r.tier === 'linked') { a.url = r.url || 'https://example.org'; delete a.versions }
+      S.apps.push(a); S.newId = id; S.admSel = id; S.adm = 'list'; S.admPicked = true
+      toast(fmt(L.registered, { a:r.name, u:addrOf(a, 'stable') })); emit('register'); render(); break
+    }
+    case 'publish': {
+      const a = app(S.admSel), v = '2026.10.30-' + Math.random().toString(16).slice(2, 9)
+      a.versions = [[v, '30 Oct']]; a.channels = { preview:v }
+      toast(fmt(L.published, { v })); emit('publish'); render(); break
+    }
+  }
+})
+scr.addEventListener('input', e => {
+  if (e.target.id === 'q') { S.q = e.target.value; if (S.q.trim()) emit('search'); render() }
+  if (e.target.id === 'reg-name') { S.reg.name = e.target.value; const p = e.target.selectionStart; render(); const n = document.getElementById('reg-name'); n.focus(); n.setSelectionRange(p, p) }
+  if (e.target.id === 'reg-url') { S.reg.url = e.target.value }
+  if (e.target.id === 'fb-text') { S.fb = { ...(S.fb || {}), text:e.target.value } }
+})
+scr.addEventListener('change', e => { if (e.target.id === 'reg-group') { S.reg.group = e.target.value; render() } })
+scr.addEventListener('keydown', e => {
+  const el = e.target.closest('[role="button"],[role="radio"]')
+  if (el && (e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); el.click() }
+})
+// right-click and long-press open the tile's sheet
+scr.addEventListener('contextmenu', e => { const tl = e.target.closest('[data-open]'); if (tl && S.view === 'home') { e.preventDefault(); openSheet(tl.dataset.open) } })
+let pressTimer, suppressClick = false
+scr.addEventListener('pointerdown', e => {
+  const tl = e.target.closest('.tile[data-open]')
+  if (!tl || e.target.closest('.more') || e.button !== 0) return
+  pressTimer = setTimeout(() => { suppressClick = true; openSheet(tl.dataset.open) }, 520)
+})
+;['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(k => scr.addEventListener(k, ev => { if (k !== 'pointermove' || Math.abs(ev.movementX) + Math.abs(ev.movementY) > 6) clearTimeout(pressTimer) }))
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && S.view === 'home') { e.preventDefault(); document.getElementById('q')?.focus() }
+  if (e.key === 'Escape' && S.sheet) { S.sheet = null; render() }
+})
+
+/* ---------- control bar ---------- */
+const personaSel = document.getElementById('persona')
+personaSel.innerHTML = Object.entries(PERSONAS).map(([k, p]) => `<option value="${k}">${p.name} · ${p.label}</option>`).join('')
+personaSel.addEventListener('change', () => {
+  S.persona = personaSel.value; S.view = 'home'; S.sheet = null; S.q = ''; S.cat = 'all'; S.forceLaunch = false
+  if (!isTester()) S.labs = false
+  emit('persona:' + S.persona); render()
+})
+const segs = (id, items, key) => {
+  const el = document.getElementById(id)
+  el.innerHTML = items.map(([v, l]) => `<button type="button" data-v="${v}">${l}</button>`).join('')
+  el.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.v; if (key === 'way') emit('way:' + S.way); if (key === 'device') S.sheet = S.device === 'desktop' ? S.sheet : null; syncControls(); render() })
+}
+segs('device-seg', [['phone', 'Phone'], ['tablet', 'Tablet'], ['desktop', 'Desktop']], 'device')
+segs('lang-seg', [['en', 'EN'], ['lt', 'LT'], ['ru', 'RU']], 'lang')
+segs('way-seg', [['nav', 'Menu only'], ['icon', '+ Header icon'], ['fab', '+ Floating'], ['bar', '+ Bar']], 'way')
+function syncControls() {
+  personaSel.value = S.persona
+  document.querySelectorAll('#device-seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.device))
+  document.querySelectorAll('#lang-seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.lang))
+  document.querySelectorAll('#way-seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.way))
+  document.documentElement.lang = S.lang
+}
+document.getElementById('reset').addEventListener('click', () => { reset({ device:S.device, lang:S.lang, way:S.way }); syncControls(); render(); renderFlows() })
+
+/* ---------- flows panel ---------- */
+const flowList = document.getElementById('flow-list'), flowNow = document.getElementById('flow-now')
+function renderFlows() {
+  flowList.innerHTML = FLOWS.map((f, i) => `<button class="flow-btn" type="button" data-flow="${f.id}" aria-current="${S.flow === f.id}"><span class="n">${i + 1}</span><span><b>${f.title}</b><span>${f.sub}</span></span></button>`).join('')
+  const f = FLOWS.find(x => x.id === S.flow)
+  if (!f) { flowNow.innerHTML = ''; hint(); return }
+  const done = S.step >= f.steps.length
+  flowNow.innerHTML = `<div style="display:grid;gap:10px"><h2>${f.title}</h2><ol class="steps">${f.steps.map((s, i) => `<li class="${i < S.step ? 'done' : i === S.step ? 'now' : ''}"><span>${s.text}</span></li>`).join('')}</ol>
+    ${done ? `<p style="color:var(--c-ok);font-weight:600;margin:0">Flow done.</p>` : ''}<div class="why">${f.why}</div>
+    <div><button class="link-btn" type="button" id="restart">Start this flow again</button></div></div>`
+  document.getElementById('restart').onclick = () => startFlow(f.id)
+  hint()
+}
+flowList.addEventListener('click', e => { const b = e.target.closest('[data-flow]'); if (b) startFlow(b.dataset.flow) })
+
+syncControls(); render(); renderFlows()
+})()
+</script>
+</body>
+</html>

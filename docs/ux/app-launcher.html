@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>App Launcher Decision Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a workbench report like docs/ux/company-assets-ux-review.html. Sticky header with section tabs, one panel at a time; the staff app's neutrals and navy brand so samples read as the product. Tier colours: here (navy), sandbox (plum), linked (amber). */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --brand-fg:#ffffff; --accent:#3341a8; --accent-soft:#e8eafb;
+  --here:#3341a8; --sandbox:#a33a7c; --linked:#a4540a;
+  --ok:#23703f; --ok-bg:#e4f3ea; --warn:#9a5a08; --warn-bg:#fcf0de; --bad:#b42318; --bad-bg:#fdeceb; --mute-bg:#eceef3;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --here:#909cff; --sandbox:#e78cc3; --linked:#f0a64a;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --here:#909cff; --sandbox:#e78cc3; --linked:#f0a64a;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 56px}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:21; background:var(--bg)}
+.wrap{max-width:1180px; margin:0 auto}
+h1,h2,h3,h4{text-wrap:balance; margin:0; line-height:1.2}
+h1{font-size:clamp(26px,3.4vw,36px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:22px; font-weight:650; letter-spacing:-.01em}
+h3{font-size:16px; font-weight:650}
+p{margin:0}
+ul,ol{margin:0; padding-left:20px}
+li + li{margin-top:4px}
+a{color:var(--accent)}
+.lede{color:var(--muted); max-width:72ch}
+code,.mono{font-family:var(--mono); font-size:.88em}
+code{background:var(--surface-2); padding:1px 5px; border-radius:5px; overflow-wrap:anywhere}
+.eyebrow{font-size:11.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.small{font-size:13px} .muted{color:var(--muted)}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter:blur(10px);
+  margin-left:calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding:10px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-bottom:1px solid var(--line)}
+.top-row{display:flex; align-items:center; gap:12px; max-width:1180px; margin:0 auto}
+.logo{width:28px; height:28px; border-radius:7px; background:var(--brand); color:var(--brand-fg); display:grid; place-items:center; flex:none}
+.top-title{font-weight:650; font-size:14.5px}
+.top-sub{font-size:12.5px; color:var(--muted)}
+.top-row .sp{flex:1}
+.proto-link{font-size:13px; font-weight:600; text-decoration:none; border:1px solid var(--line); background:var(--surface); padding:6px 10px; border-radius:8px; white-space:nowrap}
+.tabs{display:flex; gap:2px; overflow-x:auto; max-width:1180px; margin:8px auto 0; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0; background:none; padding:10px 12px 11px; font-size:13.5px; font-weight:550; color:var(--muted); border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer}
+.tab[aria-selected="true"]{color:var(--fg); border-bottom-color:var(--accent)}
+.tab:hover{color:var(--fg)}
+
+section.panel{padding-top:28px; display:grid; gap:22px}
+.head{display:grid; gap:8px}
+.grid{display:grid; gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; min-width:0; display:grid; gap:10px; align-content:start}
+.stat{display:grid; gap:2px}
+.stat .v{font-family:var(--mono); font-size:30px; font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px; color:var(--muted)}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:550; padding:2px 8px; border-radius:999px; background:var(--mute-bg); color:var(--muted); white-space:nowrap}
+.pill.here{background:color-mix(in oklab,var(--here) 16%,transparent); color:var(--here)}
+.pill.sandbox{background:color-mix(in oklab,var(--sandbox) 16%,transparent); color:var(--sandbox)}
+.pill.linked{background:color-mix(in oklab,var(--linked) 16%,transparent); color:var(--linked)}
+.pill.ok{background:var(--ok-bg); color:var(--ok)} .pill.warn{background:var(--warn-bg); color:var(--warn)} .pill.bad{background:var(--bad-bg); color:var(--bad)}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 14px; border-radius:0 8px 8px 0}
+.callout.warn{border-color:var(--warn); background:var(--warn-bg)}
+.tbl{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table{width:100%; border-collapse:collapse; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line)}
+th{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; background:var(--surface-2); white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.rec{background:color-mix(in oklab, var(--ok) 7%, transparent)}
+.num{font-variant-numeric:tabular-nums}
+
+/* terms */
+dl.terms{display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:12px 20px; margin:0}
+dl.terms dt{font-weight:650}
+dl.terms dd{margin:0; color:var(--muted); min-width:0}
+@media (max-width:560px){ dl.terms{grid-template-columns:1fr; gap:4px} dl.terms dd{margin-bottom:10px} }
+
+/* diagrams */
+.diagram{overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px}
+.diagram svg{display:block; min-width:760px; width:100%; height:auto}
+.diagram svg text{font-family:var(--font); fill:var(--fg)}
+.diagram svg .m{fill:var(--muted)}
+.diagram svg .box{fill:var(--surface-2); stroke:var(--line)}
+.diagram svg .ln{stroke:var(--muted); fill:none}
+
+/* mini mocks (UI samples) */
+.mock{background:var(--surface-2); border-radius:14px; padding:14px; display:grid; gap:10px; justify-items:center; min-width:0}
+.mock figcaption{font-size:13px; color:var(--muted); text-align:center; max-width:46ch}
+.dev{background:var(--bg); border:6px solid #14151f; border-radius:26px; overflow:hidden; width:100%; font-size:11px; color:var(--fg)}
+.dev.ph{max-width:250px}
+.dev.tb{border-radius:16px; max-width:680px}
+.dev.dt{border:1px solid var(--line); border-radius:10px; max-width:760px}
+.dv-url{background:var(--surface-2); padding:5px 8px; font-family:var(--mono); font-size:9.5px; color:var(--muted); border-bottom:1px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.dv-in{padding:10px; display:grid; gap:8px}
+.dv-h{display:flex; align-items:center; gap:6px; font-weight:650; font-size:13px}
+.dv-h i{width:18px; height:18px; border-radius:5px; background:var(--brand); display:block}
+.dv-s{border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:5px 8px; color:var(--muted)}
+.dv-l{font-size:8.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600}
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.tb .tiles{grid-template-columns:repeat(4,1fr)}
+.dt .tiles{grid-template-columns:repeat(5,1fr)}
+.t{aspect-ratio:1; border-radius:9px; background:var(--c); color:#fff; padding:6px; display:flex; flex-direction:column; justify-content:flex-end; font-size:9.5px; font-weight:600; line-height:1.15; position:relative; min-width:0; overflow-wrap:break-word; hyphens:auto; padding-top:18px}
+.t b{position:absolute; top:5px; left:6px; font-size:7.5px; font-weight:700; background:rgb(255 255 255 / .25); border-radius:3px; padding:0 3px; text-transform:uppercase}
+.split{display:grid; grid-template-columns:130px 1fr; min-height:200px}
+.mock.wide{grid-column:1/-1}
+.dt .split{grid-template-columns:1fr 200px}
+.rail{background:var(--surface); border-right:1px solid var(--line); padding:8px 6px; display:grid; gap:3px; align-content:start}
+.rail span{padding:5px 6px; border-radius:6px; display:flex; gap:5px; align-items:center}
+.rail span i{width:8px; height:8px; border-radius:2px; background:var(--c); display:block}
+.rail span.on{background:var(--accent-soft); color:var(--accent); font-weight:600}
+.panelR{background:var(--surface); border-left:1px solid var(--line); padding:8px; display:grid; gap:6px; align-content:start}
+.opt{border:1px solid var(--line); border-radius:7px; padding:5px 6px; background:var(--surface)}
+.opt.on{border-color:var(--accent); background:var(--accent-soft)}
+.opt small{display:block; font-family:var(--mono); font-size:8px; color:var(--muted)}
+.btnm{background:var(--brand); color:var(--brand-fg); border-radius:6px; padding:5px; text-align:center; font-weight:600}
+
+/* flows */
+.flow{display:grid; gap:10px}
+.steps{display:flex; flex-wrap:wrap; gap:8px; list-style:none; padding:0; margin:0; counter-reset:s}
+.steps li{margin:0; flex:1 1 150px; min-width:0; background:var(--surface-2); border-radius:8px; padding:8px 10px; font-size:13.5px; position:relative}
+.steps li::before{counter-increment:s; content:counter(s); font-family:var(--mono); font-size:11px; color:var(--muted); display:block}
+
+/* decisions */
+.dec{display:grid; gap:10px}
+.dec-head{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.dec-head .id{font-family:var(--mono); font-size:12.5px; color:var(--muted)}
+.choices{display:grid; gap:6px}
+.choice{display:grid; grid-template-columns:20px 1fr; gap:8px; align-items:start; border:1px solid var(--line); border-radius:8px; padding:8px 10px; cursor:pointer; background:var(--surface)}
+.choice input{margin:3px 0 0}
+.choice > span{min-width:0; overflow-wrap:anywhere}
+.choice:has(input:checked){border-color:var(--accent); background:var(--accent-soft)}
+.choice b{font-weight:600}
+.choice .r{font-size:11.5px; font-weight:650; color:var(--ok); text-transform:uppercase; letter-spacing:.05em; margin-left:6px}
+.tally{position:sticky; bottom:12px; justify-self:end; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); border-radius:999px; padding:8px 14px; font-size:13px}
+.roadmap{display:grid; gap:12px}
+.phase{display:grid; grid-template-columns:64px 1fr; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px}
+.phase .n{font-family:var(--mono); font-size:13px; color:var(--muted)}
+.phase .n b{display:block; font-family:var(--font); font-size:22px; color:var(--fg)}
+@media (max-width:560px){ .phase{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="top-row">
+    <div class="logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+    <div><div class="top-title">App Launcher</div><div class="top-sub">Research, UI samples, flows and decisions · 30 Oct 2026 · proposal</div></div>
+    <div class="sp"></div>
+    <a class="proto-link" id="proto-link" href="mockups/app-launcher.html">Open the prototype ↗</a>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Guide sections">
+    <button class="tab" role="tab" data-tab="overview">Overview</button>
+    <button class="tab" role="tab" data-tab="research">Research</button>
+    <button class="tab" role="tab" data-tab="concepts">Concepts</button>
+    <button class="tab" role="tab" data-tab="architecture">Architecture</button>
+    <button class="tab" role="tab" data-tab="samples">UI samples</button>
+    <button class="tab" role="tab" data-tab="flows">UX flows</button>
+    <button class="tab" role="tab" data-tab="decisions">Decisions</button>
+    <button class="tab" role="tab" data-tab="roadmap">Roadmap</button>
+    <button class="tab" role="tab" data-tab="testing">Test plan</button>
+  </nav>
+</header>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="panel" id="overview" role="tabpanel">
+  <div class="head">
+    <span class="eyebrow">Proposal</span>
+    <h1>One front door for the company's apps</h1>
+    <p class="lede">App Launcher is a page of big buttons, like a till or the Shortcuts app, that shows each person only the apps their roles use. It also lets us put proof-of-concept apps, trials and new versions in front of chosen testers without new DNS records, new addresses or Caddy changes.</p>
+  </div>
+  <div class="grid g4">
+    <div class="card stat"><span class="v">4</span><span class="l">apps today: Workwear, Administration, Scan SIMs (trial), PPE Crew (separate system)</span></div>
+    <div class="card stat"><span class="v">~12</span><span class="l">places edited by hand to add Scan SIMs (Caddy, CSP, Dockerfile, Vite, e2e, routing, app identity)</span></div>
+    <div class="card stat"><span class="v">0</span><span class="l">config changes per app after phase 3: register it, CI publishes it</span></div>
+    <div class="card stat"><span class="v">3</span><span class="l">hosting tiers, by how much we trust the code</span></div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>The problem</h3>
+      <ul>
+        <li><b>Too many doors.</b> People learn an address per app, and the staff app's sidebar already holds more than most roles use.</li>
+        <li><b>Trials are expensive.</b> Scan SIMs needed its own Caddy block, its own CSP line, Dockerfile and e2e changes, and still reports to the API as <code>workwear</code> because adding an app name touches two database CHECKs.</li>
+        <li><b>No versions.</b> Everyone gets the same build. There is no way to let three testers try the next Scan SIMs while the rest keep the current one, or to compare two designs.</li>
+        <li><b>PPE Crew lives elsewhere</b>, at <code>crew.167.71.68.195.sslip.io</code>, with a second sign-in. Nobody finds it without the link.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>The recommendation in short</h3>
+      <ul>
+        <li>A fourth app, <b>App Launcher</b>, at <code>/apps/</code> on the staff app's origin, sharing its sign-in.</li>
+        <li>A <b>registry</b> of apps, their <b>versions</b> and <b>channels</b> (Stable, Beta, Preview), and who sees each. Static at first, then in the API with a <b>Manage apps</b> screen.</li>
+        <li><b>Tiers:</b> apps built and reviewed here run at <code>/apps/&lt;slug&gt;/</code> with your sign-in. Outside code runs on a sandbox domain and never sees it. Separate systems such as PPE Crew are linked.</li>
+        <li>One Caddy rule sends <code>/apps/*</code> to the API, which serves each published build with the security policy it declared. New apps and versions need no config.</li>
+        <li>People with one app skip the launcher. Testers turn on <b>Show apps in testing</b>.</li>
+        <li>No app loses a row to the launcher: the way back is an <b>Apps</b> entry in each app's own menu, and a version shows only when someone is off Stable.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Already decided:</b> tiered hosting (built here shares the origin; outside POCs go to a sandbox), deliverables in the repo and as shared pages, and a clickable prototype to test with people. The open decisions are on the <a href="#decisions" data-go="decisions">Decisions</a> tab, each with a recommendation.</div>
+</section>
+
+<!-- ============ RESEARCH ============ -->
+<section class="panel" id="research" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">Prior art</span>
+    <h2>What launchers and release systems already get right</h2>
+    <p class="lede">None of these is copied whole. Each row says what we take from it.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Product</th><th>How it works</th><th>We take</th></tr></thead>
+    <tbody>
+      <tr><td><b>Microsoft 365 app launcher</b></td><td>The grid shows only apps the person is licensed for; admins add custom tiles for other sites.</td><td>Show only assigned apps. Linked tiles for sites we don't host.</td></tr>
+      <tr><td><b>Okta end-user dashboard</b></td><td>Admins assign apps to groups; people sort them into their own sections; sign-in carries into each app.</td><td>Audience by role. Personal pins. A shared sign-in for linked apps later.</td></tr>
+      <tr><td><b>Google apps grid</b></td><td>A fixed set the person may reorder.</td><td>Personal order without changing anyone else's.</td></tr>
+      <tr><td><b>Square, Toast and other POS screens</b></td><td>Large coloured tiles in fixed places, a category rail, built for touch and speed on a tablet.</td><td>Big tiles, a colour per app, positions that never jump (muscle memory), a group rail on tablets.</td></tr>
+      <tr><td><b>macOS Launchpad and Shortcuts</b></td><td>Icons for apps, and shortcuts that run one action.</td><td><b>Shortcuts</b>: a tile that opens one screen inside an app, such as Create Order or SIM Cards.</td></tr>
+      <tr><td><b>Backstage software catalog</b></td><td>Each component has an owner and a lifecycle (experimental, production, deprecated).</td><td>Owner and <b>stage</b> on every app.</td></tr>
+      <tr><td><b>Intune Company Portal, Jamf Self Service</b></td><td>A self-service shelf of optional apps people opt into.</td><td>The <b>Labs</b> group, behind an opt-in switch.</td></tr>
+      <tr><td><b>Chrome channels, npm dist-tags</b></td><td>Stable, Beta, Dev are names that point at builds; a build never changes.</td><td><b>Channels</b> over immutable <b>versions</b>. Promote and roll back by moving a pointer.</td></tr>
+      <tr><td><b>Vercel and Netlify previews</b></td><td>Every build gets its own permanent address; aliases point at one.</td><td><code>/apps/&lt;slug&gt;/@&lt;version&gt;/</code> for any published build.</td></tr>
+      <tr><td><b>Feature-flag services</b></td><td>Switches inside one build, turned on per person.</td><td>Not for now: variants as channels are simpler to reason about and to roll back. Flags stay an option inside an app.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Why this lowers the load on people</h3>
+      <ul>
+        <li><b>Fewer choices, faster picks.</b> The time to choose grows with the number of options (Hick's law), so each role sees only its apps.</li>
+        <li><b>Recognise, don't recall.</b> Icon, colour and name together; no addresses to remember.</li>
+        <li><b>Places that stay put.</b> Tiles keep their position, as on a till, so hands learn them. Search and pins are extras, never the only way.</li>
+        <li><b>Detail on request.</b> Versions, details and feedback sit behind ⋯, a long press or a right-click.</li>
+        <li><b>No launcher when it adds nothing.</b> Someone with one app goes straight in.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What it must not do</h3>
+      <ul>
+        <li><b>Hiding is not security.</b> A tile's audience decides what people <i>see</i>. What they can <i>do</i> stays with the API's permissions, as today.</li>
+        <li><b>No second shell.</b> ADR 0001 keeps one staff app of modules. The launcher is a front door, not a frame around apps. Each app keeps its own header. The way back is an <b>Apps</b> entry in the app's own menu, never an extra row.</li>
+        <li><b>No iframes.</b> Apps open as pages. The CSP forbids framing other sites, and frames would break sign-in, the camera and deep links.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONCEPTS ============ -->
+<section class="panel" id="concepts" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">Terms</span>
+    <h2>The words we would use</h2>
+    <p class="lede">Proposed. They go into <code>docs/ubiquitous-language.md</code> once ADR 0006 is accepted, with Lithuanian and Russian labels.</p>
+  </div>
+  <div class="card">
+    <dl class="terms">
+      <dt>App</dt><dd>Something you open from the launcher: a slug (<code>sim-scan</code>), a name in EN/LT/RU, an icon, a colour, a <b>group</b>, an owner and a stage.</dd>
+      <dt>Shortcut</dt><dd>A tile that opens one screen inside an app: Create Order, SIM Cards, Help. It has no versions of its own.</dd>
+      <dt>Group</dt><dd>Where a tile sits: Workwear &amp; PPE, Company Assets, People &amp; Crew, Administration, Labs.</dd>
+      <dt>Stage</dt><dd>Live, Pilot, POC, In development, Retired. Shown as a badge. POC and In development appear only in Labs.</dd>
+      <dt>Version</dt><dd>One published build, named <code>2026.10.30-7d26056</code> (date and commit). Never changed after publishing; kept until retired.</dd>
+      <dt>Channel</dt><dd>A name that points at one version: <b>Stable</b> (everyone), <b>Beta</b> (testers), <b>Preview</b> (the team). Promoting moves the pointer; rolling back moves it back.</dd>
+      <dt>Variant</dt><dd>Another design of the same app tried side by side, such as Scan SIMs <i>Photos first</i>. It is a channel with its own label and audience.</dd>
+      <dt>Audience</dt><dd>The roles (and the Testers role) that see an app or a channel. Not a permission.</dd>
+      <dt>Hosting tier</dt><dd><span class="pill here">Built here</span> same origin, your sign-in. <span class="pill sandbox">Sandbox</span> its own domain, no sign-in. <span class="pill linked">Linked</span> another system's address and sign-in.</dd>
+      <dt>Labs</dt><dd>The group of apps in testing, shown only to people who hold the Testers or Developer role and turn on <b>Show apps in testing</b>.</dd>
+    </dl>
+  </div>
+  <div class="diagram" aria-label="Channels point at immutable versions">
+    <svg viewBox="0 0 900 220" role="img">
+      <text x="10" y="22" font-size="13" font-weight="600">Scan SIMs: versions never change; channels move</text>
+      <g font-size="12">
+        <rect class="box" x="20" y="120" width="190" height="44" rx="8"/><text x="34" y="147" font-family="Geist Mono, monospace">2026.10.24-1e7eeb0</text>
+        <rect class="box" x="235" y="120" width="190" height="44" rx="8"/><text x="249" y="147" font-family="Geist Mono, monospace">2026.10.29-7d26056</text>
+        <rect class="box" x="450" y="120" width="190" height="44" rx="8"/><text x="464" y="147" font-family="Geist Mono, monospace">2026.10.30-b41c2e9</text>
+        <rect class="box" x="665" y="120" width="210" height="44" rx="8"/><text x="679" y="147" font-family="Geist Mono, monospace">2026.10.30-c07f1aa</text>
+      </g>
+      <g font-size="12" font-weight="650">
+        <rect x="280" y="50" width="100" height="30" rx="15" fill="var(--ok-bg)" stroke="var(--ok)"/><text x="309" y="70" style="fill:var(--ok)">Stable</text>
+        <rect x="495" y="50" width="100" height="30" rx="15" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="528" y="70" style="fill:var(--accent)">Beta</text>
+        <rect x="700" y="50" width="140" height="30" rx="15" fill="var(--surface-2)" stroke="var(--sandbox)"/><text x="718" y="70" style="fill:var(--sandbox)">Photos first</text>
+      </g>
+      <g class="ln" stroke-width="1.6"><path d="M330 80v40"/><path d="M545 80v40"/><path d="M770 80v40"/><path d="M380 65 C430 40 470 40 495 58" stroke-dasharray="4 4"/></g>
+      <text x="400" y="36" font-size="11.5" class="m">Promote: Stable moves to b41c2e9</text>
+      <text x="20" y="196" font-size="12" class="m">/apps/sim-scan/ → Stable · /apps/sim-scan/beta/ → Beta · /apps/sim-scan/photos/ → the variant · /apps/sim-scan/@2026.10.24-1e7eeb0/ → that exact build</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="panel" id="architecture" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">How it would work</span>
+    <h2>One origin for what we trust, a sandbox for what we don't</h2>
+    <p class="lede">The deciding fact: the sign-in cookie <code>ppe_refresh</code> (path <code>/api/v1/auth</code>, <code>cmd/api/auth-cookie.go</code>) lets any page on <code>workwear.gavort.nl</code> get a token with all of the person's permissions. So whatever runs on that origin is trusted as much as Workwear itself.</p>
+  </div>
+  <div class="diagram">
+    <svg viewBox="0 0 980 420" role="img" aria-label="Request routing for the three tiers">
+      <g font-size="12">
+        <rect class="box" x="10" y="160" width="120" height="60" rx="10"/><text x="38" y="186" font-weight="650">Browser</text><text x="26" y="204" class="m" font-size="11">launcher, apps</text>
+        <rect x="190" y="20" width="430" height="290" rx="12" fill="none" stroke="var(--here)" stroke-width="1.5"/>
+        <text x="204" y="42" font-weight="650" style="fill:var(--here)">workwear.gavort.nl · Built here · shared sign-in</text>
+        <rect class="box" x="210" y="60" width="130" height="230" rx="10"/><text x="246" y="84" font-weight="650">Caddy</text>
+        <text x="222" y="112" font-size="11" font-family="Geist Mono, monospace">/ → Workwear</text>
+        <text x="222" y="134" font-size="11" font-family="Geist Mono, monospace">/admin/ → Admin</text>
+        <text x="222" y="156" font-size="11" font-family="Geist Mono, monospace">/apps/ → Launcher</text>
+        <text x="222" y="178" font-size="11" font-family="Geist Mono, monospace">/apps/* → API</text>
+        <text x="222" y="200" font-size="11" font-family="Geist Mono, monospace">/api/* → API</text>
+        <text x="222" y="250" font-size="10.5" class="m">one rule for all apps;</text><text x="222" y="264" font-size="10.5" class="m">no change per app</text>
+        <rect class="box" x="380" y="60" width="220" height="110" rx="10"/><text x="394" y="84" font-weight="650">API</text>
+        <text x="394" y="104" font-size="11" class="m">registry: apps, versions, channels,</text><text x="394" y="119" font-size="11" class="m">audience, pins, feedback</text>
+        <text x="394" y="139" font-size="11" class="m">serves bundles with the CSP each</text><text x="394" y="154" font-size="11" class="m">version declares (camera, wasm…)</text>
+        <rect class="box" x="380" y="190" width="100" height="100" rx="10"/><text x="394" y="214" font-weight="650">Postgres</text><text x="394" y="232" font-size="11" class="m">registry rows</text>
+        <rect class="box" x="500" y="190" width="100" height="100" rx="10"/><text x="512" y="214" font-weight="650">Files store</text><text x="512" y="232" font-size="11" class="m">Spaces:</text><text x="512" y="247" font-size="11" class="m">apps/&lt;slug&gt;/</text><text x="512" y="262" font-size="11" class="m">&lt;version&gt;/…</text>
+        <rect x="660" y="20" width="310" height="150" rx="12" fill="none" stroke="var(--sandbox)" stroke-width="1.5"/>
+        <text x="674" y="42" font-weight="650" style="fill:var(--sandbox)">&lt;slug&gt;.sandbox domain · no sign-in</text>
+        <text x="674" y="66" font-size="11" class="m">one wildcard DNS record, set once</text>
+        <text x="674" y="84" font-size="11" class="m">Caddy on-demand TLS: a certificate on the</text><text x="674" y="99" font-size="11" class="m">first visit, only if the registry knows the host</text>
+        <text x="674" y="121" font-size="11" class="m">outside code, sample data; API data later</text><text x="674" y="136" font-size="11" class="m">only through a short-lived, narrow token</text>
+        <rect x="660" y="200" width="310" height="110" rx="12" fill="none" stroke="var(--linked)" stroke-width="1.5"/>
+        <text x="674" y="222" font-weight="650" style="fill:var(--linked)">Linked · its own address and sign-in</text>
+        <text x="674" y="246" font-size="11" class="m">PPE Crew: crew.167.71.68.195.sslip.io,</text><text x="674" y="261" font-size="11" class="m">its own API, database and roles,</text><text x="674" y="276" font-size="11" class="m">served by this droplet's Caddy</text>
+      </g>
+      <g class="ln" stroke-width="1.5"><path d="M130 190 H210"/><path d="M340 166 H380"/><path d="M430 170 V190"/><path d="M550 170 V190"/><path d="M70 160 V8 H640 V95 H660"/><path d="M70 220 V335 H640 V255 H660"/></g>
+      <text x="20" y="378" font-size="12" class="m">A tile opens a page, never a frame. Each app's own menu has an Apps entry back to /apps/; no extra row.</text>
+      <text x="20" y="400" font-size="12" class="m">The registry decides who sees a tile. Inside every app, the API's permissions still decide what anyone can do.</text>
+    </svg>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Serving a version without config</h3>
+      <ol>
+        <li>CI builds the app in <code>web/apps/&lt;slug&gt;</code> with relative asset paths and uploads <code>dist/</code> with a small manifest (slug, version, capabilities, minimum API version): <code>make app-publish SLUG=… VERSION=… DIR=…</code>.</li>
+        <li>The API stores it in the files store under <code>apps/&lt;slug&gt;/&lt;version&gt;/</code> and records the version (an audit event).</li>
+        <li>A request for <code>/apps/sim-scan/beta/…</code> resolves the channel, serves that version's <code>index.html</code> (no-cache) with asset links rewritten to <code>/apps/sim-scan/@&lt;version&gt;/assets/…</code> (cached for a year) and a <code>&lt;meta name="ppe-mount"&gt;</code> the router reads. The CSP's <code>base-uri 'none'</code> rules out a <code>&lt;base&gt;</code> tag.</li>
+        <li>Moving a channel changes only what the next load gets. Open tabs keep loading their own version's files.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Security policy per version</h3>
+      <p>Today Caddy has two CSP lines: the staff policy and Scan SIMs' (adds <code>'wasm-unsafe-eval'</code>, <code>worker-src 'self'</code> and the camera). Under <code>/apps/</code> the API builds the header from a <b>closed list of capabilities</b> a manifest may ask for:</p>
+      <div class="tbl"><table><thead><tr><th>Capability</th><th>Adds</th></tr></thead><tbody>
+        <tr><td><code>wasm</code></td><td><code>script-src 'wasm-unsafe-eval'</code></td></tr>
+        <tr><td><code>workers</code></td><td><code>worker-src 'self'</code></td></tr>
+        <tr><td><code>camera</code></td><td><code>Permissions-Policy: camera=(self)</code></td></tr>
+      </tbody></table></div>
+      <p class="small muted">Anything else needs a code change and review. The inline theme script stays allowed by its one hash, as in every app now.</p>
+    </div>
+    <div class="card">
+      <h3>One API, many front-ends</h3>
+      <p>Versions are front-end builds only. Every version talks to the same API and database, so:</p>
+      <ul>
+        <li>API changes stay additive, and ship before the front-end that needs them.</li>
+        <li>A manifest names the oldest API it works with; the launcher hides a channel whose API is not deployed yet (<code>/ready</code> already reports the commit).</li>
+        <li>Requests carry <code>X-PPE-App: &lt;slug&gt;</code> and <code>X-PPE-App-Version</code>, so Usage and System's error list can be read per app and version. Today <code>AppName</code> in <code>api-client/src/client.ts</code> allows only <code>workwear | admin</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Why the sandbox needs its own domain</h3>
+      <ul>
+        <li>The refresh cookie is host-only, so <code>&lt;slug&gt;.apps.gavort.nl</code> never receives it. But that address is <b>same-site</b> with <code>workwear.gavort.nl</code>: SameSite=Strict does not stop its requests, and a page there could set cookies for all of <code>gavort.nl</code>.</li>
+        <li>The cookie routes' Origin check (<code>sameOrigin</code>) refuses such requests today, so <code>*.apps.gavort.nl</code> would be safe enough. A separate registrable domain (the way Google serves user content from its own domain) removes the question for about €10 a year.</li>
+        <li>For a POC on day one, <code>&lt;name&gt;.&lt;ip&gt;.sslip.io</code> works with no DNS at all, as PPE Crew does now. It is a shared public domain, so no HSTS.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="head"><h3>Adding an app: today and after each phase</h3></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Step</th><th>Today (Scan SIMs)</th><th>Phase 1: static launcher</th><th>Phase 3: registry and hosting</th></tr></thead>
+    <tbody>
+      <tr><td>Address</td><td>Pick one; add to <code>@ppe/routing</code></td><td>Same, plus a manifest entry</td><td class="rec">Comes from the slug: <code>/apps/&lt;slug&gt;/</code></td></tr>
+      <tr><td>Caddy</td><td><code>handle_path</code> block, root variable</td><td>Same</td><td class="rec">None (one <code>/apps/*</code> rule)</td></tr>
+      <tr><td>Security policy</td><td>A new CSP line, three <code>csp.test.ts</code> files, e2e list</td><td>Same</td><td class="rec">Capabilities in the manifest</td></tr>
+      <tr><td>Image and compose</td><td><code>web/Dockerfile</code> filters and COPY</td><td>Same</td><td class="rec">None: CI publishes the build</td></tr>
+      <tr><td>Dev and e2e</td><td>Vite proxy, port, e2e servers</td><td>Same</td><td>A generic <code>/apps</code> proxy, once</td></tr>
+      <tr><td>App identity</td><td>Not done (reports as <code>workwear</code>): two CHECKs, Go constants, TS type</td><td>Same</td><td class="rec">The registry's slug</td></tr>
+      <tr><td>Who sees it</td><td>Nobody finds it without the link</td><td>Audience in the manifest</td><td class="rec">Audience on Manage apps</td></tr>
+      <tr><td>A second version</td><td>Not possible</td><td>Not possible</td><td class="rec">Publish; move a channel</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ UI SAMPLES ============ -->
+<section class="panel" id="samples" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">UI samples</span>
+    <h2>Big tiles, grouped, with versions one press away</h2>
+    <p class="lede">Static samples of the main screens. The <a href="mockups/app-launcher.html" class="proto-inline">clickable prototype</a> has all of them working, in EN, LT and RU, for five people.</p>
+  </div>
+  <div class="grid g2">
+    <figure class="mock" style="margin:0">
+      <div class="dev ph"><div class="dv-url">workwear.gavort.nl/apps/</div><div class="dv-in">
+        <div class="dv-h"><i></i>Apps</div><div class="muted">Good morning, Tomas</div><div class="dv-s">Search apps and screens</div>
+        <div class="dv-l">Pinned</div><div class="tiles"><div class="t" style="--c:#1c2060">Workwear &amp; Equipment</div><div class="t" style="--c:#3341a8"><b>Shortcut</b>Create Order</div><div class="t" style="--c:#0f5f8a"><b>Pilot</b>Scan SIMs</div></div>
+        <div class="dv-l">Company Assets</div><div class="tiles"><div class="t" style="--c:#0e7f72"><b>Shortcut</b>SIM Cards</div><div class="t" style="--c:#0f5f8a"><b>Pilot</b>Scan SIMs</div></div>
+        <div class="dv-l">People &amp; Crew</div><div class="tiles"><div class="t" style="--c:#a4540a"><b>Pilot</b>PPE Crew ↗</div></div>
+      </div></div>
+      <figcaption><b>Phone.</b> Three columns, pinned row on top, groups below. A long press or ⋯ opens a bottom sheet.</figcaption>
+    </figure>
+    <figure class="mock" style="margin:0">
+      <div class="dev ph"><div class="dv-url">workwear.gavort.nl/apps/</div><div class="dv-in">
+        <div class="dv-h" style="font-size:12px"><span class="t" style="--c:#0f5f8a;width:26px;aspect-ratio:1;padding:0"></span>Scan SIMs <span class="muted" style="font-weight:400">· Pilot</span></div>
+        <div class="muted">Versions · About · Feedback</div>
+        <div class="opt"><b>Stable</b><small>2026.10.29-7d26056 · /apps/sim-scan/</small></div>
+        <div class="opt on"><b>Beta</b><small>2026.10.30-b41c2e9 · /apps/sim-scan/beta/</small>Review list grouped by box.</div>
+        <div class="opt"><b>Photos first</b> · variant<small>2026.10.30-c07f1aa</small></div>
+        <div class="btnm">Open Beta</div>
+      </div></div>
+      <figcaption><b>Version sheet.</b> Only testers see Beta and variants. The choice is remembered per person until they switch back.</figcaption>
+    </figure>
+    <figure class="mock wide" style="margin:0">
+      <div class="dev tb"><div class="dv-url">workwear.gavort.nl/apps/</div><div class="split">
+        <div class="rail"><span class="on" style="--c:#8a8fa8"><i></i>All apps</span><span style="--c:#c08a10"><i></i>Pinned</span><span style="--c:#1c2060"><i></i>Workwear &amp; PPE</span><span style="--c:#0e7f72"><i></i>Company Assets</span><span style="--c:#a4540a"><i></i>People &amp; Crew</span><span style="--c:#a33a7c"><i></i>Labs</span></div>
+        <div class="dv-in"><div class="dv-s">Search apps and screens</div><div class="tiles">
+          <div class="t" style="--c:#1c2060">Workwear &amp; Equipment</div><div class="t" style="--c:#3341a8"><b>Shortcut</b>Create Order</div><div class="t" style="--c:#23703f"><b>Shortcut</b>Dashboard</div><div class="t" style="--c:#5b6475"><b>Shortcut</b>Help</div>
+          <div class="t" style="--c:#0e7f72"><b>Shortcut</b>SIM Cards</div><div class="t" style="--c:#0f5f8a"><b>Beta</b>Scan SIMs</div><div class="t" style="--c:#a4540a">PPE Crew ↗</div><div class="t" style="--c:#a33a7c"><b>POC</b>Size Helper ↗</div>
+        </div></div></div></div>
+      <figcaption><b>Tablet, POS style.</b> A group rail on the left, large tiles that keep their places. Built for a shared counter tablet.</figcaption>
+    </figure>
+    <figure class="mock wide" style="margin:0">
+      <div class="dev dt"><div class="dv-url">workwear.gavort.nl/apps/</div><div class="split">
+        <div class="dv-in"><div class="dv-s">Search apps and screens · ⌘K</div><div class="dv-l">Company Assets</div><div class="tiles">
+          <div class="t" style="--c:#0e7f72"><b>Shortcut</b>SIM Cards</div><div class="t" style="--c:#0f5f8a"><b>Beta</b>Scan SIMs</div><div class="t" style="--c:#1c2060">Workwear</div><div class="t" style="--c:#3b4256">Administration</div><div class="t" style="--c:#52307c">Manage apps</div></div></div>
+        <div class="panelR"><b>Scan SIMs</b><div class="opt"><b>Stable</b><small>2026.10.29-7d26056</small></div><div class="opt on"><b>Beta</b><small>2026.10.30-b41c2e9</small></div><div class="opt"><b>Photos first</b> · variant<small>2026.10.30-c07f1aa</small></div><div class="btnm">Open Beta</div></div>
+      </div></div>
+      <figcaption><b>Desktop.</b> Wider grid; details, versions and feedback in a side panel instead of a sheet.</figcaption>
+    </figure>
+    <figure class="mock wide" style="margin:0">
+      <div class="dev dt"><div class="dv-url">workwear.gavort.nl/admin/apps</div><div class="dv-in">
+        <div class="dv-h"><i style="background:#52307c"></i>Manage apps · Scan SIMs</div>
+        <div class="tbl" style="font-size:10px"><table style="font-size:10px"><thead><tr><th>Version</th><th>Channels</th><th></th></tr></thead><tbody>
+          <tr><td class="mono">2026.10.30-c07f1aa</td><td>Photos first</td><td>Make stable</td></tr>
+          <tr><td class="mono">2026.10.30-b41c2e9</td><td>Beta</td><td>Make stable</td></tr>
+          <tr><td class="mono">2026.10.29-7d26056</td><td>Stable</td><td></td></tr></tbody></table></div>
+        <div class="muted">Who sees it: Administrator · Manager · Testers · Developer</div>
+        <div class="muted">Channel moves: none yet · every move is an audit event</div>
+      </div></div>
+      <figcaption><b>Manage apps</b> on Administration. Register an app, see versions, move channels, roll back, set the audience.</figcaption>
+    </figure>
+  </div>
+
+  <div class="head" style="margin-top:8px"><h3>The way back to the launcher</h3>
+    <p class="lede">The launcher adds no row to any app. Every app has an <b>Apps</b> entry in its own menu, and ⌘K finds apps too. One quick way back may be added on top; try each with <b>Way back</b> in the prototype's bar (flow 8).</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Option</th><th>Screen space</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="rec"><b>A. In the app's own menu</b> (always)</td><td class="rec">None</td><td class="rec">Sidebar or rail foot on tablet and desktop, the More panel on a phone: where Workwear's Administration link is today.</td></tr>
+      <tr><td class="rec"><b>B. ⌘K “Go to app…”</b> (always)</td><td class="rec">None</td><td class="rec">The staff app's ⌘K search lists apps and shortcuts too.</td></tr>
+      <tr><td><b>C. Icon in the app's top bar</b></td><td>None</td><td>A 44px grid icon beside the avatar. One tap, but crowds a phone's header.</td></tr>
+      <tr><td><b>D. Floating button</b></td><td>Covers a corner; hides while scrolling down</td><td>Suits the counter tablet. Can hide content and actions.</td></tr>
+      <tr><td><b>E. A bar of its own</b></td><td>One row, always</td><td>Only for small apps with no header of their own, such as some POCs.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid g2">
+    <div class="card"><h3>Which version am I on?</h3><ul><li><b>Stable:</b> nothing shows.</li><li><b>Beta, Preview or a variant:</b> a 3px stripe in the channel's colour under the address bar, and a dot on <b>Apps</b> (on More on a phone).</li><li>The exact version is under the menu's Apps entry and in the tile's About.</li></ul></div>
+    <div class="card"><h3>Who chooses</h3><ol><li><b>The app</b>, in the registry: which quick way back it allows, if any. Full-screen modes (hand-over mode, stand-up, the public confirmation page) never show one.</li><li><b>The roles:</b> someone with one app sees no way back (D10).</li><li><b>The person</b>, on Account: “Show the Apps button in the header” (off by default) and “Show which version I'm on” (default: only when not Stable).</li><li><b>The device:</b> a counter tablet in kiosk mode hides it.</li></ol></div>
+  </div>
+</section>
+
+<!-- ============ FLOWS ============ -->
+<section class="panel" id="flows" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">UX flows</span>
+    <h2>Seven flows to try in the prototype, plus its flow 8 for the way back</h2>
+  </div>
+  <div class="grid g2">
+    <div class="card flow"><h3>1 · Sign in, land where you work</h3><ol class="steps"><li>Sign in once on any app</li><li>One app? It opens straight away</li><li>More? The launcher at <code>/apps/</code></li><li>Last used and pinned apps on top</li></ol><p class="small muted">Staff with the employee role use only Workwear, so nothing changes for them.</p></div>
+    <div class="card flow"><h3>2 · Find and open</h3><ol class="steps"><li>Tap a tile, or type two letters</li><li>The app or screen opens as a page</li><li><b>Apps</b> in its own menu comes back</li><li>Pin what you use daily</li></ol><p class="small muted">Shortcuts reach a screen in one tap: Create Order, SIM Cards.</p></div>
+    <div class="card flow"><h3>3 · Try a beta, then go back</h3><ol class="steps"><li>Tester turns on <b>Show apps in testing</b></li><li>⋯ on Scan SIMs, choose Beta</li><li>Opens <code>/apps/sim-scan/beta/</code></li><li>Switch back to Stable any time</li><li>Feedback goes out with the version</li></ol></div>
+    <div class="card flow"><h3>4 · Promote, then roll back</h3><ol class="steps"><li>Manage apps → Scan SIMs</li><li><b>Make stable</b> on the beta's version</li><li>Everyone's next load gets it</li><li><b>Roll back</b> moves the pointer back</li></ol><p class="small muted">No rebuild, no deploy; both moves are audit events.</p></div>
+    <div class="card flow"><h3>5 · Add a POC: no DNS, no Caddy</h3><ol class="steps"><li>Create <code>web/apps/&lt;slug&gt;</code> from the template</li><li><b>Register app</b>: name, tier, group</li><li>CI runs <code>make app-publish</code> → Preview</li><li>Testers see it in Labs</li></ol></div>
+    <div class="card flow"><h3>6 · An outside POC</h3><ol class="steps"><li>Register with tier <b>Sandbox</b></li><li>Its address: <code>&lt;slug&gt;.&lt;sandbox domain&gt;</code></li><li>First visit gets a certificate</li><li>It runs without anyone's sign-in</li></ol></div>
+    <div class="card flow"><h3>7 · Open a linked system</h3><ol class="steps"><li>Tap PPE Crew (↗)</li><li>A new tab at its own address</li><li>Its own sign-in, same email and password</li><li>Later: one sign-in, or merged in</li></ol></div>
+    <div class="card flow"><h3>Retire an app</h3><ol class="steps"><li>Stage → Retired</li><li>Tile disappears; old address shows where it went</li><li>Versions kept 90 days, then deleted</li></ol><p class="small muted">When Scan SIMs merges into SIM Cards (ADR 0005), its tile becomes a shortcut.</p></div>
+  </div>
+</section>
+
+<!-- ============ DECISIONS ============ -->
+<section class="panel" id="decisions" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">Decisions</span>
+    <h2>What we need to decide, with a recommendation each</h2>
+    <p class="lede">Tick a choice to work through them; your ticks stay in this browser only. Recommended options are marked.</p>
+  </div>
+  <div class="grid" id="dec-list"></div>
+  <div class="tally" id="tally" aria-live="polite"></div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="panel" id="roadmap" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">Roadmap</span>
+    <h2>Small steps, each usable on its own</h2>
+    <p class="lede">Each phase can stop there and still be worth it. Sizes are rough: S a few days, M one to two weeks, L more.</p>
+  </div>
+  <div class="roadmap">
+    <div class="phase"><div class="n"><b>0</b>now</div><div><h3>Decide and test the idea</h3><p class="muted">This guide, the prototype and ADR 0006 (proposed). Run the test plan with 5 to 8 people. Nothing changes in the product.</p></div></div>
+    <div class="phase"><div class="n"><b>1</b>S</div><div><h3>Launcher with a static list</h3><p class="muted"><code>web/apps/launcher</code> at <code>/apps/</code>, sharing <code>@ppe/app-shell</code>'s sign-in. The list lives in code (<code>@ppe/routing</code>), with audience by permission. An <b>Apps</b> entry in every app's own menu (More on a phone, the sidebar elsewhere) and in ⌘K. Tiles for Workwear, its shortcuts, Administration, Scan SIMs and PPE Crew. Adding the launcher itself costs what Scan SIMs cost, once.</p></div></div>
+    <div class="phase"><div class="n"><b>2</b>M</div><div><h3>Registry in the API</h3><p class="muted"><code>internal/domain/launcher</code> (apps, channels, audiences, pins, feedback), <code>GET /api/v1/launcher</code> filtered on the server, <b>Manage apps</b> on Administration with a new permission <code>apps.manage</code>, a <b>Testers</b> built-in role, app identity from the slug (one migration widens the two CHECKs).</p></div></div>
+    <div class="phase"><div class="n"><b>3</b>M–L</div><div><h3>Versions and hosting at /apps/</h3><p class="muted">One Caddy rule; the API serves builds from the files store with the CSP from capabilities; <code>api -publish-app</code> and a CI job; channels and <code>@version</code> addresses. Scan SIMs moves first, and its Caddy block and CSP line go.</p></div></div>
+    <div class="phase"><div class="n"><b>4</b>M</div><div><h3>Sandbox domain</h3><p class="muted">A wildcard record on a separate domain, Caddy on-demand TLS asking the registry. Later, if a POC needs real data: a short-lived token limited to the routes its manifest names.</p></div></div>
+    <div class="phase"><div class="n"><b>5</b>S–M</div><div><h3>Trials view</h3><p class="muted">On Manage apps: opens per version and day (from Usage), errors per version (System), feedback, and a Promote / Retire decision with its reasons, as the evidence for "merge it or drop it".</p></div></div>
+  </div>
+</section>
+
+<!-- ============ TEST PLAN ============ -->
+<section class="panel" id="testing" role="tabpanel" hidden>
+  <div class="head">
+    <span class="eyebrow">Test plan</span>
+    <h2>Trying the prototype with people</h2>
+    <p class="lede">Twenty minutes each, 5 to 8 people across the roles, on the device they really use. Watch, don't help; note where they hesitate.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Who</th><th>Device</th><th>Tasks (prototype flow)</th><th>Pass when</th></tr></thead>
+    <tbody>
+      <tr><td>Staff (employee role)</td><td>Phone</td><td>Sign in and create an order (1)</td><td>They don't notice a launcher at all</td></tr>
+      <tr><td>Manager</td><td>Tablet, phone</td><td>Open SIM Cards; come back; pin Scan SIMs (2); open PPE Crew (7)</td><td>Under 10 s per open, no wrong tile; they say what ↗ means</td></tr>
+      <tr><td>Tester</td><td>Phone</td><td>Try Scan SIMs Beta, switch back, send feedback (3)</td><td>They can say which version they are on, without help</td></tr>
+      <tr><td>Administrator</td><td>Desktop</td><td>Make the beta stable, then roll back (4)</td><td>They predict who gets the new version before pressing</td></tr>
+      <tr><td>Developer</td><td>Desktop</td><td>Register a POC and publish it (5); open the sandbox POC (6)</td><td>They explain why the sandbox has its own address</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid g2">
+    <div class="card"><h3>Questions after the tasks</h3><ol><li>Which tiles would you never use? Which are missing?</li><li>What do Beta, Pilot, POC and the ↗ arrow mean to you?</li><li>Would you rather land on the launcher or on your usual app?</li><li>On the counter tablet: which tiles should be biggest?</li><li>Did you find the way back to Apps? Would you add the header icon?</li><li>Lithuanian and Russian speakers: do the group names read naturally?</li></ol></div>
+    <div class="card"><h3>What we record</h3><ul><li>Time to open the right app, and wrong taps</li><li>Words people use for versions and stages (feeds the glossary)</li><li>Whether testers found the switch back to Stable</li><li>Which decisions the answers change (tick them on Decisions)</li></ul></div>
+  </div>
+</section>
+</div>
+
+<script>
+(() => {
+  const DEC = [
+    { id:'D1', q:'Where is the launcher?', why:'Moving Workwear off / would change every bookmark and the addresses in Help.', c:[
+      ['/apps/ beside the apps; Workwear stays at /', 'No address changes; a link from each app\'s header.', true],
+      ['/ becomes the launcher; Workwear moves to /workwear/', 'The cleanest front door, but every bookmark and Help screenshot changes. Confirmation links (/confirm/) keep working.'] ] },
+    { id:'D2', q:'Where does the list of apps live?', why:'A static list lets us test the launcher in days; a registry is needed for versions.', c:[
+      ['Start static in code (phase 1), move to the API registry (phase 2)', 'Fast to try; nothing wasted, the shape carries over.', true],
+      ['Go straight to the API registry', 'One step, but the launcher waits for the backend.'],
+      ['Static only', 'Fine for four apps; no channels, no Manage apps.'] ] },
+    { id:'D3', q:'How are versioned builds served?', why:'This decides whether a new app or version needs config.', c:[
+      ['The API serves them from the files store, with a CSP from capabilities', 'No config per app or version; one Caddy rule; the API reads the registry anyway.', true],
+      ['Caddy serves a volume; a script writes a Caddy snippet per app and reloads', 'Fastest file serving, but config is generated and must be reloaded on every change.'],
+      ['One container image per app', 'Strong isolation, but a deploy per app and more to run on one droplet.'] ] },
+    { id:'D4', q:'Addresses for channels and versions', why:'People share links; the address should say what they get.', c:[
+      ['/apps/<slug>/ = Stable, /apps/<slug>/<channel>/, /apps/<slug>/@<version>/', 'Short for most people; exact builds still reachable.', true],
+      ['Always /apps/<slug>/<channel>/', 'Explicit, but longer and Stable has a needless word.'],
+      ['One address; the channel comes from the person\'s choice only', 'Clean, but a link cannot show a tester a given build.'] ] },
+    { id:'D5', q:'How do we try two designs?', why:'Variants are how a trial answers a question.', c:[
+      ['A variant is a channel with its own label and audience', 'Same mechanics as Beta; easy to compare and to retire.', true],
+      ['Feature flags inside one build', 'Finer control, but both designs ship to everyone and flags need cleaning up.'] ] },
+    { id:'D6', q:'Who can publish a version?', why:'Publishing puts code on the trusted origin.', c:[
+      ['CI only, through make app-publish with a deploy token', 'Every build comes from a reviewed commit; the token can do nothing else.', true],
+      ['Also upload a zip on Manage apps', 'Quicker for experiments, but anyone with apps.manage could run code as every user.'] ] },
+    { id:'D7', q:'Sandbox domain', why:'Outside code must never share a site with Workwear\'s sign-in.', c:[
+      ['A separate domain with a wildcard record (about €10 a year)', 'Not same-site with workwear.gavort.nl, so no cookie questions at all.', true],
+      ['*.apps.gavort.nl', 'No new domain; safe today because the sign-in routes check Origin, but same-site.'],
+      ['<name>.<ip>.sslip.io, as PPE Crew does', 'No DNS at all; a shared public domain, no HSTS. Good for day one.'] ] },
+    { id:'D8', q:'PPE Crew\'s sign-in', why:'Two sign-ins with the same password confuse people.', c:[
+      ['Linked tile now; one sign-in when Crew merges in (ADR 0001)', 'No work now; merging was the plan anyway.', true],
+      ['A sign-in hand-off from the launcher to Crew soon', 'One sign-in sooner, but a new token exchange to build and secure in two systems.'] ] },
+    { id:'D9', q:'Who sees apps in testing?', why:'Testers must opt in; others must never stumble on a POC.', c:[
+      ['A built-in Testers role, plus the Show apps in testing switch', 'Managed like any role; the switch keeps daily work calm.', true],
+      ['A list of named people per app', 'Fine-grained, but more to manage and review.'] ] },
+    { id:'D10', q:'Skip the launcher for people with one app?', why:'Most staff use only Workwear.', c:[
+      ['Yes: sign-in opens their one app; /apps/ still works', 'Nothing new for them.', true],
+      ['No: everyone lands on the launcher', 'One way for all, but one extra tap a day for most.'] ] },
+    { id:'D11', q:'Where does feedback go?', why:'Feedback without the version is hard to act on.', c:[
+      ['Stored by the API with app, version, device and language; read on Manage apps', 'Evidence for promote or retire, next to the versions.', true],
+      ['A link to the team\'s WhatsApp group or e-mail', 'No build, but lost context and scattered.'] ] },
+    { id:'D12', q:'Where is the way back to the launcher?', why:'A row on every screen costs space people need; a hidden way back costs time.', c:[
+      ['An Apps entry in each app\'s own menu and in ⌘K; a header icon only for people who turn it on', 'No space lost; the version shows only when someone is off Stable.', true],
+      ['A header icon in every app', 'One tap from anywhere, at no height, but crowds phone headers.'],
+      ['A bar of its own on top of every app', 'Always visible, but loses a row on every screen.'] ] },
+  ]
+  const KEY = 'app-launcher-guide.decisions'
+  let picks = {}
+  try { picks = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch { picks = {} }
+  const list = document.getElementById('dec-list')
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c])
+  list.innerHTML = DEC.map(d => `<div class="card dec"><div class="dec-head"><span class="id">${d.id}</span><h3>${esc(d.q)}</h3></div><p class="small muted">${esc(d.why)}</p>
+    <div class="choices" role="radiogroup" aria-label="${esc(d.q)}">${d.c.map(([t, n, rec], i) => `<label class="choice"><input type="radio" name="${d.id}" id="${d.id}-${i}" value="${i}" ${String(picks[d.id]) === String(i) ? 'checked' : ''}>
+      <span><b>${esc(t)}</b>${rec ? '<span class="r">Recommended</span>' : ''}<br><span class="small muted">${esc(n)}</span></span></label>`).join('')}</div></div>`).join('')
+  const tally = () => {
+    const n = Object.keys(picks).length
+    const rec = DEC.filter(d => picks[d.id] !== undefined && d.c[picks[d.id]]?.[2]).length
+    document.getElementById('tally').textContent = `${n} of ${DEC.length} decided · ${rec} as recommended`
+  }
+  list.addEventListener('change', e => { if (e.target.type === 'radio') { picks[e.target.name] = Number(e.target.value); try { localStorage.setItem(KEY, JSON.stringify(picks)) } catch {} tally() } })
+  tally()
+
+  const tabs = [...document.querySelectorAll('.tab')]
+  const show = id => {
+    if (!document.getElementById(id)) id = 'overview'
+    tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.tab === id))
+    document.querySelectorAll('section.panel').forEach(p => p.hidden = p.id !== id)
+  }
+  tabs.forEach(t => t.addEventListener('click', () => { show(t.dataset.tab); try { history.replaceState(null, '', '#' + t.dataset.tab) } catch {} window.scrollTo(0, 0) }))
+  document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); show(a.dataset.go); window.scrollTo(0, 0) }))
+  show((location.hash || '#overview').slice(1))
+})()
+</script>
+</body>
+</html>
