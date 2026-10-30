@@ -49,9 +49,9 @@ export function DetailPane({ label, next, children }: { label: string; /** "next
   return (
     <aside
       aria-label={label}
-      // Its top edge is the screen header's, at rest (-mt-4, as the header's) and stuck (top-0), so their rows line up;
+      // Its top edge is the screen header's, the top of the window at rest (-mt-8, main's padding) and stuck, so their rows line up;
       // 2rem shorter than the window, main's padding below it, so it still fits at the end of the list.
-      className="relative lg:sticky lg:top-0 lg:-mt-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
+      className="relative lg:sticky lg:top-0 lg:-mt-8 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border lg:bg-card lg:p-4"
     >
       {children}
       {next ? (

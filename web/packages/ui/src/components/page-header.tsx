@@ -1,4 +1,4 @@
-import { ChevronDown, Ellipsis, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Ellipsis, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, type MouseEventHandler, type ReactNode } from 'react'
 
 import { cn } from '../lib/utils.ts'
@@ -6,6 +6,7 @@ import { uiText } from '../text.ts'
 import { Button, buttonVariants } from './button.tsx'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './dropdown-menu.tsx'
 import { InfoTip } from './info-tip.tsx'
+import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip.tsx'
 
 /** The widths a toolbar control can start being a button from (Tailwind's sm, md, lg). */
 export type ToolbarWidth = 'sm' | 'md' | 'lg'
@@ -212,13 +213,17 @@ export function MenuButton({
  *
  * description explains the screen without taking room: an ⓘ beside the
  * title. subtitle is a line under the row that scrolls away, for a fact such
- * as who is signed in.
+ * as who is signed in. `back` puts the way back to where the screen was
+ * opened from at the start of the row, an arrow named "Back to Dashboard", as
+ * a record's row has it: nothing goes above the header, which takes main's
+ * top padding.
  */
 export function PageHeader({
   title,
   description,
   subtitle,
   icon,
+  back,
   filters,
   refresh,
   secondary = [],
@@ -232,6 +237,8 @@ export function PageHeader({
   subtitle?: ReactNode
   /** A decorative mark before the title, such as an item's pictogram. */
   icon?: ReactNode
+  /** Where the screen was opened from: "Dashboard". */
+  back?: { label: string; onClick: () => void } | undefined
   filters?: ToolbarFilters | undefined
   /** A RefreshButton, on screens of live figures. */
   refresh?: ReactNode
@@ -266,7 +273,12 @@ export function PageHeader({
 
   return (
     <>
-      <div ref={mark} aria-hidden className="-mt-3 h-px md:-mt-4 print:hidden" />
+      {/*
+        From md, where nothing is above it, it takes all of main's top padding (-mt-8): at the top of the
+        window at rest as when stuck, so its words never move as the screen starts to scroll. On a phone it
+        sits under the bar with the app's name and slides over it.
+      */}
+      <div ref={mark} aria-hidden className="-mt-3 h-px md:-mt-8 print:hidden" />
       <div
         ref={bar}
         data-slot="page-header"
@@ -282,6 +294,18 @@ export function PageHeader({
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-1">
+          {back ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="-ml-2.5 shrink-0 print:hidden" aria-label={uiText().backTo(back.label)} onClick={back.onClick}>
+                    <ArrowLeft aria-hidden />
+                  </Button>
+                }
+              />
+              <TooltipContent aria-hidden>{uiText().backTo(back.label)}</TooltipContent>
+            </Tooltip>
+          ) : null}
           <h1 className="flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight md:text-2xl">
             {icon}
             <span className="truncate">{title}</span>

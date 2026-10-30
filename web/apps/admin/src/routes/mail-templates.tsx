@@ -93,9 +93,12 @@ function TemplateEditor({
 
   return (
     <>
-      <BackButton className="mb-3" onClick={onBack}>
-        {t.mailTemplates.back}
-      </BackButton>
+      {/* Once the template is drawn, the way back is in its header's row. */}
+      {!template ? (
+        <BackButton className="mb-3" onClick={onBack}>
+          {t.mailTemplates.back}
+        </BackButton>
+      ) : null}
       {!template && loaded.error ? (
         <ErrorState title={t.mailTemplates.notFound} error={loaded.error} onRetry={loaded.reload} />
       ) : !template ? (
@@ -104,6 +107,7 @@ function TemplateEditor({
         <>
           <PageHeader
             title={t.mailTemplates.names[template.key]}
+            back={{ label: t.mailTemplates.back, onClick: onBack }}
             description={t.mailTemplates.usedBy[template.key]}
             subtitle={<TemplateState template={template} timeZone={timeZone} />}
           />

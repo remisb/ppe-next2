@@ -12,7 +12,6 @@ import { useState } from 'react'
 import { inlineLink } from '@/components/dashboard'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { BackButton } from '@ppe/ui/components/back-button'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { t } from '@/i18n'
 import { type Route, linkTo } from '@/lib/router'
@@ -45,9 +44,9 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
 
   return (
     <>
-      <BackButton className="mb-2" onClick={onBack}>{t.dashboard.title}</BackButton>
       <PageHeader
         title={t.dashboard.replacementsDue}
+        back={{ label: t.dashboard.title, onClick: onBack }}
         description={t.dashboard.replacementsDescription(r?.due_soon_days ?? 30, tz)}
       />
       <Loaded load={list}>

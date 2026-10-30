@@ -55,7 +55,7 @@ export function RecordHeader({
     // display: contents, no box of its own: the row sticks the length of the record, not of its header.
     <header className="contents">
       {/* In a record that spaces its parts with gap-4 (Orders, the Audit log), the mark and the row take none between them. */}
-      <div ref={mark} aria-hidden className={cn('-mt-3 h-px md:-mt-4 print:hidden [.gap-4>*>&]:-mb-4', beside && 'lg:mt-0')} />
+      <div ref={mark} aria-hidden className={cn('-mt-3 h-px md:-mt-8 print:hidden [.gap-4>*>&]:-mb-4', beside && 'lg:mt-0')} />
       <div
         ref={row}
         data-slot="record-header"

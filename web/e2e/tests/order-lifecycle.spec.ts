@@ -353,7 +353,7 @@ test('Mail Templates: an administrator edits the SIM activation email, with its 
   await expect(subject).toHaveValue('SIM activation request - {{sim.number}}')
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(subject).toHaveValue('Please activate {{sim.number}}')
-  await page.getByRole('button', { name: 'Mail Templates', exact: true }).click()
+  await page.getByRole('button', { name: 'Back to Mail Templates' }).click()
   await expect(page.getByRole('link', { name: 'Edit SIM activation' })).toContainText('Please activate {{sim.number}}')
 })
 
@@ -1451,7 +1451,8 @@ test('Replacements due: the whole list at its own address, under the Dashboard t
   await expect(page.getByRole('heading', { name: 'Replacements due' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('group', { name: 'Show' }).getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('main').getByRole('button', { name: 'Dashboard' }).click()
+  // The way back is an arrow at the start of the header's row.
+  await page.getByRole('main').getByRole('button', { name: 'Back to Dashboard' }).click()
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
 })
 

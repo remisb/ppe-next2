@@ -165,7 +165,9 @@ Rules:
   list.
 - **Detail:** below `lg` it is an icon in the record's sticky row, named "Back to Orders"; a
   record page from `lg` and a document keep the ghost button above the title. Beside a list
-  the record has ✕ in the same row instead.
+  the record has ✕ in the same row instead. A screen opened from another (Replacements due,
+  a mail template) has it as an arrow at the start of its header's row (`PageHeader`'s
+  `back`): nothing goes above a page header, which starts at the top of the window.
 - **UI:** "← Employees", "← Audit log", "Item Catalogue". On a document: "← Back".
 
 ### Filter bar
