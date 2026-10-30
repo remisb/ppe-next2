@@ -672,7 +672,7 @@ function ReviewSheet({
       description={t.order.reviewDescription(`${order.employee?.full_name ?? '–'}${order.employee?.code ? ` · ${order.employee.code}` : ''}`)}
       footer={
         <>
-          <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} chat={supplierChat} />
+          <WhatsAppButton className="sm:mr-auto" disabled={busy} text={whatsappText} chat={supplierChat} quiet />
           <Button variant="outline" onClick={onClose}>
             {t.common.cancel}
           </Button>

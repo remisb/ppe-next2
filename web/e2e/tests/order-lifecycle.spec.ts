@@ -754,10 +754,13 @@ test('Mark as Ordered creates the ORDERED record after a review', async () => {
   await expect(review).toContainText('Ona Kazlauskienė')
   await expect(review.getByRole('listitem').filter({ hasText: 'Safety shoes' })).toContainText('42')
   await expect(review).toContainText('€114.98') // 39.99 + 49.99 + 10 × 2.50
-  // The supplier message is sent from here, not from the order panel: copied, then the supplier's
-  // group (Settings) opens for it to be pasted. The confirmation link is created as well unless unticked.
+  // The supplier message is copied from here, with nothing added under the button.
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await review.getByRole('button', { name: 'Copy for WhatsApp' }).click()
-  await expect(review.getByRole('link', { name: 'Open Superman Rubai Group' })).toHaveAttribute('href', 'https://chat.whatsapp.com/E2eSupplierGroup123')
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('Ona Kazlauskienė')
+  await expect(review.getByText('Copied.')).toHaveCount(0)
+  await expect(review.getByRole('link', { name: /^Open / })).toHaveCount(0)
+  await page.context().clearPermissions()
   await expect(page.getByRole('complementary', { name: 'Order summary' }).getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
   // Nothing to choose about the confirmation link: every new order gets one.
   await expect(review.getByRole('checkbox')).toHaveCount(0)
@@ -831,8 +834,15 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
   await expect(order.getByRole('definition').filter({ hasText: 'Electronically' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'Open Employee Confirmation' })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Order' })).toHaveCount(0)
-  // The supplier message is Create Order's review's, not the order's.
+  // The supplier message again, under ⋯ in every state: copied, with nothing added to the pane.
   await expect(order.getByRole('button', { name: 'Copy for WhatsApp' })).toHaveCount(0)
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await order.getByRole('button', { name: `More actions for ${recordNumber}` }).click()
+  await page.getByRole('menuitem', { name: 'Copy for WhatsApp' }).click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(`Workwear order ${recordNumber}`)
+  await expect(order.getByText('Copied.')).toHaveCount(0)
+  await expect(order.getByRole('link', { name: /^Open / })).toHaveCount(0)
+  await page.context().clearPermissions()
 })
 
 test('Create confirmation link shows the link on the order', async () => {
@@ -928,8 +938,13 @@ test('Orders shows it GIVEN with the GIVEN actions', async () => {
   await expect(order.getByRole('button', { name: 'Given', exact: true })).toHaveCount(0)
   await expect(order.getByRole('button', { name: 'View Order' })).toBeVisible()
   await expect(order.getByRole('button', { name: 'Print Order' })).toBeVisible()
-  // No WhatsApp on a given order: the supplier message is Create Order's review's.
+  // Copy for WhatsApp is under ⋯ on a given order too; no WhatsApp button of its own.
   await expect(order.getByRole('button', { name: /WhatsApp/ })).toHaveCount(0)
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await order.getByRole('button', { name: `More actions for ${recordNumber}` }).click()
+  await page.getByRole('menuitem', { name: 'Copy for WhatsApp' }).click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(`Workwear order ${recordNumber}`)
+  await page.context().clearPermissions()
   // Its Changes are closed at first and open to show its steps.
   const changes = order.getByRole('button', { name: 'Changes', exact: true })
   await expect(changes).toHaveAttribute('aria-expanded', 'false')
@@ -2870,11 +2885,14 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
 })
 
 test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {
-  // The administrator has no Delete order: the order pane has no ⋯ for it.
+  // The administrator has no Delete order: the order's ⋯ holds Copy for WhatsApp only.
   await openTab('Orders')
   const detail = await openOrder(paperRecord)
   await expect(detail.getByRole('heading', { name: paperRecord })).toBeVisible()
-  await expect(detail.getByRole('button', { name: `More actions for ${paperRecord}` })).toHaveCount(0)
+  await detail.getByRole('button', { name: `More actions for ${paperRecord}` }).click()
+  await expect(page.getByRole('menuitem', { name: 'Copy for WhatsApp' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Delete order…' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
 
   // Mia, the manager from the Users step, with the password reset there.
   const other = await signInElsewhere(browser, 'mia@example.com', 'mia-password-2')

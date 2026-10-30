@@ -23,6 +23,7 @@ export function WhatsAppButton({
   disabled,
   className,
   chat,
+  quiet,
 }: {
   text: string
   /** Defaults to Copy for WhatsApp. */
@@ -32,17 +33,10 @@ export function WhatsAppButton({
   className?: string | undefined
   /** The group to open: the supplier's, for an order message; none for anything else. */
   chat?: SupplierChat | null | undefined
+  /** Nothing under the button once copied (Create Order's review): its tick says so; blocked copying still shows the text. */
+  quiet?: boolean | undefined
 }) {
-  const [state, setState] = useState<'idle' | 'copied' | 'manual'>('idle')
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setState('copied')
-    } catch {
-      setState('manual') // clipboard blocked: show the text to copy by hand
-    }
-  }
+  const { state, copy } = useWhatsAppCopy(text)
 
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
@@ -51,40 +45,68 @@ export function WhatsAppButton({
         {state === 'copied' && !disabled ? <Check aria-hidden className="text-whatsapp" /> : <MessageCircle aria-hidden className="text-whatsapp" />}
         <span className="truncate">{label ?? t.order.copyForWhatsApp}</span>
       </Button>
-      {state === 'copied' && !disabled && chat ? (
+      {disabled || (quiet && state === 'copied') ? null : <WhatsAppCopyStatus state={state} text={text} chat={chat} />}
+    </div>
+  )
+}
+
+export type WhatsAppCopyState = 'idle' | 'copied' | 'manual'
+
+/** Copies text for WhatsApp; 'manual' when the clipboard is blocked, so the text is shown to copy by hand. */
+export function useWhatsAppCopy(text: string) {
+  const [state, setState] = useState<WhatsAppCopyState>('idle')
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setState('copied')
+    } catch {
+      setState('manual') // clipboard blocked: show the text to copy by hand
+    }
+  }
+  return { state, copy }
+}
+
+/**
+ * What a copy for WhatsApp says once done: Copied with the group (or WhatsApp)
+ * to open, or, when copying was blocked, the text to select. Nothing while idle.
+ * Also under the order's ⋯, whose menu closes on the copy.
+ */
+export function WhatsAppCopyStatus({ state, text, chat }: { state: WhatsAppCopyState; text: string; chat?: SupplierChat | null | undefined }) {
+  if (state === 'copied') {
+    return chat ? (
+      <p role="status" className="text-xs text-muted-foreground">
+        {t.order.copied}{' '}
+        <ChatLink chat={chat} />
+        {t.order.pasteThere}
+      </p>
+    ) : (
+      <p role="status" className="text-xs text-muted-foreground">
+        {t.order.copied}{' '}
+        <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex items-center gap-0.5 text-foreground' })}>
+          {t.order.openWhatsApp} <ExternalLink aria-hidden className="size-3" />
+        </a>
+      </p>
+    )
+  }
+  if (state !== 'manual') return null
+  return (
+    <>
+      {chat ? (
         <p role="status" className="text-xs text-muted-foreground">
-          {t.order.copied}{' '}
-          <ChatLink chat={chat} />
+          {t.order.copyBlockedChat} <ChatLink chat={chat} />
           {t.order.pasteThere}
         </p>
-      ) : state === 'copied' && !disabled ? (
+      ) : (
         <p role="status" className="text-xs text-muted-foreground">
-          {t.order.copied}{' '}
-          <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex items-center gap-0.5 text-foreground' })}>
-            {t.order.openWhatsApp} <ExternalLink aria-hidden className="size-3" />
+          {t.order.copyBlockedBefore}
+          <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'text-foreground' })}>
+            {t.order.copyBlockedLink}
           </a>
+          {t.order.copyBlockedAfter}
         </p>
-      ) : null}
-      {state === 'manual' && !disabled ? (
-        <>
-          {chat ? (
-            <p role="status" className="text-xs text-muted-foreground">
-              {t.order.copyBlockedChat} <ChatLink chat={chat} />
-              {t.order.pasteThere}
-            </p>
-          ) : (
-          <p role="status" className="text-xs text-muted-foreground">
-            {t.order.copyBlockedBefore}
-            <a href={whatsappUrl(text)} target="_blank" rel="noreferrer" className={linkVariants({ underline: 'always', weight: 'medium', className: 'text-foreground' })}>
-              {t.order.copyBlockedLink}
-            </a>
-            {t.order.copyBlockedAfter}
-          </p>
-          )}
-          <Textarea aria-label={t.order.whatsappText} readOnly rows={6} value={text} onFocus={(e) => e.target.select()} />
-        </>
-      ) : null}
-    </div>
+      )}
+      <Textarea aria-label={t.order.whatsappText} readOnly rows={6} value={text} onFocus={(e) => e.target.select()} />
+    </>
   )
 }
 

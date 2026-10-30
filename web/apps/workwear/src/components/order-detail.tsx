@@ -1,4 +1,4 @@
-import type { ConfirmationLink, Order } from '@ppe/api-client'
+import type { ConfirmationLink, Order, SupplierChat } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Button } from '@ppe/ui/components/button'
@@ -10,12 +10,13 @@ import { RecordHeader, RecordTitle, type RecordNav } from '@ppe/ui/components/re
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown, FileText, Handshake, Link2, PenLine, Printer } from 'lucide-react'
+import { ChevronDown, FileText, Handshake, Link2, MessageCircle, PenLine, Printer } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
 import { HandOver } from '@/components/hand-over'
 import { OrderLinesTable } from '@/components/order-lines'
+import { WhatsAppCopyStatus, useWhatsAppCopy } from '@/components/whatsapp-button'
 import { t } from '@/i18n'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -25,6 +26,7 @@ import { OrderStatusBadge, OrderWait } from '@/components/order-status'
 import { deleteQuestion, historyActions, waitingDays } from '@/lib/history'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
+import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
 
 /**
  * One stored order from History: who and when, its snapshot lines and the
@@ -34,6 +36,7 @@ import { useOpenKey } from '@/lib/open-sections'
 export function OrderDetail({
   id,
   timeZone,
+  supplierChat,
   navigate,
   onClose,
   onOpenRecord,
@@ -42,6 +45,8 @@ export function OrderDetail({
 }: {
   id: string
   timeZone: string | undefined
+  /** The supplier's WhatsApp group (Settings), which Copy for WhatsApp offers to open. */
+  supplierChat: SupplierChat | null
   navigate: (to: Route) => void
   onClose: () => void
   onOpenRecord: (id: string, print: boolean) => void
@@ -78,6 +83,7 @@ export function OrderDetail({
               key={o.id}
               order={o}
               timeZone={timeZone}
+              supplierChat={supplierChat}
               navigate={navigate}
               nav={{ backLabel: t.history.title, onBack: onClose, closeLabel: t.history.closeOrder }}
               onHandOver={() => setHandingOver(true)}
@@ -121,13 +127,16 @@ export function OrderDetail({
  * then shows right below the header, and the button becomes Confirmation
  * link, which collapses and expands it), then Hand over now (the employee
  * confirms on this device, at the counter), Print Order (prints the record)
- * and Mark as Signed & Given (records the signed paper copy); the supplier
- * message is Create Order's, not here. GIVEN: View Order is the main action,
- * then Print Order (both the record). Delete order, a manager's, is under ⋯.
+ * and Mark as Signed & Given (records the signed paper copy). GIVEN: View
+ * Order is the main action, then Print Order (both the record). In either
+ * state ⋯ holds Copy for WhatsApp (the supplier message again), which says
+ * nothing once copied (only when copying is blocked does the text show below
+ * the header), and Delete order, a manager's, last.
  */
 function OrderBody({
   order: o,
   timeZone,
+  supplierChat,
   navigate,
   nav,
   onHandOver,
@@ -137,6 +146,7 @@ function OrderBody({
 }: {
   order: Order
   timeZone: string | undefined
+  supplierChat: SupplierChat | null
   navigate: (to: Route) => void
   nav: RecordNav
   onHandOver: () => void
@@ -154,6 +164,9 @@ function OrderBody({
   const actions = historyActions(o.status)
   const name = `${o.employee_first_name} ${o.employee_last_name}`
   const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, new Date(), timeZone) : 0
+  const whatsappText = formatWhatsApp(messageFromOrder(o))
+  const whatsapp = useWhatsAppCopy(whatsappText)
+  const copyWhatsApp = actions.includes('copyWhatsApp')
 
   const sign = () =>
     void action.run(
@@ -201,11 +214,19 @@ function OrderBody({
         actions={
           <>
             {main}
-            {onDelete ? (
+            {copyWhatsApp || onDelete ? (
               <MoreActions label={t.common.moreActions(o.record_number)}>
-                <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                  {t.history.deleteOrder}
-                </DropdownMenuItem>
+                {copyWhatsApp ? (
+                  <DropdownMenuItem onClick={() => void whatsapp.copy()}>
+                    {/* WhatsApp's green, as on Create Order's button. */}
+                    <MessageCircle aria-hidden className="text-whatsapp" /> {t.order.copyForWhatsApp}
+                  </DropdownMenuItem>
+                ) : null}
+                {onDelete ? (
+                  <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                    {t.history.deleteOrder}
+                  </DropdownMenuItem>
+                ) : null}
               </MoreActions>
             ) : null}
           </>
@@ -230,6 +251,11 @@ function OrderBody({
           </section>
         ) : null}
       </div>
+      {copyWhatsApp && whatsapp.state === 'manual' ? (
+        <section aria-label={t.order.copyForWhatsApp} className="flex flex-col gap-1.5">
+          <WhatsAppCopyStatus state={whatsapp.state} text={whatsappText} chat={supplierChat} />
+        </section>
+      ) : null}
       <ActionError error={action.error} />
       <FactGrid aria-label={t.history.orderDetails}>
         <Fact label={t.common.ordered}>{formatDateTime(o.ordered_at, timeZone)}</Fact>

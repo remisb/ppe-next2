@@ -14,6 +14,7 @@ export type HistoryAction =
   | 'sign'
   | 'viewRecord'
   | 'printRecord'
+  | 'copyWhatsApp'
 
 /**
  * Hand over now (hand-over mode) is hidden for now and may come back: set this
@@ -28,13 +29,13 @@ export const HAND_OVER_NOW = false
  * own: its actions (Create confirmation link, Print Record, and Mark as Signed
  * & Given for the signed paper copy) sit on the order, with Hand over now; a
  * GIVEN order says Signed beside its status instead, however it was confirmed. The manual's Copy for
- * WhatsApp on ORDERED and Share via WhatsApp on GIVEN are left out: the
- * supplier message is sent from Create Order's review.
+ * WhatsApp is on every order, GIVEN too, under its ⋯ (the supplier message,
+ * sent again); the manual's Share via WhatsApp on GIVEN is left out.
  */
 export function historyActions(status: OrderStatus): HistoryAction[] {
   return status === 'ORDERED'
-    ? ['viewItems', 'createLink', ...(HAND_OVER_NOW ? (['handOver'] as const) : []), 'printRecord', 'sign']
-    : ['viewItems', 'viewRecord', 'printRecord']
+    ? ['viewItems', 'createLink', ...(HAND_OVER_NOW ? (['handOver'] as const) : []), 'printRecord', 'sign', 'copyWhatsApp']
+    : ['viewItems', 'viewRecord', 'printRecord', 'copyWhatsApp']
 }
 
 /** A status in the interface language, read when used: `statusLabel[o.status]`. */

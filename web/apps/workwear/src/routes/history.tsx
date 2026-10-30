@@ -202,6 +202,7 @@ export function History({
               key={selected}
               id={selected}
               timeZone={tz}
+              supplierChat={settings.data?.supplier_chat ?? null}
               navigate={navigate}
               onClose={close}
               onOpenRecord={openRecord}
