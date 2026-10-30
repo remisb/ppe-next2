@@ -37,6 +37,7 @@ jobs:
           --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
+      # The Go version is go.mod's (1.27.3), as the Dockerfiles' golang images are.
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -95,6 +96,7 @@ jobs:
           --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
+      # The Go version is go.mod's (1.27.3), as the Dockerfiles' golang images are.
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod

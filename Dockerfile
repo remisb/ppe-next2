@@ -1,6 +1,6 @@
 # The API binary: built with the Go toolchain, shipped on scratch with nothing
 # else. The Go version tracks go.mod; bump both together.
-FROM golang:1.27-alpine AS build
+FROM golang:1.27.3-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./

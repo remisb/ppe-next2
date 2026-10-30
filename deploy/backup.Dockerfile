@@ -4,7 +4,8 @@
 # migrate use, and DBBACKUP_VERSION, a tag of the dbbackup repository.
 ARG POSTGRES_IMAGE=postgres:18-alpine
 
-FROM golang:1.27-alpine AS build
+# The Go version tracks go.mod, as the API's Dockerfile does; bump them together.
+FROM golang:1.27.3-alpine AS build
 RUN apk add --no-cache git
 # The module is private: fetched straight from GitHub with the github_token build
 # secret (the file .github-token; docs/backups.md), present only during this RUN.
