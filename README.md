@@ -24,7 +24,7 @@ cover it.
 
 | Part | Technology |
 |---|---|
-| API | Go 1.27 with stdlib `net/http` (no framework) and [muxstack](https://github.com/remisb/muxstack) middleware; JWT (HS256) auth with bcrypt passwords |
+| API | Go 1.27.3 with stdlib `net/http` (no framework) and [muxstack](https://github.com/remisb/muxstack) middleware; JWT (HS256) auth with bcrypt passwords |
 | Database | PostgreSQL 18; plain SQL migrations in `internal/db/migrations` |
 | Web | pnpm workspace in `web/`: React 19, TypeScript 7, Vite 8, Tailwind 4 and shadcn/ui |
 | Tests | Go unit tests plus Postgres tests, Vitest, and Playwright end-to-end tests |
@@ -56,7 +56,7 @@ web/e2e/                 Playwright suite
 
 ## Prerequisites
 
-- Go 1.27.1+ (the version in `go.mod`)
+- Go 1.27.3+ (the version in `go.mod`)
 - Docker with Compose (for local Postgres)
 - Node.js 22+ and pnpm 12 (`corepack enable` picks up the pinned version)
 - `make`

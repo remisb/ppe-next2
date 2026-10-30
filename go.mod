@@ -1,6 +1,6 @@
 module github.com/remisb/ppe-next2
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/digitorus/pkcs7 v0.0.0-20260914070511-d678ea5ea03f
