@@ -3248,26 +3248,70 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   // The trial app at /sim-scan/, on the staff app's sign-in. The cards are made up (fixtures/sim-cards/make.ts).
   await page.goto('/sim-scan/')
   await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
-  // What every card of the batch shares, from Settings: the default provider, its plan and the default value.
-  await expect(page.getByLabel('Provider')).toHaveValue('Telia')
-  await expect(page.getByLabel('Plan')).toHaveValue('Biz 5 GB')
-  await expect(page.getByLabel('Non-return Value (€)')).toHaveValue('25.00')
-  // Front, back, front, back: each front's barcode is its SIM No. (never the product code), each back its PIN and PUK.
+  // What every card of the batch shares, from Settings (the default provider, its plan and the default value):
+  // a read-only line; Edit turns it over to the form, and Cancel or Save back.
+  const shared = page.getByRole('region', { name: 'For every SIM' })
+  await expect(shared).toContainText('Telia')
+  await expect(shared).toContainText('Biz 5 GB')
+  await expect(shared).toContainText('€25.00')
+  await expect(shared.getByRole('textbox')).toHaveCount(0)
+  await shared.getByRole('button', { name: 'Edit For every SIM' }).click()
+  await expect(shared.getByLabel('Provider')).toHaveValue('Telia')
+  await expect(shared.getByLabel('Plan')).toHaveValue('Biz 5 GB')
+  await expect(shared.getByLabel('Non-return Value (€)')).toHaveValue('25.00')
+  await shared.getByLabel('Plan').fill('Changed, then cancelled')
+  await shared.getByRole('button', { name: 'Cancel' }).click()
+  await expect(shared.getByRole('textbox')).toHaveCount(0)
+  await expect(shared).toContainText('Biz 5 GB')
+  // A card at a time: a photo of each side. The front's barcode is its SIM No. (never the product code); with
+  // only that, the card stays here, Next SIM dimmed, until the back's photo fills in its PIN and PUK.
   const photo = (name: string) => join(repoRoot, 'web/e2e/fixtures/sim-cards', name)
-  await page.getByLabel('Choose Photos').setInputFiles(['card-1-front.png', 'card-1-back.png', 'card-2-front.png', 'card-2-back.png'].map(photo))
+  const current = page.getByRole('region', { name: 'SIM 1' })
+  // A phone scans with the camera or chooses photos: no card at a time there.
+  const desktop = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expect(current).toBeHidden()
+  await expect(page.getByText('Scan with the camera, card after card, or choose photos taken earlier.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Camera' })).toBeVisible()
+  await page.setViewportSize(desktop)
+  await expect(current).toBeVisible()
+  await expect(page.getByText('Or scan with the camera, card after card, or choose photos taken earlier.', { exact: true })).toBeVisible()
+  const takePhoto = async (side: string, name: string) => {
+    const chooser = page.waitForEvent('filechooser')
+    await current.getByRole('button', { name: side }).click()
+    await (await chooser).setFiles(photo(name))
+  }
+  await expect(current.getByText(/Not a SIM No/)).toHaveCount(0)
+  await takePhoto('Photo of the SIM No.', 'card-1-front.png')
+  // The values read are plain text, to take little room; Edit turns them into fields.
+  await expect(current.getByTestId('sim-no')).toHaveText('8937099000000000049', { timeout: 60_000 })
+  await expect(current.getByTestId('pin')).toHaveText('–')
+  await expect(current.getByRole('button', { name: 'Next SIM' })).toBeDisabled()
+  // Edit turns the values into fields: a digit typed wrong fails the check digit.
+  await current.getByRole('button', { name: 'Edit' }).click()
+  await current.getByLabel('SIM No.', { exact: true }).fill('8937099000000000048')
+  await expect(current.getByText('The last digit does not check')).toBeVisible()
+  await current.getByLabel('SIM No.', { exact: true }).fill('8937099000000000049')
+  await expect(current.getByText('The last digit does not check')).toHaveCount(0)
   const rows = page.getByTestId('scan-row')
+  await expect(rows).toHaveCount(0)
+  await takePhoto('Photo of the PIN and PUK', 'card-1-back.png')
+  // All three filled in: the card goes to the list, and the next one starts.
+  await expect(page.getByText('SIM 1 is in the list.')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByRole('heading', { name: 'SIM 2' })).toBeVisible()
+  await expect(rows).toHaveCount(1)
+  // Photos taken earlier: front, back, card after card.
+  await page.getByLabel('Choose Photos').setInputFiles(['card-2-front.png', 'card-2-back.png'].map(photo))
   await expect(rows).toHaveCount(2, { timeout: 90_000 })
-  await expect(rows.nth(0).getByLabel('SIM No.')).toHaveValue('8937099000000000049')
-  await expect(rows.nth(0).getByLabel('PIN')).toHaveValue('4826')
-  await expect(rows.nth(0).getByLabel('PUK')).toHaveValue('31597264')
-  await expect(rows.nth(1).getByLabel('SIM No.')).toHaveValue('8937099000000000056')
-  await expect(rows.nth(1).getByLabel('PIN')).toHaveValue('7051')
-  await expect(rows.nth(1).getByLabel('PUK')).toHaveValue('68203915')
-  // A digit typed wrong fails the check digit, and Add waits for it.
-  await rows.nth(1).getByLabel('SIM No.').fill('8937099000000000057')
-  await expect(rows.nth(1).getByText('The last digit does not check')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Add 2 SIMs' })).toBeDisabled()
-  await rows.nth(1).getByLabel('SIM No.').fill('8937099000000000056')
+  await expect(rows.nth(0).getByTestId('sim-no')).toHaveText('8937099000000000049')
+  await expect(rows.nth(0).getByTestId('pin')).toHaveText('4826')
+  await expect(rows.nth(0).getByTestId('puk')).toHaveText('31597264')
+  await expect(rows.nth(1).getByTestId('sim-no')).toHaveText('8937099000000000056')
+  await expect(rows.nth(1).getByTestId('pin')).toHaveText('7051')
+  await expect(rows.nth(1).getByTestId('puk')).toHaveText('68203915')
+  // A card in the list is not edited, only removed.
+  await expect(rows.nth(1).getByRole('button', { name: /^Edit/ })).toHaveCount(0)
+  await expect(rows.nth(1).getByRole('textbox')).toHaveCount(0)
   await page.getByRole('button', { name: 'Add 2 SIMs' }).click()
   await expect(page.getByText('2 SIMs added, Not Activated:')).toBeVisible()
   await expect(rows).toHaveCount(0)

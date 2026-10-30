@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss(), serveReaderFiles(), ...(https ? [basicSsl()] : [])],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: {
-      port: 5184,
+      // PORT, when a tool that runs dev servers assigns one; else the app's own.
+      port: Number(process.env['PORT'] ?? 5184),
       strictPort: true,
       host: https,
       proxy: { '/api': { target, changeOrigin: false }, '/health': target, '/ready': target },

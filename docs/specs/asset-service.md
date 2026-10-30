@@ -178,18 +178,35 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
 
 - **Reading.** A carrier's front has the SIM No. as a Code 128 barcode, beside a product code
   (EAN-13, the same on every card, never taken). Its back has the PIN, the PUK and the
-  provider's customer service number, and no SIM No. Both are read in the browser, with the
-  phone's camera (front, then back, card after card; a reading is taken once it is the same
-  twice in a row) or from photos (front and back, in the order taken; a photo's side is what
-  is read on it, a back pairing with the front before it, or after it when the first photo is
-  a back). zxing-wasm reads the barcode, tesseract.js the PIN and PUK: each the number on its
+  provider's customer service number, and no SIM No. Both are read in the browser, three ways:
+  - **A card at a time** (at the top, from 768px; a phone has the other two only): a photo of each side, **Photo of the SIM
+    No.** and **Photo of the PIN and PUK** (the phone's camera, `capture`, or a file), each read
+    as it is taken. A photo fills the side read on it, whichever slot took it; a field still
+    empty shows no error. Only once both photos are in and the SIM No., PIN and PUK are all
+    right (`cardComplete`) does the card go to the list and the next start: at once when the
+    photos filled them, else with **Next SIM** once the user has typed what was not read (the
+    card's fields open by themselves once both photos are in and something is still missing).
+  - **Camera**, live: front, then back, card after card; a reading is taken once it is the
+    same twice in a row.
+  - **Choose Photos**, taken earlier: front and back, in the order taken; a photo's side is
+    what is read on it, a back pairing with the front before it, or after it when the first
+    photo is a back.
+- **Layout.** A card reads as photographed, in the card being scanned and in the list alike
+  (`CardFields`): the front's picture and **SIM No.** on one line; the back's picture, **PIN**
+  and **PUK** on the next, each line's problems under it. The values are plain text, a dash
+  for none, to take little room. Only the card being scanned is edited (**Edit** turns its
+  values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode, tesseract.js the PIN and PUK: each the number on its
   label's line, after it (`codesFromWords`). Their files are the app's own
   (`/sim-scan/readers/`), and nothing read leaves the browser but the batch itself.
 - **The batch** shares what Add SIM asks per card, chosen once and filled in from Settings
   (the default provider, its plan, the default Non-return Value, today): provider (required),
   plan, Non-return Value, Received Date (not later than today) and comment. Each card is its
-  SIM No. and its PIN and PUK, both or neither.
-- **The review list** shows each card with its pictures, every field editable, and marks it as
+  SIM No. and its PIN and PUK, both or neither. **For every SIM** shows them read only, a label
+  and its value a line (those set only), with an edit icon at its top right; it flips over (turning about its top
+  edge; no motion where the device asks for less) to the form, and **Save** or **Cancel**
+  (Escape) flips it back. With no provider to fill in, it opens on the form, without Cancel.
+  Saving changes this batch only, never Settings.
+- **The review list** shows each card with its pictures, and marks it as
   `POST …/sim-cards/batch/check` does: a SIM No. that is not an ICCID (`89` and 17 more digits,
   the filler `F` allowed) or whose 19th digit does not check (Luhn), the same card twice in the
   batch, a card already in the register (with a link to it), a PIN not 4 to 8 digits, a PUK not

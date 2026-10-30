@@ -796,9 +796,11 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   **front** (the SIM No.'s barcode) and the **back** (PIN and PUK), with the **Camera** or from
   photos (**Choose Photos**), checked in a list, then **Add N SIMs**.
 - **Detail:** a trial app at `/sim-scan/` for now (ADR 0005); what the batch shares is **For
-  every SIM**. A card read without its back is added without PIN and PUK (**No Back**).
-- **UI:** **Scan SIMs**, **Camera**, **Stop Camera**, **Choose Photos**, **No Back**, **Clear
-  List**, **Add N SIMs**.
+  every SIM**, read only (a label and its value a line) until **Edit For every SIM** opens its form (**Save**,
+  **Cancel**). A card read without its back is added without PIN and PUK (**No Back**).
+- **UI:** **Scan SIMs**, **SIM N** (the card being scanned), **Photo of the SIM No.**, **Photo
+  of the PIN and PUK**, **Next SIM**, **Edit** (the card being scanned's values), **Camera**, **Stop Camera**, **Choose Photos**, **No
+  Back**, **Clear List**, **Add N SIMs**.
 
 ### Equipment & Furniture
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
@@ -1095,6 +1097,7 @@ screens are built):
 | Scan SIMs / Camera / Stop Camera / Choose Photos | Skenuoti SIM / Kamera / Išjungti kamerą / Pasirinkti nuotraukas | Сканировать SIM / Камера / Выключить камеру / Выбрать фото |
 | Front / Back (a carrier's) / No Back | Priekis / Nugarėlė / Be nugarėlės | Лицевая / Обратная / Без обратной стороны |
 | For every SIM / Clear List / Add N SIMs | Visoms SIM / Išvalyti sąrašą / Pridėti N SIM | Для всех SIM / Очистить список / Добавить N SIM |
+| Photo of the SIM No. / Photo of the PIN and PUK / Next SIM | SIM Nr. nuotrauka / PIN ir PUK nuotrauka / Kita SIM | Фото № SIM / Фото PIN и PUK / Следующая SIM |
 | PIN / PUK | PIN / PUK | PIN / PUK |
 | Show PIN and PUK / Add PIN and PUK / Save PIN and PUK | Rodyti PIN ir PUK / Pridėti PIN ir PUK / Išsaugoti PIN ir PUK | Показать PIN и PUK / Добавить PIN и PUK / Сохранить PIN и PUK |
 

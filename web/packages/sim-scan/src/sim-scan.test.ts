@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   Steady,
   batchRequest,
+  cardComplete,
   codesFromWords,
   compactSimNo,
   luhn,
@@ -15,6 +16,7 @@ import {
   type OcrWord,
   type PictureRead,
   type ScanCard,
+  withPhoto,
 } from './sim-scan.ts'
 import { dictionaries } from './text.ts'
 
@@ -147,6 +149,33 @@ describe('rowMarks', () => {
   it("adds the API's registered cards", () => {
     const marks = rowMarks([card(A)], [{ index: 0, field: 'sim_no', code: 'registered', existing_id: 'id-1' }])
     expect(marks[0]).toEqual([{ field: 'sim_no', code: 'registered', existingId: 'id-1' }])
+  })
+})
+
+describe('the card being scanned', () => {
+  const empty: ScanCard = { key: 'k', simNo: '', pin: '', puk: '' }
+
+  it('fills each side from its photo, whichever slot took it', () => {
+    let c = withPhoto(empty, 'front', front('1', A))
+    expect([c.simNo, c.front, c.back]).toEqual([A, '1', undefined])
+    c = withPhoto(c, 'front', rear('2', '0306', '93691381'))
+    expect([c.pin, c.puk, c.back]).toEqual(['0306', '93691381', '2'])
+  })
+
+  it('keeps an unread photo as the slot’s picture, its fields to type', () => {
+    const c = withPhoto(empty, 'back', blank('3'))
+    expect([c.back, c.front, c.pin]).toEqual(['3', undefined, ''])
+  })
+
+  it('is done once both sides are photographed and the three fields are right', () => {
+    const done = { ...empty, simNo: A, pin: '0306', puk: '93691381', front: '1', back: '2' }
+    expect(cardComplete(done, [])).toBe(true)
+    const { back: _, ...frontOnly } = done
+    expect(cardComplete(frontOnly, [])).toBe(false)
+    expect(cardComplete({ ...done, puk: '' }, [])).toBe(false)
+    expect(cardComplete({ ...done, puk: '9369' }, [])).toBe(false)
+    expect(cardComplete({ ...done, simNo: '8937099000000000016' }, [])).toBe(false)
+    expect(cardComplete(done, [card(`${A}F`)])).toBe(false)
   })
 })
 

@@ -290,3 +290,34 @@ export class Steady<T> {
     this.#count = 0
   }
 }
+
+/**
+ * The card being scanned after a photo of one side: what was read on it fills
+ * that side's fields (a SIM No. the front's, a PIN and PUK the back's), the
+ * photo becoming that side's picture whatever slot it was taken from. A photo
+ * with nothing read is the slot's picture, its fields left to type.
+ */
+export function withPhoto(card: ScanCard, slot: 'front' | 'back', read: PictureRead): ScanCard {
+  const side = sideOf(read)
+  const next: ScanCard = { ...card }
+  if (side === 'front' || (side === 'unknown' && slot === 'front')) {
+    next.front = read.id
+    if (read.simNo) next.simNo = read.simNo
+  } else {
+    next.back = read.id
+    if (read.codes.pin) next.pin = read.codes.pin
+    if (read.codes.puk) next.puk = read.codes.puk
+  }
+  return next
+}
+
+/**
+ * Whether the card being scanned is done, so the next one may start: both
+ * sides photographed, and its SIM No., PIN and PUK all filled in with nothing
+ * wrong with them, the list's cards counted for duplicates.
+ */
+export function cardComplete(card: ScanCard, list: readonly ScanCard[]): boolean {
+  if (card.front === undefined || card.back === undefined) return false
+  if (card.simNo.trim() === '' || card.pin.trim() === '' || card.puk.trim() === '') return false
+  return !rowMarks([...list, card])[list.length]!.some(blocks)
+}

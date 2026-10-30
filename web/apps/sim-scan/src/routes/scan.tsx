@@ -1,7 +1,7 @@
 import type { AddedSim, Settings, SimProblem } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { euroInput, parseEuro } from '@ppe/i18n'
+import { euroInput, formatEuro, parseEuro } from '@ppe/i18n'
 import { staffHref } from '@ppe/routing'
 import {
   type BatchSettings,
@@ -11,22 +11,24 @@ import {
   Steady,
   batchRequest,
   blocks,
+  cardComplete,
   pairPhotos,
   pickSimNo,
   rowMarks,
   simKey,
   simScanText,
+  withPhoto,
 } from '@ppe/sim-scan'
 import { beep, cameraAvailable, eachFrame, guideCrop, startCamera, stopCamera } from '@ppe/sim-scan/camera'
-import { ReviewList, message } from '@ppe/sim-scan/review-list'
+import { CardFields, ReviewList, Thumb, message } from '@ppe/sim-scan/review-list'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { ActionError, PageHeader } from '@ppe/ui/components/states'
-import { isoDay } from '@ppe/ui/lib/dates'
+import { formatDay, isoDay } from '@ppe/ui/lib/dates'
 import { cn } from '@ppe/ui/lib/utils'
-import { Camera, CircleCheck, ImagePlus, Square } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Camera, CircleCheck, ImagePlus, Loader2, Pencil, Square } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { loadReaders } from '@/lib/readers'
 
@@ -47,7 +49,6 @@ export function ScanPage() {
   const t = simScanText()
   const [settings, setSettings] = useState<Settings | null>(null)
   const [batch, setBatch] = useState<BatchSettings>({ provider: '', plan: '', valueCents: null, receivedDate: '', comment: '' })
-  const [valueText, setValueText] = useState('')
   const [cards, setCards] = useState<ScanCard[]>([])
   const pictures = useRef(new Map<string, string>())
   const [, redraw] = useState(0)
@@ -74,7 +75,6 @@ export function ScanPage() {
           valueCents: s.default_sim_non_return_value_cents,
           receivedDate: isoDay(new Date(), s.timezone),
         }))
-        setValueText(euroInput(s.default_sim_non_return_value_cents))
       },
       (e: unknown) => live && setError(e),
     )
@@ -120,7 +120,6 @@ export function ScanPage() {
 
   const marks = useMemo(() => rowMarks(cards, apiProblems), [cards, apiProblems])
   const toFix = marks.filter((row) => row.some(blocks)).length
-  const valueBad = valueText.trim() !== '' && Number.isNaN(parseEuro(valueText))
 
   const choosePhotos = async (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -159,7 +158,6 @@ export function ScanPage() {
     }
   }
 
-  const providerChoices = settings?.sim_providers.map((p) => p.name) ?? []
   return (
     <>
       <PageHeader title={t.scanTitle} description={t.scanDescription} />
@@ -182,71 +180,26 @@ export function ScanPage() {
         </section>
       ) : null}
 
-      <section aria-labelledby="batch" className="mb-6 flex flex-col gap-4">
-        <h2 id="batch" className="text-base font-semibold">
-          {t.batch}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label={t.provider} required error={batch.provider === '' && cards.length > 0 ? t.providerRequired : undefined}>
-            {(p) =>
-              providerChoices.length > 0 ? (
-                <Select
-                  {...controlProps(p)}
-                  value={batch.provider}
-                  onChange={(e) => {
-                    const provider = e.target.value
-                    const plan = settings?.sim_providers.find((x) => x.name === provider)?.default_plan ?? ''
-                    setBatch((b) => ({ ...b, provider, plan }))
-                  }}
-                >
-                  {providerChoices.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </Select>
-              ) : (
-                <Input {...controlProps(p)} value={batch.provider} onChange={(e) => setBatch((b) => ({ ...b, provider: e.target.value }))} />
-              )
-            }
-          </Field>
-          <Field label={t.plan}>
-            {(p) => <Input {...controlProps(p)} value={batch.plan} onChange={(e) => setBatch((b) => ({ ...b, plan: e.target.value }))} />}
-          </Field>
-          <Field label={t.nonReturnValue} error={valueBad ? t.valueInvalid : undefined}>
-            {(p) => (
-              <Input
-                {...controlProps(p)}
-                inputMode="decimal"
-                value={valueText}
-                onChange={(e) => {
-                  setValueText(e.target.value)
-                  const cents = parseEuro(e.target.value)
-                  if (!Number.isNaN(cents)) setBatch((b) => ({ ...b, valueCents: cents }))
-                }}
-              />
-            )}
-          </Field>
-          <Field label={t.receivedDate}>
-            {(p) => (
-              <DateInput
-                {...controlProps(p)}
-                value={batch.receivedDate}
-                max={settings ? isoDay(new Date(), settings.timezone) : undefined}
-                onChange={(v) => setBatch((b) => ({ ...b, receivedDate: v }))}
-              />
-            )}
-          </Field>
-        </div>
-        <Field label={t.comment}>
-          {(p) => <Textarea {...controlProps(p)} rows={2} value={batch.comment} onChange={(e) => setBatch((b) => ({ ...b, comment: e.target.value }))} />}
-        </Field>
-      </section>
+      <BatchCard settings={settings} batch={batch} onSave={setBatch} missingProvider={batch.provider.trim() === '' && cards.length > 0} />
+
+      {!camera ? (
+        <CardInProgress
+          list={cards}
+          keep={keep}
+          picture={(id) => pictures.current.get(id)}
+          onDone={(card) => {
+            setAdded(null)
+            setCards((cur) => (cur.length >= MAX_CARDS ? cur : [...cur, card]))
+          }}
+        />
+      ) : null}
 
       <section className="mb-6 flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground max-md:hidden">{t.otherWays}</p>
+        <p className="text-sm text-muted-foreground md:hidden">{t.waysOnPhone}</p>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant={camera ? 'secondary' : 'default'}
+            variant={camera ? 'secondary' : 'outline'}
             onClick={() => {
               setAdded(null)
               setCamera((c) => !c)
@@ -311,7 +264,6 @@ export function ScanPage() {
             marks={marks}
             pictures={pictures.current}
             existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
-            onChange={(i, patch) => setCards((cur) => cur.map((c, j) => (j === i ? { ...c, ...patch } : c)))}
             onRemove={(i) => {
               forget([cards[i]?.front, cards[i]?.back])
               setCards((cur) => cur.filter((_, j) => j !== i))
@@ -322,7 +274,7 @@ export function ScanPage() {
         <ActionError error={error} title={addErrorTitle(error)} />
         {cards.length > 0 ? (
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => void add()} disabled={adding || toFix > 0 || batch.provider.trim() === '' || valueBad}>
+            <Button onClick={() => void add()} disabled={adding || toFix > 0 || batch.provider.trim() === ''}>
               {adding ? t.adding : t.add(cards.length)}
             </Button>
             {toFix > 0 ? <p className="text-sm text-destructive">{t.fixFirst(toFix)}</p> : null}
@@ -446,5 +398,322 @@ function LiveScan({
         </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * The card being scanned: a photo of each side, each read as it is taken, its
+ * SIM No., PIN and PUK to check or type. Only once both photos are in and the
+ * three fields are right does it go to the list, and the next card starts: at
+ * once when the photos fill them, else with Next SIM.
+ */
+function CardInProgress({
+  list,
+  keep,
+  picture,
+  onDone,
+}: {
+  list: readonly ScanCard[]
+  keep: (id: string, blob: Blob) => void
+  picture: (id: string) => string | undefined
+  onDone: (card: ScanCard) => void
+}) {
+  const t = simScanText()
+  const fresh = (): ScanCard => ({ key: newKey(), simNo: '', pin: '', puk: '' })
+  const [card, setCard] = useState<ScanCard>(fresh)
+  const [reading, setReading] = useState<'front' | 'back' | null>(null)
+  const [done, setDone] = useState<number | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [edit, setEdit] = useState(false)
+  const inputs = { front: useRef<HTMLInputElement>(null), back: useRef<HTMLInputElement>(null) }
+  const complete = cardComplete(card, list)
+  // Plain text, unless Edit is on, or both photos are in and something is still to type.
+  const editing = edit || (card.front !== undefined && card.back !== undefined && !complete)
+  // A field still empty is not wrong yet: it waits for its photo.
+  const filled = { sim_no: card.simNo, pin: card.pin, puk: card.puk }
+  const marks = (rowMarks([...list, card])[list.length] ?? []).filter((m) => filled[m.field].trim() !== '' || m.code === 'codes_incomplete')
+
+  const finish = (c: ScanCard) => {
+    onDone(c)
+    setDone(list.length + 1)
+    setCard(fresh())
+    setEdit(false)
+  }
+
+  const take = async (slot: 'front' | 'back', file: File | undefined) => {
+    if (!file) return
+    setReading(slot)
+    setError(null)
+    setDone(null)
+    try {
+      const readers = await loadReaders()
+      const id = newKey()
+      keep(id, file)
+      const next = withPhoto(card, slot, await readers.readPhoto(id, file))
+      if (cardComplete(next, list)) finish(next)
+      else setCard(next)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setReading(null)
+    }
+  }
+
+  const slot = (side: 'front' | 'back') => {
+    const id = side === 'front' ? card.front : card.back
+    const label = side === 'front' ? t.frontPhoto : t.backPhoto
+    return (
+      <>
+        <button
+          type="button"
+          title={label}
+          aria-label={label}
+          disabled={reading !== null}
+          onClick={() => inputs[side].current?.click()}
+          className="relative flex h-11 w-full cursor-pointer items-center justify-center overflow-hidden rounded border border-input bg-muted text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-wait"
+        >
+          {reading === side ? (
+            <Loader2 aria-hidden className="size-5 animate-spin" />
+          ) : id && picture(id) ? (
+            <Thumb src={picture(id)} alt={label} />
+          ) : (
+            <Camera aria-hidden className="size-5" />
+          )}
+        </button>
+        <input
+          ref={inputs[side]}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={(e) => {
+            void take(side, e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+      </>
+    )
+  }
+
+  return (
+    // Not on a phone, which scans with the camera or chooses photos.
+    <section aria-labelledby="current" className="mb-6 flex flex-col gap-3 rounded-lg border border-border p-4 max-md:hidden">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="current" className="text-base font-semibold">
+          {t.currentCard(list.length + 1)}
+        </h2>
+        {done !== null ? (
+          <p role="status" className="flex items-center gap-1.5 text-sm text-success">
+            <CircleCheck aria-hidden className="size-4" />
+            {t.inList(done)}
+          </p>
+        ) : null}
+      </div>
+      <p className="text-sm text-muted-foreground">{t.cardHint}</p>
+      <CardFields
+        card={card}
+        editing={editing}
+        marks={marks}
+        front={slot('front')}
+        back={slot('back')}
+        onChange={(patch) => setCard((c) => ({ ...c, ...patch }))}
+      />
+      {reading ? (
+        <p role="status" className="text-sm">
+          {t.readingPhoto}
+        </p>
+      ) : null}
+      <ActionError error={error} />
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => finish(card)} disabled={!complete || reading !== null || list.length >= MAX_CARDS}>
+          {t.nextCard}
+        </Button>
+        {!editing ? (
+          <Button variant="ghost" onClick={() => setEdit(true)}>
+            <Pencil aria-hidden className="size-4" />
+            {t.editCard}
+          </Button>
+        ) : null}
+      </div>
+    </section>
+  )
+}
+
+/**
+ * What every SIM of the batch shares (For every SIM), filled in from Settings:
+ * shown read only, a label and its value a line, with Edit at its top right. Edit flips
+ * it over to the form; Save or Cancel (or Escape) flips it back. Without a
+ * provider to fill in, it opens on the form.
+ */
+function BatchCard({
+  settings,
+  batch,
+  onSave,
+  missingProvider,
+}: {
+  settings: Settings | null
+  batch: BatchSettings
+  onSave: (batch: BatchSettings) => void
+  missingProvider: boolean
+}) {
+  const t = simScanText()
+  const [editing, setEditing] = useState(false)
+  // Only a change of side flips; the card as first shown does not.
+  const [flipped, setFlipped] = useState(false)
+  const [draft, setDraft] = useState(batch)
+  const [valueText, setValueText] = useState('')
+  const editButton = useRef<HTMLButtonElement>(null)
+  const form = useRef<HTMLFormElement>(null)
+  const loaded = settings !== null
+  const providerChoices = settings?.sim_providers.map((p) => p.name) ?? []
+  const valueBad = valueText.trim() !== '' && Number.isNaN(parseEuro(valueText))
+  const open = editing
+
+  const start = () => {
+    setDraft(batch)
+    setValueText(euroInput(batch.valueCents))
+    setFlipped(true)
+    setEditing(true)
+  }
+  const close = () => {
+    setFlipped(true)
+    setEditing(false)
+    requestAnimationFrame(() => editButton.current?.focus())
+  }
+  const save = () => {
+    if (draft.provider.trim() === '' || valueBad) return
+    onSave({ ...draft, valueCents: parseEuro(valueText) })
+    close()
+  }
+
+  // With no provider to fill in from Settings, it opens on the form, unflipped.
+  useEffect(() => {
+    if (!loaded || batch.provider.trim() !== '' || editing) return
+    setDraft(batch)
+    setValueText(euroInput(batch.valueCents))
+    setEditing(true)
+  }, [loaded, batch, editing])
+
+  // The form's first field takes the focus as it opens.
+  useEffect(() => {
+    if (editing) form.current?.querySelector<HTMLElement>('select, input')?.focus()
+  }, [editing])
+
+  const flip = flipped ? 'motion-safe:animate-flip-in origin-top' : undefined
+  return (
+    <section aria-labelledby="batch" className="mb-5 [perspective:900px]">
+      {!open ? (
+        <div key="view" className={cn('flex items-start gap-2 rounded-lg border border-border px-3 py-2', flip)}>
+          <div className="min-w-0 flex-1">
+            <h2 id="batch" className="text-sm font-semibold">
+              {t.batch}
+            </h2>
+            <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm">
+              {[
+                [t.provider, batch.provider],
+                [t.plan, batch.plan],
+                [t.nonReturnValue, batch.valueCents === null ? '' : formatEuro(batch.valueCents)],
+                [t.receivedDate, batch.receivedDate === '' ? '' : formatDay(batch.receivedDate)],
+                [t.comment, batch.comment],
+              ]
+                .filter(([, v]) => v !== '')
+                .map(([label, value]) => (
+                  <Fragment key={label}>
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="min-w-0 break-words">{value}</dd>
+                  </Fragment>
+                ))}
+            </dl>
+          </div>
+          <Button
+            ref={editButton}
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="-mt-1 -mr-2 shrink-0"
+            aria-label={t.editBatch}
+            title={t.editBatch}
+            disabled={!loaded}
+            onClick={start}
+          >
+            <Pencil aria-hidden className="size-4" />
+          </Button>
+        </div>
+      ) : (
+        <form
+          key="edit"
+          ref={form}
+          className={cn('flex flex-col gap-4 rounded-lg border border-border p-3 sm:p-4', flip)}
+          onSubmit={(e) => {
+            e.preventDefault()
+            save()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && batch.provider.trim() !== '') close()
+          }}
+        >
+          <h2 id="batch" className="text-base font-semibold">
+            {t.batch}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label={t.provider} required error={(missingProvider || editing) && draft.provider.trim() === '' ? t.providerRequired : undefined}>
+              {(p) =>
+                providerChoices.length > 0 ? (
+                  <Select
+                    {...controlProps(p)}
+                    value={draft.provider}
+                    onChange={(e) => {
+                      const provider = e.target.value
+                      const plan = settings?.sim_providers.find((x) => x.name === provider)?.default_plan ?? ''
+                      setDraft((b) => ({ ...b, provider, plan }))
+                    }}
+                  >
+                    <option value="" disabled>
+                      {t.provider}
+                    </option>
+                    {providerChoices.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input {...controlProps(p)} value={draft.provider} onChange={(e) => setDraft((b) => ({ ...b, provider: e.target.value }))} />
+                )
+              }
+            </Field>
+            <Field label={t.plan}>
+              {(p) => <Input {...controlProps(p)} value={draft.plan} onChange={(e) => setDraft((b) => ({ ...b, plan: e.target.value }))} />}
+            </Field>
+            <Field label={t.nonReturnValue} error={valueBad ? t.valueInvalid : undefined}>
+              {(p) => <Input {...controlProps(p)} inputMode="decimal" value={valueText} onChange={(e) => setValueText(e.target.value)} />}
+            </Field>
+            <Field label={t.receivedDate}>
+              {(p) => (
+                <DateInput
+                  {...controlProps(p)}
+                  value={draft.receivedDate}
+                  max={settings ? isoDay(new Date(), settings.timezone) : undefined}
+                  onChange={(v) => setDraft((b) => ({ ...b, receivedDate: v }))}
+                />
+              )}
+            </Field>
+          </div>
+          <Field label={t.comment}>
+            {(p) => <Textarea {...controlProps(p)} rows={2} value={draft.comment} onChange={(e) => setDraft((b) => ({ ...b, comment: e.target.value }))} />}
+          </Field>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={draft.provider.trim() === '' || valueBad}>
+              {t.saveBatch}
+            </Button>
+            {batch.provider.trim() !== '' ? (
+              <Button type="button" variant="outline" onClick={close}>
+                {t.cancel}
+              </Button>
+            ) : null}
+          </div>
+        </form>
+      )}
+    </section>
   )
 }
