@@ -5,7 +5,6 @@ import type { HistoryText } from '../en/history'
 export const history: HistoryText = {
   title: 'Užsakymai',
   filters: 'Filtrai',
-  filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
   employee: 'Darbuotojas',
   recordNumber: 'Įrašo numeris',
@@ -80,6 +79,9 @@ export const history: HistoryText = {
     `${record} · ${name}. Darbuotojas patvirtina gavimą saugiame puslapyje arba pasirašo atspausdintą įrašą.`,
   electronicConfirmation: 'Elektroninis patvirtinimas',
   createLink: 'Sukurti patvirtinimo nuorodą',
+  createLinkShort: 'Sukurti nuorodą',
+  viewOrderShort: 'Peržiūrėti',
+  confirmationLinkShort: 'Nuoroda',
   paperConfirmation: 'Patvirtinimas popieriuje',
   paperSteps: 'Atspausdinkite įrašą, duokite darbuotojui pasirašyti, tada pažymėkite, kad pasirašyta kopija gauta.',
   recordPaper: 'Pažymėti pasirašytą popierinį patvirtinimą',

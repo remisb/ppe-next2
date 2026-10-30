@@ -63,9 +63,10 @@ export function DetailPane({ label, next, children }: { label: string; /** "next
 }
 
 /**
- * The way out of an open record: below lg, Back to the list on its own row;
- * beside the list, Close in the pane's corner, beside the heading
- * (RecordHeader leaves it room).
+ * The way out of an open record while it loads or fails: below lg, Back to
+ * the list on its own row; beside the list, Close in the pane's corner. Once
+ * the record's RecordHeader is there (with `nav`), its row holds both and
+ * this is hidden (styles.css).
  */
 export function PaneBar({
   backLabel,
@@ -83,10 +84,10 @@ export function PaneBar({
 }) {
   return (
     <>
-      <BackButton className={cn('lg:hidden', className)} onClick={onClose}>
+      <BackButton data-slot="pane-bar" className={cn('lg:hidden', className)} onClick={onClose}>
         {backLabel}
       </BackButton>
-      <Button variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={closeLabel} onClick={onClose}>
+      <Button data-slot="pane-close" variant="ghost" size="icon" className="absolute top-2 right-2 max-lg:hidden" aria-label={closeLabel} onClick={onClose}>
         <X aria-hidden />
       </Button>
     </>

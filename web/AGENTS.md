@@ -210,7 +210,11 @@ The workwear app is the reference.
   `/assets/equipment/<id>`; Item Catalogue: `/catalogue/<id>`; Administration's Audit log and
   System's Errors). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. Build it with `ListDetail`, `DetailPane`,
-  `PaneBar` and `useListKeys` (`@ppe/ui`); the list and an open record are one element in
+  `PaneBar` and `useListKeys` (`@ppe/ui`), and give the record's `RecordHeader` its `nav`
+  (back to the list, Close): its first row sticks in the pane and on a phone, and holds the
+  way out once the record is loaded (`PaneBar` then hides; `styles.css`). The record's
+  parts are siblings in its `<article>`, so the row sticks the length of the record: never
+  wrap `RecordHeader` in a box of its own. The list and an open record are one element in
   `app.tsx`, so the list keeps its state when a record opens. The row's actions live in the
   detail, not in an Actions column. Beside a detail the list drops to the columns that
   find the next record (Orders: no Usage time, no time of day, the wait as the status;
@@ -219,8 +223,12 @@ The workwear app is the reference.
   and stacks only under 30rem (`stackBelow="sm"`), so from about 1200px it stays one line
   a row; J / K step through it and Escape closes the detail.
 - **Sorting**: sortable columns use `SortableHead` (`components/sortable.tsx`, `aria-sort`
-  on the header) and the same state in a `SortControl` passed as the Table's
-  `sortControl`, which shows only while the table is stacked and its header hidden.
+  on the header) and the same state in a `SortMenu` (Sort ▾) passed as the Table's
+  `sortControl`, which shows only while the table is stacked and its header hidden. Give
+  each `SortColumn` a `kind` (`text`, `date`, `number`, `duration`, `size`) so the order is
+  said in words ("Date, newest first"); a column without one (a status) shows its name
+  alone. A long list's table takes `stickyHead` (its heads stay under the stuck page
+  header); it must then never scroll sideways: stack it.
   Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
   their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
   list (Orders) sends `sort`/`dir` to the API.
@@ -251,14 +259,12 @@ The workwear app is the reference.
   time "2026 10 15 14:03" (`printDay`, `printDateTime`; Go `formpdf.Day`). File names keep
   YYYY-MM-DD.
 - **Two selects.** Forms use the native `Select` (`components/field.tsx`): the platform's own
-  picker, one-handed on a phone. A list's sort (`SortControl`, shown while a table is
-  stacked) and a register's filters (SIM Cards' and Equipment's, beside their search on one
-  line) use shadcn's `Select` (`components/select.tsx`, Base UI), set to look like
-  Orders' Date filter (`period-filter.tsx`): its list opens over the field, as wide and in
-  its place, its head the field's row (which closes it), the choice ticked on the left.
-  On a phone its label goes inside the field and the order is said in words ("Sort by:
-  Date, newest first"): give each `SortColumn` a `kind` (`text`, `date`, `number`,
-  `duration`, `size`); a column without one (a status) shows its name alone.
+  picker, one-handed on a phone. A register's filters (SIM Cards' and Equipment's, beside
+  their search on one line) use shadcn's `Select` (`components/select.tsx`, Base UI), set to
+  look like Orders' Date filter (`period-filter.tsx`): its list opens over the field, as
+  wide and in its place, its head the field's row (which closes it), the choice ticked on
+  the left. A choice among a few views (Dashboards, Help's guide language and device, a
+  list's sort) is a `MenuButton` instead.
 - **Date fields** are `DateInput` (`@ppe/ui/components/date-input`), never `<input
   type="date">`, whose form follows the browser, not the app. It takes the language's form
   (separators added as the parts are typed, so a phone needs only its number pad; typed
@@ -284,6 +290,16 @@ The workwear app is the reference.
   the list (Orders with an order open).
 - **Touch targets** are at least 44px. `Button` sizes `sm` and `icon-sm` grow to 44px on
   touch screens (`pointer-coarse:`); controls are `h-11`.
+- **Screen header**: every screen starts with one `PageHeader`, a direct child of the
+  screen's own element (a box around it ends its sticking): a row that sticks at the top
+  (`--page-header`; `--header-offset` for what sticks below it and `scroll-padding-top`) and
+  covers the phone's bar with the app's name. Pass its controls by slot (`filters`,
+  `refresh`, `secondary`, `menu`, `primary`, `more`, `moreAsk`), never as free buttons: it
+  draws them in the toolbar's order and moves a `secondary` with `showFrom` into the
+  screen's ⋯ below that width. A long primary gets `short: t.common.add` for a phone; a
+  phone's Create Order is the tab bar's (`hiddenBelow: 'md'`). Rules in
+  [docs/ui-language.md](../docs/ui-language.md) (Page header, Toolbar, Menu button) and
+  [docs/ux/screen-header-toolbar.md](../docs/ux/screen-header-toolbar.md).
 - **Primary actions** on long screens sit in a sticky bar above `var(--bottom-nav)`, the
   phone tab bar's height (0 from `md`). An action that cannot be undone (Mark as Ordered)
   opens a review of what it will store, confirmed there. Where a screen has room for it,

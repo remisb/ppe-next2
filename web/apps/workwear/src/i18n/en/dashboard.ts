@@ -36,6 +36,9 @@ export const dashboard = {
   updated: (time: string) => `Updated ${time}.`,
   managerDashboard: 'Manager Dashboard',
   employeeDashboard: 'Employee Dashboard',
+  // The menu button that switches between the dashboards a user has (Dashboards ▾), and the administrator's in it.
+  dashboards: 'Dashboards',
+  adminDashboard: 'Administrator Dashboard',
   awaitingConfirmation: 'Awaiting confirmation',
   oldest: (days: string) => `oldest ${days}`,
   allConfirmed: 'all confirmed',

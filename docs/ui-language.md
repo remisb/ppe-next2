@@ -131,24 +131,51 @@ Rules:
 - **UI:** "New order"; "Draft" with the line count while a working order is kept.
 
 ### Page header
-- **Brief:** a screen's title, its **header actions** beside it at every width, and the
-  description below.
-- **Detail:** at most one primary header action (Create Order, Add Item, Add SIM). On a
-  phone the description may be hidden; the action never is. A list screen's phone-only
-  **Filters** toggle sits here too.
-- **Code:** `PageHeader` (`@ppe/ui/components/states`).
+- **Brief:** a screen's title with its ⓘ and its **toolbar**, in one row that stays at the
+  top of the screen while it scrolls (the **stuck header**).
+- **Detail:** one row of a fixed height (56px, 64px from `md`) that never wraps: the title
+  truncates first. Stuck, it gains a rule and a light shadow, never another height; on a
+  phone it slides over the bar with the app's name. A **subtitle** ("Signed in as …", the
+  guide's lede) sits under the row and scrolls away. It does not stick on a window under
+  30rem high, nor in print. Things that stick below it (a table's column heads, Create
+  Order's panel) and `scroll-padding-top` use `--header-offset`.
+- **Code:** `PageHeader` (`@ppe/ui/components/page-header`, also from `states`).
+  **Reader words:** "the bar at the top of the screen" / "ekrano viršuje esanti juosta" /
+  «панель вверху экрана».
+
+### Toolbar
+- **Brief:** a page or record header's controls, always in one order: **Filters** (a
+  phone's), **Refresh**, up to two **secondary** buttons, a **menu button**, the **primary**,
+  then **⋯**.
+- **Detail:** at most one primary (Create Order, Add Item, Add SIM), at the end beside ⋯ as
+  in a record header. A secondary button says from which width it is a button; below it, it
+  is an item in the screen's ⋯ instead (the **overflow**: Preview PDF on a phone's SIM
+  Cards), by CSS, without measuring. A screen's ⋯ holds the overflow, then its **rare
+  actions** (Pictures on the Item Catalogue), then what asks first, with "…" (Clear order…);
+  it shows only where it holds something. A long primary keeps its icon and a shorter word on
+  a phone ("+ Add"); its name stays the full one. Create Order is not in a phone's Orders
+  header or Employee Dashboard: the tab bar's New order is.
+- **Code:** `PageHeader`'s `filters`, `refresh`, `secondary`, `menu`, `primary`, `more`,
+  `moreAsk`; `ToolbarAction` (`showFrom`, `short`, `hiddenBelow`).
+  **Reader words:** "the buttons at the top" / "viršuje esantys mygtukai" / «кнопки вверху»;
+  the overflow is "under ⋯".
 
 ### Back link
-- **Brief:** the ghost button above a record page's or detail's title that returns to the
-  list it came from, named by that list.
+- **Brief:** the way from a record or document back to the list it came from, named by that
+  list.
+- **Detail:** below `lg` it is an icon in the record's sticky row, named "Back to Orders"; a
+  record page from `lg` and a document keep the ghost button above the title. Beside a list
+  the record has ✕ in the same row instead.
 - **UI:** "← Employees", "← Audit log", "Item Catalogue". On a document: "← Back".
 
 ### Filter bar
 - **Brief:** the controls between the header and a list that choose what it shows: filter
   tabs, the search field, filters, **Clear filters**.
-- **Detail:** on a phone, filters other than the tabs and the main search go behind the
-  header's **Filters** toggle, which counts the ones set: "Filters (2)". Filters a list is
-  opened with live in its address (`?status=ORDERED`, `?show=in-office`).
+- **Detail:** one order on every list: the filter tabs on their own row, then the search,
+  the filters and **Clear filters**. It does not stick. On a phone, filters other than the
+  tabs and the main search go behind the header's **Filters** toggle, which counts the ones
+  set: "Filters (2)"; pressed in a stuck header it scrolls the filter bar back under it.
+  Filters a list is opened with live in its address (`?status=ORDERED`, `?show=in-office`).
 
 ### List
 - **Brief:** the table of records under the filter bar. See [§5](#5-lists).
@@ -191,10 +218,13 @@ Rules:
 ### Record header
 - **Brief:** a record page's title (the record's name or number, with its picture or
   avatar), its badges, and its actions: at most one primary, then ⋯.
-- **Detail:** a record's ⋯ is on its page as well as on its list row: on a phone the page is
-  the only place that reaches it. Where the title and the actions do not fit one row, the
-  title moves under them, never the actions down.
-- **Code:** `RecordHeader`, `RecordTitle` (`@ppe/ui`).
+- **Detail:** its first row (back, title, main action, ⋯, ✕) sticks: inside the pane's own
+  scroll beside a list, at the top of the screen on a phone, a tablet and a record's page.
+  The details line and badges scroll under it. A record's ⋯ is on its page as well as on its
+  list row: on a phone the page is the only place that reaches it. The main action shows
+  shorter words on a phone where it has them (Create link, View). Where the title and the
+  actions still do not fit one row, the title moves under them, never the actions down.
+- **Code:** `RecordHeader` (`nav`), `RecordTitle`, `ShortWords` (`@ppe/ui`).
 
 ### Facts
 - **Brief:** label-and-value rows that describe a record ("Connection", "Where", "Held by"
@@ -299,10 +329,12 @@ Everything that opens over a screen. Reader words in brackets.
 ### Menu
 - **Brief:** a list of actions or choices opened from a button.
 - **Detail:** the **⋯ menu** (More actions) holds a record's less common actions,
-  destructive ones last after a separator. The **Change Status** menu lists the states as
-  radio items and saves on choosing. A menu may open with a **menu note**, words that are not
-  an action.
-- **Code:** `MoreActions`, `DropdownMenu*` (`DropdownMenuNote`, `variant="destructive"`).
+  destructive ones last after a separator; a screen's ⋯ holds its toolbar's overflow and rare
+  actions (Toolbar). The **Change Status** menu lists the states as radio items and saves on
+  choosing. A **menu button** opens a menu of one kind of choice. A menu may open with a
+  **menu note**, words that are not an action.
+- **Code:** `MoreActions`, `DropdownMenu*` (`DropdownMenuNote`, `DropdownMenuGroupLabel`,
+  `variant="destructive"`).
   **UI:** ⋯, labelled "More actions for {name}"; reader word "⋯".
 
 ### Popover
@@ -313,8 +345,7 @@ Everything that opens over a screen. Reader words in brackets.
 
 ### Select list
 - **Brief:** the list a select opens. Two kinds: the **native select** in forms (the
-  platform's own picker), and the **app select** for a list's Sort by and a register's
-  filters, which opens over its field, as wide and in its place, the choice ticked.
+  platform's own picker), and the **app select** for a register's filters, which opens over its field, as wide and in its place, the choice ticked.
 - **Code:** `Select` in `components/field.tsx`; `Select` in `components/select.tsx`.
 
 ### Tooltip and help tooltip
@@ -353,7 +384,7 @@ Everything that opens over a screen. Reader words in brackets.
 | **Primary** (`default`) | filled | the one main action of a header, pane, sheet or bar |
 | **Outline** | bordered | a row's visible action, a second action beside the primary, a task button |
 | **Ghost** | text only | back links, Clear filters, Change, more links |
-| **Destructive** | red | a destructive item in a ⋯ menu; never a header action |
+| **Destructive** | red | a destructive item in a ⋯ menu; never a toolbar button |
 | **Link** | underlined text | an action inside a sentence ("Copied. Open Superman Rubai Group…") |
 | **Icon button** | an icon with an accessible name | ✕, ⋯, copy, Refresh on a phone, quantity steppers |
 
@@ -361,8 +392,19 @@ Every button is at least 44px on a touch screen (`sm` and `icon-sm` grow there).
 Lithuanian or Russian label wraps rather than overflow.
 **Code:** `Button` (`variant`, `size`).
 
+### Menu button
+- **Brief:** a labelled outline button with a chevron that opens a menu of one kind of
+  choice, the current one ticked: **Dashboards ▾**, Help's **Guide language ▾** and
+  **Device ▾**, a stacked list's **Sort ▾**.
+- **Detail:** not for one action (a button), unrelated actions (⋯), a filter that applies at
+  once (a field or tabs), or a record's state (Change Status). It says the choice or its
+  name; its accessible name says both ("Device: Phone").
+- **Code:** `MenuButton` (`@ppe/ui/components/page-header`). **Reader words:** its label:
+  "choose **Dashboards**".
+
 ### Header action, row action, task button
-- **Header action**: the main action of a screen, in its page header ("+ Add Item").
+- **Header action**: an action in a screen's toolbar; the primary is its main one
+  ("+ Add Item").
 - **Row action**: the one everyday action shown on a list row or card (Edit Sizes, Edit,
   Give SIM, Reorder); the rest under ⋯. A row that opens a page or pane shows no buttons
   while stacked: its actions are on that page.
@@ -468,10 +510,13 @@ Lithuanian or Russian label wraps rather than overflow.
 
 ### Table
 - **Brief:** every list is a `Table`; on a wide container it is columns and rows.
-- **Detail:** sortable columns have a **sortable head**; while stacked the same sort is the
-  **Sort by** control, which says the order in words on a phone ("Sort by: Date, newest
-  first"). A **group row** heads a group (Orders' months, the Catalogue's size groups).
-- **Code:** `Table`, `SortableHead`, `SortControl`, `TableGroupRow`, `sortRows`.
+- **Detail:** sortable columns have a **sortable head**; while stacked the same sort is
+  **Sort ▾**, a menu button where the heads would be that says the order in words ("Date,
+  newest first"; named "Sort by: …"), its menu the columns, then the two directions in the
+  column's words. A long list's column heads stay in view under the stuck header on a
+  desktop (`stickyHead`). A **group row** heads a group (Orders' months, the Catalogue's size
+  groups); group rows do not stick.
+- **Code:** `Table` (`stickyHead`), `SortableHead`, `SortMenu`, `TableGroupRow`, `sortRows`.
 
 ### Stacked
 - **Brief:** a table with too little room for its columns turns each row into a stacked row

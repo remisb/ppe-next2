@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
@@ -306,10 +307,11 @@ export function CreateOrder({
       <PageHeader
         title={t.order.title}
         description={t.order.description}
-        actions={
-          <Button variant="outline" onClick={reset}>
-            <RotateCcw aria-hidden /> {t.order.clearOrder}
-          </Button>
+        // It empties the work and asks first, so it is under ⋯, with "…".
+        moreAsk={
+          <DropdownMenuItem onClick={reset}>
+            <RotateCcw aria-hidden /> {t.order.clearOrder}…
+          </DropdownMenuItem>
         }
       />
 
@@ -561,7 +563,7 @@ function OrderSummary({
       className={cn(
         'sticky bottom-[var(--bottom-nav)] z-20 mt-4 border-t border-border bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
         '-mx-4 px-4 md:-mx-6 md:px-6 print:hidden',
-        'composer-wide:top-6 composer-wide:bottom-auto composer-wide:mx-0 composer-wide:mt-0 composer-wide:flex composer-wide:flex-col composer-wide:gap-4 composer-wide:rounded-lg composer-wide:border composer-wide:bg-card composer-wide:p-4 composer-wide:backdrop-blur-none',
+        'composer-wide:top-[calc(var(--header-offset)+1.5rem)] composer-wide:bottom-auto composer-wide:mx-0 composer-wide:mt-0 composer-wide:flex composer-wide:flex-col composer-wide:gap-4 composer-wide:rounded-lg composer-wide:border composer-wide:bg-card composer-wide:p-4 composer-wide:backdrop-blur-none',
       )}
     >
       {/* Narrow: one button, the count and the total on it. */}

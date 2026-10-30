@@ -7,7 +7,7 @@ import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, PasswordInput, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
@@ -82,11 +82,7 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.users.title}
         description={t.users.description}
-        actions={
-          <Button onClick={() => setEditing('new')}>
-            <Plus aria-hidden /> {t.users.addUser}
-          </Button>
-        }
+        primary={{ label: t.users.addUser, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <div className="mb-4 md:max-w-sm">
         <Input
@@ -105,7 +101,7 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
       <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
         {() => (
           // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
-          <Table stack="list" sortControl={<SortControl columns={columns()} {...sortProps} />}>
+          <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
                 {columns().map((c) => (

@@ -104,6 +104,7 @@ export function CatalogueItemDetail({
           <>
             {/* The list's title is the screen's h1; the item's is the pane's heading, as an order's beside Orders. */}
             <RecordHeader
+              nav={{ backLabel: t.catalogue.title, onBack: onClose, closeLabel: t.catalogue.closeItem }}
               title={<RecordTitle icon={<ItemTile icon={i.icon} className="size-10 shrink-0" />}>{i.name}</RecordTitle>}
               actions={
                 canManageItems ? (

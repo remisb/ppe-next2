@@ -9,6 +9,7 @@ export const common: CommonText = {
   view: 'Peržiūrėti',
   close: 'Uždaryti',
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
+  add: 'Pridėti',
   active: 'Aktyvus',
   inactive: 'Neaktyvus',
 }

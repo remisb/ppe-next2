@@ -1,12 +1,12 @@
 import type { EmployeeDashboard as Data, EmployeeDashboardWaiting } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
+import { Plus } from 'lucide-react'
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
-import { MonthChart, MoreLink, NeedsYouPanel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
+import { DashboardsMenu, MonthChart, MoreLink, NeedsYouPanel, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { type Need, changeText, formatDays, missingSizesText, missingText, monthLabel } from '@/lib/dashboard'
 import { formatTime } from '@ppe/ui/lib/dates'
@@ -37,12 +37,10 @@ export function EmployeeDashboard({ navigate }: { navigate: Navigate }) {
             ? `${t.dashboard.employeeIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.employeeIntro
         }
-        actions={
-          <>
-            <Button onClick={() => navigate({ name: 'createOrder' })}>{t.dashboard.createOrder}</Button>
-            <RefreshButton loading={board.loading} onClick={board.reload} />
-          </>
-        }
+        refresh={<RefreshButton loading={board.loading} onClick={board.reload} />}
+        menu={<DashboardsMenu current="employeeDashboard" navigate={navigate} />}
+        // Not on a phone, whose tab bar has New order.
+        primary={{ label: t.dashboard.createOrder, icon: Plus, onClick: () => navigate({ name: 'createOrder' }), hiddenBelow: 'md' }}
       />
       <Loaded load={board}>
         {(d) => (

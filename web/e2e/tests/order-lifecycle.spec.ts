@@ -87,6 +87,12 @@ async function openTab(name: string) {
   await link.click()
 }
 
+/** Create Order's Clear order…: it empties the work and asks first, so it is under the screen's ⋯. */
+async function clearOrder() {
+  await page.getByRole('button', { name: 'More actions for Create Order' }).click()
+  await page.getByRole('menuitem', { name: 'Clear order…' }).click()
+}
+
 /** Add Item is a search: type part of the name, then choose the item. */
 async function addItem(search: string, name: RegExp) {
   await page.getByRole('combobox', { name: 'Add Item' }).fill(search)
@@ -376,7 +382,9 @@ test('Item Catalogue: items with and without a price', async () => {
   const gloves = page.getByRole('row', { name: /Protective gloves/ })
   await expect(gloves).toContainText('No size')
   const setGlovesTo = async (group: string, warns: boolean) => {
-    await page.getByRole('button', { name: 'Pictures' }).click()
+    // Set up once, so never a button: under the screen's ⋯.
+    await page.getByRole('button', { name: 'More actions for Item Catalogue' }).click()
+    await page.getByRole('menuitem', { name: 'Pictures' }).click()
     const pictures = page.getByRole('dialog', { name: 'Pictures' })
     await pictures.getByLabel('Size group for Gloves').selectOption({ label: group })
     await expect(pictures.getByText('Changes the size group of 1 item.')).toBeVisible({ visible: warns })
@@ -543,7 +551,8 @@ test('Item Sets: a set of item references and default quantities', async () => {
   await expect(page.getByRole('button', { name: 'Apply Starter kit (on this order)' })).toBeDisabled()
   await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(3)
   page.once('dialog', (d) => void d.accept())
-  await page.getByRole('button', { name: 'Clear order' }).click()
+  // It empties the work and asks first, so it is under the screen's ⋯, with "…".
+  await clearOrder()
   await expect(page.getByRole('button', { name: /^Remove / })).toHaveCount(0)
 })
 
@@ -1429,11 +1438,12 @@ test('Dashboard: the figures follow the orders', async () => {
   // The Manager Dashboard is the managers' alone: an administrator gets their own.
   await page.goto('/manager')
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Manager Dashboard' })).toHaveCount(0)
+  // With one dashboard, no Dashboards ▾ to switch between them.
+  await expect(page.getByRole('button', { name: 'Dashboards' })).toHaveCount(0)
   // So is the Employee Dashboard.
   await page.goto('/my-orders')
   await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Employee Dashboard' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Dashboards' })).toHaveCount(0)
 })
 
 test('Replacements due: the whole list at its own address, under the Dashboard tab', async () => {
@@ -1673,7 +1683,7 @@ test('a reorder link starts the order with the item at the quantity given; the s
   await expect(page.getByLabel('Quantity of Protective gloves')).toHaveValue('10')
 
   page.once('dialog', (d) => void d.accept())
-  await page.getByRole('button', { name: 'Clear order' }).click()
+  await clearOrder()
   await expect(page.getByText('No items yet.')).toBeVisible()
 })
 
@@ -2310,7 +2320,7 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
 
   // Leave Create Order empty for the steps after.
   await openTab('Create Order')
-  await page.getByRole('button', { name: 'Clear order' }).click()
+  await clearOrder()
   await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveAttribute('placeholder', 'Search employees…')
 })
 
@@ -2367,6 +2377,42 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     const bar = await page.getByRole('navigation', { name: 'Main' }).boundingBox()
     expect(bar!.height, `${tab}: the tab bar is more than one row`).toBeLessThan(100)
   }
+  // The screen's header is one row that stays at the top however far the screen scrolls, over the bar with the
+  // app's name, its primary in reach. The screen is lengthened so that it scrolls whatever the data (the
+  // header sticks within the screen's own element, as long as its list).
+  const header = page.locator('[data-slot=page-header]')
+  // (Padding would not do: sticking ends at the element's content, so a tall spacer goes in it.)
+  const scrolledFar = () =>
+    page.evaluate(() => {
+      const spacer = document.createElement('div')
+      spacer.id = 'e2e-spacer'
+      spacer.style.height = '200vh'
+      document.querySelector('[data-slot=page-header]')!.parentElement!.append(spacer)
+      window.scrollTo(0, 800)
+    })
+  const unscrolled = () =>
+    page.evaluate(() => {
+      document.getElementById('e2e-spacer')?.remove()
+      window.scrollTo(0, 0)
+    })
+  await openTab('Employees')
+  await scrolledFar()
+  await expect(header).toHaveAttribute('data-stuck', '')
+  expect((await header.boundingBox())!.y, 'the header at the top of a phone').toBe(0)
+  expect((await header.boundingBox())!.height, 'the header is one row').toBe(56)
+  await expect(page.getByRole('button', { name: 'Add New Employee' })).toBeInViewport()
+  await unscrolled()
+  await expect(header).not.toHaveAttribute('data-stuck')
+  // What does not fit a phone moves under the screen's ⋯: SIM Cards' Preview PDF. Orders has no Create Order,
+  // which the tab bar's New order is.
+  await openTab('Company Assets')
+  await expect(page.getByRole('main').getByRole('button', { name: 'Preview PDF' })).toBeHidden()
+  await page.getByRole('button', { name: 'More actions for SIM Cards' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Preview PDF' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await openTab('Orders')
+  await expect(page.getByRole('main').getByRole('link', { name: 'Create Order' })).toBeHidden()
+
   // More lists Company Assets' two screens under it, the current one marked; a tap opens one and closes the panel.
   await openTab('Equipment')
   await expect(page).toHaveURL(/\/assets\/equipment$/)
@@ -2389,13 +2435,16 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const needsYou = page.getByRole('region', { name: /^Needs you/ })
   expect((await needsYou.boundingBox())!.y, 'Needs you starts in the first screen').toBeLessThan(420)
 
-  // Orders on a phone: one list of two-line rows under month headings; the sort order folds
-  // away with the filters, so the orders start near the top.
+  // Orders on a phone: one list of two-line rows under month headings, Sort ▾ above them where
+  // the table's heads would be, one button that says the order.
   await openTab('Orders')
   await expect(page.getByRole('row', { name: /^[a-z]+ \d{4}$/i }).first()).toBeVisible()
   const historyRow = page.getByRole('row', { name: new RegExp(recordNumber) })
   expect((await historyRow.boundingBox())!.height, 'an Orders row on a phone').toBeLessThan(80)
-  await expect(page.getByLabel('Sort by').filter({ visible: true })).toHaveCount(0)
+  const sortBy = page.getByRole('button', { name: /^Sort by:/ })
+  await expect(sortBy).toHaveAccessibleName('Sort by: Date, newest first')
+  await expect(sortBy).toHaveText('Date, newest first')
+  expect((await sortBy.boundingBox())!.height, 'Sort ▾ is one button high').toBeLessThanOrEqual(44)
   // The employee search stays in view, without its heading; Filters folds away the rest.
   const filters = page.getByRole('region', { name: 'Filters' })
   await expect(filters.getByRole('combobox', { name: 'Employee' })).toBeVisible()
@@ -2406,30 +2455,18 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   // Without a heading in view, as the employee search: its choice says what it is, and Date stays its name
   // (a label for screen readers only, taking no room).
   expect((await page.locator('#history-period-label').boundingBox())!.width, 'the Date label above the field').toBeLessThanOrEqual(1)
-  await expect(page.getByRole('region', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible()
-  // Sort by is shadcn's Select in the Date filter's look: its own list over the field, the choice ticked; choosing re-sorts.
-  // On a phone its label is inside the field, and the order is said in words; Sort by is still its name.
-  const sortBy = filters.getByRole('combobox', { name: 'Sort by' })
-  await expect(sortBy).toHaveText('Sort by: Date, newest first')
-  // The label above is for screen readers only on a phone: it takes no room.
-  expect((await filters.getByText('Sort by', { exact: true }).boundingBox())!.width, 'the Sort by label above the field').toBeLessThanOrEqual(1)
-  await filters.getByRole('button', { name: /^Descending/ }).click()
-  await expect(sortBy).toHaveText('Sort by: Date, oldest first')
-  await filters.getByRole('button', { name: /^Ascending/ }).click()
-  await expect(sortBy).toHaveText('Sort by: Date, newest first')
+  // Sort ▾'s menu: the columns, the current one ticked, then the two directions in the column's words.
   await sortBy.click()
-  const sortList = page.locator('[data-slot=select-content]').filter({ visible: true })
-  await expect(sortList.getByRole('option', { selected: true })).toHaveText('Date')
-  const [onField, onList] = [await sortBy.boundingBox(), await sortList.boundingBox()]
-  expect(Math.round(onList!.x), 'the list starts where the field does').toBe(Math.round(onField!.x))
-  expect(Math.round(onList!.y)).toBe(Math.round(onField!.y))
-  expect(Math.round(onList!.width), 'the list is as wide as the field').toBe(Math.round(onField!.width))
-  await expect(sortList.locator(':scope > div').first(), 'the list\'s head row').toHaveText('Sort by: Date, newest first')
-  await sortList.getByRole('option', { name: 'Employee', exact: true }).click()
-  await expect(sortBy).toHaveText('Sort by: Employee, A–Z')
+  const sortMenu = page.getByRole('menu')
+  await expect(sortMenu.getByRole('menuitemradio', { name: 'Date', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await sortMenu.getByRole('menuitemradio', { name: 'oldest first' }).click()
+  await expect(sortBy).toHaveText('Date, oldest first')
   await sortBy.click()
-  await sortList.getByRole('option', { name: 'Date', exact: true }).click()
-  await expect(sortBy).toHaveText('Sort by: Date, newest first')
+  await page.getByRole('menu').getByRole('menuitemradio', { name: 'Employee', exact: true }).click()
+  await expect(sortBy).toHaveText('Employee, A–Z')
+  await sortBy.click()
+  await page.getByRole('menu').getByRole('menuitemradio', { name: 'Date', exact: true }).click()
+  await expect(sortBy).toHaveText('Date, newest first')
   // No time zone note on Orders.
   await expect(page.getByText(/Dates and times are shown in/)).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()
@@ -2564,6 +2601,22 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   }
 
   await page.setViewportSize(desktop)
+  // On a desktop Preview PDF is a button and the screen has no ⋯, which would be empty.
+  await openTab('SIM Cards')
+  await expect(page.getByRole('main').getByRole('button', { name: 'Preview PDF' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'More actions for SIM Cards' })).toBeHidden()
+  // Scrolled, the header and the table's column heads stay in view; / brings the search back below the header.
+  await openTab('Employees')
+  await scrolledFar()
+  await expect(header).toHaveAttribute('data-stuck', '')
+  expect((await header.boundingBox())!.y).toBe(0)
+  await page.getByRole('heading', { name: 'Employees', level: 1 }).click()
+  await page.keyboard.press('/')
+  const search = page.getByRole('searchbox', { name: /Search/ })
+  await expect(search).toBeFocused()
+  const headerBox = (await header.boundingBox())!
+  expect((await search.boundingBox())!.y, 'the search below the stuck header').toBeGreaterThanOrEqual(headerBox.y + headerBox.height)
+  await unscrolled()
 })
 
 /** Signs in as someone else in a fresh browser context (its own cookies and storage); returns its page. */
@@ -2894,26 +2947,32 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   // An administrator's guide has Users and no Delete order, which is the manager's.
   await expect(page.locator('#users')).toBeVisible()
   await expect(page.locator('#orders')).not.toContainText('Ištrinti užsakymą')
-  await page.getByRole('group', { name: 'Vadovo kalba' }).getByRole('button', { name: 'English' }).click()
+  // Guide language ▾ and Device ▾: menu buttons that say the choice, the menu ticking it.
+  await page.getByRole('button', { name: /^Vadovo kalba:/ }).click()
+  await page.getByRole('menuitemradio', { name: 'English' }).click()
   await expect(page.getByRole('heading', { name: 'User guide' })).toBeVisible()
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/desktop\/create-order\.png$/)
   expect(await page.locator('#create img').evaluate((img: HTMLImageElement) => img.decode().then(() => img.naturalWidth))).toBeGreaterThan(0)
   // The guide is the device's: on a desktop the keyboard's way; a phone-sized window shows the phone's
   // screenshots and words; the switch shows another device's, until the window is resized.
-  const devices = page.getByRole('group', { name: 'Device' })
-  await expect(devices.getByRole('button', { name: 'Desktop' })).toHaveAttribute('aria-pressed', 'true')
+  const device = page.getByRole('button', { name: /^Device:/ })
+  const chooseDevice = async (name: string) => {
+    await device.click()
+    await page.getByRole('menuitemradio', { name }).click()
+  }
+  await expect(device).toHaveAccessibleName('Device: Desktop')
   await expect(page.locator('#orders')).toContainText('J and K move between orders')
   const desk = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
-  await expect(devices.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(device).toHaveAccessibleName('Device: Phone')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
   await expect(page.locator('#orders')).toContainText('Filters holds Date and Sort by')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
-  await devices.getByRole('button', { name: 'Tablet' }).click()
+  await chooseDevice('Tablet')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)
   await page.setViewportSize(desk)
-  await expect(devices.getByRole('button', { name: 'Tablet' })).toHaveAttribute('aria-pressed', 'true')
-  await devices.getByRole('button', { name: 'Desktop' }).click()
+  await expect(device).toHaveAccessibleName('Device: Tablet')
+  await chooseDevice('Desktop')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search and shortcuts$/)
   await expect(page.getByRole('navigation', { name: 'Pagrindinė navigacija' }).getByRole('link', { name: 'Užsakymai' })).toBeVisible()
 

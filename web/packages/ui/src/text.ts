@@ -21,8 +21,9 @@ const en = {
   hidePassword: 'Hide password',
   sortBy: 'Sort by',
   defaultOrder: 'Default order',
-  // A phone's Sort by, its label inside the field: "Sort by: Date, newest first".
-  sortByPrefix: 'Sort by:',
+  // Sort ▾'s directions for a column whose values have no words of their own (a status).
+  sortAsc: 'Ascending',
+  sortDesc: 'Descending',
   sortWords: {
     text: { asc: 'A–Z', desc: 'Z–A' },
     date: { asc: 'oldest first', desc: 'newest first' },
@@ -30,8 +31,6 @@ const en = {
     duration: { asc: 'shortest first', desc: 'longest first' },
     size: { asc: 'smallest first', desc: 'largest first' },
   },
-  ascending: 'Ascending; switch to descending',
-  descending: 'Descending; switch to ascending',
   // Dates in lists (lib/dates.ts), lower case to sit inside a sentence.
   today: 'today',
   todayAt: (time: string) => `today ${time}`,
@@ -52,6 +51,10 @@ const en = {
   scale: (value: string) => `Scale ${value}`,
   // A section's ⓘ (components/info-tip.tsx), named by the section.
   aboutSection: (section: string) => `About ${section}`,
+  // A screen's ⋯ (components/page-header.tsx), named by the screen.
+  moreActions: (name: string) => `More actions for ${name}`,
+  // A record row's back icon below lg (components/record-header.tsx), named by its list.
+  backTo: (place: string) => `Back to ${place}`,
 }
 
 export type UiText = typeof en
@@ -74,7 +77,8 @@ const lt: UiText = {
   hidePassword: 'Slėpti slaptažodį',
   sortBy: 'Rikiuoti pagal',
   defaultOrder: 'Numatytoji tvarka',
-  sortByPrefix: 'Rikiavimas:',
+  sortAsc: 'Didėjančiai',
+  sortDesc: 'Mažėjančiai',
   sortWords: {
     text: { asc: 'A–Ž', desc: 'Ž–A' },
     date: { asc: 'seniausi pirmi', desc: 'naujausi pirmi' },
@@ -82,8 +86,6 @@ const lt: UiText = {
     duration: { asc: 'trumpiausi pirmi', desc: 'ilgiausi pirmi' },
     size: { asc: 'mažiausi pirmi', desc: 'didžiausi pirmi' },
   },
-  ascending: 'Didėjančiai; perjungti į mažėjančiai',
-  descending: 'Mažėjančiai; perjungti į didėjančiai',
   today: 'šiandien',
   todayAt: (time: string) => `šiandien ${time}`,
   yesterday: 'vakar',
@@ -99,6 +101,8 @@ const lt: UiText = {
   needsAttention: 'Reikia dėmesio',
   scale: (value: string) => `Skalė ${value}`,
   aboutSection: (section: string) => `Apie skiltį „${section}“`,
+  moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
+  backTo: (place: string) => `Atgal: ${place}`,
 }
 
 const ru: UiText = {
@@ -119,7 +123,8 @@ const ru: UiText = {
   hidePassword: 'Скрыть пароль',
   sortBy: 'Сортировать по',
   defaultOrder: 'Порядок по умолчанию',
-  sortByPrefix: 'Сортировка:',
+  sortAsc: 'По возрастанию',
+  sortDesc: 'По убыванию',
   sortWords: {
     text: { asc: 'А–Я', desc: 'Я–А' },
     date: { asc: 'сначала старые', desc: 'сначала новые' },
@@ -127,8 +132,6 @@ const ru: UiText = {
     duration: { asc: 'сначала короткие', desc: 'сначала длинные' },
     size: { asc: 'от меньшего', desc: 'от большего' },
   },
-  ascending: 'По возрастанию; переключить на убывание',
-  descending: 'По убыванию; переключить на возрастание',
   today: 'сегодня',
   todayAt: (time: string) => `сегодня ${time}`,
   yesterday: 'вчера',
@@ -144,6 +147,8 @@ const ru: UiText = {
   needsAttention: 'Требует внимания',
   scale: (value: string) => `Шкала ${value}`,
   aboutSection: (section: string) => `О разделе «${section}»`,
+  moreActions: (name: string) => `Другие действия: ${name}`,
+  backTo: (place: string) => `Назад: ${place}`,
 }
 
 export const dictionaries = { en, lt, ru }

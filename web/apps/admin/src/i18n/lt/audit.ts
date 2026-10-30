@@ -6,7 +6,6 @@ export const audit: AuditText = {
   title: 'Audito žurnalas',
   description: 'Kiekvienas užfiksuotas pakeitimas: kas pakeista, kas, kada ir kur tai padarė. Laikas nurodomas organizacijos laiko juostoje.',
   filters: 'Filtrai',
-  filtersCount: (n: number) => `Filtrai (${n})`,
   area: 'Sritis',
   allAreas: 'Visos sritys',
   event: 'Pakeitimas',

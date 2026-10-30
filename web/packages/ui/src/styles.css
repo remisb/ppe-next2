@@ -275,6 +275,29 @@
     }
   }
 
+  /*
+   * --page-header is the height of a screen's header row (PageHeader), which
+   * sticks at the top; --header-offset is where what sticks below it goes (a
+   * table's column heads) and what scroll-padding keeps a focused field
+   * below. A short window (a phone on its side, a laptop at 200%) and print
+   * leave the header in the page, so the offset is 0 there.
+   */
+  :root {
+    --page-header: 3.5rem;
+    --header-offset: calc(var(--page-header) + env(safe-area-inset-top));
+    scroll-padding-top: calc(var(--header-offset) + 0.75rem);
+  }
+  @media (width >= 48rem) {
+    :root {
+      --page-header: 4rem;
+    }
+  }
+  @media (height < 30rem), print {
+    :root {
+      --header-offset: 0px;
+    }
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -400,4 +423,18 @@
 }
 .base-ui-disable-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Once a record's row (RecordHeader with nav) is drawn, it holds the way out:
+ * PaneBar's Close, and below lg its Back row (or a record page's), go. Outside
+ * the layers, so it wins over the buttons' own display.
+ */
+:has(> [data-slot='pane-close']):has([data-slot='record-header']) > [data-slot='pane-close'] {
+  display: none;
+}
+@media (width < 64rem) {
+  :has(> [data-slot='pane-bar']):has([data-slot='record-header']) > [data-slot='pane-bar'] {
+    display: none;
+  }
 }

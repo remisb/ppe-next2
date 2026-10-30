@@ -5,7 +5,6 @@ import { type Loaded as Load, errorText } from '../lib/use-load.ts'
 import { uiText } from '../text.ts'
 import { Alert, AlertDescription, AlertTitle } from './alert.tsx'
 import { Button } from './button.tsx'
-import { InfoTip } from './info-tip.tsx'
 
 /** An error with a Retry action; the screen's own state is untouched. */
 export function ErrorState({
@@ -57,42 +56,7 @@ export function Loading({ label }: { label?: string }) {
   return <p className="py-8 text-center text-sm text-muted-foreground">{label ?? uiText().loading}</p>
 }
 
-/**
- * Title with the screen's main action beside it at every width. description
- * explains the screen without taking room: an ⓘ beside the title (InfoTip).
- * subtitle is a line under the title that stays in sight, for a fact such as
- * who is signed in.
- */
-export function PageHeader({
-  title,
-  description,
-  subtitle,
-  actions,
-  icon,
-}: {
-  title: string
-  description?: string | undefined
-  subtitle?: ReactNode
-  actions?: ReactNode
-  /** A decorative mark before the title, such as an item's pictogram. */
-  icon?: ReactNode
-}) {
-  return (
-    <div className="mb-5 md:mb-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 items-center gap-1">
-          <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight md:text-2xl">
-            {icon}
-            {title}
-          </h1>
-          {description ? <InfoTip section={title}>{description}</InfoTip> : null}
-        </div>
-        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
-      </div>
-      {subtitle ? <p className="mt-1 max-w-prose text-sm text-muted-foreground">{subtitle}</p> : null}
-    </div>
-  )
-}
+export { PageHeader } from './page-header.tsx'
 
 /** An empty list or search: a dashed box with an optional next step. */
 export function EmptyState({ children, action }: { children: ReactNode; action?: ReactNode }) {

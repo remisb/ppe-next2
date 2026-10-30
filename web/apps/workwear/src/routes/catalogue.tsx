@@ -7,7 +7,7 @@ import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
@@ -212,18 +212,9 @@ export function Catalogue({
         <PageHeader
           title={t.catalogue.title}
           description={t.catalogue.description}
-          actions={
-            canManageItems ? (
-              <>
-                <Button variant="outline" onClick={() => setPicturesOpen(true)}>
-                  {t.catalogue.pictures}
-                </Button>
-                <Button onClick={() => setEditing('new')}>
-                  <Plus aria-hidden /> {t.catalogue.addItem}
-                </Button>
-              </>
-            ) : undefined
-          }
+          primary={canManageItems ? { label: t.catalogue.addItem, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
+          // Set up once, so never a button: under ⋯ at every width.
+          more={canManageItems ? <DropdownMenuItem onClick={() => setPicturesOpen(true)}>{t.catalogue.pictures}</DropdownMenuItem> : undefined}
         />
         {counts.all > 0 ? (
           // One status per item; a tab with nothing in it is left out unless it is the one chosen.
@@ -251,7 +242,7 @@ export function Catalogue({
               Incomplete or Inactive flagged. A row opens the item, whose page holds
               Edit and Deactivate; the table keeps Edit and ⋯ on each row.
             */
-            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
+            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
               <TableHeader>
                 <TableRow>
                   {shownColumns.map((c) => (

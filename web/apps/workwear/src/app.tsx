@@ -144,8 +144,10 @@ export function App() {
       // The screen's own search or Add Item field; the palette where there is none.
       search: () => {
         const field = document.querySelector<HTMLElement>('[data-shortcut=search]')
-        if (field) field.focus()
-        else setPaletteOpen(true)
+        if (!field) return setPaletteOpen(true)
+        // Into view by scroll-padding, so it never lands under the screen's stuck header.
+        field.focus({ preventScroll: true })
+        field.scrollIntoView({ block: 'nearest' })
       },
       newOrder: () => navigate({ name: 'createOrder' }),
       go: (k) => {
@@ -310,12 +312,14 @@ export function App() {
             <Kbd size="tiny" className="hidden xl:inline">⌘K</Kbd>
           </button>
         </div>
-        {/* A phone's More panel dims the page; a tap outside closes it. */}
-        {moreOpen ? <div aria-hidden className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setMoreOpen(false)} /> : null}
+        {/* A phone's More panel dims the page, a screen's stuck header (z-40) too; a tap outside closes it. */}
+        {moreOpen ? <div aria-hidden className="fixed inset-0 z-[41] bg-black/30 md:hidden" onClick={() => setMoreOpen(false)} /> : null}
         <nav
           aria-label={t.shell.mainNav}
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
+            // Above the dimmed page while More is open (cn keeps the later z).
+            moreOpen && 'z-[42]',
             // On a short window the sections scroll, so the foot (Help, Account, Sign out) stays in reach.
             'md:static md:flex md:min-h-0 md:flex-col md:gap-0.5 md:overflow-y-auto xl:gap-1 md:border-0 md:bg-transparent md:p-2 md:backdrop-blur-none xl:p-3',
           )}

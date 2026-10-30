@@ -7,7 +7,7 @@ import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { InControl } from '@ppe/ui/components/tooltip'
@@ -171,6 +171,7 @@ export function EmployeePage({
           <>
             <RecordHeader
               className="mb-5"
+              nav={{ backLabel: t.employees.title, onBack: onClose, closeLabel: t.employees.closeEmployee }}
               title={<RecordTitle>{e.full_name}</RecordTitle>}
               actions={
                 <>
@@ -466,7 +467,7 @@ function ItemsTable({
     [items, sort, due],
   )
   return (
-    <Table stack stackBelow="lg" sortControl={<SortControl columns={columns} noneLabel={t.employees.newestFirst} {...sortProps} />}>
+    <Table stack stackBelow="lg" sortControl={<SortMenu columns={columns} noneLabel={t.employees.newestFirst} {...sortProps} />}>
       <TableHeader>
         <TableRow>
           {columns.map((c) => (

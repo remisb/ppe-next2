@@ -2,7 +2,8 @@ import { useSession } from '@ppe/app-shell'
 import { PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
 import { Kbd } from '@ppe/ui/components/kbd'
-import { Segmented } from '@ppe/ui/components/segmented'
+import { DropdownMenuGroup, DropdownMenuGroupLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@ppe/ui/components/dropdown-menu'
+import { MenuButton } from '@ppe/ui/components/page-header'
 import { Fragment, useEffect, useState, useSyncExternalStore } from 'react'
 
 import { type Block, type Device, type Item, deviceFor, deviceOrder, forReader, guides, helpAudiences, inline, shotPath } from '@/help'
@@ -42,25 +43,49 @@ export function Help() {
   }, [])
 
   return (
-    <div lang={lang} className="flex flex-col gap-10">
-      <div className="flex flex-col gap-4">
-        <PageHeader
-          title={guide.title}
-          subtitle={guide.lede}
-          actions={
-            <>
-              {/* Each language is named in itself, so it can be found whatever is showing now. */}
-              <Segmented layout="fit" label={guide.language} options={languages.map((l) => ({ ...l, lang: l.value }))} value={lang} onChange={setLang} />
-              <Segmented
-                layout="fit"
-                label={guide.device}
-                options={deviceOrder.map((d) => ({ value: d, label: guide.devices[d] }))}
-                value={device}
-                onChange={(d) => setChosen(d === current ? undefined : d)}
-              />
-            </>
-          }
-        />
+    <div lang={lang}>
+      <PageHeader
+        title={guide.title}
+        subtitle={guide.lede}
+        menu={
+          <>
+            {/* Each language is named in itself, so it can be found whatever is showing now; its code alone on a phone. */}
+            <MenuButton
+              aria-label={`${guide.language}: ${languages.find((l) => l.value === lang)?.label ?? lang}`}
+              label={
+                <>
+                  <span className="max-sm:hidden">{languages.find((l) => l.value === lang)?.label}</span>
+                  <span className="uppercase sm:hidden">{lang}</span>
+                </>
+              }
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuGroupLabel>{guide.language}</DropdownMenuGroupLabel>
+                <DropdownMenuRadioGroup value={lang} onValueChange={(v: Lang) => setLang(v)}>
+                  {languages.map((l) => (
+                    <DropdownMenuRadioItem key={l.value} value={l.value} lang={l.value}>
+                      {l.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </MenuButton>
+            <MenuButton aria-label={`${guide.device}: ${guide.devices[device]}`} label={guide.devices[device]}>
+              <DropdownMenuGroup>
+                <DropdownMenuGroupLabel>{guide.device}</DropdownMenuGroupLabel>
+                <DropdownMenuRadioGroup value={device} onValueChange={(d: Device) => setChosen(d === current ? undefined : d)}>
+                  {deviceOrder.map((d) => (
+                    <DropdownMenuRadioItem key={d} value={d}>
+                      {guide.devices[d]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </MenuButton>
+          </>
+        }
+      />
+      <div className="flex flex-col gap-10">
         <nav aria-label={guide.contents}>
           <ol className="flex flex-wrap gap-2">
             {guide.sections.map((s, i) => (
@@ -76,10 +101,9 @@ export function Help() {
             ))}
           </ol>
         </nav>
-      </div>
 
       {guide.sections.map((s, i) => (
-        <section key={s.id} id={s.id} aria-labelledby={`${s.id}-title`} className="flex scroll-mt-20 flex-col gap-4 md:scroll-mt-6">
+        <section key={s.id} id={s.id} aria-labelledby={`${s.id}-title`} className="flex flex-col gap-4">
           <h2 id={`${s.id}-title`} className="flex items-center gap-2.5 text-lg font-semibold tracking-tight">
             <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-md bg-muted font-mono text-sm tabular-nums">
               {i + 1}
@@ -93,6 +117,7 @@ export function Help() {
       ))}
 
       <p className="max-w-prose text-sm text-muted-foreground">{guide.footer}</p>
+      </div>
     </div>
   )
 }

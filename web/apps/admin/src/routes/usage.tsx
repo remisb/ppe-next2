@@ -36,7 +36,7 @@ export function UsagePage({ navigate }: { navigate: (to: Route) => void }) {
   const loaded = useLoad(() => client.usage())
   return (
     <>
-      <PageHeader title={t.usage.title} description={t.usage.description} actions={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
+      <PageHeader title={t.usage.title} description={t.usage.description} refresh={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
       <Loaded load={loaded}>
         {(r) => (
           <div className="flex flex-col gap-4 md:gap-6">

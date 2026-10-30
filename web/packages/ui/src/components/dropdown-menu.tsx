@@ -101,6 +101,15 @@ function DropdownMenuRadioItem({ className, children, ...props }: ComponentProps
   )
 }
 
+/** A set of items under a heading (DropdownMenuGroupLabel), such as Sort's columns. */
+function DropdownMenuGroup(props: ComponentProps<typeof MenuPrimitive.Group>) {
+  return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+}
+
+function DropdownMenuGroupLabel({ className, ...props }: ComponentProps<typeof MenuPrimitive.GroupLabel>) {
+  return <MenuPrimitive.GroupLabel data-slot="dropdown-menu-group-label" className={cn('px-2 py-1.5 text-xs font-medium text-muted-foreground', className)} {...props} />
+}
+
 /** Words above a menu's items that are not an action: what the choices mean. */
 function DropdownMenuNote({ className, ...props }: ComponentProps<'p'>) {
   return <p data-slot="dropdown-menu-note" className={cn('max-w-72 px-2 py-1.5 text-xs text-muted-foreground', className)} {...props} />
@@ -109,6 +118,8 @@ function DropdownMenuNote({ className, ...props }: ComponentProps<'p'>) {
 export {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuGroupLabel,
   DropdownMenuItem,
   DropdownMenuNote,
   DropdownMenuRadioGroup,

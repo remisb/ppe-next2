@@ -30,7 +30,7 @@ import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { StatusLine } from '@ppe/ui/components/status-line'
 import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
-import { Download, ExternalLink, ShieldAlert, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
+import { Download, ExternalLink, ShieldAlert, ShieldCheck, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -161,19 +161,9 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
       <PageHeader
         title={t.audit.title}
         description={t.audit.description}
-        actions={
-          <>
-            {session.can('audit.export') ? (
-              <Button variant="outline" onClick={() => setExporting(true)}>
-                <Download aria-hidden /> {t.audit.exportAction}
-              </Button>
-            ) : null}
-            <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="audit-filters" onClick={() => setShowFilters((v) => !v)}>
-              <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.audit.filtersCount(activeFilters) : t.audit.filters}
-            </Button>
-            <RefreshButton loading={first.loading} onClick={reload} />
-          </>
-        }
+        filters={{ label: t.audit.filters, count: activeFilters, controls: 'audit-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
+        refresh={<RefreshButton loading={first.loading} onClick={reload} />}
+        secondary={session.can('audit.export') ? [{ label: t.audit.exportAction, icon: Download, onClick: () => setExporting(true), showFrom: 'md' }] : []}
       />
 
       <Seals timeZone={tz} />
@@ -291,7 +281,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
       ) : (
         <>
           {/* Four short columns fit side by side from 48rem; beside an open change, from 30rem. */}
-          <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>
+          <Table stack="list" stackBelow={beside ? 'sm' : 'md'} stickyHead>
             <TableHeader>
               <TableRow>
                 <TableHead>{t.audit.when}</TableHead>
@@ -470,7 +460,7 @@ function ChangePane({
         <Loading />
       ) : (
         <>
-          <RecordHeader className="mb-0" title={<RecordTitle>{auditTitle(e.event)}</RecordTitle>}>
+          <RecordHeader className="mb-0" nav={{ backLabel: t.audit.title, onBack: onClose, closeLabel: t.audit.closeChange }} title={<RecordTitle>{auditTitle(e.event)}</RecordTitle>}>
             <p className="text-sm text-muted-foreground">{areaLabel(e.area)}</p>
           </RecordHeader>
           <ChangeDetail entry={e} timeZone={timeZone} record={record} options={options} />

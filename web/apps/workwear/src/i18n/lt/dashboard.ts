@@ -37,6 +37,8 @@ export const dashboard: DashboardText = {
   updated: (time: string) => `Atnaujinta ${time}.`,
   managerDashboard: 'Vadovo suvestinė',
   employeeDashboard: 'Darbuotojo suvestinė',
+  dashboards: 'Suvestinės',
+  adminDashboard: 'Administratoriaus suvestinė',
   awaitingConfirmation: 'Laukia patvirtinimo',
   oldest: (days: string) => `seniausias: ${days}`,
   allConfirmed: 'visi patvirtinti',

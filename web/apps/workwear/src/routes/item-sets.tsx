@@ -49,13 +49,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.catalogue.setsTitle}
         description={t.catalogue.setsDescription}
-        actions={
-          canManageItems ? (
-            <Button onClick={() => setEditing('new')}>
-              <Plus aria-hidden /> {t.catalogue.addItemSet}
-            </Button>
-          ) : undefined
-        }
+        primary={canManageItems ? { label: t.catalogue.addItemSet, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       <ActionError error={action.error} />
       {/* The header's Add Item Set is the next step after an empty list; a second button would only repeat it. */}

@@ -6,7 +6,7 @@ import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/drop
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
@@ -138,25 +138,12 @@ export function Employees({
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
-        actions={
-          <Button onClick={() => setEditing('new')}>
-            <Plus aria-hidden /> {t.employees.addNew}
-          </Button>
-        }
+        primary={{ label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Input
-          type="search"
-          enterKeyHint="search"
-          placeholder={t.employees.searchPlaceholder}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          aria-label={t.employees.searchLabel}
-          data-shortcut="search"
-          className="min-w-48 flex-1 md:max-w-sm md:flex-none"
-        />
+      {/* As on every list: the tabs first, then the search. */}
+      <div data-slot="filter-bar" className="mb-4 flex flex-col gap-3">
         {missingCount > 0 || onlyMissing ? (
-          // The same tabs as Orders, each with its tooltip; on a phone they take their own row below the search.
+          // The same tabs as Orders, each with its tooltip.
           <Segmented
             label={t.employees.show}
             options={[
@@ -168,6 +155,16 @@ export function Employees({
             onChange={(v) => setOnlyMissing(v === 'missing' && !onlyMissing)}
           />
         ) : null}
+        <Input
+          type="search"
+          enterKeyHint="search"
+          placeholder={t.employees.searchPlaceholder}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          aria-label={t.employees.searchLabel}
+          data-shortcut="search"
+          className="md:max-w-sm"
+        />
       </div>
       <ActionError error={action.error} />
       {notice ? (
@@ -188,7 +185,7 @@ export function Employees({
             A row opens the employee, whose page holds Edit Sizes, New order and
             Delete; the table keeps Edit Sizes and ⋯ on each row.
           */
-          <Table stack="list" sortControl={<SortControl columns={columns} {...sortProps} />}>
+          <Table stack="list" stickyHead sortControl={<SortMenu columns={columns} {...sortProps} />}>
             <TableHeader>
               <TableRow>
                 {columns.map((c) => (

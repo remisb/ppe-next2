@@ -104,7 +104,7 @@ export function AssetDetail({
     <article aria-label={a ? a.inventory_no : sim ? t.assets.simCard : t.assets.item} className="@container">
       {place.page ? (
         // Back to its register: SIM Cards or Equipment, once the asset says which.
-        <BackButton className="mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>{!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}</BackButton>
+        <BackButton data-slot="pane-bar" className="mb-2" onClick={() => place.onBack(sim ? 'SIM' : 'EQUIPMENT')}>{!a ? t.assets.title : sim ? t.assets.simCards : t.assets.equipment}</BackButton>
       ) : (
         <PaneBar
           backLabel={place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment}
@@ -123,6 +123,11 @@ export function AssetDetail({
             */}
             <RecordHeader
               beside={!place.page}
+              nav={
+                place.page
+                  ? { backLabel: sim ? t.assets.simCards : t.assets.equipment, onBack: () => place.onBack(sim ? 'SIM' : 'EQUIPMENT') }
+                  : { backLabel: place.kind === 'SIM' ? t.assets.simCards : t.assets.equipment, onBack: place.onClose, closeLabel: place.kind === 'SIM' ? t.assets.closeCard : t.assets.closeItem }
+              }
               className={cn(place.page && 'mb-5 md:mb-6')}
               title={
                 !sim ? (

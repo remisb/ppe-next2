@@ -56,11 +56,7 @@ export function RolesPage() {
       <PageHeader
         title={t.roles.title}
         description={t.roles.description}
-        actions={
-          <Button onClick={() => setEditing('new')}>
-            <Plus aria-hidden /> {t.roles.addRole}
-          </Button>
-        }
+        primary={{ label: t.roles.addRole, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <ActionError error={action.error} className="mb-4" />
       <Loaded load={combineLoads(roles, catalogue)}>

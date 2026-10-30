@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Screen Header and Toolbar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* A design review: a sticky report header (the pattern it proposes), then sections of mockups drawn in the staff app's own neutrals. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --brand-fg:#ffffff; --accent:#3341a8; --accent-soft:#e8eafb;
+  --pri:#18181b; --pri-fg:#fafafa;
+  --ok:#23703f; --ok-bg:#e4f3ea; --warn:#9a5a08; --warn-bg:#fcf0de; --bad:#b42318; --bad-bg:#fdeceb; --mute-bg:#eceef3;
+  --mark:#d6336c;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --stuck:0 6px 14px -6px rgb(20 22 50 / .22);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px; --topbar:104px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --pri:#f4f4f5; --pri-fg:#18181b;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); --stuck:0 6px 14px -6px rgb(0 0 0 / .6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --pri:#f4f4f5; --pri-fg:#18181b;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); --stuck:0 6px 14px -6px rgb(0 0 0 / .6); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(var(--topbar) + 12px)}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 64px}
+.wrap{max-width:1180px; margin:0 auto}
+h1,h2,h3,h4{text-wrap:balance; margin:0; line-height:1.2}
+h1{font-size:clamp(26px,3.4vw,36px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:23px; font-weight:650; letter-spacing:-.01em}
+h3{font-size:16.5px; font-weight:650}
+p{margin:0}
+.lede{color:var(--muted); max-width:72ch}
+.small{font-size:13px} .muted{color:var(--muted)}
+code,.mono{font-family:var(--mono); font-size:.88em}
+code{background:var(--surface-2); padding:1px 5px; border-radius:5px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+button{font:inherit; color:inherit}
+
+/* the report's own sticky header: the pattern it proposes */
+header.top{position:sticky; top:0; z-index:50; background:color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter:blur(10px); margin:0 -16px; padding:12px 16px 0; border-bottom:1px solid transparent; transition:box-shadow .15s, border-color .15s}
+header.top[data-stuck]{border-bottom-color:var(--line); box-shadow:var(--stuck)}
+@media (prefers-reduced-motion: reduce){header.top{transition:none}}
+.top-row{display:flex; align-items:center; gap:12px; max-width:1180px; margin:0 auto; min-width:0}
+.logo{width:28px;height:28px;border-radius:7px;background:var(--brand);color:var(--brand-fg);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.top-title{font-weight:650; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.top-sub{font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+nav.jump{display:flex; gap:2px; overflow-x:auto; max-width:1180px; margin:8px auto 0; scrollbar-width:none}
+nav.jump::-webkit-scrollbar{display:none}
+nav.jump a{padding:9px 11px 10px; font-size:13.5px; font-weight:550; color:var(--muted); border-bottom:2px solid transparent; white-space:nowrap; text-decoration:none}
+nav.jump a:hover{color:var(--fg)}
+nav.jump a[aria-current="true"]{color:var(--fg); border-bottom-color:var(--accent)}
+.sentinel{height:1px}
+
+section.sec{padding-top:44px; display:grid; gap:20px}
+.head{display:grid; gap:8px}
+.eyebrow{font-size:11.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.grid{display:grid; gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; min-width:0}
+.card > * + *{margin-top:10px}
+.stat .v{font-family:var(--mono); font-size:30px; font-weight:500; letter-spacing:-.02em}
+.stat .l{font-size:13px; color:var(--muted)}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; background:var(--mute-bg); color:var(--muted); white-space:nowrap}
+.pill.ok{background:var(--ok-bg); color:var(--ok)} .pill.warn{background:var(--warn-bg); color:var(--warn)} .pill.bad{background:var(--bad-bg); color:var(--bad)}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 14px; border-radius:0 8px 8px 0}
+ul.clean{margin:0; padding-left:18px} ul.clean li + li{margin-top:5px}
+.scroll-x{overflow-x:auto}
+table.t{width:100%; border-collapse:collapse; font-size:13.5px}
+table.t th{text-align:left; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap}
+table.t td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+table.t tr:last-child td{border-bottom:0}
+@media (max-width:720px){
+  table.stack thead{display:none}
+  table.stack tr{display:grid; gap:3px; padding:12px 0; border-bottom:1px solid var(--line)}
+  table.stack td{border:0; padding:0}
+  table.stack td[data-l]::before{content:attr(data-l); display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:600}
+}
+.stage{background:var(--surface-2); border-radius:12px; padding:20px; overflow-x:auto}
+.stage.center{display:flex; justify-content:center; gap:24px; flex-wrap:wrap}
+.cap{font-size:13px; color:var(--muted); margin-top:8px; max-width:300px}
+.cap b{color:var(--fg)}
+figure{margin:0; display:grid; justify-items:center; align-content:start}
+figure figcaption{font-size:13px; color:var(--muted); margin-top:10px; text-align:center; max-width:300px}
+figure figcaption b{color:var(--fg); display:block}
+.verdict{display:flex; gap:6px; justify-content:center; margin-top:6px}
+
+/* ---------- mock UI, the staff app's look ---------- */
+.ic{width:14px; height:14px; flex:none; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.mb{display:inline-flex; align-items:center; justify-content:center; gap:5px; height:30px; padding:0 10px; border:1px solid var(--line); border-radius:7px; background:var(--surface); font-size:11.5px; font-weight:550; white-space:nowrap; flex:none; color:var(--fg)}
+.mb.pri{background:var(--pri); color:var(--pri-fg); border-color:var(--pri)}
+.mb.ghost{border-color:transparent; background:none}
+.mb.icon{width:30px; padding:0}
+.mb .n{font-family:var(--mono); font-size:10px}
+.title-i{display:inline-grid; place-items:center; width:15px; height:15px; border:1.5px solid var(--muted); border-radius:50%; font-size:9px; font-weight:700; color:var(--muted); flex:none}
+.seg{display:flex; gap:2px; padding:3px; border-radius:8px; background:var(--surface-2)}
+.seg span{flex:1; text-align:center; padding:4px 6px; border-radius:6px; font-size:11px; font-weight:550; color:var(--muted); white-space:nowrap}
+.seg span.on{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.seg span i{font-style:normal; font-family:var(--mono); font-size:10px; margin-left:3px}
+.inp{height:30px; border:1px solid var(--line); border-radius:7px; padding:0 9px; display:flex; align-items:center; gap:6px; color:var(--muted); font-size:11px; background:var(--surface); min-width:0; white-space:nowrap; overflow:hidden}
+.b{display:inline-block; border-radius:999px; padding:1px 7px; font-size:10px; font-weight:600; white-space:nowrap}
+.b.ok{background:var(--pri); color:var(--pri-fg)} .b.warn{background:var(--warn-bg); color:var(--warn)}
+.b.bad{background:var(--bad); color:#fff} .b.mute{background:var(--mute-bg); color:var(--muted)} .b.line{border:1px solid var(--line); color:var(--fg)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+/* phone */
+.phone{width:300px; border:1px solid var(--line); border-radius:30px; background:var(--surface); box-shadow:var(--shadow); overflow:hidden; position:relative; flex:none; font-size:11.5px; line-height:1.35}
+.phone.sm{zoom:.78}
+.ph-screen{height:560px; position:relative; overflow:hidden; display:flex; flex-direction:column}
+.ph-screen.live{overflow-y:auto; display:block; overscroll-behavior:contain; scrollbar-width:thin}
+.ph-app{position:sticky; top:0; z-index:3; height:46px; flex:none; display:flex; align-items:center; gap:8px; padding:0 14px; border-bottom:1px solid var(--line); background:var(--surface); font-weight:650; font-size:12.5px}
+.ph-app .emb{width:22px; height:22px; border-radius:50%; background:var(--brand); flex:none}
+.ph-hdr{position:sticky; top:0; z-index:4; height:50px; flex:none; display:flex; align-items:center; gap:6px; padding:0 12px; background:var(--surface); border-bottom:1px solid transparent}
+.ph-hdr[data-stuck],.ph-hdr.stuck{border-bottom-color:var(--line); box-shadow:var(--stuck)}
+.ph-title{font-size:17px; font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px}
+.ph-title span{overflow:hidden; text-overflow:ellipsis}
+.ph-body{padding:8px 12px 64px; display:grid; gap:8px; align-content:start}
+.ph-list{border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+.ph-row{padding:8px 26px 8px 10px; border-bottom:1px solid var(--line); display:grid; gap:2px; position:relative}
+.ph-row:last-child{border-bottom:0}
+.ph-row::after{content:"›"; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:15px}
+.ph-row .t{display:flex; justify-content:space-between; gap:6px; font-weight:600}
+.ph-row .d{color:var(--muted); font-size:10.5px}
+.ph-nav{position:absolute; left:0; right:0; bottom:0; z-index:5; height:52px; border-top:1px solid var(--line); background:var(--surface); display:grid; grid-template-columns:repeat(5,1fr); align-items:center; text-align:center; font-size:9.5px; color:var(--muted)}
+.ph-screen.live .ph-nav{position:sticky}
+.ph-nav span{display:grid; justify-items:center; gap:2px}
+.ph-nav span::before{content:""; width:15px; height:15px; border-radius:4px; background:var(--surface-2); display:block}
+.ph-nav span.on{color:var(--fg); font-weight:600}
+.ph-nav span.on::before{background:var(--fg)}
+.ph-nav span.mid::before{width:34px; height:34px; border-radius:11px; background:var(--pri); margin-top:-16px}
+.ph-sortrow{display:flex; gap:6px}
+.ph-sortrow .inp{flex:1}
+.gap-mark{position:relative; outline:2px dashed var(--mark); outline-offset:-2px}
+.tag{position:absolute; z-index:9; right:6px; background:var(--mark); color:#fff; font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:999px; font-family:var(--mono); white-space:nowrap}
+.ph-line{padding:8px 0; border-bottom:1px solid var(--line); display:grid; gap:2px}
+.ph-line .t{display:flex; justify-content:space-between; font-weight:600}
+.ph-line .d{color:var(--muted); font-size:10.5px}
+.facts{display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; border-block:1px solid var(--line); padding:8px 0}
+.facts small{display:block; color:var(--muted); font-size:10px}
+.facts b{font-weight:550}
+
+/* desktop */
+.desk{width:1010px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:var(--shadow); display:grid; grid-template-columns:150px 1fr; height:470px; overflow:hidden; font-size:11.5px; line-height:1.35}
+.side{border-right:1px solid var(--line); padding:12px 8px; display:grid; align-content:start; gap:2px; background:var(--surface-2)}
+.side .br{display:flex; gap:6px; align-items:center; font-weight:700; font-size:11.5px; padding:2px 6px 10px}
+.side .br i{width:18px;height:18px;border-radius:50%;background:var(--brand);display:block}
+.side span{padding:5px 8px; border-radius:6px; color:var(--muted); font-weight:500}
+.side span.on{background:var(--surface); color:var(--fg); font-weight:600}
+.side span.sub{padding-left:20px}
+.dmain{display:grid; grid-template-columns:minmax(0,1fr) 370px; gap:16px; padding:0 16px; min-width:0; position:relative}
+.dlist{min-width:0; position:relative}
+.dhdr{height:56px; display:flex; align-items:center; gap:8px; background:var(--surface); border-bottom:1px solid var(--line); box-shadow:var(--stuck); position:relative; z-index:3; margin:0 -16px 0 -16px; padding:0 16px}
+.dhdr .ttl{font-size:19px; font-weight:700; letter-spacing:-.01em; flex:1; display:flex; align-items:center; gap:6px; min-width:0}
+.dtable{width:100%; border-collapse:collapse}
+.dtable th{position:relative; text-align:left; font-weight:600; color:var(--fg); font-size:11px; padding:7px 8px; border-bottom:1px solid var(--line); background:var(--surface); white-space:nowrap}
+.dtable thead tr{box-shadow:var(--stuck)}
+.dtable td{padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap}
+.dtable tr.sel td{background:var(--surface-2)}
+.dtable tr.grp td{font-size:10px; letter-spacing:.06em; color:var(--muted); font-weight:600; padding-top:12px}
+.dpane{margin-top:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); height:446px; overflow:hidden; position:relative}
+.dpane .row1{display:flex; align-items:center; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); box-shadow:var(--stuck); background:var(--surface); position:relative; z-index:2}
+.dpane .row1 .ttl{font-size:15px; font-weight:700; flex:1; white-space:nowrap}
+.dpane .body{padding:4px 12px}
+.pin{position:absolute; z-index:8; width:20px; height:20px; border-radius:50%; background:var(--mark); color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; font-family:var(--mono); box-shadow:0 0 0 3px var(--surface)}
+ol.pins{margin:0; padding-left:0; list-style:none; display:grid; gap:8px; counter-reset:p}
+ol.pins li{display:grid; grid-template-columns:24px 1fr; gap:8px; font-size:14px; counter-increment:p}
+ol.pins li::before{content:counter(p); width:20px; height:20px; border-radius:50%; background:var(--mark); color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; font-family:var(--mono); margin-top:2px}
+
+/* anatomy */
+.anat{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:30px 18px 16px; min-width:760px; position:relative}
+.anat .bar{display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid var(--line); border-radius:10px; box-shadow:var(--stuck)}
+.anat .ttl{font-size:21px; font-weight:700; letter-spacing:-.01em; flex:1; display:flex; align-items:center; gap:7px; min-width:0; white-space:nowrap}
+.anat .slot{position:relative}
+.anat .slot .pin{left:50%; transform:translateX(-50%); bottom:-36px}
+.anat .slot .pin.up{bottom:auto; top:-34px}
+.anat .sub{margin:44px 14px 0; color:var(--muted); font-size:12.5px}
+
+/* menus */
+.menu{width:230px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 34px rgb(0 0 0 / .16); padding:5px; font-size:12.5px}
+.menu .it{display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:6px}
+.menu .it.hl{background:var(--surface-2)}
+.menu .it.bad{color:var(--bad)}
+.menu .it .tick{width:14px; text-align:center; color:var(--fg)}
+.menu .sep{height:1px; background:var(--line); margin:5px -5px}
+.menu .note{padding:6px 9px 4px; color:var(--muted); font-size:11px; font-weight:600}
+.menu .ov{margin-left:auto; font-size:10px; color:var(--muted); font-family:var(--mono)}
+.trigger-wrap{display:grid; justify-items:end; gap:6px}
+
+/* overflow demo */
+.demo-ctl{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.chipbtn{border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:5px 12px; font-size:13px; font-weight:550; cursor:pointer; min-height:36px}
+.chipbtn[aria-pressed="true"]{background:var(--fg); color:var(--bg); border-color:var(--fg)}
+.tb-demo{container-type:inline-size; resize:horizontal; overflow:hidden; width:100%; min-width:300px; max-width:100%; border:1px dashed var(--muted); border-radius:12px; background:var(--surface); padding:12px 14px 64px; position:relative}
+.tb-row{display:flex; align-items:center; gap:7px; min-width:0}
+.tb-title{font-size:19px; font-weight:700; letter-spacing:-.01em; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.only-narrow{display:inline-flex} .only-wide{display:none}
+.tb-demo details{position:relative; flex:none}
+.tb-demo summary{list-style:none; cursor:pointer}
+.tb-demo summary::-webkit-details-marker{display:none}
+.tb-demo details .menu{position:absolute; right:0; top:36px; z-index:5}
+.lbl-pri{display:inline}
+@container (min-width: 560px){ .only-narrow{display:none} .only-wide{display:inline-flex} .tb-more{display:none} }
+@container (max-width: 359px){ .lbl-pri{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%)} .mb.pri.squeeze{width:30px; padding:0} }
+.width-read{position:absolute; right:10px; bottom:4px; font-family:var(--mono); font-size:11px; color:var(--muted)}
+.resize-hint{font-size:12.5px; color:var(--muted)}
+
+/* flows */
+.flow{display:grid; gap:12px}
+.steps{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); counter-reset:s}
+.step{display:grid; gap:8px; align-content:start; justify-items:center; counter-increment:s}
+.step .cap{text-align:left; max-width:none; width:100%}
+.step .cap::before{content:counter(s); display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:var(--fg); color:var(--bg); font-size:11px; font-weight:700; margin-right:7px; font-family:var(--mono)}
+ol.flowlist{margin:0; padding-left:20px; display:grid; gap:6px}
+.kbd{font-family:var(--mono); font-size:11.5px; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:0 5px; background:var(--surface)}
+.taborder{display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:12px}
+.taborder .f{position:relative; outline:2px solid var(--accent); outline-offset:2px; border-radius:7px}
+.taborder .f::after{content:attr(data-n); position:absolute; top:-12px; left:-10px; width:18px; height:18px; border-radius:50%; background:var(--accent); color:var(--bg); font-size:10px; font-weight:700; display:grid; place-items:center; font-family:var(--mono)}
+.taborder .arrow{color:var(--muted)}
+.pc{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:760px){.pc{grid-template-columns:1fr}}
+.pc ul{margin:0; padding-left:0; list-style:none}
+.pc li{padding-left:20px; position:relative; font-size:14px}
+.pc li + li{margin-top:6px}
+.pc .pro li::before{content:"+"; position:absolute; left:3px; color:var(--ok); font-weight:700}
+.pc .con li::before{content:"–"; position:absolute; left:3px; color:var(--bad); font-weight:700}
+footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font-size:13px; color:var(--muted)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+</svg>
+
+<div class="sentinel" id="top-sentinel"></div>
+<header class="top" id="top">
+  <div class="top-row">
+    <div class="logo" aria-hidden="true">UX</div>
+    <div style="min-width:0">
+      <div class="top-title">Screen header, toolbar and More actions</div>
+      <div class="top-sub">Workwear &amp; Equipment · Administration · proposal, 28 Oct 2026</div>
+    </div>
+  </div>
+  <nav class="jump" aria-label="Sections">
+    <a href="#summary">Summary</a>
+    <a href="#today">Today</a>
+    <a href="#options">What sticks</a>
+    <a href="#anatomy">Header</a>
+    <a href="#toolbar">Toolbar &amp; ⋯</a>
+    <a href="#menus">Menus</a>
+    <a href="#lists">Lists</a>
+    <a href="#records">Records</a>
+    <a href="#flows">Flows</a>
+    <a href="#screens">Per screen</a>
+    <a href="#rollout">Rollout</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<!-- SUMMARY -->
+<section class="sec" id="summary">
+  <div class="head">
+    <div class="eyebrow">Proposal · for a decision</div>
+    <h1>One header for every screen</h1>
+    <p class="lede">A page header that stays at the top while the screen scrolls, a toolbar with one order of controls, an optional menu button, and a screen-level ⋯ that also takes what does not fit on a phone. This page's own header works the way the proposal does: scroll, and it stays in one row with a rule under it.</p>
+    <p class="small muted">Build <code>368712f</code> · code review plus the Help screenshots, no usability sessions · text version and file references: <code>docs/ux/screen-header-toolbar.md</code></p>
+  </div>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">20</div><div class="l">page headers, holding 6 kinds of control in a different order on each screen</div></div>
+    <div class="card stat"><div class="v">0</div><div class="l">screens with a ⋯ menu; only records and rows have one</div></div>
+    <div class="card stat"><div class="v">≈410px</div><div class="l">of 844 before the first SIM on a phone's SIM Cards</div></div>
+    <div class="card stat"><div class="v">+0px</div><div class="l">the sticky header's cost on a phone: it slides over the bar that shows only the app's name</div></div>
+  </div>
+  <div class="callout">
+    <b>Recommendation: Option B.</b> The page header becomes one row that sticks. Its controls are a toolbar in a fixed order: <i>Filters · Refresh · secondary · menu button · primary · ⋯</i>. Controls that do not fit a width move into ⋯, by CSS alone. A record's first row sticks in its pane and on its page. On a desktop, column heads stay in view. The filter bar does not stick: <b>Filters</b> and <span class="kbd">/</span> bring it back. Sort becomes a menu button.
+  </div>
+</section>
+
+<!-- TODAY -->
+<section class="sec" id="today">
+  <div class="head">
+    <div class="eyebrow">1 · Today</div>
+    <h2>What the screens do now</h2>
+    <p class="lede">Rebuilt from the English phone screenshots. The pink outlines mark space that does not help the task in front of the user.</p>
+  </div>
+  <div class="stage center">
+    <figure>
+      <div class="phone"><div class="ph-screen">
+        <div class="ph-app gap-mark" style="position:relative"><span class="emb"></span>Workwear &amp; Equipment<span class="tag" style="bottom:-9px">56px, sticky, name only</span></div>
+        <div class="ph-body" style="padding-top:12px">
+          <div class="ph-title" style="font-size:19px">SIM Cards</div>
+          <div class="gap-mark" style="display:grid; gap:6px; padding:4px; border-radius:8px; position:relative">
+            <div style="display:flex; gap:6px"><span class="mb"><svg class="ic"><use href="#i-file"/></svg>Preview PDF</span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span></div>
+            <div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg>Filters</span></div>
+            <span class="tag" style="bottom:6px">wraps to 2 rows</span>
+          </div>
+          <div class="seg"><span class="on">All<i>6</i></span><span>In Office<i>3</i></span><span>With Employees<i>3</i></span></div>
+          <div class="inp">SIM, phone or inventory number, or employee</div>
+          <div class="ph-sortrow gap-mark" style="position:relative; border-radius:8px; padding:2px"><div class="inp"><span class="muted">Sort by:</span>&nbsp;<span style="color:var(--fg)">Inventory No.</span></div><span class="mb icon">↑</span></div>
+          <div class="ph-list">
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40118</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 667 · Telia · Jonas Petraitis</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40119</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 668 · Telia · Aleksandr Ivanov</div></div>
+          </div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>SIM Cards, at rest</b>The first SIM is half way down. Scroll, and Add SIM, Filters and the tabs are gone.</figcaption>
+    </figure>
+    <figure>
+      <div class="phone"><div class="ph-screen">
+        <div class="ph-app"><span class="emb"></span>Workwear &amp; Equipment</div>
+        <div class="ph-body" style="padding-top:0">
+          <div class="gap-mark" style="position:relative; height:26px; border-radius:6px"><span class="tag" style="top:5px">no number, no main action</span></div>
+          <span class="mb" style="height:38px; width:100%"><svg class="ic"><use href="#i-print"/></svg>Print Order</span>
+          <span class="mb" style="height:38px; width:100%"><svg class="ic" style="color:var(--warn)"><use href="#i-pen"/></svg>Mark as Signed &amp; Given</span>
+          <div class="ph-line"><div class="t"><span>Safety shoes</span><span class="num">€54.90</span></div><div class="d">S3 SRC, steel toe cap</div><div class="d">Size 39 · Qty 1 · Unit €54.90 · Service 12 months</div></div>
+          <div class="ph-line"><div class="t"><span>Work jacket</span><span class="num">€79.00</span></div><div class="d">Polyester/cotton, reflective strips</div><div class="d">Size 46 · Qty 1 · Unit €79.00 · Service 24 months</div></div>
+          <div class="ph-line"><div class="t"><span>Work trousers</span><span class="num">€91.00</span></div><div class="d">Knee-pad pockets</div><div class="d">Size 46 · Qty 2 · Unit €45.50</div></div>
+          <div class="ph-line"><div class="t"><span>Protective gloves</span><span class="num">€32.00</span></div><div class="d">Nitrile-coated, pair</div></div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span class="on">Orders</span><span class="mid">New order</span><span>Employees</span><span>More</span></div>
+      </div></div>
+      <figcaption><b>An order, scrolled to its lines</b>Which order is this? Create confirmation link is off screen.</figcaption>
+    </figure>
+  </div>
+  <div class="scroll-x">
+  <table class="t stack">
+    <thead><tr><th>#</th><th>Finding</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td data-l="#">F1</td><td data-l="Finding">Only the phone's top bar sticks, and it shows only the emblem and the app's name</td><td data-l="Effect">56px on every phone screen say what the user knows; the screen's own title and actions scroll away</td></tr>
+      <tr><td data-l="#">F2</td><td data-l="Finding">Header actions wrap on a phone</td><td data-l="Effect">SIM Cards spends two rows on three buttons</td></tr>
+      <tr><td data-l="#">F3</td><td data-l="Finding">Each header orders its controls differently</td><td data-l="Effect">Orders: Create Order, Filters · SIM Cards: Preview PDF, Add SIM, Filters · Audit log: Export, Filters, Refresh · Dashboard: two ghost links, Refresh · Help: two segmented controls</td></tr>
+      <tr><td data-l="#">F4</td><td data-l="Finding">No screen-level ⋯</td><td data-l="Effect">Rare actions (Pictures, Preview PDF, Export) are full buttons at every width; nothing can overflow</td></tr>
+      <tr><td data-l="#">F5</td><td data-l="Finding">A record's number and main action scroll away on a phone</td><td data-l="Effect">The order above, scrolled to its lines</td></tr>
+      <tr><td data-l="#">F6</td><td data-l="Finding">Sort by takes a row of its own on stacked lists</td><td data-l="Effect">About 70px on a phone; two rows on Employees beside a pane</td></tr>
+      <tr><td data-l="#">F7</td><td data-l="Finding">The filter bar's order differs</td><td data-l="Effect">Employees: search, then tabs; Orders, SIM Cards, Catalogue: tabs, then search</td></tr>
+      <tr><td data-l="#">F8</td><td data-l="Finding">Column heads scroll away on long desktop tables</td><td data-l="Effect"><code>Table</code>'s <code>overflow-x-auto</code> wrapper would also hold a sticky head</td></tr>
+      <tr><td data-l="#">F9</td><td data-l="Finding">A phone shows Create Order twice on Orders</td><td data-l="Effect">The header's and the bottom bar's raised New order</td></tr>
+      <tr><td data-l="#">F10</td><td data-l="Finding">Create Order's only header action is Clear order, which asks first</td><td data-l="Effect">An action that empties the work sits where the main action usually is</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- OPTIONS -->
+<section class="sec" id="options">
+  <div class="head">
+    <div class="eyebrow">2 · What sticks</div>
+    <h2>Four options, each scrolled half way down SIM Cards</h2>
+    <p class="lede">All four keep the bottom bar, the detail pane and Create Order's summary as they are.</p>
+  </div>
+  <div class="stage center">
+    <figure>
+      <div class="phone sm"><div class="ph-screen">
+        <div class="ph-app"><span class="emb"></span>Workwear &amp; Equipment</div>
+        <div class="ph-body">
+          <div class="ph-list">
+            <div class="ph-row"><div class="t"><span class="num">+370 655 21988</span><span class="b bad">Blocked</span></div><div class="d">8937 0102 7788 1200 016 · Bitė · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40120</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 669 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="muted">No phone number yet</span><span class="b line">Not Activated</span></div><div class="d">8937 0203 5544 0099 001 · Tele2 · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40121</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 670 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40122</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 671 · Telia · Office</div></div>
+          </div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>A · Today</b>Which screen? Where is Add SIM?</figcaption>
+      <div class="verdict"><span class="pill">baseline</span></div>
+    </figure>
+    <figure>
+      <div class="phone sm"><div class="ph-screen">
+        <div class="ph-hdr stuck"><div class="ph-title"><span>SIM Cards</span></div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg><span class="n">1</span></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+        <div class="ph-body">
+          <div class="ph-list">
+            <div class="ph-row"><div class="t"><span class="num">+370 655 21988</span><span class="b bad">Blocked</span></div><div class="d">8937 0102 7788 1200 016 · Bitė · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40120</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 669 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="muted">No phone number yet</span><span class="b line">Not Activated</span></div><div class="d">8937 0203 5544 0099 001 · Tele2 · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40121</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 670 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40122</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 671 · Telia · Office</div></div>
+          </div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>B · Sticky header</b>Same height as today's bar; title, Filters (1), Add SIM and ⋯ at hand.</figcaption>
+      <div class="verdict"><span class="pill ok">recommended</span></div>
+    </figure>
+    <figure>
+      <div class="phone sm"><div class="ph-screen">
+        <div class="ph-hdr"><div class="ph-title"><span>SIM Cards</span></div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg><span class="n">1</span></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+        <div class="gap-mark" style="padding:6px 12px 8px; display:grid; gap:6px; position:relative; box-shadow:var(--stuck); z-index:2; background:var(--surface)">
+          <div class="seg"><span class="on">All<i>6</i></span><span>In Office<i>3</i></span><span>With Emp…<i>3</i></span></div>
+          <div class="inp"><svg class="ic"><use href="#i-search"/></svg>SIM, phone or inventory number</div>
+          <span class="tag" style="bottom:-8px">+ 108px fixed</span>
+        </div>
+        <div class="ph-body">
+          <div class="ph-list">
+            <div class="ph-row"><div class="t"><span class="num">+370 655 21988</span><span class="b bad">Blocked</span></div><div class="d">8937 0102 7788 1200 016 · Bitė · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40120</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 669 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="muted">No phone number yet</span><span class="b line">Not Activated</span></div><div class="d">8937 0203 5544 0099 001 · Tele2</div></div>
+          </div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>C · Header and filter bar</b>About 164px of chrome above, 52px below: under 60% left for the list.</figcaption>
+      <div class="verdict"><span class="pill warn">later, Audit log only</span></div>
+    </figure>
+    <figure>
+      <div class="phone sm"><div class="ph-screen">
+        <div class="gap-mark" style="height:50px; position:relative; display:grid; place-items:center; color:var(--muted); font-size:11px">hidden while scrolling down<span class="tag" style="bottom:-9px">moves under the finger</span></div>
+        <div class="ph-body">
+          <div class="ph-list">
+            <div class="ph-row"><div class="t"><span class="num">+370 655 21988</span><span class="b bad">Blocked</span></div><div class="d">8937 0102 7788 1200 016 · Bitė · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40120</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 669 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="muted">No phone number yet</span><span class="b line">Not Activated</span></div><div class="d">8937 0203 5544 0099 001 · Tele2 · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40121</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 670 · Telia · Office</div></div>
+            <div class="ph-row"><div class="t"><span class="num">+370 612 40122</span><span class="b mute">Active</span></div><div class="d">8937 0011 2233 4455 671 · Telia · Office</div></div>
+          </div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>D · Hide on scroll down</b>Shows again on scroll up. J / K and the keyboard have no "up".</figcaption>
+      <div class="verdict"><span class="pill bad">rejected</span></div>
+    </figure>
+  </div>
+  <div class="pc">
+    <div class="card pro"><h3>Why B</h3><ul>
+      <li>Every screen keeps its title and actions at any scroll position, for no more height than the bar it replaces.</li>
+      <li>One row that never changes height: nothing jumps when it sticks, and nothing flickers on and off at the edge.</li>
+      <li>The filter bar is one step away: Filters on a phone, <span class="kbd">/</span> on a desktop.</li>
+      <li>The same row serves records, so a pane and a page read like a screen.</li>
+    </ul></div>
+    <div class="card con"><h3>What B costs</h3><ul>
+      <li>The emblem is covered once the user scrolls 56px (open question 1).</li>
+      <li>Filter tabs and their counts scroll away; a filtered list does not say so while deep in it.</li>
+      <li>A sticky element can hide what has focus: <code>scroll-padding-top</code> is required, not optional.</li>
+      <li>Twenty headers move to one component, so every list screen is touched once.</li>
+    </ul></div>
+  </div>
+
+  <h3>Try it: scroll inside the phone</h3>
+  <div class="stage center">
+    <figure>
+      <div class="phone"><div class="ph-screen live" id="live" tabindex="0" aria-label="Scrollable example of SIM Cards">
+        <div class="ph-app"><span class="emb"></span>Workwear &amp; Equipment</div>
+        <div class="sentinel" id="live-sentinel"></div>
+        <div class="ph-hdr" id="live-hdr"><div class="ph-title"><span>SIM Cards</span></div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg><span class="n">1</span></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+        <div class="ph-body" style="padding-bottom:12px">
+          <div class="seg"><span class="on">All<i>12</i></span><span>In Office<i>7</i></span><span>With Employees<i>5</i></span></div>
+          <div style="display:flex; gap:6px"><div class="inp" style="flex:1"><svg class="ic"><use href="#i-search"/></svg>SIM, phone or inventory…</div><span class="mb"><svg class="ic"><use href="#i-sort"/></svg>Inventory No.<svg class="ic"><use href="#i-down"/></svg></span></div>
+          <div class="ph-list" id="live-list"></div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
+      </div></div>
+      <figcaption><b>Option B, live</b>At rest the emblem bar and the header sit one above the other. Scroll 46px and the header covers the emblem bar and gains its rule.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ANATOMY -->
+<section class="sec" id="anatomy">
+  <div class="head">
+    <div class="eyebrow">3 · The page header</div>
+    <h2>One row, stuck to the top</h2>
+    <p class="lede">The full toolbar, as the Audit log would have it on a desktop with every slot used. Most screens use two or three slots.</p>
+  </div>
+  <div class="stage">
+    <div class="anat">
+      <div class="bar">
+        <div class="ttl"><span class="slot">Audit log<span class="pin up">1</span></span><span class="slot title-i">i<span class="pin up">2</span></span></div>
+        <span class="slot mb"><svg class="ic"><use href="#i-filter"/></svg>Filters <span class="n">(2)</span><span class="pin">3</span></span>
+        <span class="slot mb"><svg class="ic"><use href="#i-refresh"/></svg>Refresh<span class="pin">4</span></span>
+        <span class="slot mb">Export<span class="pin">5</span></span>
+        <span class="slot mb">Area: All<svg class="ic"><use href="#i-down"/></svg><span class="pin">6</span></span>
+        <span class="slot mb pri"><svg class="ic"><use href="#i-plus"/></svg>Primary<span class="pin">7</span></span>
+        <span class="slot mb icon ghost"><svg class="ic"><use href="#i-more"/></svg><span class="pin">8</span></span>
+      </div>
+      <div class="sub">Times are in Europe/Vilnius. — the subtitle line, when there is one, scrolls away</div>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>The parts</h3>
+      <ol class="pins">
+        <li><span><b>Title</b>, the <code>h1</code>. Truncates with an ellipsis before any control wraps.</span></li>
+        <li><span><b>ⓘ</b>, the description (<code>InfoTip</code>), as now. Never a line under the title.</span></li>
+        <li><span><b>Filters</b>, phone only, with the count of filters set.</span></li>
+        <li><span><b>Refresh</b>, on screens of live figures. Icon on a phone.</span></li>
+        <li><span><b>Secondary</b>, outline. Two on a desktop, one on a tablet, none on a phone.</span></li>
+        <li><span><b>Menu button</b>, optional: one kind of choice, label and chevron. (Illustration only; the Audit log has none.)</span></li>
+        <li><span><b>Primary</b>, filled, at most one, next to ⋯ as in every record header.</span></li>
+        <li><span><b>⋯ More actions</b>: overflow, then rare actions, then what asks first. Always last.</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>How it sticks</h3>
+      <ul class="clean">
+        <li><code>position: sticky; top: 0</code> in <code>main</code>, the screen's background; at rest no rule, stuck a rule and a soft shadow. <b>The height never changes.</b></li>
+        <li><b>Stuck</b> is a <code>data-stuck</code> set by an <code>IntersectionObserver</code> on a 1px mark above the header (this page does the same).</li>
+        <li><b>Phone:</b> the emblem bar stays <code>z-30</code>; the header is <code>z-40</code> and opaque, so it covers the emblem bar after 56px.</li>
+        <li><b>Tablet, desktop:</b> the header spans the list's column; an open pane keeps its own top, aligned with the header's.</li>
+        <li><code>--page-header</code> (56px, 64px from <code>md</code>) feeds column heads, Create Order's summary and the root's <code>scroll-padding-top</code>, so focus, <span class="kbd">/</span> and Help's <code>#links</code> never land under it.</li>
+        <li><b>Below 30rem of window height</b> (a phone on its side, a zoomed laptop) it does not stick. In print it is static and the toolbar hidden.</li>
+        <li>Not on the confirmation page, hand-over mode, documents or sign-in.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLBAR -->
+<section class="sec" id="toolbar">
+  <div class="head">
+    <div class="eyebrow">4 · Toolbar and ⋯</div>
+    <h2>What does not fit goes into ⋯, by width</h2>
+    <p class="lede">Each control says from which width it is a button (<code>showFrom</code>); below it, it is an item in ⋯ in the toolbar's order. Both are rendered and CSS shows one; the menu's items mount only while it is open, so a screen reader never meets both. Drag the box's corner to change its width, and switch the language.</p>
+  </div>
+  <div class="demo-ctl" role="group" aria-label="Language of the example">
+    <button class="chipbtn" aria-pressed="true" data-lang="en">English</button>
+    <button class="chipbtn" aria-pressed="false" data-lang="lt">Lietuvių</button>
+    <button class="chipbtn" aria-pressed="false" data-lang="ru">Русский</button>
+    <span class="resize-hint">Drag the bottom-right corner ↘ · from 560px Preview PDF is a button · under 360px Add SIM keeps only its icon</span>
+  </div>
+  <div class="tb-demo" id="tb-demo">
+    <div class="tb-row">
+      <div class="tb-title" data-t="title">SIM Cards</div>
+      <span class="mb only-narrow"><svg class="ic"><use href="#i-filter"/></svg><span data-t="filters">Filters (1)</span></span>
+      <span class="mb only-wide"><svg class="ic"><use href="#i-file"/></svg><span data-t="pdf">Preview PDF</span></span>
+      <span class="mb pri squeeze" data-name="add"><svg class="ic"><use href="#i-plus"/></svg><span class="lbl-pri" data-t="add">Add SIM</span></span>
+      <details class="tb-more">
+        <summary class="mb icon ghost" aria-label="More actions for SIM Cards"><svg class="ic"><use href="#i-more"/></svg></summary>
+        <div class="menu"><div class="it hl"><svg class="ic"><use href="#i-file"/></svg><span data-t="pdf">Preview PDF</span><span class="ov">overflow</span></div></div>
+      </details>
+    </div>
+    <span class="width-read" id="width-read"></span>
+  </div>
+
+  <div class="grid g3">
+    <div class="card">
+      <h3>Slot defaults</h3>
+      <ul class="clean small">
+        <li><b>Filters</b>: below <code>md</code> only.</li>
+        <li><b>Refresh</b>: always; icon only below <code>md</code>.</li>
+        <li><b>Secondary</b>: a button from <code>md</code>; in ⋯ below.</li>
+        <li><b>Menu button</b>: a button from <code>sm</code>.</li>
+        <li><b>Primary</b>: always, with its words. Where the header is too narrow for title and words (LT and RU at 375px are the test), only the icon, with its name and a tooltip.</li>
+        <li><b>⋯</b>: hidden at widths where it would be empty.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>A screen's ⋯ holds, in order</h3>
+      <ol class="clean small" style="padding-left:18px">
+        <li>The overflow, in the toolbar's order.</li>
+        <li>A separator, then <b>rare actions</b> that are never buttons: set-up tasks, monthly exports (Pictures).</li>
+        <li>A separator, then what <b>asks first</b> or empties work, with "…" (Clear order…).</li>
+      </ol>
+      <p class="small muted">Never empty; never a lone item that is always there (that is a button). Named "More actions for ⟨screen⟩". No view settings that Account and ⌘K hold.</p>
+    </div>
+    <div class="card">
+      <h3>Why not measure</h3>
+      <ul class="clean small">
+        <li>A <code>ResizeObserver</code> that moves buttons as text changes re-renders on every resize and language switch, and differs between a test run and a real phone.</li>
+        <li>Breakpoints are what <code>web/AGENTS.md</code> already uses; e2e checks them at fixed widths.</li>
+        <li>Prints and the first paint are right without JavaScript.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- MENUS -->
+<section class="sec" id="menus">
+  <div class="head">
+    <div class="eyebrow">4 · Menus</div>
+    <h2>⋯ for unrelated actions, a menu button for one kind of choice</h2>
+    <p class="lede">Both are <code>DropdownMenu</code> (Base UI): Enter or a tap opens, the arrows move, typing jumps, Escape closes and returns focus to the trigger.</p>
+  </div>
+  <div class="stage center" style="align-items:flex-start">
+    <figure>
+      <div class="trigger-wrap"><span class="mb icon ghost" style="outline:2px solid var(--accent)"><svg class="ic"><use href="#i-more"/></svg></span>
+      <div class="menu">
+        <div class="it"><svg class="ic"><use href="#i-file"/></svg>Preview PDF<span class="ov">overflow</span></div>
+        <div class="sep"></div>
+        <div class="it">Pictures</div>
+        <div class="sep"></div>
+        <div class="it bad">Clear order…</div>
+      </div></div>
+      <figcaption><b>A screen's ⋯</b>The three groups, shown together for illustration; no screen has all three.</figcaption>
+    </figure>
+    <figure>
+      <div class="trigger-wrap"><span class="mb icon ghost" style="outline:2px solid var(--accent)"><svg class="ic"><use href="#i-more"/></svg></span>
+      <div class="menu">
+        <div class="it">Edit details</div>
+        <div class="sep"></div>
+        <div class="it bad">Delete employee…</div>
+      </div></div>
+      <figcaption><b>A record's ⋯</b>The same menu on the row and on the record, built by one function per record kind.</figcaption>
+    </figure>
+    <figure>
+      <div class="trigger-wrap"><span class="mb" style="outline:2px solid var(--accent)">Dashboards<svg class="ic"><use href="#i-down"/></svg></span>
+      <div class="menu">
+        <div class="it"><span class="tick">✓</span>Administrator</div>
+        <div class="it hl"><span class="tick"></span>Manager</div>
+        <div class="it"><span class="tick"></span>Employee</div>
+      </div></div>
+      <figcaption><b>Menu button: a view</b>Replaces two ghost "… Dashboard →" links on the administrator's Dashboard.</figcaption>
+    </figure>
+    <figure>
+      <div class="trigger-wrap"><span class="mb" style="outline:2px solid var(--accent)"><svg class="ic"><use href="#i-sort"/></svg>Name, A–Z<svg class="ic"><use href="#i-down"/></svg></span>
+      <div class="menu">
+        <div class="note">Sort by</div>
+        <div class="it"><span class="tick">✓</span>Name</div>
+        <div class="it"><span class="tick"></span>Code</div>
+        <div class="it"><span class="tick"></span>Height</div>
+        <div class="it"><span class="tick"></span>Clothing</div>
+        <div class="it"><span class="tick"></span>Shoes</div>
+        <div class="sep"></div>
+        <div class="it"><span class="tick">✓</span>A–Z</div>
+        <div class="it hl"><span class="tick"></span>Z–A</div>
+      </div></div>
+      <figcaption><b>Sort ▾ in the filter bar</b>One control instead of the "Sort by" field and its direction button. The words follow the column ("smallest first" for a size).</figcaption>
+    </figure>
+  </div>
+  <div class="scroll-x">
+  <table class="t stack">
+    <thead><tr><th>Need</th><th>Use</th><th>Not</th></tr></thead>
+    <tbody>
+      <tr><td data-l="Need">One action</td><td data-l="Use">a button</td><td data-l="Not">a menu with one item</td></tr>
+      <tr><td data-l="Need">Unrelated, less common actions; the overflow</td><td data-l="Use">⋯ More actions</td><td data-l="Not">a menu button named "Actions"</td></tr>
+      <tr><td data-l="Need">One of three or more views or forms (Dashboards, Guide language, Device, Sort)</td><td data-l="Use">a menu button with radio items, the choice ticked</td><td data-l="Not">a row of buttons or segmented controls in the header</td></tr>
+      <tr><td data-l="Need">A filter that applies at once</td><td data-l="Use">a filter field or filter tabs in the filter bar</td><td data-l="Not">a menu button in the header</td></tr>
+      <tr><td data-l="Need">A record's state</td><td data-l="Use">Change Status ▾, as now</td><td data-l="Not">items in ⋯</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+
+<!-- LISTS -->
+<section class="sec" id="lists">
+  <div class="head">
+    <div class="eyebrow">5 · Lists</div>
+    <h2>The filter bar stays put; column headings stay in view</h2>
+    <p class="lede">The filter bar keeps its place under the header and does not stick. Every list puts its parts in one order.</p>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>One order on every list</h3>
+      <ol class="clean small" style="padding-left:18px">
+        <li><b>Filter tabs</b> with their counts, on their own row. Employees moves its tabs above its search.</li>
+        <li><b>Search</b> (<span class="kbd">/</span> reaches it), then the <b>filters</b>, then <b>Sort ▾</b> at the end, then <b>Clear filters</b> when any is set.</li>
+      </ol>
+      <p class="small muted">On a phone, everything after the tabs and the search stays behind <b>Filters</b>. A tap on Filters in a stuck header scrolls the filter bar back under the header, opens it and focuses its first field. <span class="kbd">/</span> on a desktop scrolls the search into view the same way.</p>
+    </div>
+    <div class="card">
+      <h3>Sort ▾ instead of the Sort by row</h3>
+      <p class="small">One menu button that says the order in words ("Name, A–Z", "Date, newest first"). Its menu lists the columns as radio items, then a separator, then the two directions in words. While the table is wide, its sortable headings stay the way to sort and the button is hidden, as <code>SortControl</code> is today.</p>
+    </div>
+    <div class="card">
+      <h3>Column headings</h3>
+      <p class="small">On a desktop, a wide <code>Table</code> with <code>stickyHead</code> keeps its <code>&lt;thead&gt;</code> at <code>top: var(--page-header)</code>. Where it sticks, <code>Table</code> swaps its wrapper's <code>overflow-x-auto</code> for <code>overflow-x-clip</code>, because a scroll container would hold the heading instead of the window; these tables already stack rather than scroll sideways. Group rows (Orders' months) do not stick: two layers of sticky rows read as a second header.</p>
+    </div>
+    <div class="card">
+      <h3>Why the filter bar does not stick</h3>
+      <p class="small">Lists are paged at 20 (Orders) or hold a few dozen rows (Employees, Item Catalogue, the registers), so the filter bar is rarely more than a screen away. On a phone, header, tabs and search together would take about 164px, plus the 52px bottom bar: under 60% of the screen left for the list.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RECORDS -->
+<section class="sec" id="records">
+  <div class="head">
+    <div class="eyebrow">6 · Records</div>
+    <h2>A record's first row sticks too</h2>
+    <p class="lede">In the detail pane, inside its own scroll; on a phone or tablet, where the record is the screen, as the page header. Details, badges, facts and sections scroll under it. Below <code>lg</code> the back link becomes an icon in that row; beside the list, ✕ keeps the corner.</p>
+  </div>
+  <div class="stage center">
+    <figure>
+      <div class="phone"><div class="ph-screen">
+        <div class="ph-hdr stuck"><span class="mb icon ghost" aria-label="Back to Orders"><svg class="ic"><use href="#i-back"/></svg></span><div class="ph-title"><span class="num" style="font-size:15px">WE-000007</span></div><span class="mb pri"><svg class="ic"><use href="#i-link"/></svg>Create link</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+        <div class="ph-body">
+          <div class="ph-line"><div class="t"><span>Safety shoes</span><span class="num">€54.90</span></div><div class="d">S3 SRC, steel toe cap</div><div class="d">Size 39 · Qty 1 · Unit €54.90 · Service 12 months</div></div>
+          <div class="ph-line"><div class="t"><span>Work jacket</span><span class="num">€79.00</span></div><div class="d">Polyester/cotton, reflective strips</div><div class="d">Size 46 · Qty 1 · Unit €79.00 · Service 24 months</div></div>
+          <div class="ph-line"><div class="t"><span>Work trousers</span><span class="num">€91.00</span></div><div class="d">Knee-pad pockets</div><div class="d">Size 46 · Qty 2 · Unit €45.50</div></div>
+          <div class="ph-line"><div class="t"><span>Protective gloves</span><span class="num">€32.00</span></div><div class="d">Nitrile-coated, pair</div></div>
+          <div class="ph-line"><div class="t"><span>Safety helmet</span><span class="num">€18.00</span></div><div class="d">EN 397, adjustable</div></div>
+          <div class="ph-line" style="border:0"><div class="t"><span>Total value</span><span class="num">€274.90</span></div></div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span class="on">Orders</span><span class="mid">New order</span><span>Employees</span><span>More</span></div>
+      </div></div>
+      <figcaption><b>Proposed: the same order, scrolled</b>Number, main action (short label "Create link") and ⋯ stay; Print Order and Mark as Signed &amp; Given stay under the facts.</figcaption>
+    </figure>
+    <figure>
+      <div class="phone"><div class="ph-screen">
+        <div class="ph-app"><span class="emb"></span>Workwear &amp; Equipment</div>
+        <div class="ph-hdr"><span class="mb icon ghost"><svg class="ic"><use href="#i-back"/></svg></span><div class="ph-title"><span style="font-size:15px">Jonas Petraitis</span></div><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>New order</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+        <div class="ph-body">
+          <div class="muted">Code W-001</div>
+          <div class="facts"><div><small>Height</small><b>184 cm</b></div><div><small>Clothing</small><b>XL (56–58)</b></div><div><small>Shoes</small><b>43</b></div><div><small>Preferred language</small><b>Lietuvių</b></div></div>
+          <div style="display:flex; justify-content:space-between; font-weight:650; font-size:13px; padding:6px 0">Photos <span class="muted">0 ⌄</span></div>
+          <div style="display:flex; justify-content:space-between; font-weight:650; font-size:13px; padding:6px 0">Items given <span class="muted">5 ⌄</span></div>
+          <div style="display:flex; justify-content:space-between; font-weight:650; font-size:13px; padding:6px 0">Given SIM <span class="muted">1 ⌄</span></div>
+          <div style="display:flex; justify-content:space-between; font-weight:650; font-size:13px; padding:6px 0">Changes <span class="muted">⌄</span></div>
+        </div>
+        <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span class="on">Employees</span><span>More</span></div>
+      </div></div>
+      <figcaption><b>An employee's page, at rest</b>Back is an icon in the row, not a row of its own; the emblem bar is covered once the page scrolls.</figcaption>
+    </figure>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Rules for the record row</h3>
+      <ul class="clean small">
+        <li>Order: back (below <code>lg</code>) · title · main action · ⋯ · ✕ (beside a list).</li>
+        <li>The main action stays in the row at every width. On a phone: icon and a <b>short label</b> where the dictionary has one (<i>Create link</i>, <i>Kurti nuorodą</i>…), else the icon with the full name.</li>
+        <li>Other actions stay outline buttons under the facts, above long content, as the guidelines say.</li>
+        <li>The row's ⋯ and the list row's ⋯ hold the same items in the same order.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Short labels needed</h3>
+      <p class="small">About eight, each in EN, LT and RU. Only the main actions that are longer than about 14 characters: <i>Create confirmation link → Create link</i>, <i>Add New Employee</i> (none, the icon), <i>Mark as Not Returned</i> (it is not a main action). <i>New order</i>, <i>Edit</i>, <i>Give SIM</i>, <i>Return</i>, <i>View Order</i> fit as they are.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FLOWS -->
+<section class="sec" id="flows">
+  <div class="head">
+    <div class="eyebrow">8 · UX flows</div>
+    <h2>Six flows with the proposal in place</h2>
+  </div>
+
+  <div class="flow">
+    <h3>Flow 1 · Phone: find a SIM and give it</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="phone sm"><div class="ph-screen" style="height:420px">
+          <div class="ph-app"><span class="emb"></span>Workwear &amp; Equipment</div>
+          <div class="ph-hdr"><div class="ph-title"><span>SIM Cards</span></div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="ph-body"><div class="seg"><span class="on">All<i>12</i></span><span>In Office<i>7</i></span><span>With Emp…<i>5</i></span></div><div class="inp">SIM, phone or inventory…</div>
+            <div class="ph-list"><div class="ph-row"><div class="t"><span class="num">+370 612 40118</span><span class="b mute">Active</span></div><div class="d">Telia · Jonas Petraitis</div></div><div class="ph-row"><div class="t"><span class="num">+370 612 40119</span><span class="b mute">Active</span></div><div class="d">Telia · Aleksandr Ivanov</div></div></div></div>
+          <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New</span><span>Staff</span><span class="on">More</span></div>
+        </div></div>
+        <p class="cap">At rest: emblem bar, then the header row, tabs and search. The list starts about 150px higher than today.</p>
+      </div>
+      <div class="step">
+        <div class="phone sm"><div class="ph-screen" style="height:420px">
+          <div class="ph-hdr stuck"><div class="ph-title"><span>SIM Cards</span></div><span class="mb" style="outline:2px solid var(--accent)"><svg class="ic"><use href="#i-filter"/></svg></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="ph-body"><div class="ph-list"><div class="ph-row"><div class="t"><span class="num">+370 655 21988</span><span class="b bad">Blocked</span></div><div class="d">Bitė · Office</div></div><div class="ph-row"><div class="t"><span class="num">+370 612 40120</span><span class="b mute">Active</span></div><div class="d">Telia · Office</div></div><div class="ph-row"><div class="t"><span class="num">+370 612 40121</span><span class="b mute">Active</span></div><div class="d">Telia · Office</div></div><div class="ph-row"><div class="t"><span class="num">+370 612 40122</span><span class="b mute">Active</span></div><div class="d">Telia · Office</div></div></div></div>
+          <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New</span><span>Staff</span><span class="on">More</span></div>
+        </div></div>
+        <p class="cap">Scrolled: the header covers the emblem bar. Tap <b>Filters</b>.</p>
+      </div>
+      <div class="step">
+        <div class="phone sm"><div class="ph-screen" style="height:420px">
+          <div class="ph-hdr stuck"><div class="ph-title"><span>SIM Cards</span></div><span class="mb" style="background:var(--surface-2)"><svg class="ic"><use href="#i-filter"/></svg></span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="ph-body"><div class="seg"><span>All<i>12</i></span><span class="on">In Office<i>7</i></span><span>With Emp…<i>5</i></span></div><div class="inp">SIM, phone or inventory…</div><div class="inp" style="outline:2px solid var(--accent); color:var(--fg)">Any location ⌄</div><div class="inp">All providers ⌄</div><div class="inp">Any documents ⌄</div><span class="mb" style="justify-self:start"><svg class="ic"><use href="#i-sort"/></svg>Inventory No.<svg class="ic"><use href="#i-down"/></svg></span></div>
+          <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New</span><span>Staff</span><span class="on">More</span></div>
+        </div></div>
+        <p class="cap">The filter bar scrolls back under the header and opens; focus is in Location. Choose In Office, then a row.</p>
+      </div>
+      <div class="step">
+        <div class="phone sm"><div class="ph-screen" style="height:420px">
+          <div class="ph-hdr stuck"><span class="mb icon ghost"><svg class="ic"><use href="#i-back"/></svg></span><div class="ph-title"><span class="num" style="font-size:13px">+370 612 40120</span></div><span class="mb pri" style="outline:2px solid var(--accent); outline-offset:2px">Give SIM</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="ph-body"><div style="font-weight:650; font-size:13px; padding:6px 0; display:flex; justify-content:space-between">Assignments <span class="muted">3 ⌃</span></div><div class="ph-line"><div class="t"><span>Jonas Petraitis</span><span class="b line">Returned</span></div><div class="d">2026-03-02 – 2026-07-20 · Signed Copy Uploaded</div></div><div class="ph-line"><div class="t"><span>Ona Kazlauskienė</span><span class="b line">Returned</span></div><div class="d">2025-11-10 – 2026-02-27</div></div><div class="ph-line"><div class="t"><span>Tomas Jankauskas</span><span class="b line">Returned</span></div><div class="d">2025-06-01 – 2025-11-03</div></div></div>
+          <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New</span><span>Staff</span><span class="on">More</span></div>
+        </div></div>
+        <p class="cap">On the SIM's page, deep in Assignments, <b>Give SIM</b> is still one tap away, in the row.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:28px">
+    <h3>Flow 2 · Desktop: work through waiting orders</h3>
+    <div class="stage">
+      <div class="desk" role="img" aria-label="Orders on a desktop, scrolled: the header, the column heads and the pane's first row stay in view">
+        <div class="side"><div class="br"><i></i>Workwear</div><span>New order</span><span>Dashboard</span><span>Workwear</span><span class="sub on">Orders</span><span class="sub">Item Catalogue</span><span class="sub">Item Sets</span><span>Company Assets</span><span>Employees</span></div>
+        <div class="dmain">
+          <div class="dlist">
+            <div class="dhdr"><div class="ttl">Orders</div><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Create Order</span></div>
+            <span class="pin" style="left:-22px; top:18px">1</span>
+            <table class="dtable">
+              <thead><tr><th>Record</th><th>Employee</th><th>Date ↓</th><th>Status</th><th style="text-align:right">Total value</th></tr></thead>
+              <tbody>
+                <tr class="grp"><td colspan="5">SEPTEMBER 2026</td></tr>
+                <tr><td class="num">WE-000016</td><td>Rasa Stankevičiūtė</td><td>29 Sept</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€41.00</td></tr>
+                <tr class="sel"><td class="num">WE-000015</td><td>Ona Kazlauskienė</td><td>24 Sept</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€274.90</td></tr>
+                <tr><td class="num">WE-000014</td><td>Tomas Jankauskas</td><td>19 Sept</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€34.40</td></tr>
+                <tr><td class="num">WE-000013</td><td>Mindaugas Vasiliauskas</td><td>12 Sept</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€170.00</td></tr>
+                <tr class="grp"><td colspan="5">AUGUST 2026</td></tr>
+                <tr><td class="num">WE-000012</td><td>Jonas Petraitis</td><td>28 Aug</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€86.90</td></tr>
+                <tr><td class="num">WE-000011</td><td>Aleksandr Ivanov</td><td>20 Aug</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€224.90</td></tr>
+                <tr><td class="num">WE-000010</td><td>Rasa Stankevičiūtė</td><td>14 Aug</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€18.00</td></tr>
+                <tr><td class="num">WE-000009</td><td>Ona Kazlauskienė</td><td>9 Aug</td><td><span class="b mute">Ordered</span></td><td class="num" style="text-align:right">€32.00</td></tr>
+              </tbody>
+            </table>
+            <span class="pin" style="left:-22px; top:66px">2</span>
+          </div>
+          <div style="position:relative">
+            <div class="dpane">
+              <div class="row1"><div class="ttl num">WE-000015</div><span class="mb pri"><svg class="ic"><use href="#i-link"/></svg>Create confirmation link</span><span class="mb icon ghost"><svg class="ic"><use href="#i-more"/></svg></span><span class="mb icon ghost"><svg class="ic"><use href="#i-x"/></svg></span></div>
+              <div class="body">
+                <div class="ph-line"><div class="t"><span>Work trousers</span><span class="num">€91.00</span></div><div class="d">Size 46 · Qty 2 · Unit €45.50 · Service 12 months</div></div>
+                <div class="ph-line"><div class="t"><span>Protective gloves</span><span class="num">€32.00</span></div><div class="d">Size – · Qty 10 · Unit €3.20 · Service 1 month</div></div>
+                <div class="ph-line"><div class="t"><span>Safety helmet</span><span class="num">€18.00</span></div><div class="d">Size – · Qty 1 · Unit €18.00 · Service 36 months</div></div>
+                <div class="ph-line"><div class="t"><span>Total value</span><span class="num">€274.90</span></div></div>
+                <div style="display:flex; justify-content:space-between; font-weight:650; font-size:13px; padding:10px 0">Changes <span class="muted">⌄</span></div>
+                <p class="small muted" style="border-top:1px solid var(--line); padding-top:8px; font-size:10.5px"><span class="kbd">J</span> / <span class="kbd">K</span> next or previous order · <span class="kbd">Esc</span> close</p>
+              </div>
+            </div>
+            <span class="pin" style="left:-14px; top:24px">3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ol class="pins">
+      <li><span><b>The header</b> stays over the list's column: Orders · + Create Order.</span></li>
+      <li><span><b>The column heads</b> stick under it (<code>top: var(--page-header)</code>); the month rows scroll.</span></li>
+      <li><span><b>The pane's first row</b> stays inside its own scroll while the lines scroll. <span class="kbd">J</span> / <span class="kbd">K</span> change the order; the row is the first thing that changes, so the eye stays in one place.</span></li>
+    </ol>
+  </div>
+
+  <div class="flow" style="margin-top:28px">
+    <h3>Flow 3 · One screen at three widths</h3>
+    <div class="stage" style="display:grid; gap:14px">
+      <div>
+        <div class="small muted" style="margin-bottom:6px">1280px · desktop</div>
+        <div class="anat" style="padding:0; min-width:0; border:0; background:none"><div class="bar" style="background:var(--surface)"><div class="ttl" style="font-size:18px">SIM Cards</div><span class="mb"><svg class="ic"><use href="#i-file"/></svg>Preview PDF</span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span></div></div>
+      </div>
+      <div style="max-width:600px">
+        <div class="small muted" style="margin-bottom:6px">768px · tablet</div>
+        <div class="anat" style="padding:0; min-width:0; border:0; background:none"><div class="bar" style="background:var(--surface)"><div class="ttl" style="font-size:18px">SIM Cards</div><span class="mb"><svg class="ic"><use href="#i-file"/></svg>Preview PDF</span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span></div></div>
+      </div>
+      <div style="max-width:340px">
+        <div class="small muted" style="margin-bottom:6px">375px · phone, ⋯ open</div>
+        <div class="anat" style="padding:0 0 92px; min-width:0; border:0; background:none"><div class="bar" style="background:var(--surface); position:relative"><div class="ttl" style="font-size:17px">SIM Cards</div><span class="mb"><svg class="ic"><use href="#i-filter"/></svg>Filters (1)</span><span class="mb pri"><svg class="ic"><use href="#i-plus"/></svg>Add SIM</span><span class="mb icon ghost" style="outline:2px solid var(--accent)"><svg class="ic"><use href="#i-more"/></svg></span>
+          <div class="menu" style="position:absolute; right:6px; top:50px; width:200px"><div class="it hl"><svg class="ic"><use href="#i-file"/></svg>Preview PDF</div></div></div></div>
+      </div>
+    </div>
+    <p class="small muted">Nothing wraps at any width. Preview PDF is the same action in both places: the button from <code>md</code>, the ⋯ item below.</p>
+  </div>
+
+  <div class="flow" style="margin-top:28px">
+    <h3>Flow 4 · Keyboard and screen reader</h3>
+    <div class="taborder">
+      <span class="f mb ghost" data-n="1">Skip to content</span><span class="arrow">→</span>
+      <span class="f title-i" data-n="2" style="width:22px; height:22px">i</span><span class="arrow">→</span>
+      <span class="f mb" data-n="3"><svg class="ic"><use href="#i-refresh"/></svg>Refresh</span><span class="arrow">→</span>
+      <span class="f mb" data-n="4">Export</span><span class="arrow">→</span>
+      <span class="f mb icon ghost" data-n="5"><svg class="ic"><use href="#i-more"/></svg></span><span class="arrow">→</span>
+      <span class="f inp" data-n="6" style="width:150px">Search the log</span><span class="arrow">→ …</span>
+    </div>
+    <ol class="flowlist small">
+      <li>Tab reaches the title's ⓘ, then each toolbar control in the order shown, then the filter bar. The toolbar is a labelled group, not <code>role="toolbar"</code>: that role promises arrow-key movement inside it, and a header of three controls is quicker with Tab.</li>
+      <li><span class="kbd">/</span> focuses the search; the root's <code>scroll-padding-top: var(--page-header)</code> scrolls it to just below the stuck header, so it is never hidden (WCAG 2.2, 2.4.11 Focus Not Obscured).</li>
+      <li>On ⋯, Enter opens; the arrows move; typing a letter jumps; Escape closes and puts focus back on ⋯.</li>
+      <li>Sticking is never announced. Nothing changed but the scroll position.</li>
+      <li>Every icon-only control has a name and a tooltip: "Refresh", "Back to Orders", "More actions for Audit log".</li>
+    </ol>
+  </div>
+
+  <div class="grid g2" style="margin-top:28px">
+    <div class="card flow">
+      <h3>Flow 5 · Switch dashboards</h3>
+      <ol class="flowlist small">
+        <li>An administrator who is also a manager opens the Dashboard. The toolbar shows <b>Refresh</b> and <b>Dashboards ▾</b>.</li>
+        <li>Choose Dashboards: Administrator (ticked), Manager, Employee — only those the user's roles open.</li>
+        <li>Choose Manager: the Manager Dashboard opens, its menu with Manager ticked. Back returns to the Dashboard.</li>
+      </ol>
+      <p class="small muted">A user with one dashboard has no menu button.</p>
+    </div>
+    <div class="card flow">
+      <h3>Flow 6 · Sort a stacked list</h3>
+      <ol class="flowlist small">
+        <li>Employees on a phone. In the filter bar, after the search: <b>Sort ▾</b> reads "Name, A–Z".</li>
+        <li>Choose it: Name, Code, Height, Clothing, Shoes as radio items; a separator; A–Z, Z–A.</li>
+        <li>Choose Z–A: the menu closes, the list re-sorts, the button reads "Name, Z–A". On a wide table the button is hidden and the column heads sort, as now.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- PER SCREEN -->
+<section class="sec" id="screens">
+  <div class="head">
+    <div class="eyebrow">4 · Per screen</div>
+    <h2>Every page header, today and proposed</h2>
+    <p class="lede">Desktop is the toolbar from <code>lg</code>; phone is below <code>md</code>. Record headers follow §6.</p>
+  </div>
+  <div class="scroll-x">
+  <table class="t stack">
+    <thead><tr><th>Screen</th><th>Today</th><th>Desktop</th><th>Phone</th><th>⋯ holds</th></tr></thead>
+    <tbody>
+      <tr><td data-l="Screen"><b>Dashboard</b> (administrator)</td><td data-l="Today">Manager Dashboard →, Employee Dashboard →, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾</td><td data-l="Phone">⟳ · Dashboards ▾</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Manager Dashboard</b></td><td data-l="Today">Employee Dashboard →, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾ (two or more)</td><td data-l="Phone">⟳ · Dashboards ▾</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Employee Dashboard</b></td><td data-l="Today">Create Order, Refresh</td><td data-l="Desktop">Refresh · + Create Order</td><td data-l="Phone">⟳</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Orders</b></td><td data-l="Today">Create Order, Filters</td><td data-l="Desktop">+ Create Order</td><td data-l="Phone">Filters (n)</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Create Order</b></td><td data-l="Today">Clear order</td><td data-l="Desktop">⋯</td><td data-l="Phone">⋯</td><td data-l="⋯ holds">Clear order…</td></tr>
+      <tr><td data-l="Screen"><b>Employees</b></td><td data-l="Today">Add New Employee</td><td data-l="Desktop">+ Add New Employee</td><td data-l="Phone">+ Add New Employee (icon below the fit)</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>SIM Cards</b></td><td data-l="Today">Preview PDF, Add SIM, Filters</td><td data-l="Desktop">Preview PDF · + Add SIM</td><td data-l="Phone">Filters (n) · + Add SIM · ⋯</td><td data-l="⋯ holds">phone: Preview PDF</td></tr>
+      <tr><td data-l="Screen"><b>Equipment</b></td><td data-l="Today">Add Asset, Filters</td><td data-l="Desktop">+ Add Asset</td><td data-l="Phone">Filters (n) · + Add Asset</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Item Catalogue</b></td><td data-l="Today">Pictures, Add Item</td><td data-l="Desktop">+ Add Item · ⋯</td><td data-l="Phone">+ Add Item · ⋯</td><td data-l="⋯ holds">Pictures</td></tr>
+      <tr><td data-l="Screen"><b>Item Sets</b></td><td data-l="Today">Add Item Set</td><td data-l="Desktop">+ Add Item Set</td><td data-l="Phone">+ Add Item Set</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Help</b></td><td data-l="Today">two segmented controls</td><td data-l="Desktop">Guide language ▾ · Device ▾</td><td data-l="Phone">EN ▾ · Phone ▾</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Replacements due, Account, Settings</b></td><td data-l="Today">–</td><td data-l="Desktop">–</td><td data-l="Phone">–</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Overview, System, Usage, Security</b></td><td data-l="Today">Refresh</td><td data-l="Desktop">Refresh</td><td data-l="Phone">⟳</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Users, Roles &amp; permissions</b></td><td data-l="Today">Add User / Add Role</td><td data-l="Desktop">+ Add …</td><td data-l="Phone">+ Add …</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Audit log</b></td><td data-l="Today">Export, Filters, Refresh</td><td data-l="Desktop">Refresh · Export</td><td data-l="Phone">Filters (n) · ⟳ · ⋯</td><td data-l="⋯ holds">phone: Export</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ROLLOUT -->
+<section class="sec" id="rollout">
+  <div class="head">
+    <div class="eyebrow">10 · Rollout and questions</div>
+    <h2>Six steps, each shippable alone</h2>
+  </div>
+  <div class="scroll-x">
+  <table class="t stack">
+    <thead><tr><th>Step</th><th>What</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr><td data-l="Step">1</td><td data-l="What"><code>PageHeader</code> one row and sticky; <code>--page-header</code>; <code>data-stuck</code>; <code>scroll-padding-top</code>; short-screen and print fallbacks; the phone header covers the emblem bar</td><td data-l="Effort">M</td></tr>
+      <tr><td data-l="Step">2</td><td data-l="What"><code>Toolbar</code>, <code>ToolbarAction</code> (<code>showFrom</code>), <code>ToolbarMenu</code>, <code>ToolbarMore</code>; the 20 headers into slot order; Pictures and Clear order… into ⋯</td><td data-l="Effort">M</td></tr>
+      <tr><td data-l="Step">3</td><td data-l="What"><code>SortMenu</code> instead of <code>SortControl</code>'s row; Employees' tabs above its search</td><td data-l="Effort">S</td></tr>
+      <tr><td data-l="Step">4</td><td data-l="What">Record rows: sticky in <code>DetailPane</code> and on record pages; back as an icon below <code>lg</code>; short labels</td><td data-l="Effort">M</td></tr>
+      <tr><td data-l="Step">5</td><td data-l="What"><code>Table stickyHead</code> (with <code>overflow-x: clip</code>) on the Audit log, Orders, the registers, Users</td><td data-l="Effort">S</td></tr>
+      <tr><td data-l="Step">6</td><td data-l="What">ui-language, ui-ux-guidelines, <code>web/AGENTS.md</code>, <code>docs/testing.md</code>; e2e at 375, 768 and 1280px</td><td data-l="Effort">S</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="card">
+    <h3>A sketch of the API</h3>
+<pre class="mono" style="margin:0; white-space:pre-wrap; font-size:12.5px; line-height:1.6">&lt;PageHeader title={t.assets.simCards} description={…}&gt;
+  &lt;Toolbar more={t.common.moreActions(t.assets.simCards)}&gt;
+    &lt;ToolbarFilters count={extra} open={showFilters} onToggle={…} controls="asset-filters" /&gt;
+    &lt;ToolbarAction icon={FileText} label={t.assets.previewPdf} onSelect={previewPdf} showFrom="md" /&gt;
+    &lt;ToolbarAction primary icon={Plus} label={t.assets.addSimCard} onSelect={() =&gt; setEditing('new')} /&gt;
+  &lt;/Toolbar&gt;
+&lt;/PageHeader&gt;</pre>
+    <p class="small muted">Each <code>ToolbarAction</code> renders as a <code>Button</code> in the row and as a <code>DropdownMenuItem</code> inside ⋯ (a context says which); CSS shows one per width. Slot order is fixed by the component, not by the order a screen writes them in.</p>
+  </div>
+
+  <div class="card">
+    <h3>New words for ui-language.md</h3>
+    <p class="small muted">Builder words; none is shown on screen. Each goes into ui-language.md before it is used in code.</p>
+    <div class="scroll-x">
+    <table class="t stack">
+      <thead><tr><th>Term</th><th>Meaning</th><th>Reader words (EN / LT / RU)</th></tr></thead>
+      <tbody>
+        <tr><td data-l="Term"><b>Toolbar</b></td><td data-l="Meaning">the page or record header's controls, in their fixed order</td><td data-l="Reader words">"the buttons at the top" / "viršuje esantys mygtukai" / «кнопки вверху»</td></tr>
+        <tr><td data-l="Term"><b>Stuck header</b></td><td data-l="Meaning">the page header pinned at the top while the screen scrolls</td><td data-l="Reader words">"the bar at the top of the screen" / "ekrano viršuje esanti juosta" / «панель вверху экрана»</td></tr>
+        <tr><td data-l="Term"><b>Menu button</b></td><td data-l="Meaning">a labelled button with a chevron that opens a menu of one kind of choice</td><td data-l="Reader words">its label: "choose <b>Dashboards</b>"</td></tr>
+        <tr><td data-l="Term"><b>Overflow</b></td><td data-l="Meaning">toolbar controls that move into ⋯ below their width</td><td data-l="Reader words">"under ⋯"</td></tr>
+        <tr><td data-l="Term"><b>Sort ▾</b></td><td data-l="Meaning">the filter bar's sort menu button</td><td data-l="Reader words">"<b>Sort</b>"; "Sort by" heads its menu</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="small muted">Changed entries: Page header, Header action, Menu, Back link, and Button kinds (Destructive: "never a header action" becomes "never a toolbar button").</p>
+  </div>
+  <div class="card">
+    <h3>Open questions</h3>
+    <ol class="clean">
+      <li><b>Brand on a phone</b>: is the emblem at rest, covered after 56px, enough? Or the screen's title in that bar from the start, the emblem only in More?</li>
+      <li><b>Create Order on a phone's Orders</b>: hide it, since the bottom bar's raised New order is the same action?</li>
+      <li><b>Two primaries</b> with a pane open: keep both filled, or the screen's outline while a pane is open?</li>
+      <li><b>Clear order</b> into ⋯ as Clear order…: used often enough to stay a button?</li>
+      <li><b>Option C for the Audit log</b>, later, if people filter it while deep in the list?</li>
+    </ol>
+  </div>
+</section>
+
+<footer>The Help guide's text and screenshots will be out of date after steps 1–4; they are updated separately. The text version, with file references, is docs/ux/screen-header-toolbar.md.</footer>
+</main>
+
+<script>
+(() => {
+  // The report's header and the live phone header: stuck while their 1px mark is out of view.
+  const stick = (mark, el, root) => {
+    if (!mark || !el || !('IntersectionObserver' in window)) return
+    new IntersectionObserver(([e]) => e.isIntersecting ? el.removeAttribute('data-stuck') : el.setAttribute('data-stuck', ''), { root: root || null, threshold: 0 }).observe(mark)
+  }
+  stick(document.getElementById('top-sentinel'), document.getElementById('top'))
+  const live = document.getElementById('live')
+  stick(document.getElementById('live-sentinel'), document.getElementById('live-hdr'), live)
+
+  // The live phone's register.
+  const list = document.getElementById('live-list')
+  const people = ['Jonas Petraitis', 'Aleksandr Ivanov', 'Unknown', 'Office', 'Office', 'Office', 'Ona Kazlauskienė', 'Office', 'Tomas Jankauskas', 'Office', 'Rasa Stankevičiūtė', 'Office']
+  const status = [['Active','mute'],['Active','mute'],['Active','mute'],['Blocked','bad'],['Active','mute'],['Not Activated','line'],['Active','mute'],['Active','mute'],['Active','mute'],['Blocked','bad'],['Active','mute'],['Active','mute']]
+  people.forEach((p, i) => {
+    const row = document.createElement('div')
+    row.className = 'ph-row'
+    const n = 40118 + i
+    row.innerHTML = `<div class="t"><span class="num">+370 612 ${n}</span><span class="b ${status[i][1]}">${status[i][0]}</span></div><div class="d">8937 0011 2233 4455 ${667 + i} · ${i % 3 ? 'Telia' : 'Bitė'} · ${p}</div>`
+    list.appendChild(row)
+  })
+
+  // Overflow demo: language and width.
+  const words = {
+    en: { title: 'SIM Cards', filters: 'Filters (1)', pdf: 'Preview PDF', add: 'Add SIM', more: 'More actions for SIM Cards' },
+    lt: { title: 'SIM kortelės', filters: 'Filtrai (1)', pdf: 'Peržiūrėti PDF', add: 'Pridėti SIM', more: 'Daugiau veiksmų: SIM kortelės' },
+    ru: { title: 'SIM-карты', filters: 'Фильтры (1)', pdf: 'Просмотр PDF', add: 'Добавить SIM', more: 'Другие действия: SIM-карты' },
+  }
+  const demo = document.getElementById('tb-demo')
+  document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => {
+    const w = words[b.dataset.lang]
+    document.querySelectorAll('[data-lang]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    demo.querySelectorAll('[data-t]').forEach((el) => { el.textContent = w[el.dataset.t] })
+    demo.querySelector('summary').setAttribute('aria-label', w.more)
+    demo.querySelector('[data-name="add"]').setAttribute('title', w.add)
+  }))
+  const read = document.getElementById('width-read')
+  if ('ResizeObserver' in window) new ResizeObserver(([e]) => { read.textContent = Math.round(e.contentRect.width) + 'px' }).observe(demo)
+
+  // Mark the section in view in the report's tabs.
+  const links = [...document.querySelectorAll('nav.jump a')]
+  const secs = links.map((a) => document.querySelector(a.getAttribute('href')))
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) links.forEach((a) => a.setAttribute('aria-current', String(a.getAttribute('href') === '#' + e.target.id))) })
+    }, { rootMargin: '-120px 0px -70% 0px' })
+    secs.forEach((s) => s && io.observe(s))
+  }
+})()
+</script>
+</body>
+</html>

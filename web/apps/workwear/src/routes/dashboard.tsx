@@ -1,6 +1,5 @@
 import type { Dashboard as DashboardData, DashboardMonth } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Button } from '@ppe/ui/components/button'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -8,7 +7,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { AssetsCard } from '@/components/assets-card'
-import { BarList, MonthChart, MoreLink, NeedsYouPanel, formatDate } from '@/components/dashboard'
+import { BarList, DashboardsMenu, MonthChart, MoreLink, NeedsYouPanel, formatDate } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { backupHealth, formatBytes, healthText } from '@ppe/backups'
 import { type Need, changeText, formatDays, monthLabel, share } from '@/lib/dashboard'
@@ -26,9 +25,6 @@ type Navigate = (to: Route) => void
  */
 export function Dashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
-  const { can } = useSession()
-  const isManager = can('dashboard.manager')
-  const isEmployee = can('dashboard.employee')
   const board = useLoad(() => client.dashboard())
   const d = board.data
 
@@ -41,22 +37,9 @@ export function Dashboard({ navigate }: { navigate: Navigate }) {
             ? `${t.dashboard.adminIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.adminIntro
         }
-        actions={
-          <>
-            {/* An administrator who also holds another role reaches its dashboard from here, not from a tab. */}
-            {isManager ? (
-              <Button variant="ghost" onClick={() => navigate({ name: 'managerDashboard' })}>
-                {t.dashboard.managerDashboard} <ArrowRight aria-hidden />
-              </Button>
-            ) : null}
-            {isEmployee ? (
-              <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
-                {t.dashboard.employeeDashboard} <ArrowRight aria-hidden />
-              </Button>
-            ) : null}
-            <RefreshButton loading={board.loading} onClick={board.reload} />
-          </>
-        }
+        refresh={<RefreshButton loading={board.loading} onClick={board.reload} />}
+        // An administrator who also holds another role reaches its dashboard from here, not from a tab.
+        menu={<DashboardsMenu current="dashboard" navigate={navigate} />}
       />
       <Loaded load={board}>
         {(d) => (

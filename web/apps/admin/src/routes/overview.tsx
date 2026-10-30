@@ -46,7 +46,7 @@ export function OverviewPage({ navigate }: { navigate: (to: Route) => void }) {
   const tz = useLoad(() => client.settings()).data?.timezone
   return (
     <>
-      <PageHeader title={t.overview.title} description={t.overview.description} actions={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
+      <PageHeader title={t.overview.title} description={t.overview.description} refresh={<RefreshButton loading={loaded.loading} onClick={loaded.reload} />} />
       <Loaded load={loaded}>
         {(o) => (
           <div className="flex flex-col gap-6">

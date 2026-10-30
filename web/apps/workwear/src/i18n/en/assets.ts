@@ -61,7 +61,6 @@ export const assets = {
   searchLabel: 'Search SIMs',
   searchPlaceholder: 'SIM, phone or inventory number, or employee',
   filters: 'Filters',
-  filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Location and return',

@@ -1,15 +1,15 @@
 import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
-import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { Button } from '@ppe/ui/components/button'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import type { Help } from '@ppe/ui/components/tooltip'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronRight, Plus, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
@@ -221,19 +221,12 @@ export function History({
     >
       <PageHeader
         title={t.history.title}
-        actions={
-          <>
-            {/* As Employees has Add New Employee: a link, so it also opens in a new tab. */}
-            <a {...linkTo({ name: 'createOrder' }, navigate)} className={buttonVariants()}>
-              <Plus aria-hidden /> {t.shell.createOrder}
-            </a>
-            <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="history-filters" onClick={() => setShowFilters((v) => !v)}>
-              <SlidersHorizontal aria-hidden /> {foldedFilters > 0 ? t.history.filtersCount(foldedFilters) : t.history.filters}
-            </Button>
-          </>
-        }
+        filters={{ label: t.history.filters, count: foldedFilters, controls: 'history-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
+        // A link, so it also opens in a new tab. Not on a phone, whose tab bar has New order.
+        primary={{ label: t.shell.createOrder, icon: Plus, link: linkTo({ name: 'createOrder' }, navigate), hiddenBelow: 'md' }}
       />
 
+      <div data-slot="filter-bar">
       <Segmented
         label={t.history.status}
         options={statusTabs().map((tab) => ({ ...tab, count: counts.data?.[tab.value] }))}
@@ -294,11 +287,8 @@ export function History({
             </Button>
           </div>
         )}
-        {/* On a phone the sort order folds away with the filters; wider, it sits above the rows. */}
-        <div className={cn('md:hidden', folded)}>
-          <SortControl columns={columns} {...sortProps} />
-        </div>
       </section>
+      </div>
       {orders.error ? (
         <ErrorState error={orders.error} onRetry={orders.reload} />
       ) : !orders.data ? (
@@ -334,11 +324,8 @@ export function History({
           <Table
             stack="list"
             stackBelow={selected ? 'sm' : 'lg'}
-            sortControl={
-              <div className="max-md:hidden">
-                <SortControl columns={columns} {...sortProps} />
-              </div>
-            }
+            sortControl={<SortMenu columns={columns} {...sortProps} />}
+            stickyHead
           >
             <TableHeader>
               <TableRow>

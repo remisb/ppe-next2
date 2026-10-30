@@ -288,6 +288,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   layout and spacing, explaining things (ⓘ, status badges with issues, help tooltips),
   collapsible sections, moving items, touch and keyboard, loading, the components to use and
   a checklist for a new pane, section or badge.
+- `docs/ux/screen-header-toolbar.md` (and `.html`) — the sticky screen header, its toolbar
+  order, the screen's ⋯ and Sort ▾ (Option B, built); the rules are in ui-language.md.
 - `docs/ui-language.md` — the UI and UX language of both apps: the parts of a screen, overlays,
   controls, list shapes, states and feedback, the named patterns (list and detail, ask first,
   review first…), casing, verbs and punctuation on screen, and its known deviations.

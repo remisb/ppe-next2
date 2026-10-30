@@ -5,7 +5,8 @@ import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
-import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
+import { ShortWords } from '@ppe/ui/components/page-header'
+import { RecordHeader, RecordTitle, type RecordNav } from '@ppe/ui/components/record-header'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -78,6 +79,7 @@ export function OrderDetail({
               order={o}
               timeZone={timeZone}
               navigate={navigate}
+              nav={{ backLabel: t.history.title, onBack: onClose, closeLabel: t.history.closeOrder }}
               onHandOver={() => setHandingOver(true)}
               onOpenRecord={(print) => onOpenRecord(o.id, print)}
               onGiven={() => {
@@ -127,6 +129,7 @@ function OrderBody({
   order: o,
   timeZone,
   navigate,
+  nav,
   onHandOver,
   onOpenRecord,
   onGiven,
@@ -135,6 +138,7 @@ function OrderBody({
   order: Order
   timeZone: string | undefined
   navigate: (to: Route) => void
+  nav: RecordNav
   onHandOver: () => void
   onOpenRecord: (print: boolean) => void
   /** A signed paper confirmation was recorded: the order is Given. */
@@ -166,7 +170,7 @@ function OrderBody({
   const main = actions.includes('createLink') ? (
     link ? (
       <Button variant="outline" aria-expanded={linkOpen} aria-controls={linkId} onClick={() => setLinkOpen((v) => !v)}>
-        <Link2 aria-hidden /> {t.history.confirmationLink}
+        <Link2 aria-hidden /> <ShortWords label={t.history.confirmationLink} short={t.history.confirmationLinkShort} />
         <ChevronDown aria-hidden className={cn('transition-transform motion-reduce:transition-none', linkOpen && 'rotate-180')} />
       </Button>
     ) : (
@@ -179,12 +183,12 @@ function OrderBody({
           })
         }
       >
-        <Link2 aria-hidden /> {t.history.createLink}
+        <Link2 aria-hidden /> <ShortWords label={t.history.createLink} short={t.history.createLinkShort} />
       </Button>
     )
   ) : actions.includes('viewRecord') ? (
     <Button variant="outline" onClick={() => onOpenRecord(false)}>
-      <FileText aria-hidden /> {t.history.viewOrder}
+      <FileText aria-hidden /> <ShortWords label={t.history.viewOrder} short={t.history.viewOrderShort} />
     </Button>
   ) : null
 
@@ -192,6 +196,7 @@ function OrderBody({
     <>
       <RecordHeader
         className="mb-0"
+        nav={nav}
         title={<RecordTitle>{o.record_number}</RecordTitle>}
         actions={
           <>

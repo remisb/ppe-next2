@@ -1,7 +1,6 @@
 import type { ManagerDashboard as Data } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
-import { Button } from '@ppe/ui/components/button'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -10,7 +9,7 @@ import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from 'luc
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { AssetsCard } from '@/components/assets-card'
-import { BarList, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
+import { BarList, DashboardsMenu, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
 import { formatTime } from '@ppe/ui/lib/dates'
@@ -28,7 +27,6 @@ type Navigate = (to: Route) => void
  */
 export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
   const { client } = useApi()
-  const isEmployee = useSession().can('dashboard.employee')
   const board = useLoad(() => client.managerDashboard())
   const d = board.data
 
@@ -41,17 +39,9 @@ export function ManagerDashboard({ navigate }: { navigate: Navigate }) {
             ? `${t.dashboard.managerIntro} ${t.dashboard.updated(formatTime(d.generated_at, d.timezone))}`
             : t.dashboard.managerIntro
         }
-        actions={
-          <>
-            {/* A manager who also prepares orders reaches that dashboard from here, not from a tab. */}
-            {isEmployee ? (
-              <Button variant="ghost" onClick={() => navigate({ name: 'employeeDashboard' })}>
-                {t.dashboard.employeeDashboard} <ArrowRight aria-hidden />
-              </Button>
-            ) : null}
-            <RefreshButton loading={board.loading} onClick={board.reload} />
-          </>
-        }
+        refresh={<RefreshButton loading={board.loading} onClick={board.reload} />}
+        // A manager who also prepares orders, or administers, reaches those dashboards from here, not from a tab.
+        menu={<DashboardsMenu current="managerDashboard" navigate={navigate} />}
       />
       <Loaded load={board}>
         {(d) => (

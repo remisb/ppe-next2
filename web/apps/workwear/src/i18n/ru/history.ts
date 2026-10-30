@@ -5,7 +5,6 @@ import type { HistoryText } from '../en/history'
 export const history: HistoryText = {
   title: 'Заказы',
   filters: 'Фильтры',
-  filtersCount: (n: number) => `Фильтры (${n})`,
   status: 'Статус',
   employee: 'Сотрудник',
   recordNumber: 'Номер записи',
@@ -81,6 +80,9 @@ export const history: HistoryText = {
     `${record} · ${name}. Сотрудник подтверждает получение на защищённой странице или подписывает распечатанную запись.`,
   electronicConfirmation: 'Электронное подтверждение',
   createLink: 'Создать ссылку для подтверждения',
+  createLinkShort: 'Создать ссылку',
+  viewOrderShort: 'Открыть',
+  confirmationLinkShort: 'Ссылка',
   paperConfirmation: 'Подтверждение на бумаге',
   paperSteps: 'Распечатайте запись, дайте сотруднику подписать её, затем отметьте, что подписанный экземпляр получен.',
   recordPaper: 'Отметить подписанное подтверждение на бумаге',

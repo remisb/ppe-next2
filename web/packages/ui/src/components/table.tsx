@@ -15,26 +15,33 @@ import { InControl } from './tooltip.tsx'
  * `stackBelow="sm"` to 30rem, for one cut down to a few short columns.
  * `"list"` makes the cards one bordered list of short rows instead, for
  * lists people scan to find a record (History, Employees, Item Catalogue).
- * `sortControl` (a SortControl) shows above the cards only while stacked,
+ * `sortControl` (a SortMenu) shows above the cards only while stacked,
  * standing in for the sortable headers the stacked table hides. Compact
  * density (`compact:`, a user's choice with a mouse) shortens the rows of an
- * unstacked table; a stacked one keeps its own spacing.
+ * unstacked table; a stacked one keeps its own spacing. `stickyHead` keeps
+ * the column heads in view under the screen's stuck header (PageHeader)
+ * while a long table scrolls; such a table must not scroll sideways (stack
+ * it instead), as its wrapper then clips rather than scrolls: a scroll
+ * container would hold the heads instead of the window.
  */
 type Stack = boolean | "grid" | "list"
 const StackContext = React.createContext<Stack>(false)
+const StickyContext = React.createContext(false)
 
 function Table({
   className,
   stack = false,
   stackBelow = "md",
   sortControl,
+  stickyHead = false,
   ...props
-}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode }) {
+}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode; stickyHead?: boolean }) {
   return (
     <StackContext value={stack}>
+    <StickyContext value={stickyHead}>
       <div
         data-slot="table-container"
-        className={cn("relative w-full overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : stackBelow === "sm" ? "@container/table-sm" : "@container/table"))}
+        className={cn("relative w-full", stickyHead ? "overflow-x-clip" : "overflow-x-auto", stack && (stackBelow === "lg" ? "@container/table-lg" : stackBelow === "sm" ? "@container/table-sm" : "@container/table"))}
       >
         {stack && sortControl ? <div className="mb-3 hidden stacked:block">{sortControl}</div> : null}
         <table
@@ -43,16 +50,24 @@ function Table({
           {...props}
         />
       </div>
+    </StickyContext>
     </StackContext>
   )
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   const stack = React.use(StackContext)
+  const sticky = React.use(StickyContext)
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", stack && "stacked:hidden", className)}
+      className={cn(
+        "[&_tr]:border-b",
+        stack && "stacked:hidden",
+        // The rule is each head's shadow: a collapsed border stays behind with the table. Not in print or on a short window.
+        sticky && "sticky top-(--header-offset) z-10 bg-background [&_th]:shadow-[inset_0_-1px_0_var(--color-border)] print:static",
+        className
+      )}
       {...props}
     />
   )

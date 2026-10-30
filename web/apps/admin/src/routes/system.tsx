@@ -441,7 +441,7 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
         <Loading />
       ) : (
         <>
-          <RecordHeader className="mb-0" title={<RecordTitle className="text-lg">{e.message}</RecordTitle>}>
+          <RecordHeader className="mb-0" nav={{ backLabel: t.system.errors, onBack: onClose, closeLabel: t.system.closeError }} title={<RecordTitle className="text-lg">{e.message}</RecordTitle>}>
             <p className="text-sm text-muted-foreground">
               {kindLabel(e.kind)} · {t.system.times(e.count)}
             </p>

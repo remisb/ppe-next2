@@ -9,6 +9,7 @@ export const common: CommonText = {
   view: 'Открыть',
   close: 'Закрыть',
   moreActions: (name: string) => `Другие действия: ${name}`,
+  add: 'Добавить',
   active: 'Активен',
   inactive: 'Неактивен',
 }

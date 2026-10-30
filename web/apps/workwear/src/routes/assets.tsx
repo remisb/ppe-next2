@@ -4,7 +4,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { Input } from '@ppe/ui/components/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
-import { SortControl, SortableHead } from '@ppe/ui/components/sortable'
+import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { type Help, Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -16,7 +16,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, FileText, FilterX, Plus, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, FileText, FilterX, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
@@ -292,25 +292,12 @@ export function Assets({
       >
         <PageHeader
           title={sim ? t.assets.simCards : t.assets.equipment}
-          actions={
-            <>
-              {sim ? (
-                <Button variant="outline" disabled={pdfLoading} onClick={() => void previewPdf()}>
-                  <FileText aria-hidden /> {t.assets.previewPdf}
-                </Button>
-              ) : null}
-              {canManage ? (
-                <Button onClick={() => setEditing('new')}>
-                  <Plus aria-hidden /> {sim ? t.assets.addSimCard : t.assets.addAsset}
-                </Button>
-              ) : null}
-              <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="asset-filters" onClick={() => setShowFilters((v) => !v)}>
-                <SlidersHorizontal aria-hidden /> {extra > 0 ? t.assets.filtersCount(extra) : t.assets.filters}
-              </Button>
-            </>
-          }
+          filters={{ label: t.assets.filters, count: extra, controls: 'asset-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
+          // Preview PDF is a button from md; on a phone it is under ⋯.
+          secondary={sim ? [{ label: t.assets.previewPdf, icon: FileText, disabled: pdfLoading, onClick: () => void previewPdf(), showFrom: 'md' }] : []}
+          primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
-        <div className="mb-4 flex flex-col gap-3">
+        <div data-slot="filter-bar" className="mb-4 flex flex-col gap-3">
           {tabGroup}
           {/*
             The search and the filters on one line, as wide as it lets them (on SIM Cards after the tabs), wrapping where it
@@ -389,7 +376,7 @@ export function Assets({
           </EmptyState>
         ) : (
           <>
-            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} sortControl={<SortControl columns={columns(kind)} {...sortProps} />}>
+            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={columns(kind)} {...sortProps} />}>
               {/*
                 Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
                 columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.

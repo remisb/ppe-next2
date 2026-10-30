@@ -10,9 +10,20 @@ import { Button } from './button.tsx'
  * pulled left so its text lines up with the content below. A pane passes
  * lg:hidden, as beside the list its ✕ closes it instead.
  */
-export function BackButton({ onClick, className, children }: { onClick: () => void; className?: string | undefined; children: ReactNode }) {
+export function BackButton({
+  onClick,
+  className,
+  children,
+  'data-slot': slot,
+}: {
+  onClick: () => void
+  className?: string | undefined
+  children: ReactNode
+  /** "pane-bar": hidden below lg once the record's row (RecordHeader) holds the way back. */
+  'data-slot'?: 'pane-bar' | undefined
+}) {
   return (
-    <Button variant="ghost" className={cn('-ml-3', className)} onClick={onClick}>
+    <Button variant="ghost" className={cn('-ml-3', className)} onClick={onClick} {...(slot ? { 'data-slot': slot } : {})}>
       <ArrowLeft aria-hidden /> {children}
     </Button>
   )

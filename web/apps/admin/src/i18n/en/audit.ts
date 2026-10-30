@@ -5,7 +5,6 @@ export const audit = {
   title: 'Audit log',
   description: 'Every recorded change: what changed, who made it, when and where. Times are in the organisation’s timezone.',
   filters: 'Filters',
-  filtersCount: (n: number) => `Filters (${n})`,
   area: 'Area',
   allAreas: 'All areas',
   event: 'Change',

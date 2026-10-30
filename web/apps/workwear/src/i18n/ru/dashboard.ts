@@ -41,6 +41,8 @@ export const dashboard: DashboardText = {
   updated: (time: string) => `Обновлено в ${time}.`,
   managerDashboard: 'Сводка менеджера',
   employeeDashboard: 'Сводка сотрудника',
+  dashboards: 'Сводки',
+  adminDashboard: 'Сводка администратора',
   awaitingConfirmation: 'Ожидают подтверждения',
   oldest: (days: string) => `старейший: ${days}`,
   allConfirmed: 'все подтверждены',

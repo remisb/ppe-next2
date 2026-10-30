@@ -57,7 +57,6 @@ export const assets: AssetsText = {
   searchLabel: 'Поиск SIM',
   searchPlaceholder: '№ SIM, телефона или инвентарный, сотрудник',
   filters: 'Фильтры',
-  filtersCount: (n: number) => `Фильтры (${n})`,
   status: 'Статус',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Место и возврат',

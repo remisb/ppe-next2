@@ -4,7 +4,6 @@ import { plural } from '@ppe/i18n'
 export const history = {
   title: 'Orders',
   filters: 'Filters',
-  filtersCount: (n: number) => `Filters (${n})`,
   status: 'Status',
   employee: 'Employee',
   // The record-number filter: the one order with that number, as typed (WE-000004, we4, 4).
@@ -86,6 +85,10 @@ export const history = {
     `${record} · ${name}. The employee confirms receipt on a secure page, or signs the printed record.`,
   electronicConfirmation: 'Electronic confirmation',
   createLink: 'Create confirmation link',
+  // The order's main actions in their shorter words on a phone, where the record number needs the room.
+  createLinkShort: 'Create link',
+  viewOrderShort: 'View',
+  confirmationLinkShort: 'Link',
   paperConfirmation: 'Paper confirmation',
   paperSteps: 'Print the record, have the employee sign it, then record that the signed copy was received.',
   recordPaper: 'Record signed paper confirmation',

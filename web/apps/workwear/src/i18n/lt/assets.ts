@@ -57,7 +57,6 @@ export const assets: AssetsText = {
   searchLabel: 'Ieškoti SIM',
   searchPlaceholder: 'SIM, telefono ar inventoriaus Nr., darbuotojas',
   filters: 'Filtrai',
-  filtersCount: (n: number) => `Filtrai (${n})`,
   status: 'Būsena',
   // Equipment's row of tabs (it has no status).
   locationAndReturn: 'Vieta ir grąžinimas',

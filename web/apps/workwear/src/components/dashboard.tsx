@@ -1,4 +1,7 @@
+import { useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
+import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@ppe/ui/components/dropdown-menu'
+import { MenuButton } from '@ppe/ui/components/page-header'
 import { Button } from '@ppe/ui/components/button'
 import { BarChart, type Series } from '@ppe/ui/components/charts'
 import { Panel } from '@ppe/ui/components/panel'
@@ -150,5 +153,32 @@ export function MoreLink({ label, to, navigate }: { label: string; to: Route; na
     <Button variant="ghost" size="sm" onClick={() => navigate(to)}>
       {label} <ArrowRight aria-hidden />
     </Button>
+  )
+}
+
+type DashboardName = 'dashboard' | 'managerDashboard' | 'employeeDashboard'
+
+/**
+ * Dashboards ▾: the dashboards the user has, the one showing ticked, for a
+ * header's menu button slot; nothing for a user with only one.
+ */
+export function DashboardsMenu({ current, navigate }: { current: DashboardName; navigate: (to: Route) => void }) {
+  const { can } = useSession()
+  const boards = [
+    { name: 'dashboard' as const, label: t.dashboard.adminDashboard, shown: can('dashboard.overview') },
+    { name: 'managerDashboard' as const, label: t.dashboard.managerDashboard, shown: can('dashboard.manager') },
+    { name: 'employeeDashboard' as const, label: t.dashboard.employeeDashboard, shown: can('dashboard.employee') },
+  ].filter((b) => b.shown)
+  if (boards.length < 2) return null
+  return (
+    <MenuButton label={t.dashboard.dashboards}>
+      <DropdownMenuRadioGroup value={current} onValueChange={(name: DashboardName) => navigate({ name })}>
+        {boards.map((b) => (
+          <DropdownMenuRadioItem key={b.name} value={b.name}>
+            {b.label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </MenuButton>
   )
 }
