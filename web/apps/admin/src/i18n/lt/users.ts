@@ -27,6 +27,8 @@ export const users: UsersText = {
   employeeGrants: 'Rengia užsakymus ir seka juos Užsakymuose, tvarko darbuotojus ir jų dydžius.',
   equipment: 'Įrangos išdavimai',
   equipmentGrants: 'Mato įrangą ir baldus: kiekvieną daiktą ir pas ką jis yra.',
+  testers: 'Bandytojai',
+  testersGrants: 'Mato bandomas programas programų sąraše.',
 
   editUser: (name: string) => `Redaguoti naudotoją: ${name}`,
   editDescription: 'Rolės pakeitimas naudotoją pasiekia per kelias minutes, iš naujo jungtis nereikia.',

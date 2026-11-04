@@ -20,6 +20,8 @@ export function roleName(r: Pick<Role, 'key' | 'name'>): string {
       return t.users.employee
     case 'equipment':
       return t.users.equipment
+    case 'testers':
+      return t.users.testers
     default:
       return r.name
   }
@@ -36,6 +38,8 @@ export function roleGrants(r: Role): string {
       return t.users.employeeGrants
     case 'equipment':
       return t.users.equipmentGrants
+    case 'testers':
+      return t.users.testersGrants
     default:
       return r.description
   }

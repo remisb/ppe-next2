@@ -1,74 +1,55 @@
-import type { Permission } from '@ppe/api-client'
+import type { Client, LauncherApp, LauncherList } from '@ppe/api-client'
 import { applyLanguage } from '@ppe/i18n'
 import { dictionaryProblems, noProblems } from '@ppe/i18n/testing'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { APPS, hasSeveralApps, visibleApps } from './catalogue.ts'
-import { type Places, RECENT_MAX, loadPlaces, noteOpened, savePlaces, togglePin } from './places.ts'
+import { hasSeveralApps, inTesting } from './catalogue.ts'
+import { loadLauncher, rememberPins } from './load.ts'
+import { RECENT_MAX, loadRecent, noteOpened, takeDevicePins, togglePin } from './places.ts'
+import { tile } from './testing.ts'
 import { appName, dictionaries, launcherText, parentName } from './text.ts'
 
-const holding =
-  (...perms: Permission[]) =>
-  (p: Permission) =>
-    perms.includes(p)
+afterEach(() => applyLanguage('en'))
 
-// The built-in roles' permissions that decide tiles (internal/domain/role/builtin.go).
-const administrator = holding('users.manage', 'roles.manage', 'audit.read', 'assets.manage', 'sim_codes.read', 'dashboard.overview')
-const manager = holding('users.read', 'assets.manage', 'dashboard.manager')
-const employeeRole = holding('item_sets.read', 'dashboard.employee')
-const equipmentRole = holding('equipment.read')
-
-const ids = (can: (p: Permission) => boolean) => visibleApps(can).map((a) => a.id)
-
-describe('who sees which tile', () => {
-  it('shows an administrator every app but Equipment', () => {
-    expect(ids(administrator)).toEqual(['workwear', 'dashboard', 'create-order', 'orders', 'employees', 'help', 'sim-cards', 'sim-scan', 'crew', 'admin'])
+describe('the rules over a user’s tiles', () => {
+  it('counts apps, never shortcuts, for "several apps"', () => {
+    const workwear = tile('workwear')
+    const orders = tile('orders', { kind: 'shortcut', parent: 'workwear' })
+    expect(hasSeveralApps([workwear, orders])).toBe(false)
+    expect(hasSeveralApps([workwear, orders, tile('admin')])).toBe(true)
   })
 
-  it('shows a manager Workwear, Scan SIMs and PPE Crew, not Administration', () => {
-    const shown = ids(manager)
-    expect(shown).toContain('sim-scan')
-    expect(shown).toContain('crew')
-    expect(shown).not.toContain('admin')
+  it('knows the apps in testing', () => {
+    expect(['live', 'pilot', 'poc', 'dev'].map((stage) => inTesting(tile('x', { stage: stage as LauncherApp['stage'] })))).toEqual([false, false, true, true])
   })
 
-  it('gives the employee role and Equipment Assignments one app each', () => {
-    expect(visibleApps(employeeRole).filter((a) => a.kind === 'app').map((a) => a.id)).toEqual(['workwear'])
-    expect(ids(equipmentRole)).toContain('equipment')
-    expect(hasSeveralApps(employeeRole)).toBe(false)
-    expect(hasSeveralApps(equipmentRole)).toBe(false)
-  })
-
-  it('lands users with more than one app on the launcher', () => {
-    expect(hasSeveralApps(administrator)).toBe(true)
-    expect(hasSeveralApps(manager)).toBe(true)
-    // Administration alone, with Workwear, is two.
-    expect(hasSeveralApps(holding('audit.read'))).toBe(true)
+  it('names a tile in the language in use, and a shortcut’s app', () => {
+    const workwear = tile('workwear', { names: { en: 'Workwear & Equipment', lt: 'Darbo drabužiai ir įranga', ru: 'Спецодежда и снаряжение' } })
+    const orders = tile('orders', { kind: 'shortcut', parent: 'workwear' })
+    expect(appName(workwear)).toBe('Workwear & Equipment')
+    applyLanguage('lt')
+    expect(appName(workwear)).toBe('Darbo drabužiai ir įranga')
+    expect(parentName(orders, [workwear, orders])).toBe('Darbo drabužiai ir įranga')
+    expect(parentName(orders, [orders])).toBeUndefined()
   })
 })
 
-describe('the list', () => {
-  it('has unique ids, shortcuts into known apps, and https for linked sites', () => {
-    expect(new Set(APPS.map((a) => a.id)).size).toBe(APPS.length)
-    for (const a of APPS) {
-      if (a.kind === 'shortcut') expect(APPS.find((p) => p.id === a.parent)?.kind).toBe('app')
-      if (a.tier === 'linked') expect(a.href).toMatch(/^https:\/\//)
-      else expect(a.href).toMatch(/^\/(?!\/)/)
-    }
-  })
-
-  it('names every tile in every language', () => {
-    for (const lang of ['en', 'lt', 'ru'] as const) {
-      applyLanguage(lang)
-      for (const a of APPS) expect(appName(a)).not.toBe(a.id)
-    }
-    applyLanguage('en')
-    expect(parentName(APPS.find((a) => a.id === 'sim-cards')!)).toBe('Workwear & Equipment')
+describe('loading', () => {
+  it('asks the API once per user, and again after a failure', async () => {
+    const list: LauncherList = { apps: [tile('workwear')], pins: [], preview: false }
+    const get = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(list)
+    const client = { launcher: { get } } as unknown as Client
+    await expect(loadLauncher(client, 'u-fail')).rejects.toThrow('offline')
+    await Promise.resolve()
+    expect(await loadLauncher(client, 'u-fail')).toBe(list)
+    expect(await loadLauncher(client, 'u-fail')).toBe(list)
+    expect(get).toHaveBeenCalledTimes(2)
+    rememberPins('u-fail', ['workwear'])
+    expect((await loadLauncher(client, 'u-fail')).pins).toEqual(['workwear'])
   })
 })
 
 describe('dictionaries', () => {
-  afterEach(() => applyLanguage('en'))
   for (const lang of ['lt', 'ru'] as const) {
     it(`${lang} has every English text, none empty and none left in English`, () => {
       expect(dictionaryProblems(dictionaries.en, dictionaries[lang])).toEqual(noProblems)
@@ -80,29 +61,29 @@ describe('dictionaries', () => {
   })
 })
 
-describe('pinned and recent apps', () => {
+describe('recent apps and pins', () => {
   beforeEach(() => localStorage.clear())
 
   it('pins and unpins, keeping the order pins were made in', () => {
-    let p: Places = { pinned: [], recent: [] }
-    p = togglePin(togglePin(p, 'sim-scan'), 'workwear')
-    expect(p.pinned).toEqual(['sim-scan', 'workwear'])
-    expect(togglePin(p, 'sim-scan').pinned).toEqual(['workwear'])
+    expect(togglePin(togglePin([], 'sim-scan'), 'workwear')).toEqual(['sim-scan', 'workwear'])
+    expect(togglePin(['sim-scan', 'workwear'], 'sim-scan')).toEqual(['workwear'])
   })
 
-  it('keeps the last opened first, without repeats, up to the limit', () => {
-    let p: Places = { pinned: [], recent: [] }
-    for (const id of ['workwear', 'sim-scan', 'crew', 'admin', 'orders', 'help', 'employees', 'sim-scan']) p = noteOpened(p, id)
-    expect(p.recent).toHaveLength(RECENT_MAX)
-    expect(p.recent[0]).toBe('sim-scan')
-    expect(new Set(p.recent).size).toBe(p.recent.length)
-  })
-
-  it('keeps them per user on this device, dropping apps that no longer exist', () => {
-    savePlaces('u1', { pinned: ['crew', 'gone'], recent: ['admin'] })
-    expect(loadPlaces('u1')).toEqual({ pinned: ['crew'], recent: ['admin'] })
-    expect(loadPlaces('u2')).toEqual({ pinned: [], recent: [] })
+  it('keeps the last opened first, without repeats, up to the limit, per user on this device', () => {
+    for (const id of ['workwear', 'sim-scan', 'crew', 'admin', 'orders', 'help', 'employees', 'sim-scan']) noteOpened('u1', id)
+    const recent = loadRecent('u1')
+    expect(recent).toHaveLength(RECENT_MAX)
+    expect(recent[0]).toBe('sim-scan')
+    expect(new Set(recent).size).toBe(recent.length)
+    expect(loadRecent('u2')).toEqual([])
     localStorage.setItem('workwear.launcher.u3', '{not json')
-    expect(loadPlaces('u3')).toEqual({ pinned: [], recent: [] })
+    expect(loadRecent('u3')).toEqual([])
+  })
+
+  it('hands phase 1’s device pins over once, keeping the recent apps', () => {
+    localStorage.setItem('workwear.launcher.u1', JSON.stringify({ pinned: ['crew', 'admin'], recent: ['orders'] }))
+    expect(takeDevicePins('u1')).toEqual(['crew', 'admin'])
+    expect(takeDevicePins('u1')).toEqual([])
+    expect(loadRecent('u1')).toEqual(['orders'])
   })
 })

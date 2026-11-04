@@ -28,6 +28,8 @@ export const users = {
   employeeGrants: 'Prepares orders and follows them in Orders, manages employees and sizes.',
   equipment: 'Equipment Assignments',
   equipmentGrants: 'Sees Equipment & Furniture: each item and who holds it.',
+  testers: 'Testers',
+  testersGrants: 'Sees App Launcher’s apps in testing.',
 
   // Add User / Edit User
   editUser: (name: string) => `Edit User: ${name}`,

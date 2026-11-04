@@ -1,4 +1,5 @@
 import { account } from './account'
+import { apps } from './apps'
 import { audit } from './audit'
 import { backups } from './backups'
 import { common } from './common'
@@ -12,4 +13,4 @@ import { system } from './system'
 import { usage } from './usage'
 import { users } from './users'
 
-export const en = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, mailTemplates, backups }
+export const en = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, mailTemplates, apps, backups }

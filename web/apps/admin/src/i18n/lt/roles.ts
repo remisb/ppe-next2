@@ -42,6 +42,7 @@ export const roles: RolesText = {
   inUse: 'Šią rolę turi naudotojai. Pirmiausia atimkite ją skiltyje Naudotojai.',
   groups: {
     administration: 'Administravimas',
+    launcher: 'Programų sąrašas',
     workwear: 'Darbo drabužiai ir įranga',
     dashboards: 'Suvestinės',
   },
@@ -72,6 +73,8 @@ export const roles: RolesText = {
       label: 'Matyti naudojimą',
       grants: 'Kas ir iš ko naudojasi programomis, prisijungimai ir pakeitimai laike, patvirtinimo nuorodų eiga ir duomenų kokybė.',
     },
+    'apps.manage': { label: 'Tvarkyti programas', grants: 'Programų sąrašo programos ir nuorodos: registruoti, keisti, kas kurią mato, tvarka ir atsiliepimai.' },
+    'apps.preview': { label: 'Matyti bandomas programas', grants: 'Prototipai ir kuriamos programos programų sąraše, įjungus „Rodyti bandomas programas“.' },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',

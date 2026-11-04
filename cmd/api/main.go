@@ -28,6 +28,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -110,6 +111,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
+		launcher.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
@@ -117,6 +119,14 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		pool,
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
+	// App Launcher's default tiles, put back should the registry have been
+	// emptied, and its apps' slugs, which tell requests' apps apart.
+	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
+		return fmt.Errorf("app launcher defaults: %w", err)
+	}
+	if err := svc.launcher.Refresh(ctx); err != nil {
+		return fmt.Errorf("app launcher: %w", err)
+	}
 	if cfg.AuditTSAURL != "" {
 		// Anchor the seals outside the database (ADR 0003): an option applied
 		// to the Audit log's service once it is built.
@@ -204,6 +214,7 @@ type services struct {
 	dashboard *dashboard.Service
 	settings  *settings.Service
 	templates *mailtemplate.Service
+	launcher  *launcher.Service
 	backups   *backup.Service
 	audit     *audit.Service
 	// system is the error list and the database's status; window and
@@ -222,7 +233,7 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, codes asset.Sealer, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, codes asset.Sealer, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, apps launcher.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -234,6 +245,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
 		templates: mailtemplate.NewService(templates),
+		launcher:  launcher.NewService(apps),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
 		audit:     audit.NewService(trail, audit.WithLocation(loc), audit.WithRetention(auditRetention)),
 		system:    system.NewService(sys, system.WithRecorded(func(k system.Kind) { metrics.ErrorRecorded(string(k)) })),
@@ -278,6 +290,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)
+	registerLauncherRoutes(rt, svc.launcher)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
 	registerSystemRoutes(rt, svc, cfg, tok)
@@ -300,7 +313,7 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 		middleware.Recoverer(logger),
 		// Before Logger and the rate limiters, which read the client it resolves.
 		middleware.ClientIP(middleware.ClientIPConfig{TrustedProxies: cfg.TrustedProxies}),
-		requestContext(tok),
+		requestContext(tok, svc.launcher.IsApp),
 		middleware.Logger(logger),
 		observe(svc, logger),
 	}

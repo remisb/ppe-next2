@@ -132,6 +132,19 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['cc', 'text'],
   ['subject', 'text'],
   ['body', 'text'],
+  // An App Launcher tile's (app.registered, app.changed …).
+  ['slug', 'text'],
+  ['parent', 'text'],
+  ['group', 'text'],
+  ['color', 'text'],
+  ['href', 'text'],
+  ['tier', 'text'],
+  ['stage', 'text'],
+  ['name_en', 'text'],
+  ['name_lt', 'text'],
+  ['name_ru', 'text'],
+  ['any_of', 'permissions'],
+  ['place', 'text'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
@@ -145,10 +158,26 @@ export function auditTitle(event: string): string {
   return isAuditEvent(event) ? auditText().events[event] : event
 }
 
-/** Where a change was made, or "Not recorded" for one from before that was. */
+/** App Launcher's apps' names by slug, in the language in use (setAppNames). */
+let appNames: Record<string, string> = {}
+
+/**
+ * Names the apps registered in App Launcher, by slug: each app's frame sets
+ * them once the user's launcher list is loaded (@ppe/launcher's appNames).
+ */
+export function setAppNames(names: Record<string, string>): void {
+  appNames = names
+}
+
+/**
+ * Where a change was made, or "Not recorded" for one from before that was; an
+ * app registered in App Launcher by its name (setAppNames), else its slug.
+ */
 export function sourceLabel(source: AuditSource | null): string {
   const t = auditText()
-  return source ? t.sources[source] : t.notRecorded
+  if (!source) return t.notRecorded
+  const known: Record<string, string> = t.sources
+  return known[source] ?? appNames[source] ?? source
 }
 
 /** The area's name on the filter; an unknown one as stored. */

@@ -1,5 +1,5 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { hasSeveralApps, launcherText } from '@ppe/launcher'
+import { hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
 import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand } from '@ppe/ui/components/main-nav'
@@ -22,6 +22,7 @@ import { ScanPage } from './routes/scan'
  */
 export function App() {
   const { session, status, retry, signOut, passwordPrompt } = useApi()
+  const severalApps = hasSeveralApps(useLauncher().list?.apps ?? [])
   const { route: asked, navigate } = useRouter()
 
   useEffect(() => applyDensity(session ? loadDensity(session.userId) : null), [session?.userId])
@@ -53,7 +54,7 @@ export function App() {
             <ArrowLeft aria-hidden className="size-4" />
             {t.shell.simCards}
           </a>
-          {hasSeveralApps(session.can) ? (
+          {severalApps ? (
             <a href={launcherHref('/')} aria-label={launcherText().apps} title={launcherText().apps} className={buttonVariants({ variant: 'ghost', size: 'icon' })}>
               <Grip aria-hidden className="size-4" />
             </a>

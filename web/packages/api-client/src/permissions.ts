@@ -15,6 +15,8 @@ export const PERMISSIONS = [
   'security.read',
   'system.read',
   'usage.read',
+  'apps.manage',
+  'apps.preview',
   'employees.delete',
   'catalogue.manage',
   'item_prices.manage',

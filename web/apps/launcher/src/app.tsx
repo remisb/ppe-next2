@@ -1,59 +1,46 @@
+import type { FeedbackRating, LauncherApp, LauncherList } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, type Session, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { type AppIcon, type LauncherApp, type Places, appName, launcherText, loadPlaces, noteOpened, parentName, savePlaces, togglePin, visibleApps } from '@ppe/launcher'
+import { currentLang } from '@ppe/i18n'
+import {
+  appIcons,
+  appName,
+  launcherText,
+  loadRecent,
+  loadShowTesting,
+  noteOpened,
+  parentName,
+  rememberPins,
+  saveShowTesting,
+  takeDevicePins,
+  togglePin,
+  useLauncher,
+} from '@ppe/launcher'
 import { staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { Field, Textarea, controlProps } from '@ppe/ui/components/field'
 import { GavortEmblem } from '@ppe/ui/components/gavort-logo'
 import { Kbd } from '@ppe/ui/components/kbd'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import {
-  BookOpen,
-  CardSim,
-  ClipboardList,
-  ClipboardPlus,
-  Ellipsis,
-  ExternalLink,
-  Gauge,
-  HardHat,
-  LogOut,
-  type LucideIcon,
-  Package,
-  Pin,
-  PinOff,
-  ScanBarcode,
-  Search,
-  ShieldCheck,
-  Shirt,
-  UserRound,
-  Users,
-  X,
-} from 'lucide-react'
+import { Box, Ellipsis, ExternalLink, LogOut, Pin, PinOff, Search, UserRound, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 
-import { type Shelf, matching, pinnedOf, recentOf, sections } from '@/lib/tiles'
-
-const icons: Record<AppIcon, LucideIcon> = {
-  shirt: Shirt,
-  order: ClipboardPlus,
-  orders: ClipboardList,
-  employees: Users,
-  dashboard: Gauge,
-  sim: CardSim,
-  equipment: Package,
-  scan: ScanBarcode,
-  crew: HardHat,
-  admin: ShieldCheck,
-  help: BookOpen,
-}
+import { type Shelf, deviceOf, matching, pinnedOf, recentOf, sections, shownTiles } from '@/lib/tiles'
 
 /**
- * App Launcher (ADR 0006): the apps and shortcuts the user's roles open, as big
- * tiles in groups, like a till. Pinned tiles and recent apps come first; from
- * lg a rail of groups narrows the tiles. A tile opens its app as a page (a
- * linked site in a new tab); ⋯ or a right-click shows where it runs and pins it.
- * It shares the staff app's sign-in, so signing in or out here does so there too.
+ * App Launcher (ADR 0006): the apps and shortcuts the user's roles open, from
+ * the API's registry, as big tiles in groups, like a till. Pinned tiles (kept
+ * by the API) and recent apps (on this device) come first; from lg a rail of
+ * groups narrows the tiles. A tile opens its app as a page (a linked site in a
+ * new tab); ⋯ or a right-click shows where it runs, pins it and takes
+ * feedback. Testers show apps in testing with a switch. It shares the staff
+ * app's sign-in, so signing in or out here does so there too.
  */
 export function App() {
   const { session, status, retry, signOut, passwordPrompt } = useApi()
+  const launcher = useLauncher()
 
   useEffect(() => applyDensity(session ? loadDensity(session.userId) : null), [session?.userId])
 
@@ -62,31 +49,56 @@ export function App() {
   if (!session) return <SignIn appName={launcherText().launcherName} tagline={launcherText().signInTagline} />
   return (
     <>
-      <Launcher session={session} onSignOut={() => void signOut()} />
+      {launcher.list ? (
+        <Launcher session={session} list={launcher.list} onSignOut={() => void signOut()} />
+      ) : (
+        <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
+          {launcher.failed ? (
+            <ErrorState error={new Error(launcherText().loadFailed)} title={launcherText().loadFailed} onRetry={launcher.retry} retryLabel={launcherText().retry} />
+          ) : (
+            <Loading />
+          )}
+        </main>
+      )}
       <ConfirmPassword prompt={passwordPrompt} />
     </>
   )
 }
 
-function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => void }) {
+function Launcher({ session, list, onSignOut }: { session: Session; list: LauncherList; onSignOut: () => void }) {
+  const { client } = useApi()
   const text = launcherText()
   const [q, setQ] = useState('')
   const [shelf, setShelf] = useState<Shelf>('all')
-  const [places, setPlaces] = useState<Places>(() => loadPlaces(session.userId))
+  const [pins, setPins] = useState<string[]>(list.pins)
+  const [recent, setRecent] = useState<string[]>(() => loadRecent(session.userId))
+  const [showTesting, setShowTesting] = useState(() => list.preview && loadShowTesting(session.userId))
   const [about, setAbout] = useState<LauncherApp | null>(null)
   const search = useRef<HTMLInputElement>(null)
 
-  const shown = visibleApps(session.can)
+  const shown = shownTiles(list.apps, showTesting)
   const found = matching(shown, q)
   const searching = q.trim() !== ''
-  const pinned = pinnedOf(shown, places)
-  const recent = recentOf(shown, places)
+  const pinned = pinnedOf(shown, pins)
+  const recentApps = recentOf(shown, recent)
 
-  const change = (next: Places) => {
-    setPlaces(next)
-    savePlaces(session.userId, next)
+  const savePins = (next: string[]) => {
+    const before = pins
+    setPins(next)
+    client.launcher.setPins(next).then(
+      (r) => rememberPins(session.userId, r.slugs),
+      () => setPins(before),
+    )
   }
-  const opened = (app: LauncherApp) => change(noteOpened(places, app.id))
+  const opened = (app: LauncherApp) => setRecent(noteOpened(session.userId, app.slug))
+
+  // Pins phase 1 kept on this device go to the API once, while it has none.
+  useEffect(() => {
+    const device = takeDevicePins(session.userId).filter((slug) => list.apps.some((a) => a.slug === slug))
+    if (device.length && !list.pins.length) savePins(device)
+    // Once per load of the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list])
 
   // ⌘K, Ctrl+K or / puts the cursor in the search box, as ⌘K does in the staff app.
   useEffect(() => {
@@ -117,6 +129,7 @@ function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => v
     ...sections(shown, 'all').map((s) => ({ shelf: s.group, label: text.groups[s.group], count: s.apps.length })),
   ]
   const onShelf = shelves.some((s) => s.shelf === shelf) ? shelf : 'all'
+  const grid = (apps: LauncherApp[]) => <Grid apps={apps} all={list.apps} onOpen={opened} onAbout={setAbout} />
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
@@ -142,7 +155,7 @@ function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => v
                 setShelf(s.shelf)
                 setQ('')
               }}
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent aria-pressed:bg-accent aria-pressed:text-accent-foreground aria-pressed:font-semibold"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-accent-foreground"
             >
               <span className="min-w-0 flex-1 truncate">{s.label}</span>
               <span className="text-xs text-muted-foreground tabular-nums">{s.count}</span>
@@ -169,43 +182,59 @@ function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => v
         </header>
 
         <main id="main" tabIndex={-1} className="flex min-w-0 flex-col gap-6 px-4 pt-4 pb-12 outline-none md:px-6 md:pt-6">
-          <form role="search" onSubmit={openFirst} className="max-w-xl">
-            <label className="flex min-h-12 items-center gap-2 rounded-xl border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
-              <Search aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-              <input
-                ref={search}
-                type="search"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder={text.search}
-                aria-label={text.search}
-                autoComplete="off"
-                className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none"
-              />
-              <Kbd className="pointer-coarse:hidden">⌘K</Kbd>
-            </label>
-          </form>
+          <div className="flex flex-col gap-3">
+            <form role="search" onSubmit={openFirst} className="max-w-xl">
+              <label className="flex min-h-12 items-center gap-2 rounded-xl border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
+                <Search aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                <input
+                  ref={search}
+                  type="search"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={text.search}
+                  aria-label={text.search}
+                  autoComplete="off"
+                  className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none"
+                />
+                <Kbd className="pointer-coarse:hidden">⌘K</Kbd>
+              </label>
+            </form>
+            {list.preview ? (
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 self-start text-sm">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={showTesting}
+                  onChange={(e) => {
+                    setShowTesting(e.target.checked)
+                    saveShowTesting(session.userId, e.target.checked)
+                  }}
+                  className="size-5 accent-primary"
+                />
+                <span>
+                  <span className="font-medium">{text.showTesting}</span>
+                  <span className="block text-xs text-muted-foreground">{text.showTestingHint}</span>
+                </span>
+              </label>
+            ) : null}
+          </div>
 
           {searching ? (
             found.length ? (
-              <Grid apps={found} onOpen={opened} onAbout={setAbout} />
+              grid(found)
             ) : (
               <p className="text-muted-foreground">{text.noMatch(q.trim())}</p>
             )
           ) : onShelf === 'pinned' ? (
-            <Grid apps={pinned} onOpen={opened} onAbout={setAbout} />
+            grid(pinned)
           ) : (
             <>
-              {onShelf === 'all' && pinned.length ? (
-                <Section title={text.pinned}>
-                  <Grid apps={pinned} onOpen={opened} onAbout={setAbout} />
-                </Section>
-              ) : null}
-              {onShelf === 'all' && recent.length ? (
+              {onShelf === 'all' && pinned.length ? <Section title={text.pinned}>{grid(pinned)}</Section> : null}
+              {onShelf === 'all' && recentApps.length ? (
                 <Section title={text.recent}>
                   <ul className="flex flex-wrap gap-2">
-                    {recent.map((app) => (
-                      <li key={app.id}>
+                    {recentApps.map((app) => (
+                      <li key={app.slug}>
                         <a
                           {...openProps(app)}
                           onClick={() => opened(app)}
@@ -221,7 +250,7 @@ function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => v
               ) : null}
               {sections(shown, onShelf).map((s) => (
                 <Section key={s.group} title={text.groups[s.group]}>
-                  <Grid apps={s.apps} onOpen={opened} onAbout={setAbout} />
+                  {grid(s.apps)}
                 </Section>
               ))}
             </>
@@ -231,8 +260,9 @@ function Launcher({ session, onSignOut }: { session: Session; onSignOut: () => v
 
       <About
         app={about}
-        pinned={about ? places.pinned.includes(about.id) : false}
-        onPin={() => about && change(togglePin(places, about.id))}
+        all={list.apps}
+        pinned={about ? pins.includes(about.slug) : false}
+        onPin={() => about && savePins(togglePin(pins, about.slug))}
         onOpen={() => about && opened(about)}
         onClose={() => setAbout(null)}
       />
@@ -253,7 +283,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 const openProps = (app: LauncherApp) => (app.tier === 'linked' ? { href: app.href, target: '_blank', rel: 'noopener noreferrer' } : { href: app.href })
 
 function TileIcon({ app, className }: { app: LauncherApp; className?: string }) {
-  const Icon = icons[app.icon]
+  const Icon = appIcons[app.icon] ?? Box
   return (
     <span aria-hidden className={cn('grid shrink-0 place-items-center text-white', className)} style={{ backgroundColor: app.color }}>
       <Icon className="size-full" />
@@ -261,15 +291,15 @@ function TileIcon({ app, className }: { app: LauncherApp; className?: string }) 
   )
 }
 
-function Grid({ apps, onOpen, onAbout }: { apps: LauncherApp[]; onOpen: (a: LauncherApp) => void; onAbout: (a: LauncherApp) => void }) {
+function Grid({ apps, all, onOpen, onAbout }: { apps: LauncherApp[]; all: LauncherApp[]; onOpen: (a: LauncherApp) => void; onAbout: (a: LauncherApp) => void }) {
   const text = launcherText()
   return (
     <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 md:gap-4 xl:grid-cols-6 2xl:grid-cols-8">
       {apps.map((app) => {
-        const Icon = icons[app.icon]
+        const Icon = appIcons[app.icon] ?? Box
         const name = appName(app)
         return (
-          <li key={app.id} className="relative min-w-0">
+          <li key={app.slug} className="relative min-w-0">
             <a
               {...openProps(app)}
               onClick={() => onOpen(app)}
@@ -277,6 +307,7 @@ function Grid({ apps, onOpen, onAbout }: { apps: LauncherApp[]; onOpen: (a: Laun
                 e.preventDefault()
                 onAbout(app)
               }}
+              title={parentName(app, all) ? text.screenIn(parentName(app, all)!) : undefined}
               className="flex aspect-square flex-col justify-between rounded-2xl p-3 text-white shadow-sm transition-transform outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.97] md:p-4"
               style={{ backgroundColor: app.color }}
             >
@@ -305,19 +336,39 @@ function Grid({ apps, onOpen, onAbout }: { apps: LauncherApp[]; onOpen: (a: Laun
   )
 }
 
-/** Where a tile runs, and Open and Pin: a sheet from the bottom on a phone, a dialog elsewhere. */
-function About({ app, pinned, onPin, onOpen, onClose }: { app: LauncherApp | null; pinned: boolean; onPin: () => void; onOpen: () => void; onClose: () => void }) {
+/**
+ * Where a tile runs, Open and Pin, and for an app its Feedback: a sheet from
+ * the bottom on a phone, a dialog elsewhere.
+ */
+function About({
+  app,
+  all,
+  pinned,
+  onPin,
+  onOpen,
+  onClose,
+}: {
+  app: LauncherApp | null
+  all: LauncherApp[]
+  pinned: boolean
+  onPin: () => void
+  onOpen: () => void
+  onClose: () => void
+}) {
   const dialog = useRef<HTMLDialogElement>(null)
   const text = launcherText()
+  const [tab, setTab] = useState<'about' | 'feedback'>('about')
 
   useEffect(() => {
     const d = dialog.current
     if (!d) return
-    if (app && !d.open) d.showModal()
-    else if (!app && d.open) d.close()
+    if (app && !d.open) {
+      setTab('about')
+      d.showModal()
+    } else if (!app && d.open) d.close()
   }, [app])
 
-  const parent = app ? parentName(app) : undefined
+  const parent = app ? parentName(app, all) : undefined
   const address = app ? (app.tier === 'linked' ? app.href : window.location.origin + app.href) : ''
   return (
     <dialog
@@ -339,32 +390,94 @@ function About({ app, pinned, onPin, onOpen, onClose }: { app: LauncherApp | nul
               <X aria-hidden className="size-5" />
             </Button>
           </div>
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-muted-foreground">{text.where}</dt>
-            <dd>{app.tier === 'linked' ? text.linked : text.here}</dd>
-            {app.kind === 'app' ? (
-              <>
-                <dt className="text-muted-foreground">{text.stage}</dt>
-                <dd>{text.stages[app.stage]}</dd>
-              </>
-            ) : null}
-            <dt className="text-muted-foreground">{text.address}</dt>
-            <dd className="font-mono text-xs [overflow-wrap:anywhere]">{address}</dd>
-          </dl>
-          <div className="flex flex-wrap gap-2">
-            <a {...openProps(app)} onClick={onOpen} className={cn(buttonVariants({ size: 'lg' }), 'flex-1')}>
-              {app.tier === 'linked' ? <ExternalLink aria-hidden className="size-4" /> : null}
-              {text.open}
-            </a>
-            <Button variant="outline" size="lg" onClick={onPin} aria-pressed={pinned}>
-              {pinned ? <PinOff aria-hidden className="size-4" /> : <Pin aria-hidden className="size-4" />}
-              {pinned ? text.unpin : text.pin}
-            </Button>
-          </div>
-          {app.tier === 'linked' ? <p className="text-xs text-muted-foreground">{text.newTab}</p> : null}
+          {app.kind === 'app' ? (
+            <Segmented
+              label={appName(app)}
+              options={[
+                { value: 'about', label: text.about },
+                { value: 'feedback', label: text.feedback },
+              ]}
+              value={tab}
+              onChange={setTab}
+            />
+          ) : null}
+          {tab === 'feedback' && app.kind === 'app' ? (
+            <FeedbackForm key={app.slug} app={app} />
+          ) : (
+            <>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+                <dt className="text-muted-foreground">{text.where}</dt>
+                <dd>{app.tier === 'linked' ? text.linked : text.here}</dd>
+                {app.kind === 'app' ? (
+                  <>
+                    <dt className="text-muted-foreground">{text.stage}</dt>
+                    <dd>{text.stages[app.stage]}</dd>
+                  </>
+                ) : null}
+                <dt className="text-muted-foreground">{text.address}</dt>
+                <dd className="font-mono text-xs [overflow-wrap:anywhere]">{address}</dd>
+              </dl>
+              <div className="flex flex-wrap gap-2">
+                <a {...openProps(app)} onClick={onOpen} className={cn(buttonVariants({ size: 'lg' }), 'flex-1')}>
+                  {app.tier === 'linked' ? <ExternalLink aria-hidden className="size-4" /> : null}
+                  {text.open}
+                </a>
+                <Button variant="outline" size="lg" onClick={onPin} aria-pressed={pinned}>
+                  {pinned ? <PinOff aria-hidden className="size-4" /> : <Pin aria-hidden className="size-4" />}
+                  {pinned ? text.unpin : text.pin}
+                </Button>
+              </div>
+              {app.tier === 'linked' ? <p className="text-xs text-muted-foreground">{text.newTab}</p> : null}
+            </>
+          )}
         </div>
       ) : null}
     </dialog>
+  )
+}
+
+/** Works well, Confusing or Something broke, and what they were doing; sent with the device and language. */
+function FeedbackForm({ app }: { app: LauncherApp }) {
+  const { client } = useApi()
+  const text = launcherText()
+  const [rating, setRating] = useState<FeedbackRating | undefined>()
+  const [note, setNote] = useState('')
+  const [state, setState] = useState<{ busy?: boolean; sent?: boolean; error?: string }>({})
+
+  if (state.sent) return <p role="status">{text.feedbackSent(appName(app))}</p>
+  const send = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!rating) {
+      setState({ error: text.chooseRating })
+      return
+    }
+    setState({ busy: true })
+    try {
+      await client.launcher.sendFeedback({ app: app.slug, rating, text: note, device: deviceOf(window.innerWidth), language: currentLang() })
+      setState({ sent: true })
+    } catch (err) {
+      setState({ error: errorText(err) })
+    }
+  }
+  return (
+    <form onSubmit={send} className="flex flex-col gap-3" noValidate>
+      <p className="text-sm">{text.feedbackAsk(appName(app))}</p>
+      <Segmented
+        label={text.feedbackAsk(appName(app))}
+        options={(['works', 'confusing', 'broken'] as const).map((r) => ({ value: r, label: text.ratings[r] }))}
+        value={rating}
+        onChange={setRating}
+      />
+      <Field label={text.feedbackText}>{(p) => <Textarea {...controlProps(p)} value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />}</Field>
+      {state.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {state.error}
+        </p>
+      ) : null}
+      <Button type="submit" size="lg" disabled={state.busy}>
+        {text.sendFeedback}
+      </Button>
+    </form>
   )
 }
 

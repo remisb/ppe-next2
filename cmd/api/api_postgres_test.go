@@ -16,6 +16,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -72,8 +74,11 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE`); err != nil {
 		t.Fatal(err)
 	}
-	// The truncation reaches roles through their actor keys.
+	// The truncation reaches roles and App Launcher's tiles through their actor keys.
 	if err := role.EnsureBuiltins(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
 	owner := pool
@@ -98,6 +103,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
+		launcher.NewPostgresRepository(pool),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
@@ -106,6 +112,9 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.launcher.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
 	tok := testTokens(time.Now())
@@ -1895,5 +1904,119 @@ func TestPostgresScanSIMsHTTP(t *testing.T) {
 	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM asset_sim_codes
 		WHERE position('93691381'::bytea in sealed) > 0`).Scan(&plain); err != nil || plain != 0 {
 		t.Errorf("rows holding the PUK in plain: %d, %v", plain, err)
+	}
+}
+
+// TestPostgresLauncherHTTP: a tile registered on Manage apps is seen by its
+// audience only (testing ones by testers), pins and feedback are the user's,
+// and requests from a registered app are recorded under its slug.
+func TestPostgresLauncherHTTP(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	ctx := context.Background()
+	_, admin := api.userWith(t, role.KeyAdmin)
+	_, manager := api.userWith(t, role.KeyManager)
+	_, tester := api.userWith(t, role.KeyManager, role.KeyTesters)
+	_, staff := api.userWith(t, role.KeyEmployee)
+
+	slugsOf := func(tok string) []string {
+		t.Helper()
+		rec := api.do(t, "GET", "/api/v1/launcher", tok, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("launcher = %d %s", rec.Code, rec.Body)
+		}
+		var l struct {
+			Apps []struct {
+				Slug string `json:"slug"`
+			} `json:"apps"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &l)
+		out := []string{}
+		for _, a := range l.Apps {
+			out = append(out, a.Slug)
+		}
+		return out
+	}
+	if got := slugsOf(staff); slices.Contains(got, "admin") || slices.Contains(got, "sim-scan") || !slices.Contains(got, "workwear") {
+		t.Errorf("the employee role sees %v", got)
+	}
+
+	poc := map[string]any{"slug": "size-helper", "kind": "app", "group": "workwear", "icon": "flask", "color": "#a33a7c",
+		"href": "https://size.example.org/", "tier": "linked", "stage": "poc",
+		"names":  map[string]string{"en": "Size Helper", "lt": "Dydžių pagalbininkas", "ru": "Помощник по размерам"},
+		"any_of": []string{"assets.manage"}}
+	if rec := api.do(t, "POST", "/api/v1/apps", manager, poc); rec.Code != http.StatusForbidden {
+		t.Errorf("register without apps.manage = %d", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/apps", admin, poc); rec.Code != http.StatusCreated {
+		t.Fatalf("register = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/apps", admin, poc); rec.Code != http.StatusConflict {
+		t.Errorf("register again = %d", rec.Code)
+	}
+	// A POC: testers with assets.manage only.
+	if slices.Contains(slugsOf(manager), "size-helper") || !slices.Contains(slugsOf(tester), "size-helper") {
+		t.Errorf("manager %v, tester %v", slugsOf(manager), slugsOf(tester))
+	}
+	poc["stage"] = "pilot"
+	delete(poc, "slug")
+	delete(poc, "kind")
+	if rec := api.do(t, "PUT", "/api/v1/apps/size-helper", admin, poc); rec.Code != http.StatusOK {
+		t.Fatalf("update = %d %s", rec.Code, rec.Body)
+	}
+	if !slices.Contains(slugsOf(manager), "size-helper") {
+		t.Errorf("a pilot is seen by its audience: %v", slugsOf(manager))
+	}
+	if rec := api.do(t, "POST", "/api/v1/apps/size-helper/move", admin, map[string]any{"before": "workwear"}); rec.Code != http.StatusOK || slugsOf(manager)[0] != "size-helper" {
+		t.Errorf("move = %d, order %v", rec.Code, slugsOf(manager))
+	}
+
+	// Pins and feedback, on tiles the user sees.
+	if rec := api.do(t, "PUT", "/api/v1/launcher/pins", manager, map[string]any{"slugs": []string{"size-helper", "orders"}}); rec.Code != http.StatusOK {
+		t.Fatalf("pins = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/launcher/pins", staff, map[string]any{"slugs": []string{"size-helper"}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("pinning a tile not seen = %d", rec.Code)
+	}
+	if rec := api.do(t, "GET", "/api/v1/launcher", manager, nil); !strings.Contains(rec.Body.String(), `"pins":["size-helper","orders"]`) || !strings.Contains(rec.Body.String(), `"preview":false`) {
+		t.Errorf("launcher = %s", rec.Body)
+	}
+	fb := map[string]any{"app": "size-helper", "rating": "confusing", "text": "Which size is mine?", "device": "phone", "language": "lt"}
+	if rec := api.do(t, "POST", "/api/v1/launcher/feedback", manager, fb); rec.Code != http.StatusCreated {
+		t.Fatalf("feedback = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/launcher/feedback", staff, fb); rec.Code != http.StatusNotFound {
+		t.Errorf("feedback on an app not seen = %d", rec.Code)
+	}
+	if rec := api.do(t, "GET", "/api/v1/apps/size-helper/feedback", admin, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Which size is mine?") {
+		t.Errorf("feedback list = %d %s", rec.Code, rec.Body)
+	}
+
+	// A change sent from Scan SIMs is recorded under its slug; an unknown app is "api".
+	sent := func(app string) {
+		b, _ := json.Marshal(poc)
+		req := httptest.NewRequest("PUT", "/api/v1/apps/size-helper", bytes.NewReader(b))
+		req.Header.Set("Authorization", "Bearer "+admin)
+		req.Header.Set(appHeader, app)
+		rec := httptest.NewRecorder()
+		api.handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("update from %s = %d %s", app, rec.Code, rec.Body)
+		}
+	}
+	poc["names"] = map[string]string{"en": "Size Helper 2", "lt": "Dydžių pagalbininkas", "ru": "Помощник по размерам"}
+	sent("sim-scan")
+	poc["names"] = map[string]string{"en": "Size Helper 3", "lt": "Dydžių pagalbininkas", "ru": "Помощник по размерам"}
+	sent("not-an-app")
+	rows, err := owner.Query(ctx, `SELECT source FROM audit_events WHERE event = 'app.changed' ORDER BY occurred_at, id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil || !slices.Equal(sources, []string{"api", "sim-scan", "api"}) {
+		t.Errorf("app.changed sources = %v, %v", sources, err)
+	}
+	var used int
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM user_activity WHERE app = 'sim-scan'`).Scan(&used); err != nil || used != 1 {
+		t.Errorf("Usage under sim-scan = %d, %v", used, err)
 	}
 }

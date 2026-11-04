@@ -13,11 +13,10 @@ const container = document.getElementById('root')
 if (!container) throw new Error('#root is missing from index.html')
 
 // The launcher's words are @ppe/launcher's, which follow the shared language
-// (applyLanguage). It reports as the staff app until apps are told apart by
-// their slug (ADR 0006, phase 2): it changes nothing anyway.
+// (applyLanguage). It reports as "launcher" (ADR 0006).
 createRoot(container).render(
   <StrictMode>
-    <ApiProvider app="workwear" setLanguage={applyLanguage}>
+    <ApiProvider app="launcher" setLanguage={applyLanguage}>
       <App />
     </ApiProvider>
   </StrictMode>,

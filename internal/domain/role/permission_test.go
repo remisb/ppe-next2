@@ -49,11 +49,12 @@ func TestBuiltinsGrantKnownPermissionsWithTheirRequirements(t *testing.T) {
 		}
 	}
 	// The administrator holds everything but the other roles' own dashboards,
-	// deleting orders, which is the manager's, and seeing Equipment &
-	// Furniture, which only Equipment Assignments grants.
+	// deleting orders, which is the manager's, seeing Equipment &
+	// Furniture, which only Equipment Assignments grants, and seeing apps in
+	// testing, which only Testers grants.
 	admin := BuiltinPermissions([]string{KeyAdmin})
 	for _, p := range Catalogue() {
-		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead
+		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead && p.Key != AppsPreview
 		if slices.Contains(admin, p.Key) != want {
 			t.Errorf("admin has %s = %v, want %v", p.Key, !want, want)
 		}
@@ -69,6 +70,14 @@ func TestOnlyEquipmentAssignmentsSeesEquipment(t *testing.T) {
 	}
 	if !slices.Equal(BuiltinPermissions([]string{KeyEquipment}), []Permission{EquipmentRead}) {
 		t.Errorf("Equipment Assignments = %v, want only equipment.read", BuiltinPermissions([]string{KeyEquipment}))
+	}
+}
+
+func TestOnlyTestersSeeAppsInTesting(t *testing.T) {
+	for _, key := range BuiltinKeys() {
+		if got, want := slices.Contains(BuiltinPermissions([]string{key}), AppsPreview), key == KeyTesters; got != want {
+			t.Errorf("built-in role %s has apps.preview = %v, want %v", key, got, want)
+		}
 	}
 }
 

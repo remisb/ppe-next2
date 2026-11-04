@@ -1,5 +1,6 @@
+import type { Client } from '@ppe/api-client'
 import { ApiProvider, type Session, applyTheme, loadTheme } from '@ppe/app-shell'
-import { hasSeveralApps } from '@ppe/launcher'
+import { hasSeveralApps, loadLauncher } from '@ppe/launcher'
 import { launcherHref } from '@ppe/routing'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -24,8 +25,10 @@ function signOutHere(userId: string) {
  * on App Launcher (ADR 0006, decisions D1 and D10); a deep link, a reload or
  * someone with one app stays here.
  */
-function signedInHere(s: Session): boolean {
-  if (window.location.pathname !== '/' || !hasSeveralApps(s.can)) return false
+async function signedInHere(s: Session, client: Client): Promise<boolean> {
+  if (window.location.pathname !== '/') return false
+  const list = await loadLauncher(client, s.userId)
+  if (!hasSeveralApps(list.apps)) return false
   window.location.replace(launcherHref('/'))
   return true
 }

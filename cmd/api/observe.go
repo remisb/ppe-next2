@@ -160,7 +160,7 @@ func observe(svc services, logger *slog.Logger) func(http.Handler) http.Handler 
 func noteActivity(r *http.Request, svc services, logger *slog.Logger) {
 	req := audit.RequestFrom(r.Context())
 	app := string(req.Source)
-	if req.UserID == uuid.Nil || (req.Source != audit.SourceWorkwear && req.Source != audit.SourceAdmin && req.Source != audit.SourceAPI) {
+	if req.UserID == uuid.Nil || req.Source == audit.SourcePublicLink || req.Source == audit.SourceSystem {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 3*time.Second)

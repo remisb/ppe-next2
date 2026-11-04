@@ -14,6 +14,9 @@ const (
 	// KeyEquipment is Equipment Assignments (migration 0032): the only
 	// built-in role that sees Equipment & Furniture and who holds each item.
 	KeyEquipment = "equipment"
+	// KeyTesters is Testers (migration 0042): sees App Launcher's apps in
+	// testing (POC, In development).
+	KeyTesters = "testers"
 )
 
 // The built-in roles' fixed ids, the same in every database.
@@ -22,9 +25,10 @@ var (
 	ManagerID   = uuid.MustParse("a0e1d000-0000-4000-8000-000000000002")
 	EmployeeID  = uuid.MustParse("a0e1d000-0000-4000-8000-000000000003")
 	EquipmentID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000004")
+	TestersID   = uuid.MustParse("a0e1d000-0000-4000-8000-000000000005")
 )
 
-// builtin is a built-in role as migration 0022 (Equipment Assignments, 0032) creates it. Its name and
+// builtin is a built-in role as migration 0022 (Equipment Assignments, 0032; Testers, 0042) creates it. Its name and
 // description never change; the apps translate them by key (Administration's
 // users dictionaries hold the same English).
 type builtin struct {
@@ -38,6 +42,7 @@ var builtinRoles = []builtin{
 	{ManagerID, KeyManager, "Manager", "Manages Item Catalogue prices and Item Sets, plus everything an employee can do."},
 	{EmployeeID, KeyEmployee, "Employee", "Prepares orders and follows them in Orders, manages employees and sizes."},
 	{EquipmentID, KeyEquipment, "Equipment Assignments", "Sees Equipment & Furniture: each item and who holds it."},
+	{TestersID, KeyTesters, "Testers", "Sees App Launcher's apps in testing."},
 }
 
 // BuiltinID is the id of the built-in role with key, or uuid.Nil.
@@ -54,12 +59,13 @@ func BuiltinID(key string) uuid.UUID {
 // first three reproduce the access the three fixed roles had before
 // permissions existed, with Equipment & Furniture since taken from them, and
 // hold what was split off later (item_sets.read, item_prices.manage: 0038)
-// or added since (sim_codes.read, Administrator's: 0041);
+// or added since (sim_codes.read, Administrator's: 0041; apps.manage, Administrator's: 0042);
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
 	KeyAdmin: {
 		UsersRead, UsersManage, RolesManage, SettingsManage, MailTemplatesManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead,
+		AppsManage,
 		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage, SIMCodesRead,
 		DashboardOverview,
 	},
@@ -71,10 +77,14 @@ var builtins = map[string][]Permission{
 	KeyEmployee: {ItemSetsRead, DashboardEmployee},
 	// Not even Administrator sees Equipment & Furniture without this role.
 	KeyEquipment: {EquipmentRead},
+	// Apps in testing are for the people trying them, administrators included only when they hold it.
+	KeyTesters: {AppsPreview},
 }
 
 // BuiltinKeys returns the built-in role keys in display order.
-func BuiltinKeys() []string { return []string{KeyAdmin, KeyManager, KeyEmployee, KeyEquipment} }
+func BuiltinKeys() []string {
+	return []string{KeyAdmin, KeyManager, KeyEmployee, KeyEquipment, KeyTesters}
+}
 
 // BuiltinPermissions returns the permissions the built-in roles named by keys
 // are installed with, in catalogue order. Unknown keys grant nothing.

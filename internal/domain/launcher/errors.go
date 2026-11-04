@@ -1,0 +1,17 @@
+package launcher
+
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrNotFound      = errors.New("app not found")
+	ErrInvalid       = errors.New("invalid app")
+	ErrSlugTaken     = errors.New("app slug already in use")
+	ErrActorNotFound = errors.New("acting user not found")
+)
+
+func fieldError(field, problem string) error {
+	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
+}

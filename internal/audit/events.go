@@ -38,7 +38,7 @@ var areas = []struct {
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
-	{AreaSettings, []string{"settings", "mail_template"}},
+	{AreaSettings, []string{"settings", "mail_template", "app"}},
 	{AreaSecurity, []string{"access_review"}},
 	{AreaAudit, []string{EntityLog}},
 }
@@ -62,6 +62,7 @@ var events = []string{
 	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
 	"mail_template.changed",
+	"app.registered", "app.changed", "app.audience_changed", "app.moved",
 	"access_review.completed",
 	EventExported, EventPurged,
 }

@@ -973,8 +973,8 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 ## 13. App Launcher
 
 The front door of the company's apps (ADR 0006; rules in
-[app-launcher.md](specs/app-launcher.md)). Phase 1 is built; the terms marked *phase 2/3*
-are decided but not on screen yet.
+[app-launcher.md](specs/app-launcher.md)). Phases 1 and 2 are built; the terms marked
+*phase 3* are decided but not on screen yet.
 
 ### App Launcher
 - **Brief:** the screen at `/apps/` that shows a user, as big tiles in groups, every app
@@ -1003,9 +1003,37 @@ are decided but not on screen yet.
 - **Code:** `AppGroup`.
 
 ### Stage
-- **Brief:** how far along an app is: **Live**, **Pilot**, **POC**, **In development**
-  (later **Retired**). Every stage but Live is a badge on the tile.
-- **Code:** `AppStage`.
+- **Brief:** how far along an app is: **Live**, **Pilot**, **POC**, **In development**,
+  **Retired**. Every stage but Live is a badge on the tile.
+- **Detail:** POC and In development are **apps in testing**: seen only with **See apps in
+  testing**, and shown only with **Show apps in testing** turned on. **Retired** takes a
+  tile away from everyone; tiles are never deleted.
+- **Code:** `launcher.Stage`, `AppStage`.
+
+### Registry
+- **Brief:** App Launcher's list of tiles, kept by the API (`launcher_apps`).
+- **Detail:** phase 1's tiles are its defaults, put back at start-up when missing, never
+  over a change. Managed on **Manage apps**.
+- **Code:** `internal/domain/launcher`, `GET /api/v1/launcher`.
+
+### Manage apps
+- **Brief:** Administration's screen of App Launcher's tiles: **Register app**, **Edit**,
+  **Move earlier** / **Move later**, each app's **Feedback** and **Changes**.
+- **Code:** permission `apps.manage` (Administrator's). **UI:** **Manage apps** (short
+  **Apps**).
+
+### Testers, See apps in testing, Show apps in testing
+- **Brief:** the built-in role (**Testers**) holding the one permission (**See apps in
+  testing**, `apps.preview`) that sees apps in testing; the launcher's switch (**Show apps
+  in testing**, per device) that shows them.
+- **Detail:** administrators see apps in testing only when they are Testers too.
+- **Code:** `role.KeyTesters`, `role.AppsPreview`.
+
+### Feedback (on an app)
+- **Brief:** what someone says about an app from its tile: **Works well**, **Confusing** or
+  **Something broke**, and what they were trying to do.
+- **Detail:** sent with the device and language; read on Manage apps. Not an audit event.
+- **Code:** `launcher_feedback`, `client.launcher.sendFeedback`.
 
 ### Linked site
 - **Brief:** an app on another site with its own sign-in, such as PPE Crew; its tile shows ↗
@@ -1017,16 +1045,17 @@ are decided but not on screen yet.
 ### Pinned, Recent
 - **Brief:** tiles a user pinned (**Pin** / **Unpin** in a tile's ⋯), shown first; and the
   last six opened.
-- **Detail:** kept per user on the device until phase 2 keeps them in the registry.
-- **Code:** `Places`, `togglePin`, `noteOpened`.
+- **Detail:** pins are the user's, on every device (the API); recent apps per device.
+- **Code:** `launcher_pins`, `togglePin`, `noteOpened`.
 
-### Version, Channel, Variant, Audience (phase 2/3)
+### Version, Channel, Variant (phase 3); Audience
 - **Version:** one published build of an app (`2026.10.30-7d26056`), never changed.
 - **Channel:** a name that points at one version: **Stable**, **Beta**, **Preview**.
   Promoting moves the pointer; rolling back moves it back.
 - **Variant:** another design of an app tried side by side, a channel with its own label.
-- **Audience:** the roles that see an app or a channel. Seeing is not a permission: the API
-  still decides what anyone can do.
+- **Audience** (UI: **Who sees it**): the permissions whose holders see a tile (any of
+  them), or everyone signed in. Seeing is not doing: the API still decides what anyone can
+  do.
 
 ---
 
@@ -1172,6 +1201,11 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Live / Pilot / POC / In development | Veikia / Bandoma / Prototipas / Kuriama | Работает / Пилот / Прототип / В разработке |
 | Pin / Unpin | Prisegti / Atsegti | Закрепить / Открепить |
 | On this site, with your sign-in / Another site, with its own sign-in | Šioje svetainėje, su jūsų prisijungimu / Kita svetainė, su savu prisijungimu | На этом сайте, с вашим входом / Другой сайт, со своим входом |
+| Retired | Nebenaudojama | Выведено из работы |
+| Show apps in testing | Rodyti bandomas programas | Показывать приложения на испытании |
+| Feedback / Works well / Confusing / Something broke / Send feedback | Atsiliepimas / Veikia gerai / Neaišku / Kažkas sugedo / Siųsti atsiliepimą | Отзыв / Работает хорошо / Непонятно / Что-то сломалось / Отправить отзыв |
+| Manage apps (Administration) / Register app / Move earlier / Move later / Who sees it | Programų tvarkymas / Registruoti programą / Perkelti aukščiau / Perkelti žemiau / Kas mato | Управление приложениями / Зарегистрировать приложение / Переместить выше / Переместить ниже / Кто видит |
+| Testers (role) / See apps in testing / Manage apps (permissions) | Bandytojai / Matyti bandomas programas / Tvarkyti programas | Тестировщики / Видеть приложения на испытании / Управлять приложениями |
 
 ---
 

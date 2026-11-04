@@ -1,6 +1,7 @@
 import type { Permission } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
-import { appName, hasSeveralApps, launcherText, visibleApps } from '@ppe/launcher'
+import { setAppNames } from '@ppe/audit'
+import { appName, appNames, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
 import { adminHref, launcherHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList, railTip } from '@ppe/ui/components/main-nav'
@@ -116,6 +117,9 @@ const phoneOrder = ['max-md:order-1', 'max-md:order-2', 'max-md:order-4', 'max-m
 
 export function App() {
   const { session, status, retry, signOut, client, passwordPrompt } = useApi()
+  // The user's App Launcher tiles, for the Apps entry and ⌘K, and the names Changes give apps.
+  const launcher = useLauncher()
+  useEffect(() => setAppNames(appNames(launcher.list?.apps ?? [])), [launcher.list])
   const { route: asked, navigate } = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -189,13 +193,14 @@ export function App() {
   // Administration's link, for users who may open one of its screens.
   const administration = canAdminister(session)
   // App Launcher's link, and the other apps in ⌘K, for users with more than one app (ADR 0006).
-  const severalApps = hasSeveralApps(session.can)
+  const apps = launcher.list?.apps ?? []
+  const severalApps = hasSeveralApps(apps)
   const otherApps: PaletteApp[] = severalApps
     ? [
         { key: 'launcher', label: launcherText().launcherName, href: launcherHref('/') },
-        ...visibleApps(session.can)
-          .filter((a) => a.kind === 'app' && a.id !== 'workwear')
-          .map((a) => ({ key: a.id, label: appName(a), href: a.href, newTab: a.tier === 'linked' })),
+        ...apps
+          .filter((a) => a.kind === 'app' && a.slug !== 'workwear')
+          .map((a) => ({ key: a.slug, label: appName(a), href: a.href, newTab: a.tier === 'linked' })),
       ]
     : []
   const home = startRoute({ name: 'home' }, session.can)

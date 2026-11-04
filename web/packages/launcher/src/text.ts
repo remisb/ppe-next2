@@ -1,10 +1,11 @@
-import { localized } from '@ppe/i18n'
+import type { AppGroup, AppStage, FeedbackRating, LauncherApp } from '@ppe/api-client'
+import { currentLang, localized } from '@ppe/i18n'
 
-import { type AppGroup, type AppStage, type LauncherApp, appById } from './catalogue.ts'
+import { appBySlug } from './catalogue.ts'
 
 /**
  * App Launcher's words, in each language: the launcher at /apps/ and every
- * app's Apps entry. App names follow each app's own dictionary.
+ * app's Apps entry. Tiles' names come with them from the registry.
  */
 const en = {
   apps: 'Apps',
@@ -18,7 +19,19 @@ const en = {
   recent: 'Recent',
   groupsNav: 'Groups',
   groups: { workwear: 'Workwear & PPE', assets: 'Company Assets', people: 'People & Crew', admin: 'Administration' } satisfies Record<AppGroup, string>,
-  stages: { live: 'Live', pilot: 'Pilot', poc: 'POC', dev: 'In development' } satisfies Record<AppStage, string>,
+  stages: { live: 'Live', pilot: 'Pilot', poc: 'POC', dev: 'In development', retired: 'Retired' } satisfies Record<AppStage, string>,
+  showTesting: 'Show apps in testing',
+  showTestingHint: 'POC and In development apps, for testers.',
+  loadFailed: 'The apps could not be loaded.',
+  retry: 'Try again',
+  about: 'About',
+  feedback: 'Feedback',
+  feedbackAsk: (app: string) => `How did ${app} work for you?`,
+  ratings: { works: 'Works well', confusing: 'Confusing', broken: 'Something broke' } satisfies Record<FeedbackRating, string>,
+  feedbackText: 'What were you trying to do?',
+  sendFeedback: 'Send feedback',
+  feedbackSent: (app: string) => `Thanks. The ${app} team will read it.`,
+  chooseRating: 'Choose how it worked.',
   moreAbout: (name: string) => `More about ${name}`,
   stage: 'Stage',
   address: 'Address',
@@ -33,18 +46,6 @@ const en = {
   close: 'Close',
   account: 'Account',
   signOut: 'Sign out',
-  names: {
-    workwear: 'Workwear & Equipment',
-    dashboard: 'Dashboard',
-    'create-order': 'Create Order',
-    orders: 'Orders',
-    employees: 'Employees',
-    help: 'Help',
-    'sim-cards': 'SIM Cards',
-    equipment: 'Equipment',
-    'sim-scan': 'Scan SIMs',
-    admin: 'Administration',
-  } as Record<string, string>,
 }
 
 type Messages = typeof en
@@ -61,7 +62,19 @@ const lt: Messages = {
   recent: 'Neseniai atidarytos',
   groupsNav: 'Grupės',
   groups: { workwear: 'Darbo drabužiai ir AAP', assets: 'Įmonės turtas', people: 'Žmonės ir brigados', admin: 'Administravimas' },
-  stages: { live: 'Veikia', pilot: 'Bandoma', poc: 'Prototipas', dev: 'Kuriama' },
+  stages: { live: 'Veikia', pilot: 'Bandoma', poc: 'Prototipas', dev: 'Kuriama', retired: 'Nebenaudojama' },
+  showTesting: 'Rodyti bandomas programas',
+  showTestingHint: 'Prototipai ir kuriamos programos – bandytojams.',
+  loadFailed: 'Nepavyko įkelti programų.',
+  retry: 'Bandyti dar kartą',
+  about: 'Apie',
+  feedback: 'Atsiliepimas',
+  feedbackAsk: (app) => `Kaip jums sekėsi su „${app}“?`,
+  ratings: { works: 'Veikia gerai', confusing: 'Neaišku', broken: 'Kažkas sugedo' },
+  feedbackText: 'Ką bandėte padaryti?',
+  sendFeedback: 'Siųsti atsiliepimą',
+  feedbackSent: (app) => `Ačiū. „${app}“ komanda jį perskaitys.`,
+  chooseRating: 'Pasirinkite, kaip sekėsi.',
   moreAbout: (name) => `Daugiau apie „${name}“`,
   stage: 'Etapas',
   address: 'Adresas',
@@ -76,18 +89,6 @@ const lt: Messages = {
   close: 'Uždaryti',
   account: 'Paskyra',
   signOut: 'Atsijungti',
-  names: {
-    workwear: 'Darbo drabužiai ir įranga',
-    dashboard: 'Suvestinė',
-    'create-order': 'Kurti užsakymą',
-    orders: 'Užsakymai',
-    employees: 'Darbuotojai',
-    help: 'Pagalba',
-    'sim-cards': 'SIM kortelės',
-    equipment: 'Įranga',
-    'sim-scan': 'Skenuoti SIM',
-    admin: 'Administravimas',
-  },
 }
 
 const ru: Messages = {
@@ -102,7 +103,19 @@ const ru: Messages = {
   recent: 'Недавние',
   groupsNav: 'Группы',
   groups: { workwear: 'Спецодежда и СИЗ', assets: 'Имущество компании', people: 'Люди и бригады', admin: 'Администрирование' },
-  stages: { live: 'Работает', pilot: 'Пилот', poc: 'Прототип', dev: 'В разработке' },
+  stages: { live: 'Работает', pilot: 'Пилот', poc: 'Прототип', dev: 'В разработке', retired: 'Выведено из работы' },
+  showTesting: 'Показывать приложения на испытании',
+  showTestingHint: 'Прототипы и приложения в разработке — для тестировщиков.',
+  loadFailed: 'Не удалось загрузить приложения.',
+  retry: 'Повторить',
+  about: 'О приложении',
+  feedback: 'Отзыв',
+  feedbackAsk: (app) => `Как вам «${app}»?`,
+  ratings: { works: 'Работает хорошо', confusing: 'Непонятно', broken: 'Что-то сломалось' },
+  feedbackText: 'Что вы пытались сделать?',
+  sendFeedback: 'Отправить отзыв',
+  feedbackSent: (app) => `Спасибо. Команда «${app}» прочитает отзыв.`,
+  chooseRating: 'Выберите, как всё прошло.',
   moreAbout: (name) => `Подробнее: «${name}»`,
   stage: 'Этап',
   address: 'Адрес',
@@ -117,18 +130,6 @@ const ru: Messages = {
   close: 'Закрыть',
   account: 'Учётная запись',
   signOut: 'Выйти',
-  names: {
-    workwear: 'Спецодежда и снаряжение',
-    dashboard: 'Сводка',
-    'create-order': 'Создать заказ',
-    orders: 'Заказы',
-    employees: 'Сотрудники',
-    help: 'Справка',
-    'sim-cards': 'SIM-карты',
-    equipment: 'Оборудование',
-    'sim-scan': 'Сканировать SIM',
-    admin: 'Администрирование',
-  },
 }
 
 export const dictionaries = { en, lt, ru }
@@ -136,13 +137,18 @@ export const dictionaries = { en, lt, ru }
 /** The launcher's words in the language in use. Never read at module level. */
 export const launcherText = localized(dictionaries)
 
-/** An app's or shortcut's name in the language in use. */
+/** A tile's name in the language in use. */
 export function appName(app: LauncherApp): string {
-  return app.productName ?? launcherText().names[app.id] ?? app.id
+  return app.names[currentLang()] || app.names.en
 }
 
-/** The name of a shortcut's app, if it is one. */
-export function parentName(app: LauncherApp): string | undefined {
-  const parent = app.parent ? appById(app.parent) : undefined
+/** The apps' names by slug, in the language in use: what the Audit log, System and Usage call a source. */
+export function appNames(apps: readonly LauncherApp[]): Record<string, string> {
+  return Object.fromEntries(apps.filter((a) => a.kind === 'app').map((a) => [a.slug, appName(a)]))
+}
+
+/** The name of a shortcut's app, when it is one and the app is in the list. */
+export function parentName(app: LauncherApp, apps: readonly LauncherApp[]): string | undefined {
+  const parent = app.parent ? appBySlug(apps, app.parent) : undefined
   return parent ? appName(parent) : undefined
 }

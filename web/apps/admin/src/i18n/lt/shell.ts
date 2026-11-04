@@ -23,6 +23,8 @@ export const shell: ShellText = {
   shortSettings: 'Nustatymai',
   mailTemplates: 'Laiškų šablonai',
   shortMailTemplates: 'Laiškai',
+  manageApps: 'Programų tvarkymas',
+  shortManageApps: 'Programos',
   backups: 'Atsarginės kopijos',
   shortBackups: 'Kopijos',
   workwear: 'Darbo drabužiai ir įranga',
@@ -31,6 +33,6 @@ export const shell: ShellText = {
   shortAccount: 'Paskyra',
   signOut: 'Atsijungti',
   notForYouTitle: 'Administravimas skirtas administratoriams',
-  notForYou: 'Jūsų rolės neleidžia tvarkyti naudotojų, rolių, nustatymų, laiškų šablonų ar atsarginių kopijų ir skaityti audito žurnalo, saugos ar sistemos. Jei reikia, kreipkitės į administratorių.',
+  notForYou: 'Jūsų rolės neleidžia tvarkyti naudotojų, rolių, nustatymų, laiškų šablonų, programų ar atsarginių kopijų ir skaityti audito žurnalo, saugos ar sistemos. Jei reikia, kreipkitės į administratorių.',
   backToWorkwear: 'Grįžti į Darbo drabužius ir įrangą',
 }

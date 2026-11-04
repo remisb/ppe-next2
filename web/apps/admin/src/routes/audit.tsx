@@ -405,6 +405,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return linkTo({ name: 'security', tab: 'review', filter: {} }, navigate)
     case 'mail_template':
       return e.entity_label ? linkTo({ name: 'mailTemplates', key: e.entity_label as MailTemplateKey }, navigate) : null
+    case 'app':
+      return linkTo({ name: 'apps' }, navigate)
     default:
       return null
   }

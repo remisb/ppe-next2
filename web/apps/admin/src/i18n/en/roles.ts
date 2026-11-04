@@ -41,6 +41,7 @@ export const roles = {
   inUse: 'Users hold this role. Take it from them on Users first.',
   groups: {
     administration: 'Administration',
+    launcher: 'App Launcher',
     workwear: 'Workwear & Equipment',
     dashboards: 'Dashboards',
   } satisfies Record<PermissionInfo['group'], string>,
@@ -71,6 +72,8 @@ export const roles = {
       label: 'See Usage',
       grants: 'Who uses the apps and from what, sign-ins and changes over time, the confirmation-link funnel and data quality.',
     },
+    'apps.manage': { label: 'Manage apps', grants: 'App Launcher’s apps and shortcuts: register them, change them, who sees each, their order, and feedback on them.' },
+    'apps.preview': { label: 'See apps in testing', grants: 'POC and In development apps in App Launcher, behind Show apps in testing.' },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',

@@ -25,7 +25,8 @@ func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore
 // rows still exist (soft delete), so a deleted record keeps its name. An
 // order is named by its record number, as order.FormatRecordNumber writes it,
 // an asset by its inventory number, and a catalogue picture by its icon and a
-// mail template by its use case's key, which the apps translate.
+// mail template by its use case's key, which the apps translate, and an App
+// Launcher tile by its English name.
 const entityLabel = `CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.first_name || ' ' || x.last_name FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.name FROM catalogue_items x WHERE x.id = a.entity_id)
@@ -37,6 +38,7 @@ const entityLabel = `CASE a.entity_type
 		WHEN 'role' THEN (SELECT x.name FROM roles x WHERE x.id = a.entity_id)
 		WHEN 'asset' THEN (SELECT x.inventory_no FROM assets x WHERE x.id = a.entity_id)
 		WHEN 'mail_template' THEN (SELECT x.key FROM mail_templates x WHERE x.id = a.entity_id)
+		WHEN 'app' THEN (SELECT x.name_en FROM launcher_apps x WHERE x.id = a.entity_id)
 	END`
 
 const entityDeleted = `coalesce(CASE a.entity_type

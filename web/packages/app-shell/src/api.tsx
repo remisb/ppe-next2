@@ -51,10 +51,11 @@ export interface ApiProviderProps {
   onSignOut?: (userId: string) => void
   /**
    * Run when the user signs in with the form here (not when a reload finds the
-   * sign-in): true when the app is leaving for another page, as the staff app
-   * does for App Launcher, so it shows Checking your sign-in until it goes.
+   * sign-in), with the signed-in client: true when the app is leaving for
+   * another page, as the staff app does for App Launcher. Checking your
+   * sign-in shows until it answers, and on while the page goes.
    */
-  onSignedIn?: (session: Session) => boolean
+  onSignedIn?: (session: Session, client: Client) => boolean | Promise<boolean>
 }
 
 export function ApiProvider({ children, app, setLanguage, onSignOut, onSignedIn }: ApiProviderProps) {
@@ -162,7 +163,14 @@ export function ApiProvider({ children, app, setLanguage, onSignOut, onSignedIn 
       const s = apply(res)
       rememberDeviceLanguage(s.language)
       rememberKeepSignedIn(keepSignedIn)
-      setStatus(signedInRef.current?.(s) ? 'starting' : 'ready')
+      const signedIn = signedInRef.current
+      if (!signedIn) {
+        setStatus('ready')
+        return
+      }
+      setStatus('starting')
+      const leaving = await Promise.resolve(signedIn(s, client)).catch(() => false)
+      setStatus(leaving ? 'starting' : 'ready')
     },
     [client, apply],
   )

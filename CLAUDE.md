@@ -124,14 +124,21 @@ PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-
 `API_SIM_CODES_KEY`, required, never in the database or its backups) in `asset_sim_codes`
 (migration 0041, which also makes `…5` and `…5F` the same SIM No.: `asset.simKey`). Slice 8 (go-live
 tools) waits for the open decisions.
-**App Launcher** (ADR 0006, accepted with every recommended decision; phase 1 built; spec
+**App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 and 2 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
-(`web/apps/launcher`) showing every app and shortcut a user's roles open as big tiles in groups,
-with pinned and recent apps (per device); the list, who sees each tile, the words and the places are
-`@ppe/launcher` (`APPS`, a list in code until phase 2's registry). Someone with several apps
-(`hasSeveralApps`) who signs in at the staff app's `/` lands there (`ApiProvider`'s `onSignedIn`);
-every app has an **Apps** entry in its own menu (no extra row) and the staff app's ⌘K lists the other
-apps. PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
+(`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
+(the user's, by the API) and recent apps (per device). Its list is the API's registry
+(`internal/domain/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`;
+`GET /api/v1/launcher` filtered per user by permission), whose default tiles the API inserts at
+start-up (`launcher.EnsureDefaults`, also after a test empties the database); administrators manage it
+on Administration's **Manage apps** (`apps.manage`: register, edit, move, retire, feedback, Changes;
+events `app.*`). Apps in testing (POC, In development) are for the built-in **Testers** role
+(`apps.preview`), behind **Show apps in testing**. `@ppe/launcher` loads the list once per user and page
+(`useLauncher`) for every app's **Apps** entry (no extra row), the staff app's ⌘K and the landing:
+someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/` lands on `/apps/`
+(`ApiProvider`'s async `onSignedIn`). Each app sends its slug as `X-PPE-App` (`workwear`, `admin`,
+`launcher`, `sim-scan`); the audit trail, security log, error list and Usage record any registered slug
+(the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -143,6 +150,9 @@ nullable (Mark as Ordered must refuse such items), while order-line snapshots re
 `asset_assignments` allow one open assignment per asset (a partial unique index) and a
 trigger refuses deleting one, changing its giving, or setting its Not Returned mark or return
 twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not change it);
+App Launcher's tiles are never deleted (Retired instead), and `TRUNCATE users CASCADE` empties
+them through their actor key, so Postgres tests and e2e get the defaults back
+(`launcher.EnsureDefaults`, which the API also runs at start-up);
 `asset_signed_copies` is append-only (trigger and grants): uploading again adds a row. The
 files themselves are in the Spaces bucket, not in the database or its backups
 (`docs/backups.md`, "Uploaded files").

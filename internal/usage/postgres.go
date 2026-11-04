@@ -93,7 +93,12 @@ func (s *PostgresStore) Read(ctx context.Context, w Window) (Report, error) {
 				if i := days.index(day); i >= 0 {
 					if app == nil {
 						r.Active.Total[i] = n
-					} else if v, ok := r.Active.ByApp[*app]; ok {
+					} else {
+						v, ok := r.Active.ByApp[*app]
+						if !ok {
+							v = make([]int, Days)
+							r.Active.ByApp[*app] = v
+						}
 						v[i] = n
 					}
 				}

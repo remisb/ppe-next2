@@ -26,6 +26,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -657,6 +658,40 @@ func (stubTemplates) Update(_ context.Context, key string, m mailtemplate.Mutati
 	return next, err
 }
 
+// stubLauncher has the default tiles and no pins or feedback.
+type stubLauncher struct{}
+
+func (stubLauncher) List(context.Context) ([]launcher.App, error) { return launcher.Defaults, nil }
+func (stubLauncher) Get(_ context.Context, slug string) (launcher.App, error) {
+	for _, a := range launcher.Defaults {
+		if a.Slug == slug {
+			return a, nil
+		}
+	}
+	return launcher.App{}, launcher.ErrNotFound
+}
+func (stubLauncher) Create(_ context.Context, a launcher.App, _ audit.Event) (launcher.App, error) {
+	return a, nil
+}
+func (s stubLauncher) Update(ctx context.Context, slug string, m launcher.Mutation) (launcher.App, error) {
+	cur, err := s.Get(ctx, slug)
+	if err != nil {
+		return cur, err
+	}
+	next, _, err := m(cur)
+	return next, err
+}
+func (stubLauncher) Reorder(_ context.Context, m launcher.OrderMutation) ([]launcher.App, error) {
+	_, _, err := m(launcher.Defaults)
+	return launcher.Defaults, err
+}
+func (stubLauncher) Pins(context.Context, uuid.UUID) ([]string, error)     { return []string{}, nil }
+func (stubLauncher) SetPins(context.Context, uuid.UUID, []uuid.UUID) error { return nil }
+func (stubLauncher) AddFeedback(context.Context, launcher.Feedback) error  { return nil }
+func (stubLauncher) Feedback(context.Context, uuid.UUID) ([]launcher.Feedback, error) {
+	return []launcher.Feedback{}, nil
+}
+
 type stubBackups struct{}
 
 func (stubBackups) Read(context.Context, int) (backup.Status, error) { return backup.Status{}, nil }
@@ -693,7 +728,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -892,6 +927,15 @@ var policy = map[string]rule{
 	"GET /api/v1/mail-templates/{key}":                                          {role.MailTemplatesManage, "admins"},
 	"PUT /api/v1/mail-templates/{key}":                                          {role.MailTemplatesManage, "admins"},
 	"POST /api/v1/mail-templates/{key}/preview":                                 {role.MailTemplatesManage, "admins"},
+	"GET /api/v1/launcher":                                                      {"", "any"},
+	"PUT /api/v1/launcher/pins":                                                 {"", "any"},
+	"POST /api/v1/launcher/feedback":                                            {"", "any"},
+	"GET /api/v1/apps":                                                          {role.AppsManage, "admins"},
+	"POST /api/v1/apps":                                                         {role.AppsManage, "admins"},
+	"PUT /api/v1/apps/{slug}":                                                   {role.AppsManage, "admins"},
+	"POST /api/v1/apps/{slug}/move":                                             {role.AppsManage, "admins"},
+	"GET /api/v1/apps/{slug}/feedback":                                          {role.AppsManage, "admins"},
+	"GET /api/v1/audit-events/apps/{id}":                                        {role.AppsManage, "admins"},
 	"GET /api/v1/audit-events":                                                  {role.AuditRead, "admins"},
 	"GET /api/v1/audit-events/{id}":                                             {role.AuditRead, "admins"},
 	"GET /api/v1/audit-events/integrity":                                        {role.AuditRead, "admins"},
@@ -918,7 +962,7 @@ var policy = map[string]rule{
 // roles, and Equipment Assignments, which reaches what any signed-in user does
 // but not "staff", what only the three fixed roles do (seeing Item Sets).
 var allowedRoles = map[string][]string{
-	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment},
+	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters},
 	"staff":    {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
 	"managers": {role.KeyAdmin, role.KeyManager},
 	"admins":   {role.KeyAdmin},

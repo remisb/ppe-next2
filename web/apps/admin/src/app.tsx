@@ -1,5 +1,6 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { hasSeveralApps, launcherText } from '@ppe/launcher'
+import { setAppNames } from '@ppe/audit'
+import { appNames, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
 import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem, railTip } from '@ppe/ui/components/main-nav'
@@ -13,6 +14,7 @@ import {
   Gauge,
   Grip,
   KeyRound,
+  LayoutGrid,
   LogOut,
   Mail,
   ScrollText,
@@ -26,6 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 import { t } from '@/i18n'
 import { type Route, type Screen, linkTo, screenRoute, screens, startRoute, useRouter } from '@/lib/router'
 
+import { AppsPage } from './routes/apps'
 import { AuditPage } from './routes/audit'
 import { MailTemplatesPage } from './routes/mail-templates'
 import { OverviewPage } from './routes/overview'
@@ -56,6 +59,7 @@ const sections = (): Record<Screen, Section> => ({
   usage: { name: 'usage', label: t.shell.usage, short: t.shell.shortUsage, icon: BarChart3, inMore: true },
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon, inMore: true },
   mailTemplates: { name: 'mailTemplates', label: t.shell.mailTemplates, short: t.shell.shortMailTemplates, icon: Mail, inMore: true },
+  apps: { name: 'apps', label: t.shell.manageApps, short: t.shell.shortManageApps, icon: LayoutGrid, inMore: true },
 })
 
 /** The phone bar's columns, by how many sections are in it (none to four): those, and More. */
@@ -65,13 +69,17 @@ const phoneColumns = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'
  * Administration's frame, the staff app's in look (@ppe/ui main-nav): a
  * bottom bar on a phone, a rail on a tablet, a sidebar on a desktop. Its
  * sections are the screens the user's permissions open; on a phone, Roles,
- * System, Usage, Settings and Mail Templates are in More, so the bar holds at most four and More. More and the
+ * System, Usage, Settings, Mail Templates and Manage apps are in More, so the bar holds at most four and More. More and the
  * rail and sidebar's foot hold the way back to the staff app, Account (the
  * staff app's) and Sign out. Both apps share one sign-in, so signing in
  * or out here does so there too.
  */
 export function App() {
   const { session, status, retry, signOut, passwordPrompt } = useApi()
+  // The user's App Launcher tiles, for the Apps entry and the names the Audit log, System and Usage give apps.
+  const launcher = useLauncher()
+  const severalApps = hasSeveralApps(launcher.list?.apps ?? [])
+  useEffect(() => setAppNames(appNames(launcher.list?.apps ?? [])), [launcher.list])
   const { route: asked, navigate } = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
   const morePanel = useRef<HTMLDivElement>(null)
@@ -180,11 +188,11 @@ export function App() {
                 {s.label}
               </a>
             ))}
-            <FootLinks name={session.name} severalApps={hasSeveralApps(session.can)} onSignOut={signOut} item={moreItem} icon={moreIcon} />
+            <FootLinks name={session.name} severalApps={severalApps} onSignOut={signOut} item={moreItem} icon={moreIcon} />
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-0.5 border-t border-border p-2 md:flex xl:gap-1 xl:p-3">
-          <FootLinks name={session.name} severalApps={hasSeveralApps(session.can)} onSignOut={signOut} item={navItem} icon={navIcon} />
+          <FootLinks name={session.name} severalApps={severalApps} onSignOut={signOut} item={navItem} icon={navIcon} />
         </div>
       </aside>
 
@@ -200,6 +208,7 @@ export function App() {
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}
         {route.name === 'mailTemplates' ? <MailTemplatesPage route={route} navigate={navigate} /> : null}
+        {route.name === 'apps' ? <AppsPage route={route} navigate={navigate} /> : null}
         {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
         {route.name === 'usage' ? <UsagePage navigate={navigate} /> : null}
       </main>

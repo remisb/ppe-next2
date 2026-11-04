@@ -67,10 +67,12 @@ export type Route =
   | { name: 'mailTemplates'; key?: MailTemplateKey }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
   | { name: 'system'; tab: SystemTab; error?: string }
+  /** Manage apps: App Launcher's apps and shortcuts; app is the one open beside the list (/apps/<slug>). */
+  | { name: 'apps'; app?: string }
 
 export type Screen = Exclude<Route['name'], 'home'>
 
-const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'home'>, string> = {
+const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'apps' | 'home'>, string> = {
   overview: '/',
   users: '/users',
   roles: '/roles',
@@ -89,6 +91,7 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'usage', permissions: ['usage.read'] },
   { name: 'settings', permissions: ['settings.manage'] },
   { name: 'mailTemplates', permissions: ['mail_templates.manage'] },
+  { name: 'apps', permissions: ['apps.manage'] },
 ]
 
 /** The mail templates' keys, as their addresses carry them. */
@@ -125,6 +128,8 @@ export function parsePath(pathname: string, search = ''): Route {
     const key = decodeURIComponent(mail[1]) as MailTemplateKey
     return mailTemplateKeys.includes(key) ? { name: 'mailTemplates', key } : { name: 'mailTemplates' }
   }
+  const apps = /^\/apps(?:\/([^/]+))?$/.exec(path)
+  if (apps) return apps[1] ? { name: 'apps', app: decodeURIComponent(apps[1]) } : { name: 'apps' }
   // Backups was a screen of its own before System.
   if (path === '/backups') return { name: 'system', tab: 'backups' }
   const system = /^\/system(?:\/(errors|backups))?(?:\/([^/]+))?$/.exec(path)
@@ -156,6 +161,7 @@ export function pathOf(route: Route): string {
   }
   if (route.name === 'home') return '/'
   if (route.name === 'mailTemplates') return route.key ? `/mail-templates/${encodeURIComponent(route.key)}` : '/mail-templates'
+  if (route.name === 'apps') return route.app ? `/apps/${encodeURIComponent(route.app)}` : '/apps'
   if (route.name !== 'audit') return paths[route.name]
   const query = new URLSearchParams()
   for (const key of auditFilterKeys) {

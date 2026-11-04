@@ -1,7 +1,8 @@
 # ADR 0006: App Launcher, with hosting tiers, versions and channels
 
 - **Status:** accepted (2026-11-04, with every decision the guide recommends, D1 to D12);
-  phase 1 built 2026-11-04 (`docs/specs/app-launcher.md`)
+  phases 1 and 2 built 2026-11-04 (`docs/specs/app-launcher.md`; phase 2 with audiences by
+  permission, channels moved to phase 3, and shortcuts kept in the registry too)
 - **Date:** 2026-10-30
 - **Scope:** frontend (`web/apps`, `@ppe/app-shell`, `@ppe/routing`), backend (Go API,
   Postgres, files store), deployment (Caddy, CI, DNS)

@@ -4,5 +4,5 @@
  * where and by whom it was made, in the language in use.
  */
 export { ChangeDetail, ChangeList, ChangedFields, RecordChanges, changedBy } from './changes.tsx'
-export { type DescribeOptions, type FieldChange, areaLabel, auditChanges, auditTitle, deviceText, sourceLabel } from './describe.ts'
+export { type DescribeOptions, type FieldChange, areaLabel, auditChanges, auditTitle, deviceText, setAppNames, sourceLabel } from './describe.ts'
 export { type AuditText, auditText } from './text.ts'

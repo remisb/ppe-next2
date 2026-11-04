@@ -32,7 +32,7 @@ const columns = `r.id, r.key, r.name, r.description, r.created_at, r.updated_at,
 	(SELECT count(*) FROM user_roles ur JOIN users u ON u.id = ur.user_id AND u.deleted_at IS NULL WHERE ur.role_id = r.id)`
 
 // builtinsFirst orders admin, manager, employee, equipment, then custom roles by name.
-const builtinsFirst = `ORDER BY array_position(ARRAY['admin','manager','employee','equipment'], r.key) NULLS LAST, lower(r.name), r.id`
+const builtinsFirst = `ORDER BY array_position(ARRAY['admin','manager','employee','equipment','testers'], r.key) NULLS LAST, lower(r.name), r.id`
 
 func scan(row pgx.Row) (Role, error) {
 	var r Role

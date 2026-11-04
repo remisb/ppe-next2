@@ -8,7 +8,7 @@ clickable prototype (five people, phone/tablet/desktop, EN/LT/RU, eight guided f
 [mockups/app-launcher.html](mockups/app-launcher.html).
 
 30 Oct 2026 · sample data · status: **accepted** 4 Nov 2026 with every recommended decision;
-phase 1 built (rules in [app-launcher.md](../specs/app-launcher.md)); decision in
+phases 1 and 2 built (rules in [app-launcher.md](../specs/app-launcher.md)); decision in
 [ADR 0006](../architecture/adr/0006-app-launcher.md); terms in
 [ubiquitous-language.md §13](../ubiquitous-language.md#13-app-launcher).
 

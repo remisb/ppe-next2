@@ -84,7 +84,7 @@ function Figures({ r, onSignIns }: { r: UsageReport; onSignIns: ((day: string) =
 function Active({ r }: { r: UsageReport }) {
   const apps = Object.entries(r.active.by_app).filter(([, v]) => v.some((n) => n > 0))
   const series = apps.length > 1
-    ? apps.map(([app, values], i) => ({ label: sourceLabel(app as 'workwear'), className: i === 0 ? 'bg-primary/80' : 'bg-foreground/40', values }))
+    ? apps.map(([app, values], i) => ({ label: sourceLabel(app), className: i === 0 ? 'bg-primary/80' : 'bg-foreground/40', values }))
     : [{ label: t.usage.everyone, className: 'bg-primary/80', values: r.active.total }]
   const last = r.days.length - 1
   const roles = r.active.by_role.filter((s) => s.values.some((n) => n > 0))

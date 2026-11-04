@@ -68,6 +68,12 @@ import type {
   SecurityQuery,
   MailMessage,
   MailTemplate,
+  LauncherApp,
+  LauncherList,
+  AppFeedback,
+  AppFeedbackInput,
+  AppInput,
+  NewAppInput,
   MailTemplateKey,
   MailText,
   Settings,
@@ -84,8 +90,12 @@ import type {
   UserUpdateInput,
 } from './types.ts'
 
-/** The apps the API tells apart in the Audit log (X-PPE-App). */
-export type AppName = 'workwear' | 'admin'
+/**
+ * The app sending requests, by its slug (X-PPE-App): workwear, admin,
+ * launcher, or an app registered in App Launcher. The API records any other
+ * as the API.
+ */
+export type AppName = string
 
 export interface ClientOptions {
   /** Prefix for every path; '' when the app is served from the API's origin or proxied. */
@@ -253,6 +263,23 @@ export function createClient(options: ClientOptions) {
       update: (key: MailTemplateKey, input: MailText) => request<MailTemplate>('PUT', `/api/v1/mail-templates/${seg(key)}`, input),
       /** Renders unsaved text with the fields' samples; 400 names what cannot be saved. */
       preview: (key: MailTemplateKey, input: MailText) => request<MailMessage>('POST', `/api/v1/mail-templates/${seg(key)}/preview`, input),
+    },
+    /** App Launcher, for the signed-in user (ADR 0006). */
+    launcher: {
+      /** The tiles the user sees, their pins, and whether they may see apps in testing. */
+      get: () => request<LauncherList>('GET', '/api/v1/launcher'),
+      /** Replaces the user's pins, in order; each must be a tile they see. */
+      setPins: (slugs: string[]) => request<{ slugs: string[] }>('PUT', '/api/v1/launcher/pins', { slugs }),
+      sendFeedback: (input: AppFeedbackInput) => request<AppFeedback>('POST', '/api/v1/launcher/feedback', input),
+    },
+    /** Manage apps: App Launcher's registry; apps.manage. */
+    apps: {
+      list: () => request<LauncherApp[]>('GET', '/api/v1/apps'),
+      create: (input: NewAppInput) => request<LauncherApp>('POST', '/api/v1/apps', input),
+      update: (slug: string, input: AppInput) => request<LauncherApp>('PUT', `/api/v1/apps/${seg(slug)}`, input),
+      /** Puts a tile in front of another, or last; answers every tile in the new order. */
+      move: (slug: string, before: string) => request<LauncherApp[]>('POST', `/api/v1/apps/${seg(slug)}/move`, { before }),
+      feedback: (slug: string) => request<AppFeedback[]>('GET', `/api/v1/apps/${seg(slug)}/feedback`),
     },
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),

@@ -32,6 +32,8 @@ const (
 	SecurityRead        Permission = "security.read"
 	SystemRead          Permission = "system.read"
 	UsageRead           Permission = "usage.read"
+	AppsManage          Permission = "apps.manage"
+	AppsPreview         Permission = "apps.preview"
 	DashboardOverview   Permission = "dashboard.overview"
 	DashboardManager    Permission = "dashboard.manager"
 	DashboardEmployee   Permission = "dashboard.employee"
@@ -42,8 +44,10 @@ type Group string
 
 const (
 	GroupAdministration Group = "administration"
-	GroupWorkwear       Group = "workwear"
-	GroupDashboards     Group = "dashboards"
+	// GroupLauncher is App Launcher's (ADR 0006): managing its list, and seeing apps in testing.
+	GroupLauncher   Group = "launcher"
+	GroupWorkwear   Group = "workwear"
+	GroupDashboards Group = "dashboards"
 )
 
 // Info describes a permission: its group and the permissions it cannot work
@@ -67,6 +71,8 @@ var catalogue = []Info{
 	{SecurityRead, GroupAdministration, nil},
 	{SystemRead, GroupAdministration, nil},
 	{UsageRead, GroupAdministration, nil},
+	{AppsManage, GroupLauncher, nil},
+	{AppsPreview, GroupLauncher, nil},
 	{EmployeesDelete, GroupWorkwear, nil},
 	{CatalogueManage, GroupWorkwear, nil},
 	{ItemPricesManage, GroupWorkwear, []Permission{CatalogueManage}},

@@ -32,7 +32,8 @@ const (
 	DeviceLimit = 200
 )
 
-// Apps are where activity is counted (audit.Source's apps).
+// Apps are always reported, with no activity too; any other app (App
+// Launcher, an app registered there, by its slug) once it was used.
 var Apps = []string{"workwear", "admin", "api"}
 
 // Role names a role in the report; Key is set on the built-in ones.

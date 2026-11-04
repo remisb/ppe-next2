@@ -54,11 +54,14 @@ certificate. App Launcher is a fourth, at `/apps/` (`launcherHref`; port 5186,
 `pnpm --dir apps/launcher dev`, proxied from 5180 for `/apps` and `/apps/…` only).
 
 **Every app has a way back to App Launcher, and no app gains a row for it** (ADR 0006,
-`docs/specs/app-launcher.md`). For a user with several apps (`hasSeveralApps(session.can)`
-from `@ppe/launcher`), an **Apps** entry (`Grip` icon, `launcherText().apps`,
-`launcherHref('/')`) sits in the app's own menu: the More panel on a phone and the rail's or
-sidebar's foot elsewhere, or an icon in the header of an app with no menu. A new app or
-shortcut is a row in `@ppe/launcher`'s `APPS` with its name in the three dictionaries.
+`docs/specs/app-launcher.md`). For a user with several apps (`hasSeveralApps(apps)`
+from `@ppe/launcher`, over `useLauncher().list`: the API's list, loaded once per user and
+page), an **Apps** entry (`Grip` icon, `launcherText().apps`, `launcherHref('/')`) sits in the
+app's own menu: the More panel on a phone and the rail's or sidebar's foot elsewhere, or an
+icon in the header of an app with no menu. A new tile is registered on Administration's
+**Manage apps** (or, for every installation, added to `internal/domain/launcher` `Defaults`).
+Each app's `ApiProvider` sends its own slug as `app` (the `X-PPE-App` header), and an app
+that shows records' sources calls `setAppNames(appNames(list.apps))` (`@ppe/audit`).
 
 **Shared code lives in a package; an app keeps only its own screens and words.** A package
 is TypeScript source like `api-client` (explicit `.ts` imports, no build step). Import a

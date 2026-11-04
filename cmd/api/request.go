@@ -21,11 +21,14 @@ const appHeader = "X-PPE-App"
 //
 // The ID is always made here: one sent by the client could be chosen to
 // collide with another request's.
-func requestContext(tok *tokens) middleware.Middleware {
+//
+// isApp tells a registered app's slug (App Launcher's registry) from anything
+// else a client might send as X-PPE-App.
+func requestContext(tok *tokens, isApp func(slug string) bool) middleware.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			req := audit.Request{
-				ID: uuid.NewString(), Source: requestSource(r),
+				ID: uuid.NewString(), Source: requestSource(r, isApp),
 				IP: middleware.ClientAddr(r), UserAgent: r.UserAgent(),
 			}
 			// A token that does not verify names no sign-in; its request is
@@ -41,16 +44,19 @@ func requestContext(tok *tokens) middleware.Middleware {
 }
 
 // requestSource is where a request comes from: a public confirmation link,
-// one of the two apps (by appHeader), or any other API client.
-func requestSource(r *http.Request) audit.Source {
+// an app by its slug (appHeader: the staff app, Administration, App Launcher
+// or an app registered in App Launcher), or any other API client.
+func requestSource(r *http.Request, isApp func(slug string) bool) audit.Source {
 	if strings.HasPrefix(r.URL.Path, "/api/v1/confirmations/") {
 		return audit.SourcePublicLink
 	}
-	switch r.Header.Get(appHeader) {
-	case "workwear":
+	switch app := r.Header.Get(appHeader); {
+	case app == "workwear":
 		return audit.SourceWorkwear
-	case "admin":
+	case app == "admin":
 		return audit.SourceAdmin
+	case app == "launcher" || (app != "" && isApp(app)):
+		return audit.Source(app)
 	}
 	return audit.SourceAPI
 }

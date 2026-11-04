@@ -16,6 +16,9 @@ describe('router', () => {
     expect(pathOf({ name: 'mailTemplates', key: 'sim.blocking' })).toBe('/mail-templates/sim.blocking')
     expect(parsePath('/mail-templates/sim.blocking')).toEqual({ name: 'mailTemplates', key: 'sim.blocking' })
     expect(parsePath('/mail-templates/sim.welcome')).toEqual({ name: 'mailTemplates' })
+    expect(parsePath('/apps')).toEqual({ name: 'apps' })
+    expect(parsePath('/apps/sim-scan')).toEqual({ name: 'apps', app: 'sim-scan' })
+    expect(pathOf({ name: 'apps', app: 'sim-scan' })).toBe('/apps/sim-scan')
   })
 
   it('keeps the System tab and the open error in its address; Backups moved there', () => {

@@ -13,11 +13,11 @@ applyTheme(loadTheme())
 const container = document.getElementById('root')
 if (!container) throw new Error('#root is missing from index.html')
 
-// The trial reports as the staff app, where its features will live: the Audit
-// log's sources and Usage's apps stay as they are (docs/specs/asset-service.md).
+// The trial reports by its slug, registered in App Launcher (ADR 0006): the
+// Audit log, System's errors and Usage name it Scan SIMs.
 createRoot(container).render(
   <StrictMode>
-    <ApiProvider app="workwear" setLanguage={setLanguage}>
+    <ApiProvider app="sim-scan" setLanguage={setLanguage}>
       <App />
     </ApiProvider>
   </StrictMode>,

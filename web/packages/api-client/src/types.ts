@@ -5,10 +5,11 @@ import type { PhotoUse } from './photo-uses.ts'
 // order line holds a clothing size as its code ("54"), or as a letter (S … 3XL)
 // when it was ordered before clothing sizes became numbers.
 
+import type { AppIcon } from './app-icons.ts'
 import type { Permission } from './permissions.ts'
 
 /** A built-in role's key; a role an administrator added has none. */
-export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment'
+export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment' | 'testers'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
 /** A user's interface language; each user sets their own. */
@@ -71,7 +72,7 @@ export interface RoleInput {
 /** GET /api/v1/permissions: one permission of the catalogue, and those it cannot work without. */
 export interface PermissionInfo {
   key: Permission
-  group: 'administration' | 'workwear' | 'dashboards'
+  group: 'administration' | 'launcher' | 'workwear' | 'dashboards'
   requires: Permission[]
 }
 
@@ -811,14 +812,18 @@ export type AuditEntityType =
   | 'asset'
   | 'settings'
   | 'mail_template'
+  | 'app'
   | 'access_review'
   | 'audit_log'
 
-/** Where a change was made. */
-export type AuditSource = 'workwear' | 'admin' | 'api' | 'public_link' | 'system'
+/** Where a change was made, by a name the apps word themselves. */
+export type KnownAuditSource = 'workwear' | 'admin' | 'launcher' | 'api' | 'public_link' | 'system'
+
+/** Where a change was made: a known source, or an app registered in App Launcher, by its slug. */
+export type AuditSource = string
 
 /** The records with a History of their own (GET /api/v1/audit-events/{record}/{id}). */
-export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'assets' | 'users'
+export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'assets' | 'users' | 'apps'
 
 /**
  * One recorded change (GET /api/v1/audit-events). `event` is one of
@@ -1454,4 +1459,90 @@ export interface GiveAssetInput extends AssignmentFormInput {
 export interface AssignmentFormResult {
   form: AssignmentForm
   document_hash: string
+}
+
+// App Launcher's registry (ADR 0006; GET /api/v1/launcher, /api/v1/apps).
+
+export type AppKind = 'app' | 'shortcut'
+export type AppGroup = 'workwear' | 'assets' | 'people' | 'admin'
+/** Here: this site, with the user's sign-in. Linked: another site, with its own. */
+export type AppTier = 'here' | 'linked'
+export type AppStage = 'live' | 'pilot' | 'poc' | 'dev' | 'retired'
+
+export interface AppNames {
+  en: string
+  lt: string
+  ru: string
+}
+
+/** A tile: an app, opened by its address, or a shortcut to one screen inside an app. */
+export interface LauncherApp {
+  id: string
+  slug: string
+  kind: AppKind
+  /** The slug of a shortcut's app; '' for an app. */
+  parent: string
+  group: AppGroup
+  icon: AppIcon
+  /** #rrggbb; white text on it passes 4.5:1. */
+  color: string
+  /** A path on this site, or a linked site's https address. */
+  href: string
+  tier: AppTier
+  stage: AppStage
+  names: AppNames
+  /** Seen by holders of any of these; none: every signed-in user. */
+  any_of: Permission[]
+  position: number
+  created_at: string
+  updated_at: string
+  updated_by_user_id: string | null
+}
+
+/** What Manage apps sends for a tile; the slug and kind are set once, on register. */
+export interface AppInput {
+  parent: string
+  group: AppGroup
+  icon: AppIcon
+  color: string
+  href: string
+  tier: AppTier
+  stage: AppStage
+  names: AppNames
+  any_of: Permission[]
+}
+
+export interface NewAppInput extends AppInput {
+  slug: string
+  kind: AppKind
+}
+
+/** One user's launcher: the tiles they see, their pins among them, and whether they may see apps in testing. */
+export interface LauncherList {
+  apps: LauncherApp[]
+  pins: string[]
+  preview: boolean
+}
+
+export type FeedbackRating = 'works' | 'confusing' | 'broken'
+export type FeedbackDevice = 'phone' | 'tablet' | 'desktop'
+
+export interface AppFeedbackInput {
+  app: string
+  rating: FeedbackRating
+  text: string
+  device: FeedbackDevice
+  language: 'en' | 'lt' | 'ru'
+}
+
+export interface AppFeedback {
+  id: string
+  app_id: string
+  user_id: string
+  user_name: string
+  rating: FeedbackRating
+  text: string
+  device: FeedbackDevice
+  language: 'en' | 'lt' | 'ru'
+  created_at: string
 }

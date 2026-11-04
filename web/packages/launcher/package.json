@@ -3,8 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "App Launcher's list of apps and shortcuts (ADR 0006): who sees each, where it opens, its words in each language, and each user's pinned and recent apps. Read by the launcher at /apps/ and by every app's Apps entry.",
-  "exports": { ".": "./src/index.ts" },
+  "description": "App Launcher's tiles as the API's registry gives them (ADR 0006): loaded once per user and page, the rules the apps apply to them, the launcher's words in each language, and each user's recent apps on the device. Read by the launcher at /apps/ and by every app's Apps entry.",
+  "exports": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,11 +14,16 @@
     "@ppe/api-client": "workspace:*",
     "@ppe/app-shell": "workspace:*",
     "@ppe/i18n": "workspace:*",
-    "@ppe/routing": "workspace:*"
+    "lucide-react": "^1.48.0"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
     "jsdom": "^30.1.1",
+    "react": "^19.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
     "vitest": "^5.0.1"

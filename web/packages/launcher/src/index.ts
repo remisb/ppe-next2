@@ -1,15 +1,5 @@
-export {
-  APP_GROUPS,
-  APPS,
-  type AppGroup,
-  type AppIcon,
-  type AppStage,
-  type AppTier,
-  type LauncherApp,
-  appById,
-  hasSeveralApps,
-  sees,
-  visibleApps,
-} from './catalogue.ts'
-export { type Places, RECENT_MAX, loadPlaces, noteOpened, savePlaces, togglePin } from './places.ts'
-export { appName, launcherText, parentName } from './text.ts'
+export { APP_GROUPS, appBySlug, hasSeveralApps, inTesting } from './catalogue.ts'
+export { appIcons } from './icons.ts'
+export { type Launcher, loadLauncher, rememberPins, useLauncher } from './load.ts'
+export { RECENT_MAX, loadRecent, loadShowTesting, noteOpened, saveShowTesting, takeDevicePins, togglePin } from './places.ts'
+export { appName, appNames, launcherText, parentName } from './text.ts'

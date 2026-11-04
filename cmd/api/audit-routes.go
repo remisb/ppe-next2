@@ -4,12 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
@@ -141,6 +143,14 @@ func registerAuditRoutes(rt *router, svc services) {
 		_, err := svc.users.Get(ctx, id)
 		return err
 	}), role.UsersRead)
+	// An App Launcher tile's Changes, on Manage apps.
+	rt.restricted("GET /api/v1/audit-events/apps/{id}", history("app", func(ctx context.Context, id uuid.UUID) error {
+		apps, err := svc.launcher.List(ctx)
+		if err == nil && !slices.ContainsFunc(apps, func(a launcher.App) bool { return a.ID == id }) {
+			err = launcher.ErrNotFound
+		}
+		return err
+	}), role.AppsManage)
 }
 
 // auditFilter reads the Audit log's query parameters; the service checks
