@@ -2762,6 +2762,17 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   const headerBox = (await header.boundingBox())!
   expect((await search.boundingBox())!.y, 'the search below the stuck header').toBeGreaterThanOrEqual(headerBox.y + headerBox.height)
   await unscrolled()
+  // The Audit log's filters stick too, in one row under the header, and its column heads under them (Option C).
+  await openTab('Audit log')
+  const auditFilters = page.getByRole('region', { name: 'Filters' })
+  await expect(auditFilters).not.toHaveAttribute('data-stuck')
+  await page.evaluate(() => window.scrollTo(0, document.querySelector('thead')!.getBoundingClientRect().top + window.scrollY + 300))
+  await expect(auditFilters).toHaveAttribute('data-stuck', '')
+  const filtersBox = (await auditFilters.boundingBox())!
+  expect(filtersBox.y, 'the filters under the stuck header').toBe((await header.boundingBox())!.height)
+  expect(filtersBox.height, 'the filters are one row').toBeLessThan(110)
+  expect((await page.locator('thead').boundingBox())!.y, 'the column heads under the filters').toBeCloseTo(filtersBox.y + filtersBox.height, 0)
+  await unscrolled()
 })
 
 /**
@@ -3128,7 +3139,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
   await page.setViewportSize({ width: 375, height: 812 })
   await expect(device).toHaveAccessibleName('Device: Phone')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/phone\/create-order\.png$/)
-  await expect(page.locator('#orders')).toContainText('Filters holds Date and Sort by')
+  await expect(page.locator('#orders')).toContainText('Filters holds Date. The sort button above the orders')
   await expect(page.locator('#shortcuts h2')).toHaveText(/Search$/)
   await chooseDevice('Tablet')
   await expect(page.locator('#create img')).toHaveAttribute('src', /help-img\/en\/tablet\/create-order\.png$/)

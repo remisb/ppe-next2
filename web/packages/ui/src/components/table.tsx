@@ -19,8 +19,8 @@ import { InControl } from './tooltip.tsx'
  * standing in for the sortable headers the stacked table hides. Compact
  * density (`compact:`, a user's choice with a mouse) shortens the rows of an
  * unstacked table; a stacked one keeps its own spacing. `stickyHead` keeps
- * the column heads in view under the screen's stuck header (PageHeader)
- * while a long table scrolls; such a table must not scroll sideways (stack
+ * the column heads in view under the screen's stuck header (PageHeader), and
+ * its stuck filter bar if it has one (StickyFilters), while a long table scrolls; such a table must not scroll sideways (stack
  * it instead), as its wrapper then clips rather than scrolls: a scroll
  * container would hold the heads instead of the window.
  */
@@ -65,7 +65,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
         "[&_tr]:border-b",
         stack && "stacked:hidden",
         // The rule is each head's shadow: a collapsed border stays behind with the table. Not in print or on a short window.
-        sticky && "sticky top-(--header-offset) z-10 bg-background [&_th]:shadow-[inset_0_-1px_0_var(--color-border)] print:static",
+        sticky && "sticky top-(--list-offset) z-10 bg-background [&_th]:shadow-[inset_0_-1px_0_var(--color-border)] print:static",
         className
       )}
       {...props}

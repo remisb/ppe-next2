@@ -247,7 +247,11 @@ The workwear app is the reference.
   each `SortColumn` a `kind` (`text`, `date`, `number`, `duration`, `size`) so the order is
   said in words ("Date, newest first"); a column without one (a status) shows its name
   alone. A long list's table takes `stickyHead` (its heads stay under the stuck page
-  header); it must then never scroll sideways: stack it.
+  header); it must then never scroll sideways: stack it. A filter bar does not stick, but
+  the Audit log's (`StickyFilters`, Option C of docs/ux/screen-header-toolbar.md): a direct
+  child of an `@container` wrapping the list, it sticks in one row from 56rem of that
+  container and sets `--filter-bar` while it does; give no other list one without a reason
+  as strong (a long log filtered deep in it).
   Lists loaded whole sort with `sortRows` (`lib/sort.ts`: empty values last, sizes by
   their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
   list (Orders) sends `sort`/`dir` to the API.
@@ -311,7 +315,8 @@ The workwear app is the reference.
   touch screens (`pointer-coarse:`); controls are `h-11`.
 - **Screen header**: every screen starts with one `PageHeader`, a direct child of the
   screen's own element (a box around it ends its sticking): a row that sticks at the top
-  (`--page-header`; `--header-offset` for what sticks below it and `scroll-padding-top`) and
+  (`--page-header`; `--header-offset` for what sticks below it, `--list-offset` below a
+  stuck filter bar too, for column heads and `scroll-padding-top`) and
   covers the phone's bar with the app's name. Pass its controls by slot (`filters`,
   `refresh`, `secondary`, `menu`, `primary`, `more`, `moreAsk`), never as free buttons: it
   draws them in the toolbar's order and moves a `secondary` with `showFrom` into the

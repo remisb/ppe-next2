@@ -28,6 +28,7 @@ import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { InfoTip } from '@ppe/ui/components/info-tip'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { StatusLine } from '@ppe/ui/components/status-line'
+import { StickyFilters } from '@ppe/ui/components/sticky-filters'
 import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { Download, ExternalLink, ShieldAlert, ShieldCheck, X } from 'lucide-react'
@@ -158,193 +159,200 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
         ) : null
       }
     >
-      <PageHeader
-        title={t.audit.title}
-        description={t.audit.description}
-        filters={{ label: t.audit.filters, count: activeFilters, controls: 'audit-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
-        refresh={<RefreshButton loading={first.loading} onClick={reload} />}
-        secondary={session.can('audit.export') ? [{ label: t.audit.exportAction, icon: Download, onClick: () => setExporting(true), showFrom: 'md' }] : []}
-      />
+      {/* A container: the filters stick, in one row, where the list is wide enough for it (StickyFilters). */}
+      <div className="@container">
+        <PageHeader
+          title={t.audit.title}
+          description={t.audit.description}
+          filters={{ label: t.audit.filters, count: activeFilters, controls: 'audit-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
+          refresh={<RefreshButton loading={first.loading} onClick={reload} />}
+          secondary={session.can('audit.export') ? [{ label: t.audit.exportAction, icon: Download, onClick: () => setExporting(true), showFrom: 'md' }] : []}
+        />
 
-      <Seals timeZone={tz} />
-      {session.can('audit.export') ? <ExportSheet open={exporting} onClose={() => setExporting(false)} filter={filter} /> : null}
+        <Seals timeZone={tz} />
+        {session.can('audit.export') ? <ExportSheet open={exporting} onClose={() => setExporting(false)} filter={filter} /> : null}
 
-      <section
-        id="audit-filters"
-        aria-label={t.audit.filters}
-        className={cn('mb-4 grid gap-3 sm:grid-cols-2', !beside && 'xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,1.8fr)]', !showFilters && 'max-md:hidden')}
-      >
-        <label className="text-sm font-medium">
-          {t.audit.area}
-          <Select className="mt-1.5" value={filter.area ?? ''} onChange={(e) => setFilter('area', e.target.value)}>
-            <option value="">{t.audit.allAreas}</option>
-            {AUDIT_AREAS.map((a) => (
-              <option key={a} value={a}>
-                {areaLabel(a)}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="text-sm font-medium">
-          {t.audit.event}
-          <Select className="mt-1.5" value={filter.event ?? ''} onChange={(e) => setFilter('event', e.target.value)}>
-            <option value="">{t.audit.allEvents}</option>
-            {eventsOf(filter.area).map((e) => (
-              <option key={e} value={e}>
-                {auditTitle(e)}
-              </option>
-            ))}
-          </Select>
-        </label>
-        {seesUsers ? (
+        <StickyFilters
+          id="audit-filters"
+          aria-label={t.audit.filters}
+          className={cn(
+            'mb-4 grid gap-3 sm:grid-cols-2',
+            seesUsers ? '@4xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,1.8fr)_auto]' : '@4xl:grid-cols-[repeat(2,minmax(0,1fr))_minmax(0,1.8fr)_auto]',
+            !showFilters && 'max-md:hidden',
+          )}
+        >
           <label className="text-sm font-medium">
-            {t.audit.person}
-            <Select className="mt-1.5" value={filter.actor ?? ''} onChange={(e) => setFilter('actor', e.target.value)}>
-              <option value="">{t.audit.everyone}</option>
-              {(people.data ?? []).map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
+            {t.audit.area}
+            <Select className="mt-1.5" value={filter.area ?? ''} onChange={(e) => setFilter('area', e.target.value)}>
+              <option value="">{t.audit.allAreas}</option>
+              {AUDIT_AREAS.map((a) => (
+                <option key={a} value={a}>
+                  {areaLabel(a)}
                 </option>
               ))}
             </Select>
           </label>
-        ) : null}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label htmlFor="audit-from" className="text-sm font-medium">
-              {t.audit.from}
-            </label>
-            <DateInput
-              id="audit-from"
-              className="mt-1.5"
-              value={filter.from ?? ''}
-              max={filter.to || undefined}
-              invalid={Boolean(notDate.from) || dateError === t.audit.fromAfterTo}
-              onChange={(v, problem) => {
-                setFilter('from', v)
-                setNotDate((n) => ({ ...n, from: problem }))
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor="audit-to" className="text-sm font-medium">
-              {t.audit.to}
-            </label>
-            <DateInput
-              id="audit-to"
-              className="mt-1.5"
-              value={filter.to ?? ''}
-              min={filter.from || undefined}
-              invalid={Boolean(notDate.to) || dateError === t.audit.fromAfterTo}
-              onChange={(v, problem) => {
-                setFilter('to', v)
-                setNotDate((n) => ({ ...n, to: problem }))
-              }}
-            />
-          </div>
-        </div>
-        <div className={cn('flex items-end', !beside && 'xl:col-span-4 xl:justify-end')}>
-          <Button
-            variant="ghost"
-            className="w-full sm:w-auto"
-            disabled={activeFilters === 0}
-            onClick={() => {
-              setNotDate({})
-              go(recordOnly(filter), selected)
-            }}
-          >
-            {t.audit.clearFilters}
-          </Button>
-        </div>
-      </section>
-      {dateError ? (
-        <p role="alert" className="mb-4 text-sm text-destructive">
-          {dateError}
-        </p>
-      ) : null}
-
-      {recordFiltered ? (
-        <p className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-full bg-muted px-3 py-1 font-medium">{t.audit.recordFilter(recordLabel ?? '')}</span>
-          <Button variant="ghost" size="sm" onClick={() => go(withoutRecord(filter), selected)}>
-            <X aria-hidden /> {t.audit.allRecords}
-          </Button>
-        </p>
-      ) : null}
-
-      {first.error && !dateError ? (
-        <ErrorState error={first.error} onRetry={reload} />
-      ) : !first.data ? (
-        <Loading />
-      ) : events.length === 0 ? (
-        <EmptyState>{activeFilters > 0 || recordFiltered ? t.audit.noMatch : t.audit.noChanges}</EmptyState>
-      ) : (
-        <>
-          {/* Four short columns fit side by side from 48rem; beside an open change, from 30rem. */}
-          <Table stack="list" stackBelow={beside ? 'sm' : 'md'} stickyHead>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.audit.when}</TableHead>
-                <TableHead>{t.audit.what}</TableHead>
-                <TableHead>{t.audit.who}</TableHead>
-                {beside ? null : <TableHead>{t.audit.where}</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.map((e) => (
-                <TableRow
-                  key={e.id}
-                  data-state={selected === e.id ? 'selected' : undefined}
-                  aria-current={selected === e.id ? 'true' : undefined}
-                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
-                  // The whole row opens the change; its name is the real link, for
-                  // keyboards, screen readers and "open in new tab".
-                  onClick={(ev) => {
-                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
-                    open(e.id)
-                  }}
-                >
-                  <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-                    <RelativeDate iso={e.occurred_at} timeZone={tz} time />
-                  </TableCell>
-                  <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
-                    <a {...linkTo({ name: 'audit', filter, event: e.id }, () => open(e.id))} className={cn(recordLinkClass, 'font-medium')}>
-                      {auditTitle(e.event)}
-                    </a>
-                    <span className="block text-xs text-muted-foreground">{recordName(e)}</span>
-                  </TableCell>
-                  <TableCell className="whitespace-normal stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
-                    {/* The person filters the list to their changes, as the record's chip does to its record. */}
-                    {e.actor_id && filter.actor !== e.actor_id ? (
-                      <a
-                        {...linkTo({ name: 'audit', filter: clean({ ...filter, actor: e.actor_id }) }, () => setFilter('actor', e.actor_id!))}
-                        aria-label={t.audit.onlyBy(changedBy(e))}
-                        title={t.audit.onlyBy(changedBy(e))}
-                        className={linkVariants()}
-                      >
-                        {changedBy(e)}
-                      </a>
-                    ) : (
-                      changedBy(e)
-                    )}
-                  </TableCell>
-                  {beside ? null : (
-                    <TableCell className="whitespace-normal text-muted-foreground stacked:hidden">{sourceLabel(e.source)}</TableCell>
-                  )}
-                </TableRow>
+          <label className="text-sm font-medium">
+            {t.audit.event}
+            <Select className="mt-1.5" value={filter.event ?? ''} onChange={(e) => setFilter('event', e.target.value)}>
+              <option value="">{t.audit.allEvents}</option>
+              {eventsOf(filter.area).map((e) => (
+                <option key={e} value={e}>
+                  {auditTitle(e)}
+                </option>
               ))}
-            </TableBody>
-          </Table>
-          {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
-          {next ? (
-            <div className="mt-4 flex justify-center">
-              <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
-                {t.audit.older}
-              </Button>
-            </div>
+            </Select>
+          </label>
+          {seesUsers ? (
+            <label className="text-sm font-medium">
+              {t.audit.person}
+              <Select className="mt-1.5" value={filter.actor ?? ''} onChange={(e) => setFilter('actor', e.target.value)}>
+                <option value="">{t.audit.everyone}</option>
+                {(people.data ?? []).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </Select>
+            </label>
           ) : null}
-        </>
-      )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="audit-from" className="text-sm font-medium">
+                {t.audit.from}
+              </label>
+              <DateInput
+                id="audit-from"
+                className="mt-1.5"
+                value={filter.from ?? ''}
+                max={filter.to || undefined}
+                invalid={Boolean(notDate.from) || dateError === t.audit.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('from', v)
+                  setNotDate((n) => ({ ...n, from: problem }))
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="audit-to" className="text-sm font-medium">
+                {t.audit.to}
+              </label>
+              <DateInput
+                id="audit-to"
+                className="mt-1.5"
+                value={filter.to ?? ''}
+                min={filter.from || undefined}
+                invalid={Boolean(notDate.to) || dateError === t.audit.fromAfterTo}
+                onChange={(v, problem) => {
+                  setFilter('to', v)
+                  setNotDate((n) => ({ ...n, to: problem }))
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto"
+              disabled={activeFilters === 0}
+              onClick={() => {
+                setNotDate({})
+                go(recordOnly(filter), selected)
+              }}
+            >
+              {t.audit.clearFilters}
+            </Button>
+          </div>
+        </StickyFilters>
+        {dateError ? (
+          <p role="alert" className="mb-4 text-sm text-destructive">
+            {dateError}
+          </p>
+        ) : null}
+
+        {recordFiltered ? (
+          <p className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="rounded-full bg-muted px-3 py-1 font-medium">{t.audit.recordFilter(recordLabel ?? '')}</span>
+            <Button variant="ghost" size="sm" onClick={() => go(withoutRecord(filter), selected)}>
+              <X aria-hidden /> {t.audit.allRecords}
+            </Button>
+          </p>
+        ) : null}
+
+        {first.error && !dateError ? (
+          <ErrorState error={first.error} onRetry={reload} />
+        ) : !first.data ? (
+          <Loading />
+        ) : events.length === 0 ? (
+          <EmptyState>{activeFilters > 0 || recordFiltered ? t.audit.noMatch : t.audit.noChanges}</EmptyState>
+        ) : (
+          <>
+            {/* Four short columns fit side by side from 48rem; beside an open change, from 30rem. */}
+            <Table stack="list" stackBelow={beside ? 'sm' : 'md'} stickyHead>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.audit.when}</TableHead>
+                  <TableHead>{t.audit.what}</TableHead>
+                  <TableHead>{t.audit.who}</TableHead>
+                  {beside ? null : <TableHead>{t.audit.where}</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((e) => (
+                  <TableRow
+                    key={e.id}
+                    data-state={selected === e.id ? 'selected' : undefined}
+                    aria-current={selected === e.id ? 'true' : undefined}
+                    className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
+                    // The whole row opens the change; its name is the real link, for
+                    // keyboards, screen readers and "open in new tab".
+                    onClick={(ev) => {
+                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      open(e.id)
+                    }}
+                  >
+                    <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
+                      <RelativeDate iso={e.occurred_at} timeZone={tz} time />
+                    </TableCell>
+                    <TableCell className="whitespace-normal stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
+                      <a {...linkTo({ name: 'audit', filter, event: e.id }, () => open(e.id))} className={cn(recordLinkClass, 'font-medium')}>
+                        {auditTitle(e.event)}
+                      </a>
+                      <span className="block text-xs text-muted-foreground">{recordName(e)}</span>
+                    </TableCell>
+                    <TableCell className="whitespace-normal stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
+                      {/* The person filters the list to their changes, as the record's chip does to its record. */}
+                      {e.actor_id && filter.actor !== e.actor_id ? (
+                        <a
+                          {...linkTo({ name: 'audit', filter: clean({ ...filter, actor: e.actor_id }) }, () => setFilter('actor', e.actor_id!))}
+                          aria-label={t.audit.onlyBy(changedBy(e))}
+                          title={t.audit.onlyBy(changedBy(e))}
+                          className={linkVariants()}
+                        >
+                          {changedBy(e)}
+                        </a>
+                      ) : (
+                        changedBy(e)
+                      )}
+                    </TableCell>
+                    {beside ? null : (
+                      <TableCell className="whitespace-normal text-muted-foreground stacked:hidden">{sourceLabel(e.source)}</TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
+            {next ? (
+              <div className="mt-4 flex justify-center">
+                <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
+                  {t.audit.older}
+                </Button>
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
     </ListDetail>
   )
 }

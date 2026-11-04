@@ -287,6 +287,7 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | A menu of one kind of choice, the current one ticked (Dashboards, Guide language, Device) | `MenuButton` with `DropdownMenuRadioGroup` | `@ppe/ui/components/page-header` |
 | A stacked list's sort, in words | `SortMenu` (Sort ▾) as the `Table`'s `sortControl` | `@ppe/ui/components/sortable` |
 | Column heads that stay in view under the stuck header | `Table stickyHead` | `@ppe/ui/components/table` |
+| A long log's filter bar that sticks under the header, one row (the Audit log only) | `StickyFilters` in an `@container` | `@ppe/ui/components/sticky-filters` |
 | A button's shorter words on a phone, the full ones its name | `ShortWords` | `@ppe/ui/components/page-header` |
 | A ruled status line: an icon by tone, what it says, an action at its end (Overview's attention rows, the audit seals, Backups' verdict) | `StatusLine` (`tone`: `muted`, `success`, `warning`, `danger`) | `@ppe/ui/components/status-line` |
 | An order's status, and an Ordered one's wait (an `IssueBadge` past 14 days) | `OrderStatusBadge`, `OrderWait` | `apps/workwear/src/components/order-status.tsx` |

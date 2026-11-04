@@ -278,14 +278,17 @@
   /*
    * --page-header is the height of a screen's header row (PageHeader), which
    * sticks at the top; --header-offset is where what sticks below it goes (a
-   * table's column heads) and what scroll-padding keeps a focused field
-   * below. A short window (a phone on its side, a laptop at 200%) and print
-   * leave the header in the page, so the offset is 0 there.
+   * stuck filter bar, StickyFilters). --list-offset is below that bar too,
+   * whose height StickyFilters sets as --filter-bar while it sticks: where a
+   * table's column heads stick and what scroll-padding keeps a focused field
+   * or row below. A short window (a phone on its side, a laptop at 200%) and
+   * print leave the header in the page, so the offsets are 0 there.
    */
   :root {
     --page-header: 3.5rem;
     --header-offset: calc(var(--page-header) + env(safe-area-inset-top));
-    scroll-padding-top: calc(var(--header-offset) + 0.75rem);
+    --list-offset: calc(var(--header-offset) + var(--filter-bar, 0px));
+    scroll-padding-top: calc(var(--list-offset) + 0.75rem);
   }
   @media (width >= 48rem) {
     :root {
@@ -295,6 +298,7 @@
   @media (height < 30rem), print {
     :root {
       --header-offset: 0px;
+      --list-offset: 0px;
     }
   }
 

@@ -11,15 +11,23 @@ dashboards and the composer, with mockups and flows in the companion
 no usability sessions · paths are under `web/`, `ww` = `apps/workwear/src`, `ad` =
 `apps/admin/src`.
 
-Status: **accepted (Option B) and built**, 30 Oct 2026, rollout steps 1–6. The names in §9
+Status: **accepted (Option B) and built**, rollout steps 1–6, in `b99f3c3` (the header,
+toolbar, record rows, Sort ▾, column heads), `e355a9f` (the detail pane's top lines up with
+the header) and `35143f4` (from `md` the header starts at the top of the window, at rest as
+when stuck, so its words never move; Replacements due and a mail template have their way back
+as an arrow in the header row, `PageHeader`'s `back`); the Help guide's text and
+screenshots followed in `e9d3774`. **Option C** was then built for the Audit log alone (5):
+its filters stick in one row under the header where the list is at least 56rem wide, its
+column heads under them (`StickyFilters`). The names in §9
 are in [ui-language.md](../ui-language.md). Open questions taken as recommended: the emblem
 at rest is enough (1); Create Order is hidden on a phone's Orders and Employee Dashboard
-(2); both primaries stay filled with a pane open (3); Clear order… is under ⋯ (4); no
-Option C (5). Where the build differs from this text: Sort ▾ stands where the stacked
+(2); both primaries stay filled with a pane open (3); Clear order… is under ⋯ (4); Option C
+on the Audit log only, from a 56rem list, never on a phone (5). Where the build differs from this text: Sort ▾ stands where the stacked
 table's heads would be (it must show exactly while the table is stacked) rather than at the
 end of the filter bar; Filters scrolls the filter bar back but moves no focus (a focused
 search would open a phone's keyboard); long primaries show "+ Add" on a phone rather than
-an icon alone; the stuck header is opaque.
+an icon alone; the stuck header is opaque; System and Security keep no Refresh in the
+header (Security's is on each tab).
 
 ---
 
@@ -78,7 +86,7 @@ All four keep the bottom bar, the detail pane and Create Order's summary as they
 |---|---|---|---|---|
 | A | Today | the phone's app-name bar | 56px, no use | baseline |
 | **B** | **Sticky header** | the page header (one row) on every screen; a record's header row in its pane and page; desktop column heads | **56px, the same as today**: the header slides over the app-name bar | **recommended** |
-| C | Header and filter bar | B, plus the filter tabs and search | 56 + 52 + 56 ≈ 164px, a fifth of a phone | only for long logs, later, if asked |
+| C | Header and filter bar | B, plus the filter tabs and search | 56 + 52 + 56 ≈ 164px, a fifth of a phone | **built for the Audit log**, on a list 56rem wide or more |
 | D | Hide on scroll down, show on scroll up | B, but moving | 0–56px | rejected |
 
 **Why B.** It gives every screen its title and actions at any scroll position for no more
@@ -90,7 +98,10 @@ phone, `/` on a desktop, both scrolling it into view below the header.
 **Why not C.** Lists are paged at 20 (Orders) or a few dozen rows (Employees, Catalogue, the
 registers), so the filter bar is rarely more than a screen away, and on a phone 164px of chrome
 plus the 80px bottom bar leaves under 60% of the screen for the list. A log with heavy
-filtering (the Audit log) is the one place it might pay; leave it for when someone asks.
+filtering (the Audit log) is the one place it might pay, and there it is built where it is
+cheap: from a 56rem list, where the filters fit one row (about 99px, so 64 + 99 + the column
+heads' 40 ≈ 200px of a desktop's 800–1000), never on a phone or a narrower list, where they
+would take two or three rows.
 
 **Why not D.** The bar moves under the finger as the user reaches for it, J / K and the
 keyboard scroll do not say "up" or "down" the way a swipe does, iOS's bounce shows and hides
@@ -128,9 +139,11 @@ off.
 - **Phone:** the app-name bar keeps `sticky top-0 z-30`; the page header is `z-40` and opaque,
   so after the first 56px of scroll it covers the app-name bar. At rest the user sees the
   emblem, then the screen; scrolled, only the screen's own bar.
-- **Tablet and desktop:** there is no app-name bar; the header sticks at the top of `main`
-  and spans the list's column only, so an open detail pane keeps its own top edge, aligned to
-  the header's.
+- **Tablet and desktop:** there is no app-name bar; the header takes all of `main`'s top
+  padding, so it is at the top of the window at rest as when stuck, and spans the list's
+  column only. An open detail pane starts and sticks at the same top, its first row the
+  header's height, so the titles and the rules line up. Nothing goes above a page header: a
+  way back is `back`, an arrow at the start of the row.
 - **The height is a CSS variable**, `--page-header` (56px phone, 64px from `md`), as
   `--bottom-nav` is for the bottom bar. Things that stick below it use it: column heads
   (`top: var(--page-header)`), `scroll-padding-top` on the root (so focus, `/` and Help's `#section`
@@ -372,3 +385,5 @@ separately.
 4. **Clear order** into ⋯ as **Clear order…**: it asks first and empties work, so ⋯ fits the
    rules; is it used often enough to stay a button?
 5. **Option C for the Audit log** only, later, if people filter it while deep in the list?
+   *Built:* the filters and Clear filters in one row that sticks under the header from a 56rem
+   list (beside an open change too, on a wide window); the column heads stick under it.

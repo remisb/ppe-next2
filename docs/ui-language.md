@@ -137,8 +137,9 @@ Rules:
   truncates first. Stuck, it gains a rule and a light shadow, never another height; on a
   phone it slides over the bar with the app's name. A **subtitle** ("Signed in as …", the
   guide's lede) sits under the row and scrolls away. It does not stick on a window under
-  30rem high, nor in print. Things that stick below it (a table's column heads, Create
-  Order's panel) and `scroll-padding-top` use `--header-offset`.
+  30rem high, nor in print. Things that stick below it (the Audit log's filter bar, Create
+  Order's panel) use `--header-offset`; a table's column heads and `scroll-padding-top` use
+  `--list-offset`, below a stuck filter bar too.
 - **Code:** `PageHeader` (`@ppe/ui/components/page-header`, also from `states`).
   **Reader words:** "the bar at the top of the screen" / "ekrano viršuje esanti juosta" /
   «панель вверху экрана».
@@ -174,10 +175,16 @@ Rules:
 - **Brief:** the controls between the header and a list that choose what it shows: filter
   tabs, the search field, filters, **Clear filters**.
 - **Detail:** one order on every list: the filter tabs on their own row, then the search,
-  the filters and **Clear filters**. It does not stick. On a phone, filters other than the
+  the filters and **Clear filters**. It does not stick, except on the **Audit log**, a long
+  log people filter while deep in it: where its list is at least 56rem wide, its filters
+  and Clear filters are one row that sticks under the header (a rule when stuck, never
+  another height) and the column heads stick under it; narrower, and on a phone, it scrolls
+  away as on other lists. On a phone, filters other than the
   tabs and the main search go behind the header's **Filters** toggle, which counts the ones
   set: "Filters (2)"; pressed in a stuck header it scrolls the filter bar back under it.
   Filters a list is opened with live in its address (`?status=ORDERED`, `?show=in-office`).
+- **Code:** the Audit log's is `StickyFilters` (`@ppe/ui/components/sticky-filters`), a
+  direct child of an `@container` wrapper around the list.
 
 ### List
 - **Brief:** the table of records under the filter bar. See [§5](#5-lists).

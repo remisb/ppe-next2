@@ -267,11 +267,12 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
     <div class="logo" aria-hidden="true">UX</div>
     <div style="min-width:0">
       <div class="top-title">Screen header, toolbar and More actions</div>
-      <div class="top-sub">Workwear &amp; Equipment · Administration · proposal, 28 Oct 2026</div>
+      <div class="top-sub">Workwear &amp; Equipment · Administration · Option B, built 30 Oct – 4 Nov 2026</div>
     </div>
   </div>
   <nav class="jump" aria-label="Sections">
     <a href="#summary">Summary</a>
+    <a href="#built">Built</a>
     <a href="#today">Today</a>
     <a href="#options">What sticks</a>
     <a href="#anatomy">Header</a>
@@ -290,11 +291,12 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
 <!-- SUMMARY -->
 <section class="sec" id="summary">
   <div class="head">
-    <div class="eyebrow">Proposal · for a decision</div>
+    <div class="eyebrow">Option B · decided and built</div>
     <h1>One header for every screen</h1>
-    <p class="lede">A page header that stays at the top while the screen scrolls, a toolbar with one order of controls, an optional menu button, and a screen-level ⋯ that also takes what does not fit on a phone. This page's own header works the way the proposal does: scroll, and it stays in one row with a rule under it.</p>
-    <p class="small muted">Build <code>368712f</code> · code review plus the Help screenshots, no usability sessions · text version and file references: <code>docs/ux/screen-header-toolbar.md</code></p>
+    <p class="lede">A page header that stays at the top while the screen scrolls, a toolbar with one order of controls, an optional menu button, and a screen-level ⋯ that also takes what does not fit on a phone. Option B was chosen and is built in both apps (see <a href="#built">Built</a>). This page's own header works the way the app's now does: scroll, and it stays in one row with a rule under it.</p>
+    <p class="small muted">Proposed from build <code>368712f</code>; built in <code>b99f3c3</code>, <code>e355a9f</code>, <code>35143f4</code> · code review plus the Help screenshots, no usability sessions · text version and file references: <code>docs/ux/screen-header-toolbar.md</code></p>
   </div>
+  <p class="eyebrow">Before the change</p>
   <div class="grid g4">
     <div class="card stat"><div class="v">20</div><div class="l">page headers, holding 6 kinds of control in a different order on each screen</div></div>
     <div class="card stat"><div class="v">0</div><div class="l">screens with a ⋯ menu; only records and rows have one</div></div>
@@ -302,8 +304,60 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
     <div class="card stat"><div class="v">+0px</div><div class="l">the sticky header's cost on a phone: it slides over the bar that shows only the app's name</div></div>
   </div>
   <div class="callout">
-    <b>Recommendation: Option B.</b> The page header becomes one row that sticks. Its controls are a toolbar in a fixed order: <i>Filters · Refresh · secondary · menu button · primary · ⋯</i>. Controls that do not fit a width move into ⋯, by CSS alone. A record's first row sticks in its pane and on its page. On a desktop, column heads stay in view. The filter bar does not stick: <b>Filters</b> and <span class="kbd">/</span> bring it back. Sort becomes a menu button.
+    <b>Decision: Option B, now built.</b> The page header is one row that sticks. Its controls are a toolbar in a fixed order: <i>Filters · Refresh · secondary · menu button · primary · ⋯</i>. Controls that do not fit a width move into ⋯, by CSS alone. A record's first row sticks in its pane and on its page. On a desktop, column heads stay in view. The filter bar does not stick: <b>Filters</b> and <span class="kbd">/</span> bring it back. Sort is a menu button.
   </div>
+</section>
+
+<!-- BUILT -->
+<section class="sec" id="built">
+  <div class="head">
+    <div class="eyebrow">Built · Option B</div>
+    <h2>What is in the app now</h2>
+    <p class="lede">All six rollout steps are built, in both apps, and on <code>main</code>: <code>b99f3c3</code> (the header, toolbar, record rows, Sort ▾, column heads), <code>e355a9f</code> (the pane's top lines up with the header) and <code>35143f4</code> (the header starts at the top, so its words never move). The rest of this page is the proposal as it was decided, with the places the build differs marked.</p>
+  </div>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">1</div><div class="l"><code>PageHeader</code> for all 20 screen headers, its controls passed by slot and drawn in one order</div></div>
+    <div class="card stat"><div class="v">0px</div><div class="l">the header's movement as a screen starts to scroll, from tablet width: it is at the top at rest as when stuck</div></div>
+    <div class="card stat"><div class="v">6</div><div class="l">record kinds whose first row sticks: orders, employees, items, SIM cards and equipment, changes, errors</div></div>
+    <div class="card stat"><div class="v">64 ✓</div><div class="l">e2e steps passing (one skipped, as before), with new ones for the stuck header, the overflow and <span class="kbd">/</span></div></div>
+  </div>
+  <div class="scroll-x">
+  <table class="t stack">
+    <thead><tr><th>Part</th><th>What the user sees</th><th>Code</th></tr></thead>
+    <tbody>
+      <tr><td data-l="Part"><b>Page header</b></td><td data-l="What the user sees">One row (56px, 64px from <code>md</code>) at the top of the screen, a rule and a light shadow once stuck. On a phone it starts under the emblem bar and slides over it. From <code>md</code> it starts at the top of the window, so its title never moves. Not sticky under 30rem of window height or in print. Opaque: rows seen blurred through it read as smudges.</td><td data-l="Code"><code>PageHeader</code> (<code>@ppe/ui/components/page-header</code>), <code>--page-header</code>, <code>--header-offset</code>, <code>useStuck</code></td></tr>
+      <tr><td data-l="Part"><b>Toolbar</b></td><td data-l="What the user sees">Filters · Refresh · secondary · menu button · primary · ⋯, on every screen. Preview PDF and Export are under ⋯ on a phone; Pictures and Clear order… are always there. ⋯ shows only where it holds something.</td><td data-l="Code">slots <code>filters</code>, <code>refresh</code>, <code>secondary</code>, <code>menu</code>, <code>primary</code>, <code>more</code>, <code>moreAsk</code>; <code>ToolbarAction</code> (<code>showFrom</code>, <code>short</code>, <code>hiddenBelow</code>)</td></tr>
+      <tr><td data-l="Part"><b>Menu buttons</b></td><td data-l="What the user sees"><b>Dashboards ▾</b> instead of the dashboards' "… Dashboard →" links, for someone with two or more; Help's <b>Guide language ▾</b> (the code, EN, on a phone) and <b>Device ▾</b>.</td><td data-l="Code"><code>MenuButton</code>, <code>DashboardsMenu</code></td></tr>
+      <tr><td data-l="Part"><b>A way back</b></td><td data-l="What the user sees">Replacements due and a mail template have it as an arrow at the start of the header row, "Back to Dashboard", as records have it: nothing goes above a page header.</td><td data-l="Code"><code>PageHeader</code>'s <code>back</code></td></tr>
+      <tr><td data-l="Part"><b>Record row</b></td><td data-l="What the user sees">Back (an icon below <code>lg</code>), title, main action, ⋯, ✕ beside a list, in one row that sticks in the pane and on a phone. On a phone the order's main actions say <i>Create link</i>, <i>View</i>, <i>Link</i>. Beside a list the pane's top and its row line up with the screen header's.</td><td data-l="Code"><code>RecordHeader</code> (<code>nav</code>), <code>ShortWords</code>, <code>DetailPane</code></td></tr>
+      <tr><td data-l="Part"><b>Lists</b></td><td data-l="What the user sees"><b>Sort ▾</b> on every stacked list instead of the Sort by field and its arrow. Column heads stay under the header on Orders, Employees, Item Catalogue, SIM Cards, Equipment, Users and the Audit log. Employees has its tabs above its search.</td><td data-l="Code"><code>SortMenu</code>, <code>Table stickyHead</code></td></tr>
+      <tr><td data-l="Part"><b>Phone primaries</b></td><td data-l="What the user sees">A long primary says <b>+ Add</b> on a phone (Add New Employee, Add Item, Add Asset, Add User…), its full name kept for a screen reader. Orders and the Employee Dashboard leave Create Order to the tab bar's New order.</td><td data-l="Code"><code>short: t.common.add</code>, <code>hiddenBelow: 'md'</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>The open questions, as decided</h3>
+      <ol class="clean small" style="padding-left:18px">
+        <li><b>Brand on a phone:</b> the emblem at rest, covered once the screen scrolls, is enough.</li>
+        <li><b>Create Order on a phone's Orders:</b> hidden there, and on the Employee Dashboard; the tab bar's New order is the same action.</li>
+        <li><b>Two primaries with a pane open:</b> both stay filled.</li>
+        <li><b>Clear order:</b> under ⋯ as <b>Clear order…</b>.</li>
+        <li><b>Option C for the Audit log:</b> built for it alone: its filters stick in one row under the header where the list is at least 56rem wide, the column heads under them; on a phone and a narrower list they scroll away.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Where the build differs from the proposal</h3>
+      <ul class="clean small">
+        <li><b>Sort ▾</b> stands above the list, at its right, where the stacked table's heads would be, not at the end of the filter bar: it must show exactly while the table is stacked.</li>
+        <li><b>Filters</b> in a stuck header scrolls the filter bar back but moves no focus: a focused search would open a phone's keyboard over what was asked for.</li>
+        <li><b>A long primary</b> keeps its icon and the word <b>+ Add</b> on a phone, not the icon alone.</li>
+        <li><b>The header starts at the top</b> of the window from <code>md</code>, at rest too, so it never moves as the screen begins to scroll; the pane starts and sticks with it.</li>
+        <li><b>System and Security</b> keep their headers as they were: no Refresh in the header (Security's is on each tab).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Done:</b> the Help guide's text and screenshots followed in <code>e9d3774</code>, and Option C was built for the Audit log. Nothing from the rollout is left.</div>
 </section>
 
 <!-- TODAY -->
@@ -432,7 +486,7 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
         <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New order</span><span>Employees</span><span class="on">More</span></div>
       </div></div>
       <figcaption><b>C · Header and filter bar</b>About 164px of chrome above, 52px below: under 60% left for the list.</figcaption>
-      <div class="verdict"><span class="pill warn">later, Audit log only</span></div>
+      <div class="verdict"><span class="pill ok">built: Audit log, wide lists only</span></div>
     </figure>
     <figure>
       <div class="phone sm"><div class="ph-screen">
@@ -527,8 +581,8 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
         <li><code>position: sticky; top: 0</code> in <code>main</code>, the screen's background; at rest no rule, stuck a rule and a soft shadow. <b>The height never changes.</b></li>
         <li><b>Stuck</b> is a <code>data-stuck</code> set by an <code>IntersectionObserver</code> on a 1px mark above the header (this page does the same).</li>
         <li><b>Phone:</b> the emblem bar stays <code>z-30</code>; the header is <code>z-40</code> and opaque, so it covers the emblem bar after 56px.</li>
-        <li><b>Tablet, desktop:</b> the header spans the list's column; an open pane keeps its own top, aligned with the header's.</li>
-        <li><code>--page-header</code> (56px, 64px from <code>md</code>) feeds column heads, Create Order's summary and the root's <code>scroll-padding-top</code>, so focus, <span class="kbd">/</span> and Help's <code>#links</code> never land under it.</li>
+        <li><b>Tablet, desktop:</b> the header spans the list's column and takes all of <code>main</code>'s top padding, so it is at the top of the window at rest as when stuck: its words never move. An open pane starts and sticks at the same top, its first row the header's height, so the titles and the rules line up. <span class="pill ok">as built</span></li>
+        <li><code>--page-header</code> (56px, 64px from <code>md</code>), and <code>--header-offset</code> (0 where the header does not stick), feed column heads, Create Order's summary and the root's <code>scroll-padding-top</code>, so focus, <span class="kbd">/</span> and Help's <code>#links</code> never land under it.</li>
         <li><b>Below 30rem of window height</b> (a phone on its side, a zoomed laptop) it does not stick. In print it is static and the toolbar hidden.</li>
         <li>Not on the confirmation page, hand-over mode, documents or sign-in.</li>
       </ul>
@@ -571,7 +625,7 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
         <li><b>Refresh</b>: always; icon only below <code>md</code>.</li>
         <li><b>Secondary</b>: a button from <code>md</code>; in ⋯ below.</li>
         <li><b>Menu button</b>: a button from <code>sm</code>.</li>
-        <li><b>Primary</b>: always, with its words. Where the header is too narrow for title and words (LT and RU at 375px are the test), only the icon, with its name and a tooltip.</li>
+        <li><b>Primary</b>: always, with its words. A long one says <b>+ Add</b> on a phone (LT and RU at 375px were the test), its full name kept for a screen reader. <span class="pill ok">as built</span></li>
         <li><b>⋯</b>: hidden at widths where it would be empty.</li>
       </ul>
     </div>
@@ -675,17 +729,17 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
       <h3>One order on every list</h3>
       <ol class="clean small" style="padding-left:18px">
         <li><b>Filter tabs</b> with their counts, on their own row. Employees moves its tabs above its search.</li>
-        <li><b>Search</b> (<span class="kbd">/</span> reaches it), then the <b>filters</b>, then <b>Sort ▾</b> at the end, then <b>Clear filters</b> when any is set.</li>
+        <li><b>Search</b> (<span class="kbd">/</span> reaches it), then the <b>filters</b>, then <b>Clear filters</b> when any is set. <b>Sort ▾</b> stands above the list, at its right, where the stacked table's heads would be. <span class="pill warn">differs: proposed at the end of the filter bar</span></li>
       </ol>
-      <p class="small muted">On a phone, everything after the tabs and the search stays behind <b>Filters</b>. A tap on Filters in a stuck header scrolls the filter bar back under the header, opens it and focuses its first field. <span class="kbd">/</span> on a desktop scrolls the search into view the same way.</p>
+      <p class="small muted">On a phone, everything after the tabs and the search stays behind <b>Filters</b>. A tap on Filters in a stuck header scrolls the filter bar back under the header and opens it; focus stays on Filters, so a phone's keyboard does not open. <span class="kbd">/</span> on a desktop scrolls the search into view the same way.</p>
     </div>
     <div class="card">
       <h3>Sort ▾ instead of the Sort by row</h3>
-      <p class="small">One menu button that says the order in words ("Name, A–Z", "Date, newest first"). Its menu lists the columns as radio items, then a separator, then the two directions in words. While the table is wide, its sortable headings stay the way to sort and the button is hidden, as <code>SortControl</code> is today.</p>
+      <p class="small">One menu button that says the order in words ("Name, A–Z", "Date, newest first"). Its menu lists the columns as radio items, then a separator, then the two directions in words. While the table is wide, its sortable headings stay the way to sort and the button is hidden. Built as <code>SortMenu</code>; <code>SortControl</code> is gone.</p>
     </div>
     <div class="card">
       <h3>Column headings</h3>
-      <p class="small">On a desktop, a wide <code>Table</code> with <code>stickyHead</code> keeps its <code>&lt;thead&gt;</code> at <code>top: var(--page-header)</code>. Where it sticks, <code>Table</code> swaps its wrapper's <code>overflow-x-auto</code> for <code>overflow-x-clip</code>, because a scroll container would hold the heading instead of the window; these tables already stack rather than scroll sideways. Group rows (Orders' months) do not stick: two layers of sticky rows read as a second header.</p>
+      <p class="small">On a desktop, a wide <code>Table</code> with <code>stickyHead</code> keeps its <code>&lt;thead&gt;</code> at <code>top: var(--header-offset)</code> (on Orders, Employees, Item Catalogue, SIM Cards, Equipment, Users and the Audit log). Where it sticks, <code>Table</code> swaps its wrapper's <code>overflow-x-auto</code> for <code>overflow-x-clip</code>, because a scroll container would hold the heading instead of the window; these tables already stack rather than scroll sideways. Group rows (Orders' months) do not stick: two layers of sticky rows read as a second header.</p>
     </div>
     <div class="card">
       <h3>Why the filter bar does not stick</h3>
@@ -739,14 +793,14 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
       <h3>Rules for the record row</h3>
       <ul class="clean small">
         <li>Order: back (below <code>lg</code>) · title · main action · ⋯ · ✕ (beside a list).</li>
-        <li>The main action stays in the row at every width. On a phone: icon and a <b>short label</b> where the dictionary has one (<i>Create link</i>, <i>Kurti nuorodą</i>…), else the icon with the full name.</li>
+        <li>The main action stays in the row at every width. On a phone: icon and a <b>short label</b> where the dictionary has one (<i>Create link</i>, <i>Sukurti nuorodą</i>, <i>Создать ссылку</i>), the full name kept for a screen reader. Where it still does not fit, the title moves under the actions.</li>
         <li>Other actions stay outline buttons under the facts, above long content, as the guidelines say.</li>
         <li>The row's ⋯ and the list row's ⋯ hold the same items in the same order.</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Short labels needed</h3>
-      <p class="small">About eight, each in EN, LT and RU. Only the main actions that are longer than about 14 characters: <i>Create confirmation link → Create link</i>, <i>Add New Employee</i> (none, the icon), <i>Mark as Not Returned</i> (it is not a main action). <i>New order</i>, <i>Edit</i>, <i>Give SIM</i>, <i>Return</i>, <i>View Order</i> fit as they are.</p>
+      <h3>Short labels, as built</h3>
+      <p class="small">Each in EN, LT and RU: the order's <i>Create confirmation link → Create link</i>, <i>View Order → View</i>, <i>Confirmation link → Link</i>; and <i>+ Add</i> for the long primaries of screens (Add New Employee, Add Item, Add Item Set, Add Asset, Add User, Add Role). <i>Edit</i>, <i>Give SIM</i>, <i>Return</i> and <i>Add SIM</i> fit as they are.</p>
     </div>
   </div>
 </section>
@@ -785,7 +839,7 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
           <div class="ph-body"><div class="seg"><span>All<i>12</i></span><span class="on">In Office<i>7</i></span><span>With Emp…<i>5</i></span></div><div class="inp">SIM, phone or inventory…</div><div class="inp" style="outline:2px solid var(--accent); color:var(--fg)">Any location ⌄</div><div class="inp">All providers ⌄</div><div class="inp">Any documents ⌄</div><span class="mb" style="justify-self:start"><svg class="ic"><use href="#i-sort"/></svg>Inventory No.<svg class="ic"><use href="#i-down"/></svg></span></div>
           <div class="ph-nav"><span>Home</span><span>Orders</span><span class="mid">New</span><span>Staff</span><span class="on">More</span></div>
         </div></div>
-        <p class="cap">The filter bar scrolls back under the header and opens; focus is in Location. Choose In Office, then a row.</p>
+        <p class="cap">The filter bar scrolls back under the header and opens, Location first. Choose In Office, then a row.</p>
       </div>
       <div class="step">
         <div class="phone sm"><div class="ph-screen" style="height:420px">
@@ -880,7 +934,7 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
     </div>
     <ol class="flowlist small">
       <li>Tab reaches the title's ⓘ, then each toolbar control in the order shown, then the filter bar. The toolbar is a labelled group, not <code>role="toolbar"</code>: that role promises arrow-key movement inside it, and a header of three controls is quicker with Tab.</li>
-      <li><span class="kbd">/</span> focuses the search; the root's <code>scroll-padding-top: var(--page-header)</code> scrolls it to just below the stuck header, so it is never hidden (WCAG 2.2, 2.4.11 Focus Not Obscured).</li>
+      <li><span class="kbd">/</span> focuses the search; the root's <code>scroll-padding-top</code> (<code>--header-offset</code> and a little) scrolls it to just below the stuck header, so it is never hidden (WCAG 2.2, 2.4.11 Focus Not Obscured).</li>
       <li>On ⋯, Enter opens; the arrows move; typing a letter jumps; Escape closes and puts focus back on ⋯.</li>
       <li>Sticking is never announced. Nothing changed but the scroll position.</li>
       <li>Every icon-only control has a name and a tooltip: "Refresh", "Back to Orders", "More actions for Audit log".</li>
@@ -900,7 +954,7 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
     <div class="card flow">
       <h3>Flow 6 · Sort a stacked list</h3>
       <ol class="flowlist small">
-        <li>Employees on a phone. In the filter bar, after the search: <b>Sort ▾</b> reads "Name, A–Z".</li>
+        <li>Employees on a phone. Above the list, at its right: <b>Sort ▾</b> reads "Name, A–Z".</li>
         <li>Choose it: Name, Code, Height, Clothing, Shoes as radio items; a separator; A–Z, Z–A.</li>
         <li>Choose Z–A: the menu closes, the list re-sorts, the button reads "Name, Z–A". On a wide table the button is hidden and the column heads sort, as now.</li>
       </ol>
@@ -912,27 +966,28 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
 <section class="sec" id="screens">
   <div class="head">
     <div class="eyebrow">4 · Per screen</div>
-    <h2>Every page header, today and proposed</h2>
+    <h2>Every page header, before and as built</h2>
     <p class="lede">Desktop is the toolbar from <code>lg</code>; phone is below <code>md</code>. Record headers follow §6.</p>
   </div>
   <div class="scroll-x">
   <table class="t stack">
     <thead><tr><th>Screen</th><th>Today</th><th>Desktop</th><th>Phone</th><th>⋯ holds</th></tr></thead>
     <tbody>
-      <tr><td data-l="Screen"><b>Dashboard</b> (administrator)</td><td data-l="Today">Manager Dashboard →, Employee Dashboard →, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾</td><td data-l="Phone">⟳ · Dashboards ▾</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Dashboard</b> (administrator)</td><td data-l="Today">Manager Dashboard →, Employee Dashboard →, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾ (two or more)</td><td data-l="Phone">⟳ · Dashboards ▾</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>Manager Dashboard</b></td><td data-l="Today">Employee Dashboard →, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾ (two or more)</td><td data-l="Phone">⟳ · Dashboards ▾</td><td data-l="⋯ holds">–</td></tr>
-      <tr><td data-l="Screen"><b>Employee Dashboard</b></td><td data-l="Today">Create Order, Refresh</td><td data-l="Desktop">Refresh · + Create Order</td><td data-l="Phone">⟳</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Employee Dashboard</b></td><td data-l="Today">Create Order, Refresh</td><td data-l="Desktop">Refresh · Dashboards ▾ (two or more) · + Create Order</td><td data-l="Phone">⟳ · Dashboards ▾ (New order is the tab bar's)</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>Orders</b></td><td data-l="Today">Create Order, Filters</td><td data-l="Desktop">+ Create Order</td><td data-l="Phone">Filters (n)</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>Create Order</b></td><td data-l="Today">Clear order</td><td data-l="Desktop">⋯</td><td data-l="Phone">⋯</td><td data-l="⋯ holds">Clear order…</td></tr>
-      <tr><td data-l="Screen"><b>Employees</b></td><td data-l="Today">Add New Employee</td><td data-l="Desktop">+ Add New Employee</td><td data-l="Phone">+ Add New Employee (icon below the fit)</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Employees</b></td><td data-l="Today">Add New Employee</td><td data-l="Desktop">+ Add New Employee</td><td data-l="Phone">+ Add</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>SIM Cards</b></td><td data-l="Today">Preview PDF, Add SIM, Filters</td><td data-l="Desktop">Preview PDF · + Add SIM</td><td data-l="Phone">Filters (n) · + Add SIM · ⋯</td><td data-l="⋯ holds">phone: Preview PDF</td></tr>
-      <tr><td data-l="Screen"><b>Equipment</b></td><td data-l="Today">Add Asset, Filters</td><td data-l="Desktop">+ Add Asset</td><td data-l="Phone">Filters (n) · + Add Asset</td><td data-l="⋯ holds">–</td></tr>
-      <tr><td data-l="Screen"><b>Item Catalogue</b></td><td data-l="Today">Pictures, Add Item</td><td data-l="Desktop">+ Add Item · ⋯</td><td data-l="Phone">+ Add Item · ⋯</td><td data-l="⋯ holds">Pictures</td></tr>
-      <tr><td data-l="Screen"><b>Item Sets</b></td><td data-l="Today">Add Item Set</td><td data-l="Desktop">+ Add Item Set</td><td data-l="Phone">+ Add Item Set</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Equipment</b></td><td data-l="Today">Add Asset, Filters</td><td data-l="Desktop">+ Add Asset</td><td data-l="Phone">Filters (n) · + Add</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Item Catalogue</b></td><td data-l="Today">Pictures, Add Item</td><td data-l="Desktop">+ Add Item · ⋯</td><td data-l="Phone">+ Add · ⋯</td><td data-l="⋯ holds">Pictures</td></tr>
+      <tr><td data-l="Screen"><b>Item Sets</b></td><td data-l="Today">Add Item Set</td><td data-l="Desktop">+ Add Item Set</td><td data-l="Phone">+ Add</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>Help</b></td><td data-l="Today">two segmented controls</td><td data-l="Desktop">Guide language ▾ · Device ▾</td><td data-l="Phone">EN ▾ · Phone ▾</td><td data-l="⋯ holds">–</td></tr>
-      <tr><td data-l="Screen"><b>Replacements due, Account, Settings</b></td><td data-l="Today">–</td><td data-l="Desktop">–</td><td data-l="Phone">–</td><td data-l="⋯ holds">–</td></tr>
-      <tr><td data-l="Screen"><b>Overview, System, Usage, Security</b></td><td data-l="Today">Refresh</td><td data-l="Desktop">Refresh</td><td data-l="Phone">⟳</td><td data-l="⋯ holds">–</td></tr>
-      <tr><td data-l="Screen"><b>Users, Roles &amp; permissions</b></td><td data-l="Today">Add User / Add Role</td><td data-l="Desktop">+ Add …</td><td data-l="Phone">+ Add …</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Replacements due</b>, a mail template</td><td data-l="Today">← Dashboard (← Mail Templates) above the title</td><td data-l="Desktop">← in the row</td><td data-l="Phone">← in the row</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Account, Settings, System, Security</b></td><td data-l="Today">–</td><td data-l="Desktop">–</td><td data-l="Phone">–</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Overview, Usage</b></td><td data-l="Today">Refresh</td><td data-l="Desktop">Refresh</td><td data-l="Phone">⟳</td><td data-l="⋯ holds">–</td></tr>
+      <tr><td data-l="Screen"><b>Users, Roles &amp; permissions</b></td><td data-l="Today">Add User / Add Role</td><td data-l="Desktop">+ Add User / + Add Role</td><td data-l="Phone">+ Add</td><td data-l="⋯ holds">–</td></tr>
       <tr><td data-l="Screen"><b>Audit log</b></td><td data-l="Today">Export, Filters, Refresh</td><td data-l="Desktop">Refresh · Export</td><td data-l="Phone">Filters (n) · ⟳ · ⋯</td><td data-l="⋯ holds">phone: Export</td></tr>
     </tbody>
   </table>
@@ -943,36 +998,35 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
 <section class="sec" id="rollout">
   <div class="head">
     <div class="eyebrow">10 · Rollout and questions</div>
-    <h2>Six steps, each shippable alone</h2>
+    <h2>Six steps, all built</h2>
   </div>
   <div class="scroll-x">
   <table class="t stack">
-    <thead><tr><th>Step</th><th>What</th><th>Effort</th></tr></thead>
+    <thead><tr><th>Step</th><th>What</th><th>Effort</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td data-l="Step">1</td><td data-l="What"><code>PageHeader</code> one row and sticky; <code>--page-header</code>; <code>data-stuck</code>; <code>scroll-padding-top</code>; short-screen and print fallbacks; the phone header covers the emblem bar</td><td data-l="Effort">M</td></tr>
-      <tr><td data-l="Step">2</td><td data-l="What"><code>Toolbar</code>, <code>ToolbarAction</code> (<code>showFrom</code>), <code>ToolbarMenu</code>, <code>ToolbarMore</code>; the 20 headers into slot order; Pictures and Clear order… into ⋯</td><td data-l="Effort">M</td></tr>
-      <tr><td data-l="Step">3</td><td data-l="What"><code>SortMenu</code> instead of <code>SortControl</code>'s row; Employees' tabs above its search</td><td data-l="Effort">S</td></tr>
-      <tr><td data-l="Step">4</td><td data-l="What">Record rows: sticky in <code>DetailPane</code> and on record pages; back as an icon below <code>lg</code>; short labels</td><td data-l="Effort">M</td></tr>
-      <tr><td data-l="Step">5</td><td data-l="What"><code>Table stickyHead</code> (with <code>overflow-x: clip</code>) on the Audit log, Orders, the registers, Users</td><td data-l="Effort">S</td></tr>
-      <tr><td data-l="Step">6</td><td data-l="What">ui-language, ui-ux-guidelines, <code>web/AGENTS.md</code>, <code>docs/testing.md</code>; e2e at 375, 768 and 1280px</td><td data-l="Effort">S</td></tr>
+      <tr><td data-l="Step">1</td><td data-l="What"><code>PageHeader</code> one row and sticky; <code>--page-header</code>; <code>data-stuck</code>; <code>scroll-padding-top</code>; short-screen and print fallbacks; the phone header covers the emblem bar</td><td data-l="Effort">M</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
+      <tr><td data-l="Step">2</td><td data-l="What"><code>Toolbar</code>, <code>ToolbarAction</code> (<code>showFrom</code>), <code>ToolbarMenu</code>, <code>ToolbarMore</code>; the 20 headers into slot order; Pictures and Clear order… into ⋯ (built as <code>PageHeader</code>'s slots and <code>MenuButton</code>)</td><td data-l="Effort">M</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
+      <tr><td data-l="Step">3</td><td data-l="What"><code>SortMenu</code> instead of <code>SortControl</code>'s row; Employees' tabs above its search</td><td data-l="Effort">S</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
+      <tr><td data-l="Step">4</td><td data-l="What">Record rows: sticky in <code>DetailPane</code> and on record pages; back as an icon below <code>lg</code>; short labels</td><td data-l="Effort">M</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
+      <tr><td data-l="Step">5</td><td data-l="What"><code>Table stickyHead</code> (with <code>overflow-x: clip</code>) on the Audit log, Orders, the registers, Users (and Employees, Item Catalogue)</td><td data-l="Effort">S</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
+      <tr><td data-l="Step">6</td><td data-l="What">ui-language, ui-ux-guidelines, <code>web/AGENTS.md</code>, <code>docs/testing.md</code>; e2e at 375, 768 and 1280px</td><td data-l="Effort">S</td><td data-l="Status"><span class="pill ok">done</span></td></tr>
     </tbody>
   </table>
   </div>
   <div class="card">
-    <h3>A sketch of the API</h3>
-<pre class="mono" style="margin:0; white-space:pre-wrap; font-size:12.5px; line-height:1.6">&lt;PageHeader title={t.assets.simCards} description={…}&gt;
-  &lt;Toolbar more={t.common.moreActions(t.assets.simCards)}&gt;
-    &lt;ToolbarFilters count={extra} open={showFilters} onToggle={…} controls="asset-filters" /&gt;
-    &lt;ToolbarAction icon={FileText} label={t.assets.previewPdf} onSelect={previewPdf} showFrom="md" /&gt;
-    &lt;ToolbarAction primary icon={Plus} label={t.assets.addSimCard} onSelect={() =&gt; setEditing('new')} /&gt;
-  &lt;/Toolbar&gt;
-&lt;/PageHeader&gt;</pre>
-    <p class="small muted">Each <code>ToolbarAction</code> renders as a <code>Button</code> in the row and as a <code>DropdownMenuItem</code> inside ⋯ (a context says which); CSS shows one per width. Slot order is fixed by the component, not by the order a screen writes them in.</p>
+    <h3>The API, as built</h3>
+<pre class="mono" style="margin:0; white-space:pre-wrap; font-size:12.5px; line-height:1.6">&lt;PageHeader
+  title={sim ? t.assets.simCards : t.assets.equipment}
+  filters={{ label: t.assets.filters, count: extra, controls: 'asset-filters', open: showFilters, onToggle }}
+  secondary={[{ label: t.assets.previewPdf, icon: FileText, onClick: previewPdf, showFrom: 'md' }]}
+  primary={{ label: t.assets.addSimCard, icon: Plus, onClick: () =&gt; setEditing('new') }}
+/&gt;</pre>
+    <p class="small muted">The controls are data, passed by slot (<code>filters</code>, <code>refresh</code>, <code>secondary</code>, <code>menu</code>, <code>primary</code>, <code>more</code>, <code>moreAsk</code>, and <code>back</code>), so the component fixes their order whatever order a screen writes them in. A <code>ToolbarAction</code> with <code>showFrom</code> is drawn as a button from that width and as a <code>DropdownMenuItem</code> in ⋯ below it; CSS shows one.</p>
   </div>
 
   <div class="card">
-    <h3>New words for ui-language.md</h3>
-    <p class="small muted">Builder words; none is shown on screen. Each goes into ui-language.md before it is used in code.</p>
+    <h3>Words, now in ui-language.md</h3>
+    <p class="small muted">Builder words; none is shown on screen.</p>
     <div class="scroll-x">
     <table class="t stack">
       <thead><tr><th>Term</th><th>Meaning</th><th>Reader words (EN / LT / RU)</th></tr></thead>
@@ -981,25 +1035,25 @@ footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--line); font
         <tr><td data-l="Term"><b>Stuck header</b></td><td data-l="Meaning">the page header pinned at the top while the screen scrolls</td><td data-l="Reader words">"the bar at the top of the screen" / "ekrano viršuje esanti juosta" / «панель вверху экрана»</td></tr>
         <tr><td data-l="Term"><b>Menu button</b></td><td data-l="Meaning">a labelled button with a chevron that opens a menu of one kind of choice</td><td data-l="Reader words">its label: "choose <b>Dashboards</b>"</td></tr>
         <tr><td data-l="Term"><b>Overflow</b></td><td data-l="Meaning">toolbar controls that move into ⋯ below their width</td><td data-l="Reader words">"under ⋯"</td></tr>
-        <tr><td data-l="Term"><b>Sort ▾</b></td><td data-l="Meaning">the filter bar's sort menu button</td><td data-l="Reader words">"<b>Sort</b>"; "Sort by" heads its menu</td></tr>
+        <tr><td data-l="Term"><b>Sort ▾</b></td><td data-l="Meaning">a stacked list's sort menu button, where the table's heads would be</td><td data-l="Reader words">"<b>Sort</b>"; "Sort by" heads its menu</td></tr>
       </tbody>
     </table>
     </div>
-    <p class="small muted">Changed entries: Page header, Header action, Menu, Back link, and Button kinds (Destructive: "never a header action" becomes "never a toolbar button").</p>
+    <p class="small muted">Changed entries: Page header, Header action, Menu, Back link, Filter bar, Record header, Table, and Button kinds (Destructive: "never a header action" became "never a toolbar button").</p>
   </div>
   <div class="card">
-    <h3>Open questions</h3>
+    <h3>Open questions, as decided</h3>
     <ol class="clean">
-      <li><b>Brand on a phone</b>: is the emblem at rest, covered after 56px, enough? Or the screen's title in that bar from the start, the emblem only in More?</li>
-      <li><b>Create Order on a phone's Orders</b>: hide it, since the bottom bar's raised New order is the same action?</li>
-      <li><b>Two primaries</b> with a pane open: keep both filled, or the screen's outline while a pane is open?</li>
-      <li><b>Clear order</b> into ⋯ as Clear order…: used often enough to stay a button?</li>
-      <li><b>Option C for the Audit log</b>, later, if people filter it while deep in the list?</li>
+      <li><b>Brand on a phone</b>: is the emblem at rest, covered after 56px, enough? <span class="pill ok">yes, kept</span></li>
+      <li><b>Create Order on a phone's Orders</b>: hide it, since the bottom bar's raised New order is the same action? <span class="pill ok">hidden, on the Employee Dashboard too</span></li>
+      <li><b>Two primaries</b> with a pane open: keep both filled, or the screen's outline while a pane is open? <span class="pill ok">both filled</span></li>
+      <li><b>Clear order</b> into ⋯ as Clear order…? <span class="pill ok">under ⋯</span></li>
+      <li><b>Option C for the Audit log</b>, later? <span class="pill ok">built, from a 56rem list</span></li>
     </ol>
   </div>
 </section>
 
-<footer>The Help guide's text and screenshots will be out of date after steps 1–4; they are updated separately. The text version, with file references, is docs/ux/screen-header-toolbar.md.</footer>
+<footer>Built in <code>b99f3c3</code>, <code>e355a9f</code> and <code>35143f4</code>; the Help guide in <code>e9d3774</code>; Option C on the Audit log after them. The text version, with file references, is docs/ux/screen-header-toolbar.md.</footer>
 </main>
 
 <script>
