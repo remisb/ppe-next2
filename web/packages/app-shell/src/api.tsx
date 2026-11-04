@@ -49,14 +49,22 @@ export interface ApiProviderProps {
   setLanguage: (lang: Lang) => void
   /** Run when the user signs out here, before the session is dropped: the app clears what it keeps per user on this device. */
   onSignOut?: (userId: string) => void
+  /**
+   * Run when the user signs in with the form here (not when a reload finds the
+   * sign-in): true when the app is leaving for another page, as the staff app
+   * does for App Launcher, so it shows Checking your sign-in until it goes.
+   */
+  onSignedIn?: (session: Session) => boolean
 }
 
-export function ApiProvider({ children, app, setLanguage, onSignOut }: ApiProviderProps) {
+export function ApiProvider({ children, app, setLanguage, onSignOut, onSignedIn }: ApiProviderProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [status, setStatus] = useState<ApiContext['status']>('starting')
   // The client reads the token through a ref so it never needs rebuilding.
   const sessionRef = useRef(session)
   sessionRef.current = session
+  const signedInRef = useRef(onSignedIn)
+  signedInRef.current = onSignedIn
 
   /** Takes a sign-in or refresh answer as the session; the language stays the one in use for the same user. */
   const apply = useCallback((res: LoginResponse): Session => {
@@ -154,7 +162,7 @@ export function ApiProvider({ children, app, setLanguage, onSignOut }: ApiProvid
       const s = apply(res)
       rememberDeviceLanguage(s.language)
       rememberKeepSignedIn(keepSignedIn)
-      setStatus('ready')
+      setStatus(signedInRef.current?.(s) ? 'starting' : 'ready')
     },
     [client, apply],
   )

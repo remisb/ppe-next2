@@ -15,12 +15,14 @@ import { defineConfig } from 'vitest/config'
 // VITE_ADMIN_TARGET overrides it), websocket and all for its hot reload, so
 // both apps are on this one origin and share the sign-in, as behind Caddy.
 // /sim-scan goes to the Scan SIMs trial's (apps/sim-scan, port 5184;
-// VITE_SIM_SCAN_TARGET overrides it) for the same reason.
+// VITE_SIM_SCAN_TARGET overrides it) for the same reason, and /apps to App
+// Launcher's (apps/launcher, port 5186; VITE_LAUNCHER_TARGET overrides it).
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
   const admin = env['VITE_ADMIN_TARGET'] ?? 'http://localhost:5182'
   const simScan = env['VITE_SIM_SCAN_TARGET'] ?? 'http://localhost:5184'
+  const launcher = env['VITE_LAUNCHER_TARGET'] ?? 'http://localhost:5186'
   return {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
@@ -33,6 +35,8 @@ export default defineConfig(({ mode }) => {
         '/ready': target,
         '/admin': { target: admin, changeOrigin: false, ws: true },
         '/sim-scan': { target: simScan, changeOrigin: false, ws: true },
+        // '/apps/' and '/apps' exactly, not every path that starts with "apps".
+        '^/apps(/|$)': { target: launcher, changeOrigin: false, ws: true },
       },
     },
     test: { environment: 'jsdom', globals: true },

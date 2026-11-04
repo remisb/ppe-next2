@@ -178,6 +178,8 @@ test('sign in', async () => {
   await expect(password).toHaveAttribute('type', 'password')
   await show.click()
   await page.getByRole('button', { name: 'Sign in' }).click()
+  // An administrator has several apps, so signing in lands on App Launcher (ADR 0006); Workwear's tile opens it.
+  await throughLauncher(page)
   // An administrator starts on the Dashboard; an empty database still gives a whole one.
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await expect(page.getByText('Nothing needs you: every order is confirmed and nothing is due.')).toBeVisible()
@@ -225,6 +227,7 @@ test('Backups: an administrator sees whether the database is backed up', async (
 
 test('Administration shares the sign-in: signed in there at once, and Sign out there signs the staff app out', async ({ browser }) => {
   const staff = await signInElsewhere(browser, admin.email, admin.password)
+  await throughLauncher(staff)
   await expect(staff.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   // The old addresses of its screens lead there.
   await staff.goto(webURL + '/users')
@@ -241,6 +244,50 @@ test('Administration shares the sign-in: signed in there at once, and Sign out t
   await expect(staff.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await staff.context().close()
+})
+
+test('App Launcher: the apps of the roles as tiles, pinned on this device, and an Apps entry in every app', async () => {
+  await page.goto('/apps/')
+  const main = page.getByRole('main')
+  await expect(page.getByRole('searchbox', { name: 'Search apps and screens' })).toBeVisible()
+  // Workwear, opened on signing in, is a recent app too.
+  await expect(page.getByRole('heading', { name: 'Recent' })).toBeVisible()
+  // An administrator's apps and shortcuts, in groups; Equipment is for Equipment Assignments alone.
+  for (const name of ['Workwear & Equipment', 'Create Order', 'SIM Cards', 'Administration']) await expect(main.getByRole('link', { name, exact: true }).last()).toBeVisible()
+  await expect(main.getByRole('link', { name: 'Scan SIMs Pilot' })).toHaveAttribute('href', '/sim-scan/')
+  await expect(main.getByRole('link', { name: 'Equipment', exact: true })).toHaveCount(0)
+  // PPE Crew is another site, with its own sign-in: it opens in a new tab.
+  await expect(main.getByRole('link', { name: 'PPE Crew Pilot' })).toHaveAttribute('target', '_blank')
+  await expect(page.getByRole('heading', { name: 'People & Crew' })).toBeVisible()
+
+  // Typing narrows the tiles; Enter opens the first.
+  await page.getByRole('searchbox', { name: 'Search apps and screens' }).fill('sim')
+  await expect(main.getByRole('listitem')).toHaveCount(2)
+  await page.getByRole('searchbox', { name: 'Search apps and screens' }).fill('')
+
+  // ⋯ says where a tile runs, and pins it; pins stay on this device.
+  await page.getByRole('button', { name: 'More about Scan SIMs' }).click()
+  const about = page.getByRole('dialog', { name: 'Scan SIMs' })
+  await expect(about.getByText('On this site, with your sign-in')).toBeVisible()
+  await about.getByRole('button', { name: 'Pin' }).click()
+  await about.getByRole('button', { name: 'Close' }).click()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Pinned' })).toBeVisible()
+  await page.getByRole('button', { name: 'More about Scan SIMs' }).first().click()
+  await page.getByRole('dialog', { name: 'Scan SIMs' }).getByRole('button', { name: 'Unpin' }).click()
+  await page.getByRole('dialog', { name: 'Scan SIMs' }).getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByRole('heading', { name: 'Pinned' })).toHaveCount(0)
+
+  // Each app has an Apps entry back here: Administration, Scan SIMs and Workwear.
+  await main.getByRole('link', { name: 'Administration', exact: true }).last().click()
+  await expect(page).toHaveURL(/\/admin\/$/)
+  await page.getByRole('link', { name: 'Apps', exact: true }).filter({ visible: true }).click()
+  await expect(page).toHaveURL(/\/apps\/$/)
+  await page.goto('/sim-scan/')
+  await expect(page.getByRole('link', { name: 'Apps', exact: true })).toHaveAttribute('href', '/apps/')
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Apps', exact: true }).filter({ visible: true })).toHaveAttribute('href', '/apps/')
 })
 
 test("Settings: an administrator sets the supplier's WhatsApp group", async () => {
@@ -741,7 +788,7 @@ test('the draft survives a closed tab, for the same user only', async ({ browser
   await other.getByLabel('Email').fill(admin.email)
   await other.getByLabel(/^Password/).fill(admin.password)
   await other.getByRole('button', { name: 'Sign in' }).click()
-  await expect(other.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+  await expect(other).toHaveURL(/\/apps\/$/)
   await other.goto(webURL + '/orders/new')
   await expect(other.getByText('No items yet.')).toBeVisible()
   await other.context().close()
@@ -1321,6 +1368,7 @@ test('Security: a failed attempt and a sign-in elsewhere are recorded; an admini
   await expect(phone.getByRole('alert')).toBeVisible()
   await phone.getByLabel(/^Password/).fill(admin.password)
   await phone.getByRole('button', { name: 'Sign in' }).click()
+  await throughLauncher(phone)
   await expect(phone.getByRole('navigation', { name: 'Main' })).toBeVisible()
 
   // Sign-ins, newest first, with the device and why an attempt failed.
@@ -2635,6 +2683,15 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   await unscrolled()
 })
 
+/**
+ * From App Launcher, where someone with several apps lands after signing in at
+ * the staff app's start (ADR 0006), into Workwear by its tile, as people do.
+ */
+async function throughLauncher(p: Page, workwear = 'Workwear & Equipment') {
+  await expect(p).toHaveURL(/\/apps\/$/)
+  await p.getByRole('main').getByRole('link', { name: workwear, exact: true }).first().click()
+}
+
 /** Signs in as someone else in a fresh browser context (its own cookies and storage); returns its page. */
 async function signInElsewhere(browser: Browser, email: string, password: string) {
   const other = await (await browser.newContext()).newPage()
@@ -2689,6 +2746,7 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   // A manager starts on the Manager Dashboard and has no Users tab; the
   // administrator's Dashboard address shows the manager's own.
   let other = await signInElsewhere(browser, mia.email, mia.password)
+  await throughLauncher(other)
   const nav = other.getByRole('navigation', { name: 'Main' })
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Item Catalogue' })).toBeVisible()
@@ -2761,6 +2819,7 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
 
   // Deactivated: signed out where she is signed in, and can no longer sign in.
   const miaPhone = await signInElsewhere(browser, mia.email, mia.password)
+  await throughLauncher(miaPhone)
   await expect(miaPhone.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await page.getByRole('button', { name: `Edit ${mia.name}` }).click()
   dialog = page.getByRole('dialog')
@@ -2797,6 +2856,7 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await expect(dialog.getByText(`The password for ${mia.name} has been changed.`)).toBeVisible()
   await dialog.getByRole('button', { name: 'Done' }).click()
   other = await signInElsewhere(browser, mia.email, 'mia-password-2')
+  await throughLauncher(other)
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   await other.context().close()
 })
@@ -2896,6 +2956,7 @@ test('Orders: only a manager deletes an order, after asking; it then leaves Orde
 
   // Mia, the manager from the Users step, with the password reset there.
   const other = await signInElsewhere(browser, 'mia@example.com', 'mia-password-2')
+  await throughLauncher(other)
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
   // The old address, from bookmarks and links already sent, opens the screen at its own.
   await other.goto(webURL + '/history')
@@ -2956,6 +3017,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
 
   // Saved on the account, so a sign-in on another device opens in Lithuanian too.
   const other = await signInElsewhere(browser, admin.email, admin.password)
+  await throughLauncher(other, 'Darbo drabužiai ir įranga')
   await expect(other.getByRole('heading', { name: 'Suvestinė' })).toBeVisible()
   await other.context().close()
 
@@ -3143,7 +3205,8 @@ test('the sign-in renews itself every few minutes while the app is open', async 
   const context = await browser.newContext({ baseURL: webURL })
   const tab = await context.newPage()
   await tab.clock.install()
-  await tab.goto('/')
+  // At her dashboard's own address, so signing in stays here (App Launcher is for the start, /) and the answer can be read.
+  await tab.goto('/manager')
   await tab.getByLabel('Email').fill('mia@example.com')
   await tab.getByLabel(/^Password/).fill('mia-password-2')
   const login = tab.waitForResponse((r) => r.url().endsWith('/api/v1/auth/login'))
@@ -3193,6 +3256,7 @@ test('Account: signed-in devices, each but this one with Sign out', async ({ bro
 
   // A laptop signs in; Account lists it with its own Sign out, which signs it out.
   const laptop = await signInElsewhere(browser, admin.email, admin.password)
+  await throughLauncher(laptop)
   await expect(laptop.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await page.reload()
   await expect(devices.getByRole('listitem')).toHaveCount(2)
@@ -3206,6 +3270,7 @@ test('Account: signed-in devices, each but this one with Sign out', async ({ bro
 test('Account: change password, then only the new one signs in, and the other devices are signed out', async ({ browser }) => {
   const newPassword = 'e2e-new-password-456'
   const laptop = await signInElsewhere(browser, admin.email, admin.password)
+  await throughLauncher(laptop)
   await expect(laptop.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await page.getByRole('link', { name: admin.name }).click()
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
@@ -3365,7 +3430,7 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
 test('no screen broke the Content-Security-Policy', async () => {
   // Behind Caddy (E2E_WEB_SERVER=caddy, as in CI) every step above ran under the policy.
   if (process.env['E2E_WEB_SERVER'] === 'caddy') {
-    for (const path of ['/', '/admin/', '/admin/users', '/sim-scan/']) {
+    for (const path of ['/', '/admin/', '/admin/users', '/sim-scan/', '/apps/']) {
       const res = await page.request.get(path)
       expect(res.headers()['content-security-policy'], path).toContain("default-src 'self'")
       // Only Scan SIMs may compile its readers' WebAssembly (ADR 0005).

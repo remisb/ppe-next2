@@ -183,6 +183,70 @@ importers:
       '@ppe/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ppe/launcher':
+        specifier: workspace:*
+        version: link:../../packages/launcher
+      '@ppe/routing':
+        specifier: workspace:*
+        version: link:../../packages/routing
+      '@ppe/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      lucide-react:
+        specifier: ^1.48.0
+        version: 1.48.0(react@19.3.0)
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))
+      jsdom:
+        specifier: ^30.1.1
+        version: 30.1.1
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.1
+        version: 8.3.1(@types/node@26.6.2)(jiti@2.7.0)
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))
+
+  apps/launcher:
+    dependencies:
+      '@ppe/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@ppe/app-shell':
+        specifier: workspace:*
+        version: link:../../packages/app-shell
+      '@ppe/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@ppe/launcher':
+        specifier: workspace:*
+        version: link:../../packages/launcher
       '@ppe/routing':
         specifier: workspace:*
         version: link:../../packages/routing
@@ -241,6 +305,9 @@ importers:
       '@ppe/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ppe/launcher':
+        specifier: workspace:*
+        version: link:../../packages/launcher
       '@ppe/routing':
         specifier: workspace:*
         version: link:../../packages/routing
@@ -314,6 +381,9 @@ importers:
       '@ppe/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ppe/launcher':
+        specifier: workspace:*
+        version: link:../../packages/launcher
       '@ppe/routing':
         specifier: workspace:*
         version: link:../../packages/routing
@@ -492,6 +562,37 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))
+
+  packages/launcher:
+    dependencies:
+      '@ppe/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@ppe/app-shell':
+        specifier: workspace:*
+        version: link:../app-shell
+      '@ppe/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@ppe/routing':
+        specifier: workspace:*
+        version: link:../routing
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      jsdom:
+        specifier: ^30.1.1
+        version: 30.1.1
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.1
+        version: 8.3.1(@types/node@26.6.2)(jiti@2.7.0)
       vitest:
         specifier: ^5.0.1
         version: 5.0.1(@types/node@26.6.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))

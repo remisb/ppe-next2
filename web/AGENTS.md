@@ -18,7 +18,7 @@ web/
   tsconfig.base.json     strict TypeScript settings apps extend
   packages/
     api-client/          the typed client every app uses, and the permission catalogue
-    routing/             where each app is mounted (base path, staffHref, adminHref)
+    routing/             where each app is mounted (base path, staffHref, adminHref, launcherHref)
     i18n/                the language in use, plural, localized(); no app's words
     ui/                  the look: shadcn components (with Table stack), styles.css
                          (tokens and variants), panels, relative dates, use-load
@@ -27,12 +27,15 @@ web/
     backups/             how backups read, for Backups and the Dashboard's card
     sim-scan/            Scan SIMs: reading SIM carriers (barcode, PIN and PUK), pairing,
                          the review list and its rules; the readers' files' Vite plugin
+    launcher/            App Launcher's list of apps and shortcuts (who sees each, where it
+                         opens), its words, and each user's pinned and recent apps
   apps/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,
                          Settings, Backups
     sim-scan/            Scan SIMs, a trial at /sim-scan/ (ADR 0005); moves into the
                          staff app once it passes
+    launcher/            App Launcher, at /apps/ (ADR 0006): every app a user's roles open
 ```
 
 **Two apps, one origin, one sign-in.** Administration is a separate app (ADR 0002) on the
@@ -47,7 +50,15 @@ proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`). T
 trial is a third app on the same terms, at `/sim-scan/` (`simScanHref`; port 5184,
 `pnpm --dir apps/sim-scan dev`, proxied from 5180). A phone's camera needs a secure address:
 `VITE_HTTPS=1 pnpm --dir apps/sim-scan dev` serves it on the LAN over https with a throwaway
-certificate.
+certificate. App Launcher is a fourth, at `/apps/` (`launcherHref`; port 5186,
+`pnpm --dir apps/launcher dev`, proxied from 5180 for `/apps` and `/apps/…` only).
+
+**Every app has a way back to App Launcher, and no app gains a row for it** (ADR 0006,
+`docs/specs/app-launcher.md`). For a user with several apps (`hasSeveralApps(session.can)`
+from `@ppe/launcher`), an **Apps** entry (`Grip` icon, `launcherText().apps`,
+`launcherHref('/')`) sits in the app's own menu: the More panel on a phone and the rail's or
+sidebar's foot elsewhere, or an icon in the header of an app with no menu. A new app or
+shortcut is a row in `@ppe/launcher`'s `APPS` with its name in the three dictionaries.
 
 **Shared code lives in a package; an app keeps only its own screens and words.** A package
 is TypeScript source like `api-client` (explicit `.ts` imports, no build step). Import a
@@ -374,7 +385,7 @@ images and requests come from the app's own origin only. So:
 - No script, stylesheet, font or image from another host, and no `eval` or `new Function`.
   Self-host what you need, as the Geist font is.
 - The only inline script is the theme in `index.html`, allowed by its hash, and it is the
-  same in both apps so one hash allows both. Changing it, whitespace included, changes the
+  same in every app so one hash allows them all. Changing it, whitespace included, changes the
   hash: each app's `src/csp.test.ts` fails and names the new value to put in the
   Caddyfile; Administration's also fails when its script differs from the staff app's.
   Do not add another inline script.

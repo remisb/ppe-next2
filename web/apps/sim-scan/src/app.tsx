@@ -1,10 +1,11 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { staffHref } from '@ppe/routing'
+import { hasSeveralApps, launcherText } from '@ppe/launcher'
+import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, LogOut } from 'lucide-react'
+import { ArrowLeft, Grip, LogOut } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { t } from '@/i18n'
@@ -16,7 +17,7 @@ import { ScanPage } from './routes/scan'
 /*
  * The trial's frame, kept small: its name, its two screens as tabs (Scan,
  * which needs assets.manage, and PIN and PUK, which needs sim_codes.read),
- * the way back to SIM Cards and Sign out. It shares the staff app's sign-in,
+ * the way back to SIM Cards, App Launcher and Sign out. It shares the staff app's sign-in,
  * so signing in or out here does so there too.
  */
 export function App() {
@@ -52,6 +53,11 @@ export function App() {
             <ArrowLeft aria-hidden className="size-4" />
             {t.shell.simCards}
           </a>
+          {hasSeveralApps(session.can) ? (
+            <a href={launcherHref('/')} aria-label={launcherText().apps} title={launcherText().apps} className={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+              <Grip aria-hidden className="size-4" />
+            </a>
+          ) : null}
           <Button variant="ghost" size="icon" aria-label={t.shell.signOut} title={t.shell.signOut} onClick={() => void signOut()}>
             <LogOut aria-hidden className="size-4" />
           </Button>

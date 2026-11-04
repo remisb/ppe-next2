@@ -2,7 +2,7 @@ import type { Asset, CatalogueItem, Employee, ListedOrder } from '@ppe/api-clien
 import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
 import { cn } from '@ppe/ui/lib/utils'
 import { Kbd } from '@ppe/ui/components/kbd'
-import { Boxes, ClipboardList, CornerDownLeft, Smartphone, FileText, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
+import { Boxes, ClipboardList, CornerDownLeft, ExternalLink, Smartphone, FileText, Grip, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { ItemIcon } from '@/components/item-icon'
@@ -17,6 +17,14 @@ export interface PaletteSection {
   route: Route
   label: string
   icon: LucideIcon
+}
+
+/** Another app on App Launcher's list, or the launcher itself: opened as a page, a linked site in a new tab. */
+export interface PaletteApp {
+  key: string
+  label: string
+  href: string
+  newTab?: boolean
 }
 
 interface Entry {
@@ -48,12 +56,15 @@ const themeIcon: Record<Theme, LucideIcon> = { light: Sun, dark: Moon, system: M
 export function CommandPalette({
   open,
   sections,
+  apps = [],
   userId,
   onClose,
   navigate,
 }: {
   open: boolean
   sections: PaletteSection[]
+  /** The other apps the user has, found by name (ADR 0006). */
+  apps?: PaletteApp[]
   /** Whose table density the palette's switch saves. */
   userId: string
   onClose: () => void
@@ -201,6 +212,16 @@ export function CommandPalette({
       const Icon = s.icon
       out.push({ key: `screen-${s.label}`, group: 'screens', label: s.label, icon: <Icon aria-hidden className="size-4" />, to: s.route })
     }
+    for (const a of apps.filter((a) => term && has(a.label))) {
+      const Icon = a.newTab ? ExternalLink : Grip
+      out.push({
+        key: `app-${a.key}`,
+        group: 'apps',
+        label: a.label,
+        icon: <Icon aria-hidden className="size-4" />,
+        to: () => (a.newTab ? window.open(a.href, '_blank', 'noopener') : window.location.assign(a.href)),
+      })
+    }
     for (const e of employees.slice(0, PER_GROUP)) {
       out.push({
         key: `emp-${e.id}`,
@@ -217,7 +238,7 @@ export function CommandPalette({
       }
     }
     return out
-  }, [q, orders, assets, employees, items, sections, density, setDensity, text])
+  }, [q, orders, assets, employees, items, sections, apps, density, setDensity, text])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]

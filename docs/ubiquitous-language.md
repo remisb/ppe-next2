@@ -970,6 +970,66 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 
 ---
 
+## 13. App Launcher
+
+The front door of the company's apps (ADR 0006; rules in
+[app-launcher.md](specs/app-launcher.md)). Phase 1 is built; the terms marked *phase 2/3*
+are decided but not on screen yet.
+
+### App Launcher
+- **Brief:** the screen at `/apps/` that shows a user, as big tiles in groups, every app
+  and shortcut their roles open.
+- **Detail:** shares the staff app's sign-in. Someone with several apps lands on it after
+  signing in at the staff app's start; someone with one app goes straight to it. Not a
+  "portal", "home screen" or "dashboard" (the Dashboard is the staff app's screen).
+- **Code:** `web/apps/launcher`, `@ppe/launcher`, `launcherHref`. **UI:** **Apps** (its
+  title and every app's entry back to it); **App Launcher** where it is named among apps
+  (⌘K).
+
+### App
+- **Brief:** something a tile opens by its address: Workwear & Equipment, Administration,
+  Scan SIMs, PPE Crew.
+- **Detail:** has a slug (`sim-scan`), a name in each language, an icon, a colour, a
+  **group** and a **stage**. "Several apps" counts apps, never shortcuts.
+- **Code:** `LauncherApp` with `kind: 'app'`, `APPS`, `hasSeveralApps`.
+
+### Shortcut
+- **Brief:** a tile that opens one screen inside an app: Create Order, Orders, SIM Cards.
+- **Code:** `LauncherApp` with `kind: 'shortcut'` and its `parent`.
+
+### Group
+- **Brief:** where a tile sits: **Workwear & PPE**, **Company Assets**, **People & Crew**,
+  **Administration**. From `lg` the groups are the launcher's rail.
+- **Code:** `AppGroup`.
+
+### Stage
+- **Brief:** how far along an app is: **Live**, **Pilot**, **POC**, **In development**
+  (later **Retired**). Every stage but Live is a badge on the tile.
+- **Code:** `AppStage`.
+
+### Linked site
+- **Brief:** an app on another site with its own sign-in, such as PPE Crew; its tile shows ↗
+  and opens it in a new tab.
+- **Detail:** one of three **hosting tiers**: *built here* (this origin, the user's sign-in),
+  *sandbox* (an outside POC on its own domain, never the sign-in; phase 4) and *linked*.
+- **Code:** `AppTier` `'linked'`. **UI:** *Another site, with its own sign-in*.
+
+### Pinned, Recent
+- **Brief:** tiles a user pinned (**Pin** / **Unpin** in a tile's ⋯), shown first; and the
+  last six opened.
+- **Detail:** kept per user on the device until phase 2 keeps them in the registry.
+- **Code:** `Places`, `togglePin`, `noteOpened`.
+
+### Version, Channel, Variant, Audience (phase 2/3)
+- **Version:** one published build of an app (`2026.10.30-7d26056`), never changed.
+- **Channel:** a name that points at one version: **Stable**, **Beta**, **Preview**.
+  Promoting moves the pointer; rolling back moves it back.
+- **Variant:** another design of an app tried side by side, a channel with its own label.
+- **Audience:** the roles that see an app or a channel. Seeing is not a permission: the API
+  still decides what anyone can do.
+
+---
+
 ## Translations
 
 The staff app speaks English, Lithuanian and Russian (each user's choice). The
@@ -1101,6 +1161,18 @@ screens are built):
 | PIN / PUK | PIN / PUK | PIN / PUK |
 | Show PIN and PUK / Add PIN and PUK / Save PIN and PUK | Rodyti PIN ir PUK / Pridėti PIN ir PUK / Išsaugoti PIN ir PUK | Показать PIN и PUK / Добавить PIN и PUK / Сохранить PIN и PUK |
 
+App Launcher (the source is `@ppe/launcher`'s `text.ts`):
+
+| English | Lietuvių | Русский |
+|---|---|---|
+| Apps (the launcher, the entry back to it) | Programos | Приложения |
+| App Launcher | Programų sąrašas | Список приложений |
+| All apps / Pinned / Recent | Visos programos / Prisegtos / Neseniai atidarytos | Все приложения / Закреплённые / Недавние |
+| Workwear & PPE / People & Crew (groups) | Darbo drabužiai ir AAP / Žmonės ir brigados | Спецодежда и СИЗ / Люди и бригады |
+| Live / Pilot / POC / In development | Veikia / Bandoma / Prototipas / Kuriama | Работает / Пилот / Прототип / В разработке |
+| Pin / Unpin | Prisegti / Atsegti | Закрепить / Открепить |
+| On this site, with your sign-in / Another site, with its own sign-in | Šioje svetainėje, su jūsų prisijungimu / Kita svetainė, su savu prisijungimu | На этом сайте, с вашим входом / Другой сайт, со своим входом |
+
 ---
 
 ## Words to avoid
@@ -1141,3 +1213,5 @@ screens are built):
 | dashboard (in Administration) | **Overview** | The Dashboard is the staff app's screen of workwear figures. |
 | error ID, trace ID, correlation ID (in the UI) | **reference** | One word on every error message. |
 | logs, incidents (for the error list) | **Errors** on **System** | |
+| portal, home screen, dashboard (for the launcher) | **Apps** (App Launcher) | The Dashboard is the staff app's screen of figures. |
+| module, tool (for a tile) | **app** or **shortcut** | A shortcut opens a screen in an app; only apps count as "several apps". |

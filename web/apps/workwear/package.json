@@ -19,6 +19,7 @@
     "@ppe/audit": "workspace:*",
     "@ppe/backups": "workspace:*",
     "@ppe/i18n": "workspace:*",
+    "@ppe/launcher": "workspace:*",
     "@ppe/routing": "workspace:*",
     "@ppe/ui": "workspace:*",
     "lucide-react": "^1.48.0",

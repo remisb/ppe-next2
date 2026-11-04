@@ -24,6 +24,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "web/apps/sim-scan", "dev"],
       "port": 5184
+    },
+    {
+      "name": "launcher",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/launcher", "dev"],
+      "port": 5186
     }
   ]
 }

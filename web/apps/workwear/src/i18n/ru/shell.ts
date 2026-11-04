@@ -61,6 +61,7 @@ export const shell: ShellText = {
     screens: 'Экраны',
     employees: 'Сотрудники',
     items: 'Предметы',
+    apps: 'Приложения',
   },
   newOrder: 'Новый заказ',
   newOrderFor: (name: string) => `Новый заказ: ${name}`,

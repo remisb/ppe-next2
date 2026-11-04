@@ -16,6 +16,7 @@
     "@ppe/api-client": "workspace:*",
     "@ppe/app-shell": "workspace:*",
     "@ppe/i18n": "workspace:*",
+    "@ppe/launcher": "workspace:*",
     "@ppe/routing": "workspace:*",
     "@ppe/sim-scan": "workspace:*",
     "@ppe/ui": "workspace:*",

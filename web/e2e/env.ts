@@ -13,6 +13,8 @@ export const webPort = 5181
 export const adminPort = 5183
 /** Scan SIMs' Vite server; the staff app's proxies /sim-scan to it, so tests open it at webURL/sim-scan/. */
 export const simScanPort = 5185
+/** App Launcher's Vite server; the staff app's proxies /apps to it, so tests open it at webURL/apps/. */
+export const launcherPort = 5187
 export const webURL = `http://localhost:${webPort}`
 
 // A test-only account created by global setup; not a real credential.

@@ -124,6 +124,14 @@ PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-
 `API_SIM_CODES_KEY`, required, never in the database or its backups) in `asset_sim_codes`
 (migration 0041, which also makes `…5` and `…5F` the same SIM No.: `asset.simKey`). Slice 8 (go-live
 tools) waits for the open decisions.
+**App Launcher** (ADR 0006, accepted with every recommended decision; phase 1 built; spec
+`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
+(`web/apps/launcher`) showing every app and shortcut a user's roles open as big tiles in groups,
+with pinned and recent apps (per device); the list, who sees each tile, the words and the places are
+`@ppe/launcher` (`APPS`, a list in code until phase 2's registry). Someone with several apps
+(`hasSeveralApps`) who signs in at the staff app's `/` lands there (`ApiProvider`'s `onSignedIn`);
+every app has an **Apps** entry in its own menu (no extra row) and the staff app's ⌘K lists the other
+apps. PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -191,8 +199,8 @@ cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, L
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
 8080, 5173–5175): Postgres 5442, API 8090, Vite 5180 (Administration 5182, reached through
-5180 at `/admin/`; Scan SIMs 5184, at `/sim-scan/`), e2e 18090/5181 (Administration 5183,
-Scan SIMs 5185), compose project
+5180 at `/admin/`; Scan SIMs 5184, at `/sim-scan/`; App Launcher 5186, at `/apps/`), e2e
+18090/5181 (Administration 5183, Scan SIMs 5185, App Launcher 5187), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
 new ports out of PPE-next's range.
 
@@ -205,15 +213,15 @@ because Postgres tests truncate tables.
 `.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
 → api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
 built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/`,
-Administration at `ADMIN_ROOT` served at `/admin/` and the Scan SIMs trial at `SIM_SCAN_ROOT`
-served at `/sim-scan/`; `deploy/Caddyfile`). Only Caddy publishes ports.
+Administration at `ADMIN_ROOT` served at `/admin/`, the Scan SIMs trial at `SIM_SCAN_ROOT`
+served at `/sim-scan/` and App Launcher at `LAUNCHER_ROOT` served at `/apps/`; `deploy/Caddyfile`). Only Caddy publishes ports.
 Both builds keep their cache between deploys: the API's Go build cache is a BuildKit cache
 mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
 image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
 keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in every app, by its hash
-(`web/apps/{workwear,admin,sim-scan}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`);
+(`web/apps/{workwear,admin,sim-scan,launcher}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`);
 `/sim-scan/` alone gets `'wasm-unsafe-eval'`, `worker-src 'self'` and the camera (ADR 0005).
 `.env.prod` needs `API_SIM_CODES_KEY` (`openssl rand -hex 32`, kept offline too: a restore
 needs the same key; `docs/backups.md`), or the API does not start.
@@ -401,13 +409,15 @@ pnpm typecheck && pnpm test && pnpm build           # whole workspace
 pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api and /admin
 pnpm --dir apps/admin dev                            # Administration on 5182; open it at http://localhost:5180/admin/
 pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
+pnpm --dir apps/launcher dev                         # App Launcher on 5186; open it at http://localhost:5180/apps/
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 
 The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
 in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TARGET`
-(default `http://localhost:5182`). `.claude/launch.json` has `api` (port 8090), `workwear`
-(port 5180) and `admin` (port 5182) configs.
+(default `http://localhost:5182`), `/sim-scan` to `VITE_SIM_SCAN_TARGET` (5184) and `/apps` to
+`VITE_LAUNCHER_TARGET` (5186). `.claude/launch.json` has `api` (port 8090), `workwear`
+(port 5180), `admin` (port 5182), `sim-scan` (5184) and `launcher` (5186) configs.
 
 - `packages/api-client` is a **hand-written** typed client (`types.ts` mirrors the Go JSON);
   update it with every API change. Its `permissions.ts` lists the permission catalogue in

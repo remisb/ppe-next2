@@ -1,5 +1,6 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { staffHref } from '@ppe/routing'
+import { hasSeveralApps, launcherText } from '@ppe/launcher'
+import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem, railTip } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
@@ -10,6 +11,7 @@ import {
   BarChart3,
   Ellipsis,
   Gauge,
+  Grip,
   KeyRound,
   LogOut,
   Mail,
@@ -178,11 +180,11 @@ export function App() {
                 {s.label}
               </a>
             ))}
-            <FootLinks name={session.name} onSignOut={signOut} item={moreItem} icon={moreIcon} />
+            <FootLinks name={session.name} severalApps={hasSeveralApps(session.can)} onSignOut={signOut} item={moreItem} icon={moreIcon} />
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-0.5 border-t border-border p-2 md:flex xl:gap-1 xl:p-3">
-          <FootLinks name={session.name} onSignOut={signOut} item={navItem} icon={navIcon} />
+          <FootLinks name={session.name} severalApps={hasSeveralApps(session.can)} onSignOut={signOut} item={navItem} icon={navIcon} />
         </div>
       </aside>
 
@@ -206,11 +208,22 @@ export function App() {
   )
 }
 
-/** Back to the staff app, the account (the staff app's Account) and Sign out. */
-function FootLinks({ name, onSignOut, item, icon }: { name: string; onSignOut: () => void; item: string; icon: string }) {
+/** App Launcher (for users with more than one app), back to the staff app, the account (the staff app's Account) and Sign out. */
+function FootLinks({ name, severalApps, onSignOut, item, icon }: { name: string; severalApps: boolean; onSignOut: () => void; item: string; icon: string }) {
   const phoneRow = item === moreItem
   return (
     <>
+      {severalApps ? (
+        <a href={launcherHref('/')} title={launcherText().apps} className={item}>
+          <span className={icon}>
+            <Grip aria-hidden className="size-5 md:size-4" />
+          </span>
+          <span aria-hidden className={cn(railTip, 'xl:hidden', phoneRow && 'max-md:hidden')}>
+            {launcherText().apps}
+          </span>
+          <span className={cn('sr-only xl:not-sr-only', phoneRow && 'max-md:not-sr-only')}>{launcherText().apps}</span>
+        </a>
+      ) : null}
       <a href={staffHref('/')} title={t.shell.workwear} className={item}>
         <span className={icon}>
           <ArrowLeft aria-hidden className="size-5 md:size-4" />

@@ -3,15 +3,16 @@ import { join } from 'node:path'
 
 import { defineConfig, devices } from '@playwright/test'
 
-import { adminPort, apiEnv, apiPort, repoRoot, simScanPort, webPort, webURL } from './env.ts'
+import { adminPort, apiEnv, apiPort, launcherPort, repoRoot, simScanPort, webPort, webURL } from './env.ts'
 
 // E2E_WEB_SERVER=caddy serves the production bundle through deploy/Caddyfile,
 // as in a deployment (CI does this); the default is the Vite dev server.
 const webRoot = join(repoRoot, 'web/apps/workwear/dist')
 const adminRoot = join(repoRoot, 'web/apps/admin/dist')
 const simScanRoot = join(repoRoot, 'web/apps/sim-scan/dist')
+const launcherRoot = join(repoRoot, 'web/apps/launcher/dist')
 const caddy = process.env['E2E_WEB_SERVER'] === 'caddy'
-for (const root of caddy ? [webRoot, adminRoot, simScanRoot] : []) {
+for (const root of caddy ? [webRoot, adminRoot, simScanRoot, launcherRoot] : []) {
   if (!existsSync(join(root, 'index.html'))) throw new Error(`E2E_WEB_SERVER=caddy needs a web build at ${root}: run pnpm build first`)
 }
 const webServerCommand = caddy
@@ -21,11 +22,12 @@ const webServerCommand = caddy
     // reaches vite and the run hangs after the last test.
     `${join(repoRoot, 'web/apps/workwear/node_modules/.bin/vite')} --port ${webPort} --strictPort`
 const webServerEnv: Record<string, string> = caddy
-  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot, SIM_SCAN_ROOT: simScanRoot }
+  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot, SIM_SCAN_ROOT: simScanRoot, LAUNCHER_ROOT: launcherRoot }
   : {
       VITE_API_TARGET: `http://localhost:${apiPort}`,
       VITE_ADMIN_TARGET: `http://localhost:${adminPort}`,
       VITE_SIM_SCAN_TARGET: `http://localhost:${simScanPort}`,
+      VITE_LAUNCHER_TARGET: `http://localhost:${launcherPort}`,
     }
 
 // With Vite, Administration runs on its own server, which the staff app's proxies /admin to.
@@ -44,6 +46,16 @@ const simScanServer = {
   cwd: join(repoRoot, 'web/apps/sim-scan'),
   env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
   url: `http://localhost:${simScanPort}/sim-scan/`,
+  reuseExistingServer: false,
+  timeout: 120_000,
+}
+
+// And App Launcher, at /apps.
+const launcherServer = {
+  command: `${join(repoRoot, 'web/apps/launcher/node_modules/.bin/vite')} --port ${launcherPort} --strictPort`,
+  cwd: join(repoRoot, 'web/apps/launcher'),
+  env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
+  url: `http://localhost:${launcherPort}/apps/`,
   reuseExistingServer: false,
   timeout: 120_000,
 }
@@ -80,6 +92,6 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
-    ...(caddy ? [] : [adminServer, simScanServer]),
+    ...(caddy ? [] : [adminServer, simScanServer, launcherServer]),
   ],
 })

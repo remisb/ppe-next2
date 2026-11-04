@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { adminBase, adminHref, staffHref } from './apps.ts'
+import { adminBase, adminHref, launcherHref, staffHref } from './apps.ts'
 import { stripBase } from './base-path.ts'
 
 describe('stripBase', () => {
@@ -27,5 +27,6 @@ describe('app addresses', () => {
     expect(adminHref('/')).toBe('/admin/')
     expect(adminHref('/users')).toBe('/admin/users')
     expect(stripBase(adminHref('/users'), adminBase)).toBe('/users')
+    expect(launcherHref('/')).toBe('/apps/')
   })
 })

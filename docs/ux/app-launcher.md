@@ -7,9 +7,10 @@ UI samples, flows, decisions and test plan, is [app-launcher.html](app-launcher.
 clickable prototype (five people, phone/tablet/desktop, EN/LT/RU, eight guided flows) is
 [mockups/app-launcher.html](mockups/app-launcher.html).
 
-30 Oct 2026 · sample data · status: **proposed**; decision in
-[ADR 0006](../architecture/adr/0006-app-launcher.md). Terms go into
-[ubiquitous-language.md](../ubiquitous-language.md) once it is accepted.
+30 Oct 2026 · sample data · status: **accepted** 4 Nov 2026 with every recommended decision;
+phase 1 built (rules in [app-launcher.md](../specs/app-launcher.md)); decision in
+[ADR 0006](../architecture/adr/0006-app-launcher.md); terms in
+[ubiquitous-language.md §13](../ubiquitous-language.md#13-app-launcher).
 
 ## Why
 

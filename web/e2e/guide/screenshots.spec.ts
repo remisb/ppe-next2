@@ -72,6 +72,9 @@ test('sign in and the dashboard', async () => {
     await page.emulateMedia({ colorScheme: 'light' })
   }
   await page.getByRole('button', { name: S.signIn }).click()
+  // An administrator lands on App Launcher (ADR 0006); the guide goes on in Workwear.
+  await page.waitForURL(/\/apps\/$/)
+  await page.goto('/')
   await expect(page.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await shot('dashboard')
 })
@@ -265,7 +268,7 @@ test('account and the search', async ({ browser }) => {
   await other.getByLabel(S.email).fill(admin.email)
   await other.getByLabel(new RegExp(`^${S.password}`)).fill(admin.password)
   await other.getByRole('button', { name: S.signIn }).click()
-  await expect(other.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
+  await other.waitForURL(/\/apps\/$/)
   await other.close()
 
   await page.goto('/account')

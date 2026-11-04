@@ -1,6 +1,7 @@
 import type { Permission } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, canAdminister, loadDensity, useApi } from '@ppe/app-shell'
-import { adminHref } from '@ppe/routing'
+import { appName, hasSeveralApps, launcherText, visibleApps } from '@ppe/launcher'
+import { adminHref, launcherHref } from '@ppe/routing'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { Brand, moreIcon, moreItem, moreSubList, navIcon, navItem, navSubItem, navSubList, railTip } from '@ppe/ui/components/main-nav'
 import { Loading } from '@ppe/ui/components/states'
@@ -9,10 +10,10 @@ import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Kbd } from '@ppe/ui/components/kbd'
-import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
+import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, Grip, History as HistoryIcon, Keyboard, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
-import { CommandPalette, type PaletteSection } from '@/components/command-palette'
+import { CommandPalette, type PaletteApp, type PaletteSection } from '@/components/command-palette'
 import { t } from '@/i18n'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
@@ -187,6 +188,16 @@ export function App() {
   const route = startRoute(asked, session.can)
   // Administration's link, for users who may open one of its screens.
   const administration = canAdminister(session)
+  // App Launcher's link, and the other apps in ⌘K, for users with more than one app (ADR 0006).
+  const severalApps = hasSeveralApps(session.can)
+  const otherApps: PaletteApp[] = severalApps
+    ? [
+        { key: 'launcher', label: launcherText().launcherName, href: launcherHref('/') },
+        ...visibleApps(session.can)
+          .filter((a) => a.kind === 'app' && a.id !== 'workwear')
+          .map((a) => ({ key: a.id, label: appName(a), href: a.href, newTab: a.tier === 'linked' })),
+      ]
+    : []
   const home = startRoute({ name: 'home' }, session.can)
   const shownTabs = [
     ...(home.name === 'dashboard' || home.name === 'managerDashboard' || home.name === 'employeeDashboard' ? [homeTab(home.name)] : []),
@@ -381,6 +392,14 @@ export function App() {
             {more.map((tab) => section(tab, { item: moreItem, icon: moreIcon }, moreSubList))}
             {/* The rail and sidebar show the account and Sign out at their foot instead. */}
             <div className="mt-1 flex flex-col gap-1 border-t border-border pt-1 md:hidden">
+              {severalApps ? (
+                <a href={launcherHref('/')} className={moreItem}>
+                  <span className={moreIcon}>
+                    <Grip aria-hidden className="size-5" />
+                  </span>
+                  {launcherText().apps}
+                </a>
+              ) : null}
               {administration ? (
                 <a href={adminHref('/')} className={moreItem}>
                   <span className={moreIcon}>
@@ -414,6 +433,14 @@ export function App() {
           </div>
         </nav>
         <div className="mt-auto hidden flex-col gap-0.5 border-t border-border p-2 md:flex xl:gap-1 xl:p-3">
+          {severalApps ? (
+            <a href={launcherHref('/')} title={launcherText().apps} className={navItem}>
+              <span className={navIcon}>
+                <Grip aria-hidden className="size-5 md:size-4" />
+              </span>
+              <span className={railTip}>{launcherText().apps}</span>
+            </a>
+          ) : null}
           {administration ? (
             <a href={adminHref('/')} title={t.shell.administration} className={navItem}>
               <span className={navIcon}>
@@ -519,7 +546,7 @@ export function App() {
         ) : null}
       </main>
       <ConfirmPassword prompt={passwordPrompt} />
-      <CommandPalette open={paletteOpen} sections={sections} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
+      <CommandPalette open={paletteOpen} sections={sections} apps={otherApps} userId={session.userId} onClose={() => setPaletteOpen(false)} navigate={navigate} />
       <FormSheet
         open={helpOpen}
         onClose={() => setHelpOpen(false)}

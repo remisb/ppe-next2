@@ -64,6 +64,7 @@ export const shell = {
     screens: 'Screens',
     employees: 'Employees',
     items: 'Items',
+    apps: 'Apps',
   },
   newOrder: 'New order',
   newOrderFor: (name: string) => `New order for ${name}`,
