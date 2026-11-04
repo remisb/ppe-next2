@@ -33,6 +33,7 @@ export const en: Guide = {
         { p: 'The bar at the bottom holds **Home**, **Orders**, **New order** and **Employees**. **More** holds the rest: the other sections, **Search**, **Help**, your account and **Sign out**.', devices: ['phone'] },
         { p: 'The rail on the left holds every section, with **Search** at the top. **Help**, your account and **Sign out** are at its foot.', devices: ['tablet'] },
         { p: 'The sidebar holds every section and **Search…** (`⌘K`). **Orders**, **Item Catalogue** and **Item Sets** are listed under **Workwear**. Choose **Workwear** to hide or show them; while they are hidden, it shows the number of orders waiting for confirmation. **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.', devices: ['desktop'] },
+        { p: "On every screen, the bar at the top with the screen's name and its buttons stays in view as you scroll. **⋯** in it holds the screen's less common actions and, on a phone, the buttons that do not fit." },
         { p: 'With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.' },
         { p: '**Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.' },
         {
@@ -63,6 +64,7 @@ export const en: Guide = {
           p: "The **Employee Dashboard** starts with what needs doing: your orders still waiting for the employee's confirmation (**Send link**), items due for replacement and employees missing a size. Below are your orders by month and those given recently.",
           roles: ['employee'],
         },
+        { p: 'If you hold more than one role, **Dashboards** at the top switches between your dashboards.' },
       ],
     },
     {
@@ -71,7 +73,7 @@ export const en: Guide = {
       blocks: [
         {
           ol: [
-            { text: 'Tap **New order** in the bar at the bottom, or **Create Order** at the top of **Orders**.', devices: ['phone'] },
+            { text: 'Tap **New order** in the bar at the bottom.', devices: ['phone'] },
             { text: 'On **Orders**, choose **Create Order** at the top.', devices: ['tablet', 'desktop'] },
             "In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.",
             { text: 'Add the items:', items: ['**Item Set** adds a whole kit in one tap.', { text: '**Add Item** adds one item.', devices: ['phone', 'tablet'] }, { text: '**Add Item** adds one item. Press `/` to jump to it.', devices: ['desktop'] }] },
@@ -83,7 +85,7 @@ export const en: Guide = {
             { text: 'Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'This device keeps a draft of the order while you work; **Clear order** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier\'s message, is in the review.' },
+        { p: 'This device keeps a draft of the order while you work; **⋯ → Clear order…** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier\'s message, is in the review.' },
         { shots: [{ name: 'create-order', alt: 'Create Order with an employee, a kit applied and sizes chosen' }] },
       ],
     },
@@ -126,13 +128,13 @@ export const en: Guide = {
       id: 'orders',
       title: 'Orders',
       blocks: [
-        { p: '**Orders** lists every order placed. **Create Order**, at the top, starts a new one.' },
+        { p: '**Orders** lists every order placed. **Create Order**, at the top, starts a new one; on a phone, **New order** in the bar at the bottom does.' },
         {
           p: '**All**, **Ordered** and **Given** filter the orders by status; point at one to see what it counts. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.',
           devices: ['desktop'],
         },
-        { p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['tablet'] },
-        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds **Date** and **Sort by**. **Sort by** says the order in words, such as **Sort by: Date, newest first**; the arrow beside it reverses it. Tap an order to open it; **Orders** at its top takes you back to the list.', devices: ['phone'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Tap an order to open it; the arrow **←** at its top takes you back to the list.', devices: ['tablet'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds **Date**. The sort button above the orders says their order in words, such as **Date, newest first**: choose it to sort by another column or to reverse the order. Tap an order to open it; the arrow **←** at its top takes you back to the list. Its number and main action stay at the top as you scroll.', devices: ['phone'] },
         {
           p: '**Date** shows **All dates** at first; choose **Last 7 days**, **This month** or **Previous month** instead. **Custom range…** opens **From** and **To** in its place: **Apply** makes that range the choice shown, such as **2026-09-01 – 2026-09-30**, and **Cancel** leaves the filter as it was. Choose **Custom range…** again to change it.',
         },
@@ -195,7 +197,7 @@ export const en: Guide = {
           devices: ['desktop'],
         },
         {
-          p: 'Tap an item to open it; **Item Catalogue** at its top takes you back. An item without a price or service period is marked **Incomplete**; open it to see which is missing.',
+          p: 'Tap an item to open it; the arrow **←** at its top takes you back. An item without a price or service period is marked **Incomplete**; open it to see which is missing.',
           devices: ['phone', 'tablet'],
         },
         { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
@@ -224,7 +226,7 @@ export const en: Guide = {
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; **SIM Cards** or **Equipment** at its top takes you back.',
+          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; the arrow **←** at its top takes you back.',
           devices: ['phone'],
         },
         {
@@ -232,7 +234,7 @@ export const en: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder' }] },
         {
-          p: "**Preview PDF** on **SIM Cards** shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.",
+          p: "**Preview PDF** on **SIM Cards** (under **⋯** on a phone) shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.",
         },
         {
           p: '**Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. The non-return value set there is filled in, and you can change or clear it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.',
@@ -384,7 +386,7 @@ export const en: Guide = {
             "**Seals**, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. **Verify** checks every seal again; the app also checks them every hour.",
             'Each seal also gets a timestamp: a public timestamp service signs the seal with the time. A seal made again later cannot get the original time, so not even someone with access to the server can rewrite the log unnoticed. The panel says through which day the seals are timestamped.',
             'If a sealed day does not match, or its timestamp is wrong, late or missing, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.',
-            '**Export** downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.',
+            '**Export** (under **⋯** on a phone) downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.',
             'Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.',
           ],
         },

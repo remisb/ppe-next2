@@ -33,6 +33,7 @@ export const lt: Guide = {
         { p: 'Apatinėje juostoje yra **Pradžia**, **Užsakymai**, **Užsakyti** ir **Darbuotojai**. Mygtuke **Daugiau** – visa kita: kiti skyriai, **Paieška**, **Pagalba**, jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Juostoje kairėje yra visi skyriai, viršuje – **Paieška**. **Pagalba**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['tablet'] },
         { p: 'Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Užsakymai**, **Prekių katalogas** ir **Prekių rinkiniai** išvardyti po **Darbo drabužiai**. Pasirinkę **Darbo drabužiai**, juos paslėpsite arba parodysite; kol jie paslėpti, rodomas patvirtinimo laukiančių užsakymų skaičius. **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.', devices: ['desktop'] },
+        { p: 'Kiekviename ekrane viršutinė juosta su ekrano pavadinimu ir mygtukais slenkant lieka matoma. Joje esantis **⋯** turi rečiau naudojamus ekrano veiksmus, o telefone – ir netilpusius mygtukus.' },
         { p: 'Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.' },
         { p: '**Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.' },
         {
@@ -63,6 +64,7 @@ export const lt: Guide = {
           p: '**Darbuotojo suvestinė** prasideda nuo to, ką reikia padaryti: jūsų užsakymai, dar laukiantys darbuotojo patvirtinimo (**Siųsti nuorodą**), keistinos prekės ir darbuotojai, kuriems trūksta dydžio. Žemiau – jūsų užsakymai pagal mėnesius ir neseniai išduoti.',
           roles: ['employee'],
         },
+        { p: 'Jei turite daugiau nei vieną rolę, **Suvestinės** viršuje perjungia jūsų suvestines.' },
       ],
     },
     {
@@ -71,7 +73,7 @@ export const lt: Guide = {
       blocks: [
         {
           ol: [
-            { text: 'Palieskite **Užsakyti** apatinėje juostoje arba **Kurti užsakymą** skyriaus **Užsakymai** viršuje.', devices: ['phone'] },
+            { text: 'Palieskite **Užsakyti** apatinėje juostoje.', devices: ['phone'] },
             { text: 'Skyriuje **Užsakymai** viršuje pasirinkite **Kurti užsakymą**.', devices: ['tablet', 'desktop'] },
             'Lauke **Kam skirta** įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite **+ Naujas darbuotojas**.',
             {
@@ -86,7 +88,7 @@ export const lt: Guide = {
             { text: 'Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.', devices: ['desktop'] },
           ],
         },
-        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **Išvalyti užsakymą** viršuje jį ištrina, prieš tai paklausęs. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.' },
+        { p: 'Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **⋯ → Išvalyti užsakymą…** viršuje jį ištrina, prieš tai paklausęs. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.' },
         { shots: [{ name: 'create-order', alt: 'Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai' }] },
       ],
     },
@@ -129,13 +131,13 @@ export const lt: Guide = {
       id: 'orders',
       title: 'Užsakymai',
       blocks: [
-        { p: '**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.' },
+        { p: '**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują; telefone – **Užsakyti** apatinėje juostoje.' },
         {
           p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną; užvedę žymeklį ant vieno, matysite, ką jis skaičiuoja. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.',
           devices: ['desktop'],
         },
-        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
-        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – **Data** ir rikiavimas. Rikiavimas nurodomas žodžiais, pavyzdžiui, **Rikiavimas: Data, naujausi pirmi**; rodyklė šalia jį apverčia. Palieskite užsakymą, kad jį atidarytumėte; **Užsakymai** jo viršuje grąžina į sąrašą.', devices: ['phone'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – **Data**. Rikiavimo mygtukas virš užsakymų nurodo jų tvarką žodžiais, pavyzdžiui, **Data, naujausi pirmi**: pasirinkite jį, kad rikiuotumėte pagal kitą stulpelį arba apverstumėte tvarką. Palieskite užsakymą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą. Jo numeris ir pagrindinis veiksmas slenkant lieka viršuje.', devices: ['phone'] },
         {
           p: '**Data** iš pradžių rodo **Visos datos**; vietoj to galite pasirinkti **Paskutinės 7 dienos**, **Šis mėnuo** arba **Praėjęs mėnuo**. **Pasirinktas laikotarpis…** jo vietoje atveria **Nuo** ir **Iki**: **Taikyti** padaro tą laikotarpį rodomu pasirinkimu, pavyzdžiui, **2026.09.01 – 2026.09.30**, o **Atšaukti** palieka filtrą kaip buvo. Norėdami jį pakeisti, vėl pasirinkite **Pasirinktas laikotarpis…**.',
         },
@@ -198,7 +200,7 @@ export const lt: Guide = {
           devices: ['desktop'],
         },
         {
-          p: 'Palieskite prekę, kad ją atidarytumėte; **Prekių katalogas** viršuje grąžina atgal. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; atidarę ją matysite, ko trūksta.',
+          p: 'Palieskite prekę, kad ją atidarytumėte; rodyklė **←** viršuje grąžina atgal. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; atidarę ją matysite, ko trūksta.',
           devices: ['phone', 'tablet'],
         },
         { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.' },
@@ -227,7 +229,7 @@ export const lt: Guide = {
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; **SIM kortelės** ar **Įranga** jo viršuje grąžina į sąrašą.',
+          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą.',
           devices: ['phone'],
         },
         {
@@ -235,7 +237,7 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'assets', alt: 'SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju' }] },
         {
-          p: 'Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.',
+          p: 'Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** (telefone – po **⋯**) parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.',
         },
         {
           p: '**Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ten nustatyta negrąžinimo vertė įrašoma iš anksto; ją galite pakeisti arba ištrinti. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.',
@@ -362,7 +364,7 @@ export const lt: Guide = {
           '**Antspaudai**, viršuje: kiekvienos dienos pakeitimai užantspauduojami praėjus valandai po dienos pabaigos maiša, kuri apima ir ankstesnę dieną, todėl vėliau pakeistas, pridėtas ar pašalintas pakeitimas išryškėja. **Patikrinti** iš naujo patikrina visus antspaudus; programėlė juos tikrina ir kas valandą.',
           'Kiekvienam antspaudui suteikiama ir laiko žyma: viešoji laiko žymų tarnyba pasirašo antspaudą kartu su laiku. Vėliau iš naujo sudarytas antspaudas negali gauti pradinio laiko, todėl net turintis prieigą prie serverio negali nepastebimai perrašyti žurnalo. Skydelis rodo, iki kurios dienos antspaudams suteiktos laiko žymos.',
           'Jei užantspauduota diena nesutampa arba jos laiko žyma netinkama, pavėluota ar jos nėra, tai parodo Apžvalga. Praneškite serverį prižiūrinčiam asmeniui ir išsaugokite atsargines kopijas iš laiko prieš tą dieną.',
-          '**Eksportuoti** atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip **CSV, skaičiuoklei** arba **JSON eilutės, archyvui**. Pats eksportas taip pat užfiksuojamas audito žurnale.',
+          '**Eksportuoti** (telefone – po **⋯**) atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip **CSV, skaičiuoklei** arba **JSON eilutės, archyvui**. Pats eksportas taip pat užfiksuojamas audito žurnale.',
           'Pakeitimai laikomi metų metus (10 metų, jei serveryje nenustatyta kitaip), paskui ištrinami po dieną.',
         ] },
         { shots: [{ name: 'audit-log', alt: 'Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po' }] },

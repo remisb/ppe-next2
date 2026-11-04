@@ -14,6 +14,8 @@ The app records workwear and safety equipment given to employees. You prepare an
 
 The sidebar holds every section and **Search…** (`⌘K`). **Orders**, **Item Catalogue** and **Item Sets** are listed under **Workwear**. Choose **Workwear** to hide or show them; while they are hidden, it shows the number of orders waiting for confirmation. **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
 
+On every screen, the bar at the top with the screen's name and its buttons stays in view as you scroll. **⋯** in it holds the screen's less common actions and, on a phone, the buttons that do not fit.
+
 With **Keep me signed in** ticked, you stay signed in on this device after closing the app or restarting the device, for up to 30 days, or until you have not used it for 14 days. On a shared computer, untick it: you are signed out when the browser closes, and after 12 hours at the latest.
 
 **Sign out** ends your sign-in on this device. When you change your password, your other devices are signed out. When an administrator resets your password or deactivates your account, you are signed out everywhere.
@@ -46,6 +48,8 @@ The **Manager Dashboard** covers items, prices and purchasing: what is on order,
 
 The **Employee Dashboard** starts with what needs doing: your orders still waiting for the employee's confirmation (**Send link**), items due for replacement and employees missing a size. Below are your orders by month and those given recently.
 
+If you hold more than one role, **Dashboards** at the top switches between your dashboards.
+
 ## 3. Create an order
 
 1. On **Orders**, choose **Create Order** at the top.
@@ -59,7 +63,7 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
    - If you choose a size other than the employee's saved one, you're asked **Different size selected. Save it to employee profile?** **Save** keeps it for their future orders; **Skip size update** uses it on this order only.
 5. Choose **Review and mark as ordered** in the panel on the right, or press `⌘/Ctrl` `Enter`.
 
-This device keeps a draft of the order while you work; **Clear order** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier's message, is in the review.
+This device keeps a draft of the order while you work; **⋯ → Clear order…** at the top empties it, after asking. **Copy for WhatsApp**, for the supplier's message, is in the review.
 
 ![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/desktop/create-order.png)
 
@@ -86,7 +90,7 @@ If the employee will sign on paper, choose **Print Record** instead.
 
 ## 6. Orders
 
-**Orders** lists every order placed. **Create Order**, at the top, starts a new one.
+**Orders** lists every order placed. **Create Order**, at the top, starts a new one; on a phone, **New order** in the bar at the bottom does.
 
 **All**, **Ordered** and **Given** filter the orders by status; point at one to see what it counts. You can also filter by employee and date. Click a record number to open the order beside the list. `J` and `K` move between orders, and `Esc` closes the order.
 
@@ -177,7 +181,7 @@ A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** 
 
 ![SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder](../../web/apps/workwear/public/help-img/en/desktop/assets.png)
 
-**Preview PDF** on **SIM Cards** shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.
+**Preview PDF** on **SIM Cards** (under **⋯** on a phone) shows the list as a PDF to print: every SIM the tabs, search and filters keep, not only the first page, in the list's order. Each page names the list, the date and time it was printed, the filters and the order. It is in the **Language** chosen on your account, and dates are written **2026 10 15**. From the preview, **Print** prints it, **Download PDF** saves it and **Open in New Tab** opens it in your browser's own viewer. Where the browser cannot show a PDF in the app, as on many phones, it offers the last two.
 
 *Administrators and managers only:*
 
@@ -282,7 +286,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 - **Seals**, at the top: each day's changes are sealed an hour after the day ends, with a hash that also covers the day before, so a change altered, added or removed afterwards shows. **Verify** checks every seal again; the app also checks them every hour.
 - Each seal also gets a timestamp: a public timestamp service signs the seal with the time. A seal made again later cannot get the original time, so not even someone with access to the server can rewrite the log unnoticed. The panel says through which day the seals are timestamped.
 - If a sealed day does not match, or its timestamp is wrong, late or missing, the Overview says so. Tell whoever runs the server, and keep the backups from before that day.
-- **Export** downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.
+- **Export** (under **⋯** on a phone) downloads the changes the filters select, between two days at most a year apart, as **CSV, for a spreadsheet** or **JSON lines, for an archive**. The export is itself recorded on the Audit log.
 - Changes are kept for years (10, unless the server is set otherwise), then deleted a day at a time.
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)

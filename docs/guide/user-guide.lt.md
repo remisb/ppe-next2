@@ -14,6 +14,8 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
 
 Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Užsakymai**, **Prekių katalogas** ir **Prekių rinkiniai** išvardyti po **Darbo drabužiai**. Pasirinkę **Darbo drabužiai**, juos paslėpsite arba parodysite; kol jie paslėpti, rodomas patvirtinimo laukiančių užsakymų skaičius. **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
 
+Kiekviename ekrane viršutinė juosta su ekrano pavadinimu ir mygtukais slenkant lieka matoma. Joje esantis **⋯** turi rečiau naudojamus ekrano veiksmus, o telefone – ir netilpusius mygtukus.
+
 Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir uždarę programėlę ar perkrovę įrenginį – iki 30 dienų arba kol jo nenaudojate 14 dienų. Bendrame kompiuteryje varnelę nuimkite: būsite atjungti uždarius naršyklę ir ne vėliau kaip po 12 valandų.
 
 **Atsijungti** užbaigia prisijungimą šiame įrenginyje. Pakeitus slaptažodį, kiti jūsų įrenginiai atjungiami. Jei administratorius atkuria jūsų slaptažodį ar išjungia paskyrą, esate atjungiami visur.
@@ -46,6 +48,8 @@ Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkit
 
 **Darbuotojo suvestinė** prasideda nuo to, ką reikia padaryti: jūsų užsakymai, dar laukiantys darbuotojo patvirtinimo (**Siųsti nuorodą**), keistinos prekės ir darbuotojai, kuriems trūksta dydžio. Žemiau – jūsų užsakymai pagal mėnesius ir neseniai išduoti.
 
+Jei turite daugiau nei vieną rolę, **Suvestinės** viršuje perjungia jūsų suvestines.
+
 ## 3. Užsakymo kūrimas
 
 1. Skyriuje **Užsakymai** viršuje pasirinkite **Kurti užsakymą**.
@@ -59,7 +63,7 @@ Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkit
    - Jei pasirinksite kitą dydį nei išsaugotas darbuotojo, programa paklaus **Pasirinktas kitas dydis. Išsaugoti jį darbuotojo profilyje?** **Išsaugoti** – dydis bus naudojamas ir būsimiems užsakymams; **Praleisti dydžio atnaujinimą** – tik šiam užsakymui.
 5. Dešinėje esančiame skydelyje pasirinkite **Peržiūrėti ir pažymėti kaip užsakytą** arba paspauskite `⌘/Ctrl` `Enter`.
 
-Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **Išvalyti užsakymą** viršuje jį ištrina, prieš tai paklausęs. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.
+Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **⋯ → Išvalyti užsakymą…** viršuje jį ištrina, prieš tai paklausęs. **Kopijuoti į WhatsApp** (žinutė tiekėjui) yra peržiūroje.
 
 ![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](../../web/apps/workwear/public/help-img/lt/desktop/create-order.png)
 
@@ -86,7 +90,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 
 ## 6. Užsakymai
 
-**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują.
+**Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują; telefone – **Užsakyti** apatinėje juostoje.
 
 **Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną; užvedę žymeklį ant vieno, matysite, ką jis skaičiuoja. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. `J` ir `K` pereina tarp užsakymų, o `Esc` užsakymą uždaro.
 
@@ -177,7 +181,7 @@ SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** a
 
 ![SIM kortelės: skirtukai su skaičiais, paieška ir filtrai, kiekviena SIM su jos turėtoju](../../web/apps/workwear/public/help-img/lt/desktop/assets.png)
 
-Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.
+Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** (telefone – po **⋯**) parodo sąrašą kaip PDF spausdinti: visas SIM, kurias palieka skirtukai, paieška ir filtrai, ne tik pirmą puslapį, sąrašo tvarka. Kiekviename puslapyje nurodytas sąrašas, spausdinimo data ir laikas, filtrai ir tvarka. Jis būna ta **kalba**, kuri pasirinkta jūsų paskyroje, o datos rašomos **2026 10 15**. Peržiūroje **Spausdinti** jį atspausdina, **Atsisiųsti PDF** išsaugo, o **Atidaryti naujame skirtuke** atidaro jūsų naršyklės peržiūros programoje. Jei naršyklė PDF programoje parodyti negali, kaip daugelyje telefonų, ji siūlo du paskutinius.
 
 *Tik administratoriams ir vadovams:*
 
@@ -282,7 +286,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 - **Antspaudai**, viršuje: kiekvienos dienos pakeitimai užantspauduojami praėjus valandai po dienos pabaigos maiša, kuri apima ir ankstesnę dieną, todėl vėliau pakeistas, pridėtas ar pašalintas pakeitimas išryškėja. **Patikrinti** iš naujo patikrina visus antspaudus; programėlė juos tikrina ir kas valandą.
 - Kiekvienam antspaudui suteikiama ir laiko žyma: viešoji laiko žymų tarnyba pasirašo antspaudą kartu su laiku. Vėliau iš naujo sudarytas antspaudas negali gauti pradinio laiko, todėl net turintis prieigą prie serverio negali nepastebimai perrašyti žurnalo. Skydelis rodo, iki kurios dienos antspaudams suteiktos laiko žymos.
 - Jei užantspauduota diena nesutampa arba jos laiko žyma netinkama, pavėluota ar jos nėra, tai parodo Apžvalga. Praneškite serverį prižiūrinčiam asmeniui ir išsaugokite atsargines kopijas iš laiko prieš tą dieną.
-- **Eksportuoti** atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip **CSV, skaičiuoklei** arba **JSON eilutės, archyvui**. Pats eksportas taip pat užfiksuojamas audito žurnale.
+- **Eksportuoti** (telefone – po **⋯**) atsisiunčia filtrų atrinktus pakeitimus tarp dviejų dienų, ne ilgiau kaip per metus, kaip **CSV, skaičiuoklei** arba **JSON eilutės, archyvui**. Pats eksportas taip pat užfiksuojamas audito žurnale.
 - Pakeitimai laikomi metų metus (10 metų, jei serveryje nenustatyta kitaip), paskui ištrinami po dieną.
 
 ![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
