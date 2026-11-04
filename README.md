@@ -49,8 +49,11 @@ internal/domain/<name>/  domain services (user, employee, catalogue, itemset, or
 internal/audit/          append-only audit events
 internal/db/migrations/  NNNN_name.up.sql / .down.sql
 docs/                    domain-service contract, per-service specs, test map
-web/apps/workwear/       the web app
-web/packages/            api-client (typed, hand-written) and routing
+web/apps/workwear/       the staff app, at /
+web/apps/admin/          Administration, at /admin/
+web/apps/sim-scan/       Scan SIMs, a trial app, at /sim-scan/
+web/apps/launcher/       App Launcher, at /apps/
+web/packages/            shared code: api-client (typed, hand-written), app-shell, ui, i18n, launcher, routing…
 web/e2e/                 Playwright suite
 ```
 
@@ -70,8 +73,9 @@ without either one reaching the other's services:
 |---|---|
 | Postgres | 5442 |
 | API | 8090 |
-| Web dev server | 5180 |
-| End-to-end tests | 18090 (API) and 5181 (web) |
+| Staff app dev server (open every app through it) | 5180 |
+| Administration, Scan SIMs, App Launcher dev servers | 5182, 5184, 5186 |
+| End-to-end tests | 18090 (API), 5181 (web), 5183, 5185, 5187 |
 
 The Docker names are also separate: the compose project is `ppe-next2` and the data
 volume is `ppe-next2-pgdata`. The database user and names are `ppe2`, `ppe2` and
@@ -126,18 +130,50 @@ make run
 The API listens on port 8090. If that port is taken, run `make run API_ADDR=:8091` and
 create `web/apps/workwear/.env.local` containing `VITE_API_TARGET=http://localhost:8091`.
 
-In a second terminal, install the web dependencies and start the web app:
+The API inserts App Launcher's default tiles when it starts. After pulling changes that add
+migrations, run `make migrate` again and restart the API: a running API keeps its old code.
+
+In a second terminal, install the web dependencies:
 
 ```bash
 cd web && pnpm install
 ```
 
+Then start the four apps, each in its own terminal, from `web/`:
+
 ```bash
-pnpm --dir web/apps/workwear dev
+pnpm --dir apps/workwear dev
 ```
 
-Open http://localhost:5180 and sign in with the seeded admin. The Vite dev server proxies
-`/api` to the Go API, so no CORS setup is needed.
+```bash
+pnpm --dir apps/admin dev
+```
+
+```bash
+pnpm --dir apps/sim-scan dev
+```
+
+```bash
+pnpm --dir apps/launcher dev
+```
+
+Open every app through the staff app's dev server on 5180, which proxies `/admin`,
+`/sim-scan` and `/apps` to the others and `/api` to the Go API. That way they share one
+origin and one sign-in, as behind Caddy in production, and no CORS setup is needed:
+
+| App | Address |
+|---|---|
+| Workwear & Equipment, the staff app | http://localhost:5180/ |
+| App Launcher | http://localhost:5180/apps/ |
+| Administration (Manage apps is in its menu) | http://localhost:5180/admin/ |
+| Scan SIMs | http://localhost:5180/sim-scan/ |
+
+Sign in with the seeded admin. Someone with more than one app who signs in at `/` lands on
+App Launcher. Apps in testing (POC, In development) show only to users with the **Testers**
+role (given on Administration → Users), after they turn on **Show apps in testing**.
+
+If the `pnpm` on your `PATH` fails, check that `corepack enable` installed pnpm 12, or
+put corepack's pnpm 12 directory first on your `PATH`.
 
 `make help` lists every Make target.
 
