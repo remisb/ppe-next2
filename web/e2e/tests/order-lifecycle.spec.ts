@@ -3572,6 +3572,8 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   for (const version of ['2026.01.02-e2e', '2026.01.01-e2e']) {
     await pane.getByRole('button', { name: `More actions for ${version}` }).click()
     await page.getByRole('menuitem', { name: 'Make Stable' }).click()
+    // The menu closes before the next one opens (two menus' items would both match).
+    await expect(page.getByRole('menu')).toHaveCount(0)
     await expect(pane.getByRole('status').filter({ hasText: 'now opens' })).toHaveText(`Stable now opens ${version}.`)
     expect(await stableOpens()).toBe(version)
   }
