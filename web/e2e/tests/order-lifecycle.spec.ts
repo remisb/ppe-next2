@@ -42,13 +42,14 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates', 'Manage apps']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
-  const link = page.getByRole('link', { name: linkName, exact: true }).filter({ visible: true })
+  // In the navigation, not the screen: Manage apps lists a tile of the same name.
+  const link = page.locator('nav, aside').getByRole('link', { name: linkName, exact: true }).filter({ visible: true })
   if ((await link.count()) === 0) await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click()
-  await link.click()
+  await link.first().click()
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
 }
 
@@ -2464,6 +2465,9 @@ test('⌘K finds an employee and starts an order for them; G then H and ? work f
 })
 
 test('phone and tablet: no screen scrolls sideways', async () => {
+  // Every screen at seven widths, each once its data is in: some hundred screen loads, more than the
+  // default 30 seconds on a slow CI runner.
+  test.setTimeout(120_000)
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
   // The phone bar puts New order in the middle, raised: Home, Orders, New order, Employees, More.
@@ -2503,6 +2507,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
     ['System', 'Largest tables'],
     ['Usage', 'Active people per day'],
     ['Settings', 'Invite link'],
+    ['Manage apps', 'Scan SIMs'],
   ] as const) {
     // The same Main navigation, now a bottom tab bar.
     await openTab(tab)
@@ -2700,6 +2705,7 @@ test('phone and tablet: no screen scrolls sideways', async () => {
       ['System', 'Largest tables'],
       ['Usage', 'Active people per day'],
       ['Settings', 'Invite link'],
+      ['Manage apps', 'Scan SIMs'],
     ] as const) {
       await openTab(tab)
       await expect(page.getByRole('main').getByText(content).filter({ visible: true }).first()).toBeVisible()
