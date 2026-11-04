@@ -133,6 +133,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		audit.WithTimestamps(tsa.New(cfg.AuditTSAURL))(svc.audit)
 	}
 
+	if cfg.PublishApp != "" {
+		return publishApp(ctx, svc, cfg, os.Stdin, os.Stdout)
+	}
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, pool, svc.users, cfg, logger)
 	}
@@ -291,6 +294,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)
 	registerLauncherRoutes(rt, svc.launcher)
+	registerPublishedAppRoutes(rt, svc.launcher, cfg.AppsDir)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
 	registerSystemRoutes(rt, svc, cfg, tok)
@@ -320,7 +324,7 @@ func routes(cfg config, svc services, tok *tokens, logger *slog.Logger) http.Han
 	if len(cfg.AllowedOrigins) > 0 {
 		cors := middleware.DefaultCORSConfig()
 		cors.AllowedOrigins = cfg.AllowedOrigins
-		cors.AllowedHeaders = append(cors.AllowedHeaders, appHeader)
+		cors.AllowedHeaders = append(cors.AllowedHeaders, appHeader, appVersionHeader)
 		global = append(global, middleware.CORS(cors))
 	}
 	// capturePanics inside Timeout, on the goroutine that runs the handler: Timeout

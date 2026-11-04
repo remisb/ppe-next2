@@ -14,6 +14,7 @@
     "@ppe/api-client": "workspace:*",
     "@ppe/app-shell": "workspace:*",
     "@ppe/i18n": "workspace:*",
+    "@ppe/routing": "workspace:*",
     "lucide-react": "^1.48.0"
   },
   "peerDependencies": {

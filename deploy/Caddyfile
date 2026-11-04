@@ -6,10 +6,10 @@
 #   WEB_ROOT      web/apps/workwear/dist from `pnpm build`: the staff app, at /
 #   ADMIN_ROOT    web/apps/admin/dist: Administration, at /admin/ (its Vite
 #                 base, and adminBase in @ppe/routing)
-#   SIM_SCAN_ROOT web/apps/sim-scan/dist: Scan SIMs, the trial, at /sim-scan/
-#                 (simScanBase in @ppe/routing)
 #   LAUNCHER_ROOT web/apps/launcher/dist: App Launcher, at /apps/
 #                 (launcherBase in @ppe/routing; ADR 0006)
+#   PUBLISHED_ROOT the published apps' builds (the API's API_APPS_DIR, the
+#                 `published` volume), <profile>/<slug>/<version>/, read only
 #   HSTS_MAX_AGE  seconds; set 0 on a shared zone such as sslip.io, where a pin
 #                 would outlive the demo and cannot be taken back
 
@@ -35,33 +35,48 @@ import sites/*.caddy
 	handle @probe {
 		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
+	# Scan SIMs moved under /apps/ when it was published (ADR 0006, phase 3);
+	# its old addresses still open it.
+	redir /sim-scan /apps/sim-scan/ 308
+	@oldsimscan path_regexp oldsimscan ^/sim-scan/(.*)$
+	redir @oldsimscan /apps/sim-scan/{re.oldsimscan.1} 308
+	# App Launcher (ADR 0006), every app a user's roles open, on the same
+	# origin as the staff app, so they share the sign-in cookie: /apps/ and
+	# its files are the launcher's.
+	redir /apps /apps/ 308
+	@launcher path /apps/ /apps/index.html /apps/assets/*
+	handle @launcher {
+		# header runs before uri, so it matches the path as requested.
+		uri strip_prefix /apps
+		root * {$LAUNCHER_ROOT:/srv/launcher/dist}
+		@unhashed not path /apps/assets/*
+		header /apps/assets/* Cache-Control "public, max-age=31536000, immutable"
+		header @unhashed Cache-Control "no-cache"
+		file_server
+	}
+	# Published apps' files, by the profile their version declared (a closed
+	# list: launcher.Capabilities). A version's files never change. Nothing
+	# else under PUBLISHED_ROOT (the API's .incoming) is served.
+	@published path /apps/files/standard/* /apps/files/device/*
+	handle @published {
+		uri strip_prefix /apps/files
+		root * {$PUBLISHED_ROOT:/srv/published}
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	handle /apps/files/* {
+		respond 404
+	}
+	# Every other address under /apps/ is a published app's page
+	# (/apps/<slug>/, /apps/<slug>/<channel>/, /apps/<slug>/@<version>/ and
+	# the app's own screens): the API answers its version's index.html with
+	# the profile's policy (cmd/api/published-app-routes.go).
+	handle /apps/* {
+		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
+	}
 	# Administration: the same origin as the staff app, so the two share the
 	# sign-in cookie. handle_path strips /admin, so its built /admin/assets/*
 	# are the files under ADMIN_ROOT/assets.
-	# Scan SIMs, the trial (docs/specs/asset-service.md "Scan SIM cards"), on
-	# the same origin for the same reason. Its readers' files are under
-	# /sim-scan/readers/, outside /assets: their names never change.
-	redir /sim-scan /sim-scan/ 308
-	handle_path /sim-scan/* {
-		root * {$SIM_SCAN_ROOT:/srv/sim-scan/dist}
-		@unhashed not path /assets/*
-		header /assets/* Cache-Control "public, max-age=31536000, immutable"
-		header @unhashed Cache-Control "no-cache"
-		try_files {path} /index.html
-		file_server
-	}
-	# App Launcher (ADR 0006), every app a user's roles open, on the same
-	# origin for the same reason. Phase 3 serves versioned apps under
-	# /apps/<slug>/ from the API; until then this is the launcher alone.
-	redir /apps /apps/ 308
-	handle_path /apps/* {
-		root * {$LAUNCHER_ROOT:/srv/launcher/dist}
-		@unhashed not path /assets/*
-		header /assets/* Cache-Control "public, max-age=31536000, immutable"
-		header @unhashed Cache-Control "no-cache"
-		try_files {path} /index.html
-		file_server
-	}
 	redir /admin /admin/ 308
 	handle_path /admin/* {
 		root * {$ADMIN_ROOT:/srv/admin/dist}
@@ -105,13 +120,22 @@ import sites/*.caddy
 	# Not in the header block above: its -Server defers the whole block, which
 	# would then write over a policy set for one path. The staff app's and
 	# Administration's policy stays first, as their csp.test.ts read the first.
-	# Scan SIMs alone may also compile WebAssembly (its barcode and text
-	# readers, ADR 0005) and start its text reader's worker from its own files;
-	# it alone may use the camera.
-	@simscan path /sim-scan /sim-scan/*
-	@notsimscan not path /sim-scan /sim-scan/*
-	header @notsimscan Content-Security-Policy "default-src 'self'; frame-src 'self' blob:; script-src 'self' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
-	header @simscan {
+	# A published app's page gets its policy from the API, so none is set
+	# here (two would both be enforced); its files get their profile's, which
+	# matters for a worker, whose script's own policy is the one it runs under.
+	# The device profile (Scan SIMs, ADR 0005) may also compile WebAssembly
+	# (its barcode and text readers) and start workers from its own files, and
+	# use the camera. cmd/api's TestPublishedPoliciesMatchCaddy keeps the API's
+	# copies of both policies equal to these.
+	@staffpolicy {
+		not {
+			path_regexp ^/apps/[^/]+/
+			not path /apps/assets/* /apps/files/standard/*
+		}
+	}
+	@devicepolicy path /apps/files/device/*
+	header @staffpolicy Content-Security-Policy "default-src 'self'; frame-src 'self' blob:; script-src 'self' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
+	header @devicepolicy {
 		Content-Security-Policy "default-src 'self'; frame-src 'self' blob:; script-src 'self' 'wasm-unsafe-eval' 'sha256-AKRvWbdPuFGkTUGtgLGUciQLScPr+u526xsQQFr2xgU='; worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
 		Permissions-Policy "camera=(self)"
 	}

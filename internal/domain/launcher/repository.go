@@ -16,9 +16,14 @@ type Mutation func(cur App) (App, []audit.Event, error)
 // position changes and the events to record.
 type OrderMutation func(cur []App) (changed []App, evs []audit.Event, err error)
 
+// ChannelMutation computes a channel's new state from its current, locked one
+// (nil when the app has no channel by that name yet) and the events to record.
+type ChannelMutation func(cur *Channel) (Channel, []audit.Event, error)
+
 // Repository stores tiles in launcher_apps, pins in launcher_pins and
-// feedback in launcher_feedback (migration 0042). Implementations translate
-// storage errors to this package's sentinels and never validate.
+// feedback in launcher_feedback (migration 0042), versions, channels and
+// channel choices (0043). Implementations translate storage errors to this
+// package's sentinels and never validate.
 type Repository interface {
 	// List returns every tile, retired ones included, by position.
 	List(ctx context.Context) ([]App, error)
@@ -34,6 +39,20 @@ type Repository interface {
 	Pins(ctx context.Context, user uuid.UUID) ([]string, error)
 	// SetPins replaces a user's pins with these tiles, in this order.
 	SetPins(ctx context.Context, user uuid.UUID, apps []uuid.UUID) error
+
+	// Versions returns an app's published versions, newest first.
+	Versions(ctx context.Context, app uuid.UUID) ([]Version, error)
+	// AddVersion stores a newly published version with its event.
+	AddVersion(ctx context.Context, v Version, ev audit.Event) error
+	// Channels returns every app's channels, each with its version's name.
+	Channels(ctx context.Context) ([]Channel, error)
+	// PutChannel locks the app's channel by that name, applies m and writes
+	// the result with its events.
+	PutChannel(ctx context.Context, app uuid.UUID, name string, m ChannelMutation) (Channel, error)
+	// Choices returns the channel a user chose for each app, by app id.
+	Choices(ctx context.Context, user uuid.UUID) (map[uuid.UUID]string, error)
+	// SetChoice keeps the channel a user opens an app on; "" removes it.
+	SetChoice(ctx context.Context, user, app uuid.UUID, channel string) error
 
 	AddFeedback(ctx context.Context, f Feedback) error
 	// Feedback returns an app's feedback, newest first, with each sender's name.

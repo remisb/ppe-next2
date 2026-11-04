@@ -26,6 +26,10 @@ type Request struct {
 	ID        string    // the X-Request-ID; "" when there is none
 	SessionID uuid.UUID // the sign-in; uuid.Nil when the request has none
 	Source    Source
+	// AppVersion is the build of the app that sent it (X-PPE-App-Version),
+	// for an app published under /apps/; "" otherwise. Only System's error
+	// list records it.
+	AppVersion string
 	// UserID is the signed-in user (the access token's subject); uuid.Nil
 	// when the request has none. IP and UserAgent are the client's. Insert
 	// records none of the three: the security log does (internal/security).

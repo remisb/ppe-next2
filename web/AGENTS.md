@@ -33,8 +33,8 @@ web/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,
                          Settings, Backups
-    sim-scan/            Scan SIMs, a trial at /sim-scan/ (ADR 0005); moves into the
-                         staff app once it passes
+    sim-scan/            Scan SIMs, a trial (ADR 0005), published at /apps/sim-scan/
+                         (ADR 0006 phase 3); moves into the staff app once it passes
     launcher/            App Launcher, at /apps/ (ADR 0006): every app a user's roles open
 ```
 
@@ -47,8 +47,13 @@ both) and the device's `workwear.theme`, `workwear.language`, `workwear.keepSign
 plain `<a href>` (`staffHref`, `adminHref`), a full page load. In development open
 Administration through the staff app's server, `http://localhost:5180/admin/`, which
 proxies `/admin` to Administration's (port 5182, `pnpm --dir apps/admin dev`). The Scan SIMs
-trial is a third app on the same terms, at `/sim-scan/` (`simScanHref`; port 5184,
-`pnpm --dir apps/sim-scan dev`, proxied from 5180). A phone's camera needs a secure address:
+trial is a third app on the same terms, published at `/apps/sim-scan/` (`simScanHref`; port
+5184, `pnpm --dir apps/sim-scan dev`, proxied from 5180 for `/apps/sim-scan` before the
+launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-launcher.md`)
+builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
+`public/ppe-app.json` (`slug`, `capabilities`), and reads where it is mounted and where its
+files are from `@ppe/routing`'s `basePath` and `filesBase` (the API's meta tags), never from
+`import.meta.env.BASE_URL`; its frame shows `@ppe/launcher`'s `ChannelStripe`. A phone's camera needs a secure address:
 `VITE_HTTPS=1 pnpm --dir apps/sim-scan dev` serves it on the LAN over https with a throwaway
 certificate. App Launcher is a fourth, at `/apps/` (`launcherHref`; port 5186,
 `pnpm --dir apps/launcher dev`, proxied from 5180 for `/apps` and `/apps/…` only).
@@ -405,15 +410,19 @@ images and requests come from the app's own origin only. So:
   frame inherits the page's policy and Safari applies its `frame-ancestors` to it, so
   `'none'` left the preview blank in Safari (Chrome ignores it). Other sites still may not
   frame the app.
-- **Scan SIMs alone** (`/sim-scan/`, ADR 0005) gets the same policy plus `'wasm-unsafe-eval'`
+- **Published apps get their policy by profile** (ADR 0006 phase 3): `standard` is the staff
+  policy; `device` (any capability declared, Scan SIMs, ADR 0005) adds `'wasm-unsafe-eval'`
   in `script-src` (its barcode and text readers are WebAssembly; still no `eval`) and
   `worker-src 'self'` (the text reader's worker, from its own file, `workerBlobURL: false`),
-  and `Permissions-Policy: camera=(self)`. Caddy sends it on `@simscan` and the others' on
-  `@notsimscan`, outside the global `header` block (whose `-Server` defers it, so it would
+  and `Permissions-Policy: camera=(self)`. The API sends it with the page
+  (`cmd/api/published-app-routes.go`), Caddy with the files under `/apps/files/<profile>/`
+  (`@devicepolicy`; the staff policy goes on `@staffpolicy`, everything but a published
+  app's page), outside the global `header` block (whose `-Server` defers it, so it would
   overwrite a per-path policy). Keep the staff app's line first: the staff and
   Administration `csp.test.ts` read the first policy; `apps/sim-scan/src/csp.test.ts` checks
-  that its policy is the staff one with exactly those two additions. Its readers' files
-  (WebAssembly, the worker, the cores and the English data) are served from
-  `/sim-scan/readers/` by `@ppe/sim-scan/reader-files`, never from a CDN.
+  that the device policy is the staff one with exactly those two additions, and Go's
+  `TestPublishedPoliciesMatchCaddy` that the API's copies equal Caddy's. Its readers' files
+  (WebAssembly, the worker, the cores and the English data) are its own build's, under
+  `<filesBase>readers/` (`@ppe/sim-scan/reader-files`), never from a CDN.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 

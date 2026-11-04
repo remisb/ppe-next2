@@ -32,21 +32,21 @@ func (s *PostgresStore) RecordError(ctx context.Context, ev ErrorEvent, foldSinc
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `
 			UPDATE error_events SET count = count + 1, last_seen = $3, message = $4, stack = $5, source = $6,
-				last_request_id = $7, last_user_id = $8, last_user_agent = $9
+				last_request_id = $7, last_user_id = $8, last_user_agent = $9, app_version = $10
 			WHERE id = (
 				SELECT id FROM error_events WHERE fingerprint = $1 AND last_seen >= $2
 				ORDER BY last_seen DESC LIMIT 1 FOR UPDATE)`,
 			ev.Fingerprint, foldSince, ev.LastSeen, ev.Message, ev.Stack, source,
-			ev.LastRequestID, ev.LastUserID, ev.LastUserAgent)
+			ev.LastRequestID, ev.LastUserID, ev.LastUserAgent, ev.AppVersion)
 		if err != nil || tag.RowsAffected() > 0 {
 			return err
 		}
 		_, err = tx.Exec(ctx, `
 			INSERT INTO error_events (id, fingerprint, kind, route, method, status, message, stack, source,
-				first_seen, last_seen, count, last_request_id, last_user_id, last_user_agent)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+				first_seen, last_seen, count, last_request_id, last_user_id, last_user_agent, app_version)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 			ev.ID, ev.Fingerprint, string(ev.Kind), ev.Route, ev.Method, ev.Status, ev.Message, ev.Stack, source,
-			ev.FirstSeen, ev.LastSeen, ev.Count, ev.LastRequestID, ev.LastUserID, ev.LastUserAgent)
+			ev.FirstSeen, ev.LastSeen, ev.Count, ev.LastRequestID, ev.LastUserID, ev.LastUserAgent, ev.AppVersion)
 		return err
 	})
 }
@@ -68,7 +68,7 @@ func (s *PostgresStore) ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEv
 		where = append(where, "(e.last_seen, e.id) < ("+arg(q.After.At)+", "+arg(q.After.ID)+")")
 	}
 	sql := `SELECT e.id, e.fingerprint, e.kind, e.route, e.method, e.status, e.message, e.stack, e.source,
-			e.first_seen, e.last_seen, e.count, e.last_request_id, e.last_user_id, u.name, e.last_user_agent
+			e.first_seen, e.last_seen, e.count, e.last_request_id, e.last_user_id, u.name, e.last_user_agent, e.app_version
 		FROM error_events e LEFT JOIN users u ON u.id = e.last_user_id`
 	if len(where) > 0 {
 		sql += " WHERE " + strings.Join(where, " AND ")
@@ -83,7 +83,7 @@ func (s *PostgresStore) ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEv
 		var kind string
 		var source *string
 		err := row.Scan(&e.ID, &e.Fingerprint, &kind, &e.Route, &e.Method, &e.Status, &e.Message, &e.Stack, &source,
-			&e.FirstSeen, &e.LastSeen, &e.Count, &e.LastRequestID, &e.LastUserID, &e.LastUserName, &e.LastUserAgent)
+			&e.FirstSeen, &e.LastSeen, &e.Count, &e.LastRequestID, &e.LastUserID, &e.LastUserName, &e.LastUserAgent, &e.AppVersion)
 		e.Kind = Kind(kind)
 		if source != nil {
 			src := audit.Source(*source)

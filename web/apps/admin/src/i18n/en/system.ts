@@ -93,6 +93,7 @@ export const system = {
   nobody: 'No one signed in',
   where: 'Made in',
   device: 'Device',
+  appVersion: (version: string) => `version ${version}`,
   httpStatus: 'Answer',
   stack: 'Stack',
   times: (n: number) => plural(n, { one: 'once', other: '# times' }),

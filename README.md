@@ -51,7 +51,7 @@ internal/db/migrations/  NNNN_name.up.sql / .down.sql
 docs/                    domain-service contract, per-service specs, test map
 web/apps/workwear/       the staff app, at /
 web/apps/admin/          Administration, at /admin/
-web/apps/sim-scan/       Scan SIMs, a trial app, at /sim-scan/
+web/apps/sim-scan/       Scan SIMs, a trial app, published at /apps/sim-scan/
 web/apps/launcher/       App Launcher, at /apps/
 web/packages/            shared code: api-client (typed, hand-written), app-shell, ui, i18n, launcher, routing…
 web/e2e/                 Playwright suite
@@ -158,7 +158,7 @@ pnpm --dir apps/launcher dev
 ```
 
 Open every app through the staff app's dev server on 5180, which proxies `/admin`,
-`/sim-scan` and `/apps` to the others and `/api` to the Go API. That way they share one
+`/apps/sim-scan` and `/apps` to the others and `/api` to the Go API. That way they share one
 origin and one sign-in, as behind Caddy in production, and no CORS setup is needed:
 
 | App | Address |
@@ -166,7 +166,7 @@ origin and one sign-in, as behind Caddy in production, and no CORS setup is need
 | Workwear & Equipment, the staff app | http://localhost:5180/ |
 | App Launcher | http://localhost:5180/apps/ |
 | Administration (Manage apps is in its menu) | http://localhost:5180/admin/ |
-| Scan SIMs | http://localhost:5180/sim-scan/ |
+| Scan SIMs | http://localhost:5180/apps/sim-scan/ |
 
 Sign in with the seeded admin. Someone with more than one app who signs in at `/` lands on
 App Launcher. Apps in testing (POC, In development) show only to users with the **Testers**
@@ -343,6 +343,20 @@ Caddy gets and renews a TLS certificate automatically when the site address is a
 domain. The domain's DNS must point at the server, and ports 80 and 443 must be open.
 Confirmation links carry a bearer token, and the page sets a `no-referrer` policy, but the
 links should still only be served over HTTPS.
+
+**Published apps** (App Launcher phase 3, `docs/specs/app-launcher.md`): Scan SIMs is not baked
+into the web image's site but published as versions under `/apps/sim-scan/`. On the droplet,
+`make prod-up` publishes the deployed commit's build to Preview (and to Stable the first
+time); Stable, Beta and variants move on Administration → Manage apps → Scan SIMs →
+Versions and channels. To publish another commit, fetch it and run:
+
+```bash
+make prod-publish APP=sim-scan REF=<commit, tag or branch> CHANNEL=beta
+```
+
+Locally, with `API_APPS_DIR=.published` in `.env` (an existing folder) and the API restarted,
+`make publish-app APP=sim-scan` builds and publishes it; behind Vite it is still Scan SIMs'
+dev server at `/apps/sim-scan/`.
 
 **Backups:** the order records, confirmation evidence and audit trail exist only in
 Postgres. The `backup` service in `docker-compose.prod.yml` backs it up nightly and

@@ -83,9 +83,11 @@ type ErrorEvent struct {
 	Message     string        `json:"message"`
 	Stack       string        `json:"stack"`
 	Source      *audit.Source `json:"source"`
-	FirstSeen   time.Time     `json:"first_seen"`
-	LastSeen    time.Time     `json:"last_seen"`
-	Count       int           `json:"count"`
+	// AppVersion is the build the latest occurrence came from, for an app published under /apps/.
+	AppVersion *string   `json:"app_version"`
+	FirstSeen  time.Time `json:"first_seen"`
+	LastSeen   time.Time `json:"last_seen"`
+	Count      int       `json:"count"`
 	// LastRequestID is the latest occurrence's request: the reference an
 	// error message shows, and the request_id on its log lines.
 	LastRequestID *string    `json:"last_request_id"`

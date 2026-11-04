@@ -454,7 +454,10 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
             <Fact label={t.system.firstSeen}>{formatDateTime(e.first_seen, timeZone)}</Fact>
             <Fact label={t.system.lastSeen}>{formatDateTime(e.last_seen, timeZone)}</Fact>
             <Fact label={t.system.who}>{e.last_user_name ?? t.system.nobody}</Fact>
-            <Fact label={t.system.where}>{sourceLabel(e.source)}</Fact>
+            <Fact label={t.system.where}>
+              {sourceLabel(e.source)}
+              {e.app_version ? <code className="ml-2 text-xs text-muted-foreground">{t.system.appVersion(e.app_version)}</code> : null}
+            </Fact>
             {e.last_user_agent ? <Fact label={t.system.device}>{deviceText(e.last_user_agent)}</Fact> : null}
             {e.last_request_id ? (
               <Fact label={t.system.reference}>

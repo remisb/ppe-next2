@@ -117,3 +117,60 @@ func TestPostgresRegistry(t *testing.T) {
 		t.Errorf("no feedback = %v, %v", fb, err)
 	}
 }
+
+func TestPostgresVersions(t *testing.T) {
+	pool, actor := newTestPool(t)
+	ctx := context.Background()
+	svc := NewService(NewPostgresRepository(pool))
+
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelPreview), nil); err != nil {
+		t.Fatalf("publishing again: %v", err)
+	}
+	versions, channels, err := svc.Releases(ctx, "sim-scan")
+	if err != nil || len(versions) != 2 || versions[0].Version != "2026.11.05-bbb" || versions[0].Profile != ProfileDevice ||
+		!slices.Equal(names(channels), []string{"stable=2026.11.04-aaa", "preview=2026.11.05-bbb"}) {
+		t.Fatalf("Releases = %v, %v, %v", len(versions), names(channels), err)
+	}
+
+	variant := ChannelParams{Version: "2026.11.04-aaa", Label: Names{"Photos first", "Pirmiausia nuotraukos", "Сначала фото"}, AnyOf: []string{"assets.manage"}}
+	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.05-bbb"}, actor); err != nil {
+		t.Fatal(err)
+	}
+	_, channels, _ = svc.Releases(ctx, "sim-scan")
+	if !slices.Equal(names(channels), []string{"stable=2026.11.05-bbb", "preview=2026.11.05-bbb", "photos-first=2026.11.04-aaa"}) {
+		t.Errorf("channels %v", names(channels))
+	}
+	var events int
+	// Two versions published (not the repeat); Stable and Preview first set, Preview moved, the variant added, Stable promoted.
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event LIKE 'app.%' AND event <> 'app.registered'`).Scan(&events); err != nil || events != 7 {
+		t.Errorf("app events = %d, %v", events, err)
+	}
+
+	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.AssetsManage }
+	if err := svc.ChooseChannel(ctx, actor, "sim-scan", "photos-first", tester); err != nil {
+		t.Fatal(err)
+	}
+	apps, _, _ := svc.ForUser(ctx, actor, tester)
+	seen, chosen, err := svc.ChannelsFor(ctx, actor, apps, tester)
+	if err != nil || len(seen["sim-scan"]) != 3 || chosen["sim-scan"] != "photos-first" {
+		t.Errorf("ChannelsFor = %v, %v, %v", names(seen["sim-scan"]), chosen, err)
+	}
+	r, err := svc.Resolve(ctx, "sim-scan", "photos-first")
+	if err != nil || r.Version.Version != "2026.11.04-aaa" || r.Mount != "/apps/sim-scan/photos-first/" {
+		t.Errorf("Resolve = %+v, %v", r, err)
+	}
+	// Scan SIMs' tile lives under /apps/ (migration 0043, defaults).
+	a, _ := svc.Get(ctx, "sim-scan")
+	if a.Href != "/apps/sim-scan/" {
+		t.Errorf("Scan SIMs' address %s", a.Href)
+	}
+}

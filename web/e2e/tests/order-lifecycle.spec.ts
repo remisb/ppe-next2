@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
-import { admin, apiEnv, repoRoot, webURL } from '../env.ts'
+import { admin, apiEnv, caddyMode, publishSimScan, repoRoot, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -255,7 +255,7 @@ test('App Launcher: the apps of the roles as tiles, pinned on this device, and a
   await expect(page.getByRole('heading', { name: 'Recent' })).toBeVisible()
   // An administrator's apps and shortcuts, in groups; Equipment is for Equipment Assignments alone.
   for (const name of ['Workwear & Equipment', 'Create Order', 'SIM Cards', 'Administration']) await expect(main.getByRole('link', { name, exact: true }).last()).toBeVisible()
-  await expect(main.getByRole('link', { name: 'Scan SIMs Pilot' })).toHaveAttribute('href', '/sim-scan/')
+  await expect(main.getByRole('link', { name: 'Scan SIMs Pilot' })).toHaveAttribute('href', '/apps/sim-scan/')
   await expect(main.getByRole('link', { name: 'Equipment', exact: true })).toHaveCount(0)
   // PPE Crew is another site, with its own sign-in: it opens in a new tab.
   await expect(main.getByRole('link', { name: 'PPE Crew Pilot' })).toHaveAttribute('target', '_blank')
@@ -284,7 +284,7 @@ test('App Launcher: the apps of the roles as tiles, pinned on this device, and a
   await expect(page).toHaveURL(/\/admin\/$/)
   await page.getByRole('link', { name: 'Apps', exact: true }).filter({ visible: true }).click()
   await expect(page).toHaveURL(/\/apps\/$/)
-  await page.goto('/sim-scan/')
+  await page.goto('/apps/sim-scan/')
   await expect(page.getByRole('link', { name: 'Apps', exact: true })).toHaveAttribute('href', '/apps/')
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
@@ -3409,8 +3409,8 @@ test('Sign in: too many failed attempts for one account are refused for a while'
 })
 
 test('Scan SIMs: photos of the cards read into a list, checked, added at once, then Show PIN and PUK', async () => {
-  // The trial app at /sim-scan/, on the staff app's sign-in. The cards are made up (fixtures/sim-cards/make.ts).
-  await page.goto('/sim-scan/')
+  // The trial app at /apps/sim-scan/, on the staff app's sign-in. The cards are made up (fixtures/sim-cards/make.ts).
+  await page.goto('/apps/sim-scan/')
   await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
   // What every card of the batch shares, from Settings (the default provider, its plan and the default value):
   // a read-only line; Edit turns it over to the form, and Cancel or Save back.
@@ -3508,15 +3508,83 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(page.getByText('4826')).toHaveCount(0)
 })
 
+test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; Make Stable promotes and rolls back', async () => {
+  test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
+  // A second build, as make prod-publish publishes one: no channel points at it yet.
+  expect(publishSimScan('2026.01.02-e2e')).toContain('sim-scan 2026.01.02-e2e published (device)')
+  await page.goto('/admin/apps/sim-scan')
+  const pane = page.getByRole('article', { name: 'Scan SIMs' })
+  await openSection(/^Versions and channels/)
+  await expect(pane.getByRole('row', { name: /2026\.01\.02-e2e/ })).toBeVisible()
+  await expect(pane.getByRole('row', { name: /2026\.01\.01-e2e/ })).toContainText('Stable')
+
+  // Add variant: a version some people try beside Stable, here those who manage Company Assets.
+  await pane.getByRole('button', { name: 'Add variant' }).click()
+  const form = page.getByRole('dialog', { name: 'Add variant' })
+  await form.getByLabel(/^Name in addresses/).fill('photos-first')
+  await form.getByLabel(/^English/).fill('Photos first')
+  await form.getByLabel(/^Lithuanian/).fill('Pirmiausia nuotraukos')
+  await form.getByLabel(/^Russian/).fill('Сначала фото')
+  await form.getByLabel(/^Version/).selectOption('2026.01.02-e2e')
+  await form.getByRole('checkbox', { name: 'Manage Company Assets' }).check()
+  await form.getByRole('button', { name: 'Add variant' }).click()
+  await expect(form).toBeHidden()
+  await expect(pane.getByText('People with: Manage Company Assets')).toBeVisible()
+
+  // App Launcher: Versions offers Stable and the variant; the choice is kept and the tile says so.
+  await page.goto('/apps/')
+  await page.getByRole('button', { name: 'More about Scan SIMs' }).click()
+  const about = page.getByRole('dialog', { name: 'Scan SIMs' })
+  await about.getByRole('button', { name: 'Versions' }).click()
+  await about.getByRole('radio', { name: /Photos first/ }).check()
+  await about.getByRole('button', { name: 'Close' }).click()
+  await page.reload()
+  const tile = page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()
+  await expect(tile).toHaveAttribute('href', '/apps/sim-scan/photos-first/')
+  await expect(tile).toContainText('Photos first')
+  await tile.click()
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/photos-first\/$/)
+  await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'You are using Photos first' })).toContainText('2026.01.02-e2e')
+  // Back to Stable, from now on.
+  await page.getByRole('link', { name: 'Back to Stable' }).click()
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/$/)
+  await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
+  await expect(page.getByText('You are using')).toHaveCount(0)
+  await page.goto('/apps/')
+  await expect(page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()).toHaveAttribute('href', '/apps/sim-scan/')
+
+  // Make Stable promotes the new version for everyone; Make Stable on the first rolls it back.
+  const stableOpens = async () => /name="ppe-version" content="([^"]+)"/.exec(await (await page.request.get('/apps/sim-scan/')).text())?.[1]
+  await page.goto('/admin/apps/sim-scan')
+  await openSection(/^Versions and channels/)
+  for (const version of ['2026.01.02-e2e', '2026.01.01-e2e']) {
+    await pane.getByRole('button', { name: `More actions for ${version}` }).click()
+    await page.getByRole('menuitem', { name: 'Make Stable' }).click()
+    await expect(pane.getByRole('status').filter({ hasText: 'now opens' })).toHaveText(`Stable now opens ${version}.`)
+    expect(await stableOpens()).toBe(version)
+  }
+  await openSection(/^Changes/)
+  await expect(pane.getByText('Channel moved').first()).toBeVisible()
+})
+
 test('no screen broke the Content-Security-Policy', async () => {
   // Behind Caddy (E2E_WEB_SERVER=caddy, as in CI) every step above ran under the policy.
   if (process.env['E2E_WEB_SERVER'] === 'caddy') {
-    for (const path of ['/', '/admin/', '/admin/users', '/sim-scan/', '/apps/']) {
+    // Scan SIMs' page comes from the API, its files from Caddy, each with the device profile's policy, and one policy each.
+    const worker = '/apps/files/device/sim-scan/2026.01.01-e2e/readers/worker.min.js'
+    for (const path of ['/', '/admin/', '/admin/users', '/apps/', '/apps/sim-scan/', '/apps/sim-scan/find', worker]) {
       const res = await page.request.get(path)
-      expect(res.headers()['content-security-policy'], path).toContain("default-src 'self'")
+      expect(res.status(), path).toBe(200)
+      const policies = res.headersArray().filter((h) => h.name.toLowerCase() === 'content-security-policy')
+      expect(policies, path).toHaveLength(1)
+      expect(policies[0]!.value, path).toContain("default-src 'self'")
       // Only Scan SIMs may compile its readers' WebAssembly (ADR 0005).
-      expect(res.headers()['content-security-policy']?.includes("'wasm-unsafe-eval'"), path).toBe(path.startsWith('/sim-scan/'))
+      expect(policies[0]!.value.includes("'wasm-unsafe-eval'"), path).toBe(path.startsWith('/apps/sim-scan/') || path === worker)
     }
+    // Its old address still opens it.
+    const old = await page.request.get('/sim-scan/find', { maxRedirects: 0 })
+    expect([old.status(), old.headers()['location']]).toEqual([308, '/apps/sim-scan/find'])
   }
   expect(cspViolations).toEqual([])
 })

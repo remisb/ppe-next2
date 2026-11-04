@@ -91,6 +91,7 @@ export const system: SystemText = {
   nobody: 'Никто не вошёл',
   where: 'Где сделано',
   device: 'Устройство',
+  appVersion: (version) => `версия ${version}`,
   httpStatus: 'Ответ',
   stack: 'Стек',
   times: (n: number) => plural(n, { one: '# раз', few: '# раза', many: '# раз', other: '# раза' }),

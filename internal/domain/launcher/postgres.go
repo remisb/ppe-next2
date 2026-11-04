@@ -179,6 +179,130 @@ func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps [
 	}))
 }
 
+const versionColumns = `id, app_id, version, profile, capabilities, commit, published_at, published_by_user_id`
+
+func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Version, error) {
+	rows, err := r.pool.Query(ctx, `SELECT `+versionColumns+` FROM launcher_versions WHERE app_id = $1 ORDER BY published_at DESC, version DESC`, app)
+	if err != nil {
+		return nil, err
+	}
+	out, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Version, error) {
+		var v Version
+		err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
+		v.PublishedAt = v.PublishedAt.UTC()
+		return v, err
+	})
+	if out == nil {
+		out = []Version{}
+	}
+	return out, err
+}
+
+func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit.Event) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			v.ID, v.AppID, v.Version, v.Profile, v.Capabilities, v.Commit, v.PublishedAt, v.PublishedByUserID); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	}))
+}
+
+// channelColumns are a channel's (c), with its version's name and date (v).
+const channelColumns = `c.id, c.app_id, c.name, c.label_en, c.label_lt, c.label_ru, c.version_id, v.version, v.published_at, c.any_of,
+	c.updated_at, c.updated_by_user_id`
+
+// channelOrder: Stable, Beta, Preview, then variants by name.
+const channelOrder = ` ORDER BY c.app_id, array_position(ARRAY['stable','beta','preview'], c.name) NULLS LAST, c.name`
+
+func scanChannel(row pgx.Row) (Channel, error) {
+	var c Channel
+	var anyOf []string
+	err := row.Scan(&c.ID, &c.AppID, &c.Name, &c.Label.EN, &c.Label.LT, &c.Label.RU, &c.VersionID, &c.Version, &c.PublishedAt, &anyOf,
+		&c.UpdatedAt, &c.UpdatedByUserID)
+	c.AnyOf = role.Known(anyOf)
+	c.PublishedAt, c.UpdatedAt = c.PublishedAt.UTC(), c.UpdatedAt.UTC()
+	return c, err
+}
+
+func (r *PostgresRepository) Channels(ctx context.Context) ([]Channel, error) {
+	rows, err := r.pool.Query(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id`+channelOrder)
+	if err != nil {
+		return nil, err
+	}
+	out, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Channel, error) { return scanChannel(row) })
+	if out == nil {
+		out = []Channel{}
+	}
+	return out, err
+}
+
+func (r *PostgresRepository) PutChannel(ctx context.Context, app uuid.UUID, name string, m ChannelMutation) (Channel, error) {
+	var out Channel
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		// The app's row, so two first channels of one name never race.
+		if _, err := tx.Exec(ctx, `SELECT 1 FROM launcher_apps WHERE id = $1 FOR UPDATE`, app); err != nil {
+			return err
+		}
+		var cur *Channel
+		c, err := scanChannel(tx.QueryRow(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id
+			WHERE c.app_id = $1 AND c.name = $2 FOR UPDATE OF c`, app, name))
+		switch {
+		case err == nil:
+			cur = &c
+		case !errors.Is(err, pgx.ErrNoRows):
+			return err
+		}
+		next, evs, err := m(cur)
+		if err != nil {
+			return err
+		}
+		out = next
+		if len(evs) == 0 {
+			return nil
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO launcher_channels (id, app_id, name, label_en, label_lt, label_ru, version_id, any_of, updated_at, updated_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			ON CONFLICT (app_id, name) DO UPDATE SET label_en = $4, label_lt = $5, label_ru = $6, version_id = $7, any_of = $8,
+				updated_at = $9, updated_by_user_id = $10`,
+			next.ID, app, name, next.Label.EN, next.Label.LT, next.Label.RU, next.VersionID, role.Strings(next.AnyOf), next.UpdatedAt, next.UpdatedByUserID); err != nil {
+			return err
+		}
+		return audit.InsertAll(ctx, tx, evs)
+	})
+	return out, translate(err)
+}
+
+func (r *PostgresRepository) Choices(ctx context.Context, user uuid.UUID) (map[uuid.UUID]string, error) {
+	rows, err := r.pool.Query(ctx, `SELECT app_id, channel FROM launcher_channel_choices WHERE user_id = $1`, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[uuid.UUID]string{}
+	for rows.Next() {
+		var app uuid.UUID
+		var channel string
+		if err := rows.Scan(&app, &channel); err != nil {
+			return nil, err
+		}
+		out[app] = channel
+	}
+	return out, rows.Err()
+}
+
+func (r *PostgresRepository) SetChoice(ctx context.Context, user, app uuid.UUID, channel string) error {
+	if channel == "" {
+		_, err := r.pool.Exec(ctx, `DELETE FROM launcher_channel_choices WHERE user_id = $1 AND app_id = $2`, user, app)
+		return translate(err)
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO launcher_channel_choices (user_id, app_id, channel) VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, app_id) DO UPDATE SET channel = $3`, user, app, channel)
+	return translate(err)
+}
+
 func (r *PostgresRepository) AddFeedback(ctx context.Context, f Feedback) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO launcher_feedback (id, app_id, user_id, rating, text, device, language, created_at)
@@ -243,10 +367,14 @@ func translate(err error) error {
 	}
 	switch pgErr.Code {
 	case "23505":
+		if pgErr.ConstraintName == "launcher_versions_app_version_key" {
+			return fieldError("version", "is published already")
+		}
 		return ErrSlugTaken
 	case "23503":
 		if pgErr.ConstraintName == "launcher_apps_updated_by_user_id_fkey" || pgErr.ConstraintName == "launcher_feedback_user_id_fkey" ||
-			pgErr.ConstraintName == "launcher_pins_user_id_fkey" {
+			pgErr.ConstraintName == "launcher_pins_user_id_fkey" || pgErr.ConstraintName == "launcher_versions_published_by_user_id_fkey" ||
+			pgErr.ConstraintName == "launcher_channels_updated_by_user_id_fkey" || pgErr.ConstraintName == "launcher_channel_choices_user_id_fkey" {
 			return ErrActorNotFound
 		}
 		return ErrNotFound

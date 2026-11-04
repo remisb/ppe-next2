@@ -1,20 +1,21 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { defineConfig, devices } from '@playwright/test'
 
-import { adminPort, apiEnv, apiPort, launcherPort, repoRoot, simScanPort, webPort, webURL } from './env.ts'
+import { adminPort, apiEnv, apiPort, appsDir, caddyMode, launcherPort, repoRoot, simScanDist, simScanPort, webPort, webURL } from './env.ts'
 
 // E2E_WEB_SERVER=caddy serves the production bundle through deploy/Caddyfile,
 // as in a deployment (CI does this); the default is the Vite dev server.
 const webRoot = join(repoRoot, 'web/apps/workwear/dist')
 const adminRoot = join(repoRoot, 'web/apps/admin/dist')
-const simScanRoot = join(repoRoot, 'web/apps/sim-scan/dist')
 const launcherRoot = join(repoRoot, 'web/apps/launcher/dist')
-const caddy = process.env['E2E_WEB_SERVER'] === 'caddy'
-for (const root of caddy ? [webRoot, adminRoot, simScanRoot, launcherRoot] : []) {
+const caddy = caddyMode
+for (const root of caddy ? [webRoot, adminRoot, simScanDist, launcherRoot] : []) {
   if (!existsSync(join(root, 'index.html'))) throw new Error(`E2E_WEB_SERVER=caddy needs a web build at ${root}: run pnpm build first`)
 }
+// Scan SIMs is published there by global setup (the API must find the folder at start).
+if (caddy) mkdirSync(appsDir, { recursive: true })
 const webServerCommand = caddy
   ? `caddy run --adapter caddyfile --config ${join(repoRoot, 'deploy/Caddyfile')}`
   : // The app's own vite binary, not `pnpm exec vite`: pnpm 12 starts the
@@ -22,7 +23,7 @@ const webServerCommand = caddy
     // reaches vite and the run hangs after the last test.
     `${join(repoRoot, 'web/apps/workwear/node_modules/.bin/vite')} --port ${webPort} --strictPort`
 const webServerEnv: Record<string, string> = caddy
-  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot, SIM_SCAN_ROOT: simScanRoot, LAUNCHER_ROOT: launcherRoot }
+  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot, LAUNCHER_ROOT: launcherRoot, PUBLISHED_ROOT: appsDir }
   : {
       VITE_API_TARGET: `http://localhost:${apiPort}`,
       VITE_ADMIN_TARGET: `http://localhost:${adminPort}`,
@@ -40,12 +41,12 @@ const adminServer = {
   timeout: 120_000,
 }
 
-// And so does Scan SIMs, the trial, at /sim-scan.
+// And so does Scan SIMs, the trial, at /apps/sim-scan (behind Caddy, a published app).
 const simScanServer = {
   command: `${join(repoRoot, 'web/apps/sim-scan/node_modules/.bin/vite')} --port ${simScanPort} --strictPort`,
   cwd: join(repoRoot, 'web/apps/sim-scan'),
   env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
-  url: `http://localhost:${simScanPort}/sim-scan/`,
+  url: `http://localhost:${simScanPort}/apps/sim-scan/`,
   reuseExistingServer: false,
   timeout: 120_000,
 }

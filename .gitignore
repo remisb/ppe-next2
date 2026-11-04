@@ -17,3 +17,5 @@ test-results/
 /.github-token
 # Signed copies uploaded in development (API_FILES_TARGET=file:.files).
 /.files/
+# Published apps' builds in development (API_APPS_DIR=.published).
+/.published/

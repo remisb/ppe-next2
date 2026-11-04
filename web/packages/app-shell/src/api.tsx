@@ -1,5 +1,6 @@
 import { ApiError, type AppName, type Client, type LoginResponse, NetworkError, createClient } from '@ppe/api-client'
 import { type Lang, deviceLanguage, isLang, rememberDeviceLanguage } from '@ppe/i18n'
+import { appVersion } from '@ppe/routing'
 import { Fragment, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { reportErrors } from './error-reporter.ts'
@@ -113,6 +114,8 @@ export function ApiProvider({ children, app, setLanguage, onSignOut, onSignedIn 
   const client = useMemo(() => {
     const c = createClient({
       app,
+      // A published app's build, for System's error list.
+      ...(appVersion ? { appVersion } : {}),
       getToken: () => sessionRef.current?.token ?? null,
       renew: () => refresh().then((r) => r === 'signedIn'),
       onUnauthenticated: drop,

@@ -113,6 +113,9 @@ type UpdateParams struct {
 	Fields
 }
 
+// reservedSlugs are App Launcher's own paths under /apps/: its files and published builds' files.
+var reservedSlugs = []string{"assets", "files"}
+
 var (
 	slugPattern  = regexp.MustCompile(`^[a-z][a-z0-9-]{1,30}$`)
 	colorPattern = regexp.MustCompile(`^#[0-9a-f]{6}$`)
@@ -191,6 +194,9 @@ func (f Fields) Validate(k Kind) error {
 func (p CreateParams) Validate() error {
 	if !slugPattern.MatchString(p.Slug) {
 		return fieldError("slug", "must be 2 to 31 lowercase letters, digits or hyphens, starting with a letter")
+	}
+	if slices.Contains(reservedSlugs, p.Slug) {
+		return fieldError("slug", "is taken by App Launcher's own addresses")
 	}
 	return p.Fields.Validate(p.Kind)
 }

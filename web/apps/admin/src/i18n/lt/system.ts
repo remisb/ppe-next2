@@ -90,6 +90,7 @@ export const system: SystemText = {
   nobody: 'Niekas neprisijungęs',
   where: 'Kur atlikta',
   device: 'Įrenginys',
+  appVersion: (version) => `versija ${version}`,
   httpStatus: 'Atsakymas',
   stack: 'Iškvietimų dėklas',
   times: (n: number) => plural(n, { one: '# kartą', few: '# kartus', other: '# kartų' }),

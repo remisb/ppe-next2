@@ -42,6 +42,8 @@ func TestConfigValidate(t *testing.T) {
 		"relative url":                 func(c *config) { c.PublicBaseURL = "/confirm" },
 		"tsa not a url":                func(c *config) { c.AuditTSAURL = "timestamp.digicert.com" },
 		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
+		"apps dir missing":             func(c *config) { c.AppsDir = "/no/such/folder" },
+		"version without publish-app":  func(c *config) { c.PublishVersion = "2026.11.04-abc" },
 	} {
 		c := ok
 		mutate(&c)
@@ -86,6 +88,19 @@ func TestConfigValidate(t *testing.T) {
 	if (config{DBMaxConns: 1, VerifyAudit: true}).validate() == nil {
 		t.Error("-verify-audit without API_DB_DSN should fail")
 	}
+	pub := config{DBDSN: "postgres://x", DBMaxConns: 1, PublishApp: "sim-scan"}
+	if pub.validate() == nil {
+		t.Error("-publish-app without API_APPS_DIR and -version should fail")
+	}
+	pub.AppsDir, pub.PublishVersion = t.TempDir(), "2026.11.04-abc"
+	if err := pub.validate(); err != nil {
+		t.Errorf("-publish-app needs only the database, the folder and the version: %v", err)
+	}
+	withDir := ok
+	withDir.AppsDir = t.TempDir()
+	if err := withDir.validate(); err != nil {
+		t.Errorf("an existing apps folder: %v", err)
+	}
 	// The container healthcheck runs with the API's environment, but needs none of it.
 	if err := (config{Healthcheck: true}).validate(); err != nil {
 		t.Errorf("-healthcheck needs no database or secret: %v", err)
@@ -98,7 +113,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR", "API_AUDIT_RETENTION"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR", "API_AUDIT_RETENTION", "API_APPS_DIR"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -114,7 +129,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if c.PublicBaseURL != "http://localhost:5180" || c.ConfirmTTL != 7*24*time.Hour || c.OrgTimezone != "Europe/Vilnius" ||
 		c.JWTTTL != 15*time.Minute || c.SessionMaxAge != 12*time.Hour || c.LoginEmailFailures != 10 || c.LoginEmailInterval != 15*time.Minute ||
 		c.SessionKeepMaxAge != 30*24*time.Hour || c.SessionKeepIdle != 14*24*time.Hour || c.RecentSignIn != 12*time.Hour ||
-		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour || c.AuditTSAURL != "" {
+		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour || c.AuditTSAURL != "" || c.AppsDir != "" {
 		t.Errorf("defaults = %+v", c)
 	}
 	if len(c.TrustedProxies) != 0 {

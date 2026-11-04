@@ -78,6 +78,10 @@ func (s *Service) Record(ctx context.Context, r Report) error {
 	}
 	src := req.Source
 	ev.Source = &src
+	if req.AppVersion != "" {
+		v := req.AppVersion
+		ev.AppVersion = &v
+	}
 	if req.ID != "" {
 		ev.LastRequestID = &req.ID
 	}

@@ -4,16 +4,18 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-// Caddy (deploy/Caddyfile) sends Scan SIMs its own Content-Security-Policy:
-// the staff app's, word for word, plus what its readers need, WebAssembly and
-// a worker from its own files (ADR 0005). Nothing else may differ.
+// Scan SIMs is published with the device profile (ADR 0006, phase 3): Caddy
+// (deploy/Caddyfile) sends its files, and the API its page, the device policy,
+// the staff app's word for word plus what its readers need, WebAssembly and a
+// worker from its own files (ADR 0005). Nothing else may differ. cmd/api's
+// TestPublishedPoliciesMatchCaddy keeps the API's copy equal.
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const indexHtml = read('../index.html')
 const caddyfile = read('../../../../deploy/Caddyfile')
 const staffIndexHtml = read('../../workwear/index.html')
 
-const staffPolicy = /header @notsimscan Content-Security-Policy "([^"]+)"/.exec(caddyfile)?.[1] ?? ''
-const policy = /header @simscan \{\s*Content-Security-Policy "([^"]+)"/.exec(caddyfile)?.[1] ?? ''
+const staffPolicy = /header @staffpolicy Content-Security-Policy "([^"]+)"/.exec(caddyfile)?.[1] ?? ''
+const policy = /header @devicepolicy \{\s*Content-Security-Policy "([^"]+)"/.exec(caddyfile)?.[1] ?? ''
 const directives = (p: string) => new Map(p.split(';').map((d) => d.trim().split(/\s+/)).map(([n, ...v]) => [n!, v]))
 
 const inlineScripts = (html: string) => [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]!)

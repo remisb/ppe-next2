@@ -35,11 +35,15 @@ COPY internal/ internal/
 ARG API_COMMIT=
 RUN --mount=type=cache,id=ppe-go-build,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build -tags timetzdata -trimpath -ldflags="-s -w -X main.commit=${API_COMMIT}" -o /out/api ./cmd/api
+# The published apps' folder (API_APPS_DIR), the API user's: a new named
+# volume mounted on it takes its owner from here. Scratch has no mkdir.
+RUN mkdir -p /out/published
 
 FROM scratch
 # Root certificates for a managed (TLS) database.
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /out/api /api
+COPY --from=build --chown=65532:65532 /out/published /srv/published
 USER 65532:65532
 EXPOSE 8090
 # Exec form: the binary is PID 1 and gets SIGTERM, so shutdown drains.

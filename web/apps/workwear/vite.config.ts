@@ -14,9 +14,10 @@ import { defineConfig } from 'vitest/config'
 // /admin goes to Administration's dev server (apps/admin, port 5182;
 // VITE_ADMIN_TARGET overrides it), websocket and all for its hot reload, so
 // both apps are on this one origin and share the sign-in, as behind Caddy.
-// /sim-scan goes to the Scan SIMs trial's (apps/sim-scan, port 5184;
-// VITE_SIM_SCAN_TARGET overrides it) for the same reason, and /apps to App
-// Launcher's (apps/launcher, port 5186; VITE_LAUNCHER_TARGET overrides it).
+// /apps/sim-scan goes to the Scan SIMs trial's (apps/sim-scan, port 5184;
+// VITE_SIM_SCAN_TARGET overrides it) for the same reason, and the rest of /apps
+// to App Launcher's (apps/launcher, port 5186; VITE_LAUNCHER_TARGET overrides
+// it). Behind Caddy the API answers a published app's page instead.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
@@ -34,7 +35,8 @@ export default defineConfig(({ mode }) => {
         '/health': target,
         '/ready': target,
         '/admin': { target: admin, changeOrigin: false, ws: true },
-        '/sim-scan': { target: simScan, changeOrigin: false, ws: true },
+        // Before /apps: the first rule that matches is used.
+        '/apps/sim-scan': { target: simScan, changeOrigin: false, ws: true },
         // '/apps/' and '/apps' exactly, not every path that starts with "apps".
         '^/apps(/|$)': { target: launcher, changeOrigin: false, ws: true },
       },

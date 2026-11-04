@@ -27,6 +27,8 @@ import { type AppDraft, type AppErrors, SWATCHES, draftOf, inputOf, moveTarget, 
 import { permissionLabel } from '@/lib/roles'
 import { type Route, linkTo } from '@/lib/router'
 
+import { AppReleases } from './app-releases'
+
 type Navigate = (to: Route, options?: { scroll?: boolean }) => void
 
 const groups: readonly AppGroup[] = ['workwear', 'assets', 'people', 'admin']
@@ -34,8 +36,9 @@ const stages: readonly AppStage[] = ['live', 'pilot', 'poc', 'dev', 'retired']
 
 /**
  * Manage apps (ADR 0006): App Launcher's apps and shortcuts in its order, each
- * opened beside the list with where it runs, who sees it, its feedback and
- * Changes; Register app, Edit, and moving a tile earlier or later.
+ * opened beside the list with where it runs, who sees it, a published app's
+ * versions and channels, its feedback and Changes; Register app, Edit, and
+ * moving a tile earlier or later.
  */
 export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'apps' }>; navigate: Navigate }) {
   const { client } = useApi()
@@ -250,6 +253,7 @@ function AppPane({
         </Fact>
       </FactGrid>
       <ActionError error={action.error} />
+      {app.kind === 'app' && app.tier === 'here' ? <AppReleases app={app} timeZone={timeZone} onChanged={onMoved} /> : null}
       {app.kind === 'app' ? <Feedback slug={app.slug} timeZone={timeZone} /> : null}
       <RecordChanges
         className="mb-0"

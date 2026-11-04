@@ -123,6 +123,11 @@ services:
       API_SEED_USER_EMAIL: ${API_SEED_USER_EMAIL:-}
       API_SEED_USER_NAME: ${API_SEED_USER_NAME:-Administrator}
       API_SEED_USER_PASSWORD: ${API_SEED_USER_PASSWORD:-}
+      # Published apps' builds (ADR 0006, phase 3): `make prod-up` and
+      # `make prod-publish` write them here; Caddy serves their files.
+      API_APPS_DIR: /srv/published
+    volumes:
+      - published:/srv/published
 
   # The backup agent (github.com/remisb/dbbackup), built on the database's own
   # image so pg_dump matches the server. It backs up on DBBACKUP_SCHEDULE,
@@ -180,6 +185,7 @@ services:
       API_UPSTREAM: api:8090
       WEB_ROOT: /srv/workwear/dist
       ADMIN_ROOT: /srv/admin/dist
+      PUBLISHED_ROOT: /srv/published
       # 0 on a shared zone such as sslip.io; see deploy/Caddyfile.
       HSTS_MAX_AGE: ${HSTS_MAX_AGE:-31536000}
     volumes:
@@ -190,6 +196,8 @@ services:
       # start re-issues against Let's Encrypt's rate limit.
       - caddy-data:/data
       - caddy-config:/config
+      # Published apps' builds, written by the API.
+      - published:/srv/published:ro
 
 # The private dbbackup module is fetched with this read-only GitHub token during
 # the api and backup builds (docs/backups.md); the file is gitignored.
@@ -205,3 +213,5 @@ volumes:
   backups:
   caddy-data:
   caddy-config:
+  # Published apps' builds (ADR 0006, phase 3): rebuilt from git, so not backed up.
+  published:

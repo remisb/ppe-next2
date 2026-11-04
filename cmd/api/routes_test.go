@@ -688,6 +688,21 @@ func (stubLauncher) Reorder(_ context.Context, m launcher.OrderMutation) ([]laun
 func (stubLauncher) Pins(context.Context, uuid.UUID) ([]string, error)     { return []string{}, nil }
 func (stubLauncher) SetPins(context.Context, uuid.UUID, []uuid.UUID) error { return nil }
 func (stubLauncher) AddFeedback(context.Context, launcher.Feedback) error  { return nil }
+func (stubLauncher) Versions(context.Context, uuid.UUID) ([]launcher.Version, error) {
+	return []launcher.Version{}, nil
+}
+func (stubLauncher) AddVersion(context.Context, launcher.Version, audit.Event) error { return nil }
+func (stubLauncher) Channels(context.Context) ([]launcher.Channel, error) {
+	return []launcher.Channel{}, nil
+}
+func (stubLauncher) PutChannel(_ context.Context, _ uuid.UUID, _ string, m launcher.ChannelMutation) (launcher.Channel, error) {
+	c, _, err := m(nil)
+	return c, err
+}
+func (stubLauncher) Choices(context.Context, uuid.UUID) (map[uuid.UUID]string, error) {
+	return map[uuid.UUID]string{}, nil
+}
+func (stubLauncher) SetChoice(context.Context, uuid.UUID, uuid.UUID, string) error { return nil }
 func (stubLauncher) Feedback(context.Context, uuid.UUID) ([]launcher.Feedback, error) {
 	return []launcher.Feedback{}, nil
 }
@@ -930,6 +945,10 @@ var policy = map[string]rule{
 	"GET /api/v1/launcher":                                                      {"", "any"},
 	"PUT /api/v1/launcher/pins":                                                 {"", "any"},
 	"POST /api/v1/launcher/feedback":                                            {"", "any"},
+	"PUT /api/v1/launcher/choices/{slug}":                                       {"", "any"},
+	"GET /api/v1/apps/{slug}/releases":                                          {role.AppsManage, "admins"},
+	"PUT /api/v1/apps/{slug}/channels/{name}":                                   {role.AppsManage, "admins"},
+	"GET /apps/{slug}/{rest...}":                                                {"", "public"},
 	"GET /api/v1/apps":                                                          {role.AppsManage, "admins"},
 	"POST /api/v1/apps":                                                         {role.AppsManage, "admins"},
 	"PUT /api/v1/apps/{slug}":                                                   {role.AppsManage, "admins"},

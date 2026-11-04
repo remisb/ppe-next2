@@ -22,10 +22,13 @@ type memRepo struct {
 	pins     map[uuid.UUID][]uuid.UUID
 	feedback []Feedback
 	events   []audit.Event
+	versions []Version
+	channels []Channel
+	choices  map[[2]uuid.UUID]string
 }
 
 func newMem() *memRepo {
-	m := &memRepo{pins: map[uuid.UUID][]uuid.UUID{}}
+	m := &memRepo{pins: map[uuid.UUID][]uuid.UUID{}, choices: map[[2]uuid.UUID]string{}}
 	for i, d := range Defaults {
 		d.ID, d.Position = uuid.New(), (i+1)*positionStep
 		m.apps = append(m.apps, d)
@@ -104,6 +107,68 @@ func (m *memRepo) Pins(_ context.Context, user uuid.UUID) ([]string, error) {
 
 func (m *memRepo) SetPins(_ context.Context, user uuid.UUID, apps []uuid.UUID) error {
 	m.pins[user] = apps
+	return nil
+}
+
+func (m *memRepo) Versions(_ context.Context, app uuid.UUID) ([]Version, error) {
+	out := []Version{}
+	for i := len(m.versions) - 1; i >= 0; i-- {
+		if m.versions[i].AppID == app {
+			out = append(out, m.versions[i])
+		}
+	}
+	return out, nil
+}
+
+func (m *memRepo) AddVersion(_ context.Context, v Version, ev audit.Event) error {
+	for _, x := range m.versions {
+		if x.AppID == v.AppID && x.Version == v.Version {
+			return fieldError("version", "is published already")
+		}
+	}
+	m.versions = append(m.versions, v)
+	m.events = append(m.events, ev)
+	return nil
+}
+
+func (m *memRepo) Channels(context.Context) ([]Channel, error) { return slices.Clone(m.channels), nil }
+
+func (m *memRepo) PutChannel(_ context.Context, app uuid.UUID, name string, f ChannelMutation) (Channel, error) {
+	at := slices.IndexFunc(m.channels, func(c Channel) bool { return c.AppID == app && c.Name == name })
+	var cur *Channel
+	if at >= 0 {
+		c := m.channels[at]
+		cur = &c
+	}
+	next, evs, err := f(cur)
+	if err != nil || len(evs) == 0 {
+		return next, err
+	}
+	if at >= 0 {
+		m.channels[at] = next
+	} else {
+		m.channels = append(m.channels, next)
+	}
+	m.events = append(m.events, evs...)
+	return next, nil
+}
+
+func (m *memRepo) Choices(_ context.Context, user uuid.UUID) (map[uuid.UUID]string, error) {
+	out := map[uuid.UUID]string{}
+	for k, v := range m.choices {
+		if k[0] == user {
+			out[k[1]] = v
+		}
+	}
+	return out, nil
+}
+
+func (m *memRepo) SetChoice(_ context.Context, user, app uuid.UUID, channel string) error {
+	if channel == "" {
+		delete(m.choices, [2]uuid.UUID{user, app})
+	} else {
+		m.choices[[2]uuid.UUID{user, app}] = channel
+	}
 	return nil
 }
 

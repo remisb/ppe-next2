@@ -65,6 +65,10 @@ type config struct {
 	FilesTarget    string
 	FilesAccessKey string
 	FilesSecretKey string
+	// AppsDir holds the builds of apps published under /apps/<slug>/ (ADR 0006,
+	// phase 3): <profile>/<slug>/<version>/, which Caddy serves; empty
+	// publishes and serves none.
+	AppsDir        string
 	AllowedOrigins []string
 	// TrustedProxies are the reverse proxies (e.g. Caddy) whose
 	// X-Forwarded-For is believed when finding the client for rate limits.
@@ -108,6 +112,14 @@ type config struct {
 	// unless ImportCommit is set.
 	ImportSIMs   string
 	ImportCommit bool
+
+	// PublishApp is the slug of the app whose build (a tar of its dist/ on
+	// standard input) is published as PublishVersion into AppsDir, pointing
+	// PublishChannel at it; PublishCommit is the commit it was built from.
+	PublishApp     string
+	PublishVersion string
+	PublishChannel string
+	PublishCommit  string
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -130,6 +142,7 @@ func loadConfig(args []string) (config, error) {
 		FilesTarget:      env("API_FILES_TARGET", ""),
 		FilesAccessKey:   env("API_FILES_S3_ACCESS_KEY", ""),
 		FilesSecretKey:   env("API_FILES_S3_SECRET_KEY", ""),
+		AppsDir:          env("API_APPS_DIR", ""),
 	}
 	var err error
 	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
@@ -176,6 +189,10 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.Upkeep, "upkeep", false, "run the hourly upkeep once (purges, samples, audit seals) and exit")
 	fs.StringVar(&c.ImportSIMs, "import-sims", "", "check the SIM card list at this CSV path (- for standard input), print what it would import and exit")
 	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards")
+	fs.StringVar(&c.PublishApp, "publish-app", "", "publish this app's build (a tar of its dist/ on standard input) into API_APPS_DIR and exit")
+	fs.StringVar(&c.PublishVersion, "version", "", "with -publish-app: the version, YYYY.MM.DD-<commit>")
+	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta, preview or a variant)")
+	fs.StringVar(&c.PublishCommit, "from-commit", "", "with -publish-app: the commit it was built from")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -202,6 +219,18 @@ func (c config) validate() error {
 	}
 	if c.VerifyAudit || c.Upkeep {
 		return errors.Join(errs...)
+	}
+	if c.PublishApp != "" {
+		if c.AppsDir == "" {
+			errs = append(errs, errors.New("-publish-app needs API_APPS_DIR"))
+		}
+		if c.PublishVersion == "" {
+			errs = append(errs, errors.New("-publish-app needs -version"))
+		}
+		return errors.Join(errs...)
+	}
+	if c.PublishVersion != "" || c.PublishChannel != "" || c.PublishCommit != "" {
+		errs = append(errs, errors.New("-version, -channel and -from-commit are for -publish-app"))
 	}
 	if c.ImportCommit && c.ImportSIMs == "" {
 		errs = append(errs, errors.New("-commit is for -import-sims"))
@@ -272,6 +301,11 @@ func (c config) validate() error {
 	}
 	if err := files.Check(c.FilesTarget, c.FilesAccessKey, c.FilesSecretKey); err != nil {
 		errs = append(errs, fmt.Errorf("API_FILES_TARGET: %w", err))
+	}
+	if c.AppsDir != "" {
+		if fi, err := os.Stat(c.AppsDir); err != nil || !fi.IsDir() {
+			errs = append(errs, errors.New("API_APPS_DIR must be empty or an existing folder"))
+		}
 	}
 	if c.ConfirmTTL < time.Minute || c.ConfirmTTL > 90*24*time.Hour {
 		errs = append(errs, errors.New("API_CONFIRM_TTL must be between 1m and 2160h"))

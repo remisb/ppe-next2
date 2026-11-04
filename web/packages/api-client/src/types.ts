@@ -990,6 +990,8 @@ export interface ErrorEvent {
   last_user_id: string | null
   last_user_name: string | null
   last_user_agent: string | null
+  /** The published app's build the latest occurrence came from. */
+  app_version: string | null
 }
 
 export interface ErrorPage {
@@ -1517,11 +1519,62 @@ export interface NewAppInput extends AppInput {
   kind: AppKind
 }
 
-/** One user's launcher: the tiles they see, their pins among them, and whether they may see apps in testing. */
+/**
+ * One user's launcher: the tiles they see, their pins among them, whether they
+ * may see apps in testing, and for each published app (by slug) the channels
+ * they see and the one they chose (none: Stable).
+ */
 export interface LauncherList {
   apps: LauncherApp[]
   pins: string[]
   preview: boolean
+  channels: Record<string, AppChannel[]>
+  choices: Record<string, string>
+}
+
+/** The policy a published version gets, from the capabilities it declared. */
+export type AppProfile = 'standard' | 'device'
+
+/** One published build of an app (ADR 0006, phase 3), never changed once published. */
+export interface AppVersion {
+  id: string
+  app_id: string
+  /** YYYY.MM.DD-<commit> */
+  version: string
+  profile: AppProfile
+  capabilities: string[]
+  commit: string
+  published_at: string
+  /** null for a deploy's. */
+  published_by_user_id: string | null
+}
+
+/** A name that points at one version of an app: stable, beta, preview or a variant. */
+export interface AppChannel {
+  id: string
+  app_id: string
+  name: string
+  /** A variant's name in each language; empty for the fixed channels. */
+  label: AppNames
+  version_id: string
+  version: string
+  published_at: string
+  /** Who sees it beside the tile's audience; none: testers. Stable follows the tile. */
+  any_of: Permission[]
+  updated_at: string
+  updated_by_user_id: string | null
+}
+
+export interface AppReleases {
+  versions: AppVersion[]
+  channels: AppChannel[]
+}
+
+/** Points a channel at a version; a variant needs a label, the fixed channels have none. */
+export interface ChannelInput {
+  version: string
+  label?: AppNames
+  any_of?: Permission[]
 }
 
 export type FeedbackRating = 'works' | 'confusing' | 'broken'

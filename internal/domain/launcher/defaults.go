@@ -30,7 +30,7 @@ var Defaults = []App{
 		Names: Names{"SIM Cards", "SIM kortelės", "SIM-карты"}},
 	{Slug: "equipment", Kind: KindShortcut, Parent: "workwear", Group: "assets", Icon: "equipment", Color: "#7a4e14", Href: "/assets/equipment", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Equipment", "Įranga", "Оборудование"}, AnyOf: []role.Permission{role.EquipmentRead}},
-	{Slug: "sim-scan", Kind: KindApp, Group: "assets", Icon: "scan", Color: "#0f5f8a", Href: "/sim-scan/", Tier: TierHere, Stage: StagePilot,
+	{Slug: "sim-scan", Kind: KindApp, Group: "assets", Icon: "scan", Color: "#0f5f8a", Href: "/apps/sim-scan/", Tier: TierHere, Stage: StagePilot,
 		Names: Names{"Scan SIMs", "Skenuoti SIM", "Сканировать SIM"}, AnyOf: []role.Permission{role.AssetsManage, role.SIMCodesRead}},
 	// Who plans crews: administrators and managers, by their dashboards.
 	{Slug: "crew", Kind: KindApp, Group: "people", Icon: "crew", Color: "#9a4f0a", Href: "https://crew.167.71.68.195.sslip.io/", Tier: TierLinked, Stage: StagePilot,

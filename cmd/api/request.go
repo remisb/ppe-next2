@@ -8,10 +8,14 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
 )
 
 // appHeader names the app a request comes from; @ppe/api-client sends it.
 const appHeader = "X-PPE-App"
+
+// appVersionHeader names the build of a published app (/apps/<slug>/) that sent the request.
+const appVersionHeader = "X-PPE-App-Version"
 
 // requestContext gives every request an ID, returned as X-Request-ID, and puts
 // the audit.Request on its context: that ID, the sign-in its access token
@@ -30,6 +34,10 @@ func requestContext(tok *tokens, isApp func(slug string) bool) middleware.Middle
 			req := audit.Request{
 				ID: uuid.NewString(), Source: requestSource(r, isApp),
 				IP: middleware.ClientAddr(r), UserAgent: r.UserAgent(),
+			}
+			// A published app's build, when the header is a version's name.
+			if v := r.Header.Get(appVersionHeader); req.Source != audit.SourceAPI && launcher.ValidVersion(v) {
+				req.AppVersion = v
 			}
 			// A token that does not verify names no sign-in; its request is
 			// refused by Authenticator before it could change anything.

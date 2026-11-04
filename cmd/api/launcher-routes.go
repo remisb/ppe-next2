@@ -18,11 +18,14 @@ func registerLauncherRoutes(rt *router, svc *launcher.Service) {
 	rt.authenticated("GET /api/v1/launcher", h.forUser)
 	rt.authenticated("PUT /api/v1/launcher/pins", h.setPins)
 	rt.authenticated("POST /api/v1/launcher/feedback", h.giveFeedback)
+	rt.authenticated("PUT /api/v1/launcher/choices/{slug}", h.chooseChannel)
 	rt.restricted("GET /api/v1/apps", h.list, role.AppsManage)
 	rt.restricted("POST /api/v1/apps", h.create, role.AppsManage)
 	rt.restricted("PUT /api/v1/apps/{slug}", h.update, role.AppsManage)
 	rt.restricted("POST /api/v1/apps/{slug}/move", h.move, role.AppsManage)
 	rt.restricted("GET /api/v1/apps/{slug}/feedback", h.feedback, role.AppsManage)
+	rt.restricted("GET /api/v1/apps/{slug}/releases", h.releases, role.AppsManage)
+	rt.restricted("PUT /api/v1/apps/{slug}/channels/{name}", h.pointChannel, role.AppsManage)
 }
 
 // can is what the request's token grants, as the registry asks it.
@@ -31,11 +34,14 @@ func can(r *http.Request) func(role.Permission) bool {
 }
 
 // launcherList is what one user's launcher shows: their tiles, pins among
-// them, and whether they may see apps in testing (the launcher's switch).
+// them, whether they may see apps in testing (the launcher's switch), the
+// channels they see of each published app and the one they chose.
 type launcherList struct {
-	Apps    []launcher.App `json:"apps"`
-	Pins    []string       `json:"pins"`
-	Preview bool           `json:"preview"`
+	Apps     []launcher.App                `json:"apps"`
+	Pins     []string                      `json:"pins"`
+	Preview  bool                          `json:"preview"`
+	Channels map[string][]launcher.Channel `json:"channels"`
+	Choices  map[string]string             `json:"choices"`
 }
 
 func (h *launcherHandler) forUser(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +55,35 @@ func (h *launcherHandler) forUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, launcherList{Apps: apps, Pins: pins, Preview: holds(r, role.AppsPreview)})
+	channels, choices, err := h.apps.ChannelsFor(r.Context(), user, apps, can(r))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, launcherList{Apps: apps, Pins: pins, Preview: holds(r, role.AppsPreview), Channels: channels, Choices: choices})
+}
+
+type choiceRequest struct {
+	Channel string `json:"channel"`
+}
+
+// chooseChannel keeps the channel the user opens an app on; "" or stable is the default.
+func (h *launcherHandler) chooseChannel(w http.ResponseWriter, r *http.Request) {
+	user, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req choiceRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.apps.ChooseChannel(r.Context(), user, r.PathValue("slug"), req.Channel, can(r)); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type pinsRequest struct {
@@ -211,4 +245,46 @@ func (h *launcherHandler) feedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// releases is an app's published versions, newest first, and its channels.
+type releases struct {
+	Versions []launcher.Version `json:"versions"`
+	Channels []launcher.Channel `json:"channels"`
+}
+
+func (h *launcherHandler) releases(w http.ResponseWriter, r *http.Request) {
+	versions, channels, err := h.apps.Releases(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, releases{Versions: versions, Channels: channels})
+}
+
+// channelRequest points a channel at a version; a variant's label and
+// audience come with it.
+type channelRequest struct {
+	Version string         `json:"version"`
+	Label   launcher.Names `json:"label"`
+	AnyOf   []string       `json:"any_of"`
+}
+
+func (h *launcherHandler) pointChannel(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req channelRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	c, err := h.apps.PointChannel(r.Context(), r.PathValue("slug"), r.PathValue("name"), launcher.ChannelParams(req), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, c)
 }

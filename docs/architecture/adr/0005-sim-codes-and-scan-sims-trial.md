@@ -1,6 +1,8 @@
 # ADR 0005: SIM cards' PIN and PUK sealed by the app, and Scan SIMs as a trial app
 
-- **Status:** accepted (built 2026-10-29)
+- **Status:** accepted (built 2026-10-29); since 2026-11-04 Scan SIMs is a published app at
+  `/apps/sim-scan/` (ADR 0006 phase 3): its policy is the `device` profile's, and `/sim-scan/…`
+  redirects there
 - **Date:** 2026-10-29
 - **Scope:** backend (Go API, Postgres), frontend (`web/apps/sim-scan`, `web/packages/sim-scan`), deployment (Caddy, `.env.prod`)
 - **Builds on:** [ADR 0002](0002-permissions-and-administration-app.md) (a permission per

@@ -973,8 +973,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 ## 13. App Launcher
 
 The front door of the company's apps (ADR 0006; rules in
-[app-launcher.md](specs/app-launcher.md)). Phases 1 and 2 are built; the terms marked
-*phase 3* are decided but not on screen yet.
+[app-launcher.md](specs/app-launcher.md)). Phases 1 to 3 are built.
 
 ### App Launcher
 - **Brief:** the screen at `/apps/` that shows a user, as big tiles in groups, every app
@@ -1048,11 +1047,31 @@ The front door of the company's apps (ADR 0006; rules in
 - **Detail:** pins are the user's, on every device (the API); recent apps per device.
 - **Code:** `launcher_pins`, `togglePin`, `noteOpened`.
 
-### Version, Channel, Variant (phase 3); Audience
-- **Version:** one published build of an app (`2026.10.30-7d26056`), never changed.
-- **Channel:** a name that points at one version: **Stable**, **Beta**, **Preview**.
-  Promoting moves the pointer; rolling back moves it back.
-- **Variant:** another design of an app tried side by side, a channel with its own label.
+### Published app
+- **Brief:** an app on this site whose builds are published as versions and opened under
+  `/apps/<slug>/` through channels, rather than baked in at a fixed address. Scan SIMs is one.
+- **Detail:** not "deployed" (a deploy updates the whole site) nor "released". A deploy
+  publishes its build to Preview; `make prod-publish` publishes one from a git ref.
+- **Code:** `launcher_versions`, `api -publish-app`, `PUBLISHED_APPS`. **UI:** *Published*
+  (a version's date).
+
+### Version, Channel, Variant; Audience
+- **Version:** one published build of an app, named by its commit's date and hash
+  (`2026.11.04-1c7f2a1ee57c`), never changed. **UI:** **Version** (LT *Versija*, RU *Версия*).
+- **Channel:** a name that points at one version: **Stable** (LT *Stabili*, RU
+  *Стабильная*), **Beta** (*Beta*, *Бета*), **Preview** (*Peržiūra*, *Предпросмотр*).
+  **Make Stable** (and Beta, Preview) points it at a version: promoting is making a newer
+  one Stable, rolling back an older one. Stable is for whoever sees the app; the others for
+  testers or the permissions they name. Not "branch", "track" or "environment".
+- **Variant:** another design of an app tried side by side, a channel with its own name in
+  addresses (`photos-first`), label and audience. **UI:** **Add variant** (LT *Pridėti
+  variantą*, RU *Добавить вариант*).
+- **Versions** (in a tile's ⋯): where a user chooses the channel an app opens on for them;
+  kept per user. Off Stable, the app shows a stripe: *You are using Beta · Version …* with
+  **Back to Stable**.
+- **Profile:** what a version may do beyond the staff app's policy, from the capabilities its
+  build declares: *Standard*, or *Camera and readers* (`device`).
+- **Code:** `launcher.Channel`, `AppChannel`, `ChannelStripe`, `mayOpenChannel`.
 - **Audience** (UI: **Who sees it**): the permissions whose holders see a tile (any of
   them), or everyone signed in. Seeing is not doing: the API still decides what anyone can
   do.

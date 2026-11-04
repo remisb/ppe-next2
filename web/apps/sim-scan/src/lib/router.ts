@@ -1,6 +1,6 @@
 import { type Addresses, linkWith, useAddressRouter } from '@ppe/app-shell'
 
-/** The trial's two screens, at their addresses under /sim-scan. */
+/** The trial's two screens, at their addresses under where it is mounted (/apps/sim-scan/, a channel's or a version's). */
 export type Route = { name: 'scan' } | { name: 'find' }
 
 export const addresses: Addresses<Route> = {

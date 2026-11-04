@@ -26,6 +26,21 @@ export function rememberPins(userId: string, pins: string[]): void {
   if (list) lists.set(userId, list.then((l) => ({ ...l, pins })))
 }
 
+/** Keeps the channel the user chose for an app ('stable': none), so the frames read it too. */
+export function rememberChoice(userId: string, slug: string, channel: string): void {
+  const list = lists.get(userId)
+  if (!list) return
+  lists.set(
+    userId,
+    list.then((l) => {
+      const choices = { ...l.choices }
+      if (channel === 'stable') delete choices[slug]
+      else choices[slug] = channel
+      return { ...l, choices }
+    }),
+  )
+}
+
 export interface Launcher {
   /** The user's launcher once loaded; null while loading or after a failure. */
   list: LauncherList | null

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -2018,5 +2019,152 @@ func TestPostgresLauncherHTTP(t *testing.T) {
 	var used int
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM user_activity WHERE app = 'sim-scan'`).Scan(&used); err != nil || used != 1 {
 		t.Errorf("Usage under sim-scan = %d, %v", used, err)
+	}
+}
+
+// buildTar is a published build as publish-app reads it: name → content.
+func buildTar(t *testing.T, files map[string]string) *bytes.Buffer {
+	t.Helper()
+	var b bytes.Buffer
+	tw := tar.NewWriter(&b)
+	for name, body := range files {
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return &b
+}
+
+func TestPostgresPublishedAppsHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	ctx := context.Background()
+	_, admin := api.userWith(t, role.KeyAdmin)
+	_, manager := api.userWith(t, role.KeyManager)
+	_, tester := api.userWith(t, role.KeyManager, role.KeyTesters)
+	cfg := testConfig()
+	cfg.AppsDir = t.TempDir()
+	handler := routes(cfg, api.svc, api.tokens, testLogger)
+	get := func(path string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec
+	}
+
+	scanSIMs := map[string]string{
+		"index.html":      `<html><head><script type="module" crossorigin src="./assets/index.js"></script><link rel="stylesheet" href="./assets/index.css"></head><body></body></html>`,
+		"ppe-app.json":    `{"slug":"sim-scan","capabilities":["wasm","workers","camera"]}`,
+		"assets/index.js": "console.log(1)",
+	}
+	publish := func(slug, version, channel string, files map[string]string) (string, error) {
+		c := cfg
+		c.PublishApp, c.PublishVersion, c.PublishChannel, c.PublishCommit = slug, version, channel, "abc1234"
+		var out bytes.Buffer
+		err := publishApp(ctx, api.svc, c, buildTar(t, files), &out)
+		return out.String(), err
+	}
+	if out, err := publish("sim-scan", "2026.11.04-aaa", "preview", scanSIMs); err != nil || !strings.Contains(out, "sim-scan 2026.11.04-aaa published (device), preview points at it") {
+		t.Fatalf("publish = %q, %v", out, err)
+	}
+	if _, err := os.Stat(cfg.AppsDir + "/device/sim-scan/2026.11.04-aaa/assets/index.js"); err != nil {
+		t.Errorf("the files: %v", err)
+	}
+	if out, err := publish("sim-scan", "2026.11.04-aaa", "beta", scanSIMs); err != nil || !strings.Contains(out, "already published") {
+		t.Errorf("publish again = %q, %v", out, err)
+	}
+	evil := map[string]string{"../evil.js": "x", "index.html": "<head></head>", "ppe-app.json": `{"slug":"sim-scan"}`}
+	if _, err := publish("sim-scan", "2026.11.05-bad", "", evil); err == nil {
+		t.Error("a build writing outside its folder was published")
+	}
+	if _, err := publish("sim-scan", "2026.11.05-cap", "", map[string]string{"index.html": "<head></head>", "ppe-app.json": `{"slug":"sim-scan","capabilities":["usb"]}`}); err == nil {
+		t.Error("an unknown capability was published")
+	}
+	if _, err := publish("crew", "2026.11.05-ccc", "", scanSIMs); err == nil {
+		t.Error("a linked site was published")
+	}
+
+	// Stable (set by the first publish), a deep link, a channel and a version, each with where it is mounted.
+	for path, mount := range map[string]string{
+		"/apps/sim-scan/":                 "/apps/sim-scan/",
+		"/apps/sim-scan/review/today":     "/apps/sim-scan/",
+		"/apps/sim-scan/preview/":         "/apps/sim-scan/preview/",
+		"/apps/sim-scan/beta/review":      "/apps/sim-scan/beta/",
+		"/apps/sim-scan/@2026.11.04-aaa/": "/apps/sim-scan/@2026.11.04-aaa/",
+	} {
+		rec := get(path)
+		body := rec.Body.String()
+		if rec.Code != http.StatusOK || !strings.Contains(body, `src="/apps/files/device/sim-scan/2026.11.04-aaa/assets/index.js"`) ||
+			!strings.Contains(body, `href="/apps/files/device/sim-scan/2026.11.04-aaa/assets/index.css"`) ||
+			!strings.Contains(body, `<meta name="ppe-mount" content="`+mount+`">`) || !strings.Contains(body, `<meta name="ppe-version" content="2026.11.04-aaa">`) {
+			t.Errorf("%s = %d %s", path, rec.Code, body)
+		}
+		if rec.Header().Get("Content-Security-Policy") != devicePolicy || rec.Header().Get("Permissions-Policy") != "camera=(self)" || rec.Header().Get("Cache-Control") != "no-cache" {
+			t.Errorf("%s headers %v", path, rec.Header())
+		}
+	}
+	for path, code := range map[string]int{"/apps/sim-scan/@2026.01.01-zzz/": 404, "/apps/nothing/": 404, "/apps/admin/": 302, "/apps/admin/users": 302} {
+		if rec := get(path); rec.Code != code {
+			t.Errorf("%s = %d, want %d", path, rec.Code, code)
+		}
+	}
+	if rec := get("/apps/admin/"); rec.Header().Get("Location") != "/admin/" {
+		t.Errorf("Administration is at %s", rec.Header().Get("Location"))
+	}
+
+	// A build with no capabilities gets the staff app's policy and no camera.
+	if _, err := publish("workwear", "2026.11.04-www", "", map[string]string{"index.html": "<head></head>", "ppe-app.json": `{"slug":"workwear","capabilities":[]}`}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := get("/apps/workwear/"); rec.Code != http.StatusOK || rec.Header().Get("Content-Security-Policy") != staffPolicy || rec.Header().Get("Permissions-Policy") != "" {
+		t.Errorf("standard = %d %v", rec.Code, rec.Header())
+	}
+
+	// Who sees which channel, and a tester's choice.
+	channelsOf := func(tok string) (map[string][]launcher.Channel, map[string]string) {
+		t.Helper()
+		rec := api.do(t, "GET", "/api/v1/launcher", tok, nil)
+		var l struct {
+			Channels map[string][]launcher.Channel `json:"channels"`
+			Choices  map[string]string             `json:"choices"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &l); err != nil {
+			t.Fatal(err)
+		}
+		return l.Channels, l.Choices
+	}
+	if seen, _ := channelsOf(manager); len(seen["sim-scan"]) != 1 || seen["sim-scan"][0].Name != "stable" {
+		t.Errorf("a manager sees %+v", seen["sim-scan"])
+	}
+	if rec := api.do(t, "PUT", "/api/v1/launcher/choices/sim-scan", manager, map[string]string{"channel": "preview"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a manager choosing Preview = %d", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/launcher/choices/sim-scan", tester, map[string]string{"channel": "preview"}); rec.Code != http.StatusNoContent {
+		t.Fatalf("a tester choosing Preview = %d %s", rec.Code, rec.Body)
+	}
+	if seen, chosen := channelsOf(tester); len(seen["sim-scan"]) != 3 || chosen["sim-scan"] != "preview" {
+		t.Errorf("a tester sees %d channels, chose %v", len(seen["sim-scan"]), chosen)
+	}
+
+	// Manage apps: the releases, and a variant for those who manage assets.
+	if rec := api.do(t, "GET", "/api/v1/apps/sim-scan/releases", admin, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"profile":"device"`) {
+		t.Errorf("releases = %d %s", rec.Code, rec.Body)
+	}
+	variant := map[string]any{"version": "2026.11.04-aaa", "label": map[string]string{"en": "Photos first", "lt": "Pirmiausia nuotraukos", "ru": "Сначала фото"}, "any_of": []string{"assets.manage"}}
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/photos-first", admin, variant); rec.Code != http.StatusOK {
+		t.Fatalf("variant = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/beta", admin, map[string]any{"version": "2026.01.01-zzz"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("an unpublished version = %d", rec.Code)
+	}
+	if seen, _ := channelsOf(manager); len(seen["sim-scan"]) != 2 {
+		t.Errorf("a manager sees %+v", seen["sim-scan"])
+	}
+	if rec := get("/apps/sim-scan/photos-first/"); !strings.Contains(rec.Body.String(), `<meta name="ppe-channel" content="photos-first">`) {
+		t.Errorf("the variant = %s", rec.Body)
 	}
 }

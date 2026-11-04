@@ -46,6 +46,14 @@ const en = {
   close: 'Close',
   account: 'Account',
   signOut: 'Sign out',
+  channels: { stable: 'Stable', beta: 'Beta', preview: 'Preview' } as Record<'stable' | 'beta' | 'preview', string>,
+  versions: 'Versions',
+  version: 'Version',
+  versionsHint: 'Choose which version of the app opens for you. Stable is the one everyone uses.',
+  published: (date: string) => `Published ${date}`,
+  onChannel: (channel: string) => `You are using ${channel}`,
+  backToStable: 'Back to Stable',
+  channelChosen: (channel: string) => `Opens on ${channel} for you.`,
 }
 
 type Messages = typeof en
@@ -89,6 +97,14 @@ const lt: Messages = {
   close: 'Uždaryti',
   account: 'Paskyra',
   signOut: 'Atsijungti',
+  channels: { stable: 'Stabili', beta: 'Beta', preview: 'Peržiūra' },
+  versions: 'Versijos',
+  version: 'Versija',
+  versionsHint: 'Pasirinkite, kuri programos versija jums atsidaro. Stabili – ta, kuria naudojasi visi.',
+  published: (date) => `Paskelbta ${date}`,
+  onChannel: (channel) => `Naudojate: ${channel}`,
+  backToStable: 'Grįžti į stabilią',
+  channelChosen: (channel) => `Jums atsidarys: ${channel}.`,
 }
 
 const ru: Messages = {
@@ -130,6 +146,14 @@ const ru: Messages = {
   close: 'Закрыть',
   account: 'Учётная запись',
   signOut: 'Выйти',
+  channels: { stable: 'Стабильная', beta: 'Бета', preview: 'Предпросмотр' },
+  versions: 'Версии',
+  version: 'Версия',
+  versionsHint: 'Выберите, какая версия приложения открывается у вас. Стабильная — та, которой пользуются все.',
+  published: (date) => `Опубликована ${date}`,
+  onChannel: (channel) => `Вы используете: ${channel}`,
+  backToStable: 'Вернуться к стабильной',
+  channelChosen: (channel) => `У вас будет открываться: ${channel}.`,
 }
 
 export const dictionaries = { en, lt, ru }

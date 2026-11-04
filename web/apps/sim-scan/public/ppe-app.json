@@ -1,0 +1,4 @@
+{
+  "slug": "sim-scan",
+  "capabilities": ["wasm", "workers", "camera"]
+}

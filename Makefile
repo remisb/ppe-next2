@@ -16,7 +16,7 @@ PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db 
 
 .PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
 	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims \
-	prod-backup prod-backups prod-restore prod-drill backup-once
+	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
 help: ## List targets
 	@awk -F':.*## ' '/^[a-z0-9-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(firstword $(MAKEFILE_LIST))
@@ -95,6 +95,19 @@ import-sims: ## Import SIM cards from a CSV list as the seed admin: FILE=<csv> C
 	@test -n "$(FILE)" || { echo "FILE=<the SIM card list, CSV> is required" >&2; exit 2; }
 	go run ./cmd/api -import-sims - $(if $(filter yes,$(COMMIT)),-commit) < "$(FILE)"
 
+# A published app's version (ADR 0006, phase 3): its commit's date and short
+# hash, YYYY.MM.DD-<hash>, for the ref $(1).
+app_version = $(shell git log -1 --format=%cd-%h --date=format:%Y.%m.%d --abbrev=12 $(1) 2>/dev/null)
+# The apps published under /apps/<slug>/ rather than baked into the web image.
+PUBLISHED_APPS := sim-scan
+
+publish-app: ## Build an app and publish it to API_APPS_DIR (for Caddy locally): APP=<slug> [CHANNEL=<name>]
+	@test -n "$(APP)" || { echo "APP=<slug> is required, one of: $(PUBLISHED_APPS)" >&2; exit 2; }
+	@test -n "$$API_APPS_DIR" || { echo "set API_APPS_DIR in .env (an existing folder) first" >&2; exit 2; }
+	cd web && pnpm --filter "./apps/$(APP)" build
+	tar -C "web/apps/$(APP)/dist" -cf - . | go run ./cmd/api -publish-app "$(APP)" -version "$(call app_version,HEAD)" \
+		-channel "$(CHANNEL)" -from-commit "$$(git rev-parse --short=12 HEAD)"
+
 # The deployment stack (docker-compose.prod.yml, .env.prod). `env -i` because
 # compose reads ${VAR} from the environment before --env-file, and this Makefile
 # exports every development value from .env.
@@ -131,6 +144,22 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 		sleep 1; \
 	done; \
 	echo "the API is not ready after 60s" >&2; $(PROD) logs --tail=30 api >&2; exit 1
+	@# The deployed commit's published apps go to Preview (and Stable, for an
+	@# app with none yet); Stable and Beta move on Manage apps.
+	@for app in $(PUBLISHED_APPS); do \
+		$(PROD) exec -T caddy tar -C "/srv/build/$$app" -cf - . | \
+		$(PROD) run --rm --no-deps -T api -publish-app "$$app" -version "$(call app_version,HEAD)" \
+			-channel preview -from-commit "$(PROD_COMMIT)" || exit 1; \
+	done
+
+# Builds the app at REF with that commit's web/Dockerfile (deploy/build-app.sh)
+# and publishes it; fetch the ref first. An app's new version reaches no one
+# until a channel points at it: CHANNEL, or Manage apps later.
+prod-publish: ## Publish an app built at a git ref: APP=<slug> REF=<commit, tag or branch> [CHANNEL=<stable|beta|preview|variant>]
+	@test -n "$(APP)" -a -n "$(REF)" || { echo "usage: make prod-publish APP=<slug> REF=<git ref> [CHANNEL=<name>]" >&2; exit 2; }
+	@git rev-parse --verify --quiet "$(REF)^{commit}" >/dev/null || { echo "$(REF) is not a commit here: git fetch first" >&2; exit 2; }
+	deploy/build-app.sh "$(APP)" "$(REF)" | $(PROD) run --rm --no-deps -T api -publish-app "$(APP)" \
+		-version "$(call app_version,$(REF))" -channel "$(CHANNEL)" -from-commit "$$(git rev-parse --short=12 '$(REF)^{commit}')"
 
 prod-ready: ## Ask the running API whether it is ready (GET /ready) and which commit it runs
 	$(PROD) exec -T api /api -healthcheck

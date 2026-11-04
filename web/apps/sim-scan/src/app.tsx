@@ -1,5 +1,5 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
+import { ChannelStripe, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
 import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand } from '@ppe/ui/components/main-nav'
@@ -18,7 +18,8 @@ import { ScanPage } from './routes/scan'
  * The trial's frame, kept small: its name, its two screens as tabs (Scan,
  * which needs assets.manage, and PIN and PUK, which needs sim_codes.read),
  * the way back to SIM Cards, App Launcher and Sign out. It shares the staff app's sign-in,
- * so signing in or out here does so there too.
+ * so signing in or out here does so there too. Published under App Launcher
+ * (ADR 0006, phase 3): off Stable, a stripe says which channel and version.
  */
 export function App() {
   const { session, status, retry, signOut, passwordPrompt } = useApi()
@@ -48,6 +49,7 @@ export function App() {
         {t.shell.skipToContent}
       </a>
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <ChannelStripe slug="sim-scan" />
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 md:px-6">
           <Brand name={t.shell.appName} />
           <a href={staffHref('/assets/sim-cards')} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'ml-auto')}>

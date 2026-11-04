@@ -1,14 +1,19 @@
-import type { FeedbackRating, LauncherApp, LauncherList } from '@ppe/api-client'
+import type { AppChannel, FeedbackRating, LauncherApp, LauncherList } from '@ppe/api-client'
 import { CheckingSignIn, ConfirmPassword, Offline, type Session, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
 import { currentLang } from '@ppe/i18n'
 import {
   appIcons,
   appName,
+  channelName,
+  channelsOf,
+  chosenChannel,
   launcherText,
   loadRecent,
   loadShowTesting,
   noteOpened,
+  openHref,
   parentName,
+  rememberChoice,
   rememberPins,
   saveShowTesting,
   takeDevicePins,
@@ -22,6 +27,7 @@ import { GavortEmblem } from '@ppe/ui/components/gavort-logo'
 import { Kbd } from '@ppe/ui/components/kbd'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { formatDate } from '@ppe/ui/lib/dates'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { Box, Ellipsis, ExternalLink, LogOut, Pin, PinOff, Search, UserRound, X } from 'lucide-react'
@@ -35,7 +41,8 @@ import { type Shelf, deviceOf, matching, pinnedOf, recentOf, sections, shownTile
  * by the API) and recent apps (on this device) come first; from lg a rail of
  * groups narrows the tiles. A tile opens its app as a page (a linked site in a
  * new tab); ⋯ or a right-click shows where it runs, pins it and takes
- * feedback. Testers show apps in testing with a switch. It shares the staff
+ * feedback, and for a published app with more than Stable to offer the user,
+ * which version (channel) opens for them. Testers show apps in testing with a switch. It shares the staff
  * app's sign-in, so signing in or out here does so there too.
  */
 export function App() {
@@ -74,7 +81,10 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
   const [recent, setRecent] = useState<string[]>(() => loadRecent(session.userId))
   const [showTesting, setShowTesting] = useState(() => list.preview && loadShowTesting(session.userId))
   const [about, setAbout] = useState<LauncherApp | null>(null)
+  const [choices, setChoices] = useState<Record<string, string>>(list.choices ?? {})
   const search = useRef<HTMLInputElement>(null)
+  const current: LauncherList = { ...list, choices }
+  const hrefOf = (app: LauncherApp) => openHref(app, current)
 
   const shown = shownTiles(list.apps, showTesting)
   const found = matching(shown, q)
@@ -91,6 +101,17 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
     )
   }
   const opened = (app: LauncherApp) => setRecent(noteOpened(session.userId, app.slug))
+  const chooseChannel = (app: LauncherApp, channel: string) => {
+    const before = choices
+    const next = { ...choices }
+    if (channel === 'stable') delete next[app.slug]
+    else next[app.slug] = channel
+    setChoices(next)
+    client.launcher.chooseChannel(app.slug, channel).then(
+      () => rememberChoice(session.userId, app.slug, channel),
+      () => setChoices(before),
+    )
+  }
 
   // Pins phase 1 kept on this device go to the API once, while it has none.
   useEffect(() => {
@@ -120,7 +141,7 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
     if (!first) return
     opened(first)
     if (first.tier === 'linked') window.open(first.href, '_blank', 'noopener')
-    else window.location.assign(first.href)
+    else window.location.assign(hrefOf(first))
   }
 
   const shelves: { shelf: Shelf; label: string; count: number }[] = [
@@ -129,7 +150,7 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
     ...sections(shown, 'all').map((s) => ({ shelf: s.group, label: text.groups[s.group], count: s.apps.length })),
   ]
   const onShelf = shelves.some((s) => s.shelf === shelf) ? shelf : 'all'
-  const grid = (apps: LauncherApp[]) => <Grid apps={apps} all={list.apps} onOpen={opened} onAbout={setAbout} />
+  const grid = (apps: LauncherApp[]) => <Grid apps={apps} list={current} onOpen={opened} onAbout={setAbout} />
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
@@ -236,7 +257,7 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
                     {recentApps.map((app) => (
                       <li key={app.slug}>
                         <a
-                          {...openProps(app)}
+                          {...openProps(app, hrefOf(app))}
                           onClick={() => opened(app)}
                           className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-card py-1 pr-4 pl-1 text-sm font-medium hover:bg-accent"
                         >
@@ -260,7 +281,8 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
 
       <About
         app={about}
-        all={list.apps}
+        list={current}
+        onChoose={chooseChannel}
         pinned={about ? pins.includes(about.slug) : false}
         onPin={() => about && savePins(togglePin(pins, about.slug))}
         onOpen={() => about && opened(about)}
@@ -279,8 +301,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-/** How a tile's link opens: on this origin as a page, a linked site in a new tab. */
-const openProps = (app: LauncherApp) => (app.tier === 'linked' ? { href: app.href, target: '_blank', rel: 'noopener noreferrer' } : { href: app.href })
+/** How a tile's link opens: on this origin as a page (a published app on the user's channel), a linked site in a new tab. */
+const openProps = (app: LauncherApp, href: string) => (app.tier === 'linked' ? { href, target: '_blank', rel: 'noopener noreferrer' } : { href })
 
 function TileIcon({ app, className }: { app: LauncherApp; className?: string }) {
   const Icon = appIcons[app.icon] ?? Box
@@ -291,17 +313,19 @@ function TileIcon({ app, className }: { app: LauncherApp; className?: string }) 
   )
 }
 
-function Grid({ apps, all, onOpen, onAbout }: { apps: LauncherApp[]; all: LauncherApp[]; onOpen: (a: LauncherApp) => void; onAbout: (a: LauncherApp) => void }) {
+function Grid({ apps, list, onOpen, onAbout }: { apps: LauncherApp[]; list: LauncherList; onOpen: (a: LauncherApp) => void; onAbout: (a: LauncherApp) => void }) {
   const text = launcherText()
+  const all = list.apps
   return (
     <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 md:gap-4 xl:grid-cols-6 2xl:grid-cols-8">
       {apps.map((app) => {
         const Icon = appIcons[app.icon] ?? Box
         const name = appName(app)
+        const channel = chosenChannel(list, app.slug)
         return (
           <li key={app.slug} className="relative min-w-0">
             <a
-              {...openProps(app)}
+              {...openProps(app, openHref(app, list))}
               onClick={() => onOpen(app)}
               onContextMenu={(e) => {
                 e.preventDefault()
@@ -316,6 +340,9 @@ function Grid({ apps, all, onOpen, onAbout }: { apps: LauncherApp[]; all: Launch
                 <span className="text-sm leading-tight font-semibold text-balance [overflow-wrap:anywhere] md:text-base">{name}</span>
                 {app.stage !== 'live' ? (
                   <span className="rounded-md bg-white/20 px-1.5 py-px text-[11px] font-semibold tracking-wide uppercase">{text.stages[app.stage]}</span>
+                ) : null}
+                {channel !== 'stable' ? (
+                  <span className="rounded-md bg-amber-200 px-1.5 py-px text-[11px] font-semibold text-amber-950">{channelName(channel, channelsOf(list, app.slug))}</span>
                 ) : null}
               </span>
             </a>
@@ -342,14 +369,16 @@ function Grid({ apps, all, onOpen, onAbout }: { apps: LauncherApp[]; all: Launch
  */
 function About({
   app,
-  all,
+  list,
+  onChoose,
   pinned,
   onPin,
   onOpen,
   onClose,
 }: {
   app: LauncherApp | null
-  all: LauncherApp[]
+  list: LauncherList
+  onChoose: (app: LauncherApp, channel: string) => void
   pinned: boolean
   onPin: () => void
   onOpen: () => void
@@ -357,7 +386,10 @@ function About({
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const text = launcherText()
-  const [tab, setTab] = useState<'about' | 'feedback'>('about')
+  const [tab, setTab] = useState<'about' | 'feedback' | 'versions'>('about')
+  const all = list.apps
+  // Versions only when there is more than Stable to choose from.
+  const channels = app ? channelsOf(list, app.slug) : []
 
   useEffect(() => {
     const d = dialog.current
@@ -369,7 +401,8 @@ function About({
   }, [app])
 
   const parent = app ? parentName(app, all) : undefined
-  const address = app ? (app.tier === 'linked' ? app.href : window.location.origin + app.href) : ''
+  const href = app ? openHref(app, list) : ''
+  const address = app ? (app.tier === 'linked' ? href : window.location.origin + href) : ''
   return (
     <dialog
       ref={dialog}
@@ -395,6 +428,7 @@ function About({
               label={appName(app)}
               options={[
                 { value: 'about', label: text.about },
+                ...(channels.length > 1 ? [{ value: 'versions' as const, label: text.versions }] : []),
                 { value: 'feedback', label: text.feedback },
               ]}
               value={tab}
@@ -403,6 +437,8 @@ function About({
           ) : null}
           {tab === 'feedback' && app.kind === 'app' ? (
             <FeedbackForm key={app.slug} app={app} />
+          ) : tab === 'versions' && channels.length > 1 ? (
+            <Versions channels={channels} chosen={chosenChannel(list, app.slug)} onChoose={(c) => onChoose(app, c)} />
           ) : (
             <>
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
@@ -418,7 +454,7 @@ function About({
                 <dd className="font-mono text-xs [overflow-wrap:anywhere]">{address}</dd>
               </dl>
               <div className="flex flex-wrap gap-2">
-                <a {...openProps(app)} onClick={onOpen} className={cn(buttonVariants({ size: 'lg' }), 'flex-1')}>
+                <a {...openProps(app, href)} onClick={onOpen} className={cn(buttonVariants({ size: 'lg' }), 'flex-1')}>
                   {app.tier === 'linked' ? <ExternalLink aria-hidden className="size-4" /> : null}
                   {text.open}
                 </a>
@@ -433,6 +469,30 @@ function About({
         </div>
       ) : null}
     </dialog>
+  )
+}
+
+/** The channels of a published app the user sees, each with its version; choosing one opens the app on it from now on. */
+function Versions({ channels, chosen, onChoose }: { channels: AppChannel[]; chosen: string; onChoose: (channel: string) => void }) {
+  const text = launcherText()
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-sm text-muted-foreground">{text.versionsHint}</legend>
+      {channels.map((c) => (
+        <label
+          key={c.name}
+          className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2 has-checked:border-primary has-checked:bg-accent"
+        >
+          <input type="radio" name="channel" value={c.name} checked={chosen === c.name} onChange={() => onChoose(c.name)} className="size-4 accent-primary" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium">{channelName(c.name, channels)}</span>
+            <span className="block text-xs text-muted-foreground">
+              {text.version} {c.version} · {text.published(formatDate(c.published_at, undefined))}
+            </span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
   )
 }
 

@@ -40,6 +40,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
 		mailtemplate.EventChanged,
 		launcher.EventRegistered, launcher.EventChanged, launcher.EventAudienceChanged, launcher.EventMoved,
+		launcher.EventVersionPublished, launcher.EventChannelMoved, launcher.EventChannelChanged,
 		security.EventAccessReviewCompleted,
 		audit.EventExported, audit.EventPurged,
 	}

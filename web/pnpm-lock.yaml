@@ -577,6 +577,9 @@ importers:
       '@ppe/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@ppe/routing':
+        specifier: workspace:*
+        version: link:../routing
       lucide-react:
         specifier: ^1.48.0
         version: 1.48.0(react@19.3.0)

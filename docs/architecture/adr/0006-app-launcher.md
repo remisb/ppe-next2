@@ -2,7 +2,8 @@
 
 - **Status:** accepted (2026-11-04, with every decision the guide recommends, D1 to D12);
   phases 1 and 2 built 2026-11-04 (`docs/specs/app-launcher.md`; phase 2 with audiences by
-  permission, channels moved to phase 3, and shortcuts kept in the registry too)
+  permission, channels moved to phase 3, and shortcuts kept in the registry too); phase 3
+  built 2026-11-04, with decisions 4 and 5 changed as "As built, phase 3" below says
 - **Date:** 2026-10-30
 - **Scope:** frontend (`web/apps`, `@ppe/app-shell`, `@ppe/routing`), backend (Go API,
   Postgres, files store), deployment (Caddy, CI, DNS)
@@ -78,6 +79,30 @@ app, without DNS or address work for each.
    manifest names the oldest API it needs, and the launcher hides a channel the running API
    cannot serve. Requests carry `X-PPE-App: <slug>` and `X-PPE-App-Version`, so Usage and
    System's error list read per app and version.
+
+### As built, phase 3
+
+- **Caddy serves the files, the API the page.** The API's `Timeout` middleware buffers every
+  answer in memory, so it does not stream builds. A version's files are in the `published`
+  volume (`API_APPS_DIR`, Caddy's `PUBLISHED_ROOT`) at `<profile>/<slug>/<version>/`, served
+  by Caddy at `/apps/files/<profile>/<slug>/<version>/…`, cached for a year. The API answers
+  only `index.html` for `/apps/<slug>/…` (Stable, `/<channel>/`, `/@<version>/`, and any
+  deeper path, the app's own screens), with its relative links rewritten to those files and
+  `ppe-mount`, `ppe-files`, `ppe-version` and `ppe-channel` meta tags.
+- **Profiles, not a policy per manifest.** The capabilities a build declares
+  (`ppe-app.json`: `wasm`, `workers`, `camera`) map to a closed list of profiles: `standard`
+  (none, the staff app's policy) and `device` (any, ADR 0005's Scan SIMs policy with the
+  camera). The policy is chosen by path, so a worker's script gets it too; the API's copies of
+  both are kept equal to Caddy's by a test.
+- **Published on the droplet, from git, by people.** No CI token: `make prod-publish APP= REF=
+  [CHANNEL=]` builds the app at a git ref with that commit's web Dockerfile and pipes it to
+  `api -publish-app`; `make prod-up` publishes the deployed commit of each published app to
+  Preview (and to Stable, for an app with none yet). Stable, Beta and variants move on Manage
+  apps. A version is `YYYY.MM.DD-<commit>`, never replaced.
+- **Who sees a channel:** Stable whoever sees the tile; Beta, Preview and variants testers,
+  or the permissions a channel names. A tester's choice is kept per user by the API and
+  opens the tile on it; a published app moves anyone on a channel they do not see to Stable.
+- Not built: a manifest's oldest API (decision 6); old versions are kept until a prune command.
 
 ## Consequences
 

@@ -1,5 +1,6 @@
 // Settings shared by the Playwright config and global setup. The suite owns
 // its database: it is emptied before every run, so never point it at dev data.
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,11 +12,22 @@ export const apiPort = 18090
 export const webPort = 5181
 /** Administration's Vite server; the staff app's proxies /admin to it, so tests open it at webURL/admin/. */
 export const adminPort = 5183
-/** Scan SIMs' Vite server; the staff app's proxies /sim-scan to it, so tests open it at webURL/sim-scan/. */
+/** Scan SIMs' Vite server; the staff app's proxies /apps/sim-scan to it, so tests open it at webURL/apps/sim-scan/. */
 export const simScanPort = 5185
 /** App Launcher's Vite server; the staff app's proxies /apps to it, so tests open it at webURL/apps/. */
 export const launcherPort = 5187
 export const webURL = `http://localhost:${webPort}`
+
+/** E2E_WEB_SERVER=caddy: the production bundle behind deploy/Caddyfile, as CI runs it. */
+export const caddyMode = process.env['E2E_WEB_SERVER'] === 'caddy'
+
+/**
+ * Published apps' builds (API_APPS_DIR, Caddy's PUBLISHED_ROOT) in Caddy mode:
+ * Scan SIMs is published there before the run, as a deploy publishes it. With
+ * Vite it is its own dev server instead.
+ */
+export const appsDir = join(tmpdir(), 'ppe-next2-e2e-published')
+export const simScanDist = join(fileURLToPath(new URL('../..', import.meta.url)), 'web/apps/sim-scan/dist')
 
 // A test-only account created by global setup; not a real credential.
 export const admin = { email: 'e2e-admin@example.com', password: 'e2e-password-123', name: 'E2E Admin' }
@@ -82,5 +94,17 @@ export function apiEnv(): Record<string, string> {
     API_SEED_USER_NAME: admin.name,
     // Signed copies go to a folder of the run's own, as a Spaces bucket would keep them.
     API_FILES_TARGET: `file://${join(tmpdir(), 'ppe-next2-e2e-files')}`,
+    ...(caddyMode ? { API_APPS_DIR: appsDir } : {}),
   }
+}
+
+/** Publishes Scan SIMs' build (pnpm build) as version, pointing channel at it, as `make prod-up` does (Caddy mode). */
+export function publishSimScan(version: string, channel = ''): string {
+  const build = execFileSync('tar', ['-C', simScanDist, '-cf', '-', '.'], { maxBuffer: 512 << 20 })
+  return execFileSync('go', ['run', './cmd/api', '-publish-app', 'sim-scan', '-version', version, '-channel', channel, '-from-commit', 'e2e'], {
+    cwd: repoRoot,
+    env: apiEnv(),
+    input: build,
+    maxBuffer: 16 << 20,
+  }).toString()
 }

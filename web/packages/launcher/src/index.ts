@@ -1,5 +1,7 @@
 export { APP_GROUPS, appBySlug, hasSeveralApps, inTesting } from './catalogue.ts'
 export { appIcons } from './icons.ts'
-export { type Launcher, loadLauncher, rememberPins, useLauncher } from './load.ts'
+export { type Launcher, loadLauncher, rememberChoice, rememberPins, useLauncher } from './load.ts'
 export { RECENT_MAX, loadRecent, loadShowTesting, noteOpened, saveShowTesting, takeDevicePins, togglePin } from './places.ts'
 export { appName, appNames, launcherText, parentName } from './text.ts'
+export { FIXED_CHANNELS, channelHref, channelName, channelsOf, chosenChannel, isVariant, mayOpenChannel, openHref } from './channels.ts'
+export { ChannelStripe } from './channel-stripe.tsx'

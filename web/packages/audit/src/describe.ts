@@ -145,6 +145,15 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['name_ru', 'text'],
   ['any_of', 'permissions'],
   ['place', 'text'],
+  // A published version's and a channel's (app.version_published, app.channel_moved …).
+  ['version', 'text'],
+  ['profile', 'text'],
+  ['capabilities', 'list'],
+  ['commit', 'text'],
+  ['channel', 'text'],
+  ['label_en', 'text'],
+  ['label_lt', 'text'],
+  ['label_ru', 'text'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */

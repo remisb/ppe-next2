@@ -112,11 +112,11 @@ production, the folder `.files` in development; `components/signed-copies.tsx`).
 spec "Photos" in `employee-service.md`): any number each in the files store, one the default
 (`Employee.default_photo_id`, the avatar in the Employees list), each with optional uses from a
 fixed list (`PHOTO_USES`). **Scan SIMs** (ADR 0005, spec "Scan SIM cards" and "PIN and PUK"
-in `asset-service.md`) is a **trial app** at `/sim-scan/` (`web/apps/sim-scan`, the third on the
+in `asset-service.md`) is a **trial app**, published at `/apps/sim-scan/` (`web/apps/sim-scan`, the third on the
 origin, reporting as `workwear`; its rules, readers, words and review list in
 `web/packages/sim-scan`, to merge into the staff app beside SIM Cards once it passes): newly
 received SIM cards read from their carriers in the browser (zxing-wasm for the SIM No.'s
-barcode, tesseract.js for the PIN and PUK; their files served from `/sim-scan/readers/`), with
+barcode, tesseract.js for the PIN and PUK; their files its build's own, under `readers/`), with
 the camera or from photos, checked in a review list (`POST /api/v1/assets/sim-cards/batch/check`)
 and added all or none (`…/batch`, `asset.Service.AddSIMs`, the import's core), and Show PIN and
 PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-in,
@@ -124,7 +124,7 @@ PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-
 `API_SIM_CODES_KEY`, required, never in the database or its backups) in `asset_sim_codes`
 (migration 0041, which also makes `…5` and `…5F` the same SIM No.: `asset.simKey`). Slice 8 (go-live
 tools) waits for the open decisions.
-**App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 and 2 built; spec
+**App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
 (the user's, by the API) and recent apps (per device). Its list is the API's registry
@@ -139,6 +139,22 @@ someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/`
 (`ApiProvider`'s async `onSignedIn`). Each app sends its slug as `X-PPE-App` (`workwear`, `admin`,
 `launcher`, `sim-scan`); the audit trail, security log, error list and Usage record any registered slug
 (the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
+Phase 3, **published apps** (migration 0043: `launcher_versions`, `launcher_channels`,
+`launcher_channel_choices`; `error_events.app_version`): an app on this site may be published as
+immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` declaring its slug and
+capabilities, which give its **profile**: `standard` or `device`) and **channels** (Stable, Beta,
+Preview, named variants with a label and audience; events `app.version_published`,
+`app.channel_moved`, `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/` (the old
+`/sim-scan/…` redirects). Caddy serves a version's files from the `published` volume at
+`/apps/files/<profile>/<slug>/<version>/`; the API (`cmd/api/published-app-routes.go`, public
+`GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
+`ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`)
+and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
+stdin into `API_APPS_DIR`; `make prod-up` publishes `PUBLISHED_APPS` from the web image's
+`/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
+builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
+Preview, Add variant); the launcher's **Versions** keeps each user's choice (by the API), and a
+published app off Stable shows `@ppe/launcher`'s `ChannelStripe`.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -209,7 +225,7 @@ cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, L
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
 8080, 5173–5175): Postgres 5442, API 8090, Vite 5180 (Administration 5182, reached through
-5180 at `/admin/`; Scan SIMs 5184, at `/sim-scan/`; App Launcher 5186, at `/apps/`), e2e
+5180 at `/admin/`; Scan SIMs 5184, at `/apps/sim-scan/`; App Launcher 5186, at `/apps/`), e2e
 18090/5181 (Administration 5183, Scan SIMs 5185, App Launcher 5187), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
 new ports out of PPE-next's range.
@@ -223,8 +239,10 @@ because Postgres tests truncate tables.
 `.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
 → api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
 built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/`,
-Administration at `ADMIN_ROOT` served at `/admin/`, the Scan SIMs trial at `SIM_SCAN_ROOT`
-served at `/sim-scan/` and App Launcher at `LAUNCHER_ROOT` served at `/apps/`; `deploy/Caddyfile`). Only Caddy publishes ports.
+Administration at `ADMIN_ROOT` served at `/admin/`,
+App Launcher at `LAUNCHER_ROOT` served at `/apps/`, and Scan SIMs' build at `/srv/build/sim-scan`
+for `prod-up` to publish into the `published` volume, which Caddy serves read-only at
+`/apps/files/…`; `deploy/Caddyfile`). Only Caddy publishes ports.
 Both builds keep their cache between deploys: the API's Go build cache is a BuildKit cache
 mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
 image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
@@ -232,7 +250,8 @@ keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in every app, by its hash
 (`web/apps/{workwear,admin,sim-scan,launcher}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`);
-`/sim-scan/` alone gets `'wasm-unsafe-eval'`, `worker-src 'self'` and the camera (ADR 0005).
+published apps get their profile's policy, the `device` one (Scan SIMs) alone `'wasm-unsafe-eval'`,
+`worker-src 'self'` and the camera (ADR 0005; the API sends the page's, Caddy the files').
 `.env.prod` needs `API_SIM_CODES_KEY` (`openssl rand -hex 32`, kept offline too: a restore
 needs the same key; `docs/backups.md`), or the API does not start.
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
@@ -418,14 +437,14 @@ cd web && pnpm install
 pnpm typecheck && pnpm test && pnpm build           # whole workspace
 pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api and /admin
 pnpm --dir apps/admin dev                            # Administration on 5182; open it at http://localhost:5180/admin/
-pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
+pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/apps/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
 pnpm --dir apps/launcher dev                         # App Launcher on 5186; open it at http://localhost:5180/apps/
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 
 The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
 in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TARGET`
-(default `http://localhost:5182`), `/sim-scan` to `VITE_SIM_SCAN_TARGET` (5184) and `/apps` to
+(default `http://localhost:5182`), `/apps/sim-scan` to `VITE_SIM_SCAN_TARGET` (5184) and the rest of `/apps` to
 `VITE_LAUNCHER_TARGET` (5186). `.claude/launch.json` has `api` (port 8090), `workwear`
 (port 5180), `admin` (port 5182), `sim-scan` (5184) and `launcher` (5186) configs.
 

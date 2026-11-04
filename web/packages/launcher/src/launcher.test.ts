@@ -36,7 +36,7 @@ describe('the rules over a user’s tiles', () => {
 
 describe('loading', () => {
   it('asks the API once per user, and again after a failure', async () => {
-    const list: LauncherList = { apps: [tile('workwear')], pins: [], preview: false }
+    const list: LauncherList = { apps: [tile('workwear')], pins: [], preview: false, channels: {}, choices: {} }
     const get = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(list)
     const client = { launcher: { get } } as unknown as Client
     await expect(loadLauncher(client, 'u-fail')).rejects.toThrow('offline')

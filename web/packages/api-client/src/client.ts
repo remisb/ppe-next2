@@ -70,6 +70,9 @@ import type {
   MailTemplate,
   LauncherApp,
   LauncherList,
+  AppChannel,
+  AppReleases,
+  ChannelInput,
   AppFeedback,
   AppFeedbackInput,
   AppInput,
@@ -102,6 +105,8 @@ export interface ClientOptions {
   baseUrl?: string
   /** The app sending the requests; the Audit log records it with each change. */
   app?: AppName
+  /** A published app's version (X-PPE-App-Version), which System's error list records. */
+  appVersion?: string
   /** The current bearer token, or null when signed out. */
   getToken: () => string | null
   /**
@@ -167,6 +172,8 @@ export function createClient(options: ClientOptions) {
     const get = async () => {
       const headers: Record<string, string> = {}
       if (options.app) headers['X-PPE-App'] = options.app
+    if (options.appVersion) headers['X-PPE-App-Version'] = options.appVersion
+      if (options.appVersion) headers['X-PPE-App-Version'] = options.appVersion
       const token = options.getToken()
       if (token) headers['Authorization'] = `Bearer ${token}`
       try {
@@ -188,6 +195,7 @@ export function createClient(options: ClientOptions) {
   async function send(method: Method, path: string, body: unknown): Promise<{ res: Response; text: string }> {
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (options.app) headers['X-PPE-App'] = options.app
+    if (options.appVersion) headers['X-PPE-App-Version'] = options.appVersion
     const token = options.getToken()
     if (token) headers['Authorization'] = `Bearer ${token}`
     // A file goes as multipart/form-data, whose boundary the browser writes.
@@ -266,8 +274,10 @@ export function createClient(options: ClientOptions) {
     },
     /** App Launcher, for the signed-in user (ADR 0006). */
     launcher: {
-      /** The tiles the user sees, their pins, and whether they may see apps in testing. */
+      /** The tiles the user sees, their pins, whether they may see apps in testing, and the channels they see. */
       get: () => request<LauncherList>('GET', '/api/v1/launcher'),
+      /** Keeps the channel the user opens an app on; 'stable' (or '') is the default. */
+      chooseChannel: (slug: string, channel: string) => request<void>('PUT', `/api/v1/launcher/choices/${seg(slug)}`, { channel }),
       /** Replaces the user's pins, in order; each must be a tile they see. */
       setPins: (slugs: string[]) => request<{ slugs: string[] }>('PUT', '/api/v1/launcher/pins', { slugs }),
       sendFeedback: (input: AppFeedbackInput) => request<AppFeedback>('POST', '/api/v1/launcher/feedback', input),
@@ -280,6 +290,11 @@ export function createClient(options: ClientOptions) {
       /** Puts a tile in front of another, or last; answers every tile in the new order. */
       move: (slug: string, before: string) => request<LauncherApp[]>('POST', `/api/v1/apps/${seg(slug)}/move`, { before }),
       feedback: (slug: string) => request<AppFeedback[]>('GET', `/api/v1/apps/${seg(slug)}/feedback`),
+      /** A published app's versions, newest first, and its channels. */
+      releases: (slug: string) => request<AppReleases>('GET', `/api/v1/apps/${seg(slug)}/releases`),
+      /** Points a channel at a version: promote, roll back, or add or change a variant. */
+      pointChannel: (slug: string, name: string, input: ChannelInput) =>
+        request<AppChannel>('PUT', `/api/v1/apps/${seg(slug)}/channels/${seg(name)}`, input),
     },
     /** The administrator's dashboard; admins only. */
     dashboard: () => request<Dashboard>('GET', '/api/v1/dashboard'),

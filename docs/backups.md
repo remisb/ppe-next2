@@ -100,6 +100,14 @@ the codes are gone (the cards' carriers still have them; Add PIN and PUK keeps t
 Generate it once with `openssl rand -hex 32`, never reuse `API_JWT_SECRET`, and do not
 change it: there is no rotation yet (each row's `key_id` leaves room for one).
 
+### Published apps' builds
+
+The `published` volume (App Launcher's published apps, such as Scan SIMs; `API_APPS_DIR`) is
+not backed up: every version is a build of a commit, named by it (`YYYY.MM.DD-<commit>`).
+After losing the server, `make prod-up` publishes the deployed commit again, and
+`make prod-publish APP=<slug> REF=<commit>` any older version a channel pointed at; the
+registry rows (versions, channels) are in the database backups.
+
 ### Encryption (optional)
 
 On your own computer: `age-keygen -o ppe-backup.key` prints `Public key: age1...`. Put

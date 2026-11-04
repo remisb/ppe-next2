@@ -108,8 +108,21 @@ func TestClientErrors(t *testing.T) {
 		t.Fatalf("report = %d %s", rec.Code, rec.Body)
 	}
 	e := api.errors.recorded()[0]
-	if e.Kind != system.KindClient || e.Route != "/orders/:id" || e.Status != nil || string(*e.Source) != "workwear" {
+	if e.Kind != system.KindClient || e.Route != "/orders/:id" || e.Status != nil || string(*e.Source) != "workwear" || e.AppVersion != nil {
 		t.Errorf("recorded %+v", e)
+	}
+	// A published app's build names itself; anything not a version is dropped.
+	for version, want := range map[string]string{"2026.11.04-abc1234": "2026.11.04-abc1234", "<script>": ""} {
+		req = httptest.NewRequest("POST", "/api/v1/client-errors", bytes.NewReader(b))
+		req.Header.Set("Authorization", "Bearer "+tok)
+		req.Header.Set(appHeader, "workwear")
+		req.Header.Set(appVersionHeader, version)
+		api.handler.ServeHTTP(httptest.NewRecorder(), req)
+		got := api.errors.recorded()
+		e := got[len(got)-1]
+		if (want == "" && e.AppVersion != nil) || (want != "" && (e.AppVersion == nil || *e.AppVersion != want)) {
+			t.Errorf("version %q recorded %v", version, e.AppVersion)
+		}
 	}
 	for _, body := range []any{map[string]string{"message": ""}, map[string]string{"message": "x", "colour": "red"}} {
 		if rec := api.do(t, "POST", "/api/v1/client-errors", tok, body); rec.Code != 400 {
