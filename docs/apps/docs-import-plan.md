@@ -1,8 +1,11 @@
 # docs-import: requirements and plan
 
 - **Date:** 2026-11-05
-- **Status:** proposal, **revision 3** (2026-11-05: phase 1, the reading spike, is done and its
-  numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate)).
+- **Status:** proposal, **revision 4** (2026-11-05: **D2 decided**: keep every field the document
+  gives, and keep the document's images as **Document Copies**, sealed per person; sections 3, 4,
+  5.5, 5.6, 9 and 11 follow it, and D3 keeps only the retention period open).
+  Revision 3 (the same day): phase 1, the reading spike, is done and its
+  numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
   Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
   [section 0](#0-review-after-the-scan-sims-fixes-revision-2).
   It becomes ADR 0007 (Personnel files: identity documents) and a spec
@@ -250,12 +253,20 @@ The plan follows that split:
 | Data | Goes to | Stored as | Why |
 | --- | --- | --- | --- |
 | First and last name (printed form, with diacritics) | `employees` (People) | plain, audited as today (`employee.updated`) | Everyone needs names |
-| Date of birth, nationality, sex | `employees` (People): new nullable columns | plain | Ordinary personal data, used for checks and reports. **Decision D2**: keep or drop each one |
-| Document kind, issuing state, **expiry date** | `personnel.identity_documents` | plain | Needed for "valid until" and expiry reminders without opening anything |
-| **Document number, personal code**, the MRZ text | `personnel.identity_documents` | **sealed** (sealbox), plus a **blind index** for lookups | Special care. Never in plain text in the database, backups, events or logs |
-| Portrait **as cropped from the document** | files store, `personnel/…` | encrypted object, with a retention period | It is a copy of part of an ID. **Decision D3**: keep it, or keep only the derived photo |
+| Date of birth, nationality, sex | `employees` (People): new nullable columns | plain | Ordinary personal data, used for checks and reports. Kept (D2) |
+| Document kind, issuing state, **expiry date**, **date of issue** | `personnel.identity_documents` | plain | Needed for "valid until" and expiry reminders without opening anything. The date of issue is not in the MRZ: typed in the review, or read from the printed page later (FR-16) |
+| **Document number, personal code**, the MRZ text, **place of birth**, **issuing authority** | `personnel.identity_documents` | **sealed** (sealbox), plus a **blind index** of the number and the code for lookups | Special care. Never in plain text in the database, backups, events or logs. Place of birth and authority are not in the MRZ either: typed, optional (D2) |
+| Portrait **as cropped from the document** | files store, `personnel/…` | encrypted with the person's data key | Kept (D2), as the source of the photos made from it; retention as the document's (D3) |
+| **Document Copies**: the photos of the document as read (a passport's data page; an ID card's front and back) | files store, `personnel/…`, one object per side | JPEG at most 2400 px long, without metadata, **encrypted with the person's data key** | Kept (D2). A copy of an ID: the DPIA records why it is kept and on what legal basis (PR-10), and showing one is audited like the number (FR-14) |
 | Colour photo (AI) | `employee_photos` (existing), use `profile` | as other photos, plus `ai_generated = true` | Shown as the avatar. Labelled as AI-made everywhere it appears |
-| The whole document image | **not kept** (default) | | Data minimisation. Lithuanian practice treats copies of ID documents as excessive unless a law requires them. Confirm with the DPO (D3) |
+
+**Document Copies and the law.** Lithuanian practice (the State Data Protection Inspectorate)
+treats copying ID documents as excessive unless a purpose needs it. D2 keeps them anyway, so
+the DPIA (PR-10) names the purpose (for example proof of identity and right to work, checked
+again at an inspection) and the legal basis before go-live, and the employee is told. The
+technical side keeps the risk small: sealed per person, never sent to the AI (PR-9), shown only
+with `personnel.documents.read` and a recent sign-in, audited, and destroyed with the person's
+key (below).
 
 **Blind index.** `HMAC-SHA256(API_PERSONNEL_INDEX_KEY, normalised value)` of the document
 number and the personal code. It answers "is this person or document already on file?"
@@ -268,7 +279,9 @@ keys Personnel files can destroy". Each employee gets a data key (32 random byte
 `sealbox.Box`) that is sealed by the master keyring (`API_PERSONNEL_KEY`, a `sealbox.Keyring`
 exactly as the SIM codes key is, with `…_KEY_ID` and `…_PREVIOUS_KEYS`), bound to the employee
 (`"ppe.personnel.subject_key.v1|" + employee id`), and kept in `personnel.subject_keys`. Their
-document fields and portrait are sealed with that data key. Changing the master key re-seals
+document fields, portrait and Document Copies are sealed with that data key. The files store
+keeps every version of every object (bucket versioning, `docs/backups.md`), so deleting an
+object would not remove it; the data key is what makes the copies unreadable. Changing the master key re-seals
 only these small rows (`api -reseal-personnel-keys`, the SIM codes command's pattern), never
 the documents.
 
@@ -296,16 +309,16 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-4 | M | The MRZ is read in the browser. A live reading is accepted once **every check digit passes** and the same result has been read in **two frames in a row** (`Steady`). A photo is read **twice**, with two thresholds of the same band, and accepted only when both give the same lines (phase 1: check digits cannot see every misread) |
 | FR-5 | M | **Deterministic correction:** inside fields that must be digits or letters, look-alikes are swapped and every combination is tried, up to a small limit (≤ 64 per field). A correction is taken only if it makes that field's check digit **and** the composite check digit pass, and no other combination does. In a document or personal number the composite adds nothing (phase 1), so such a correction also needs the second read (`needsSecondRead`). The fields that were corrected are shown |
 | FR-6 | M | Cross-checks: dates are valid (birth in the past, expiry after birth); the personal code's checksum, birth date and sex agree with the MRZ when there is a code; an **expired** document is a warning, not a stop |
-| FR-7 | M | The **review screen** shows the MRZ lines in a monospaced, editable field, with each field underlined in place. The parsed fields are below, with marks: problem (stops Save) or note. Editing the MRZ re-parses it. Names are a separate field, pre-filled from the MRZ, where the user types the diacritics (`Ž`, `Ė`, …). Their diacritic-free form must equal the MRZ name, or a note says that it does not |
+| FR-7 | M | The **review screen** shows the MRZ lines in a monospaced, editable field, with each field underlined in place. The parsed fields are below, with marks: problem (stops Save) or note. Editing the MRZ re-parses it. Names are a separate field, pre-filled from the MRZ, where the user types the diacritics (`Ž`, `Ė`, …). Their diacritic-free form must equal the MRZ name, or a note says that it does not. Below them, optional fields the MRZ does not hold: **date of issue**, **place of birth** and **issuing authority** (D2), typed, or later filled from the printed page (FR-16) |
 | FR-8 | M | The review compares the result with the chosen person's current data and shows only the differences (name, birth date…). The user chooses, field by field, to take the document's value or keep the current one |
 | FR-9 | M | The **check** call (server) reports: problems, a document already on file (same number), **another employee** with the same personal code or document number (blind index), and, for a new employee, possible duplicates by name and birth date |
-| FR-10 | M | **Save** is all or none, in one transaction: employee created or updated, identity document recorded (an earlier document of the same kind is marked superseded), events. Nothing is written before Save |
+| FR-10 | M | **Save** is all or none, in one transaction: employee created or updated, identity document recorded (an earlier document of the same kind is marked superseded, its copies kept with it until its retention ends), its **Document Copies** and portrait stored, events. Nothing is written before Save |
 | FR-11 | M | **Portrait crop:** the portrait is found from its position relative to the MRZ (TD3: left of the data page above the MRZ; TD1: left of the front). The user can move and resize the crop box (touch and keyboard). Output is about 600 × 800 px JPEG |
 | FR-12 | S | **AI colour photo:** Make Colour Photo (AI) sends the cropped portrait to the API, which returns a colour version. Before and after are shown side by side. The user may Use it, Try Again or Discard. It is saved as an employee photo with `ai_generated`, the use `profile`, and the default if the person has none. It is never offered without the Settings switch (D4) and the person's consent being recorded (PR-6) |
 | FR-13 | S | Save the plain (grey) portrait as a photo instead, without AI |
-| FR-14 | S | **Show document number** for someone with `personnel.documents.read`: needs a recent sign-in, is audited, `no-store`, and hides again after 60 s or when the tab is hidden (the pattern from Show PIN and PUK) |
+| FR-14 | S | **Show Document** for someone with `personnel.documents.read`: the number, the personal code, the sealed fields and the Document Copies. Needs a recent sign-in, is audited, `no-store`, and hides again after 60 s or when the tab is hidden (the pattern from Show PIN and PUK) |
 | FR-15 | S | The employee page in the staff app shows "ID card · LTU · valid until 2029-04-12" (never the number) and the AI label on AI photos |
-| FR-16 | C | VIZ OCR of the name lines (Lithuanian and Russian data), accepted only when it folds to the MRZ name (section 5.3). Also date of issue and place of birth if D2 asks for them |
+| FR-16 | C | VIZ OCR of the name lines (Lithuanian and Russian data), accepted only when it folds to the MRZ name (section 5.3). Also the date of issue, place of birth and issuing authority (D2 keeps them), pre-filling FR-7's fields for the user to confirm |
 | FR-17 | C | Expiry reminders (Overview item 60 days before), once the outbox and jobs exist |
 | FR-18 | C | A native companion to read the chip (DG1, and DG2 for a real colour portrait) |
 
@@ -326,15 +339,15 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 
 | ID | Pri | Requirement |
 | --- | --- | --- |
-| PR-1 | M | Images, MRZ text and fields live **only in the screen's memory**, never in any browser storage, in a `PictureStore` that revokes blob URLs when a picture is let go, after Save and when the screen goes. The steps (Person → Capture → Review → Portrait → Save) are one screen's state, not routes, so moving between them never unmounts the work (as Scan SIMs keeps Scan mounted); leaving the page asks first (`beforeunload`) |
+| PR-1 | M | Images, MRZ text and fields live **only in the screen's memory** until Save sends them, never in any browser storage, in a `PictureStore` that revokes blob URLs when a picture is let go, after Save and when the screen goes. The steps (Person → Capture → Review → Portrait → Save) are one screen's state, not routes, so moving between them never unmounts the work (as Scan SIMs keeps Scan mounted); leaving the page asks first (`beforeunload`) |
 | PR-2 | M | No read value ever goes into an `Error`, a log line, an audit event or System's error list. A Go test runs a scan through the service and asserts that the number and personal code appear in no event or log (as the SIM codes tests do) |
-| PR-3 | M | The document number, personal code and MRZ text are sealed per person (section 3). Plain columns hold only kind, issuing state and expiry |
+| PR-3 | M | The document number, personal code, MRZ text, place of birth, issuing authority, the portrait and the Document Copies are sealed per person (section 3). Plain columns hold only kind, issuing state, dates of issue and expiry. A Document Copy is re-encoded in the browser before Save (at most 2400 px, JPEG): the camera's metadata, location included, never leaves the phone |
 | PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save; needs `employees.manage`), `personnel.documents.read` (show the number; recent sign-in), and `personnel.portraits.colorize` (use AI colouring). Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
-| PR-5 | M | Audit events: `personnel.document_recorded`, `personnel.document_superseded`, `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
+| PR-5 | M | Audit events: `personnel.document_recorded` (with how many copies), `personnel.document_superseded`, `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
 | PR-6 | M | **AI colouring needs a recorded legal basis.** The default is the person's consent, recorded with the photo (who, when, how), and the person may refuse. If they refuse, only the grey portrait or a fresh camera photo is used |
 | PR-7 | M | **Label AI images.** "AI-coloured" is shown on the photo in every app. The JPEG carries a metadata note, and the record has `ai_generated`. An AI photo is never used where a true likeness is required (ID badges: the `id_badge` use is refused for an AI photo). The EU AI Act's transparency duties for generated or manipulated images apply from 2 August 2026, so confirm the exact form with the DPO |
-| PR-8 | M | Retention: identity documents are kept while the person is employed plus a period set by D3. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
-| PR-9 | S | If an external AI provider is chosen (D4): a processor agreement, EU processing, no training on our data, no retention by the provider. Only the cropped portrait is sent, never the document |
+| PR-8 | M | Retention: identity documents, their Document Copies and portraits are kept while the person is employed plus a period set by D3. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
+| PR-9 | S | If an external AI provider is chosen (D4): a processor agreement, EU processing, no training on our data, no retention by the provider. Only the cropped portrait is sent, never the document or a Document Copy |
 | PR-10 | S | A DPIA for the whole feature before go-live (identity data and photos of employees) |
 
 ## 5. Architecture
@@ -363,9 +376,10 @@ flowchart LR
   end
   Colorizer["colorizer sidecar<br/>(or a provider adapter)"]
   DB[("Postgres<br/>employees · personnel.* · audit")]
-  FS[("files store<br/>photos · personnel portraits")]
+  FS[("files store<br/>photos · Document Copies and portraits (sealed)")]
   App --> Check & Save & Show & Col
   Check & Save & Show --> PM --> DB
+  PM --> FS
   Save --> EP --> DB
   EP --> FS
   Col --> Colorizer
@@ -460,9 +474,10 @@ colouring is then for people who are not present.
 | Route | Permission | Behaviour |
 | --- | --- | --- |
 | `POST /api/v1/personnel/documents/check` | `personnel.documents.manage` | `{employee_id?, mrz: [lines], names, …}` → re-parse and re-check; returns `{problems, document_on_file?, other_employee?, possible_duplicates[]}`. Writes nothing |
-| `POST /api/v1/personnel/documents` | `personnel.documents.manage` | `{employee: {id} or {new: Params}, employee_changes, mrz, names, portrait_upload_id?}` → one transaction: employee create/update, document (sealed), supersede the earlier one, events |
+| `POST /api/v1/personnel/documents` | `personnel.documents.manage` | `multipart/form-data`: a JSON part `{employee: {id} or {new: Params}, employee_changes, mrz, names, issued_on?, place_of_birth?, authority?}`, one JPEG part per side (`copy_page`, or `copy_front` and `copy_back`, ≤ 5 MB each, checked by content) and `portrait` → the objects sealed and written first under new ids, then one transaction: employee create/update, document (sealed), its copies' rows, supersede the earlier one, events. If the transaction fails, the new objects are deleted (and are unreadable without a key row anyway) |
 | `GET /api/v1/personnel/documents/by-employee/{id}` | `personnel.documents.manage` or `.read` | kind, issuing state, expiry, status. Never the number |
-| `POST /api/v1/personnel/documents/{id}/show` | `personnel.documents.read` + `sensitive` | number and personal code; audited first; `no-store` |
+| `POST /api/v1/personnel/documents/{id}/show` | `personnel.documents.read` + `sensitive` | number, personal code, place of birth, authority and the copies' ids; audited first; `no-store` |
+| `POST /api/v1/personnel/documents/{id}/copies/{copy}/show` | `personnel.documents.read` + `sensitive` | the Document Copy's JPEG, opened with the person's key; audited first (`personnel.document_shown`, which side); `no-store` |
 | `DELETE /api/v1/personnel/documents/{id}` | `personnel.documents.manage` | removes it, recorded, sealed content destroyed |
 | `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | a JPEG (≤ 2 MB) → a colour JPEG; `no-store`; rate-limited; usage counted, not stored |
 | existing `POST /api/v1/employee-photos/{employee}` | `employees.manage` | gains an `ai_generated` flag; `id_badge` refused for AI photos |
@@ -488,7 +503,8 @@ CREATE TABLE personnel.identity_documents (
   kind             text NOT NULL CHECK (kind IN ('passport','id_card','residence_permit')),
   issuing_state    char(3) NOT NULL,           -- ICAO code, e.g. LTU
   expires_on       date NOT NULL,
-  sealed           bytea NOT NULL,             -- {number, personal_code, mrz} sealed with the subject key
+  issued_on        date,                       -- typed in the review (D2); not in the MRZ
+  sealed           bytea NOT NULL,             -- {number, personal_code, mrz, place_of_birth, authority} sealed with the subject key
   number_index     bytea NOT NULL,             -- HMAC blind index
   personal_index   bytea,                      -- HMAC blind index, when there is a code
   superseded_at    timestamptz,
@@ -496,12 +512,23 @@ CREATE TABLE personnel.identity_documents (
 );
 CREATE UNIQUE INDEX ON personnel.identity_documents (number_index, issuing_state) WHERE deleted_at IS NULL;
 
-CREATE TABLE personnel.subjects (               -- one person, one personal code
-  employee_id     uuid PRIMARY KEY REFERENCES employees(id),
-  personal_index  bytea UNIQUE                   -- HMAC of the personal code, when kept (D2)
+CREATE TABLE personnel.document_copies (      -- the document's images (D2), and its portrait
+  id           uuid PRIMARY KEY,
+  document_id  uuid NOT NULL REFERENCES personnel.identity_documents(id),
+  side         text NOT NULL CHECK (side IN ('page','front','back','portrait')),
+  object_key   text NOT NULL,                  -- files store, personnel/…; the object is sealed with the subject key
+  sha256       bytea NOT NULL,                 -- of the plain JPEG, checked when it is opened
+  bytes        integer NOT NULL,
+  created_at …, created_by_user_id …,
+  UNIQUE (document_id, side)
 );
 
-ALTER TABLE employees ADD COLUMN birth_date date, ADD COLUMN nationality char(3), ADD COLUMN sex char(1);  -- per D2
+CREATE TABLE personnel.subjects (               -- one person, one personal code
+  employee_id     uuid PRIMARY KEY REFERENCES employees(id),
+  personal_index  bytea UNIQUE                   -- HMAC of the personal code, when there is one
+);
+
+ALTER TABLE employees ADD COLUMN birth_date date, ADD COLUMN nationality char(3), ADD COLUMN sex char(1);  -- D2: kept
 ALTER TABLE employee_photos ADD COLUMN ai_generated boolean NOT NULL DEFAULT false,
                             ADD COLUMN consent jsonb;                                            -- PR-6
 ```
@@ -554,7 +581,7 @@ screens: `PhotoSlot`, a generalised `pairPhotos`, and the image worker (in the s
 | `rowMarks` / `blocks` (problem or note) | `@ppe/sim-scan` | MRZ field marks | the same pattern; problem codes shared with Go |
 | check → commit API, late answers dropped, marks kept by identity (`registeredOf`) | `@ppe/sim-scan`, scan page | `documents/check` → `documents` | same pattern: the check's answer kept by document number, not row |
 | `sealbox.Keyring`, `-reseal-sim-codes` | built (step 6) | master key over per-person keys | reuse as is; `-reseal-personnel-keys` on the same pattern |
-| `sensitive()` + recent sign-in + audit before answer + `no-store` | `cmd/api` | Show document number | reuse unchanged |
+| `sensitive()` + recent sign-in + audit before answer + `no-store` | `cmd/api` | Show Document (number and copies) | reuse unchanged |
 | a no-leak test (codes never in events, errors, JSON) | `TestAddSIMs` | document number and personal code | the same test for every route that touches them |
 | `internal/files`, `employeephoto` | built | portraits and photos | reuse; add `ai_generated` and consent |
 | device profile, `csp.test.ts`, `TestPublishedPoliciesMatchCaddy` | built | same profile | reuse; no new directive. `make new-app` makes a standard app: set `device` and copy the CSP test (R7) |
@@ -579,7 +606,7 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 | **6. Trial** | a deploy publishes to Preview only (Stable follows deploys is off, R11); Beta for testers, then **Make Stable** in Manage apps. Watch the Trials page (reads, check failures, errors) | Decide to merge into the staff app or keep it as its own app |
 | later | VIZ names (FR-16), expiry reminders (FR-17), native chip reader (FR-18) | |
 
-Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
+Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is; D3's period is only a setting the job reads).
 
 ## 8. Testing
 
@@ -594,11 +621,11 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
   and angle.
 - **Go:** service tests with a fake repository (sealed fields never in events, a supersede
   on a second document, `other_employee` through the blind index), Postgres tests (schema,
-  grants, crypto-shredding: after deleting a subject key the document no longer opens), the
+  grants, crypto-shredding: after deleting a subject key neither the document nor its copies open; a stored copy is not a readable JPEG without the key), the
   route policy, and the luminance-lock test.
 - **e2e:** generated specimens (`fixtures/documents/make.ts`): a passport and an ID card front
   and back, one with a misread planted in the image, and one expired. Read from photos, review,
-  save, portrait, show number with Confirm your password, and the AI photo path with a fake
+  save with its Document Copies, portrait, Show Document (number and a copy) with Confirm your password, and the AI photo path with a fake
   colouriser.
 - **Workers and policy:** the e2e step asserts the image and OCR workers run (`page.workers()`),
   and the Caddy run (`make e2e-caddy`, as CI) proves they load under the device policy.
@@ -617,7 +644,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 | --- | --- | --- |
 | Check digits' blind spots: `K`/`<`, `G`/`6`, `L`/`1`, `U`/`0` change no digit, the composite weighs the document number as its own digit does, and names, document code and sex have none (phase 1) | a wrong value accepted from one read | two agreeing reads (FR-4), `needsSecondRead` on number corrections, the names' shape rules, the person typing the printed names (FR-7) |
 | OCR-B accuracy on phone photos (glare from laminate, holograms, guilloche) | slow or failed reads | adaptive threshold, the two-frame rule, correction by check digits, guidance text ("tilt to remove glare"), and typing the MRZ by hand as the last resort |
-| Keeping ID copies breaks data-protection rules | legal | keep only what D2 and D3 allow; seal it; crypto-shredding; DPIA |
+| Keeping ID copies breaks data-protection rules (D2 keeps every field and the Document Copies) | legal: a finding by the inspectorate, an employee's complaint | the DPIA states the purpose and legal basis before go-live and the employee is told (PR-10); copies sealed per person, without metadata, never sent to the AI, shown only with a recent sign-in and audited; retention and crypto-shredding (D3, PR-8). If the DPO finds no basis, the copies are switched off (a setting) and the fields stay |
 | AI changes the person's likeness | misleading photo | luminance lock, before and after view, labels, refusing the photo for ID badges, a live photo as the alternative |
 | An external AI provider sees employees' faces | GDPR transfer | a self-hosted sidecar by default; otherwise a processor agreement, EU only, no retention |
 | Two parsers drift apart | the client accepts what the server refuses | the shared test vectors |
@@ -631,17 +658,18 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 ## 10. Words to add to the glossary
 
 `docs/ubiquitous-language.md` needs these before the UI uses them (EN / LT / RU):
-**Identity Document** (Asmens dokumentas / Документ личности), **MRZ** (machine-readable zone),
-**Portrait**, **AI-coloured photo**, **Import Document**, **Show Document Number**,
-**Expires on**.
+**Identity Document** (Asmens dokumentas / Документ личности), **Document Copy** (Dokumento kopija /
+Копия документа: the photo of a document's page or side as kept, not an employee photo), **MRZ** (machine-readable zone),
+**Portrait**, **AI-coloured photo**, **Import Document**, **Show Document**,
+**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**.
 
 ## 11. Open decisions
 
 | # | Decision | Recommendation |
 | --- | --- | --- |
 | D1 | Identity data in a new **Personnel files** context (schema `personnel`, sealed), or new columns on `employees` | **Personnel files**, as the context map already plans. Names go to `employees` |
-| D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | Keep only what a process needs. Is the personal code needed (payroll, contracts)? If not, read it only to cross-check and do not store it |
-| D3 | Keep the document's portrait crop and/or the full image, and for how long | Keep neither the full image nor the crop by default; keep the derived photo. Retention for document data: employment + N months, set with the DPO |
+| D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | **Decided 2026-11-05: keep as much as the document gives**: names, date of birth, nationality, sex, document number, personal code, the MRZ, date of issue, place of birth, issuing authority, the portrait, and the document's own images (**Document Copies**). Sealed as section 3 sets out; the DPIA records why (PR-10) |
+| D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | Retention of the document, its copies and portrait: employment + N months, set with the DPO. Until then the job reads N from a setting and shreds nothing |
 | D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | Self-hosted with the luminance lock, off by default. Consider a live camera photo as the main path |
 | D5 | Documents in v1 | TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
 | D6 | Can the app create **new** employees, or only update existing ones? | Both. New employees need `employees.manage` too |
