@@ -1,5 +1,6 @@
 import type { ManagerDashboard as Data } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
+import { BarList } from '@ppe/ui/components/charts'
 import { Badge } from '@ppe/ui/components/badge'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -9,7 +10,7 @@ import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2 } from 'luc
 
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { AssetsCard } from '@/components/assets-card'
-import { BarList, DashboardsMenu, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
+import { DashboardsMenu, MonthChart, formatDate, inlineLink, jumpTo } from '@/components/dashboard'
 import { t } from '@/i18n'
 import { changeText, monthLabel, percentChange } from '@/lib/dashboard'
 import { formatTime } from '@ppe/ui/lib/dates'

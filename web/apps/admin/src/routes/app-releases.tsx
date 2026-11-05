@@ -6,7 +6,7 @@ import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { ActionError, ErrorState, Loading } from '@ppe/ui/components/states'
+import { ActionError, ErrorState, ListSkeleton } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -62,7 +62,7 @@ export function AppReleases({ app, timeZone, onChanged }: { app: LauncherApp; ti
       {releases.error ? (
         <ErrorState error={releases.error} onRetry={releases.reload} />
       ) : !releases.data ? (
-        <Loading />
+        <ListSkeleton rows={3} />
       ) : versions.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.apps.notPublished}</p>
       ) : (

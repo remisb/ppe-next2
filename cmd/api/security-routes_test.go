@@ -100,6 +100,38 @@ func TestEndSessionFromSecurity(t *testing.T) {
 	}
 }
 
+// Signing someone out of every device ends each of their live sessions,
+// recorded as ended by an administrator, with the same checks as one.
+func TestEndEverySessionFromSecurity(t *testing.T) {
+	api := newTestAPI(t)
+	ctx := context.Background()
+	_, adminTok := api.userWith(t, role.KeyAdmin)
+	emp, _ := api.userWith(t, role.KeyEmployee)
+	var ids []uuid.UUID
+	for range 2 {
+		s, _, err := api.svc.sessions.Start(ctx, session.StartParams{UserID: emp.ID, KeepSignedIn: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, s.ID)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/security/users/"+uuid.NewString()+"/sessions", adminTok, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown user = %d, want 404", rec.Code)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/security/users/"+emp.ID.String()+"/sessions", adminTok, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("end all = %d", rec.Code)
+	}
+	for _, id := range ids {
+		if _, err := api.svc.sessions.Live(ctx, id); err == nil {
+			t.Errorf("session %s is still live", id)
+		}
+	}
+	kinds := api.log.kinds()
+	if kinds[len(kinds)-1] != string(security.KindSessionEnded)+":"+session.ReasonEndedByAdministrator {
+		t.Errorf("last event = %s", kinds[len(kinds)-1])
+	}
+}
+
 func TestSecurityListRejectsUnknownParameters(t *testing.T) {
 	api := newTestAPI(t)
 	_, tok := api.userWith(t, role.KeyAdmin)

@@ -1,4 +1,4 @@
-import type { ConfirmationLink, Order, SupplierChat } from '@ppe/api-client'
+import type { ConfirmationLink, Order, SupplierChat, WaitingLink } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Button } from '@ppe/ui/components/button'
@@ -157,7 +157,7 @@ function OrderBody({
   onDelete?: (() => void) | undefined
 }) {
   const { client } = useApi()
-  const [link, setLink] = useState<ConfirmationLink | null>(null)
+  const [link, setLink] = useState<(ConfirmationLink & { made_at: string }) | null>(null)
   const [linkOpen, setLinkOpen] = useState(false)
   const linkId = useId()
   const action = useAction()
@@ -167,6 +167,8 @@ function OrderBody({
   const whatsappText = formatWhatsApp(messageFromOrder(o))
   const whatsapp = useWhatsAppCopy(whatsappText)
   const copyWhatsApp = actions.includes('copyWhatsApp')
+  // The link the order waits on: the one just made here, else the one the API knows of.
+  const waiting = link ? { created_at: link.made_at, expires_at: link.expires_at, opened_at: null } : o.link
 
   const sign = () =>
     void action.run(
@@ -190,10 +192,14 @@ function OrderBody({
       <Button
         disabled={action.pending}
         onClick={() =>
-          void action.run(async () => {
-            setLink(await client.orders.createConfirmationLink(o.id))
-            setLinkOpen(true)
-          })
+          void action.run(
+            async () => {
+              setLink({ ...(await client.orders.createConfirmationLink(o.id)), made_at: new Date().toISOString() })
+              setLinkOpen(true)
+            },
+            // A link made earlier (on another visit or device) would stop working without a word: ask first (S11).
+            o.link ? { confirm: t.history.replaceLinkQuestion(formatDateTime(o.link.created_at, timeZone)) } : {},
+          )
         }
       >
         <Link2 aria-hidden /> <ShortWords label={t.history.createLink} short={t.history.createLinkShort} />
@@ -262,6 +268,7 @@ function OrderBody({
         <Fact label={t.history.preparedByLabel}>{o.prepared_by_name}</Fact>
         {o.given_at ? <Fact label={t.common.given}>{formatDateTime(o.given_at, timeZone)}</Fact> : null}
         {o.confirmation_method ? <Fact label={t.history.confirmedLabel}>{t.history.confirmedHow[o.confirmation_method]}</Fact> : null}
+        {waiting ? <Fact label={t.history.confirmationLink} wide>{linkState(waiting, timeZone)}</Fact> : null}
       </FactGrid>
       {actions.some((a) => a === 'handOver' || a === 'printRecord' || a === 'sign') ? (
         <div className="grid gap-2 sm:flex sm:flex-wrap">
@@ -284,4 +291,12 @@ function OrderBody({
       ) : null}
     </>
   )
+}
+
+/** "Made 3 Nov 2026, 14:05 · opened 4 Nov 2026, 09:12", or not opened yet, or when it stopped working. */
+function linkState(l: WaitingLink, timeZone: string | undefined): string {
+  const parts = [t.history.linkMade(formatDateTime(l.created_at, timeZone))]
+  parts.push(l.opened_at ? t.history.linkOpened(formatDateTime(l.opened_at, timeZone)) : t.history.linkNotOpened)
+  if (new Date(l.expires_at).getTime() <= Date.now()) parts.push(t.history.linkExpired(formatDateTime(l.expires_at, timeZone)))
+  return parts.join(' · ')
 }

@@ -567,8 +567,10 @@ Lithuanian or Russian label wraps rather than overflow.
 ### Loading
 - **Brief:** the screen or part is being read: "Loading…", or a skeleton in its shape.
 - **Detail:** the app's first state is **Checking your sign-in…** while the sign-in is
-  refreshed; nothing that needs a session draws before it.
-- **Code:** `Loading`, `Skeleton`, `CheckingSignIn`.
+  refreshed; nothing that needs a session draws before it. A list's first load is grey rows
+  in its shape; loading it again (a filter, a page, Refresh) keeps its rows, dimmed and busy,
+  until the new ones come.
+- **Code:** `Loading`, `ListSkeleton`, `Skeleton`, `Table busy`, `CheckingSignIn`.
 
 ### Empty state
 - **Brief:** a dashed box where a list or panel has nothing to show, saying why and, when

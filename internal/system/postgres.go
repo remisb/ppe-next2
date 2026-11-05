@@ -94,6 +94,21 @@ func (s *PostgresStore) ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEv
 	})
 }
 
+func (s *PostgresStore) CountErrors(ctx context.Context) (map[Kind]int, error) {
+	counts := map[Kind]int{KindServer: 0, KindPanic: 0, KindClient: 0}
+	rows, err := s.pool.Query(ctx, `SELECT kind, count(*) FROM error_events GROUP BY kind`)
+	if err != nil {
+		return nil, err
+	}
+	var kind string
+	var n int
+	_, err = pgx.ForEachRow(rows, []any{&kind, &n}, func() error {
+		counts[Kind(kind)] = n
+		return nil
+	})
+	return counts, err
+}
+
 func (s *PostgresStore) NewErrorKinds(ctx context.Context, since time.Time) (int, error) {
 	var n int
 	err := s.pool.QueryRow(ctx, `

@@ -97,6 +97,11 @@ export const history = {
   recordPaperQuestion: (name: string, record: string) =>
     `Record that ${name} signed the paper record for ${record}? The order becomes Given.`,
   confirmationLink: 'Confirmation link',
+  linkMade: (when: string) => `Made ${when}`,
+  linkOpened: (when: string) => `opened ${when}`,
+  linkNotOpened: 'not opened yet',
+  linkExpired: (when: string) => `stopped working ${when}`,
+  replaceLinkQuestion: (made: string) => `The link made ${made} stops working, and the employee needs the new one. Make a new link?`,
   copied: 'Copied',
   copyLink: 'Copy link',
   linkValidUntil: (date: string) => `Valid until ${date}. This link is shown once; creating another replaces it.`,

@@ -3,7 +3,9 @@
 Accounts that sign in to the API. Package `internal/domain/user`, routes in
 `cmd/api/user-routes.go` and `cmd/api/auth-routes.go`, table from migration `0001_users`;
 the roles each holds are in `user_roles` (migration 0022, roles: `docs/specs/role-service.md`).
-The Users screen is in Administration (`/admin/users`).
+The Users screen is in Administration (`/admin/users`): status tabs with counts (All, Active,
+Inactive) and a role filter, both in its address (`/admin/users?status=inactive&role=<id>`), so
+a role's user count on Roles & permissions opens its users; the search stays on the screen.
 
 ## Entity
 

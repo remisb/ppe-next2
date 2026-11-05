@@ -19,6 +19,8 @@ type Store interface {
 	RecordError(ctx context.Context, ev ErrorEvent, foldSince time.Time) error
 	// ListErrors returns up to q.Limit rows matching q, last seen first.
 	ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEvent, error)
+	// CountErrors counts the error list's rows by kind; a kind with none is 0.
+	CountErrors(ctx context.Context) (map[Kind]int, error)
 	// NewErrorKinds counts the fingerprints first seen at or after since and
 	// on no row before it.
 	NewErrorKinds(ctx context.Context, since time.Time) (int, error)
@@ -141,6 +143,13 @@ func (s *Service) Errors(ctx context.Context, f ErrorFilter) (ErrorPage, error) 
 	}
 	if page.Errors == nil {
 		page.Errors = make([]ErrorEvent, 0)
+	}
+	if f.After == nil {
+		counts, err := s.store.CountErrors(ctx)
+		if err != nil {
+			return ErrorPage{}, err
+		}
+		page.Counts = &counts
 	}
 	return page, nil
 }

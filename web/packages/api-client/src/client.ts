@@ -329,6 +329,8 @@ export function createClient(options: ClientOptions) {
       events: (query: SecurityQuery = {}) => request<SecurityPage>('GET', `/api/v1/security/events${historyQueryString(query)}`),
       sessions: () => request<LiveSession[]>('GET', '/api/v1/security/sessions'),
       endSession: (id: string) => request<void>('DELETE', `/api/v1/security/sessions/${seg(id)}`),
+      /** Signs one person out on every device (users.manage, a recent sign-in). */
+      endUserSessions: (userId: string) => request<void>('DELETE', `/api/v1/security/users/${seg(userId)}/sessions`),
       review: () => request<AccessReview>('GET', '/api/v1/security/access-review'),
       /** Records that the signed-in user reviewed access now; returns the review. */
       markReviewed: () => request<AccessReview>('POST', '/api/v1/security/access-review'),

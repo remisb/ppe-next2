@@ -7,6 +7,7 @@ import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ActionError, EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useAction } from '@ppe/ui/lib/use-action'
@@ -17,6 +18,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 
 import { t } from '@/i18n'
 import { type RoleDraft, type RoleErrors, draftOf, grouped, neededBy, permissionLabel, togglePermission, validateRole } from '@/lib/roles'
+import { type Route, linkTo } from '@/lib/router'
 import { roleGrants, roleName } from '@/lib/users'
 
 /**
@@ -24,10 +26,11 @@ import { roleGrants, roleName } from '@/lib/users'
  * adds, changes and deletes them; Administrator stays as it is, and a role
  * someone holds is not deleted. Roles are given to users on Users.
  */
-export function RolesPage() {
+export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
   const allowed = session.can('roles.manage')
+  const canUsers = session.can('users.manage')
   const roles = useLoad(() => (allowed ? client.roles.list() : Promise.resolve([])))
   const catalogue = useLoad(() => (allowed ? client.permissions() : Promise.resolve([])))
   const [editing, setEditing] = useState<Role | 'new' | null>(null)
@@ -89,7 +92,13 @@ export function RolesPage() {
                     <span className="hidden stacked:inline">{t.roles.permissionsCount(r.permissions.length)}</span>
                   </TableCell>
                   <TableCell className="tabular-nums stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">
-                    {t.roles.usersCount(r.user_count)}
+                    {r.user_count > 0 && canUsers ? (
+                      <a {...linkTo({ name: 'users', role: r.id }, navigate)} aria-label={t.users.usersWithRole(roleName(r))} className={linkVariants()}>
+                        {t.roles.usersCount(r.user_count)}
+                      </a>
+                    ) : (
+                      t.roles.usersCount(r.user_count)
+                    )}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
                     <Button

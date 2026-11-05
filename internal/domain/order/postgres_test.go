@@ -331,6 +331,17 @@ func TestPostgresConfirmation(t *testing.T) {
 	if _, err := f.svc.ConfirmByToken(ctx, old, true); !errors.Is(err, ErrLinkExpired) {
 		t.Errorf("replaced link err = %v", err)
 	}
+	// The order shows the link it waits on, the new one, not yet opened (S11).
+	got, err := f.svc.Get(ctx, o.ID)
+	if err != nil || got.Link == nil || got.Link.OpenedAt != nil || !got.Link.ExpiresAt.After(got.Link.CreatedAt) {
+		t.Fatalf("waiting link = %+v, %v", got.Link, err)
+	}
+	if _, err := f.svc.RecordByToken(ctx, token); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := f.svc.Get(ctx, o.ID); got.Link == nil || got.Link.OpenedAt == nil {
+		t.Errorf("opened link = %+v", got.Link)
+	}
 
 	// Two confirmations race; exactly one writes, both see GIVEN.
 	var wg sync.WaitGroup

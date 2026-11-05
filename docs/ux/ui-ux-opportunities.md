@@ -9,14 +9,17 @@ Every finding was checked in the code; paths are under `web/`, with `ww` for
 24 Oct 2026 · build `9e08b5c` · code review only (no usability sessions) · 49 findings in
 four parts: defects, staff app, Administration and extraction.
 
-**Status (24 Oct 2026):** steps 1–5 of the [suggested order](#5-suggested-order) are done and
-live in `571764f`, which is 36 of the 49 findings:
+**Status (5 Nov 2026):** all 49 findings are done. Steps 1–5 (36 findings) are live in
+`571764f`. The last 13 are built and tested on main but not deployed yet:
 
-- **Done:** D1–D4; S1–S6, S10, S12, S15, S16, S17; A1–A3, A5, A6, A8, A10–A12; X1–X7, X9–X11,
-  X13, X14.
-- **Open, step 6** (needs the API or bigger flows): S11, S13, S14, S18, A4, A7, A13.
-- **Open, in no step yet:** S7 (Item Sets), S8 (the busy cue while reloading), S9 (which SIM
-  number is which), A9 (the error pane's links), X8 (`useCursorPages`), X12 (`BarList`).
+- **Step 6, with the API:** S11 (the order shows its link's state, and a new link asks first),
+  S13 (Return on the employee page), S14 (Replacements by employee, one Reorder each), S18
+  (select SIMs, Change Status at once), A4 (the access review's tabs, Edit and ⋯), A7 (Users'
+  status tabs and role filter, linked from Roles), A13 (Signed-in devices by person, Sign out
+  on all).
+- **The rest:** S7 (Item Sets' links, badges and Changes), S8 (`ListSkeleton`, `Table busy`),
+  S9 (the SIM numbers' labels shown), A9 (the error pane's links and copy, kind tabs with
+  counts), X8 (`useCursorPages`, `OlderButton`), X12 (`BarList` in `charts`).
 
 The summary and tables below describe the code as it was at `9e08b5c`.
 
@@ -161,17 +164,19 @@ instance).
    item or an employee. Close sits in the same corner in both apps, and Administration's two
    lists gained J / K. Employees open beside the list (S17), keeping its search and tab.
 6. **New capabilities that need the API or bigger flows**: S11 (link state), S13, S14, S18,
-   A4, A7, A13. Not started.
-
-Not in any step yet: S7, S8, S9, A9, X8 and X12.
+   A4, A7, A13. **Done**, with S7, S8, S9, A9, X8 and X12, which no step had taken. The API
+   gained an ORDERED order's waiting `link` (S11), the error list's `counts` by kind (A9), an
+   item set's Changes (S7) and signing a person out on every device (A13). S18 changes the
+   cards one after another, each its own change, and stops at a failure saying how far it
+   got.
 
 ### Decisions for you
 
 - **Given as a `success` (green) badge** (S5, X10): decided, Given is green and the separate
   Signed badge is gone.
 - **Employees beside the list** (S17): done, the employee opens beside the list from `lg`.
-- **Replacing a confirmation link** (S11): keep it silent, or ask first and show the old link's
-  state.
+- **Replacing a confirmation link** (S11): decided, ask first, and show the link's state as a
+  fact.
 - **One count style on filter tabs** (X2): decided for the plain muted number most screens
   used; the registers' pill is gone.
 

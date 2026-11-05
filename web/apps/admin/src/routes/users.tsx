@@ -4,9 +4,10 @@ import { MIN_PASSWORD_LENGTH, useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
-import { Field, Input, PasswordInput, controlProps } from '@ppe/ui/components/field'
+import { Field, Input, PasswordInput, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { Segmented } from '@ppe/ui/components/segmented'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -18,7 +19,7 @@ import { Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
-import type { Route } from '@/lib/router'
+import type { Route, UserStatus } from '@/lib/router'
 import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleGrants, roleName, roleRank, rolesOf, validateNewPassword, validateUser } from '@/lib/users'
 
 type UserSort = 'name' | 'email' | 'roles' | 'status'
@@ -35,7 +36,13 @@ const columns = (): SortColumn<UserSort>[] => [
  * For whoever manages users; the navigation shows it to them alone, and the
  * API refuses everyone else.
  */
-export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
+export function UsersPage({
+  route,
+  navigate,
+}: {
+  route: Extract<Route, { name: 'users' }>
+  navigate: (to: Route, options?: { replace?: boolean; scroll?: boolean }) => void
+}) {
   const { client } = useApi()
   const session = useSession()
   const allowed = session.can('users.manage')
@@ -51,10 +58,21 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
   const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
   const sortProps = { sort, onSort: setSort }
 
-  const shown = useMemo(() => {
+  // The status tabs and the role filter are in the address (a role's user count on Roles opens them); the search is not.
+  const { status, role } = route
+  const setFilters = (next: { status?: UserStatus | undefined; role?: string | undefined }) => {
+    const to = { status, role, ...next }
+    navigate({ name: 'users', ...(to.status ? { status: to.status } : {}), ...(to.role ? { role: to.role } : {}) }, { replace: true, scroll: false })
+  }
+  // Searched and filtered by role; the tabs count these, then show their own.
+  const matching = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    const matching = (users.data ?? []).filter((u) => !q || `${u.name} ${u.email}`.toLowerCase().includes(q))
-    return sortRows(matching, sort, (u, key) => {
+    return (users.data ?? []).filter((u) => (!q || `${u.name} ${u.email}`.toLowerCase().includes(q)) && (!role || u.role_ids.includes(role)))
+  }, [users.data, filter, role])
+  const activeCount = matching.filter((u) => u.is_active).length
+  const shown = useMemo(() => {
+    const inTab = matching.filter((u) => !status || u.is_active === (status === 'active'))
+    return sortRows(inTab, sort, (u, key) => {
       switch (key) {
         case 'name':
           return u.name
@@ -66,7 +84,7 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
           return u.is_active ? 0 : 1
       }
     })
-  }, [users.data, roleList.data, filter, sort])
+  }, [matching, roleList.data, status, sort])
 
   if (!allowed) {
     return (
@@ -84,7 +102,19 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
         description={t.users.description}
         primary={{ label: t.users.addUser, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
-      <div className="mb-4 md:max-w-sm">
+      <Segmented<UserStatus | 'all'>
+        label={t.users.show}
+        layout="fit"
+        className="mb-3"
+        value={status ?? 'all'}
+        onChange={(v) => setFilters({ status: v === 'all' ? undefined : v })}
+        options={[
+          { value: 'all', label: t.users.allUsers, count: users.data ? matching.length : undefined },
+          { value: 'active', label: t.common.active, count: users.data ? activeCount : undefined },
+          { value: 'inactive', label: t.common.inactive, count: users.data ? matching.length - activeCount : undefined },
+        ]}
+      />
+      <div className="mb-4 flex flex-wrap gap-2">
         <Input
           type="search"
           enterKeyHint="search"
@@ -93,12 +123,21 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
           onChange={(e) => setFilter(e.target.value)}
           aria-label={t.users.searchLabel}
           data-shortcut="search"
+          className="min-w-0 flex-1 md:max-w-sm"
         />
+        <Select aria-label={t.users.role} value={role ?? ''} onChange={(e) => setFilters({ role: e.target.value || undefined })} className="w-auto">
+          <option value="">{t.users.allRoles}</option>
+          {allRoles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {roleName(r)}
+            </option>
+          ))}
+        </Select>
       </div>
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
-      <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
+      <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={status || role ? t.users.noneFiltered : filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
         {() => (
           // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
           <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
@@ -174,7 +213,8 @@ export function UsersPage({ navigate }: { navigate: (to: Route) => void }) {
 }
 
 /** Add User (with a first password) or Edit User (profile, roles, active). */
-function UserForm({
+/** Add User or Edit User: the account, its roles and whether it may sign in; also the access review's Edit. */
+export function UserForm({
   open,
   user,
   roles,

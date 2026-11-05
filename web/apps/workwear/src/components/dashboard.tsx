@@ -10,7 +10,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { t } from '@/i18n'
-import { type Need, barPercent, monthLabel, sortNeeds } from '@/lib/dashboard'
+import { type Need, monthLabel, sortNeeds } from '@/lib/dashboard'
 import type { Route } from '@/lib/router'
 
 /*
@@ -66,26 +66,6 @@ export function MonthChart({
       cell={cell}
       columnHead={t.dashboard.month}
     />
-  )
-}
-
-/** A ranked list with a bar under each entry, scaled to the largest value. */
-export function BarList({ items }: { items: { key: string; label: string; value: number; text: string }[] }) {
-  const scale = Math.max(1, ...items.map((i) => i.value))
-  return (
-    <ol className="flex flex-col gap-3">
-      {items.map((i) => (
-        <li key={i.key}>
-          <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="min-w-0 truncate font-medium">{i.label}</span>
-            <span className="shrink-0 text-muted-foreground tabular-nums">{i.text}</span>
-          </div>
-          <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/10">
-            <div className="h-full rounded-full bg-foreground/70" style={{ width: `${barPercent(i.value, scale)}%` }} />
-          </div>
-        </li>
-      ))}
-    </ol>
   )
 }
 

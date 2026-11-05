@@ -110,6 +110,13 @@ export const assets: AssetsText = {
   statusNote: 'Pasirinkite dabartinę būseną, kurią patvirtino tiekėjas. Tai tik įrašas: kortelė nuo to neaktyvuojama ir neužblokuojama.',
   activateNote: 'Parašykite tiekėjui, kad aktyvuotų šią SIM. Kai aktyvavimas patvirtintas, pakeiskite būseną į „Aktyvi“.',
   statusChanged: (number: string, status: string) => `${number}: būsena pakeista į „${status}“.`,
+  selectCard: (inventoryNo: string) => `Pažymėti ${inventoryNo}`,
+  selectPage: 'Pažymėti visas šio puslapio SIM',
+  selectedCount: (n: number) => plural(n, { one: 'Pažymėta # SIM', few: 'Pažymėtos # SIM', many: 'Pažymėta # SIM', other: 'Pažymėta # SIM' }),
+  clearSelection: 'Atžymėti visas',
+  statusOfSelected: 'Keisti pažymėtų SIM būseną',
+  bulkChanged: (n: number, status: string) => `Pažymėtų SIM (${n}) būsena pakeista į „${status}“.`,
+  bulkStopped: (done: number, total: number) => `Pakeista ${done} iš ${total}; kitos liko nepakeistos.`,
   copyNumbers: (inventoryNo: string) => `Kopijuoti ${inventoryNo} numerius`,
   simCopyText: (simNo: string, phoneNo: string | null) => (phoneNo ? `SIM: ${simNo} | Telefonas: ${phoneNo}` : `SIM: ${simNo}`),
   copied: (number: string) => `Nukopijuota: ${number}.`,
@@ -161,6 +168,7 @@ export const assets: AssetsText = {
   giveSimCard: 'Išduoti SIM',
   // One word for SIMs and items; what it does is its tooltip.
   takeBack: 'Priimti',
+  takeBackOf: (inventoryNo: string) => `Priimti ${inventoryNo}`,
   takeBackHelp: {
     SIM: { body: 'Registruoti, kad SIM kortelė fiziškai grąžinta į biurą.', note: 'Jos ryšio būsena nesikeičia.' },
     EQUIPMENT: { body: 'Registruoti, kad daiktas fiziškai grąžintas į biurą.' },

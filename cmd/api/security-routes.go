@@ -8,6 +8,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/security"
 )
 
@@ -65,6 +66,27 @@ func registerSecurityRoutes(rt *router, svc services, sensitive func(role.Permis
 		}
 		if err == nil {
 			err = svc.sessions.EndByAdministrator(r.Context(), s.UserID, id)
+		}
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}), role.UsersManage)
+
+	// Every device of one person at once (A13): as ending each of them, with the same checks.
+	rt.restricted("DELETE /api/v1/security/users/{id}/sessions", sensitive(role.UsersManage, func(w http.ResponseWriter, r *http.Request) {
+		actor, err := actorID(r)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		userID, err := parseUUIDPath(r, "id")
+		if err == nil {
+			err = svc.users.MayManage(r.Context(), userID, actor)
+		}
+		if err == nil {
+			err = svc.sessions.EndAll(r.Context(), userID, uuid.Nil, session.ReasonEndedByAdministrator)
 		}
 		if err != nil {
 			writeError(w, r, err)

@@ -75,6 +75,7 @@ ADR 0003), shown on Security.
 | `GET /api/v1/audit-events/{id}` | `audit.read` | one event (single object, 404 on miss) |
 | `GET /api/v1/audit-events/employees/{id}` | any signed-in user | an employee's Changes |
 | `GET /api/v1/audit-events/catalogue/{id}` | any signed-in user | a catalogue item's Changes |
+| `GET /api/v1/audit-events/item-sets/{id}` | `item_sets.read` | an item set's Changes (Item Sets, under each set's ⋯) |
 | `GET /api/v1/audit-events/orders/{id}` | any signed-in user | an order's Changes |
 | `GET /api/v1/audit-events/assets/{id}` | any signed-in user | an asset's Changes, its assignments' events included |
 | `GET /api/v1/audit-events/users/{id}` | `users.read` | a user's Changes |

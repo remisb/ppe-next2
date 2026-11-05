@@ -175,7 +175,7 @@ func TestSystemErrorsRejectUnknownParameters(t *testing.T) {
 			t.Errorf("%s = %d, want 400", q, rec.Code)
 		}
 	}
-	if rec := api.do(t, "GET", "/api/v1/system/errors?kind=client", tok, nil); rec.Body.String() != `{"errors":[],"next":null}`+"\n" {
+	if rec := api.do(t, "GET", "/api/v1/system/errors?kind=client", tok, nil); rec.Body.String() != `{"errors":[],"next":null,"counts":{"client":0,"panic":0,"server":0}}`+"\n" {
 		t.Errorf("empty list = %s", rec.Body)
 	}
 }

@@ -237,6 +237,14 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 
 ## 8. Loading and performance
 
+- **A first load shows the shape, not a word.** `Loaded` draws a `ListSkeleton` (grey rows
+  fading down, "Loading…" to a screen reader) until the data comes; a list screen's own
+  ladder uses it too.
+- **Loading again keeps the list.** A filter, page or Refresh keeps the rows on screen, dimmed
+  and `aria-busy` (`Table busy={load.loading}`), until the new ones come; the filter tabs dim
+  their counts (`Segmented busy`).
+- **Older pages are appended.** A log read a page at a time (the Audit log, Sign-ins, Errors)
+  is `useCursorPages`, with `OlderButton` under it; a change of filter drops the older pages.
 - **Load when shown.** Sheets and forms that stay mounted load their data only while open
   (key the load on "is it open", not on the record object). A closed section loads nothing.
 - **Counts are cheap.** A count for a closed section is the `total` of a one-row query.
@@ -295,7 +303,11 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | A record's facts, label over value (`FactGrid`, ruled), or a panel's, one per line (`layout="rows"`) | `FactGrid`, `Fact` (`wide` for a comment) | `@ppe/ui/components/facts` |
 | Status tabs that filter a list (with counts and tooltips), and choices such as Language or Theme | `Segmented` (`layout`: `fill`, `fit`, `scroll`, `grid`) | `@ppe/ui/components/segmented` |
 | An action with ask first, one error at a time and a busy state | `useAction` (`run(fn, { confirm, mapError })`, `fail`, `pending`), `ActionError` | `@ppe/ui/lib/use-action`, `@ppe/ui/components/states` |
-| What a load shows: its error with Retry, Loading, the empty state, the content | `Loaded` (`empty`, `emptyState`); several loads as one: `combineLoads` | `@ppe/ui/components/states`, `@ppe/ui/lib/use-load` |
+| What a load shows: its error with Retry, a skeleton, the empty state, the content | `Loaded` (`empty`, `emptyState`), `ListSkeleton`; several loads as one: `combineLoads` | `@ppe/ui/components/states`, `@ppe/ui/lib/use-load` |
+| A list loading again, kept on screen dimmed | `Table busy` | `@ppe/ui/components/table` |
+| A log read a page at a time, "Show older" under it | `useCursorPages`, `OlderButton` | `@ppe/ui/lib/use-cursor-pages`, `@ppe/ui/components/older-button` |
+| A ranked list with a bar under each entry (most given, most active, the link funnel, languages) | `BarList` (`scale`: `'max'` or the whole) | `@ppe/ui/components/charts` |
+| Copy a number or a reference, with the screen's own "Copied." | `CopyButton` | `@ppe/ui/components/copy-button` |
 | Back to the list on a page or a narrow pane | `BackButton` | `@ppe/ui/components/back-button` |
 | A key: in a hint line, on its own (Help), beside a control | `Kbd` (`size`: `inline`, `chip`, `tiny`) | `@ppe/ui/components/kbd` |
 | Amounts and counts: a field's cents, a locked document's €, a grouped count | `euroInput`, `formatDocumentEuro`, `formatNumber` (with `formatEuro`, `parseEuro`) | `@ppe/i18n` |
@@ -340,7 +352,7 @@ Fix these with the screen they are on. Do not copy them.
   paragraphs beside Refresh: the tabs have no heading for an ⓘ to sit beside.
 - **Four lists keep their own load states**: Orders and the asset registers (an empty state with
   Clear filters), System's error list and hand-over mode (its own words). `Loaded` does not
-  take an empty state's action yet.
+  take an empty state's action yet; the first three draw `ListSkeleton` as it does.
 - **The order pane's lines** are a stacked table, already ruled, not a `RuleList`. That is
   acceptable while they keep the same look.
 - **List rows carry one tooltip each.** Base UI could share one tooltip per list

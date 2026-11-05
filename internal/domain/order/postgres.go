@@ -380,6 +380,19 @@ func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, fn Delete
 	}))
 }
 
+func (r *PostgresRepository) LatestLink(ctx context.Context, orderID uuid.UUID) (*Confirmation, error) {
+	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations
+		WHERE order_id = $1 AND method = 'ELECTRONIC' AND revoked_at IS NULL AND confirmed_at IS NULL
+		ORDER BY created_at DESC LIMIT 1`, orderID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
 func (r *PostgresRepository) LinkByHash(ctx context.Context, tokenHash string) (Confirmation, error) {
 	// A deleted order's links read as expired, even one already used.
 	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations

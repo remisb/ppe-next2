@@ -171,7 +171,7 @@ The keys are in `overview.Keys()` and `ATTENTION_KEYS` (`@ppe/api-client`), comp
 | --- | --- | --- |
 | `GET /api/v1/overview` | any signed-in user | areas by the token's permissions |
 | `GET /api/v1/system/status` | `system.read` | service (commit, Go, started, ready), the window, database and pool, retention and the last upkeep |
-| `GET /api/v1/system/errors?kind=&after=&page_size=` | `system.read` | last seen first, keyset pages with the Audit log's cursor; unknown or repeated parameters are 400 |
+| `GET /api/v1/system/errors?kind=&after=&page_size=` | `system.read` | last seen first, keyset pages with the Audit log's cursor; the first page (no `after`) also has `counts`, the rows by kind whatever `kind` is; unknown or repeated parameters are 400 |
 | `GET /api/v1/system/errors/{id}` | `system.read` | one row, 404 when there is none |
 | `POST /api/v1/client-errors` | any signed-in user | `{message, stack, path}`, unknown fields 400; 204 |
 
@@ -191,10 +191,11 @@ The keys are in `overview.Keys()` and `ATTENTION_KEYS` (`@ppe/api-client`), comp
     oldest transaction, the latest migration and the largest tables.
   - How long records are kept, and the last cleanup.
 - **Errors** (`/system/errors`, one open at `/system/errors/<id>` beside the list from `lg`):
-  - a filter by kind;
+  - tabs by kind (All, Server error, Crash, In the browser), each with its count;
   - each error's latest message, route, count and when it was last seen;
-  - open, it shows first and last seen, who, the app, the device, the reference and the
-    stack.
+  - open, it shows first and last seen, who (with links to their Sign-ins and the changes
+    they made, for whoever may read those), the app, the device, the reference with a copy
+    button, and the stack.
 - **Backups** (`/system/backups`; `/admin/backups` leads there) is the former Backups
   screen.
 

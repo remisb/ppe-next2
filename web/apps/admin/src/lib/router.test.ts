@@ -8,6 +8,10 @@ describe('router', () => {
     expect(parsePath('/')).toEqual({ name: 'overview' })
     expect(parsePath(pathOf({ name: 'audit', filter: {} }))).toEqual({ name: 'audit', filter: {} })
     expect(parsePath('/users/')).toEqual({ name: 'users' })
+    // Users' filters are in its address, so a role's user count can open them.
+    expect(parsePath('/users', '?status=inactive&role=r1')).toEqual({ name: 'users', status: 'inactive', role: 'r1' })
+    expect(pathOf({ name: 'users', status: 'active', role: 'r1' })).toBe('/users?status=active&role=r1')
+    expect(parsePath('/users', '?status=gone')).toEqual({ name: 'users' })
     expect(parsePath('/nope')).toEqual({ name: 'home' })
   })
 

@@ -89,6 +89,11 @@ export const history: HistoryText = {
   recordPaperQuestion: (name: string, record: string) =>
     `Pažymėti, kad ${name} pasirašė popierinį įrašą ${record}? Užsakymas taps išduotu.`,
   confirmationLink: 'Patvirtinimo nuoroda',
+  linkMade: (when: string) => `Sukurta ${when}`,
+  linkOpened: (when: string) => `atidaryta ${when}`,
+  linkNotOpened: 'dar neatidaryta',
+  linkExpired: (when: string) => `nebegalioja nuo ${when}`,
+  replaceLinkQuestion: (made: string) => `Nuoroda, sukurta ${made}, nustos veikti, ir darbuotojui reikės naujos. Sukurti naują nuorodą?`,
   copied: 'Nukopijuota',
   copyLink: 'Kopijuoti nuorodą',
   linkValidUntil: (date: string) => `Galioja iki ${date}. Ši nuoroda rodoma tik kartą; sukūrus naują, ji pakeičiama.`,

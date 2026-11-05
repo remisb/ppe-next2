@@ -380,14 +380,16 @@ both apps share it (Layout above):
 - Calls go through `client`; a 401 refreshes once and repeats the call, and a 403
   `recent sign-in required` opens Confirm your password (`@ppe/app-shell`'s `ConfirmPassword`)
   and repeats it. Screens need no handling of their own; `errorText` words the cancelled case.
-- Charts are `@ppe/ui/components/charts` (`BarChart`, `Sparkline`, `HeatStrip`): plain
+- Charts are `@ppe/ui/components/charts` (`BarChart`, `Sparkline`, `HeatStrip`, `BarList`): plain
   elements and SVG, drawn `aria-hidden`, with the figures in a visually hidden table or an
   `aria-label`. No chart library.
 - Show errors through `errorText` (or `ErrorState`, which uses it): a 5xx becomes the user's
   language's "The server could not do this…" with its reference, never the API's raw words.
 - A load's states are `<Loaded load={…} emptyState={…}>{(data) => …}</Loaded>` (error with
-  Retry, Loading, empty, content); several loads a screen needs together are
-  `combineLoads(a, b)`. An action (Delete, Deactivate, Change Status) runs through
+  Retry, a `ListSkeleton`, empty, content); several loads a screen needs together are
+  `combineLoads(a, b)`. A list that loads again (a filter, a page, Refresh) stays on screen
+  with `<Table busy={load.loading}>`. A log read a page at a time is `useCursorPages(fetch,
+  deps)` with `<OlderButton pages label>`, never its own older-pages state. An action (Delete, Deactivate, Change Status) runs through
   `useAction().run(fn, { confirm, mapError })`, which asks first, clears the last error and
   keeps the new one for `<ActionError error={action.error} />`; never a try/catch with an
   error state of its own.

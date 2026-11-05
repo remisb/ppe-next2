@@ -110,6 +110,13 @@ export const assets: AssetsText = {
   statusNote: 'Выберите текущий статус, подтверждённый оператором. Это только запись: карта от этого не активируется и не блокируется.',
   activateNote: 'Напишите оператору, чтобы он активировал эту SIM. Когда активация подтверждена, измените статус на «Активна».',
   statusChanged: (number: string, status: string) => `${number}: статус изменён на «${status}».`,
+  selectCard: (inventoryNo: string) => `Выбрать ${inventoryNo}`,
+  selectPage: 'Выбрать все SIM на этой странице',
+  selectedCount: (n: number) => plural(n, { one: 'Выбрана # SIM', few: 'Выбрано # SIM', many: 'Выбрано # SIM', other: 'Выбрано # SIM' }),
+  clearSelection: 'Снять выбор',
+  statusOfSelected: 'Изменить статус выбранных SIM',
+  bulkChanged: (n: number, status: string) => `Статус выбранных SIM (${n}) изменён на «${status}».`,
+  bulkStopped: (done: number, total: number) => `Изменено ${done} из ${total}; остальные не изменены.`,
   copyNumbers: (inventoryNo: string) => `Копировать номера ${inventoryNo}`,
   simCopyText: (simNo: string, phoneNo: string | null) => (phoneNo ? `SIM: ${simNo} | Телефон: ${phoneNo}` : `SIM: ${simNo}`),
   copied: (number: string) => `Скопировано: ${number}.`,
@@ -161,6 +168,7 @@ export const assets: AssetsText = {
   giveSimCard: 'Выдать SIM',
   // One word for SIMs and items; what it does is its tooltip.
   takeBack: 'Принять',
+  takeBackOf: (inventoryNo: string) => `Принять ${inventoryNo}`,
   takeBackHelp: {
     SIM: { body: 'Зарегистрировать, что SIM-карта физически вернулась в офис.', note: 'Статус связи не меняется.' },
     EQUIPMENT: { body: 'Зарегистрировать, что предмет физически вернулся в офис.' },

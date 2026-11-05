@@ -189,8 +189,11 @@ type ErrorQuery struct {
 	Limit int
 }
 
-// ErrorPage is one page of the error list, the latest occurrence first.
+// ErrorPage is one page of the error list, the latest occurrence first. The
+// first page (no cursor) also counts the list's rows by kind, whatever kind it
+// is filtered to, for the kind tabs; older pages leave Counts out.
 type ErrorPage struct {
-	Errors []ErrorEvent `json:"errors"`
-	Next   *string      `json:"next"`
+	Errors []ErrorEvent  `json:"errors"`
+	Next   *string       `json:"next"`
+	Counts *map[Kind]int `json:"counts,omitempty"`
 }

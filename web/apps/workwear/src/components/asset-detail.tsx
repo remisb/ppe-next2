@@ -1,10 +1,10 @@
 import type { AssetAssignment, AssetKind, ConnectionStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
+import { CopyButton } from '@ppe/ui/components/copy-button'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { formatDate } from '@ppe/ui/lib/dates'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
@@ -21,7 +21,7 @@ import { PaneBar } from '@ppe/ui/components/list-detail'
 import { FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, CopyButton, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
+import { AssetMoreActions, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { usePrintStoredForm } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -117,8 +117,8 @@ export function AssetDetail({
         {(a) => (
           <>
             {/*
-              What a manager reads out or sends the provider: the phone number over the SIM No., both large, named by a
-              tooltip rather than a label; the first of them is the heading, the inventory number follows, smaller.
+              What a manager reads out or sends the provider: the phone number over the SIM No., both large, each after
+              its small label; the first of them is the heading, the inventory number follows, smaller.
               The action stays in the top right corner (RecordHeader).
             */}
             <RecordHeader
@@ -468,21 +468,15 @@ function StoredFormActions({ assetId, assignmentId }: { assetId: string; assignm
 }
 
 /**
- * A SIM's phone number or SIM No., large and without a label beside it: the
- * label is a tooltip on hover, and screen readers hear it before the number.
+ * A SIM's phone number or SIM No., large, after its label in small muted
+ * words: on a phone there is no hover to name it. The label wraps above the
+ * number where the line is short.
  */
 function SimNumber({ as: As, label, className, children }: { as: 'h1' | 'h2' | 'p'; label: string; className: string; children: ReactNode }) {
-  // Keyed by its element: the SIM No. turns from heading to line when a phone number is added, and Base UI keeps
-  // listening for hover on the element it first had.
   return (
-    <Tooltip key={As}>
-      <TooltipTrigger render={<As className={cn('w-fit', className)} />}>
-        <span className="sr-only">{label} </span>
-        {children}
-      </TooltipTrigger>
-      <TooltipContent aria-hidden side="top" align="start">
-        {label}
-      </TooltipContent>
-    </Tooltip>
+    <As className={cn('flex w-fit flex-wrap items-baseline gap-x-2', className)}>
+      <span className="font-sans text-xs font-normal tracking-normal text-muted-foreground">{label}</span>{' '}
+      {children}
+    </As>
   )
 }

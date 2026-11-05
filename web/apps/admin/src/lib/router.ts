@@ -51,8 +51,8 @@ export type Route =
   | { name: 'home' }
   /** The Overview at the root: what needs attention, then figures. */
   | { name: 'overview' }
-  /** User accounts and the roles each holds. */
-  | { name: 'users' }
+  /** User accounts and the roles each holds, filtered by status and by a role's id (/users?status=inactive&role=<id>). */
+  | { name: 'users'; status?: UserStatus; role?: string }
   /** Roles & permissions: what each role allows. */
   | { name: 'roles' }
   /** The Audit log, filtered; event is the change open beside it (/audit/<id>). */
@@ -72,9 +72,11 @@ export type Route =
 
 export type Screen = Exclude<Route['name'], 'home'>
 
-const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'apps' | 'home'>, string> = {
+/** The Users screen's status tabs, All being none. */
+export type UserStatus = 'active' | 'inactive'
+
+const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'apps' | 'users' | 'home'>, string> = {
   overview: '/',
-  users: '/users',
   roles: '/roles',
   usage: '/usage',
   settings: '/settings',
@@ -128,6 +130,12 @@ export function parsePath(pathname: string, search = ''): Route {
     const key = decodeURIComponent(mail[1]) as MailTemplateKey
     return mailTemplateKeys.includes(key) ? { name: 'mailTemplates', key } : { name: 'mailTemplates' }
   }
+  if (path === '/users') {
+    const query = new URLSearchParams(search)
+    const status = query.get('status')
+    const role = query.get('role')
+    return { name: 'users', ...(status === 'active' || status === 'inactive' ? { status } : {}), ...(role ? { role } : {}) }
+  }
   const apps = /^\/apps(?:\/([^/]+))?$/.exec(path)
   if (apps) return apps[1] ? { name: 'apps', app: decodeURIComponent(apps[1]) } : { name: 'apps' }
   // Backups was a screen of its own before System.
@@ -162,6 +170,13 @@ export function pathOf(route: Route): string {
   if (route.name === 'home') return '/'
   if (route.name === 'mailTemplates') return route.key ? `/mail-templates/${encodeURIComponent(route.key)}` : '/mail-templates'
   if (route.name === 'apps') return route.app ? `/apps/${encodeURIComponent(route.app)}` : '/apps'
+  if (route.name === 'users') {
+    const query = new URLSearchParams()
+    if (route.status) query.set('status', route.status)
+    if (route.role) query.set('role', route.role)
+    const q = query.toString()
+    return q ? `/users?${q}` : '/users'
+  }
   if (route.name !== 'audit') return paths[route.name]
   const query = new URLSearchParams()
   for (const key of auditFilterKeys) {

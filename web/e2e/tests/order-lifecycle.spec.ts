@@ -975,6 +975,12 @@ test('Orders shows it ORDERED with the ORDERED actions', async () => {
 
 test('Create confirmation link shows the link on the order', async () => {
   const order = page.getByRole('complementary', { name: 'Order' })
+  // Mark as Ordered made a link already: the order says so, and a new one asks first, as it stops that one (S11).
+  await expect(order.getByText(/^Made .+ · not opened yet$/)).toBeVisible()
+  page.once('dialog', (d) => {
+    expect(d.message()).toMatch(/^The link made .+ stops working/)
+    void d.accept()
+  })
   await order.getByRole('button', { name: 'Create confirmation link' }).click()
   const link = order.getByRole('textbox', { name: 'Confirmation link' })
   await expect(link).toHaveValue(/\/confirm\/[\w-]{40,}$/)
@@ -989,6 +995,17 @@ test('Create confirmation link shows the link on the order', async () => {
   await expect(link).toBeHidden()
   await toggle.click()
   await expect(link).toHaveValue(confirmationURL)
+  // The fact now tells of the new link (S11).
+  await expect(order.getByText(/^Made .+ · not opened yet$/)).toBeVisible()
+  // Back later the link is not shown again; making another asks first, as the employee may have this one.
+  await page.reload()
+  await expect(order.getByText(/^Made .+ · not opened yet$/)).toBeVisible()
+  page.once('dialog', (d) => {
+    expect(d.message()).toMatch(/^The link made .+ stops working/)
+    void d.dismiss()
+  })
+  await order.getByRole('button', { name: 'Create confirmation link' }).click()
+  await expect(link).toHaveCount(0)
 })
 
 test('the employee confirms on the public page; a second confirmation is a no-op', async ({ browser }) => {
@@ -1928,8 +1945,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(0)
   // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it or where
   // it is (Office, Unknown) in one Employee column, with no Location column.
-  await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone \/ SIM/)
-  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Employee/)
+  // (The first column selects cards, for one Change Status of several.)
+  await expect(page.getByRole('columnheader').nth(0).getByRole('checkbox', { name: 'Select every SIM on this page' })).toBeVisible()
+  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Phone \/ SIM/)
+  await expect(page.getByRole('columnheader').nth(2)).toHaveText(/^Employee/)
   await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toHaveCount(0)
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
@@ -1949,6 +1968,21 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByText('SIM-000001: status changed to Active.')).toBeVisible()
   await expect(card.getByText('Active', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
+  // Several at once (a batch the provider confirmed): select, then one Change Status for them all; ticking a box
+  // does not open the card.
+  await card.getByRole('checkbox', { name: 'Select SIM-000001' }).check()
+  await expect(page).toHaveURL(/\/assets\/sim-cards$/)
+  const chosen = page.getByRole('group', { name: '1 SIM selected' })
+  await chosen.getByRole('button', { name: 'Change Status of the selected SIMs' }).click()
+  await page.getByRole('menuitem', { name: 'Blocked' }).click()
+  await expect(page.getByText('1 SIM: status changed to Blocked.')).toBeVisible()
+  await expect(card.getByText('Blocked', { exact: true })).toBeVisible()
+  await expect(chosen).toHaveCount(0)
+  await page.getByRole('checkbox', { name: 'Select every SIM on this page' }).check()
+  await chosen.getByRole('button', { name: 'Change Status of the selected SIMs' }).click()
+  await page.getByRole('menuitem', { name: 'Active' }).click()
+  await expect(page.getByText('1 SIM: status changed to Active.')).toBeVisible()
+  await expect(card.getByText('Active', { exact: true })).toBeVisible()
   // The same card again, its number typed with a space: refused, and the form opens the one registered.
   await page.getByRole('button', { name: 'Add SIM' }).click()
   await form.getByLabel('SIM No.').fill('0089 370011')
@@ -2003,13 +2037,11 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('SIM-000001 saved.')).toBeVisible()
   // The phone number (now the heading) over the SIM No., one copy button for both (the register has none).
-  // No labels beside them: each says what it is in a tooltip, and to a screen reader first.
+  // Each after its small label, which shows without hover (a phone has none).
   await expect(pane.getByRole('heading', { name: 'Phone No. +370 612 40118' })).toBeVisible()
-  // The SIM No. was the heading until the phone number came; its tooltip still opens.
-  await pane.getByText('SIM No. 0089370011').hover()
-  await expect(page.locator('[data-slot=tooltip-content]')).toHaveText('SIM No.')
-  await page.mouse.move(0, 0)
-  await expect(page.locator('[data-slot=tooltip-content]')).toHaveCount(0)
+  await expect(pane.getByRole('heading', { name: 'Phone No. +370 612 40118' }).getByText('Phone No.', { exact: true })).toBeVisible()
+  // The SIM No. was the heading until the phone number came; now a line under it.
+  await expect(pane.getByText('SIM No. 0089370011').getByText('SIM No.', { exact: true })).toBeVisible()
   await expect(pane.getByRole('button', { name: /^Copy/ })).toHaveCount(1)
   await expect(pane.getByRole('button', { name: 'Copy the numbers of SIM-000001' })).toBeVisible()
 

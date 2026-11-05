@@ -3,7 +3,7 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, ListSkeleton, PageHeader } from '@ppe/ui/components/states'
 import type { Help } from '@ppe/ui/components/tooltip'
 import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
@@ -293,7 +293,7 @@ export function History({
       {orders.error ? (
         <ErrorState error={orders.error} onRetry={orders.reload} />
       ) : !orders.data ? (
-        <Loading />
+        <ListSkeleton />
       ) : orders.data.orders.length === 0 ? (
         <EmptyState
           action={
@@ -325,6 +325,7 @@ export function History({
           <Table
             stack="list"
             stackBelow={selected ? 'sm' : 'lg'}
+            busy={orders.loading}
             sortControl={<SortMenu columns={columns} {...sortProps} />}
             stickyHead
           >

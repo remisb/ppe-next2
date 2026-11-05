@@ -1,14 +1,16 @@
-import { type ErrorEvent, type ErrorKind, type ErrorPage, type RequestPoint, type SystemStatus } from '@ppe/api-client'
+import { type ErrorEvent, type ErrorKind, type RequestPoint, type SystemStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { deviceText, sourceLabel } from '@ppe/audit'
 import { formatBytes } from '@ppe/backups'
-import { Button } from '@ppe/ui/components/button'
-import { Select } from '@ppe/ui/components/field'
+import { OlderButton } from '@ppe/ui/components/older-button'
+import { CopyButton } from '@ppe/ui/components/copy-button'
+import { Segmented } from '@ppe/ui/components/segmented'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loaded, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loaded, ListSkeleton, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { formatDateTime } from '@ppe/ui/lib/dates'
+import { useCursorPages } from '@ppe/ui/lib/use-cursor-pages'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -312,27 +314,18 @@ const kindLabel = (k: string) => (errorKinds as string[]).includes(k) ? t.system
 function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefined; timeZone: string | undefined; navigate: Navigate }) {
   const { client } = useApi()
   const [kind, setKind] = useState<ErrorKind | ''>('')
-  const first = useLoad<ErrorPage>(() => client.system.errors(kind ? { kind } : {}), [kind])
-  const [older, setOlder] = useState<{ kind: string; errors: ErrorEvent[]; next: string | null } | null>(null)
-  const [olderState, setOlderState] = useState<{ loading: boolean; error?: unknown }>({ loading: false })
-  const olderPages = older?.kind === kind ? older : null
-  const errors = useMemo(() => [...(first.data?.errors ?? []), ...(olderPages?.errors ?? [])], [first.data, olderPages])
-  const next = olderPages ? olderPages.next : (first.data?.next ?? null)
-  const loadOlder = async () => {
-    if (!next) return
-    setOlderState({ loading: true })
-    try {
-      const page = await client.system.errors({ ...(kind ? { kind } : {}), after: next })
-      setOlder({ kind, errors: [...(olderPages?.errors ?? []), ...page.errors], next: page.next })
-      setOlderState({ loading: false })
-    } catch (error) {
-      setOlderState({ loading: false, error })
-    }
-  }
-  const reload = () => {
-    setOlder(null)
-    first.reload()
-  }
+  // The tabs' counts come with each first page, of every kind whatever the tab.
+  const [counts, setCounts] = useState<Record<ErrorKind, number>>()
+  const pages = useCursorPages<ErrorEvent>(
+    (after) =>
+      client.system.errors({ ...(kind ? { kind } : {}), ...(after ? { after } : {}) }).then((p) => {
+        if (p.counts) setCounts(p.counts)
+        return { items: p.errors, next: p.next }
+      }),
+    [kind],
+  )
+  const errors = useMemo(() => pages.data ?? [], [pages.data])
+  const reload = pages.reload
   const open = (id: string) => navigate({ name: 'system', tab: 'errors', error: id }, { scroll: false })
   const close = () => navigate({ name: 'system', tab: 'errors' }, { scroll: false })
   // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
@@ -346,34 +339,34 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
       pane={
         selected ? (
           <DetailPane label={t.system.error} next={t.system.nextOrPrevious}>
-            <ErrorPane key={selected} id={selected} listed={errors.find((e) => e.id === selected)} timeZone={timeZone} onClose={close} />
+            <ErrorPane key={selected} id={selected} listed={errors.find((e) => e.id === selected)} timeZone={timeZone} onClose={close} navigate={navigate} />
           </DetailPane>
         ) : null
       }
     >
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <label className="text-sm font-medium">
-          {t.system.kind}
-          <Select className="mt-1.5" value={kind} onChange={(e) => setKind(e.target.value as ErrorKind | '')}>
-            <option value="">{t.system.allKinds}</option>
-            {errorKinds.map((k) => (
-              <option key={k} value={k}>
-                {t.system.kinds[k]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <RefreshButton loading={first.loading} onClick={reload} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label={t.system.kind}
+          layout="scroll"
+          value={kind}
+          onChange={setKind}
+          busy={pages.loading}
+          options={[
+            { value: '', label: t.system.allKinds, count: counts ? errorKinds.reduce((n, k) => n + counts[k], 0) : undefined },
+            ...errorKinds.map((k) => ({ value: k, label: t.system.kinds[k], count: counts?.[k] })),
+          ]}
+        />
+        <RefreshButton loading={pages.loading} onClick={reload} />
       </div>
-      {first.error ? (
-        <ErrorState error={first.error} onRetry={reload} />
-      ) : !first.data ? (
-        <Loading />
+      {pages.error ? (
+        <ErrorState error={pages.error} onRetry={reload} />
+      ) : !pages.data ? (
+        <ListSkeleton />
       ) : errors.length === 0 ? (
         <EmptyState>{kind ? t.system.noMatch : t.system.noErrors}</EmptyState>
       ) : (
         <>
-          <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>
+          <Table stack="list" stackBelow={beside ? 'sm' : 'md'} busy={pages.loading}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t.system.lastSeen}</TableHead>
@@ -414,22 +407,29 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
               ))}
             </TableBody>
           </Table>
-          {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
-          {next ? (
-            <div className="mt-4 flex justify-center">
-              <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
-                {t.system.older}
-              </Button>
-            </div>
-          ) : null}
+          <OlderButton pages={pages} label={t.system.older} />
         </>
       )}
     </ListDetail>
   )
 }
 
-function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: ErrorEvent | undefined; timeZone: string | undefined; onClose: () => void }) {
+function ErrorPane({
+  id,
+  listed,
+  timeZone,
+  onClose,
+  navigate,
+}: {
+  id: string
+  listed: ErrorEvent | undefined
+  timeZone: string | undefined
+  onClose: () => void
+  navigate: Navigate
+}) {
   const { client } = useApi()
+  const session = useSession()
+  const [copied, setCopied] = useState<string>()
   const loaded = useLoad(() => (listed ? Promise.resolve(listed) : client.system.error(id)), [id, listed])
   const e = listed ?? loaded.data
   return (
@@ -453,7 +453,24 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
             {e.status ? <Fact label={t.system.httpStatus}>{e.status}</Fact> : null}
             <Fact label={t.system.firstSeen}>{formatDateTime(e.first_seen, timeZone)}</Fact>
             <Fact label={t.system.lastSeen}>{formatDateTime(e.last_seen, timeZone)}</Fact>
-            <Fact label={t.system.who}>{e.last_user_name ?? t.system.nobody}</Fact>
+            <Fact label={t.system.who}>
+              {e.last_user_name ?? t.system.nobody}
+              {e.last_user_id && e.last_user_name ? (
+                // Where to look next: what that person did around then, and their sign-ins.
+                <span role="group" aria-label={t.system.personLinks(e.last_user_name)} className="ml-3 inline-flex gap-3 text-sm">
+                  {session.can('security.read') ? (
+                    <a {...linkTo({ name: 'security', tab: 'sign-ins', filter: { user: e.last_user_id } }, navigate)} className={linkVariants()}>
+                      {t.system.personSignIns}
+                    </a>
+                  ) : null}
+                  {session.can('audit.read') ? (
+                    <a {...linkTo({ name: 'audit', filter: { actor: e.last_user_id } }, navigate)} className={linkVariants()}>
+                      {t.system.personChanges}
+                    </a>
+                  ) : null}
+                </span>
+              ) : null}
+            </Fact>
             <Fact label={t.system.where}>
               {sourceLabel(e.source)}
               {e.app_version ? <code className="ml-2 text-xs text-muted-foreground">{t.system.appVersion(e.app_version)}</code> : null}
@@ -461,7 +478,19 @@ function ErrorPane({ id, listed, timeZone, onClose }: { id: string; listed: Erro
             {e.last_user_agent ? <Fact label={t.system.device}>{deviceText(e.last_user_agent)}</Fact> : null}
             {e.last_request_id ? (
               <Fact label={t.system.reference}>
-                <code className="text-xs break-all">{e.last_request_id}</code>
+                <span className="flex items-center gap-1">
+                  <code className="text-xs break-all">{e.last_request_id}</code>
+                  <span className="-my-2">
+                    <CopyButton
+                      text={e.last_request_id}
+                      label={t.system.copyReference}
+                      onCopied={(ok) => setCopied(ok ? t.system.referenceCopied : t.system.copyFailed)}
+                    />
+                  </span>
+                </span>
+                <span role="status" className="block text-xs text-muted-foreground empty:hidden">
+                  {copied}
+                </span>
                 <span className="block text-xs text-muted-foreground">{t.system.referenceHint}</span>
               </Fact>
             ) : null}

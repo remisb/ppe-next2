@@ -2,7 +2,7 @@ import type { UsageReport } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { areaLabel, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
-import { BarChart, type Column, HeatStrip, Sparkline } from '@ppe/ui/components/charts'
+import { BarChart, BarList, type Column, HeatStrip, Sparkline } from '@ppe/ui/components/charts'
 import { KeyFigures, Kpi, Panel, RefreshButton } from '@ppe/ui/components/panel'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { formatDay } from '@ppe/ui/lib/dates'
@@ -150,22 +150,18 @@ function Funnel({ r }: { r: UsageReport }) {
         <p className="text-sm text-muted-foreground">{t.usage.noLinks}</p>
       ) : (
         <>
-          <ol className="flex flex-col gap-3">
-            {steps.map((s) => (
-              <li key={s.key} className="text-sm">
-                <div className="flex justify-between gap-3">
-                  <span>{s.label}</span>
-                  <span className="tabular-nums">
-                    {formatNumber(s.value)}
-                    {s.key === 'created' ? null : <span className="ml-2 text-xs text-muted-foreground">{t.usage.ofSent(percent(s.value, f.created))}</span>}
-                  </span>
-                </div>
-                <div aria-hidden className="mt-1 h-2 rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary/80" style={{ width: `${percent(s.value, f.created)}%` }} />
-                </div>
-              </li>
-            ))}
-          </ol>
+          <BarList
+            scale={f.created}
+            items={steps.map((s) => ({
+              ...s,
+              text: (
+                <>
+                  <span className="text-foreground">{formatNumber(s.value)}</span>
+                  {s.key === 'created' ? null : <span className="ml-2 text-xs">{t.usage.ofSent(percent(s.value, f.created))}</span>}
+                </>
+              ),
+            }))}
+          />
           <dl className="mt-4 grid grid-cols-3 divide-x divide-border border-y border-border py-2 text-center text-xs text-muted-foreground">
             {[
               [t.usage.waiting, f.waiting],
@@ -188,7 +184,6 @@ function Funnel({ r }: { r: UsageReport }) {
 function Changes({ r, navigate }: { r: UsageReport; navigate: ((to: Route) => void) | undefined }) {
   const columns: Column[] = r.weeks.map((w) => ({ key: w, short: dayText(w), long: t.usage.weekOf(dayText(w, true)) }))
   const rows = r.changes.map((c) => ({ key: c.area, label: areaLabel(c.area), values: c.counts }))
-  const max = Math.max(1, ...r.top_people.map((p) => p.changes))
   return (
     <Panel title={t.usage.changes} description={t.usage.changesHint}>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -200,25 +195,20 @@ function Changes({ r, navigate }: { r: UsageReport; navigate: ((to: Route) => vo
           {r.top_people.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t.usage.noChanges}</p>
           ) : (
-            <ol className="flex flex-col gap-2.5">
-              {r.top_people.map((p) => (
-                <li key={p.id} className="text-sm">
-                  <div className="flex justify-between gap-3">
-                    {navigate ? (
-                      <a {...linkTo({ name: 'audit', filter: { actor: p.id } }, navigate)} className={linkVariants({ className: 'truncate' })}>
-                        {p.name}
-                      </a>
-                    ) : (
-                      <span className="truncate">{p.name}</span>
-                    )}
-                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{t.usage.changesCount(p.changes)}</span>
-                  </div>
-                  <div aria-hidden className="mt-1 h-1.5 rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-foreground/60" style={{ width: `${percent(p.changes, max)}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <BarList
+              items={r.top_people.map((p) => ({
+                key: p.id,
+                label: navigate ? (
+                  <a {...linkTo({ name: 'audit', filter: { actor: p.id } }, navigate)} className={linkVariants()}>
+                    {p.name}
+                  </a>
+                ) : (
+                  p.name
+                ),
+                value: p.changes,
+                text: t.usage.changesCount(p.changes),
+              }))}
+            />
           )}
         </div>
       </div>
@@ -280,19 +270,16 @@ function Languages({ r }: { r: UsageReport }) {
     return (
       <div>
         <h3 className="mb-1 text-xs font-medium text-muted-foreground">{title}</h3>
-        <ul className="text-sm">
-          {ranked(new Map(Object.entries(counts))).map(([lang, n]) => (
-            <li key={lang || 'none'} className="py-0.5">
-              <div className="flex justify-between gap-3">
-                <span>{lang ? (names.of(lang) ?? lang) : t.usage.noLanguage}</span>
-                <span className="tabular-nums text-muted-foreground">{formatNumber(n)}</span>
-              </div>
-              <div aria-hidden className="mt-0.5 h-1 rounded-full bg-muted">
-                <div className="h-full rounded-full bg-primary/70" style={{ width: `${percent(n, total)}%` }} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <BarList
+          scale={total}
+          className="gap-2"
+          items={ranked(new Map(Object.entries(counts))).map(([lang, n]) => ({
+            key: lang || 'none',
+            label: lang ? (names.of(lang) ?? lang) : t.usage.noLanguage,
+            value: n,
+            text: formatNumber(n),
+          }))}
+        />
       </div>
     )
   }

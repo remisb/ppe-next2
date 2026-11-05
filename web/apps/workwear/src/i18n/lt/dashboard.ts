@@ -56,6 +56,7 @@ export const dashboard: DashboardText = {
   sendLink: 'Siųsti nuorodą',
   reorder: 'Užsakyti vėl',
   itemFor: (item: string, name: string) => `${item}, ${name}`,
+  forName: (name: string) => `: ${name}`,
   forContext: (what: string) => `– ${what}`,
   addSizes: 'Pridėti dydžius',
   receipt: (record: string) => `Išdavimo įrašas ${record}`,

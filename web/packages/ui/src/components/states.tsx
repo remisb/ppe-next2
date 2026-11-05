@@ -5,6 +5,7 @@ import { type Loaded as Load, errorText } from '../lib/use-load.ts'
 import { uiText } from '../text.ts'
 import { Alert, AlertDescription, AlertTitle } from './alert.tsx'
 import { Button } from './button.tsx'
+import { Skeleton } from './skeleton.tsx'
 
 /** An error with a Retry action; the screen's own state is untouched. */
 export function ErrorState({
@@ -56,6 +57,22 @@ export function Loading({ label }: { label?: string }) {
   return <p className="py-8 text-center text-sm text-muted-foreground">{label ?? uiText().loading}</p>
 }
 
+/**
+ * A list's first load: grey rows the shape of the list, fading down, instead of
+ * the word; a screen reader hears "Loading…". Loading again keeps the list on
+ * screen instead, dimmed (Table's `busy`).
+ */
+export function ListSkeleton({ rows = 5, label }: { rows?: number; label?: string | undefined }) {
+  return (
+    <div role="status" className="grid gap-2 py-2">
+      <span className="sr-only">{label ?? uiText().loading}</span>
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} aria-hidden className="h-11" style={{ opacity: 1 - i / (rows + 1) }} />
+      ))}
+    </div>
+  )
+}
+
 export { PageHeader } from './page-header.tsx'
 
 /** An empty list or search: a dashed box with an optional next step. */
@@ -69,8 +86,8 @@ export function EmptyState({ children, action }: { children: ReactNode; action?:
 }
 
 /**
- * What a load shows, in one place: its error with Retry, Loading while there is
- * nothing to show yet, the empty state when `empty` says there is nothing (an
+ * What a load shows, in one place: its error with Retry, a ListSkeleton while
+ * there is nothing to show yet, the empty state when `empty` says there is nothing (an
  * empty list, by default), else children(data). Loading again keeps the data on
  * screen.
  */
@@ -88,7 +105,7 @@ export function Loaded<T>({
   children: (data: Exclude<T, undefined>) => ReactNode
 }) {
   if (load.error) return <ErrorState error={load.error} onRetry={load.reload} />
-  if (load.data === undefined) return <Loading {...(loadingLabel ? { label: loadingLabel } : {})} />
+  if (load.data === undefined) return <ListSkeleton label={loadingLabel} />
   const data = load.data as Exclude<T, undefined>
   const nothing = typeof empty === 'function' ? empty(data) : (empty ?? (Array.isArray(data) && data.length === 0))
   if (emptyState !== undefined && nothing) return <EmptyState>{emptyState}</EmptyState>

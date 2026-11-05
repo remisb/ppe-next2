@@ -13,7 +13,7 @@ import {
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { HelpTooltip } from '@ppe/ui/components/tooltip'
-import { ChevronDown, Copy } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import { t } from '@/i18n'
@@ -55,6 +55,27 @@ export function StatusBadge({ status }: { status: ConnectionStatus }) {
 export async function setStatus(client: Client, a: Asset, next: ConnectionStatus): Promise<string> {
   await client.assets.setStatus(a.id, next)
   return t.assets.statusChanged(a.inventory_no, statusLabel(next))
+}
+
+/** Change Status of the SIMs selected in the register (S18): the three statuses, none of them current. */
+export function BulkStatusMenu({ onChange, disabled = false }: { onChange: (next: ConnectionStatus) => void; disabled?: boolean }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button size="sm" disabled={disabled} />} aria-label={t.assets.statusOfSelected}>
+        {t.assets.changeStatus}
+        <ChevronDown aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuNote>{t.assets.statusNote}</DropdownMenuNote>
+        <DropdownMenuSeparator />
+        {statuses.map((s) => (
+          <DropdownMenuItem key={s} onClick={() => onChange(s)}>
+            {statusLabel(s)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 export function StatusMenu({
@@ -112,38 +133,13 @@ export function ReturnButton({
   kind,
   onClick,
   ...props
-}: { kind: Asset['kind']; onClick: () => void } & Pick<ComponentProps<typeof Button>, 'size' | 'variant'>) {
+}: { kind: Asset['kind']; onClick: () => void } & Pick<ComponentProps<typeof Button>, 'size' | 'variant' | 'aria-label' | 'disabled'>) {
   return (
     <HelpTooltip title={t.assets.takeBack} help={t.assets.takeBackHelp[kind === 'EQUIPMENT' ? 'EQUIPMENT' : 'SIM']}>
       <Button {...props} onClick={onClick}>
         {t.assets.takeBack}
       </Button>
     </HelpTooltip>
-  )
-}
-
-/**
- * A button copying text (§5: numbers are easy to copy, for the e-mail to the
- * provider): a SIM's two numbers as one line (simCopyText). label is its name
- * and tooltip; onCopied reports what happened, for the screen's announcement.
- */
-export function CopyButton({ text, label, onCopied }: { text: string; label: string; onCopied: (ok: boolean) => void }) {
-  return (
-    <Button
-      size="icon-sm"
-      variant="ghost"
-      aria-label={label}
-      title={label}
-      onClick={() => {
-        // No clipboard outside a secure context (http on another host): say so instead.
-        ;(navigator.clipboard?.writeText(text) ?? Promise.reject(new Error('no clipboard'))).then(
-          () => onCopied(true),
-          () => onCopied(false),
-        )
-      }}
-    >
-      <Copy aria-hidden />
-    </Button>
   )
 }
 

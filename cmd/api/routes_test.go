@@ -350,6 +350,9 @@ func (m *memSystem) ListErrors(context.Context, system.ErrorQuery) ([]system.Err
 	return nil, nil
 }
 func (m *memSystem) NewErrorKinds(context.Context, time.Time) (int, error) { return 0, nil }
+func (m *memSystem) CountErrors(context.Context) (map[system.Kind]int, error) {
+	return map[system.Kind]int{system.KindServer: 0, system.KindPanic: 0, system.KindClient: 0}, nil
+}
 func (m *memSystem) PurgeErrors(context.Context, time.Time) (int64, error) { return 0, nil }
 func (m *memSystem) SampleSize(context.Context, time.Time) error           { return nil }
 func (m *memSystem) VersionErrors(context.Context, string) (map[string]system.VersionErrors, error) {
@@ -548,6 +551,9 @@ func (stubOrders) List(context.Context, order.ListFilter) ([]order.Order, int, e
 }
 func (stubOrders) CreateLink(context.Context, uuid.UUID, order.LinkFunc) error {
 	return order.ErrNotFound
+}
+func (stubOrders) LatestLink(context.Context, uuid.UUID) (*order.Confirmation, error) {
+	return nil, nil
 }
 func (stubOrders) LinkByHash(context.Context, string) (order.Confirmation, error) {
 	return order.Confirmation{}, order.ErrLinkExpired
@@ -985,10 +991,12 @@ var policy = map[string]rule{
 	"GET /api/v1/audit-events/employees/{id}":                                   {"", "any"},
 	"GET /api/v1/audit-events/catalogue/{id}":                                   {"", "any"},
 	"GET /api/v1/audit-events/orders/{id}":                                      {"", "any"},
+	"GET /api/v1/audit-events/item-sets/{id}":                                   {role.ItemSetsRead, "staff"},
 	"GET /api/v1/audit-events/users/{id}":                                       {role.UsersRead, "managers"},
 	"GET /api/v1/security/events":                                               {role.SecurityRead, "admins"},
 	"GET /api/v1/security/sessions":                                             {role.SecurityRead, "admins"},
 	"DELETE /api/v1/security/sessions/{id}":                                     {role.UsersManage, "admins"},
+	"DELETE /api/v1/security/users/{id}/sessions":                               {role.UsersManage, "admins"},
 	"GET /api/v1/security/access-review":                                        {role.SecurityRead, "admins"},
 	"POST /api/v1/security/access-review":                                       {role.SecurityRead, "admins"},
 	"GET /api/v1/system/status":                                                 {role.SystemRead, "admins"},

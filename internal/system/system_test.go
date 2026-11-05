@@ -136,6 +136,10 @@ func TestPostgresErrorList(t *testing.T) {
 	if len(page.Errors) != 3 || page.Next != nil {
 		t.Fatalf("rows = %+v", page.Errors)
 	}
+	// The first page counts the rows by kind, whatever its filter; an older page does not.
+	if c := page.Counts; c == nil || (*c)[KindServer] != 2 || (*c)[KindClient] != 1 || (*c)[KindPanic] != 0 {
+		t.Errorf("counts = %v", c)
+	}
 	folded := page.Errors[2]
 	if folded.Count != 2 || *folded.LastRequestID != "r2" || folded.Message != "order 5678: boom" || *folded.LastUserName != "Ona" ||
 		*folded.Status != 500 || *folded.Source != audit.SourceWorkwear || *folded.LastUserAgent != "Firefox" ||
@@ -151,12 +155,12 @@ func TestPostgresErrorList(t *testing.T) {
 	if strings.Join([]string{string(recorded[0]), string(recorded[3])}, ",") != "server,client" {
 		t.Errorf("recorded = %v", recorded)
 	}
-	if only, _ := svc.Errors(context.Background(), ErrorFilter{Kind: KindClient}); len(only.Errors) != 1 {
-		t.Errorf("client errors = %d", len(only.Errors))
+	if only, _ := svc.Errors(context.Background(), ErrorFilter{Kind: KindClient}); len(only.Errors) != 1 || (*only.Counts)[KindServer] != 2 {
+		t.Errorf("client errors = %d, counts %v", len(only.Errors), only.Counts)
 	}
 	two, _ := svc.Errors(context.Background(), ErrorFilter{PageSize: 2})
 	c, _ := audit.ParseCursor(*two.Next)
-	if rest, _ := svc.Errors(context.Background(), ErrorFilter{After: &c}); len(rest.Errors) != 1 || rest.Errors[0].ID != folded.ID {
+	if rest, _ := svc.Errors(context.Background(), ErrorFilter{After: &c}); len(rest.Errors) != 1 || rest.Errors[0].ID != folded.ID || rest.Counts != nil {
 		t.Errorf("second page = %+v", rest.Errors)
 	}
 	if got, err := svc.Error(context.Background(), folded.ID); err != nil || got.Count != 2 {

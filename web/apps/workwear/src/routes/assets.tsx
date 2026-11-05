@@ -6,7 +6,7 @@ import { Input } from '@ppe/ui/components/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ppe/ui/components/select'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { type Help, Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
-import { ActionError, EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, EmptyState, ErrorState, ListSkeleton, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
@@ -20,7 +20,7 @@ import { ChevronRight, FileText, FilterX, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
-import { AssetMoreActions, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
+import { AssetMoreActions, BulkStatusMenu, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { usePrintStoredForm } from '@/components/assignment-form'
 import { EquipmentForm } from '@/components/equipment-form'
@@ -47,6 +47,7 @@ import {
   chooseTab,
   countedTabs,
   primaryAction,
+  statusLabel,
   tabCountQuery,
   tabCounts,
   tabPressed,
@@ -153,6 +154,10 @@ export function Assets({
     [kind, JSON.stringify(counted), reloads],
   )
   const reload = () => setReloads((n) => n + 1)
+  // SIMs chosen on this page for one Change Status (S18: a batch the provider confirmed); another page or filter starts afresh.
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  useEffect(() => setChosen(new Set()), [JSON.stringify(query)])
   // SIM Cards' Preview PDF: the server draws every card the filters match, in the register's sort and the language
   // of the user's account; the preview shows it, to print, download or open in a tab.
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -170,6 +175,29 @@ export function Assets({
   const clear = () => {
     setSearch('')
     update(noAssetFilters)
+  }
+
+  // One card after another, each its own change in the card's Changes; a failure stops there and says how far it got.
+  const changeChosen = async (next: ConnectionStatus) => {
+    const cards = (list.data?.assets ?? []).filter((a) => chosen.has(a.id))
+    const pending = cards.filter((a) => a.connection_status !== next)
+    let done = 0
+    setBulkBusy(true)
+    action.clear()
+    try {
+      for (const a of pending) {
+        await client.assets.setStatus(a.id, next)
+        done++
+      }
+      setMessage(t.assets.bulkChanged(cards.length, statusLabel(next)))
+      setChosen(new Set())
+    } catch (err) {
+      action.fail(err)
+      setMessage(t.assets.bulkStopped(done, pending.length))
+    } finally {
+      setBulkBusy(false)
+      reload()
+    }
   }
 
   const changeStatus = async (a: Asset, next: ConnectionStatus) => {
@@ -210,6 +238,17 @@ export function Assets({
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
+  // Selecting SIMs, for one Change Status: the table's first column, where the register is a table (not beside a card).
+  const bulk = sim && canManage && !beside
+  const pageIds = list.data?.assets.map((a) => a.id) ?? []
+  const allChosen = pageIds.length > 0 && pageIds.every((id) => chosen.has(id))
+  const choose = (id: string, on: boolean) =>
+    setChosen((c) => {
+      const next = new Set(c)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
 
   const s = summary.data
   const places: { value: Place; label: string }[] = [
@@ -364,7 +403,7 @@ export function Assets({
         {list.error ? (
           <ErrorState error={list.error} onRetry={reload} />
         ) : list.loading && !list.data ? (
-          <Loading />
+          <ListSkeleton />
         ) : !list.data || list.data.assets.length === 0 ? (
           <EmptyState>
             {filtered ? (sim ? t.assets.noMatches : t.assets.noEquipmentMatches) : sim ? t.assets.noSimCards : t.assets.noEquipment}
@@ -376,13 +415,33 @@ export function Assets({
           </EmptyState>
         ) : (
           <>
-            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={columns(kind)} {...sortProps} />}>
+            {bulk && chosen.size > 0 ? (
+              <div role="group" aria-label={t.assets.selectedCount(chosen.size)} className="mb-3 flex flex-wrap items-center gap-2 border-y border-border py-2">
+                <span className="text-sm font-medium">{t.assets.selectedCount(chosen.size)}</span>
+                <BulkStatusMenu disabled={bulkBusy} onChange={(next) => void changeChosen(next)} />
+                <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setChosen(new Set())}>
+                  {t.assets.clearSelection}
+                </Button>
+              </div>
+            ) : null}
+            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} stickyHead busy={list.loading} sortControl={<SortMenu columns={columns(kind)} {...sortProps} />}>
               {/*
                 Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
                 columns fit beside the sidebar or rail from 1100px, where the table starts, however long they run.
               */}
               <TableHeader className="[&_th]:whitespace-normal">
                 <TableRow>
+                  {bulk ? (
+                    <TableHead className="w-8">
+                      <input
+                        type="checkbox"
+                        className="size-4 align-middle accent-primary"
+                        aria-label={t.assets.selectPage}
+                        checked={allChosen}
+                        onChange={(e) => setChosen(e.target.checked ? new Set(pageIds) : new Set())}
+                      />
+                    </TableHead>
+                  ) : null}
                   {sim ? (
                     <>
                       <SortableHead column={column('phone')} {...sortProps} />
@@ -422,10 +481,21 @@ export function Assets({
                       className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
                       // The whole row opens the card; its number is the real link, for keyboards and new tabs.
                       onClick={(ev) => {
-                        if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                        if ((ev.target as Element).closest('a, button, input') || window.getSelection()?.toString()) return
                         openAsset(a.id)
                       }}
                     >
+                      {bulk ? (
+                        <TableCell className="w-8 stacked:hidden">
+                          <input
+                            type="checkbox"
+                            className="size-4 align-middle accent-primary"
+                            aria-label={t.assets.selectCard(a.inventory_no)}
+                            checked={chosen.has(a.id)}
+                            onChange={(e) => choose(a.id, e.target.checked)}
+                          />
+                        </TableCell>
+                      ) : null}
                       {sim ? (
                         <TableCell className="stacked:col-start-1 stacked:row-start-1">
                           {/* The phone number over the SIM No., the card's link; the card copies both (the Copy button there). */}

@@ -58,10 +58,22 @@ type Order struct {
 	UpdatedByUserID    *uuid.UUID `json:"updated_by_user_id"`
 	// ReceiptTextVersion is the confirmation wording the order was placed
 	// under (ConfirmationTexts); its record shows that wording for good.
-	ReceiptTextVersion string     `json:"receipt_text_version"`
-	Lines              []Line     `json:"lines"`
-	DeletedAt          *time.Time `json:"-"`
-	DeletedByUserID    *uuid.UUID `json:"-"`
+	ReceiptTextVersion string `json:"receipt_text_version"`
+	Lines              []Line `json:"lines"`
+	// Link is the confirmation link an ORDERED order waits on: the latest one
+	// neither replaced nor used, expired or not. Only Get fills it in; no link
+	// leaves it out.
+	Link            *WaitingLink `json:"link,omitempty"`
+	DeletedAt       *time.Time   `json:"-"`
+	DeletedByUserID *uuid.UUID   `json:"-"`
+}
+
+// WaitingLink is what the staff know of an order's confirmation link (S11):
+// when it was made, when it stops working, and whether the employee opened it.
+type WaitingLink struct {
+	CreatedAt time.Time  `json:"created_at"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	OpenedAt  *time.Time `json:"opened_at"`
 }
 
 // RecordNumber is the human-facing record number, e.g. WE-000123.

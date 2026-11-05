@@ -5,13 +5,13 @@ import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { Loaded } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
-import { useLoad } from '@ppe/ui/lib/use-load'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
-import { NotReturnedBadge, StatusBadge } from '@/components/asset-controls'
+import { NotReturnedBadge, ReturnButton, StatusBadge } from '@/components/asset-controls'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import type { PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
@@ -57,6 +57,18 @@ export function HeldAssets({
   const [opened, setOpened] = useState(false)
   const open = remembered || opened
   const rows = (held.data ?? []).filter((h) => h.asset.kind === kind)
+  // Return from here (S13: leaving the company means returning each asset): the sheet needs the card as its page has it.
+  const [fetching, setFetching] = useState<string>()
+  const startReturn = async (h: HeldAsset) => {
+    setFetching(h.asset.id)
+    try {
+      setSheet({ kind: 'return', asset: await client.assets.get(h.asset.id) })
+    } catch (err) {
+      setMessage(errorText(err))
+    } finally {
+      setFetching(undefined)
+    }
+  }
   const heading = `held-${kind.toLowerCase()}`
 
   return (
@@ -92,7 +104,7 @@ export function HeldAssets({
         {() => (
           <RuleList>
             {rows.map((h) => (
-              <HeldRow key={h.id} held={h} navigate={navigate} />
+              <HeldRow key={h.id} held={h} navigate={navigate} onReturn={canManage ? () => void startReturn(h) : undefined} busy={fetching === h.asset.id} />
             ))}
           </RuleList>
         )}
@@ -112,33 +124,38 @@ export function HeldAssets({
   )
 }
 
-function HeldRow({ held: h, navigate }: { held: HeldAsset; navigate: (to: Route) => void }) {
+function HeldRow({ held: h, navigate, onReturn, busy }: { held: HeldAsset; navigate: (to: Route) => void; onReturn: (() => void) | undefined; busy: boolean }) {
   const open = h.returned_date === null
   return (
-    <li className={cn('text-sm', !open && 'text-muted-foreground')}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <a {...linkTo({ name: 'asset', id: h.asset.id }, navigate)} className={link}>
-          {h.asset.inventory_no}
-        </a>
-        {h.asset.kind === 'SIM' ? (
-          <>
-            <span className="font-mono">{h.asset.phone_no ?? h.asset.sim_no}</span>
-            <span>{h.asset.provider}</span>
-          </>
-        ) : (
-          <>
-            <span>{h.asset.name}</span>
-            {h.asset.category ? <span className="text-muted-foreground">{categoryLabel(h.asset.category)}</span> : null}
-          </>
-        )}
-        {h.asset.connection_status ? <StatusBadge status={h.asset.connection_status} /> : null}
-        {h.not_returned_at && open ? <NotReturnedBadge kind={h.asset.kind} /> : null}
+    <li className={cn('flex items-start gap-3 text-sm', !open && 'text-muted-foreground')}>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <a {...linkTo({ name: 'asset', id: h.asset.id }, navigate)} className={link}>
+            {h.asset.inventory_no}
+          </a>
+          {h.asset.kind === 'SIM' ? (
+            <>
+              <span className="font-mono">{h.asset.phone_no ?? h.asset.sim_no}</span>
+              <span>{h.asset.provider}</span>
+            </>
+          ) : (
+            <>
+              <span>{h.asset.name}</span>
+              {h.asset.category ? <span className="text-muted-foreground">{categoryLabel(h.asset.category)}</span> : null}
+            </>
+          )}
+          {h.asset.connection_status ? <StatusBadge status={h.asset.connection_status} /> : null}
+          {h.not_returned_at && open ? <NotReturnedBadge kind={h.asset.kind} /> : null}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {t.assets.givenOnDate(formatDay(h.given_date))} ·{' '}
+          {h.returned_date ? t.assets.returnedOnDate(formatDay(h.returned_date)) : t.assets.stillHeld} · {t.assets.daysHeld(h.days_held)}
+          {documentsText(h) ? ` · ${documentsText(h)}` : ''}
+        </div>
       </div>
-      <div className="text-xs text-muted-foreground">
-        {t.assets.givenOnDate(formatDay(h.given_date))} ·{' '}
-        {h.returned_date ? t.assets.returnedOnDate(formatDay(h.returned_date)) : t.assets.stillHeld} · {t.assets.daysHeld(h.days_held)}
-        {documentsText(h) ? ` · ${documentsText(h)}` : ''}
-      </div>
+      {open && onReturn ? (
+        <ReturnButton kind={h.asset.kind} size="sm" variant="outline" aria-label={t.assets.takeBackOf(h.asset.inventory_no)} disabled={busy} onClick={onReturn} />
+      ) : null}
     </li>
   )
 }

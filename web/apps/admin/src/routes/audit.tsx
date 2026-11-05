@@ -3,7 +3,6 @@ import {
   AUDIT_EVENTS,
   type AuditArea,
   type AuditEntry,
-  type AuditPage as AuditPageData,
   type AuditVerification,
   type MailTemplateKey,
   isPermission,
@@ -12,15 +11,17 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { type DescribeOptions, ChangeDetail, areaLabel, auditText, auditTitle, changedBy, sourceLabel } from '@ppe/audit'
 import { staffHref } from '@ppe/routing'
 import { Button } from '@ppe/ui/components/button'
+import { OlderButton } from '@ppe/ui/components/older-button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, ListSkeleton, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { formatDateTime, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
+import { useCursorPages } from '@ppe/ui/lib/use-cursor-pages'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -84,33 +85,14 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
   const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
   const dateError = notDate.from ?? notDate.to ?? (filter.from && filter.to && filter.from > filter.to ? t.audit.fromAfterTo : undefined)
   const filterKey = JSON.stringify(filter)
-  const first = useLoad<AuditPageData>(
-    () => (dateError ? Promise.resolve({ events: [], next: null }) : client.audit.list(filter)),
-    [filterKey],
+  // Older pages are appended; they belong to the filter they were loaded for.
+  const pages = useCursorPages<AuditEntry>(
+    (after) =>
+      dateError ? Promise.resolve({ items: [], next: null }) : client.audit.list({ ...filter, ...(after ? { after } : {}) }).then((p) => ({ items: p.events, next: p.next })),
+    [filterKey, dateError],
   )
-  // Older pages, appended; they belong to the filter they were loaded for.
-  const [older, setOlder] = useState<{ key: string; events: AuditEntry[]; next: string | null } | null>(null)
-  const [olderState, setOlderState] = useState<{ loading: boolean; error?: unknown }>({ loading: false })
-  const olderPages = older?.key === filterKey ? older : null
-  const events = useMemo(() => [...(first.data?.events ?? []), ...(olderPages?.events ?? [])], [first.data, olderPages])
-  const next = olderPages ? olderPages.next : (first.data?.next ?? null)
-
-  const loadOlder = async () => {
-    if (!next) return
-    setOlderState({ loading: true })
-    try {
-      const page = await client.audit.list({ ...filter, after: next })
-      setOlder({ key: filterKey, events: [...(olderPages?.events ?? []), ...page.events], next: page.next })
-      setOlderState({ loading: false })
-    } catch (error) {
-      setOlderState({ loading: false, error })
-    }
-  }
-
-  const reload = () => {
-    setOlder(null)
-    first.reload()
-  }
+  const events = useMemo(() => pages.data ?? [], [pages.data])
+  const reload = pages.reload
 
   const go = (to: AuditFilter, event?: string) =>
     navigate(event ? { name: 'audit', filter: to, event } : { name: 'audit', filter: to }, { replace: true, scroll: false })
@@ -165,7 +147,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
           title={t.audit.title}
           description={t.audit.description}
           filters={{ label: t.audit.filters, count: activeFilters, controls: 'audit-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
-          refresh={<RefreshButton loading={first.loading} onClick={reload} />}
+          refresh={<RefreshButton loading={pages.loading} onClick={reload} />}
           secondary={session.can('audit.export') ? [{ label: t.audit.exportAction, icon: Download, onClick: () => setExporting(true), showFrom: 'md' }] : []}
         />
 
@@ -279,16 +261,16 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
           </p>
         ) : null}
 
-        {first.error && !dateError ? (
-          <ErrorState error={first.error} onRetry={reload} />
-        ) : !first.data ? (
-          <Loading />
+        {pages.error ? (
+          <ErrorState error={pages.error} onRetry={reload} />
+        ) : !pages.data ? (
+          <ListSkeleton />
         ) : events.length === 0 ? (
           <EmptyState>{activeFilters > 0 || recordFiltered ? t.audit.noMatch : t.audit.noChanges}</EmptyState>
         ) : (
           <>
             {/* Four short columns fit side by side from 48rem; beside an open change, from 30rem. */}
-            <Table stack="list" stackBelow={beside ? 'sm' : 'md'} stickyHead>
+            <Table stack="list" stackBelow={beside ? 'sm' : 'md'} stickyHead busy={pages.loading}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t.audit.when}</TableHead>
@@ -342,14 +324,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
                 ))}
               </TableBody>
             </Table>
-            {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
-            {next ? (
-              <div className="mt-4 flex justify-center">
-                <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
-                  {t.audit.older}
-                </Button>
-              </div>
-            ) : null}
+            <OlderButton pages={pages} label={t.audit.older} />
           </>
         )}
       </div>

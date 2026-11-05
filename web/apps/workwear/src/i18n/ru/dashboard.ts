@@ -60,6 +60,7 @@ export const dashboard: DashboardText = {
   sendLink: 'Отправить ссылку',
   reorder: 'Заказать снова',
   itemFor: (item: string, name: string) => `${item} для ${name}`,
+  forName: (name: string) => `: ${name}`,
   forContext: (what: string) => `для ${what}`,
   addSizes: 'Добавить размеры',
   receipt: (record: string) => `Запись о выдаче ${record}`,

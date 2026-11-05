@@ -344,6 +344,18 @@ export interface Order {
   receipt_text_version: string
   lines: OrderLine[]
   total_cents: number
+  /**
+   * GET /api/v1/orders/{id} alone, for an ORDERED order: the confirmation link it waits on (the latest
+   * neither replaced nor used, expired or not); left out when there is none.
+   */
+  link?: WaitingLink
+}
+
+/** What the staff know of an order's confirmation link: when it was made, until when it works, and when the employee first opened it. */
+export interface WaitingLink {
+  created_at: string
+  expires_at: string
+  opened_at: string | null
 }
 
 /** Mark as Ordered: only items, quantities and sizes; the server copies the rest. */
@@ -823,7 +835,7 @@ export type KnownAuditSource = 'workwear' | 'admin' | 'launcher' | 'api' | 'publ
 export type AuditSource = string
 
 /** The records with a History of their own (GET /api/v1/audit-events/{record}/{id}). */
-export type AuditRecordKind = 'employees' | 'catalogue' | 'orders' | 'assets' | 'users' | 'apps'
+export type AuditRecordKind = 'employees' | 'catalogue' | 'item-sets' | 'orders' | 'assets' | 'users' | 'apps'
 
 /**
  * One recorded change (GET /api/v1/audit-events). `event` is one of
@@ -997,6 +1009,8 @@ export interface ErrorEvent {
 export interface ErrorPage {
   errors: ErrorEvent[]
   next: string | null
+  /** The first page's alone: the list's rows by kind, whatever kind it is filtered to. */
+  counts?: Record<ErrorKind, number>
 }
 
 export interface ErrorQuery {

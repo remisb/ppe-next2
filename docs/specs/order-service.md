@@ -54,7 +54,12 @@ accounting price (`accounting_price_cents`); the purchase price (`purchase_price
 null when the item had none, which never blocks an order, and on lines written before
 migration `0021`. No screen shows it on an order yet.
 
-`GET /api/v1/orders/{id}` returns a stored order with its lines.
+`GET /api/v1/orders/{id}` returns a stored order with its lines. An ORDERED order also has
+`link`, the confirmation link it waits on: the latest electronic one neither replaced nor
+used, expired or not, as `created_at`, `expires_at` and `opened_at` (its first opening, or
+null); no such link leaves it out. The order pane shows it as a fact ("Made … · opened …",
+"not opened yet", or when it stopped working), and Create confirmation link asks first while
+there is one, as a new link stops it working. The list (`GET /api/v1/orders`) has no `link`.
 
 ## Copy for WhatsApp (algorithm E)
 

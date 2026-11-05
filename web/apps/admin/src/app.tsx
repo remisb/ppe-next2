@@ -202,8 +202,8 @@ export function App() {
         className="w-full min-w-0 px-4 pt-5 pb-[calc(var(--bottom-nav)+1.5rem)] outline-none md:px-6 md:py-8"
       >
         {route.name === 'overview' ? <OverviewPage navigate={navigate} /> : null}
-        {route.name === 'users' ? <UsersPage navigate={navigate} /> : null}
-        {route.name === 'roles' ? <RolesPage /> : null}
+        {route.name === 'users' ? <UsersPage route={route} navigate={navigate} /> : null}
+        {route.name === 'roles' ? <RolesPage navigate={navigate} /> : null}
         {route.name === 'audit' ? <AuditPage route={route} navigate={navigate} /> : null}
         {route.name === 'security' ? <SecurityPage route={route} navigate={navigate} /> : null}
         {route.name === 'settings' ? <SettingsPage /> : null}

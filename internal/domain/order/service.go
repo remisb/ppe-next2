@@ -148,5 +148,14 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 
 // Get returns a stored order with its snapshot lines.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Order, error) {
-	return s.repo.Get(ctx, id)
+	o, err := s.repo.Get(ctx, id)
+	if err != nil || o.Status != StatusOrdered {
+		return o, err
+	}
+	link, err := s.repo.LatestLink(ctx, id)
+	if err != nil || link == nil {
+		return o, err
+	}
+	o.Link = &WaitingLink{CreatedAt: link.CreatedAt, ExpiresAt: *link.ExpiresAt, OpenedAt: link.FirstOpenedAt}
+	return o, nil
 }

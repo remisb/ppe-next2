@@ -1,19 +1,21 @@
 import type { CatalogueItem, ItemSet } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
+import { ChangeList, auditText } from '@ppe/audit'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/card'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
+import { linkVariants } from '@ppe/ui/components/link'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
-import { InactiveSetBadge } from '@/components/status-badges'
+import { InactiveItemBadge, InactiveSetBadge, IncompleteBadge } from '@/components/status-badges'
 import { t } from '@/i18n'
 import { type SetTotal, setTotal } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
@@ -31,6 +33,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const sets = useLoad(() => client.itemSets.list())
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)
+  const [changes, setChanges] = useState<ItemSet | null>(null)
   const action = useAction()
 
   const itemsById = useMemo(() => new Map((catalogue.data ?? []).map((i) => [i.id, i])), [catalogue.data])
@@ -74,8 +77,21 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
                       const item = itemsById.get(l.catalogue_item_id)
                       return (
                         <li key={l.catalogue_item_id}>
-                          {item?.name ?? t.catalogue.deletedItem} × {l.default_quantity}
-                          {item && !item.active ? <span className="text-muted-foreground">{t.catalogue.inactiveSuffix}</span> : null}
+                          {item ? (
+                            <a {...linkTo({ name: 'catalogue', item: item.id }, navigate)} className={linkVariants()}>
+                              {item.name}
+                            </a>
+                          ) : (
+                            t.catalogue.deletedItem
+                          )}{' '}
+                          × {l.default_quantity}
+                          {item ? (
+                            // What stops the line from being ordered as it is: an inactive item, a missing price or service period.
+                            <span className="ml-2 inline-flex gap-1 align-middle empty:hidden">
+                              {item.active ? null : <InactiveItemBadge />}
+                              <IncompleteBadge item={item} />
+                            </span>
+                          ) : null}
                         </li>
                       )
                     })}
@@ -96,6 +112,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
                           {t.common.edit}
                         </Button>
                         <MoreActions label={t.common.moreActions(s.name)}>
+                          <DropdownMenuItem onClick={() => setChanges(s)}>{auditText().changes}</DropdownMenuItem>
                           <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
                             {t.catalogue.deleteItemSet}
                           </DropdownMenuItem>
@@ -109,6 +126,9 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
           </div>
         )}
       </Loaded>
+      <FormSheet open={changes !== null} onClose={() => setChanges(null)} title={changes?.name ?? ''} description={auditText().changesIntro}>
+        {changes ? <SetChanges id={changes.id} updatedAt={changes.updated_at} /> : null}
+      </FormSheet>
       <SetForm
         set={editing}
         catalogue={catalogue.data ?? []}
@@ -119,6 +139,18 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
         }}
       />
     </>
+  )
+}
+
+/** An item set's Changes (S7), read when its sheet opens. */
+function SetChanges({ id, updatedAt }: { id: string; updatedAt: string }) {
+  const { client } = useApi()
+  const entries = useLoad(() => client.audit.history('item-sets', id), [id, updatedAt])
+  const tz = useLoad(() => client.settings()).data?.timezone
+  return (
+    <Loaded load={entries} emptyState={auditText().noChanges}>
+      {(data) => <ChangeList entries={data} timeZone={tz} />}
+    </Loaded>
   )
 }
 

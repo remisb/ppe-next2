@@ -90,6 +90,11 @@ export const history: HistoryText = {
   recordPaperQuestion: (name: string, record: string) =>
     `Отметить, что ${name} подписал(а) бумажную запись ${record}? Заказ получит статус «Выдано».`,
   confirmationLink: 'Ссылка для подтверждения',
+  linkMade: (when: string) => `Создана ${when}`,
+  linkOpened: (when: string) => `открыта ${when}`,
+  linkNotOpened: 'ещё не открыта',
+  linkExpired: (when: string) => `не действует с ${when}`,
+  replaceLinkQuestion: (made: string) => `Ссылка, созданная ${made}, перестанет работать, и сотруднику понадобится новая. Создать новую ссылку?`,
   copied: 'Скопировано',
   copyLink: 'Копировать ссылку',
   linkValidUntil: (date: string) => `Действует до ${date}. Ссылка показывается один раз; новая ссылка заменяет её.`,

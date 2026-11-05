@@ -1,9 +1,10 @@
 import {
+  ACCESS_FLAGS,
   type AccessReview,
   type LiveSession,
   type ReviewUser,
   type SecurityEntry,
-  type SecurityPage as SecurityPageData,
+  type User,
   SECURITY_KINDS,
   decodeToken,
   isPermission,
@@ -14,13 +15,18 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { deviceText, sourceLabel } from '@ppe/audit'
 import { Alert } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
+import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
+import { MoreActions } from '@ppe/ui/components/more-actions'
+import { Segmented } from '@ppe/ui/components/segmented'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { OlderButton } from '@ppe/ui/components/older-button'
 import { DateInput } from '@ppe/ui/components/date-input'
 import { Select } from '@ppe/ui/components/field'
 import { RefreshButton } from '@ppe/ui/components/panel'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { EmptyState, ErrorState, Loaded, Loading, PageHeader } from '@ppe/ui/components/states'
+import { EmptyState, ErrorState, Loaded, ListSkeleton, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
+import { useCursorPages } from '@ppe/ui/lib/use-cursor-pages'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -31,6 +37,7 @@ import { useMemo, useState } from 'react'
 import { t } from '@/i18n'
 import { type Route, type SecurityFilter, type SecurityTab, linkTo, securityTabs } from '@/lib/router'
 import { roleName } from '@/lib/users'
+import { UserForm } from '@/routes/users'
 
 type SecurityRoute = Extract<Route, { name: 'security' }>
 type Navigate = (to: Route, options?: { replace?: boolean; scroll?: boolean }) => void
@@ -92,31 +99,13 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
   const [notDate, setNotDate] = useState<{ from?: string | undefined; to?: string | undefined }>({})
   const dateError = notDate.from ?? notDate.to ?? (filter.from && filter.to && filter.from > filter.to ? t.security.fromAfterTo : undefined)
   const filterKey = JSON.stringify(filter)
-  const first = useLoad<SecurityPageData>(
-    () => (dateError ? Promise.resolve({ events: [], next: null }) : client.security.events(filter)),
-    [filterKey],
+  const pages = useCursorPages<SecurityEntry>(
+    (after) =>
+      dateError ? Promise.resolve({ items: [], next: null }) : client.security.events({ ...filter, ...(after ? { after } : {}) }).then((p) => ({ items: p.events, next: p.next })),
+    [filterKey, dateError],
   )
-  const [older, setOlder] = useState<{ key: string; events: SecurityEntry[]; next: string | null } | null>(null)
-  const [olderState, setOlderState] = useState<{ loading: boolean; error?: unknown }>({ loading: false })
-  const olderPages = older?.key === filterKey ? older : null
-  const events = useMemo(() => [...(first.data?.events ?? []), ...(olderPages?.events ?? [])], [first.data, olderPages])
-  const next = olderPages ? olderPages.next : (first.data?.next ?? null)
-
-  const loadOlder = async () => {
-    if (!next) return
-    setOlderState({ loading: true })
-    try {
-      const page = await client.security.events({ ...filter, after: next })
-      setOlder({ key: filterKey, events: [...(olderPages?.events ?? []), ...page.events], next: page.next })
-      setOlderState({ loading: false })
-    } catch (error) {
-      setOlderState({ loading: false, error })
-    }
-  }
-  const reload = () => {
-    setOlder(null)
-    first.reload()
-  }
+  const events = useMemo(() => pages.data ?? [], [pages.data])
+  const reload = pages.reload
   const setFilter = (key: keyof SecurityFilter, value: string) => {
     const nextFilter: SecurityFilter = { ...filter, [key]: value || undefined }
     navigate({ name: 'security', tab: 'sign-ins', filter: clean(nextFilter) }, { replace: true, scroll: false })
@@ -131,7 +120,7 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
           <Button variant="outline" className="md:hidden" aria-expanded={showFilters} aria-controls="security-filters" onClick={() => setShowFilters((v) => !v)}>
             <SlidersHorizontal aria-hidden /> {activeFilters > 0 ? t.security.filtersCount(activeFilters) : t.security.filters}
           </Button>
-          <RefreshButton loading={first.loading} onClick={reload} />
+          <RefreshButton loading={pages.loading} onClick={reload} />
         </div>
       </div>
       <section
@@ -222,15 +211,15 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
         </Alert>
       ) : null}
 
-      {first.error && !dateError ? (
-        <ErrorState error={first.error} onRetry={reload} />
-      ) : !first.data ? (
-        <Loading />
+      {pages.error ? (
+        <ErrorState error={pages.error} onRetry={reload} />
+      ) : !pages.data ? (
+        <ListSkeleton />
       ) : events.length === 0 ? (
         <EmptyState>{activeFilters > 0 ? t.security.noMatch : t.security.noEvents}</EmptyState>
       ) : (
         <>
-          <Table stack="list">
+          <Table stack="list" busy={pages.loading}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t.security.when}</TableHead>
@@ -279,14 +268,7 @@ function SignIns({ filter, timeZone, navigate }: { filter: SecurityFilter; timeZ
               ))}
             </TableBody>
           </Table>
-          {olderState.error ? <ErrorState error={olderState.error} onRetry={() => void loadOlder()} /> : null}
-          {next ? (
-            <div className="mt-4 flex justify-center">
-              <Button variant="outline" disabled={olderState.loading} onClick={() => void loadOlder()}>
-                {t.security.older}
-              </Button>
-            </div>
-          ) : null}
+          <OlderButton pages={pages} label={t.security.older} />
         </>
       )}
     </>
@@ -333,6 +315,33 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
   }
 
   const people = new Set((list.data ?? []).map((s) => s.user_id)).size
+  // One person's devices (A13): chosen here, then signed out everywhere at once.
+  const [person, setPerson] = useState('')
+  const persons = useMemo(() => {
+    const byId = new Map<string, { id: string; name: string; devices: number }>()
+    for (const s of list.data ?? []) {
+      const p = byId.get(s.user_id) ?? { id: s.user_id, name: s.user_name, devices: 0 }
+      byId.set(s.user_id, { ...p, devices: p.devices + 1 })
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [list.data])
+  const chosen = persons.find((p) => p.id === person)
+  const mine = (list.data ?? []).some((s) => s.user_id === person && s.id === current)
+  const endAll = async (p: { id: string; name: string; devices: number }) => {
+    if (!window.confirm(t.security.signOutAllQuestion(p.name, p.devices))) return
+    setBusy(p.id)
+    setMessage(null)
+    try {
+      await client.security.endUserSessions(p.id)
+      setMessage({ ok: true, text: t.security.signedOutAll(p.name) })
+      setPerson('')
+      list.reload()
+    } catch (err) {
+      setMessage({ ok: false, text: errorText(err) })
+    } finally {
+      setBusy(null)
+    }
+  }
   return (
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -345,10 +354,30 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
         </p>
       ) : null}
       <Loaded load={list} emptyState={t.security.noDevices}>
-        {(data) => (
+        {(all) => {
+          // Each person's devices together, the person last seen first, their devices last used first (the list's own order).
+          const order = new Map<string, number>()
+          all.forEach((s, i) => order.set(s.user_id, Math.min(order.get(s.user_id) ?? i, i)))
+          const data = all.filter((s) => !person || s.user_id === person).sort((a, b) => order.get(a.user_id)! - order.get(b.user_id)!)
+          return (
           <>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Select aria-label={t.security.person} value={person} onChange={(e) => setPerson(e.target.value)} className="w-auto">
+                <option value="">{t.security.everyone}</option>
+                {persons.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.devices})
+                  </option>
+                ))}
+              </Select>
+              {mayEnd && chosen && !mine ? (
+                <Button variant="outline" aria-label={t.security.signOutAllLabel(chosen.name)} disabled={busy !== null} onClick={() => void endAll(chosen)}>
+                  {t.security.signOutAll(chosen.devices)}
+                </Button>
+              ) : null}
+            </div>
             <p className="mb-2 text-sm text-muted-foreground">
-              {t.security.deviceCount(data.length)} · {t.security.people(people)}
+              {t.security.deviceCount(data.length)} · {t.security.people(person ? 1 : people)}
             </p>
             <Table stack="list">
               <TableHeader>
@@ -411,7 +440,8 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
               </TableBody>
             </Table>
           </>
-        )}
+          )
+        }}
       </Loaded>
     </>
   )
@@ -441,7 +471,13 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
   const session = useSession()
   const review = useLoad<AccessReview>(() => client.security.review())
   const [marked, setMarked] = useState<AccessReview | null>(null)
-  const [onlyMarked, setOnlyMarked] = useState(false)
+  const [show, setShow] = useState<ReviewShow>('all')
+  // Edit on a row: the user's account as Users edits it, for whoever manages users.
+  const canEdit = session.can('users.manage')
+  const accounts = useLoad(() => (canEdit ? client.users.list() : Promise.resolve([])), [canEdit])
+  const roleList = useLoad(() => (canEdit ? client.roles.list() : Promise.resolve([])), [canEdit])
+  const [editing, setEditing] = useState<User>()
+  const [saved, setSaved] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string>()
   const data = marked ?? review.data
@@ -465,7 +501,8 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
   if (review.error && !data) return <ErrorState error={review.error} onRetry={reload} />
   if (!data) return <Loading />
   const days = data.dormant_after_days
-  const users = onlyMarked ? data.users.filter((u) => u.flags.length > 0) : data.users
+  const counts = Object.fromEntries(reviewShows.map((s) => [s, data.users.filter((u) => inReview(u, s)).length])) as Record<ReviewShow, number>
+  const users = data.users.filter((u) => inReview(u, show))
   const last = data.last_review
 
   return (
@@ -510,12 +547,19 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
         </p>
       ) : null}
 
-      <label className="mb-3 flex items-center gap-2 text-sm">
-        <input type="checkbox" className="size-4 accent-primary" checked={onlyMarked} onChange={(e) => setOnlyMarked(e.target.checked)} />
-        {t.security.onlyMarked}
-      </label>
+      <Segmented
+        label={t.security.reviewShow}
+        layout="scroll"
+        className="mb-3"
+        value={show}
+        onChange={setShow}
+        options={reviewShows.map((s) => ({ value: s, label: reviewShowLabel(s, days), count: counts[s] }))}
+      />
+      <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
+        {saved}
+      </p>
       {users.length === 0 ? (
-        <EmptyState>{t.security.noMarked}</EmptyState>
+        <EmptyState>{show === 'all' ? t.users.noUsers : t.security.noMarked}</EmptyState>
       ) : (
         <Table stack="list" stackBelow="lg">
           <TableHeader>
@@ -524,15 +568,41 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
               <TableHead>{t.security.roles}</TableHead>
               <TableHead>{t.security.permissions}</TableHead>
               <TableHead>{t.security.lastSignIn}</TableHead>
+              <TableHead>
+                <span className="sr-only">{t.users.actions}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => (
-              <ReviewRow key={u.id} user={u} days={days} timeZone={timeZone} you={u.id === session.userId} />
-            ))}
+            {users.map((u) => {
+              const account = accounts.data?.find((a) => a.id === u.id)
+              return (
+                <ReviewRow
+                  key={u.id}
+                  user={u}
+                  days={days}
+                  timeZone={timeZone}
+                  you={u.id === session.userId}
+                  navigate={navigate}
+                  onEdit={account && roleList.data ? () => setEditing(account) : undefined}
+                />
+              )
+            })}
           </TableBody>
         </Table>
       )}
+      <UserForm
+        open={editing !== undefined}
+        user={editing}
+        roles={roleList.data ?? []}
+        onClose={() => setEditing(undefined)}
+        onSaved={(message) => {
+          setEditing(undefined)
+          setSaved(message)
+          accounts.reload()
+          reload()
+        }}
+      />
 
       {data.unused_roles.length > 0 ? (
         <section className="mt-6">
@@ -551,7 +621,38 @@ function Review({ timeZone, navigate }: { timeZone: string | undefined; navigate
   )
 }
 
-function ReviewRow({ user: u, days, timeZone, you }: { user: ReviewUser; days: number; timeZone: string | undefined; you: boolean }) {
+/** The access review's tabs: everyone, anyone marked, or one mark. */
+const reviewShows = ['all', 'marked', ...ACCESS_FLAGS] as const
+type ReviewShow = (typeof reviewShows)[number]
+
+function inReview(u: ReviewUser, show: ReviewShow): boolean {
+  return show === 'all' ? true : show === 'marked' ? u.flags.length > 0 : u.flags.includes(show)
+}
+
+function reviewShowLabel(show: ReviewShow, days: number): string {
+  if (show === 'all') return t.security.reviewAll
+  if (show === 'marked') return t.security.reviewMarked
+  if (show === 'administrator') return t.security.administrators
+  return flagLabel(show, days)
+}
+
+function ReviewRow({
+  user: u,
+  days,
+  timeZone,
+  you,
+  navigate,
+  onEdit,
+}: {
+  user: ReviewUser
+  days: number
+  timeZone: string | undefined
+  you: boolean
+  navigate: Navigate
+  /** Edit the account; none for a reader who may not manage users. */
+  onEdit: (() => void) | undefined
+}) {
+  const can = useSession().can
   const labels = u.permissions.map((p) => (isPermission(p) ? t.roles.permission[p].label : p))
   return (
     <TableRow className={cn(stackedBreak, !u.is_active && 'text-muted-foreground')}>
@@ -598,6 +699,22 @@ function ReviewRow({ user: u, days, timeZone, you }: { user: ReviewUser; days: n
       <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
         {u.last_sign_in_at ? <RelativeDate iso={u.last_sign_in_at} timeZone={timeZone} time /> : <span className="text-muted-foreground">{t.security.noSignIn}</span>}
         {u.live_sessions > 0 ? <span className="block text-xs text-muted-foreground">{t.security.signedInOn(u.live_sessions)}</span> : null}
+      </TableCell>
+      {/* What to do about it: edit the account, or look at what the person did. */}
+      <TableCell className="text-right whitespace-nowrap stacked:order-1 stacked:w-auto">
+        <span className="inline-flex gap-1">
+          {onEdit ? (
+            <Button size="sm" variant="outline" onClick={onEdit} aria-label={t.users.editUserLabel(u.name)}>
+              {t.common.edit}
+            </Button>
+          ) : null}
+          <MoreActions label={t.common.moreActions(u.name)}>
+            <DropdownMenuItem onClick={() => navigate({ name: 'security', tab: 'sign-ins', filter: { user: u.id } })}>{t.security.signIns}</DropdownMenuItem>
+            {can('audit.read') ? (
+              <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { actor: u.id } })}>{t.security.changesMade}</DropdownMenuItem>
+            ) : null}
+          </MoreActions>
+        </span>
       </TableCell>
     </TableRow>
   )

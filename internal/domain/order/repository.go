@@ -49,6 +49,9 @@ type Repository interface {
 	// CreateLink locks the order (ErrNotFound), calls fn, revokes the order's
 	// unused electronic links, and inserts the new link and its event.
 	CreateLink(ctx context.Context, orderID uuid.UUID, fn LinkFunc) error
+	// LatestLink returns the order's latest electronic link neither revoked nor
+	// confirmed, expired or not; nil when there is none.
+	LatestLink(ctx context.Context, orderID uuid.UUID) (*Confirmation, error)
 	// LinkByHash returns the confirmation with this token hash, or
 	// ErrLinkExpired when there is none or its order is deleted (an unknown
 	// link reads as expired).

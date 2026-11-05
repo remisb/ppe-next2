@@ -129,6 +129,11 @@ func registerAuditRoutes(rt *router, svc services) {
 		_, err := svc.catalogue.Get(ctx, id)
 		return err
 	}))
+	// An item set's Changes, for whoever may see item sets.
+	rt.restricted("GET /api/v1/audit-events/item-sets/{id}", history("item_set", func(ctx context.Context, id uuid.UUID) error {
+		_, err := svc.itemSets.Get(ctx, id)
+		return err
+	}), role.ItemSetsRead)
 	rt.authenticated("GET /api/v1/audit-events/orders/{id}", history("order", func(ctx context.Context, id uuid.UUID) error {
 		_, err := svc.orders.Get(ctx, id)
 		return err

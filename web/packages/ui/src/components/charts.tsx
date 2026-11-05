@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { barPercent, heatLevel, niceCeiling, sparkPoints } from '../lib/charts.ts'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
@@ -215,5 +217,39 @@ export function HeatStrip({
         </table>
       </div>
     </>
+  )
+}
+
+/** An entry of a BarList: what it is (a name or a link), its figure in words, and the number its bar is drawn from. */
+export interface BarItem {
+  key: string
+  label: ReactNode
+  value: number
+  text: ReactNode
+}
+
+/**
+ * A ranked list with a bar under each entry (the most given items, the most
+ * active people, the confirmation-link funnel, languages): the label and its
+ * figure on one line, the bar under them. The bars are scaled to the largest
+ * value, or to `scale` when the entries are parts of a whole (a percentage of
+ * links sent, of people). The bars are for the eye; the words carry the figures.
+ */
+export function BarList({ items, scale = 'max', className }: { items: BarItem[]; scale?: 'max' | number; className?: string | undefined }) {
+  const of = scale === 'max' ? Math.max(1, ...items.map((i) => i.value)) : scale
+  return (
+    <ol className={cn('flex flex-col gap-3 text-sm', className)}>
+      {items.map((i) => (
+        <li key={i.key}>
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0 truncate">{i.label}</span>
+            <span className="shrink-0 text-muted-foreground tabular-nums">{i.text}</span>
+          </div>
+          <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary/70" style={{ width: `${barPercent(i.value, of)}%` }} />
+          </div>
+        </li>
+      ))}
+    </ol>
   )
 }

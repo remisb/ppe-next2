@@ -47,6 +47,17 @@ func (f *fakeRepo) CreateLink(_ context.Context, orderID uuid.UUID, fn LinkFunc)
 	return nil
 }
 
+func (f *fakeRepo) LatestLink(_ context.Context, orderID uuid.UUID) (*Confirmation, error) {
+	var latest *Confirmation
+	for i, l := range f.links {
+		if l.OrderID == orderID && l.Method == MethodElectronic && l.RevokedAt == nil && l.ConfirmedAt == nil &&
+			(latest == nil || !l.CreatedAt.Before(latest.CreatedAt)) {
+			latest = &f.links[i]
+		}
+	}
+	return latest, nil
+}
+
 func (f *fakeRepo) LinkByHash(_ context.Context, h string) (Confirmation, error) {
 	for _, l := range f.links {
 		if l.TokenHash != nil && *l.TokenHash == h {

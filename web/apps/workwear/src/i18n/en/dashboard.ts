@@ -57,6 +57,7 @@ export const dashboard = {
   reorder: 'Reorder',
   /** A button's context for screen readers: "Reorder" + "Gloves for Ona". */
   itemFor: (item: string, name: string) => `${item} for ${name}`,
+  forName: (name: string) => ` for ${name}`,
   /** A button's context for screen readers: "Send link" + "for WE-000004". */
   forContext: (what: string) => `for ${what}`,
   addSizes: 'Add sizes',

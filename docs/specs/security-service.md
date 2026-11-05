@@ -75,6 +75,7 @@ is middleware and stays in memory. Index: `auth_events_email_idx (email_hash, oc
 | `GET /api/v1/security/events` | `security.read` | The log, newest first, a page at a time |
 | `GET /api/v1/security/sessions` | `security.read` | Every live user's live sessions, last used first |
 | `DELETE /api/v1/security/sessions/{id}` | `users.manage` + recent sign-in | Ends a live session. The actor must be allowed to manage its user (`user.Service.MayManage`), as on Users, so 403 otherwise. 404 when it is not live |
+| `DELETE /api/v1/security/users/{id}/sessions` | `users.manage` + recent sign-in | Ends every live session of the user, each recorded as `ended_by_administrator`, with the same check (`MayManage`; 404 for an unknown user). 204 also when there were none |
 | `GET /api/v1/security/access-review` | `security.read` | The review |
 | `POST /api/v1/security/access-review` | `security.read` | Mark as reviewed: records `access_review.completed` on the audit trail and returns the review. It changes no access, so reading is enough |
 
@@ -118,11 +119,17 @@ Each tab is its own address.
   - **This device** is marked, by the token's `sid`.
   - Whoever holds `users.manage` has Sign out on the others, which asks for the password
     when the sign-in is not recent.
+  - A person filter, each person's devices together (the person last seen first); with a
+    person chosen, Sign out on all asks first and ends every one of their sign-ins (not
+    offered for your own: Account signs out your other devices).
 - **Access review** (`/security/review`):
   - The last review, linking to its change on the Audit log, with Mark as reviewed, and
     Open Users for whoever manages users.
-  - The users with their roles, their permissions (folded), last sign-in, "Not used for 90
-    days", and a filter to show only marked users.
+  - The users with their roles, their permissions (folded), last sign-in and "Not used for
+    90 days", under tabs with counts: All, Marked, and one per mark (Administrators, No
+    sign-in, Not used for 90 days).
+  - Each row has Edit (the user's account, as on Users, for whoever manages users) and,
+    under ⋯, the person's Sign-ins and the Changes they made.
   - The roles no one holds.
 
 On a phone, Security is in the bar, and Roles & permissions and Settings move under More.

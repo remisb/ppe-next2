@@ -13,7 +13,7 @@ import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { ActionError, EmptyState, ErrorState, Loaded, Loading, PageHeader } from '@ppe/ui/components/states'
+import { ActionError, EmptyState, ErrorState, Loaded, ListSkeleton, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { useAction } from '@ppe/ui/lib/use-action'
@@ -286,7 +286,7 @@ function Feedback({ slug, timeZone }: { slug: string; timeZone: string | undefin
       {feedback.error ? (
         <ErrorState error={feedback.error} onRetry={feedback.reload} />
       ) : !feedback.data ? (
-        <Loading />
+        <ListSkeleton rows={3} />
       ) : feedback.data.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.apps.noFeedback}</p>
       ) : (

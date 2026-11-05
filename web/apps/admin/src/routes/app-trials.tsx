@@ -4,7 +4,7 @@ import { channelName, launcherText } from '@ppe/launcher'
 import { Badge } from '@ppe/ui/components/badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { ErrorState, ListSkeleton } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useLoad } from '@ppe/ui/lib/use-load'
 
@@ -26,7 +26,7 @@ export function AppTrials({ app, timeZone, revision = 0 }: { app: LauncherApp; t
       {trials.error ? (
         <ErrorState error={trials.error} onRetry={trials.reload} />
       ) : !trials.data ? (
-        <Loading />
+        <ListSkeleton rows={3} />
       ) : versions.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.apps.notPublished}</p>
       ) : (

@@ -22,7 +22,9 @@ import { InControl } from './tooltip.tsx'
  * the column heads in view under the screen's stuck header (PageHeader), and
  * its stuck filter bar if it has one (StickyFilters), while a long table scrolls; such a table must not scroll sideways (stack
  * it instead), as its wrapper then clips rather than scrolls: a scroll
- * container would hold the heads instead of the window.
+ * container would hold the heads instead of the window. `busy`: the rows are
+ * loading again (a filter or a page changed) and stay on screen dimmed, with
+ * `aria-busy`, until the new ones come (guidelines, "Loading").
  */
 type Stack = boolean | "grid" | "list"
 const StackContext = React.createContext<Stack>(false)
@@ -34,8 +36,9 @@ function Table({
   stackBelow = "md",
   sortControl,
   stickyHead = false,
+  busy = false,
   ...props
-}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode; stickyHead?: boolean }) {
+}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode; stickyHead?: boolean; busy?: boolean }) {
   return (
     <StackContext value={stack}>
     <StickyContext value={stickyHead}>
@@ -46,7 +49,8 @@ function Table({
         {stack && sortControl ? <div className="mb-3 hidden stacked:block">{sortControl}</div> : null}
         <table
           data-slot="table"
-          className={cn("w-full caption-bottom text-sm", stack && "stacked:block", className)}
+          aria-busy={busy || undefined}
+          className={cn("w-full caption-bottom text-sm [&>tbody]:transition-opacity aria-busy:[&>tbody]:opacity-50", stack && "stacked:block", className)}
           {...props}
         />
       </div>
