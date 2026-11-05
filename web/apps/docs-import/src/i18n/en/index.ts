@@ -56,6 +56,17 @@ const capture = {
   noMrz: 'No code lines found on this photo.',
   frontOnly: 'This is the front. Photograph the back too, with the code lines.',
   typeInstead: 'Type the Lines Instead',
+  liveCamera: 'Camera',
+  stopCamera: 'Stop Camera',
+  liveLabel: 'The camera’s picture',
+  aim: (type: 'passport' | 'card'): string =>
+    type === 'passport'
+      ? 'Hold the photo page inside the frame, its code lines in the band at the bottom.'
+      : 'Hold the back inside the frame, its code lines in the band at the bottom.',
+  liveRead: 'Read the same in two frames. For a card, now Take Picture of its front.',
+  takePicture: 'Take Picture',
+  cameraDenied: 'The camera was not allowed. Allow it in the browser, or take photos instead.',
+  cameraUnavailable: 'The camera could not start. Take photos instead.',
   continue: 'Review',
 }
 

@@ -52,6 +52,17 @@ const capture: Messages['capture'] = {
   noMrz: 'Šioje nuotraukoje kodo eilučių nerasta.',
   frontOnly: 'Tai priekinė pusė. Nufotografuokite ir kitąją, su kodo eilutėmis.',
   typeInstead: 'Įvesti eilutes ranka',
+  liveCamera: 'Kamera',
+  stopCamera: 'Išjungti kamerą',
+  liveLabel: 'Kameros vaizdas',
+  aim: (type: 'passport' | 'card') =>
+    type === 'passport'
+      ? 'Laikykite puslapį su nuotrauka rėmelyje, kodo eilutes – juostoje apačioje.'
+      : 'Laikykite kitąją pusę rėmelyje, kodo eilutes – juostoje apačioje.',
+  liveRead: 'Du kadrai nuskaityti vienodai. Jei tai kortelė, dabar fotografuokite jos priekinę pusę.',
+  takePicture: 'Fotografuoti kadrą',
+  cameraDenied: 'Kamera neleista. Leiskite ją naršyklėje arba darykite nuotraukas.',
+  cameraUnavailable: 'Kamera nepasileido. Darykite nuotraukas.',
   continue: 'Peržiūrėti',
 }
 

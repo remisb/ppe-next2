@@ -131,8 +131,9 @@ tools) waits for the open decisions.
 **Personnel files** (ADR 0007; specs `personnel-service.md`, `ai-usage-service.md`) is being built for the
 docs-import app: migration 0048 (schema `personnel`, the role Personnel Documents and its permissions),
 **Import Documents** (`web/apps/docs-import`, published, device profile, POC; for `personnel.documents.manage`) reads
-a passport's or ID card's MRZ from photos in the browser (`@ppe/mrz/reader`: an image worker and tesseract.js with the
-OCR-B model `mrz` committed in `web/packages/mrz/readers`, BSD-3), each photo read twice, and saves it through the routes
+a passport's or ID card's MRZ from photos or the live camera in the browser (`@ppe/mrz/reader`: an image worker and
+tesseract.js with the OCR-B model `mrz` committed in `web/packages/mrz/readers`, BSD-3), each photo read twice, a live
+reading taken when two frames agree, and saves it through the routes
 below; its rules are `src/lib/flow.ts`. The staff app's employee page has an **Identity** section
 (`components/identity-section.tsx`): the "valid until" line for everyone, the documents, Show Document, Mark Employment
 Ended and Legal Hold for the personnel permissions. `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys

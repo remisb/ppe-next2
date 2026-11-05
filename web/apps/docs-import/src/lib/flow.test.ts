@@ -6,6 +6,7 @@ import {
   differences,
   draftFromReading,
   emptyDraft,
+  guideFor,
   kindOf,
   linesOf,
   namesFromMrz,
@@ -144,5 +145,23 @@ describe('save', () => {
     const input = saveInput({ kind: 'new' }, d, m)
     expect(input.employee).toEqual({ new: { first_name: 'Miglė', last_name: 'Žukauskaitė' } })
     expect(input.take).toEqual(['birth_date', 'nationality', 'sex'])
+  })
+})
+
+describe('live view', () => {
+  it("frames the document in its own shape, centred, with its code lines' band at its bottom", () => {
+    const { guide, band } = guideFor('card')
+    expect(guide.w).toBeCloseTo(0.88)
+    // A card is wider for its height than a passport's page.
+    expect(guideFor('passport').guide.h).toBeGreaterThan(guide.h)
+    expect(guide.x + guide.w / 2).toBeCloseTo(0.5)
+    expect(guide.y + guide.h / 2).toBeCloseTo(0.5)
+    expect(band.y + band.h).toBeCloseTo(guide.y + guide.h)
+    expect(band.y).toBeGreaterThan(guide.y + guide.h / 2)
+    for (const type of ['passport', 'card'] as const) {
+      const g = guideFor(type).guide
+      expect(g.y).toBeGreaterThanOrEqual(0)
+      expect(g.y + g.h).toBeLessThanOrEqual(1)
+    }
   })
 })

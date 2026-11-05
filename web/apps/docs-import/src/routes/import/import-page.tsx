@@ -1,4 +1,5 @@
 import type { IdentityDocument } from '@ppe/api-client'
+import type { Mrz } from '@ppe/mrz'
 import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { useEffect, useRef, useState } from 'react'
 
@@ -66,7 +67,17 @@ export function ImportPage() {
     setDraft(emptyDraft(next))
   }
 
-  const addPhoto = async (file: File) => {
+  /** A picture whose MRZ the live view has read the same in two frames (FR-4): no second reading. */
+  const addLiveRead = (picture: Blob, mrz: Mrz) => {
+    const id = crypto.randomUUID()
+    pictures.keep(id, picture)
+    files.current.set(id, picture)
+    const placed = placePhoto(type, photos, { id, found: true, agreed: true, mrz })
+    forget([placed.dropped?.id])
+    setPhotos(placed.photos)
+  }
+
+  const addPhoto = async (file: Blob) => {
     setReaderFailed(false)
     setReading(true)
     try {
@@ -131,6 +142,7 @@ export function ImportPage() {
           readerFailed={readerFailed}
           onType={chooseType}
           onPhoto={(f) => void addPhoto(f)}
+          onLiveRead={addLiveRead}
           onChangePerson={() => setStep('person')}
           onReview={review}
           onTypeLines={() => {

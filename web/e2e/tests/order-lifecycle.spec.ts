@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
+import { type Browser, type BrowserContext, type Page, chromium, expect, test } from '@playwright/test'
 import pg from 'pg'
 
 import { admin, apiEnv, caddyMode, dbDSN, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
@@ -3690,6 +3691,67 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   await openSection(/^Changes/)
   await expect(page.getByText('Identity document shown').first()).toBeVisible()
   await expect(page.getByText('Employment ended').first()).toBeVisible()
+})
+
+test('Import Documents, live: the camera reads a passport held inside its frame, the same in two frames', async ({ browser }) => {
+  test.skip(!runsApp('docs-import'), 'Import Documents is not started (E2E_APPS)')
+  test.setTimeout(240_000)
+  // The camera is Chromium's fake one, playing a Motion JPEG: the made-up German passport held inside
+  // the guide frame, on a dark table, 1280 × 960 (4:3, as the view). It plays in a browser of its own,
+  // started with the camera's flags, signed in there as anyone would be.
+  const drawing = await (await browser.newContext({ viewport: { width: 1280, height: 960 } })).newPage()
+  const passport = (await readFile(join(repoRoot, 'web/e2e/fixtures/documents/passport-de.jpg'))).toString('base64')
+  await drawing.setContent(
+    `<body style="margin:0;width:1280px;height:960px;background:#2b2b2b;display:grid;place-items:center">` +
+      `<img src="data:image/jpeg;base64,${passport}" style="width:1000px;box-shadow:0 8px 24px #000"></body>`,
+  )
+  await drawing.locator('img').evaluate((img: HTMLImageElement) => img.decode())
+  const frame = await drawing.screenshot({ type: 'jpeg', quality: 92 })
+  await drawing.context().close()
+  const video = join(await mkdtemp(join(tmpdir(), 'ppe-e2e-camera-')), 'passport.mjpeg')
+  await writeFile(video, Buffer.concat(Array.from({ length: 10 }, () => frame)))
+  // A user of its own, so no other step's sign-in or password matters: made as the test admin is
+  // (api -seed-admin), then holding Personnel Documents alone, set in the database.
+  const clerk = { name: 'Rasa Records', email: 'rasa@example.com', password: 'rasa-password-1' }
+  execFileSync('go', ['run', './cmd/api', '-seed-admin'], {
+    cwd: repoRoot,
+    env: { ...apiEnv(), API_SEED_USER_EMAIL: clerk.email, API_SEED_USER_PASSWORD: clerk.password, API_SEED_USER_NAME: clerk.name },
+    stdio: 'ignore',
+  })
+  const db = new pg.Client({ connectionString: dbDSN })
+  await db.connect()
+  try {
+    await db.query(
+      `WITH u AS (SELECT id FROM users WHERE email = $1), gone AS (DELETE FROM user_roles WHERE user_id = (SELECT id FROM u))
+       INSERT INTO user_roles (user_id, role_id) SELECT id, $2 FROM u ON CONFLICT DO NOTHING`,
+      [clerk.email, 'a0e1d000-0000-4000-8000-000000000006'],
+    )
+  } finally {
+    await db.end()
+  }
+  const camera = await chromium.launch({
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${video}`],
+  })
+  try {
+    const live = await (await camera.newContext()).newPage()
+    await live.goto(webURL + '/apps/docs-import/')
+    await live.getByLabel('Email').fill(clerk.email)
+    await live.getByLabel(/^Password/).fill(clerk.password)
+    await live.getByRole('button', { name: 'Sign in' }).click()
+    await live.getByRole('button', { name: 'New Employee from Document' }).click()
+    await live.getByRole('button', { name: 'Camera', exact: true }).click()
+    await expect(live.getByLabel('The camera’s picture')).toBeVisible()
+    await expect(live.getByText('Hold the photo page inside the frame, its code lines in the band at the bottom.')).toBeVisible()
+    // Read live, the same twice: taken as the page's picture, without a second reading of the photo.
+    await expect(live.getByText('Code lines found. Read twice, the same both times.')).toBeVisible({ timeout: 120_000 })
+    await expect(live.getByLabel('The camera’s picture')).toHaveCount(0)
+    await live.getByRole('button', { name: 'Review' }).click()
+    await expect(live.getByLabel('Code lines (MRZ)')).toHaveValue(/^P<D<<MUELLER<LUEDENSCHEIDT<<JUERGEN<HANS/)
+    await expect(live.getByRole('region', { name: 'Read from the code lines' })).toContainText('C4H7K2M95')
+    await expect(live.getByRole('checkbox', { name: /I have compared the code lines/ })).toHaveCount(0)
+  } finally {
+    await camera.close()
+  }
 })
 
 test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {

@@ -227,3 +227,34 @@ export const COPY_PARTS = { page: 'copy_page', back: 'copy_back', front: 'copy_f
 
 /** The longest side of a Document Copy (the API's limit). */
 export const COPY_MAX_SIDE = 2400
+
+/** A document's proportions (ICAO): a passport's data page 125 × 88 mm, an ID-1 card 85.6 × 54 mm. */
+const DOC_RATIO: Record<DocType, number> = { passport: 125 / 88, card: 85.6 / 54 }
+
+/** Where the code lines are in a held document, as fractions of its height from the top. */
+const BAND_TOP: Record<DocType, number> = { passport: 0.76, card: 0.66 }
+
+/** The live view's picture: 4:3, as phones' cameras take it. */
+export const VIEW_RATIO = 4 / 3
+
+/** A box as fractions of the picture's width and height. */
+export interface Box {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/**
+ * The guide frame over the live picture (FR-2): the document's shape, as
+ * wide as fits with a margin, centred; and inside it, the band where its
+ * code lines are, for the eye. The whole guide is what is read: the band is
+ * found in it, as in a photo.
+ */
+export function guideFor(type: DocType, margin = 0.06): { guide: Box; band: Box } {
+  const w = 1 - 2 * margin
+  const h = Math.min(1 - 2 * margin, (w * VIEW_RATIO) / DOC_RATIO[type])
+  const guide = { x: (1 - w) / 2, y: (1 - h) / 2, w, h }
+  const top = BAND_TOP[type]
+  return { guide, band: { x: guide.x, y: guide.y + guide.h * top, w: guide.w, h: guide.h * (1 - top) } }
+}

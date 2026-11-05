@@ -1,13 +1,16 @@
+import type { Mrz } from '@ppe/mrz'
+import { cameraAvailable } from '@ppe/scan-kit/camera'
 import { Thumb } from '@ppe/scan-kit/thumb'
 import { Button } from '@ppe/ui/components/button'
 import { PageHeader } from '@ppe/ui/components/states'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { Camera, CircleCheck, ImagePlus, Keyboard, TriangleAlert } from 'lucide-react'
-import { useRef } from 'react'
+import { Camera, CircleCheck, ImagePlus, Keyboard, TriangleAlert, Video } from 'lucide-react'
+import { useRef, useState } from 'react'
 
 import { t } from '@/i18n'
 import { readPhotoOf, slotsOf, type DocType, type Holder, type Photo, type Photos, type Slot } from '@/lib/flow'
 
+import { LiveCapture } from './live-capture'
 import { HolderLine } from './person-step'
 
 /**
@@ -27,6 +30,7 @@ export function CaptureStep({
   readerFailed,
   onType,
   onPhoto,
+  onLiveRead,
   onChangePerson,
   onReview,
   onTypeLines,
@@ -38,12 +42,15 @@ export function CaptureStep({
   reading: boolean
   readerFailed: boolean
   onType: (type: DocType) => void
-  onPhoto: (file: File) => void
+  onPhoto: (file: Blob) => void
+  /** The live view read the same lines twice: its picture and the reading. */
+  onLiveRead: (picture: Blob, mrz: Mrz) => void
   onChangePerson: () => void
   onReview: () => void
   onTypeLines: () => void
 }) {
   const camera = useRef<HTMLInputElement>(null)
+  const [live, setLive] = useState(false)
   const chooser = useRef<HTMLInputElement>(null)
   const read = readPhotoOf(type, photos)
   const take = (input: HTMLInputElement) => {
@@ -68,11 +75,17 @@ export function CaptureStep({
           ]}
         />
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => camera.current?.click()} disabled={reading}>
+          {cameraAvailable() ? (
+            <Button variant={live ? 'secondary' : 'default'} onClick={() => setLive((v) => !v)} disabled={reading}>
+              <Video aria-hidden className="size-4" />
+              {live ? t.capture.stopCamera : t.capture.liveCamera}
+            </Button>
+          ) : null}
+          <Button variant={cameraAvailable() ? 'outline' : 'default'} onClick={() => camera.current?.click()} disabled={reading || live}>
             <Camera aria-hidden className="size-4" />
             {t.capture.takePhoto}
           </Button>
-          <Button variant="outline" onClick={() => chooser.current?.click()} disabled={reading}>
+          <Button variant="outline" onClick={() => chooser.current?.click()} disabled={reading || live}>
             <ImagePlus aria-hidden className="size-4" />
             {t.capture.choosePhoto}
           </Button>
@@ -80,6 +93,19 @@ export function CaptureStep({
           <input ref={camera} type="file" accept="image/*" capture="environment" hidden aria-label={t.capture.takePhoto} onChange={(e) => take(e.target)} />
           <input ref={chooser} type="file" accept="image/*" hidden aria-label={t.capture.choosePhoto} onChange={(e) => take(e.target)} />
         </div>
+        {live ? (
+          <LiveCapture
+            key={type}
+            type={type}
+            onRead={(picture, mrz) => {
+              onLiveRead(picture, mrz)
+              // A card's back read: its front is still wanted, with Take Picture. A page: done.
+              if (type === 'passport') setLive(false)
+            }}
+            onPicture={onPhoto}
+            onClose={() => setLive(false)}
+          />
+        ) : null}
         {reading ? (
           <p role="status" className="text-sm">
             {t.capture.reading}

@@ -49,6 +49,12 @@ export interface MrzReaderOptions {
 export interface MrzReader {
   /** Reads a photo; today (ISO) is the organisation's, for the centuries and "expired". */
   readPhoto(photo: Blob, today: string): Promise<PhotoReading>
+  /**
+   * Reads a live frame (the guide frame's part of the picture) once: its MRZ
+   * when every check digit passes, else undefined. The caller takes it once
+   * two frames in a row give the same lines (@ppe/scan-kit's Steady, FR-4).
+   */
+  readFrame(frame: HTMLCanvasElement, today: string): Promise<Mrz | undefined>
   /** Starts loading the reader now, so the first photo reads sooner. */
   warmUp(): void
   stop(): Promise<void>
@@ -86,6 +92,10 @@ export function createMrzReader(o: MrzReaderOptions): MrzReader {
       // The valid reading, the first's when both are; else whatever the first gave, for the user to put right.
       const mrz = a ?? b ?? first.mrz ?? (second.found ? second.mrz : undefined)
       return { found: true, agreed, ...(mrz ? { mrz } : {}) }
+    },
+    async readFrame(frame, today) {
+      const r = await readBand(frame, today)
+      return r.found && r.mrz?.valid ? r.mrz : undefined
     },
     warmUp: () => text.warmUp(),
     stop: async () => {
