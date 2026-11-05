@@ -75,4 +75,14 @@ describe('make new-app', () => {
     expect(existsSync(join(paths.webDir, 'apps', 'crew'))).toBe(false)
     expect(readFileSync(paths.defaultsFile, 'utf8')).toBe(before)
   })
+
+  it('refuses a template with a placeholder it does not know, leaving no folder', () => {
+    const paths = workspace()
+    const badTemplate = mkdtempSync(join(tmpdir(), 'template-'))
+    mkdirSync(join(badTemplate, 'src'))
+    writeFileSync(join(badTemplate, 'package.json'), '{ "name": "@ppe/__SLUG__-app" }')
+    writeFileSync(join(badTemplate, 'src', 'main.ts'), "export const owner = '__OWNER__'")
+    expect(() => newApp({ slug: 'size-helper', name: 'Size Helper' }, { ...paths, templateDir: badTemplate })).toThrow(/__OWNER__/)
+    expect(existsSync(join(paths.webDir, 'apps', 'size-helper'))).toBe(false)
+  })
 })

@@ -21,7 +21,6 @@ export const apps: AppsText = {
   group: 'Группа',
   groups: { workwear: 'Спецодежда и СИЗ', assets: 'Имущество компании', people: 'Люди и бригады', admin: 'Администрирование' },
   stage: 'Этап',
-  stages: { live: 'Работает', pilot: 'Пилот', poc: 'Прототип', dev: 'В разработке', retired: 'Выведено из работы' },
   stageHints: {
     live: 'В ежедневной работе.',
     pilot: 'Пробуют обычные пользователи; показывается значок «Пилот».',
@@ -52,7 +51,6 @@ export const apps: AppsText = {
   moved: (name: string, n: number, of: number) => `«${name}» теперь ${n} из ${of}.`,
   feedback: 'Отзывы',
   noFeedback: 'Отзывов пока нет.',
-  ratings: { works: 'Работает хорошо', confusing: 'Непонятно', broken: 'Что-то сломалось' },
   devices: { phone: 'Телефон', tablet: 'Планшет', desktop: 'Компьютер' },
   changes: 'Изменения',
   open: (name: string) => `Открыть «${name}»`,

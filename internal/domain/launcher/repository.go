@@ -54,6 +54,8 @@ type Repository interface {
 	PruneVersions(ctx context.Context, app uuid.UUID, m PruneMutation) ([]Version, error)
 	// Channels returns every app's channels, each with its version's name.
 	Channels(ctx context.Context) ([]Channel, error)
+	// AppChannels returns one app's channels, as Channels does.
+	AppChannels(ctx context.Context, app uuid.UUID) ([]Channel, error)
 	// PutChannel locks the app's channel by that name, applies m and writes
 	// the result with its events.
 	PutChannel(ctx context.Context, app uuid.UUID, name string, m ChannelMutation) (Channel, error)

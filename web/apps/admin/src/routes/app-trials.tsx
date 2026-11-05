@@ -1,6 +1,6 @@
 import type { LauncherApp } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { channelName } from '@ppe/launcher'
+import { channelName, launcherText } from '@ppe/launcher'
 import { Badge } from '@ppe/ui/components/badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
@@ -71,13 +71,13 @@ export function AppTrials({ app, timeZone }: { app: LauncherApp; timeZone: strin
                   <TableCell>
                     <span className="flex flex-wrap gap-1">
                       <Badge variant="outline">
-                        {t.apps.ratings.works} {v.feedback.works}
+                        {launcherText().ratings.works} {v.feedback.works}
                       </Badge>
                       <Badge variant={v.feedback.confusing ? 'secondary' : 'outline'}>
-                        {t.apps.ratings.confusing} {v.feedback.confusing}
+                        {launcherText().ratings.confusing} {v.feedback.confusing}
                       </Badge>
                       <Badge variant={v.feedback.broken ? 'destructive' : 'outline'}>
-                        {t.apps.ratings.broken} {v.feedback.broken}
+                        {launcherText().ratings.broken} {v.feedback.broken}
                       </Badge>
                     </span>
                   </TableCell>

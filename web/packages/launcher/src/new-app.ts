@@ -17,8 +17,8 @@
  * removes it, so the template cannot rot unnoticed.
  */
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
-import { extname, join, relative } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { dirname, extname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 // By path: this file runs in Node, beside the workspace's packages.
@@ -92,15 +92,21 @@ export function newApp(app: NewApp, paths: Paths): Started {
 
   const devPort = nextDevPort(webDir)
   const values: Record<string, string> = { __SLUG__: slug, __NAME__: name, __NAME_LT__: nameLt, __NAME_RU__: nameRu, __DEV_PORT__: String(devPort) }
-  cpSync(templateDir, dir, { recursive: true })
-  for (const file of readdirSync(dir, { recursive: true, encoding: 'utf8' }).map((f) => join(dir, f))) {
-    if (!statSync(file).isFile()) continue
-    const escape = escapes[extname(file)] ?? ((s: string) => s)
-    const text = readFileSync(file, 'utf8').replace(/__[A-Z_]+__/g, (key) => {
-      const value = values[key]
-      if (value === undefined) throw new Error(`${relative(templateDir, file)}: ${key} is not a placeholder make new-app knows`)
-      return key === '__SLUG__' || key === '__DEV_PORT__' ? value : escape(value)
+  // Every file is filled in before anything is written, so a template with a
+  // placeholder this does not know leaves no half-made folder behind.
+  const filled = readdirSync(templateDir, { recursive: true, encoding: 'utf8' })
+    .filter((f) => statSync(join(templateDir, f)).isFile())
+    .map((f) => {
+      const escape = escapes[extname(f)] ?? ((s: string) => s)
+      const text = readFileSync(join(templateDir, f), 'utf8').replace(/__[A-Z_]+__/g, (key) => {
+        const value = values[key]
+        if (value === undefined) throw new Error(`${f}: ${key} is not a placeholder make new-app knows`)
+        return key === '__SLUG__' || key === '__DEV_PORT__' ? value : escape(value)
+      })
+      return { file: join(dir, f), text }
     })
+  for (const { file, text } of filled) {
+    mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, text)
   }
 

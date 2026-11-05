@@ -56,35 +56,24 @@ const webServerEnv: Record<string, string> = caddy
       VITE_LAUNCHER_TARGET: `http://localhost:${launcherPort}`,
     }
 
-// With Vite, Administration runs on its own server, which the staff app's proxies /admin to.
-const adminServer = {
-  command: `${join(repoRoot, 'web/apps/admin/node_modules/.bin/vite')} --port ${adminPort} --strictPort`,
-  cwd: join(repoRoot, 'web/apps/admin'),
+// With Vite, each app besides the staff app runs on its own server, which
+// the staff app's proxies to, so tests open them on one origin as behind
+// Caddy: Administration at /admin, each published app (Scan SIMs) at
+// /apps/<slug> (behind Caddy, published instead) and App Launcher at /apps.
+// Each is started from the app's own vite (see webServerCommand), on its port.
+const viteServer = (dir: string, port: number, path: string) => ({
+  command: `${join(dir, 'node_modules/.bin/vite')} --port ${port} --strictPort`,
+  cwd: dir,
   env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
-  url: `http://localhost:${adminPort}/admin/`,
+  url: `http://localhost:${port}${path}`,
   reuseExistingServer: false,
   timeout: 120_000,
-}
-
-// And so does each published app (Scan SIMs), at /apps/<slug> (behind Caddy, published instead).
-const publishedServers = publishedApps.map((a) => ({
-  command: `${join(a.dir, 'node_modules/.bin/vite')} --port ${a.e2ePort} --strictPort`,
-  cwd: a.dir,
-  env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
-  url: `http://localhost:${a.e2ePort}/apps/${a.slug}/`,
-  reuseExistingServer: false,
-  timeout: 120_000,
-}))
-
-// And App Launcher, at /apps.
-const launcherServer = {
-  command: `${join(repoRoot, 'web/apps/launcher/node_modules/.bin/vite')} --port ${launcherPort} --strictPort`,
-  cwd: join(repoRoot, 'web/apps/launcher'),
-  env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
-  url: `http://localhost:${launcherPort}/apps/`,
-  reuseExistingServer: false,
-  timeout: 120_000,
-}
+})
+const appServers = [
+  viteServer(join(repoRoot, 'web/apps/admin'), adminPort, '/admin/'),
+  ...publishedApps.map((a) => viteServer(a.dir, a.e2ePort, `/apps/${a.slug}/`)),
+  viteServer(join(repoRoot, 'web/apps/launcher'), launcherPort, '/apps/'),
+]
 
 export default defineConfig({
   testDir: './tests',
@@ -118,6 +107,6 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
-    ...(caddy ? [] : [adminServer, ...publishedServers, launcherServer]),
+    ...(caddy ? [] : appServers),
   ],
 })

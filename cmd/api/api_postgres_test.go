@@ -2105,6 +2105,10 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	if _, err := publish("sim-scan", "2026.11.05-cap", "", map[string]string{"index.html": "<head></head>", "ppe-app.json": `{"slug":"sim-scan","capabilities":["usb"]}`}); err == nil {
 		t.Error("an unknown capability was published")
 	}
+	if _, err := publish("sim-scan", "2026.11.05-nohead", "", map[string]string{"index.html": "<html><body></body></html>", "ppe-app.json": `{"slug":"sim-scan"}`}); err == nil ||
+		!strings.Contains(err.Error(), "</head>") {
+		t.Errorf("a page with no </head> (it would run without its meta tags): %v", err)
+	}
 	if _, err := publish("crew", "2026.11.05-ccc", "", scanSIMs); err == nil {
 		t.Error("a linked site was published")
 	}
@@ -2257,6 +2261,18 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 		!strings.Contains(rec.Body.String(), `"stable_follows_deploys":true`) {
 		t.Fatalf("turning it on = %d %s", rec.Code, rec.Body)
 	}
+	// A page is the same until a channel moves: its ETag gets a 304 with the
+	// same headers and no body.
+	first := get("/apps/sim-scan/")
+	etag := first.Header().Get("ETag")
+	again := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/apps/sim-scan/review", nil)
+	req.Header.Set("If-None-Match", etag)
+	handler.ServeHTTP(again, req)
+	if etag == "" || again.Code != http.StatusNotModified || again.Body.Len() != 0 || again.Header().Get("Content-Security-Policy") != devicePolicy ||
+		again.Header().Get("Cache-Control") != "no-cache" {
+		t.Errorf("If-None-Match %s = %d %v %q", etag, again.Code, again.Header(), again.Body)
+	}
 	stableIs := func() string {
 		return regexp.MustCompile(`ppe-version" content="([^"]+)"`).FindStringSubmatch(get("/apps/sim-scan/").Body.String())[1]
 	}
@@ -2267,6 +2283,13 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	}
 	if got := stableIs(); got != "2026.11.12-v12" {
 		t.Errorf("Stable after a deploy = %s", got)
+	}
+	moved := httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/apps/sim-scan/", nil)
+	req.Header.Set("If-None-Match", etag)
+	handler.ServeHTTP(moved, req)
+	if moved.Code != http.StatusOK || moved.Header().Get("ETag") == etag || !strings.Contains(moved.Body.String(), "2026.11.12-v12") {
+		t.Errorf("the old ETag once Stable moved = %d %s", moved.Code, moved.Header().Get("ETag"))
 	}
 
 	// Pruning keeps what a channel opens (the variant's 2026.11.04-aaa) and the newest five.

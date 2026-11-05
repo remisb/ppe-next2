@@ -2,7 +2,7 @@
   "name": "@ppe/sim-scan-app",
   "private": true,
   "version": "0.0.0",
-  "description": "Scan SIMs, a trial at /sim-scan: newly received SIM cards read from their carriers and added in a batch, and Show PIN and PUK. Shares the staff app's sign-in and look; its features move into the staff app once the trial passes.",
+  "description": "Scan SIMs, a trial published at /apps/sim-scan/ (ADR 0006): newly received SIM cards read from their carriers and added in a batch, and Show PIN and PUK. Shares the staff app's sign-in and look; its features move into the staff app once the trial passes.",
   "type": "module",
   "scripts": {
     "dev": "vite",

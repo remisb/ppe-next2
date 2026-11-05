@@ -302,17 +302,7 @@ func (s *Service) PointChannel(ctx context.Context, slug, name string, p Channel
 }
 
 func (s *Service) appChannels(ctx context.Context, app uuid.UUID) ([]Channel, error) {
-	all, err := s.repo.Channels(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := []Channel{}
-	for _, c := range all {
-		if c.AppID == app {
-			out = append(out, c)
-		}
-	}
-	return out, nil
+	return s.repo.AppChannels(ctx, app)
 }
 
 // Releases returns an app's versions, newest first, and its channels, for Manage apps.

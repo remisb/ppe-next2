@@ -1,7 +1,7 @@
 import { APP_ICONS, ApiError, type AppFeedback, type AppGroup, type AppKind, type AppStage, type AppTier, type LauncherApp, PERMISSIONS, type Permission } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { appIcons, appName } from '@ppe/launcher'
+import { appIcons, appName, launcherText } from '@ppe/launcher'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
@@ -123,7 +123,7 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
                     </TableCell>
                     {beside ? null : <TableCell className="whitespace-nowrap text-muted-foreground stacked:hidden">{t.apps.groups[a.group]}</TableCell>}
                     <TableCell className="whitespace-nowrap stacked:w-auto">
-                      <Badge variant={a.stage === 'live' ? 'outline' : 'secondary'}>{t.apps.stages[a.stage]}</Badge>
+                      <Badge variant={a.stage === 'live' ? 'outline' : 'secondary'}>{launcherText().stages[a.stage]}</Badge>
                     </TableCell>
                     {beside ? null : (
                       <TableCell className="whitespace-nowrap text-muted-foreground stacked:hidden">
@@ -212,7 +212,7 @@ function AppPane({
         }
       >
         <p className="text-sm text-muted-foreground">
-          {t.apps.kinds[app.kind]} · {t.apps.stages[app.stage]}
+          {t.apps.kinds[app.kind]} · {launcherText().stages[app.stage]}
         </p>
       </RecordHeader>
       <FactGrid layout="rows" ruled>
@@ -284,7 +284,7 @@ function Feedback({ slug, timeZone }: { slug: string; timeZone: string | undefin
           {feedback.data.map((f: AppFeedback) => (
             <li key={f.id} className="rounded-lg border border-border p-3 text-sm">
               <p className="flex flex-wrap items-center gap-2">
-                <Badge variant={f.rating === 'broken' ? 'destructive' : f.rating === 'confusing' ? 'secondary' : 'outline'}>{t.apps.ratings[f.rating]}</Badge>
+                <Badge variant={f.rating === 'broken' ? 'destructive' : f.rating === 'confusing' ? 'secondary' : 'outline'}>{launcherText().ratings[f.rating]}</Badge>
                 <span className="font-medium">{f.user_name}</span>
                 <span className="text-muted-foreground">
                   {t.apps.devices[f.device]} · {f.language.toUpperCase()} · <RelativeDate iso={f.created_at} timeZone={timeZone} />
@@ -469,7 +469,7 @@ function AppForm({
               <Select {...controlProps(p)} value={d.stage} onChange={(e) => set({ stage: e.target.value as AppStage })}>
                 {stages.map((s) => (
                   <option key={s} value={s}>
-                    {t.apps.stages[s]}
+                    {launcherText().stages[s]}
                   </option>
                 ))}
               </Select>

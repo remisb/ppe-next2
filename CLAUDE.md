@@ -148,7 +148,8 @@ Preview, named variants with a label and audience; events `app.version_published
 `/sim-scan/…` redirects). Caddy serves a version's files from the `published` volume at
 `/apps/files/<profile>/<slug>/<version>/`; the API (`cmd/api/published-app-routes.go`, public
 `GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
-`ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`)
+`ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`;
+kept in memory per version, with an `ETag`)
 and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
 stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
 (slug, capabilities, devPort), found from it by the Makefile, the web image, the dev proxy and e2e

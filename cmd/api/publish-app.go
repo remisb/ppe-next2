@@ -16,11 +16,14 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/launcher"
 )
 
-// The most a published build may hold: Scan SIMs' readers are about 15 MB.
-const (
-	maxBuildBytes = 300 << 20
-	maxBuildFiles = 5000
-)
+// buildLimits is the most a published build may hold.
+type buildLimits struct {
+	bytes int64
+	files int
+}
+
+// publishLimits are a deploy's: Scan SIMs' readers are about 15 MB.
+var publishLimits = buildLimits{bytes: 300 << 20, files: 5000}
 
 // publishApp publishes an app's build, a tar of its dist/ read from in (the
 // API's image has no shell, so the build arrives on standard input): the
@@ -42,15 +45,21 @@ func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out
 		return err
 	}
 	defer os.RemoveAll(tmp)
-	if err := untar(in, tmp); err != nil {
+	if err := untar(in, tmp, publishLimits); err != nil {
 		return fmt.Errorf("the build: %w", err)
 	}
 	raw, err := os.ReadFile(filepath.Join(tmp, "ppe-app.json"))
 	if err != nil {
 		return errors.New("the build has no ppe-app.json")
 	}
-	if _, err := os.Stat(filepath.Join(tmp, "index.html")); err != nil {
+	page, err := os.ReadFile(filepath.Join(tmp, "index.html"))
+	if err != nil {
 		return errors.New("the build has no index.html")
+	}
+	// The API puts the page's meta tags (where it is mounted, its files, its
+	// version) before </head>: a page without one would run without them.
+	if !strings.Contains(string(page), "</head>") {
+		return errors.New("the build's index.html has no </head>")
 	}
 	var m launcher.Manifest
 	if err := json.Unmarshal(raw, &m); err != nil {
@@ -187,8 +196,9 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 }
 
 // untar writes the tar's directories and regular files under dir: no
-// absolute names, none outside dir, no links or devices, within the limits.
-func untar(in io.Reader, dir string) error {
+// absolute names, none outside dir, no links or devices, no name twice,
+// within the limits.
+func untar(in io.Reader, dir string, limits buildLimits) error {
 	tr := tar.NewReader(in)
 	var total int64
 	files := 0
@@ -214,11 +224,11 @@ func untar(in io.Reader, dir string) error {
 				return err
 			}
 		case tar.TypeReg:
-			if files++; files > maxBuildFiles {
-				return fmt.Errorf("more than %d files", maxBuildFiles)
+			if files++; files > limits.files {
+				return fmt.Errorf("more than %d files", limits.files)
 			}
-			if total += h.Size; total > maxBuildBytes {
-				return fmt.Errorf("larger than %d MB", maxBuildBytes>>20)
+			if total += h.Size; total > limits.bytes {
+				return fmt.Errorf("larger than %d MB", limits.bytes>>20)
 			}
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err

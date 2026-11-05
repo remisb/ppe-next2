@@ -133,6 +133,16 @@ func (m *memRepo) AddVersion(_ context.Context, v Version, ev audit.Event) error
 
 func (m *memRepo) Channels(context.Context) ([]Channel, error) { return slices.Clone(m.channels), nil }
 
+func (m *memRepo) AppChannels(_ context.Context, app uuid.UUID) ([]Channel, error) {
+	out := []Channel{}
+	for _, c := range m.channels {
+		if c.AppID == app {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
 func (m *memRepo) PruneVersions(ctx context.Context, app uuid.UUID, f PruneMutation) ([]Version, error) {
 	versions, _ := m.Versions(ctx, app)
 	channels := slices.DeleteFunc(slices.Clone(m.channels), func(c Channel) bool { return c.AppID != app })

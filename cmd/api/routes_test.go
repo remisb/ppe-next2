@@ -706,6 +706,9 @@ func (stubLauncher) PruneVersions(context.Context, uuid.UUID, launcher.PruneMuta
 func (stubLauncher) Channels(context.Context) ([]launcher.Channel, error) {
 	return []launcher.Channel{}, nil
 }
+func (stubLauncher) AppChannels(context.Context, uuid.UUID) ([]launcher.Channel, error) {
+	return []launcher.Channel{}, nil
+}
 func (stubLauncher) PutChannel(_ context.Context, _ uuid.UUID, _ string, m launcher.ChannelMutation) (launcher.Channel, error) {
 	c, _, err := m(nil)
 	return c, err

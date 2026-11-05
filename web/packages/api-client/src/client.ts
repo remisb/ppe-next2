@@ -173,7 +173,6 @@ export function createClient(options: ClientOptions) {
     const get = async () => {
       const headers: Record<string, string> = {}
       if (options.app) headers['X-PPE-App'] = options.app
-    if (options.appVersion) headers['X-PPE-App-Version'] = options.appVersion
       if (options.appVersion) headers['X-PPE-App-Version'] = options.appVersion
       const token = options.getToken()
       if (token) headers['Authorization'] = `Bearer ${token}`

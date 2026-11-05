@@ -1,5 +1,5 @@
 import type { AppChannel, FeedbackRating, LauncherApp, LauncherList } from '@ppe/api-client'
-import { CheckingSignIn, ConfirmPassword, Offline, type Session, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
+import { type Session, useApi } from '@ppe/app-shell'
 import { currentLang } from '@ppe/i18n'
 import {
   appIcons,
@@ -18,6 +18,7 @@ import {
   rememberChoice,
   rememberPins,
   saveShowTesting,
+  SignedIn,
   togglePin,
   useLauncher,
 } from '@ppe/launcher'
@@ -47,30 +48,29 @@ import { type Shelf, deviceOf, matching, pinnedOf, recentOf, sections, shownTile
  * app's sign-in, so signing in or out here does so there too.
  */
 export function App() {
-  const { session, status, retry, signOut, passwordPrompt } = useApi()
-  const launcher = useLauncher()
-
-  useEffect(() => applyDensity(session ? loadDensity(session.userId) : null), [session?.userId])
-
-  if (status === 'starting') return <CheckingSignIn />
-  if (status === 'offline') return <Offline onRetry={retry} />
-  if (!session) return <SignIn appName={launcherText().launcherName} tagline={launcherText().signInTagline} />
   return (
-    <>
-      {launcher.list ? (
-        // Keyed by user: its pins and choices are state taken from the list once.
-        <Launcher key={session.userId} session={session} list={launcher.list} onSignOut={() => void signOut()} />
+    <SignedIn appName={launcherText().launcherName} tagline={launcherText().signInTagline}>
+      {(session) => <Signed session={session} />}
+    </SignedIn>
+  )
+}
+
+/** The launcher once the user's list is in: loading, failed with Try again, or the tiles. */
+function Signed({ session }: { session: Session }) {
+  const { signOut } = useApi()
+  const launcher = useLauncher()
+  if (launcher.list) {
+    // Keyed by user: its pins and choices are state taken from the list once.
+    return <Launcher key={session.userId} session={session} list={launcher.list} onSignOut={() => void signOut()} />
+  }
+  return (
+    <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
+      {launcher.failed ? (
+        <ErrorState error={new Error(launcherText().loadFailed)} title={launcherText().loadFailed} onRetry={launcher.retry} retryLabel={launcherText().retry} />
       ) : (
-        <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
-          {launcher.failed ? (
-            <ErrorState error={new Error(launcherText().loadFailed)} title={launcherText().loadFailed} onRetry={launcher.retry} retryLabel={launcherText().retry} />
-          ) : (
-            <Loading />
-          )}
-        </main>
+        <Loading />
       )}
-      <ConfirmPassword prompt={passwordPrompt} />
-    </>
+    </main>
   )
 }
 

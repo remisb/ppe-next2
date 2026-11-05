@@ -8,7 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/domain/launcher"
 )
@@ -46,10 +51,21 @@ var profilePolicies = map[launcher.Profile]pagePolicy{
 type publishedApps struct {
 	apps *launcher.Service
 	dir  string
+	// epoch tells this process's pages from an earlier one's in their ETags,
+	// so a deploy that changes the policies or the meta tags is never a 304.
+	epoch string
+
+	mu sync.Mutex
+	// pages holds each version's index.html with its links made absolute,
+	// read and rewritten once: a version never changes. Emptied when full.
+	pages map[uuid.UUID]string
 }
 
+// maxCachedPages bounds pages: a few apps, each with a handful of versions a channel opens.
+const maxCachedPages = 64
+
 func registerPublishedAppRoutes(rt *router, svc *launcher.Service, dir string) {
-	h := &publishedApps{apps: svc, dir: dir}
+	h := &publishedApps{apps: svc, dir: dir, epoch: strconv.FormatInt(time.Now().UnixNano(), 36), pages: map[uuid.UUID]string{}}
 	rt.public("GET /apps/{slug}/{rest...}", http.HandlerFunc(h.page))
 }
 
@@ -86,19 +102,6 @@ func (h *publishedApps) page(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, fmt.Errorf("published app %s %s: no policy for profile %q", slug, v.Version, v.Profile))
 		return
 	}
-	page, err := os.ReadFile(filepath.Join(h.dir, string(v.Profile), slug, v.Version, "index.html"))
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	files := "/apps/files/" + string(v.Profile) + "/" + slug + "/" + v.Version + "/"
-	out := relativeLink.ReplaceAllString(string(page), "${1}"+files)
-	meta := `<meta name="ppe-mount" content="` + html.EscapeString(res.Mount) + `">` +
-		`<meta name="ppe-files" content="` + html.EscapeString(files) + `">` +
-		`<meta name="ppe-version" content="` + html.EscapeString(v.Version) + `">` +
-		`<meta name="ppe-channel" content="` + html.EscapeString(res.Channel) + `">`
-	out = strings.Replace(out, "</head>", meta+"</head>", 1)
-
 	hd := w.Header()
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Cache-Control", "no-cache")
@@ -107,6 +110,54 @@ func (h *publishedApps) page(w http.ResponseWriter, r *http.Request) {
 	if policy.permissions != "" {
 		hd.Set("Permissions-Policy", policy.permissions)
 	}
+	// The page at this address is this version's, as this process writes it:
+	// unchanged until a channel moves (another version) or the API restarts.
+	etag := `"` + v.ID.String() + "." + h.epoch + `"`
+	hd.Set("ETag", etag)
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	files := "/apps/files/" + string(v.Profile) + "/" + slug + "/" + v.Version + "/"
+	page, err := h.rewritten(v, filepath.Join(h.dir, string(v.Profile), slug, v.Version, "index.html"), files)
+	if err != nil {
+		hd.Del("ETag")
+		writeError(w, r, err)
+		return
+	}
+	meta := `<meta name="ppe-mount" content="` + html.EscapeString(res.Mount) + `">` +
+		`<meta name="ppe-files" content="` + html.EscapeString(files) + `">` +
+		`<meta name="ppe-version" content="` + html.EscapeString(v.Version) + `">` +
+		`<meta name="ppe-channel" content="` + html.EscapeString(res.Channel) + `">`
+	out := strings.Replace(page, "</head>", meta+"</head>", 1)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(out))
+}
+
+// rewritten is a version's index.html with its links made absolute (files),
+// from pages or read once. A page without </head> is an error, not a page
+// without its meta tags (publishing refuses one).
+func (h *publishedApps) rewritten(v launcher.Version, file, files string) (string, error) {
+	h.mu.Lock()
+	page, ok := h.pages[v.ID]
+	h.mu.Unlock()
+	if ok {
+		return page, nil
+	}
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		return "", err
+	}
+	if !strings.Contains(string(raw), "</head>") {
+		return "", fmt.Errorf("published app %s: index.html has no </head>", v.Version)
+	}
+	page = relativeLink.ReplaceAllString(string(raw), "${1}"+files)
+	h.mu.Lock()
+	if len(h.pages) >= maxCachedPages {
+		clear(h.pages)
+	}
+	h.pages[v.ID] = page
+	h.mu.Unlock()
+	return page, nil
 }

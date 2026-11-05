@@ -21,7 +21,6 @@ export const apps: AppsText = {
   group: 'Grupė',
   groups: { workwear: 'Darbo drabužiai ir AAP', assets: 'Įmonės turtas', people: 'Žmonės ir brigados', admin: 'Administravimas' },
   stage: 'Etapas',
-  stages: { live: 'Veikia', pilot: 'Bandoma', poc: 'Prototipas', dev: 'Kuriama', retired: 'Nebenaudojama' },
   stageHints: {
     live: 'Naudojama kasdien.',
     pilot: 'Bando įprasti naudotojai; rodomas ženklelis „Bandoma“.',
@@ -52,7 +51,6 @@ export const apps: AppsText = {
   moved: (name: string, n: number, of: number) => `„${name}“ dabar ${n} iš ${of}.`,
   feedback: 'Atsiliepimai',
   noFeedback: 'Atsiliepimų dar nėra.',
-  ratings: { works: 'Veikia gerai', confusing: 'Neaišku', broken: 'Kažkas sugedo' },
   devices: { phone: 'Telefonas', tablet: 'Planšetė', desktop: 'Kompiuteris' },
   changes: 'Pakeitimai',
   open: (name: string) => `Atidaryti „${name}“`,

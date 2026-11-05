@@ -193,7 +193,11 @@ tests and build, and is then removed.
   (`GET /apps/{slug}/{rest...}`, public: the app signs in itself) answers the version's
   `index.html` with its `./` links made `/apps/files/<profile>/<slug>/<version>/…`, the meta
   tags `ppe-mount` (the address above), `ppe-files`, `ppe-version` and `ppe-channel`,
-  `Cache-Control: no-cache` and the profile's policy. A retired or unknown app, an unknown
+  `Cache-Control: no-cache` and the profile's policy. The rewritten page is kept in memory per
+  version (read and rewritten once; a version never changes) and sent with an `ETag` of the
+  version and the API process, so a reload while no channel moved is a `304` with the same
+  headers and no body; a channel moved or a deploy gives another `ETag`. A page without `</head>`
+  is an error (500), never a page without its meta tags. A retired or unknown app, an unknown
   version, and a published app with no Stable are 404; an app with no versions redirects to
   its `href` (Administration at `/apps/admin/` goes to `/admin/`). Caddy serves the files from
   the `published` volume, cached for a year, `/apps/files/standard/*` and `/apps/files/device/*`
@@ -219,8 +223,9 @@ tests and build, and is then removed.
   `PageHeader` is the only sticky header (two covered each other in Scan SIMs, fixed in
   `8eb4fc0`; the e2e Scan SIMs step scrolls and checks it).
 - **Publishing.** `api -publish-app <slug> -version <v> [-channel <name>] [-from-commit <sha>]`
-  reads a tar of `dist/` on standard input (at most 5000 files and 300 MB; no links, nothing
-  outside it), needs `API_APPS_DIR`, checks the manifest against the slug and the app (here,
+  reads a tar of `dist/` on standard input (at most 5000 files and 300 MB; only folders and
+  regular files, none named twice, nothing outside it), needs `API_APPS_DIR`, refuses an
+  `index.html` without `</head>`, checks the manifest against the slug and the app (here,
   an app), unpacks it under `.incoming`, renames it into `<profile>/<slug>/<version>/` unless a
   complete folder (one with `index.html`) is there, and records the version (publishing it again
   only points the channel). The files are decided by the folder, not the registry: a recorded

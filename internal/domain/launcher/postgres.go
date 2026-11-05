@@ -291,7 +291,15 @@ func scanChannel(row pgx.Row) (Channel, error) {
 }
 
 func (r *PostgresRepository) Channels(ctx context.Context) ([]Channel, error) {
-	rows, err := r.pool.Query(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id`+channelOrder)
+	return r.channels(ctx, ``)
+}
+
+func (r *PostgresRepository) AppChannels(ctx context.Context, app uuid.UUID) ([]Channel, error) {
+	return r.channels(ctx, ` WHERE c.app_id = $1`, app)
+}
+
+func (r *PostgresRepository) channels(ctx context.Context, where string, args ...any) ([]Channel, error) {
+	rows, err := r.pool.Query(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id`+where+channelOrder, args...)
 	if err != nil {
 		return nil, err
 	}

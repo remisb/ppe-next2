@@ -1,4 +1,4 @@
-import type { AppGroup, AppKind, AppStage, AppTier, FeedbackRating } from '@ppe/api-client'
+import type { AppGroup, AppKind, AppStage, AppTier } from '@ppe/api-client'
 
 /** Manage apps: App Launcher's apps and shortcuts, who sees each, and what people say about them. */
 export const apps = {
@@ -22,7 +22,6 @@ export const apps = {
   group: 'Group',
   groups: { workwear: 'Workwear & PPE', assets: 'Company Assets', people: 'People & Crew', admin: 'Administration' } satisfies Record<AppGroup, string>,
   stage: 'Stage',
-  stages: { live: 'Live', pilot: 'Pilot', poc: 'POC', dev: 'In development', retired: 'Retired' } satisfies Record<AppStage, string>,
   stageHints: {
     live: 'In everyday use.',
     pilot: 'Tried by its usual people; shows a Pilot badge.',
@@ -53,7 +52,6 @@ export const apps = {
   moved: (name: string, n: number, of: number) => `${name} is now ${n} of ${of}.`,
   feedback: 'Feedback',
   noFeedback: 'No feedback yet.',
-  ratings: { works: 'Works well', confusing: 'Confusing', broken: 'Something broke' } satisfies Record<FeedbackRating, string>,
   devices: { phone: 'Phone', tablet: 'Tablet', desktop: 'Desktop' },
   changes: 'Changes',
   open: (name: string) => `Open ${name}`,
