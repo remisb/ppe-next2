@@ -1,12 +1,38 @@
 # docs-import: requirements and plan
 
 - **Date:** 2026-11-05
-- **Status:** proposal. It becomes ADR 0007 (Personnel files: identity documents) and a spec
+- **Status:** proposal, **revision 2** (2026-11-05, reviewed after the Scan SIMs fixes were built
+  and deployed; what changed is in [section 0](#0-review-after-the-scan-sims-fixes-revision-2)).
+  It becomes ADR 0007 (Personnel files: identity documents) and a spec
   `docs/specs/personnel-service.md` once the [open decisions](#11-open-decisions) are made.
 - **Builds on:** [Scan SIMs review](sim-scan-review.md), [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.md)
   and the [context map](../architecture/context-map.md) (People, Personnel files),
   [ADR 0005](../architecture/adr/0005-sim-codes-and-scan-sims-trial.md) (sealed values, the device
   profile), [ADR 0006](../architecture/adr/0006-app-launcher.md) (published apps)
+
+## 0. Review after the Scan SIMs fixes (revision 2)
+
+The first revision was written before the Scan SIMs review's six steps were built (commits
+`74d5214`…`749f304`, deployed 2026-11-05). Building them settled several things this plan had only
+assumed, and showed two mistakes in it. What changed:
+
+| # | Finding | Change to the plan |
+| --- | --- | --- |
+| R1 | **Crypto-shredding was overstated.** Revision 1 said destroying a person's key row "makes every copy unreadable, including copies in backups". It does not: the row is in every backup taken before, sealed by the same master key, so a backup still opens it. A restore would even bring the person's data back | Erasure is complete once the last backup holding the key has expired (`DBBACKUP_KEEP_DAYS`, 14 days), and shredding is a **rule a daily job applies**, not a one-off action, so it applies again after a restore (section 3, PR-8, D10) |
+| R2 | **The keyring now exists.** `sealbox.Keyring` (key ids on rows, previous keys only open) and the re-seal pattern (`api -reseal-sim-codes`: counts only, nothing audited, a row changed meanwhile left as set) are built and tested | Phase 0 no longer adds a keyring. The master key follows the SIM codes key's settings exactly; rotating it re-seals only the per-person keys, which is cheap (sections 3, 5.7) |
+| R3 | **Live OCR is slower than the plan assumed.** Barcode decoding measured 10–16 ms a frame on a Mac; Tesseract on a back is roughly a second on a phone (not measured), and the plan asked for "≥ 3 live attempts a second" | NFR-4 now asks for ≥ 1 attempt a second, reading only the MRZ band (a narrow crop), with the number fixed in phase 1. A still photo stays the main path; live scanning is a convenience (5.2) |
+| R4 | **The worker pattern is proven.** `barcode.worker.ts` with a typed protocol file, pixels transferred, a fallback to the page's thread, and an e2e check that the worker really runs (`page.workers()`), under the device policy behind Caddy | Image work and OCR follow the same pattern, with the same e2e check (NFR-3, 5.2, section 8) |
+| R5 | **F1 was fixed without a router guard**: Scan stays mounted, hidden, while the other tab is open. No leave guard exists in `@ppe/app-shell` | docs-import keeps its steps (Person → Capture → Review → Portrait → Save) as one screen's state, not routes, plus `beforeunload`; no router guard is needed (PR-1) |
+| R6 | **The picture store and list reducer exist, but in the app** (`apps/sim-scan/src/routes/scan/`), not in a package | Phase 0 moves `PictureStore`/`usePictureStore` and the "released pictures" reducer pattern into `@ppe/scan-kit` (section 6) |
+| R7 | **`make new-app` has no profile option**; its template is `standard` | Phase 3 sets `"profile": "device"` in `public/ppe-app.json` by hand and copies Scan SIMs' `csp.test.ts` (or `new-app` gains `--profile device`) |
+| R8 | **Reader files are downloaded again for every version.** Each published version's files live under `/apps/files/device/<slug>/<version>/`, so `readers/` (about 7 MB for Scan SIMs, likely similar for an OCR-B model) is a new URL after every deploy, and two apps never share it | A risk to measure now that there will be two such apps; a shared, content-addressed readers path is the fix if it matters (section 9) |
+| R9 | **Concurrent writes need a decision each.** Step 5 showed two Scan SIMs batches racing for numbers; the fix was a retry because numbers were the batch's own | docs-import numbers nothing, so it retries nothing: two people saving the same document at once is refused by a unique index and answered as "already on file" with the other's id (5.6) |
+| R10 | **e2e and Postgres tests share one database and one set of ports across every session and worktree.** Runs emptied each other's database three times on 2026-11-05 | A lock in the e2e and `test-db` set-up (refuse to start while another run holds it) before docs-import adds its own long e2e steps (section 8) |
+| R11 | **"Stable follows deploys" is off for published apps**, so a deploy puts a new build on Preview only; Scan SIMs' fixes reached users only after someone pressed Make Stable | Phase 6 names that step; the trial is judged on Preview and Beta first anyway |
+| R12 | **The publish pipe could fail a deploy** on tar's padding (fixed in `b4fdc42`), and a local Caddy e2e served a stale build (fixed in `9ab5ee8`) | Nothing to change; docs-import inherits both fixes |
+
+Unchanged: the MRZ-and-check-digits approach, the data split (Personnel files), the AI rules
+(luminance lock, labels, consent), and the open decisions D1–D8.
 
 ## 1. Goal
 
@@ -108,15 +134,28 @@ The plan follows that split:
 
 **Blind index.** `HMAC-SHA256(API_PERSONNEL_INDEX_KEY, normalised value)` of the document
 number and the personal code. It answers "is this person or document already on file?"
-without decrypting anything. The index key is separate from the sealing key.
+without decrypting anything. The index key is separate from the sealing key. It is not
+rotated like the sealing key: a new index key means computing every index again from the
+opened values, so it gets a command of its own only if it is ever needed.
 
-**Per-person keys (crypto-shredding).** The context map promises documents "encrypted with keys
-Personnel files can destroy". Each employee gets a data key (32 random bytes) that is sealed
-by the master key (`API_PERSONNEL_KEY`) and kept in `personnel.subject_keys`. Their document
-fields and portrait are sealed with that key. Destroying the row when retention ends makes
-every copy unreadable, including copies in backups. `sealbox` already has the right format
-(version byte, context binding). What it needs is a small **keyring**, which also fixes Scan
-SIMs' F12.
+**Per-person keys (envelope encryption).** The context map promises documents "encrypted with
+keys Personnel files can destroy". Each employee gets a data key (32 random bytes, a
+`sealbox.Box`) that is sealed by the master keyring (`API_PERSONNEL_KEY`, a `sealbox.Keyring`
+exactly as the SIM codes key is, with `…_KEY_ID` and `…_PREVIOUS_KEYS`), bound to the employee
+(`"ppe.personnel.subject_key.v1|" + employee id`), and kept in `personnel.subject_keys`. Their
+document fields and portrait are sealed with that data key. Changing the master key re-seals
+only these small rows (`api -reseal-personnel-keys`, the SIM codes command's pattern), never
+the documents.
+
+**Erasure (crypto-shredding), as it really works.** Deleting a person's `subject_keys` row makes
+their documents unreadable in the live database at once. It does **not** reach backups taken
+before: they hold the row, sealed by a master key the API still has. So erasure is complete
+when the last such backup has expired (`DBBACKUP_KEEP_DAYS`, 14 days today), and the DPIA and
+any answer to an erasure request say so. Because a restore would bring the row back, shredding
+is a **rule** (`employment ended + retention`, D3) that a daily job applies, idempotently, not
+an action taken once: after a restore the job shreds again what the rule says is gone. A
+stronger form, keys kept outside the database and its backups, is possible later and not
+planned (D10).
 
 ## 4. Requirements
 
@@ -151,8 +190,8 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | --- | --- | --- |
 | NFR-1 | M | **Same stack as Scan SIMs:** React 19, TypeScript, Vite, Tailwind, `@ppe/ui`, `@ppe/app-shell`, `@ppe/launcher` (`SignedIn`, `AppFrame`), `@ppe/i18n`, published with the **device** profile. No new CSP directive: colouring goes through the API, so `connect-src 'self'` is enough |
 | NFR-2 | M | Readers come from the app's own files (`readers/`), loaded on first use. No CDN |
-| NFR-3 | M | Image work (thresholding, zxing if used) and OCR run **in workers**. The camera preview stays smooth (fixes Scan SIMs F2 for both) |
-| NFR-4 | M | Speed on a mid-range Android phone (to be benchmarked in phase 1): first MRZ read ≤ 1.5 s from a photo, live attempts ≥ 3 per second, first-use download ≤ 6 MB |
+| NFR-3 | M | Image work (thresholding, band finding) and OCR run **in workers**, as Scan SIMs' barcode reader now does (`barcode.worker.ts`: a protocol file, pixels transferred, a fallback to the page's thread). The camera preview stays smooth; the e2e step checks the workers run (`page.workers()`) |
+| NFR-4 | M | Speed on a mid-range Android phone (benchmarked in phase 1, numbers then fixed here): first MRZ read ≤ 2 s from a photo; live, ≥ 1 attempt a second on the MRZ band alone; first-use download ≤ 6 MB. A photo is the main path; live scanning is a convenience |
 | NFR-5 | M | Accuracy on the test set (phase 1): ≥ 98 % of good photos read with every check digit passing, **0 %** accepted with a wrong value (the check digits guarantee this; tests prove it) |
 | NFR-6 | M | EN / LT / RU from typed dictionaries; mobile first; 44 px touch targets; no sideways scroll at the e2e widths; WCAG 2.1 AA (status texts announced, crop box usable with the keyboard) |
 | NFR-7 | M | Server rules mirrored: the Go API re-parses the MRZ and re-checks every digit and the personal code. A shared test-vector file (`testdata/mrz/*.json`) is read by both the TS and Go test suites, so the two parsers cannot drift apart |
@@ -162,14 +201,14 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 
 | ID | Pri | Requirement |
 | --- | --- | --- |
-| PR-1 | M | Images, MRZ text and fields live **only in the screen's memory**, never in any browser storage. Blob URLs are revoked on leave and after Save. Leaving, including in-app navigation, asks first (fixes Scan SIMs F1) |
+| PR-1 | M | Images, MRZ text and fields live **only in the screen's memory**, never in any browser storage, in a `PictureStore` that revokes blob URLs when a picture is let go, after Save and when the screen goes. The steps (Person → Capture → Review → Portrait → Save) are one screen's state, not routes, so moving between them never unmounts the work (as Scan SIMs keeps Scan mounted); leaving the page asks first (`beforeunload`) |
 | PR-2 | M | No read value ever goes into an `Error`, a log line, an audit event or System's error list. A Go test runs a scan through the service and asserts that the number and personal code appear in no event or log (as the SIM codes tests do) |
 | PR-3 | M | The document number, personal code and MRZ text are sealed per person (section 3). Plain columns hold only kind, issuing state and expiry |
 | PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save; needs `employees.manage`), `personnel.documents.read` (show the number; recent sign-in), and `personnel.portraits.colorize` (use AI colouring). Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
 | PR-5 | M | Audit events: `personnel.document_recorded`, `personnel.document_superseded`, `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
 | PR-6 | M | **AI colouring needs a recorded legal basis.** The default is the person's consent, recorded with the photo (who, when, how), and the person may refuse. If they refuse, only the grey portrait or a fresh camera photo is used |
 | PR-7 | M | **Label AI images.** "AI-coloured" is shown on the photo in every app. The JPEG carries a metadata note, and the record has `ai_generated`. An AI photo is never used where a true likeness is required (ID badges: the `id_badge` use is refused for an AI photo). The EU AI Act's transparency duties for generated or manipulated images apply from 2 August 2026, so confirm the exact form with the DPO |
-| PR-8 | M | Retention: identity documents are kept while the person is employed plus a period set by D3. When it ends, crypto-shredding destroys the data (section 3). The soft-delete-forever default does not apply to Personnel files |
+| PR-8 | M | Retention: identity documents are kept while the person is employed plus a period set by D3. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
 | PR-9 | S | If an external AI provider is chosen (D4): a processor agreement, EU processing, no training on our data, no retention by the provider. Only the cropped portrait is sent, never the document |
 | PR-10 | S | A DPIA for the whole feature before go-live (identity data and photos of employees) |
 
@@ -230,6 +269,15 @@ flowchart LR
    check digits and FR-5's corrections.
 7. **Accept:** every check digit passes, the result is the same in two frames (live), and the
    FR-6 cross-checks pass.
+
+**Threads.** Steps 2–3 run in an image worker and step 4 in Tesseract's worker, each started on
+first use; steps 5–7 are pure functions on the page. The image worker follows
+`barcode.worker.ts`: a typed protocol file, the frame's pixels transferred (not copied), a
+fallback to the page's thread if it cannot start, and errors returned by name only, never with
+what was read. Live, only the MRZ band (a strip of the guide frame, a few hundred pixels high)
+goes to OCR: a smaller image is read sooner, as 1280 px barcode frames were (10 ms against 16 ms
+at 1690 px on a Mac). The text reader becomes a factory, `createTextReader({ lang, langPath,
+whitelist, psm })`, since Scan SIMs' is fixed to English and its own whitelist.
 
 The **portrait** comes from the MRZ geometry. Once the MRZ band's corners are known, the
 document's size and angle follow from the ICAO layout, and the portrait zone is a fixed
@@ -324,6 +372,11 @@ CREATE TABLE personnel.identity_documents (
 );
 CREATE UNIQUE INDEX ON personnel.identity_documents (number_index, issuing_state) WHERE deleted_at IS NULL;
 
+CREATE TABLE personnel.subjects (               -- one person, one personal code
+  employee_id     uuid PRIMARY KEY REFERENCES employees(id),
+  personal_index  bytea UNIQUE                   -- HMAC of the personal code, when kept (D2)
+);
+
 ALTER TABLE employees ADD COLUMN birth_date date, ADD COLUMN nationality char(3), ADD COLUMN sex char(1);  -- per D2
 ALTER TABLE employee_photos ADD COLUMN ai_generated boolean NOT NULL DEFAULT false,
                             ADD COLUMN consent jsonb;                                            -- PR-6
@@ -332,11 +385,19 @@ ALTER TABLE employee_photos ADD COLUMN ai_generated boolean NOT NULL DEFAULT fal
 `grants.sql`: `ppe_app` gets DML on `personnel.*`. A later step gives Personnel files its own
 role (ADR 0001 §3). `TRUNCATE` lists in tests gain the new tables.
 
+**Two saves at once.** Nothing here is numbered by the app, so nothing is retried (unlike Scan
+SIMs' batches, R9). The same document saved twice at the same moment is refused by the unique
+index on the second save and answered like Scan SIMs' duplicates: a `DuplicateError` naming the
+document already on file. The same personal code on two employees is refused by
+`subjects.personal_index` the same way, naming the other employee. Both have Postgres tests
+with two concurrent saves, as `TestPostgresAddSIMsAtTheSameMoment` does for batches.
+
 ### 5.7 Configuration
 
 | Setting | Purpose |
 | --- | --- |
 | `API_PERSONNEL_KEY` | master key that seals the per-person keys (64 hex). Required once the feature is on. Kept offline like `API_SIM_CODES_KEY` |
+| `API_PERSONNEL_KEY_ID`, `API_PERSONNEL_PREVIOUS_KEYS` | the master key's id and the keys it replaced, only to open, exactly as `API_SIM_CODES_KEY_ID` and `API_SIM_CODES_PREVIOUS_KEYS`; `api -reseal-personnel-keys` re-seals the per-person keys after a change |
 | `API_PERSONNEL_INDEX_KEY` | HMAC key for blind indexes (64 hex) |
 | `API_COLORIZER_URL` | the sidecar's or provider adapter's address. Empty means colouring is off |
 | Settings → **AI colour photos** | an administrator's switch (D4), shown on Settings and recorded |
@@ -348,26 +409,28 @@ Each is read in `loadConfig` and checked in `validate` (`TestLoadConfigDefaults`
 The reusable half of `@ppe/sim-scan` moves to a new package **`@ppe/scan-kit`**. Scan SIMs then
 depends on it, and its behaviour does not change.
 
-| Scan SIMs piece | In docs-import | Action |
-| --- | --- | --- |
-| `camera.ts` (`startCamera`, `guideCrop`, `eachFrame`, `beep`) | as is | move to `scan-kit` and add a test for `guideCrop` |
-| `Steady` | as is (key = the parsed MRZ) | move |
-| `canvasOf`, `imageDataOf` | plus thresholding, band finding, straightening | move; the new image ops go in `scan-kit/image` and run in a worker |
-| `readers.ts` tesseract singleton | different model and settings | turn into a factory: `createTextReader({ lang, whitelist, psm, langPath })` |
-| `barcodesIn` (zxing) | not needed in v1 (C: PDF417 or QR on some documents) | move, with `formats` as a parameter, run in a worker (F2) |
-| `reader-files.ts` Vite plugin | a different file list (OCR-B model) | generalise: `serveReaderFiles({ 'ocrb.traineddata.gz': path, … })`. Each app lists its own files |
-| `pairPhotos` / `sideOf` | TD1 front and back | generalise with a `sideOf` function as a parameter |
-| `Thumb`, the photo slot button, `CardFields`' layout | review and portrait screens | move `Thumb` and a `PhotoSlot` component |
-| picture `Map` in a ref with `redraw` (F4) | needed for document photos | replace with `usePictureStore()` in `scan-kit`, which owns the blob URLs |
-| leave guard (F1) | needed | `useLeaveGuard(when)` in `scan-kit`, which covers `beforeunload` and in-app navigation (a hook in `@ppe/app-shell`'s router) |
-| `rowMarks` / `blocks` (problem or note) | MRZ field marks | the same pattern; problem codes shared with Go |
-| check → commit API pattern | `documents/check` → `documents` | same pattern |
-| `sealbox` | document fields | reuse, and add a **keyring** (key id → key) and per-subject data keys |
-| `sensitive()` + recent sign-in + audit before answer + `no-store` | Show document number | reuse unchanged |
-| `internal/files`, `employeephoto` | portraits and photos | reuse; add `ai_generated` and consent |
-| device profile, `csp.test.ts`, `TestPublishedPoliciesMatchCaddy` | same profile | reuse; no new directive |
-| `make new-app`, `ppe-app.json`, channels, Trials | the new app | `make new-app SLUG=docs-import NAME='Import Documents' NAME_LT='Dokumentų importas' NAME_RU='Импорт документов'` |
-| synthetic fixtures (`fixtures/sim-cards/make.ts`) | synthetic specimen documents | the same approach: generated MRZ (valid and with planted errors), a made-up portrait, never a real document in the repository |
+| Scan SIMs piece | Where it is now | In docs-import | Action |
+| --- | --- | --- | --- |
+| `camera.ts` (`startCamera`, `guideCrop`, `eachFrame`, `beep`) | `@ppe/sim-scan`, `guideCrop` tested | as is | move to `scan-kit` (phase 0) |
+| `Steady` | `@ppe/sim-scan` | as is (key = the parsed MRZ) | move |
+| `canvasOf`, `imageDataOf`, `LIVE_BARCODE_SIDE` | `@ppe/sim-scan/readers` | plus thresholding, band finding, straightening | move; the new image ops go in `scan-kit/image`, run in a worker |
+| `barcode.worker.ts` + `barcode-protocol.ts` | `@ppe/sim-scan`, e2e-checked | the pattern for the image worker; barcodes not needed in v1 (C: PDF417 or QR on some documents) | move with `formats` as a parameter; copy the pattern for `image.worker.ts` |
+| `readers.ts` Tesseract singleton (English, fixed whitelist) | `@ppe/sim-scan/readers` | an OCR-B model and other settings | turn into a factory: `createTextReader({ lang, langPath, whitelist, psm })` |
+| `reader-files.ts` Vite plugin (fixed file list) | `@ppe/sim-scan` | a different file list (OCR-B model, no zxing) | generalise: `serveReaderFiles({ 'ocrb.traineddata.gz': path, … })`, each app listing its own |
+| `PictureStore` / `usePictureStore` | `apps/sim-scan/src/routes/scan/`, tested | document photos and the portrait | move to `scan-kit` |
+| the list reducer's "released pictures" pattern | `apps/sim-scan/…/scan-list.ts`, tested | the document being read and its photos | reuse the pattern; the reducer itself is SIM-specific |
+| `pairPhotos` / `sideOf` | `@ppe/sim-scan` | TD1 front and back | generalise with a `sideOf` function as a parameter |
+| `Thumb`, the photo slot button | `@ppe/sim-scan/review-list`, `card-in-progress.tsx` | review and portrait screens | move `Thumb` and a `PhotoSlot` component |
+| keep-mounted instead of a leave guard | `apps/sim-scan/src/app.tsx` | steps as one screen's state | the same idea; no router guard (R5) |
+| `rowMarks` / `blocks` (problem or note) | `@ppe/sim-scan` | MRZ field marks | the same pattern; problem codes shared with Go |
+| check → commit API, late answers dropped, marks kept by identity (`registeredOf`) | `@ppe/sim-scan`, scan page | `documents/check` → `documents` | same pattern: the check's answer kept by document number, not row |
+| `sealbox.Keyring`, `-reseal-sim-codes` | built (step 6) | master key over per-person keys | reuse as is; `-reseal-personnel-keys` on the same pattern |
+| `sensitive()` + recent sign-in + audit before answer + `no-store` | `cmd/api` | Show document number | reuse unchanged |
+| a no-leak test (codes never in events, errors, JSON) | `TestAddSIMs` | document number and personal code | the same test for every route that touches them |
+| `internal/files`, `employeephoto` | built | portraits and photos | reuse; add `ai_generated` and consent |
+| device profile, `csp.test.ts`, `TestPublishedPoliciesMatchCaddy` | built | same profile | reuse; no new directive. `make new-app` makes a standard app: set `device` and copy the CSP test (R7) |
+| `make new-app`, `ppe-app.json`, channels, Trials | built | the new app | `make new-app SLUG=docs-import NAME='Import Documents' NAME_LT='Dokumentų importas' NAME_RU='Импорт документов'` |
+| synthetic fixtures (`fixtures/sim-cards/make.ts`) | built | synthetic specimen documents | the same approach: generated MRZ (valid and with planted errors), a made-up portrait, never a real document in the repository |
 
 Nothing is copied. Whatever both apps use is in a package. When docs-import merges into the
 staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will take
@@ -377,13 +440,13 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 
 | Phase | Content | Done when |
 | --- | --- | --- |
-| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan`. Fix Scan SIMs F1–F4 there (worker for zxing, picture store, leave guard, cancelled checks). Add a keyring to `sealbox` (F12) | Scan SIMs' unit and e2e tests pass unchanged; the camera preview is smooth on a phone |
+| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) Add the e2e/test-db lock (R10) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check |
 | **1. Reading spike** | `@ppe/mrz` (TS) with ICAO test vectors; band finding and threshold; choose the OCR-B model; a bare test page in the app reading specimens. Measure on synthetic specimens and on the team's **own** documents (read locally, never committed) | NFR-4 and NFR-5 numbers recorded; model and licence chosen. **Go / no-go gate** |
 | **2. Personnel backend** | ADR 0007; `internal/personnel/document` (five-file layout), Go MRZ parser on the shared vectors, keyring and subject keys, blind index, migrations, permissions, routes, audit events, `api-client` | Go service and Postgres tests pass, including PR-2's no-leak test; `routes_test.go` policy |
-| **3. docs-import app** | `make new-app`; Person → Capture → Review → Save, without the portrait | e2e: synthetic passport and ID card read from photos, checked, saved; the employee shows "valid until" |
+| **3. docs-import app** | `make new-app`, then the device profile by hand (R7); Person → Capture → Review → Save as one screen's steps, without the portrait | e2e (Vite and Caddy): synthetic passport and ID card read from photos, checked, saved; the workers run; the employee shows "valid until" |
 | **4. Portrait** | crop from MRZ geometry, adjust, save the grey portrait as a photo | e2e with a specimen portrait; crop usable with keyboard and touch |
 | **5. AI colour** | colorizer sidecar or adapter, luminance lock, consent, labels, Settings switch, `ai_generated` | Go test of the luminance lock; labels shown in both apps; DPIA done (PR-10) |
-| **6. Trial** | publish to Preview, then Beta for testers, then Stable. Watch the Trials page (reads, check failures, errors) | Decide to merge into the staff app or keep it as its own app |
+| **6. Trial** | a deploy publishes to Preview only (Stable follows deploys is off, R11); Beta for testers, then **Make Stable** in Manage apps. Watch the Trials page (reads, check failures, errors) | Decide to merge into the staff app or keep it as its own app |
 | later | VIZ names (FR-16), expiry reminders (FR-17), native chip reader (FR-18) | |
 
 Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
@@ -407,6 +470,13 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
   and back, one with a misread planted in the image, and one expired. Read from photos, review,
   save, portrait, show number with Confirm your password, and the AI photo path with a fake
   colouriser.
+- **Workers and policy:** the e2e step asserts the image and OCR workers run (`page.workers()`),
+  and the Caddy run (`make e2e-caddy`, as CI) proves they load under the device policy.
+- **Races:** two concurrent saves of one document, and of one personal code on two employees,
+  in Postgres (R9). Erasure: after the job deletes a data key, the document does not open, and
+  the job run again changes nothing.
+- **Shared test database:** the e2e and `test-db` set-up take a lock first (R10), so a second
+  session's run waits or stops instead of emptying a running one's database.
 - **Field test (phase 1 and 6):** at least 30 real documents of the kinds employees have, read
   on two phones (iPhone Safari and a mid-range Android). Only counts are recorded, never the
   data.
@@ -422,6 +492,10 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 | Two parsers drift apart | the client accepts what the server refuses | the shared test vectors |
 | The colouring model is too heavy for the droplet | slow or out of memory | measure in phase 5; a separate host or the adapter |
 | Diacritics typed wrongly | wrong names | `fold` check against the MRZ; VIZ OCR later |
+| Tesseract too slow for live MRZ on phones (R3) | live scanning feels stuck | OCR the MRZ band only; a photo as the main path; phase 1 measures it on two phones |
+| Reader files downloaded again after every deploy and per app (R8) | several MB on mobile data per version | measure after phase 3; if it matters, a shared content-addressed `readers/` path for every published app |
+| Erasure takes until older backups expire (R1) | an erasure answer that claims too much | say "within 14 days" in the DPIA and the answer; the daily shredding job re-applies after a restore |
+| Parallel sessions empty each other's test database (R10) | false test failures, lost time | the lock in phase 0 |
 
 ## 10. Words to add to the glossary
 
@@ -442,3 +516,5 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 | D6 | Can the app create **new** employees, or only update existing ones? | Both. New employees need `employees.manage` too |
 | D7 | Who uses it | A new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
 | D8 | Its own app forever, or merge into the staff app after the trial | Trial first, as Scan SIMs did; decide in phase 6 |
+| D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | Not in v1. Decide after phase 1's numbers: worth it only if photos fail often in the browser |
+| D10 | What erasure means: "unreadable at once, gone from backups within 14 days" (data keys in the database), or keys kept outside the database and its backups (gone at once everywhere) | The first, stated plainly in the DPIA; the second only if the DPO requires it |
