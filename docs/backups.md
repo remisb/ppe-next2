@@ -97,8 +97,26 @@ their ciphertext. So the key must be kept **apart from the backups**, as the age
 in a password manager, off the server. A restore on a new server needs the same key in its
 `.env.prod`; with another key the API starts, but Show PIN and PUK fails for every card. Lost,
 the codes are gone (the cards' carriers still have them; Add PIN and PUK keeps them again).
-Generate it once with `openssl rand -hex 32`, never reuse `API_JWT_SECRET`, and do not
-change it: there is no rotation yet (each row's `key_id` leaves room for one).
+Generate it once with `openssl rand -hex 32` and never reuse `API_JWT_SECRET`.
+
+#### Changing the SIM codes key
+
+Each sealed row names its key (`asset_sim_codes.key_id`), so the key can be changed without
+losing a code: when it may have been seen by someone who should not have it, or by policy.
+
+1. Generate the new key (`openssl rand -hex 32`) and keep a copy offline, as the first.
+2. In `.env.prod`: move the old key to `API_SIM_CODES_PREVIOUS_KEYS=1:<old key>` (its id is
+   the one its rows name, 1 unless it was changed before; several are `1:<key>,2:<key>`), put
+   the new one in `API_SIM_CODES_KEY` and give it the next id, `API_SIM_CODES_KEY_ID=2`.
+3. `make prod-up`. The API now seals under the new key and opens under both.
+4. `make prod-reseal-sim-codes`. It seals every card's PIN and PUK again under the new key and
+   prints the counts (`resealed`, `changed_meanwhile`, `not_opened` by key id), never a code;
+   it records nothing in the Audit log (the codes are the same) and keeps who set them and
+   when. It fails when some did not open, naming their key ids: give the API those keys and
+   run it again. Run again, it changes nothing.
+5. Keep the old key **offline** as long as a kept backup is older than step 4 (`DBBACKUP_*`
+   retention): restoring one needs it, in `API_SIM_CODES_PREVIOUS_KEYS`, and then step 4
+   again. It can leave `.env.prod` once step 4 has run (and `make prod-up` again).
 
 ### Published apps' builds
 

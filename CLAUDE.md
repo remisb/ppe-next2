@@ -275,7 +275,9 @@ Caddy also sends the security headers, including a Content-Security-Policy that 
 published apps get their profile's policy, the `device` one (Scan SIMs) alone `'wasm-unsafe-eval'`,
 `worker-src 'self'` and the camera (ADR 0005; the API sends the page's, Caddy the files').
 `.env.prod` needs `API_SIM_CODES_KEY` (`openssl rand -hex 32`, kept offline too: a restore
-needs the same key; `docs/backups.md`), or the API does not start.
+needs the same key; `docs/backups.md`), or the API does not start. Changing it: the new key with
+`API_SIM_CODES_KEY_ID`, the old in `API_SIM_CODES_PREVIOUS_KEYS`, then `make prod-reseal-sim-codes`
+(`docs/backups.md` "Changing the SIM codes key").
 `make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
 `prod-seed-demo`, `prod-import-sims` (the list on standard input), `prod-backup`, `prod-backups`, `prod-restore`, `prod-drill` (the monthly restore drill into a throwaway database, `deploy/restore-drill.sh`); they run compose under `env -i` so `.env` values cannot leak in.
 The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`

@@ -19,7 +19,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/files"
-	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
 // newTestPool connects to API_TEST_DB_DSN (skipping when unset), empties the
@@ -515,11 +514,7 @@ func TestPostgresImportSIMs(t *testing.T) {
 func TestPostgresScanSIMs(t *testing.T) {
 	app, owner, actor, _ := newTestPool(t)
 	ctx := context.Background()
-	box, err := sealbox.New(bytes.Repeat([]byte{3}, sealbox.KeySize))
-	if err != nil {
-		t.Fatal(err)
-	}
-	svc := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(box))
+	svc := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(testKeyring(t, 1, 3)))
 	p := AddSIMsParams{Provider: sp("Bitė"), Cards: []ScannedSIM{{SimNo: scanA, PIN: "0306", PUK: "93691381"}, {SimNo: scanB + "F"}}}
 	added, err := svc.AddSIMs(ctx, p, actor)
 	if err != nil {
@@ -673,5 +668,55 @@ func TestPostgresAddSIMsAtTheSameMoment(t *testing.T) {
 	}
 	if rows != batches*cards || last != batches*cards {
 		t.Errorf("%d SIM cards, the counter at %d; want %d each", rows, last, batches*cards)
+	}
+}
+
+// A key change in the database: every card's codes sealed again under the
+// new key as ppe_app, nothing recorded, who set them kept, and the codes
+// shown under the new key alone (docs/backups.md "Changing the SIM codes key").
+func TestPostgresResealSIMCodes(t *testing.T) {
+	app, owner, actor, _ := newTestPool(t)
+	ctx := context.Background()
+	before := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(testKeyring(t, 1, 3)))
+	// More cards than ResealSIMCodes reads at a time, added in batches of at most MaxScannedSIMs.
+	var added []AddedSIM
+	for n := 0; n < resealPage+5; n += MaxScannedSIMs {
+		p := AddSIMsParams{Provider: sp("Bitė")}
+		for i := n; i < min(n+MaxScannedSIMs, resealPage+5); i++ {
+			p.Cards = append(p.Cards, ScannedSIM{SimNo: iccid(i), PIN: "0306", PUK: "93691381"})
+		}
+		batch, err := before.AddSIMs(ctx, p, actor)
+		if err != nil {
+			t.Fatal(err)
+		}
+		added = append(added, batch...)
+	}
+	var events int
+	var setAt time.Time
+	if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM audit_events), (SELECT updated_at FROM asset_sim_codes WHERE asset_id = $1)`,
+		added[0].ID).Scan(&events, &setAt); err != nil {
+		t.Fatal(err)
+	}
+
+	after := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(testKeyring(t, 2, 4, 1, 3)))
+	res, err := after.ResealSIMCodes(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Resealed != len(added) || res.Changed != 0 || len(res.NotOpened) != 0 {
+		t.Fatalf("result = %+v", res)
+	}
+	var under1, eventsAfter int
+	var setAtAfter time.Time
+	if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM asset_sim_codes WHERE key_id <> 2), (SELECT count(*) FROM audit_events),
+		(SELECT updated_at FROM asset_sim_codes WHERE asset_id = $1)`, added[0].ID).Scan(&under1, &eventsAfter, &setAtAfter); err != nil {
+		t.Fatal(err)
+	}
+	if under1 != 0 || eventsAfter != events || !setAtAfter.Equal(setAt) {
+		t.Errorf("%d rows not under key 2, %d events recorded, set at %v (was %v)", under1, eventsAfter-events, setAtAfter, setAt)
+	}
+	newOnly := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithSealer(testKeyring(t, 2, 4)))
+	if c, err := newOnly.ShowSIMCodes(ctx, added[len(added)-1].ID, actor); err != nil || c != (SIMCodes{PIN: "0306", PUK: "93691381"}) {
+		t.Errorf("Show under the new key = %+v, %v", c, err)
 	}
 }

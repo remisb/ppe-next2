@@ -196,7 +196,9 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   and **PUK** on the next, each line's problems under it. The values are plain text, a dash
   for none, to take little room. Only the card being scanned is edited (**Edit** turns its
   values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`barcode.worker.ts`; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
-  label's line, after it (`codesFromWords`). Their files are the app's own
+  label's line, after it (`codesFromWords`); a carrier that prints a code under its label instead
+  reads nothing on its back, and its PIN and PUK are typed (a known limit while there is one
+  carrier layout; another provider's layout would be a hint per provider). Their files are the app's own
   (`readers/` beside the build, under `/apps/files/device/sim-scan/<version>/`), and nothing read leaves the browser but the batch itself.
 - **The batch** shares what Add SIM asks per card, chosen once and filled in from Settings
   (the default provider, its plan, the default Non-return Value, today): provider (required),
@@ -259,6 +261,14 @@ has them). They are never in an asset's JSON, an event, an error or a log line.
   PUK finds a SIM by part of its number and offers **Add PIN and PUK** to one without them.
 - Without the key the API does not start; losing it loses the codes (`docs/backups.md`), which
   are still on the cards' carriers.
+- **The key can be changed.** Each row names the key it was sealed under (`key_id`): the API
+  seals under `API_SIM_CODES_KEY` as `API_SIM_CODES_KEY_ID` (1 unless changed) and opens under
+  it and `API_SIM_CODES_PREVIOUS_KEYS` (`sealbox.Keyring`). `api -reseal-sim-codes` (`make
+  prod-reseal-sim-codes`) seals every card's codes kept under another key again under the
+  current one (`asset.Service.ResealSIMCodes`): the same codes, so nothing recorded and who set
+  them kept; a card whose codes someone sets meanwhile keeps theirs; codes that do not open are
+  counted by key and left, and the command fails naming those keys. Steps in `docs/backups.md`
+  "Changing the SIM codes key".
 
 ### Edit
 

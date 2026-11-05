@@ -85,6 +85,14 @@ type Repository interface {
 	SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error)
 	// PutSIMCodes keeps c in place of the asset's codes, and ev, in one transaction.
 	PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error
+	// SIMCodesNotUnder lists the cards' sealed codes kept under a key other
+	// than keyID, of cards after the id after, in id order, at most limit
+	// (SimNo not read).
+	SIMCodesNotUnder(ctx context.Context, keyID int16, after uuid.UUID, limit int) ([]SealedCodes, error)
+	// ResealSIMCodes keeps c's sealed codes and key in place of the card's
+	// when they are still old, keeping who set them and when; false when
+	// they were changed or forgotten meanwhile.
+	ResealSIMCodes(ctx context.Context, c SealedCodes, old []byte) (bool, error)
 	// DeleteSIMCodes forgets the asset's codes and writes ev, or is
 	// ErrNoSIMCodes when it has none.
 	DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error

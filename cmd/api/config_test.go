@@ -12,10 +12,16 @@ func TestConfigValidate(t *testing.T) {
 		SessionKeepMaxAge: 30 * 24 * time.Hour, SessionKeepIdle: 14 * 24 * time.Hour, RecentSignIn: 12 * time.Hour,
 		LoginRateLimit: 5, LoginRateInterval: time.Minute, LoginEmailFailures: 10, LoginEmailInterval: 15 * time.Minute,
 		AuthEventsRetention: 180 * 24 * time.Hour, AuditRetention: 3653 * 24 * time.Hour, RequestTimeout: time.Second, OrgTimezone: "Europe/Vilnius",
-		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour,
+		PublicBaseURL: "http://localhost:5180", ConfirmTTL: time.Hour, SIMCodesKeyID: 1,
 	}
 	if err := ok.validate(); err != nil {
 		t.Fatalf("valid config: %v", err)
+	}
+	// A key change: the new key current as key 2, the old one only opening as key 1.
+	changing := ok
+	changing.SIMCodesKey, changing.SIMCodesKeyID, changing.SIMCodesPreviousKeys = strings.Repeat("cd", 32), 2, "1:"+strings.Repeat("ab", 32)
+	if err := changing.validate(); err != nil {
+		t.Fatalf("a key change: %v", err)
 	}
 	for name, mutate := range map[string]func(*config){
 		"no dsn":                       func(c *config) { c.DBDSN = "" },
@@ -44,6 +50,15 @@ func TestConfigValidate(t *testing.T) {
 		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
 		"apps dir missing":             func(c *config) { c.AppsDir = "/no/such/folder" },
 		"version without publish-app":  func(c *config) { c.PublishVersion = "2026.11.04-abc" },
+		"no SIM codes key id":          func(c *config) { c.SIMCodesKeyID = 0 },
+		"SIM codes key id too big":     func(c *config) { c.SIMCodesKeyID = 40000 },
+		"previous keys not id:key":     func(c *config) { c.SIMCodesPreviousKeys = strings.Repeat("cd", 32) },
+		"previous key not hex":         func(c *config) { c.SIMCodesPreviousKeys = "2:" + strings.Repeat("s", 64) },
+		"previous key id twice": func(c *config) {
+			c.SIMCodesPreviousKeys = "2:" + strings.Repeat("cd", 32) + ",2:" + strings.Repeat("ef", 32)
+		},
+		"previous key's id is current": func(c *config) { c.SIMCodesPreviousKeys = "1:" + strings.Repeat("cd", 32) },
+		"previous key is the current":  func(c *config) { c.SIMCodesPreviousKeys = "2:" + strings.Repeat("ab", 32) },
 	} {
 		c := ok
 		mutate(&c)
@@ -66,6 +81,15 @@ func TestConfigValidate(t *testing.T) {
 	demo.SeedUserEmail = "a@example.com"
 	if err := demo.validate(); err != nil {
 		t.Errorf("seed-demo needs no JWT secret or password: %v", err)
+	}
+	// -reseal-sim-codes needs the database and the keys, nothing of the server.
+	reseal := config{DBDSN: "postgres://x", DBMaxConns: 1, ResealSIMCodes: true, SIMCodesKey: strings.Repeat("cd", 32), SIMCodesKeyID: 2, SIMCodesPreviousKeys: "1:" + strings.Repeat("ab", 32)}
+	if err := reseal.validate(); err != nil {
+		t.Errorf("-reseal-sim-codes: %v", err)
+	}
+	reseal.SIMCodesKey = ""
+	if reseal.validate() == nil {
+		t.Error("-reseal-sim-codes without API_SIM_CODES_KEY should fail")
 	}
 	verify := config{DBDSN: "postgres://x", DBMaxConns: 1, VerifyAudit: true}
 	if err := verify.validate(); err != nil {

@@ -81,3 +81,63 @@ func TestKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestKeyring(t *testing.T) {
+	oldKey, newKey := bytes.Repeat([]byte{1}, KeySize), bytes.Repeat([]byte{2}, KeySize)
+	before, err := NewKeyring(1, map[int16][]byte{1: oldKey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealedBefore, id, err := before.Seal([]byte("0306 93691381"), []byte("card"))
+	if err != nil || id != 1 || before.Current() != 1 {
+		t.Fatalf("seal = key %d, %v", id, err)
+	}
+	// After a key change: the new key seals, the old one still opens what it sealed.
+	after, err := NewKeyring(2, map[int16][]byte{1: oldKey, 2: newKey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plain, err := after.Open(sealedBefore, 1, []byte("card")); err != nil || string(plain) != "0306 93691381" {
+		t.Errorf("open under the previous key = %q, %v", plain, err)
+	}
+	sealedAfter, id, err := after.Seal([]byte("0306 93691381"), []byte("card"))
+	if err != nil || id != 2 {
+		t.Fatalf("seal after the change = key %d, %v", id, err)
+	}
+	// A key named wrongly, or one the keyring does not have, does not open.
+	for name, try := range map[string]func() ([]byte, error){
+		"the wrong key's id": func() ([]byte, error) { return after.Open(sealedAfter, 1, []byte("card")) },
+		"a key not given":    func() ([]byte, error) { return before.Open(sealedAfter, 2, []byte("card")) },
+	} {
+		if _, err := try(); !errors.Is(err, ErrOpen) {
+			t.Errorf("%s: %v, want ErrOpen", name, err)
+		}
+	}
+	for name, keys := range map[string]map[int16][]byte{
+		"no current key": {1: oldKey},
+		"an id below 1":  {2: newKey, 0: oldKey},
+		"a short key":    {2: newKey, 1: oldKey[:16]},
+	} {
+		if _, err := NewKeyring(2, keys); err == nil {
+			t.Errorf("%s: expected an error", name)
+		}
+	}
+}
+
+func TestParseKeys(t *testing.T) {
+	a, b := strings.Repeat("ab", 32), strings.Repeat("cd", 32)
+	keys, err := ParseKeys(" 1:" + a + " , 7:" + b + ",")
+	if err != nil || len(keys) != 2 || keys[1][0] != 0xab || keys[7][0] != 0xcd {
+		t.Fatalf("keys = %v, %v", keys, err)
+	}
+	if keys, err := ParseKeys(""); err != nil || len(keys) != 0 {
+		t.Errorf("none = %v, %v", keys, err)
+	}
+	for _, bad := range []string{a, "x:" + a, "0:" + a, "1:" + a[:10], "1:" + a + ",1:" + b, "40000:" + a} {
+		if _, err := ParseKeys(bad); err == nil {
+			t.Errorf("%.20q…: expected an error", bad)
+		} else if strings.Contains(err.Error(), a) || strings.Contains(err.Error(), b) {
+			t.Errorf("the error quotes a key: %v", err)
+		}
+	}
+}

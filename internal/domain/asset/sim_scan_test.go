@@ -24,12 +24,22 @@ const (
 func scanFixture(t *testing.T) *fixture {
 	t.Helper()
 	f := newFixture(t)
-	box, err := sealbox.New(bytes.Repeat([]byte{7}, sealbox.KeySize))
+	WithSealer(testKeyring(t, 1, 7))(f.svc)
+	return f
+}
+
+// testKeyring seals under key current, a key of bytes b; more ids:bytes pairs are previous keys.
+func testKeyring(t *testing.T, current int16, b byte, previous ...int) *sealbox.Keyring {
+	t.Helper()
+	keys := map[int16][]byte{current: bytes.Repeat([]byte{b}, sealbox.KeySize)}
+	for i := 0; i+1 < len(previous); i += 2 {
+		keys[int16(previous[i])] = bytes.Repeat([]byte{byte(previous[i+1])}, sealbox.KeySize)
+	}
+	k, err := sealbox.NewKeyring(current, keys)
 	if err != nil {
 		t.Fatal(err)
 	}
-	WithSealer(box)(f.svc)
-	return f
+	return k
 }
 
 func batch(cards ...ScannedSIM) AddSIMsParams {
@@ -132,7 +142,7 @@ func TestAddSIMs(t *testing.T) {
 	// The codes are sealed for their card, and nothing the API answers or
 	// records holds them.
 	sealed := f.repo.codes[added[0].ID]
-	if bytes.Contains(sealed.Sealed, []byte("0306")) || bytes.Contains(sealed.Sealed, []byte("93691381")) || sealed.KeyID != sealKeyID {
+	if bytes.Contains(sealed.Sealed, []byte("0306")) || bytes.Contains(sealed.Sealed, []byte("93691381")) || sealed.KeyID != 1 {
 		t.Errorf("sealed = %+v", sealed)
 	}
 	v, _ := f.svc.Get(f.ctx, added[0].ID)
@@ -263,7 +273,7 @@ func TestShowSetClearSIMCodes(t *testing.T) {
 	}
 
 	// Codes copied to another card do not open there.
-	f.repo.codes[without] = SealedCodes{AssetID: without, Sealed: f.repo.codes[withCodes].Sealed, KeyID: sealKeyID}
+	f.repo.codes[without] = SealedCodes{AssetID: without, Sealed: f.repo.codes[withCodes].Sealed, KeyID: 1}
 	if _, err := f.svc.ShowSIMCodes(f.ctx, without, testActor); err == nil || errors.Is(err, ErrNoSIMCodes) {
 		t.Errorf("moved codes opened: %v", err)
 	}
@@ -303,5 +313,77 @@ func TestShowSetClearSIMCodes(t *testing.T) {
 	}
 	if _, err := newFixture(t).svc.ShowSIMCodes(f.ctx, withCodes, testActor); !errors.Is(err, ErrSIMCodesUnavailable) {
 		t.Errorf("Show without a sealer = %v", err)
+	}
+}
+
+// changingRepo is a repository where someone sets a card's codes again just
+// after ResealSIMCodes has listed them.
+type changingRepo struct {
+	*fakeRepo
+	changes uuid.UUID
+}
+
+func (r *changingRepo) SIMCodesNotUnder(ctx context.Context, keyID int16, after uuid.UUID, limit int) ([]SealedCodes, error) {
+	page, err := r.fakeRepo.SIMCodesNotUnder(ctx, keyID, after, limit)
+	if c, ok := r.codes[r.changes]; ok {
+		c.Sealed = append([]byte(nil), c.Sealed...)
+		c.Sealed[len(c.Sealed)-1] ^= 1
+		r.codes[r.changes] = c
+	}
+	return page, err
+}
+
+func TestResealSIMCodes(t *testing.T) {
+	f := scanFixture(t) // seals under key 1
+	added, err := f.svc.AddSIMs(f.ctx, batch(
+		ScannedSIM{SimNo: scanA, PIN: "0306", PUK: "93691381"},
+		ScannedSIM{SimNo: scanB, PIN: "1234", PUK: "12345678"},
+		ScannedSIM{SimNo: scanC, PIN: "5555", PUK: "87654321"},
+	), testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A card sealed under a key 9 this API is never given.
+	stray := f.repo.codes[added[2].ID]
+	stray.KeyID = 9
+	f.repo.codes[added[2].ID] = stray
+	setAt := f.repo.codes[added[0].ID].UpdatedAt
+	events := len(f.repo.events)
+
+	// The key changes: key 2 seals, key 1 only opens. Someone sets the second card's codes meanwhile.
+	WithSealer(testKeyring(t, 2, 8, 1, 7))(f.svc)
+	f.svc.repo = &changingRepo{fakeRepo: f.repo, changes: added[1].ID}
+	res, err := f.svc.ResealSIMCodes(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Key != 2 || res.Resealed != 1 || res.Changed != 1 || len(res.NotOpened) != 1 || res.NotOpened[9] != 1 {
+		t.Fatalf("result = %+v", res)
+	}
+	resealed := f.repo.codes[added[0].ID]
+	if resealed.KeyID != 2 || !resealed.UpdatedAt.Equal(setAt) || resealed.UpdatedByUserID != testActor {
+		t.Errorf("resealed = key %d, set %v by %v; who set them and when are kept", resealed.KeyID, resealed.UpdatedAt, resealed.UpdatedByUserID)
+	}
+	if f.repo.codes[added[1].ID].KeyID != 1 || f.repo.codes[added[2].ID].KeyID != 9 {
+		t.Error("a card changed meanwhile or under an unknown key was sealed again")
+	}
+	if len(f.repo.events) != events {
+		t.Errorf("%d events recorded; the codes did not change", len(f.repo.events)-events)
+	}
+	// Under the new key alone, the resealed card still shows its codes.
+	WithSealer(testKeyring(t, 2, 8))(f.svc)
+	f.svc.repo = f.repo
+	if c, err := f.svc.ShowSIMCodes(f.ctx, added[0].ID, testActor); err != nil || c != (SIMCodes{PIN: "0306", PUK: "93691381"}) {
+		t.Errorf("Show after the change = %+v, %v", c, err)
+	}
+	// Run again: nothing left under key 1 but the card changed meanwhile, which does not open now either.
+	if res, err := f.svc.ResealSIMCodes(f.ctx); err != nil || res.Resealed != 0 || res.NotOpened[1] != 1 || res.NotOpened[9] != 1 {
+		t.Errorf("again = %+v, %v", res, err)
+	}
+
+	// Without the key nothing is read.
+	f.svc.sealer = nil
+	if _, err := f.svc.ResealSIMCodes(f.ctx); !errors.Is(err, ErrSIMCodesUnavailable) {
+		t.Errorf("no key = %v", err)
 	}
 }

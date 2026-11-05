@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -94,11 +96,11 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	// PIN or PUK (-publish-app, -seed-admin…) runs without one.
 	var codes asset.Sealer
 	if cfg.SIMCodesKey != "" {
-		box, err := simCodesBox(cfg.SIMCodesKey)
+		keys, err := simCodesKeyring(cfg)
 		if err != nil {
 			return err
 		}
-		codes = box
+		codes = keys
 	}
 	svc := newServices(
 		loc, cfg.ConfirmTTL, cfg.AuditRetention,
@@ -144,6 +146,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	}
 	if cfg.PruneApps {
 		return pruneApps(ctx, svc, cfg, os.Stdout)
+	}
+	if cfg.ResealSIMCodes {
+		return resealSIMCodes(ctx, svc.assets, os.Stdout)
 	}
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, pool, svc.users, cfg, logger)
@@ -405,12 +410,44 @@ func seedAdmin(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg
 	return nil
 }
 
-// simCodesBox seals SIM cards' PIN and PUK under API_SIM_CODES_KEY, which
-// validate has checked.
-func simCodesBox(hexKey string) (*sealbox.Box, error) {
-	key, err := sealbox.ParseKey(hexKey)
+// simCodesKeyring seals SIM cards' PIN and PUK under API_SIM_CODES_KEY, as
+// key API_SIM_CODES_KEY_ID, and opens those sealed under any of
+// API_SIM_CODES_PREVIOUS_KEYS too; validate has checked them.
+func simCodesKeyring(cfg config) (*sealbox.Keyring, error) {
+	key, err := sealbox.ParseKey(cfg.SIMCodesKey)
 	if err != nil {
 		return nil, fmt.Errorf("API_SIM_CODES_KEY %w", err)
 	}
-	return sealbox.New(key)
+	keys, err := sealbox.ParseKeys(cfg.SIMCodesPreviousKeys)
+	if err != nil {
+		return nil, fmt.Errorf("API_SIM_CODES_PREVIOUS_KEYS %w", err)
+	}
+	keys[int16(cfg.SIMCodesKeyID)] = key
+	return sealbox.NewKeyring(int16(cfg.SIMCodesKeyID), keys)
+}
+
+// resealSIMCodes is -reseal-sim-codes: every card's PIN and PUK under a
+// previous key sealed again under the current one (docs/backups.md
+// "Changing the SIM codes key"). It prints the counts as JSON, never a code, and fails
+// when some did not open, naming their keys.
+func resealSIMCodes(ctx context.Context, assets *asset.Service, out io.Writer) error {
+	res, err := assets.ResealSIMCodes(ctx)
+	if err != nil {
+		return err
+	}
+	if err := json.NewEncoder(out).Encode(res); err != nil {
+		return err
+	}
+	if len(res.NotOpened) > 0 {
+		return fmt.Errorf("the PIN and PUK of %d card(s) did not open: give the API their key in API_SIM_CODES_PREVIOUS_KEYS (by the ids in not_opened) and run it again", sum(res.NotOpened))
+	}
+	return nil
+}
+
+func sum(counts map[int16]int) int {
+	n := 0
+	for _, c := range counts {
+		n += c
+	}
+	return n
 }

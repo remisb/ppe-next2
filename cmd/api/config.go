@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"net/netip"
 	"net/url"
 	"os"
@@ -28,8 +30,13 @@ type config struct {
 	JWTIssuer string
 	// SIMCodesKey seals SIM cards' PIN and PUK (internal/sealbox): 64 hex
 	// characters, kept apart from the database and its backups (ADR 0005).
-	SIMCodesKey string
-	JWTTTL      time.Duration
+	// SIMCodesKeyID names it on each row it seals; SIMCodesPreviousKeys
+	// ("id:hex,…") only open, while a key change seals everything again
+	// (ResealSIMCodes, docs/backups.md).
+	SIMCodesKey          string
+	SIMCodesKeyID        int
+	SIMCodesPreviousKeys string
+	JWTTTL               time.Duration
 	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
 	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
@@ -123,6 +130,11 @@ type config struct {
 	// PruneApps removes published versions no channel points at beyond each
 	// app's newest launcher.KeepVersions, files and all, and exits.
 	PruneApps bool
+
+	// ResealSIMCodes seals every SIM card's PIN and PUK kept under a
+	// previous key again under API_SIM_CODES_KEY, prints what it did and
+	// exits; non-zero when some did not open.
+	ResealSIMCodes bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -150,6 +162,10 @@ func loadConfig(args []string) (config, error) {
 	var err error
 	if c.TrustedProxies, err = middleware.ParseTrustedProxies(splitList(env("API_TRUSTED_PROXIES", ""))); err != nil {
 		return c, fmt.Errorf("API_TRUSTED_PROXIES: %w", err)
+	}
+	c.SIMCodesPreviousKeys = env("API_SIM_CODES_PREVIOUS_KEYS", "")
+	if c.SIMCodesKeyID, err = envInt("API_SIM_CODES_KEY_ID", 1); err != nil {
+		return c, err
 	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {
 		return c, err
@@ -197,6 +213,7 @@ func loadConfig(args []string) (config, error) {
 	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta or preview)")
 	fs.StringVar(&c.PublishCommit, "from-commit", "", "with -publish-app: the commit it was built from")
 	fs.BoolVar(&c.PruneApps, "prune-apps", false, "remove published versions no channel points at, beyond each app's newest, and exit")
+	fs.BoolVar(&c.ResealSIMCodes, "reseal-sim-codes", false, "seal every SIM card's PIN and PUK kept under a previous key again under API_SIM_CODES_KEY, print the counts and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -222,6 +239,10 @@ func (c config) validate() error {
 		return errors.Join(errs...)
 	}
 	if c.VerifyAudit || c.Upkeep {
+		return errors.Join(errs...)
+	}
+	if c.ResealSIMCodes {
+		errs = append(errs, c.simCodesKeyErrors()...)
 		return errors.Join(errs...)
 	}
 	if c.PruneApps {
@@ -261,11 +282,7 @@ func (c config) validate() error {
 	if len(c.JWTSecret) < 32 {
 		errs = append(errs, errors.New("API_JWT_SECRET must be at least 32 bytes"))
 	}
-	if _, err := sealbox.ParseKey(c.SIMCodesKey); err != nil {
-		errs = append(errs, fmt.Errorf("API_SIM_CODES_KEY %w", err))
-	} else if c.SIMCodesKey == c.JWTSecret {
-		errs = append(errs, errors.New("API_SIM_CODES_KEY must not be API_JWT_SECRET"))
-	}
+	errs = append(errs, c.simCodesKeyErrors()...)
 	if c.JWTTTL < time.Minute || c.JWTTTL > 24*time.Hour {
 		errs = append(errs, errors.New("API_JWT_TTL must be between 1m and 24h"))
 	}
@@ -370,4 +387,32 @@ func splitList(s string) []string {
 // location loads OrgTimezone; validate has already checked it loads.
 func (c config) location() (*time.Location, error) {
 	return time.LoadLocation(c.OrgTimezone)
+}
+
+// simCodesKeyErrors checks the SIM codes keys: the current one, its id and
+// the previous ones (ADR 0005, docs/backups.md "Changing the SIM codes key").
+func (c config) simCodesKeyErrors() []error {
+	var errs []error
+	if _, err := sealbox.ParseKey(c.SIMCodesKey); err != nil {
+		errs = append(errs, fmt.Errorf("API_SIM_CODES_KEY %w", err))
+	} else if c.SIMCodesKey == c.JWTSecret {
+		errs = append(errs, errors.New("API_SIM_CODES_KEY must not be API_JWT_SECRET"))
+	}
+	if c.SIMCodesKeyID < 1 || c.SIMCodesKeyID > math.MaxInt16 {
+		errs = append(errs, fmt.Errorf("API_SIM_CODES_KEY_ID must be from 1 to %d", math.MaxInt16))
+	}
+	previous, err := sealbox.ParseKeys(c.SIMCodesPreviousKeys)
+	if err != nil {
+		return append(errs, fmt.Errorf("API_SIM_CODES_PREVIOUS_KEYS %w", err))
+	}
+	current, _ := sealbox.ParseKey(c.SIMCodesKey)
+	for id, key := range previous {
+		if int(id) == c.SIMCodesKeyID {
+			errs = append(errs, fmt.Errorf("API_SIM_CODES_PREVIOUS_KEYS has key %d, which is API_SIM_CODES_KEY_ID: a previous key needs an id of its own", id))
+		}
+		if current != nil && bytes.Equal(key, current) {
+			errs = append(errs, fmt.Errorf("API_SIM_CODES_PREVIOUS_KEYS key %d is API_SIM_CODES_KEY", id))
+		}
+	}
+	return errs
 }

@@ -604,6 +604,12 @@ func (stubAssets) SIMCodes(context.Context, uuid.UUID) (asset.SealedCodes, error
 	return asset.SealedCodes{}, asset.ErrNoSIMCodes
 }
 func (stubAssets) PutSIMCodes(context.Context, asset.SealedCodes, audit.Event) error { return nil }
+func (stubAssets) SIMCodesNotUnder(context.Context, int16, uuid.UUID, int) ([]asset.SealedCodes, error) {
+	return []asset.SealedCodes{}, nil
+}
+func (stubAssets) ResealSIMCodes(context.Context, asset.SealedCodes, []byte) (bool, error) {
+	return false, nil
+}
 func (stubAssets) DeleteSIMCodes(context.Context, uuid.UUID, audit.Event) error {
 	return asset.ErrNoSIMCodes
 }

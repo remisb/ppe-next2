@@ -75,7 +75,9 @@ Three constraints shape this:
 
 - **Losing the key loses the codes.** A restore needs the same key. Without it every Show
   fails, though the cards' carriers still have the codes and Add PIN and PUK keeps them
-  again. There is no key rotation yet.
+  again. There is no key rotation yet. (Since 2026-11-05 there is: `sealbox.Keyring`,
+  `API_SIM_CODES_KEY_ID`, `API_SIM_CODES_PREVIOUS_KEYS` and `api -reseal-sim-codes`;
+  docs/backups.md "Changing the SIM codes key".)
 - **A deploy needs the new setting.** The API does not start without
   `API_SIM_CODES_KEY`, so `.env.prod` gets it before the first `make prod-up` of this
   version.

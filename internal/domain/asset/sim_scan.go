@@ -20,9 +20,6 @@ const (
 	EventSIMCodesChanged = "asset.sim_codes_changed"
 	// MaxScannedSIMs is the most cards one batch adds.
 	MaxScannedSIMs = 100
-	// sealKeyID names API_SIM_CODES_KEY on each sealed row, so a later key
-	// can be brought in beside it.
-	sealKeyID int16 = 1
 )
 
 var (
@@ -33,11 +30,15 @@ var (
 	pukPattern   = regexp.MustCompile(`^[0-9]{8}$`)
 )
 
-// Sealer seals a card's codes for its id and opens them again
-// (internal/sealbox). Without one, codes are neither kept nor shown.
+// Sealer seals a card's codes for its id under its current key, naming the
+// key, and opens them under the key they name (internal/sealbox's Keyring:
+// API_SIM_CODES_KEY and any previous keys). Without one, codes are neither
+// kept nor shown.
 type Sealer interface {
-	Seal(plain, context []byte) ([]byte, error)
-	Open(sealed, context []byte) ([]byte, error)
+	Seal(plain, context []byte) (sealed []byte, keyID int16, err error)
+	Open(sealed []byte, keyID int16, context []byte) ([]byte, error)
+	// Current is the id of the key Seal uses.
+	Current() int16
 }
 
 // WithSealer keeps PIN and PUK, sealed by sealer.
@@ -315,11 +316,11 @@ func (s *Service) seal(id uuid.UUID, c SIMCodes, actor uuid.UUID, now time.Time)
 	if s.sealer == nil {
 		return SealedCodes{}, ErrSIMCodesUnavailable
 	}
-	sealed, err := s.sealer.Seal([]byte(c.PIN+" "+c.PUK), codesContext(id))
+	sealed, keyID, err := s.sealer.Seal([]byte(c.PIN+" "+c.PUK), codesContext(id))
 	if err != nil {
 		return SealedCodes{}, err
 	}
-	return SealedCodes{AssetID: id, Sealed: sealed, KeyID: sealKeyID, UpdatedAt: now, UpdatedByUserID: actor}, nil
+	return SealedCodes{AssetID: id, Sealed: sealed, KeyID: keyID, UpdatedAt: now, UpdatedByUserID: actor}, nil
 }
 
 // simCard is the live SIM card id: codes belong to SIM cards only.
@@ -348,7 +349,7 @@ func (s *Service) ShowSIMCodes(ctx context.Context, id uuid.UUID, actor uuid.UUI
 	if err != nil {
 		return SIMCodes{}, err
 	}
-	plain, err := s.sealer.Open(sc.Sealed, codesContext(id))
+	plain, err := s.sealer.Open(sc.Sealed, sc.KeyID, codesContext(id))
 	if err != nil {
 		return SIMCodes{}, fmt.Errorf("asset: the PIN and PUK of %s do not open (key %d): %w", id, sc.KeyID, err)
 	}
@@ -364,6 +365,66 @@ func (s *Service) ShowSIMCodes(ctx context.Context, id uuid.UUID, actor uuid.UUI
 		return SIMCodes{}, err
 	}
 	return SIMCodes{PIN: pin, PUK: puk}, nil
+}
+
+// ResealResult is what ResealSIMCodes did: how many cards' codes it sealed
+// again under the current key, how many were changed by someone meanwhile
+// (and so are under it already), and how many did not open, by the key they
+// name (a key the API was not given), which it left as they were.
+type ResealResult struct {
+	Key       int16         `json:"key"`
+	Resealed  int           `json:"resealed"`
+	Changed   int           `json:"changed_meanwhile"`
+	NotOpened map[int16]int `json:"not_opened"`
+}
+
+// resealPage is how many cards' codes ResealSIMCodes reads at a time.
+const resealPage = 200
+
+// ResealSIMCodes seals again, under the current key, every card's PIN and
+// PUK kept under another: the second half of changing API_SIM_CODES_KEY
+// (docs/backups.md), after the API has the new key and the old one among
+// its previous keys. The codes stay the same, so nothing is recorded in the
+// Audit log and who set them, and when, is kept; a card whose codes someone
+// changes meanwhile keeps theirs. Codes that do not open (their key not
+// given) are counted and left; they are never shown.
+func (s *Service) ResealSIMCodes(ctx context.Context) (ResealResult, error) {
+	if s.sealer == nil {
+		return ResealResult{}, ErrSIMCodesUnavailable
+	}
+	res := ResealResult{Key: s.sealer.Current(), NotOpened: map[int16]int{}}
+	after := uuid.Nil
+	for {
+		page, err := s.repo.SIMCodesNotUnder(ctx, res.Key, after, resealPage)
+		if err != nil {
+			return res, err
+		}
+		for _, sc := range page {
+			after = sc.AssetID
+			plain, err := s.sealer.Open(sc.Sealed, sc.KeyID, codesContext(sc.AssetID))
+			if err != nil {
+				res.NotOpened[sc.KeyID]++
+				continue
+			}
+			sealed, keyID, err := s.sealer.Seal(plain, codesContext(sc.AssetID))
+			clear(plain)
+			if err != nil {
+				return res, err
+			}
+			ok, err := s.repo.ResealSIMCodes(ctx, SealedCodes{AssetID: sc.AssetID, Sealed: sealed, KeyID: keyID}, sc.Sealed)
+			if err != nil {
+				return res, err
+			}
+			if ok {
+				res.Resealed++
+			} else {
+				res.Changed++
+			}
+		}
+		if len(page) < resealPage {
+			return res, nil
+		}
+	}
 }
 
 // SetSIMCodes keeps a SIM card's PIN and PUK, sealed, in place of any it had

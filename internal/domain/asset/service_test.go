@@ -363,6 +363,31 @@ func (f *fakeRepo) Give(_ context.Context, assetID, employeeID uuid.UUID, fn Giv
 
 // ImportSIMs writes into a copy and keeps it only on commit with no failure,
 // as the transaction does.
+func (f *fakeRepo) SIMCodesNotUnder(_ context.Context, keyID int16, after uuid.UUID, limit int) ([]SealedCodes, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := []SealedCodes{}
+	for _, c := range f.codes {
+		if c.KeyID != keyID && bytes.Compare(c.AssetID[:], after[:]) > 0 {
+			out = append(out, c)
+		}
+	}
+	slices.SortFunc(out, func(a, b SealedCodes) int { return bytes.Compare(a.AssetID[:], b.AssetID[:]) })
+	return out[:min(limit, len(out))], nil
+}
+
+func (f *fakeRepo) ResealSIMCodes(_ context.Context, c SealedCodes, old []byte) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cur, ok := f.codes[c.AssetID]
+	if !ok || !bytes.Equal(cur.Sealed, old) {
+		return false, nil
+	}
+	cur.Sealed, cur.KeyID = c.Sealed, c.KeyID
+	f.codes[c.AssetID] = cur
+	return true, nil
+}
+
 func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()

@@ -19,13 +19,13 @@ const testSecret = "test-secret-test-secret-test-secret-0123"
 // testCodesKey seals the tests' SIM codes (API_SIM_CODES_KEY).
 const testCodesKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
-func testCodes(t *testing.T) *sealbox.Box {
+func testCodes(t *testing.T) *sealbox.Keyring {
 	t.Helper()
-	box, err := simCodesBox(testCodesKey)
+	keys, err := simCodesKeyring(config{SIMCodesKey: testCodesKey, SIMCodesKeyID: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return box
+	return keys
 }
 
 func testTokens(now time.Time) *tokens {

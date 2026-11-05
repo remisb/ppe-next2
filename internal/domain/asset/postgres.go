@@ -576,6 +576,32 @@ func putCodes(ctx context.Context, tx pgx.Tx, c SealedCodes) error {
 	return err
 }
 
+func (r *PostgresRepository) SIMCodesNotUnder(ctx context.Context, keyID int16, after uuid.UUID, limit int) ([]SealedCodes, error) {
+	rows, err := r.pool.Query(ctx, `SELECT asset_id, sealed, key_id, updated_at, updated_by_user_id FROM asset_sim_codes
+		WHERE key_id <> $1 AND asset_id > $2 ORDER BY asset_id LIMIT $3`, keyID, after, limit)
+	if err != nil {
+		return nil, err
+	}
+	out, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (SealedCodes, error) {
+		var c SealedCodes
+		err := row.Scan(&c.AssetID, &c.Sealed, &c.KeyID, &c.UpdatedAt, &c.UpdatedByUserID)
+		return c, err
+	})
+	if out == nil {
+		out = []SealedCodes{}
+	}
+	return out, err
+}
+
+func (r *PostgresRepository) ResealSIMCodes(ctx context.Context, c SealedCodes, old []byte) (bool, error) {
+	tag, err := r.pool.Exec(ctx, `UPDATE asset_sim_codes SET sealed = $2, key_id = $3 WHERE asset_id = $1 AND sealed = $4`,
+		c.AssetID, c.Sealed, c.KeyID, old)
+	if err != nil {
+		return false, translate(err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
 func (r *PostgresRepository) DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `DELETE FROM asset_sim_codes WHERE asset_id = $1`, assetID)
