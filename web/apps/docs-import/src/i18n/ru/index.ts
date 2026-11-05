@@ -16,6 +16,7 @@ const steps: Messages['steps'] = {
   person: 'Человек',
   capture: 'Документ',
   review: 'Проверка',
+  portrait: 'Портрет',
   done: 'Сохранено',
 }
 
@@ -100,10 +101,28 @@ const review: Messages['review'] = {
   document: 'В документе',
   none: 'нет',
   checking: 'Проверка в реестре…',
+  next: 'Далее: портрет',
   save: 'Сохранить документ',
   saving: 'Сохранение…',
   back: 'Назад',
   photos: 'Фото',
+}
+
+const portrait: Messages['portrait'] = {
+  title: 'Портрет',
+  description: 'Фото из документа, вырезанное. Переместите рамку на лицо и подгоните её размер к голове и плечам.',
+  keep: 'Сохранить портрет',
+  keepHint: 'Хранится с копиями документа, зашифрованным.',
+  asPhoto: 'Сделать его и фото сотрудника',
+  asPhotoHint: 'Добавляется к его фото и виден всем, кто открывает сотрудника; первое фото становится его изображением.',
+  documentAlt: 'Документ с рамкой портрета',
+  cropLabel: 'Рамка портрета',
+  cropHint: 'Перетащите рамку, чтобы переместить, и её угол, чтобы изменить размер; с клавиатуры стрелки перемещают её, а + и − меняют размер.',
+  larger: 'Больше',
+  smaller: 'Меньше',
+  loading: 'Открывается изображение…',
+  noPicture: (type: 'passport' | 'card'): string =>
+    type === 'passport' ? 'Нет изображения страницы с фото: сохраняется без портрета.' : 'Нет изображения лицевой стороны карты: сохраняется без портрета.',
 }
 
 const blockers: Messages['blockers'] = {
@@ -180,4 +199,4 @@ const errors: Messages['errors'] = {
   notConfigured: 'Личные дела на этом сервере ещё не настроены.',
 }
 
-export const ru = { shell, steps, person, capture, review, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const ru = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

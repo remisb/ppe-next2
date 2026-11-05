@@ -15,7 +15,19 @@ self.onmessage = (e: MessageEvent<ImageRequest>) => {
     const found = findMrz(m.image, { now: () => performance.now(), ...(m.k === undefined ? {} : { k: m.k }) })
     if (!found) return post({ id: m.id, found: false, times: { total: performance.now() - t0 } })
     const band = rgbaOf(found.image)
-    post({ id: m.id, found: true, band, angle: found.angle, format: found.format, times: { ...found.times, total: performance.now() - t0 } }, [band.data.buffer])
+    post(
+      {
+        id: m.id,
+        found: true,
+        band,
+        angle: found.angle,
+        centre: found.centre,
+        size: found.size,
+        format: found.format,
+        times: { ...found.times, total: performance.now() - t0 },
+      },
+      [band.data.buffer],
+    )
   } catch (err) {
     post({ id: m.id, error: err instanceof Error ? err.name : 'Error' })
   }

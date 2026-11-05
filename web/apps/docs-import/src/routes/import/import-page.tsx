@@ -14,16 +14,16 @@ import {
   type Holder,
   type Photo,
   type Photos,
-  type Slot,
 } from '@/lib/flow'
 import { loadReader, todayHere } from '@/lib/reader'
 
 import { CaptureStep } from './capture-step'
 import { DoneStep } from './done-step'
 import { PersonStep } from './person-step'
+import { PortraitStep } from './portrait-step'
 import { ReviewStep } from './review-step'
 
-export type Step = 'person' | 'capture' | 'review' | 'done'
+export type Step = 'person' | 'capture' | 'review' | 'portrait' | 'done'
 
 /**
  * Import Documents' one screen: Person → Document (photos) → Review → Saved,
@@ -46,7 +46,7 @@ export function ImportPage() {
   const pictures = usePictureStore()
   const files = useRef(new Map<string, Blob>())
 
-  const unsaved = step === 'capture' ? Object.keys(photos).length > 0 : step === 'review'
+  const unsaved = step === 'capture' ? Object.keys(photos).length > 0 : step === 'review' || step === 'portrait'
   useEffect(() => {
     if (!unsaved) return
     const warn = (e: BeforeUnloadEvent) => e.preventDefault()
@@ -86,7 +86,7 @@ export function ImportPage() {
       const id = crypto.randomUUID()
       pictures.keep(id, file)
       files.current.set(id, file)
-      const photo: Photo = { id, found: r.found, agreed: r.agreed, ...(r.mrz ? { mrz: r.mrz } : {}) }
+      const photo: Photo = { id, found: r.found, agreed: r.agreed, ...(r.mrz ? { mrz: r.mrz } : {}), ...(r.band ? { band: r.band } : {}) }
       const placed = placePhoto(type, photos, photo)
       forget([placed.dropped?.id])
       setPhotos(placed.photos)
@@ -112,14 +112,6 @@ export function ImportPage() {
     setStep('person')
   }
 
-  const copies = () => {
-    const out: Partial<Record<Slot, Blob>> = {}
-    for (const [slot, p] of Object.entries(photos) as [Slot, Photo | undefined][]) {
-      const f = p ? files.current.get(p.id) : undefined
-      if (f) out[slot] = f
-    }
-    return out
-  }
 
   return (
     <>
@@ -158,8 +150,18 @@ export function ImportPage() {
           onDraft={setDraft}
           photos={photos}
           pictures={pictures.urls}
-          copies={copies}
           onBack={() => setStep('capture')}
+          onNext={() => setStep('portrait')}
+        />
+      ) : null}
+      {step === 'portrait' && holder ? (
+        <PortraitStep
+          holder={holder}
+          draft={draft}
+          photos={photos}
+          pictures={pictures.urls}
+          file={(id) => files.current.get(id)}
+          onBack={() => setStep('review')}
           onSaved={(doc) => {
             forget(Object.values(photos).map((p) => p?.id))
             setPhotos({})
@@ -175,7 +177,7 @@ export function ImportPage() {
 
 /** Where the user is, in words: Person, Document, Review, Saved. */
 function StepsBar({ step }: { step: Step }) {
-  const order: Step[] = ['person', 'capture', 'review', 'done']
+  const order: Step[] = ['person', 'capture', 'review', 'portrait', 'done']
   const at = order.indexOf(step)
   return (
     <ol aria-label={t.steps.label} className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">

@@ -1,24 +1,21 @@
-import { ApiError, type DocumentCheck, type DocumentCopies, type DocumentTake, type IdentityDocument } from '@ppe/api-client'
+import type { DocumentCheck, DocumentTake } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import type { Issue, Mrz } from '@ppe/mrz'
 import { Thumb } from '@ppe/scan-kit/thumb'
 import { Button } from '@ppe/ui/components/button'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
-import { ActionError, PageHeader } from '@ppe/ui/components/states'
+import { PageHeader } from '@ppe/ui/components/states'
 import { useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
-import { documentCopy } from '@/lib/copies'
 import {
-  COPY_PARTS,
   blockers,
   differences,
   linesOf,
   needsChecking,
   parseDraft,
   readPhotoOf,
-  saveInput,
   type Draft,
   type Holder,
   type Photos,
@@ -26,6 +23,7 @@ import {
 } from '@/lib/flow'
 import { todayHere } from '@/lib/reader'
 
+import { issueText, noteText } from './issues'
 import { HolderLine } from './person-step'
 
 /**
@@ -41,26 +39,23 @@ export function ReviewStep({
   onDraft,
   photos,
   pictures,
-  copies,
   onBack,
-  onSaved,
+  onNext,
 }: {
   holder: Holder
   draft: Draft
   onDraft: (d: Draft) => void
   photos: Photos
   pictures: ReadonlyMap<string, string>
-  copies: () => Partial<Record<Slot, Blob>>
   onBack: () => void
-  onSaved: (doc: IdentityDocument) => void
+  /** Nothing stops Save: on to the portrait, where Save is. */
+  onNext: () => void
 }) {
   const { client } = useApi()
   const today = todayHere()
   const m = useMemo(() => parseDraft(draft, today), [draft, today])
   const [check, setCheck] = useState<DocumentCheck | undefined>(undefined)
   const [checking, setChecking] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<unknown>(null)
   const set = (patch: Partial<Draft>) => onDraft({ ...draft, ...patch })
 
   // The API's check, a moment after the lines or names change; an answer to an earlier draft is dropped.
@@ -90,20 +85,6 @@ export function ReviewStep({
   const diffs = draft.addToRecord ? differences(holder, draft, m) : []
   const read = readPhotoOf(draft.type, photos)
 
-  const save = async () => {
-    if (!m || stops.length > 0) return
-    setSaving(true)
-    setError(null)
-    try {
-      const parts: DocumentCopies = {}
-      for (const [slot, blob] of Object.entries(copies()) as [Slot, Blob][]) parts[COPY_PARTS[slot]] = await documentCopy(blob)
-      onSaved(await client.personnel.save(saveInput(holder, draft, m), parts))
-    } catch (e) {
-      setError(e)
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <>
@@ -221,18 +202,11 @@ export function ReviewStep({
                 ))}
               </ul>
             ) : null}
-            {saveErrorText(error) ? (
-              <p role="alert" className="text-sm text-destructive">
-                <span className="font-medium">{t.errors.title}:</span> {saveErrorText(error)}
-              </p>
-            ) : (
-              <ActionError error={error} title={t.errors.title} />
-            )}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => void save()} disabled={saving || stops.length > 0 || checking}>
-                {saving ? t.review.saving : t.review.save}
+              <Button onClick={onNext} disabled={stops.length > 0 || checking}>
+                {t.review.next}
               </Button>
-              <Button variant="outline" onClick={onBack} disabled={saving}>
+              <Button variant="outline" onClick={onBack}>
                 {t.review.back}
               </Button>
             </div>
@@ -306,15 +280,7 @@ function IssueList({ issues, tone }: { issues: Issue<string>[]; tone: 'problem' 
   )
 }
 
-function issueText(i: { code: string; field?: string | undefined }): string {
-  const text = (t.problems as Record<string, string>)[i.code] ?? i.code
-  return i.field ? `${(t.fieldNames as Record<string, string>)[i.field] ?? i.field}: ${text}` : text
-}
 
-function noteText(i: { code: string; field?: string | undefined }): string {
-  const text = (t.notes as Record<string, string>)[i.code] ?? i.code
-  return i.code === 'corrected' && i.field ? `${(t.fieldNames as Record<string, string>)[i.field] ?? i.field}: ${text}` : text
-}
 
 function toggle(take: DocumentTake[], field: DocumentTake, on: boolean): DocumentTake[] {
   return on ? [...new Set([...take, field])] : take.filter((f) => f !== field)
@@ -325,12 +291,3 @@ function shown(field: DocumentTake, v: string | null): string {
   return field === 'sex' && (v === 'M' || v === 'F' || v === 'X') ? t.sexes[v] : v
 }
 
-/** Save's refusals in words; other errors keep ActionError's own. */
-function saveErrorText(error: unknown): string | undefined {
-  if (!(error instanceof ApiError)) return undefined
-  if (error.conflict === 'document_on_file') return t.errors.conflictDocument
-  if (error.conflict === 'other_employee') return t.errors.conflictEmployee
-  if (error.status === 503) return t.errors.notConfigured
-  if (error.problems?.[0]) return issueText(error.problems[0])
-  return undefined
-}

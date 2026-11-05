@@ -31,10 +31,26 @@ const noDictionaries = {
   load_bigram_dawg: '0',
 }
 
+/**
+ * Where the MRZ band was found, as fractions of the picture's width and
+ * height: its centre and size, and its turn in degrees. The portrait is found
+ * from it (docs-import plan FR-11).
+ */
+export interface BandPlace {
+  centre: { x: number; y: number }
+  size: { width: number; height: number }
+  angle: number
+  format: 'TD1' | 'TD2' | 'TD3'
+  /** The picture's width over its height, to turn the fractions back into a shape. */
+  aspect: number
+}
+
 /** What a photo gave. */
 export interface PhotoReading {
   /** An MRZ band was found: for a card, this is its back. */
   found: boolean
+  /** Where the band is, when found. */
+  band?: BandPlace
   /** The lines parsed, when the text read had an MRZ's shape. */
   mrz?: Mrz
   /** Both reads gave the same valid lines (FR-4): the reading may be taken without a second look. */
@@ -75,7 +91,14 @@ export function createMrzReader(o: MrzReaderOptions): MrzReader {
     if ('error' in found || !found.found) return { found: false as const }
     const { text: read } = await text.read(canvasFromRgba(found.band))
     const r = readMrz(read, { today })
-    return { found: true as const, ...(r.mrz ? { mrz: r.mrz } : {}) }
+    const band: BandPlace = {
+      centre: { x: found.centre.x / canvas.width, y: found.centre.y / canvas.height },
+      size: { width: found.size.width / canvas.width, height: found.size.height / canvas.height },
+      angle: found.angle,
+      format: found.format,
+      aspect: canvas.width / canvas.height,
+    }
+    return { found: true as const, band, ...(r.mrz ? { mrz: r.mrz } : {}) }
   }
 
   return {
@@ -85,13 +108,14 @@ export function createMrzReader(o: MrzReaderOptions): MrzReader {
       bitmap.close()
       const first = await readBand(canvas, today)
       if (!first.found) return { found: false, agreed: false }
+      const band = first.band
       const second = await readBand(canvas, today, SECOND_K)
       const a = first.mrz?.valid ? first.mrz : undefined
       const b = second.found && second.mrz?.valid ? second.mrz : undefined
       const agreed = !!a && !!b && a.lines.join('\n') === b.lines.join('\n')
       // The valid reading, the first's when both are; else whatever the first gave, for the user to put right.
       const mrz = a ?? b ?? first.mrz ?? (second.found ? second.mrz : undefined)
-      return { found: true, agreed, ...(mrz ? { mrz } : {}) }
+      return { found: true, agreed, band, ...(mrz ? { mrz } : {}) }
     },
     async readFrame(frame, today) {
       const r = await readBand(frame, today)
@@ -139,7 +163,9 @@ function imageWorker() {
       if (!w) {
         const f = findMrz(image, k === undefined ? {} : { k })
         return Promise.resolve(
-          f ? { id: 0, found: true, band: rgbaOf(f.image), angle: f.angle, format: f.format, times: {} } : { id: 0, found: false, times: {} },
+          f
+            ? { id: 0, found: true, band: rgbaOf(f.image), angle: f.angle, centre: f.centre, size: f.size, format: f.format, times: {} }
+            : { id: 0, found: false, times: {} },
         )
       }
       const id = ++next

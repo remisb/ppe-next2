@@ -16,6 +16,9 @@ export type ImageResponse =
       /** The cut-out band, RGBA, transferred back. */
       band: Rgba
       angle: number
+      /** Where the band is in the picture sent: its centre and size in its pixels. */
+      centre: { x: number; y: number }
+      size: { width: number; height: number }
       format: 'TD1' | 'TD2' | 'TD3'
       times: Record<string, number>
     }

@@ -18,6 +18,7 @@ const steps = {
   person: 'Person',
   capture: 'Document',
   review: 'Review',
+  portrait: 'Portrait',
   done: 'Saved',
 }
 
@@ -105,10 +106,29 @@ const review = {
   document: 'Document',
   none: 'none',
   checking: 'Checking with the register…',
+  next: 'Next: Portrait',
   save: 'Save Document',
   saving: 'Saving…',
   back: 'Back',
   photos: 'Photos',
+}
+
+/** Step 4: the portrait (FR-11, FR-13). */
+const portrait = {
+  title: 'The portrait',
+  description: 'The photo on the document, cut out. Move the box over the face and size it to the head and shoulders.',
+  keep: 'Keep the portrait',
+  keepHint: "Kept with the document's copies, sealed.",
+  asPhoto: "Also make it the employee's photo",
+  asPhotoHint: 'Added to their Photos, seen by everyone who opens the employee; the first photo becomes their picture.',
+  documentAlt: 'The document, with the portrait’s box',
+  cropLabel: 'Portrait box',
+  cropHint: 'Drag the box to move it and its corner to size it; with the keyboard, the arrows move it and + and − size it.',
+  larger: 'Larger',
+  smaller: 'Smaller',
+  loading: 'Opening the picture…',
+  noPicture: (type: 'passport' | 'card'): string =>
+    type === 'passport' ? 'No picture of the photo page: saved without a portrait.' : "No picture of the card's front: saved without a portrait.",
 }
 
 /** What stops Save, said on the review. */
@@ -190,4 +210,4 @@ const errors = {
   notConfigured: 'Personnel files is not set up on this server yet.',
 }
 
-export const en = { shell, steps, person, capture, review, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const en = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

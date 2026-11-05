@@ -16,6 +16,7 @@ const steps: Messages['steps'] = {
   person: 'Asmuo',
   capture: 'Dokumentas',
   review: 'Peržiūra',
+  portrait: 'Portretas',
   done: 'Išsaugota',
 }
 
@@ -100,10 +101,28 @@ const review: Messages['review'] = {
   document: 'Dokumente',
   none: 'nėra',
   checking: 'Tikrinama registre…',
+  next: 'Toliau: portretas',
   save: 'Išsaugoti dokumentą',
   saving: 'Išsaugoma…',
   back: 'Atgal',
   photos: 'Nuotraukos',
+}
+
+const portrait: Messages['portrait'] = {
+  title: 'Portretas',
+  description: 'Dokumento nuotrauka, iškirpta. Perkelkite rėmelį ant veido ir pritaikykite jo dydį galvai ir pečiams.',
+  keep: 'Išsaugoti portretą',
+  keepHint: 'Saugomas su dokumento kopijomis, užšifruotas.',
+  asPhoto: 'Taip pat padaryti jį darbuotojo nuotrauka',
+  asPhotoHint: 'Pridedama prie jo nuotraukų, matoma visiems, kas atidaro darbuotoją; pirmoji nuotrauka tampa jo paveikslėliu.',
+  documentAlt: 'Dokumentas su portreto rėmeliu',
+  cropLabel: 'Portreto rėmelis',
+  cropHint: 'Vilkite rėmelį, kad perkeltumėte, ir jo kampą, kad pakeistumėte dydį; klaviatūra rodyklės jį perkelia, o + ir − keičia dydį.',
+  larger: 'Didesnis',
+  smaller: 'Mažesnis',
+  loading: 'Atidaromas vaizdas…',
+  noPicture: (type: 'passport' | 'card'): string =>
+    type === 'passport' ? 'Nėra puslapio su nuotrauka vaizdo: išsaugoma be portreto.' : 'Nėra kortelės priekinės pusės vaizdo: išsaugoma be portreto.',
 }
 
 const blockers: Messages['blockers'] = {
@@ -180,4 +199,4 @@ const errors: Messages['errors'] = {
   notConfigured: 'Šiame serveryje asmens bylos dar neparuoštos.',
 }
 
-export const lt = { shell, steps, person, capture, review, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const lt = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

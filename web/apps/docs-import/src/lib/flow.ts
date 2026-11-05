@@ -14,6 +14,7 @@ import type {
   IdentityDocumentKind,
 } from '@ppe/api-client'
 import { parseMrz, type Mrz } from '@ppe/mrz'
+import type { BandPlace } from '@ppe/mrz/reader'
 
 /** Who the document is for: an employee on file, or a new one made from it (D6). */
 export type Holder = { kind: 'existing'; employee: Employee } | { kind: 'new' }
@@ -37,6 +38,8 @@ export interface Photo {
   mrz?: Mrz
   /** Both reads gave the same valid lines (FR-4). */
   agreed: boolean
+  /** Where the MRZ band is on it, which places the portrait on a passport's page. */
+  band?: BandPlace
 }
 
 /** The photos by slot. */

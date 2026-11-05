@@ -3618,12 +3618,30 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   const original = await lines.inputValue()
   await lines.fill(original.replace('3309243', '3309253'))
   await expect(page.getByText(/check digit does not match/).first()).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Save Document' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Next: Portrait' })).toBeDisabled()
   await lines.fill(original)
   // Both reads agreed, so no comparison with the document is asked for.
   await expect(page.getByRole('checkbox', { name: /I have compared the code lines/ })).toHaveCount(0)
   await page.getByLabel('Place of Birth').fill('Vilnius')
   await page.getByRole('checkbox', { name: /Add to Employee Record/ }).check()
+  // The portrait, found from the code lines' place on the page: kept, and made the employee's photo.
+  await page.getByRole('button', { name: 'Next: Portrait' }).click()
+  await expect(page.getByRole('heading', { name: 'The portrait' })).toBeVisible()
+  const crop = page.getByRole('group', { name: 'Portrait box' })
+  await expect(crop).toBeVisible()
+  // It starts over the specimen's portrait (centred 22 mm across and 34 mm down the 125 × 88 mm page),
+  // placed from where the code lines were found.
+  const picture = await page.getByRole('img', { name: 'The document, with the portrait’s box' }).boundingBox()
+  const before = await crop.boundingBox()
+  expect(Math.abs((before!.x + before!.width / 2 - picture!.x) / picture!.width - 22 / 125)).toBeLessThan(0.04)
+  expect(Math.abs((before!.y + before!.height / 2 - picture!.y) / picture!.height - 34 / 88)).toBeLessThan(0.06)
+  // The keyboard moves and sizes it, inside the picture.
+  await crop.focus()
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('+')
+  const after = await crop.boundingBox()
+  expect(after!.width).toBeGreaterThan(before!.width)
+  await page.getByRole('checkbox', { name: /Also make it the employee's photo/ }).check()
   await page.getByRole('button', { name: 'Save Document' }).click()
   await expect(page.getByRole('heading', { name: 'Document saved' })).toBeVisible()
   await expect(page.getByText('Passport · LTU · valid until 2031-05-15')).toBeVisible()
@@ -3635,7 +3653,7 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   await page.getByLabel('Choose Photo').setInputFiles(specimen('passport-lt.jpg'))
   await page.getByRole('button', { name: 'Review' }).click({ timeout: 90_000 })
   await expect(page.getByText('This document is already on file.')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Save Document' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Next: Portrait' })).toBeDisabled()
   await page.getByRole('button', { name: 'Back' }).click()
   await page.getByRole('button', { name: 'Change' }).click()
 
@@ -3657,6 +3675,9 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   await page.setViewportSize({ width: 375, height: 812 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.setViewportSize(desktop)
+  // The card's portrait is on its front, taken as filling its photo.
+  await page.getByRole('button', { name: 'Next: Portrait' }).click()
+  await expect(page.getByRole('group', { name: 'Portrait box' })).toBeVisible()
   await page.getByRole('button', { name: 'Save Document' }).click()
   await expect(page.getByText('ID card · LTU · valid until 2033-03-03')).toBeVisible()
 
@@ -3678,6 +3699,7 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   await expect(passport.getByText('Vilnius')).toBeVisible()
   await passport.getByRole('button', { name: 'Hide' }).click()
   await expect(passport.getByText('91234567')).toHaveCount(0)
+  await expect(passport.getByRole('button', { name: 'Show Portrait' })).toBeVisible()
   await passport.getByRole('button', { name: 'Show Page' }).click()
   await expect(passport.getByRole('img', { name: 'Show Page' })).toBeVisible()
   await passport.getByRole('button', { name: 'Hide' }).click()
@@ -3686,6 +3708,9 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   await page.getByRole('button', { name: 'Mark Employment Ended' }).last().click()
   await expect(page.getByRole('region', { name: 'Retention' })).toContainText('2026-10-31')
   await expect(page.getByRole('button', { name: 'Clear End of Employment' })).toBeVisible()
+  // The portrait is the employee's photo too.
+  await openSection(/^Photos/)
+  await expect(page.getByRole('img', { name: /Jonas Pavyzdys/ }).first()).toBeVisible()
   // The Changes say so, never what the document holds (read again: they load as the page opens).
   await page.reload()
   await openSection(/^Changes/)
