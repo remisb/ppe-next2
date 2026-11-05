@@ -1,0 +1,36 @@
+{
+  "name": "@ppe/__SLUG__-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "__NAME__, a published app under App Launcher at /apps/__SLUG__/ (ADR 0006). Started from web/templates/published-app by make new-app.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@ppe/app-shell": "workspace:*",
+    "@ppe/i18n": "workspace:*",
+    "@ppe/launcher": "workspace:*",
+    "@ppe/routing": "workspace:*",
+    "@ppe/ui": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1"
+  }
+}

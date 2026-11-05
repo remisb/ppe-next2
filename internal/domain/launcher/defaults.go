@@ -37,4 +37,5 @@ var Defaults = []App{
 		Names: Names{"PPE Crew", "PPE Crew", "PPE Crew"}, AnyOf: []role.Permission{role.DashboardOverview, role.DashboardManager}},
 	{Slug: "admin", Kind: KindApp, Group: "admin", Icon: "admin", Color: "#3b4256", Href: "/admin/", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Administration", "Administravimas", "Администрирование"}, AnyOf: administration},
+	// make new-app adds each new published app's tile above this line, in POC (Testers only).
 }

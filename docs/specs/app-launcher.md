@@ -154,7 +154,14 @@ folder's and that no two share a port). The Makefile's `PUBLISHED_APPS`, the web
 every `apps/*` and copies each published app's `dist/` to `/srv/build/<slug>`), the staff app's
 dev proxy (`/apps/<slug>` to the app's `devPort`, or `VITE_APP_<SLUG>_TARGET`) and the e2e servers
 (each on `devPort + 1`) all read it, so a new published app needs no edit outside its folder.
-The API ignores `devPort`.
+The API ignores `devPort`. **`make new-app SLUG= NAME= [NAME_LT= NAME_RU=]`** starts one
+(`@ppe/launcher`'s `new-app.ts`): `web/apps/<slug>` from `web/templates/published-app` (the small
+app's frame, a first screen, its words, `csp.test.ts`, the standard profile) with the next free
+even `devPort` from 5188, and its tile appended to `Defaults` above the marker line, in POC, so only
+Testers see it; the tile is required, as a deploy and e2e publish only a registered app. The slug
+follows the registry's rule and may not be a tile's or a folder's already. CI's web job runs
+`pnpm check:new-app`: an app started from the template (without a tile) must typecheck, pass its
+tests and build, and is then removed.
 
 - **Registry** (migration 0043): `launcher_versions` (app, version `YYYY.MM.DD-<commit>`,
   profile, capabilities, commit, published, by whom: nobody for a deploy's),

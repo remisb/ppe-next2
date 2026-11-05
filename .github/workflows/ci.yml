@@ -77,6 +77,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      # make new-app's template still starts an app that typechecks, passes its tests and builds.
+      - run: pnpm check:new-app
       - run: pnpm build
 
   e2e:

@@ -53,7 +53,9 @@ launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-laun
 builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
 `public/ppe-app.json` (`slug`, the folder's name; `capabilities`; `devPort`, its dev server's,
 the e2e server taking the next), which is all the build, the deploy, the staff app's dev proxy
-and e2e need to find it, and reads where it is mounted and where its
+and e2e need to find it (start one with `make new-app SLUG= NAME=`, from
+`web/templates/published-app`, which also adds its tile in POC; change the template when the
+apps' shared setup changes, as `pnpm check:new-app` in CI builds it), and reads where it is mounted and where its
 files are from `@ppe/routing`'s `basePath` and `filesBase` (the API's meta tags), never from
 `import.meta.env.BASE_URL`; its frame is `@ppe/launcher`'s `SignedIn` and `AppFrame` (the
 channel stripe, a way back, the Apps entry, Sign out, tabs), never one of its own: the frame's

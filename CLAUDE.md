@@ -152,7 +152,8 @@ Preview, named variants with a label and audience; events `app.version_published
 and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
 stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
 (slug, capabilities, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
-(`@ppe/launcher`'s `published-apps.ts`); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
+(`@ppe/launcher`'s `published-apps.ts`), and `make new-app` starts one from `web/templates/published-app`
+with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
 Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
@@ -220,6 +221,7 @@ make migrate-down     # revert all; make migrate-status lists applied files
 make seed-admin       # create the first admin from API_SEED_USER_*
 make seed-demo        # demo data via the services (cmd/api/seed-demo.go); refuses a non-empty DB
 make import-sims FILE=sims.csv   # check the SIM card list; COMMIT=yes imports it (prod: make prod-import-sims)
+make new-app SLUG=size-helper NAME='Size Helper' NAME_LT='…' NAME_RU='…'   # start a published app from web/templates/published-app, its tile in POC
 make backup-once      # back up the dev DB now (docker-compose.yml backup profile; volume ppe-next2-backups)
 make run              # go run ./cmd/api
 make vet

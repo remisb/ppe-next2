@@ -14,7 +14,7 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e e2e-caddy db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
+.PHONY: help build run vet test test-db e2e e2e-caddy new-app db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
 	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
@@ -116,6 +116,14 @@ publish-app: ## Build an app and publish it to API_APPS_DIR (for Caddy locally):
 	cd web && pnpm --filter "./apps/$(APP)" build
 	tar -C "web/apps/$(APP)/dist" -cf - . | go run ./cmd/api -publish-app "$(APP)" -version "$(call app_version,HEAD)" \
 		-channel "$(CHANNEL)" -from-commit "$$(git rev-parse --short=12 HEAD)"
+
+# A new published app from web/templates/published-app (@ppe/launcher's
+# new-app.ts): web/apps/<slug> with the next free dev port, and its tile in
+# internal/domain/launcher/defaults.go in POC, which lets a deploy publish it.
+NEW_APP := node --experimental-strip-types --no-warnings=ExperimentalWarning packages/launcher/src/new-app.ts
+new-app: ## Start a published app, its tile in POC (Testers only): SLUG=<slug> NAME='<name in English>' [NAME_LT='…'] [NAME_RU='…']
+	@cd web && $(NEW_APP) --slug "$(SLUG)" --name "$(NAME)" $(if $(NAME_LT),--name-lt "$(NAME_LT)") $(if $(NAME_RU),--name-ru "$(NAME_RU)")
+	cd web && pnpm install
 
 # The deployment stack (docker-compose.prod.yml, .env.prod). `env -i` because
 # compose reads ${VAR} from the environment before --env-file, and this Makefile

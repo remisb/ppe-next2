@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
-    "build": "pnpm -r --if-present build"
+    "build": "pnpm -r --if-present build",
+    "check:new-app": "node --experimental-strip-types --no-warnings=ExperimentalWarning packages/launcher/src/new-app.ts --check"
   }
 }

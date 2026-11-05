@@ -4,7 +4,7 @@ How App Launcher works today, how people use it, how an app joins it, how new
 apps should be designed, and what should change next. For everyone who uses the
 apps, administers them or builds them.
 
-As of 2026-11-05: production `b276a0a`; improvements 1, 2, 3, 5, 6, 7, 8 and 9 built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
+As of 2026-11-05: production `b276a0a`; all nine improvements built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
 Rules and routes: [the spec](../specs/app-launcher.md). The research and options
 that led here: [the decision guide](app-launcher.md). Terms: glossary §13.
 
@@ -190,15 +190,21 @@ another team or another feature.
 
 ### Checklist for a published app
 
-1. `web/apps/<slug>/` from the Scan SIMs layout: React, `@ppe/app-shell` (`ApiProvider app="<slug>"`), `@ppe/ui`, `@ppe/i18n` (EN, LT, RU).
-2. `vite.config.ts`: `base: command === 'build' ? './' : '/apps/<slug>/'` and the manifest's `devPort`, as Scan SIMs' reads them.
-3. `public/ppe-app.json`: `{"slug": "<slug>", "capabilities": [], "devPort": 5188}`; add capabilities only when needed (they widen the policy). This file is what makes it a published app: the build, the deploy, the dev proxy and e2e find it from here.
-4. Never read `import.meta.env.BASE_URL` for addresses: use `basePath` (router) and `filesBase` (your own static files).
-5. Wrap it in `@ppe/launcher`'s `SignedIn` and `AppFrame` (the channel stripe, a way back, the Apps entry, Sign out, tabs) instead of building a frame.
-6. Let each screen's `PageHeader` be the only sticky header; `AppFrame`'s bar scrolls away.
-7. Register the tile on Manage apps (*On this site*, href `/apps/<slug>/`), or add it to `defaults.go` if every installation needs it.
-8. Tests: the app's unit tests, its `csp.test.ts`, an e2e step (Vite mode serves the dev server; Caddy mode publishes it).
-9. Ship: deploy → it lands on Preview → try it → **Make Stable**.
+1. `make new-app SLUG=<slug> NAME='<name>' NAME_LT='…' NAME_RU='…'` starts `web/apps/<slug>/` from
+   `web/templates/published-app`: `ApiProvider app="<slug>"`, `SignedIn` and `AppFrame`, a first
+   screen, words in EN, LT and RU, `csp.test.ts` and the Tailwind test; `vite.config.ts` and
+   `public/ppe-app.json` (`{"slug", "capabilities": [], "devPort"}`, the next free port). The
+   manifest is what makes it a published app: the build, the deploy, the dev proxy and e2e find it
+   there. It also adds the tile to `defaults.go` in POC (Testers only): a deploy and e2e publish only
+   a registered app. Set the tile's group, icon and colour there (it runs `pnpm install` for you).
+2. Add a capability to the manifest only when needed: each one widens the policy (then test that
+   profile's policy, as Scan SIMs' `csp.test.ts` does).
+3. Use `basePath` for the router and `filesBase` for your own static files, never `import.meta.env.BASE_URL`.
+4. Add screens as tabs of `AppFrame` (the template's router has one); let each screen's
+   `PageHeader` be the only sticky header, as `AppFrame`'s bar scrolls away.
+5. Tests: the app's unit tests and an e2e step (Vite mode uses its dev server; Caddy mode publishes it).
+6. Ship: deploy → it lands on Preview (and Stable, the first time) → Testers try it → move its stage
+   on Manage apps when it is for everyone.
 
 ### Rules that keep it simple
 
@@ -219,7 +225,7 @@ What does not, in order of impact:
 1. **Deploys do not reach users by themselves.** *Eased: Stable follows deploys and the Preview-ahead note (improvement 1).* A deploy moves Preview only, so a fix
    reaches nobody until someone remembers **Make Stable**. This happened on 2026-11-05:
    the Scan SIMs header fix was deployed but Stable stayed on the old build. Safe, but easy to forget.
-2. **"No config per app" is not true yet.** *Fixed: published apps are found from their manifest (improvement 2).* A new published app still needs edits in
+2. **"No config per app" is not true yet.** *Fixed: published apps are found from their manifest (improvement 2), and `make new-app` starts one (improvement 4).* A new published app still needs edits in
    five places outside its folder (Makefile list, Dockerfile build filter and copy, Vite
    proxy, e2e server and port), besides registering its tile.
    ADR 0006 promised a registration and a publish.
@@ -249,14 +255,14 @@ Sorted by value for effort. Each keeps or reduces moving parts.
 | 1 | **Promote after deploy, per app**: a switch "Stable follows deploys" on Manage apps (on for apps with no testers); otherwise the Overview lists "Preview is newer than Stable for N days" | 1 | S | Built 2026-11-05 |
 | 2 | **Discover published apps from the build**: any `web/apps/*/public/ppe-app.json` is published; Dockerfile copies `apps/*/dist` with a manifest; one generic Vite proxy and e2e server entry per manifest | 2 | M | Built 2026-11-05 |
 | 3 | **One shared frame for small apps**: `AppFrame` in `@ppe/app-shell` (bar that scrolls away, tabs, Apps entry, ChannelStripe, sign-out, gates) used by Scan SIMs and the launcher, with a scroll test | 4 | M | Built 2026-11-05 |
-| 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from Scan SIMs | 2 | S | Proposed |
+| 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from a template; CI checks the template still builds | 2 | S | Built 2026-11-05 |
 | 5 | **Honour the choice everywhere**: `/apps/<slug>/` redirects a tester to their chosen channel; the stripe also offers **Versions** | 5 | S | Built 2026-11-05 |
 | 6 | **Prune**: `api -prune-apps` keeps every version a channel points at plus the last N, run by `prod-up`; refuse dirty builds in `prod-up` | 6 | S | Built 2026-11-05 |
 | 7 | **Code owns a default until an administrator changes it**: untouched default tiles follow `defaults.go` at start-up, audited; edited ones are never overwritten (instead of seeding once, which would need a migration per rename) | 7 | S | Built 2026-11-05 |
 | 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M | Built 2026-11-05 |
 | 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S | Built 2026-11-05 |
 
-**Simplicity check before building more.** All but 4 are built: today's single published app
+**Simplicity check before building more.** All nine are built: today's single published app
 is safe, invisible to users, measured per version and tested locally as in production, and a
-second one needs no edit outside its folder. 4, a scaffold, is worth it once apps are added
-often; copying Scan SIMs' folder does the same today.
+second one is one command (`make new-app`) with no edit outside its folder but its tile. What
+remains is critique 3: the machinery pays off only when a second and third app use it.

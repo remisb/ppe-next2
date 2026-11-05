@@ -10,3 +10,5 @@ AGENTS.md
 # The lockfile names e2e as a workspace package, so its manifest stays.
 e2e/*
 !e2e/package.json
+# make new-app's template: make new-app copies it into apps/, the image never builds it.
+templates
