@@ -9,8 +9,8 @@ Every finding was checked in the code; paths are under `web/`, with `ww` for
 24 Oct 2026 · build `9e08b5c` · code review only (no usability sessions) · 49 findings in
 four parts: defects, staff app, Administration and extraction.
 
-**Status (5 Nov 2026):** all 49 findings are done. Steps 1–5 (36 findings) are live in
-`571764f`. The last 13 are built and tested on main but not deployed yet:
+**Status (5 Nov 2026):** all 49 findings are done and live. Steps 1–5 (36 findings) went live in
+`571764f`; the last 13 in `907fe9e`:
 
 - **Step 6, with the API:** S11 (the order shows its link's state, and a new link asks first),
   S13 (Return on the employee page), S14 (Replacements by employee, one Reorder each), S18
