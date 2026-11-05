@@ -227,7 +227,9 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   trial; the merge uses the staff app's).
 - **In the browser** pictures and codes live in the screen's memory only (never localStorage,
   sessionStorage or IndexedDB), go when the screen is left or the batch is added, and leaving
-  with cards not yet added asks first. Nothing read is ever put in an error, since browser
+  with cards not yet added asks first. Opening the app's PIN and PUK tab is not leaving: Scan
+  stays mounted, hidden, so its list, pictures and For every SIM are there on coming back; its
+  camera stops while hidden. PIN and PUK itself is mounted only while open. Nothing read is ever put in an error, since browser
   errors reach System's error list.
 - **At most 100 cards** a batch (`MAX_CARDS`, `asset.MaxScannedSIMs`): Choose Photos reads only the
   photos the list still has room for, the camera takes no card once it is full, and the screen says

@@ -45,7 +45,18 @@ function Screens({ session }: { session: Session }) {
       navLabel={t.shell.mainNav}
       tabs={shown.map((x) => ({ key: x.route.name, label: x.label, current: route.name === x.route.name, ...linkTo(x.route, navigate) }))}
     >
-      {route.name === 'scan' ? <ScanPage /> : <FindPage />}
+      {/*
+        Scan stays mounted while PIN and PUK is open, only hidden: its list, pictures and
+        For every SIM are the user's unsaved work, and a tab switch must not lose them
+        (docs/apps/sim-scan-review.md F1). PIN and PUK is mounted only while open, so
+        shown codes go when it is left.
+      */}
+      {session.can('assets.manage') ? (
+        <div hidden={route.name !== 'scan'}>
+          <ScanPage active={route.name === 'scan'} />
+        </div>
+      ) : null}
+      {route.name === 'find' ? <FindPage /> : null}
     </AppFrame>
   )
 }

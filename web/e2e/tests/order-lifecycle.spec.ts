@@ -3508,16 +3508,24 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(rows.nth(0).getByRole('link', { name: 'Open' })).toHaveAttribute('href', /^\/assets\/sim-cards\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('button', { name: 'Add 1 SIM' })).toBeDisabled()
   await expect(rows.nth(0).getByText('No back: added without PIN and PUK.')).toBeVisible()
-  await page.getByRole('button', { name: 'Clear List' }).click()
 
   // Show PIN and PUK: found by part of its number, shown, and recorded without the codes.
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'PIN and PUK' }).click()
+  // The list scanned so far is kept meanwhile: the tab switch only hides Scan.
+  const nav = page.getByRole('navigation', { name: 'Main' })
+  await nav.getByRole('link', { name: 'PIN and PUK' }).click()
+  await expect(rows).toHaveCount(1)
+  await expect(rows.nth(0)).toBeHidden()
   await page.getByLabel('SIM No. or phone number').fill('0000000049')
   const found = page.getByRole('listitem').filter({ hasText: '8937099000000000049' })
   await found.getByRole('button', { name: 'Show PIN and PUK' }).click()
   await expect(found.getByText('4826', { exact: true })).toBeVisible()
   await expect(found.getByText('31597264', { exact: true })).toBeVisible()
   await expect(found.getByText('Shown and recorded in the Audit log.')).toBeVisible()
+  // Back on Scan, the card is still in the list; leaving PIN and PUK took its shown codes with it.
+  await nav.getByRole('link', { name: 'Scan', exact: true }).click()
+  await expect(rows.nth(0).getByTestId('sim-no')).toHaveText('8937099000000000049')
+  await expect(page.getByText('31597264', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Clear List' }).click()
 
   // In SIM Cards, the two cards as any SIM added: Not Activated, in the Office, the provider and plan chosen once.
   await page.goto('/assets/sim-cards')

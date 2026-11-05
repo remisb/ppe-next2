@@ -44,9 +44,11 @@ const newKey = () => `p${++nextKey}`
  * Scan SIMs: what the batch shares (from Settings), the cards read with the
  * camera or from photos, the review list, then Add, all or none. Pictures and
  * codes live in this screen's memory only, and go when it is left or the
- * batch is added (docs/specs/asset-service.md "Scan SIM cards").
+ * batch is added (docs/specs/asset-service.md "Scan SIM cards"). The app
+ * keeps it mounted, hidden, while PIN and PUK is open (active false), so a tab
+ * switch keeps the list; the camera stops while it is hidden.
  */
-export function ScanPage() {
+export function ScanPage({ active = true }: { active?: boolean }) {
   const { client } = useApi()
   const t = simScanText()
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -64,6 +66,11 @@ export function ScanPage() {
   const [error, setError] = useState<unknown>(null)
   const [added, setAdded] = useState<AddedSim[] | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // Hidden behind PIN and PUK, the camera stops: nothing films a screen no one sees.
+  useEffect(() => {
+    if (!active) setCamera(false)
+  }, [active])
 
   // What the batch shares, filled in from Settings: the default provider, its plan, the default value, today.
   useEffect(() => {
