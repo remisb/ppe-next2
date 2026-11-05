@@ -87,6 +87,15 @@ func insert(ctx context.Context, tx pgx.Tx, a App, onConflict string) (pgconn.Co
 func (r *PostgresRepository) Create(ctx context.Context, a App, ev audit.Event) (App, error) {
 	var out App
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		// One new tile at a time, so two registered at once never share a place.
+		if _, err := tx.Exec(ctx, `LOCK TABLE launcher_apps IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+			return err
+		}
+		var last int
+		if err := tx.QueryRow(ctx, `SELECT coalesce(max(position), 0) FROM launcher_apps`).Scan(&last); err != nil {
+			return err
+		}
+		a.Position = max(a.Position, last+positionStep)
 		if _, err := insert(ctx, tx, a, ""); err != nil {
 			return err
 		}

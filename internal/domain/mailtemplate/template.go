@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -82,7 +83,7 @@ func (p *TextParams) Validate(u UseCase) error {
 			continue
 		case part.text == "":
 			return fieldError(part.name, "is required")
-		case len(part.text) > part.max:
+		case utf8.RuneCountInString(part.text) > part.max:
 			return fieldError(part.name, fmt.Sprintf("is longer than %d characters", part.max))
 		case part.oneLine && strings.ContainsAny(part.text, "\r\n"):
 			return fieldError(part.name, "must be one line")

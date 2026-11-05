@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -98,7 +99,7 @@ func (p *CompanyParams) Normalize() { p.Name = strings.Join(strings.Fields(p.Nam
 
 func (p *CompanyParams) Validate() error {
 	p.Normalize()
-	if len(p.Name) > maxCompanyNameLen {
+	if utf8.RuneCountInString(p.Name) > maxCompanyNameLen {
 		return fieldError("name", "is too long")
 	}
 	return nil
@@ -201,7 +202,7 @@ func (p *SIMProvidersParams) Validate() error {
 	}
 	seen := make(map[string]bool, len(p.Providers))
 	for _, sp := range p.Providers {
-		if len(sp.Name) > maxProviderLen {
+		if utf8.RuneCountInString(sp.Name) > maxProviderLen {
 			return fieldError("provider", "is too long")
 		}
 		key := strings.ToLower(sp.Name)
@@ -212,7 +213,7 @@ func (p *SIMProvidersParams) Validate() error {
 		if sp.Email != "" && !validEmail(sp.Email) {
 			return fieldError("email", fmt.Sprintf("of %s must be one e-mail address, such as sim@provider.lt", sp.Name))
 		}
-		if len(sp.DefaultPlan) > maxPlanLen {
+		if utf8.RuneCountInString(sp.DefaultPlan) > maxPlanLen {
 			return fieldError("default_plan", fmt.Sprintf("of %s is too long", sp.Name))
 		}
 	}

@@ -56,6 +56,9 @@ type SealedCodes struct {
 	KeyID           int16
 	UpdatedAt       time.Time
 	UpdatedByUserID uuid.UUID
+	// SimNo is the card's SIM No., read with the codes for Show's record;
+	// writing ignores it.
+	SimNo string
 }
 
 // ScannedSIM is one card of a batch: its SIM No. and, when its back was
@@ -343,10 +346,6 @@ func (s *Service) ShowSIMCodes(ctx context.Context, id uuid.UUID, actor uuid.UUI
 	if s.sealer == nil {
 		return SIMCodes{}, ErrSIMCodesUnavailable
 	}
-	a, err := s.simCard(ctx, id)
-	if err != nil {
-		return SIMCodes{}, err
-	}
 	sc, err := s.repo.SIMCodes(ctx, id)
 	if err != nil {
 		return SIMCodes{}, err
@@ -359,7 +358,7 @@ func (s *Service) ShowSIMCodes(ctx context.Context, id uuid.UUID, actor uuid.UUI
 	if !ok {
 		return SIMCodes{}, fmt.Errorf("asset: the PIN and PUK of %s are not as sealed", id)
 	}
-	ev, err := s.event(actor, EventSIMCodesShown, id, s.now(), nil, map[string]any{"sim_no": a.SimNo})
+	ev, err := s.event(actor, EventSIMCodesShown, id, s.now(), nil, map[string]any{"sim_no": sc.SimNo})
 	if err != nil {
 		return SIMCodes{}, err
 	}

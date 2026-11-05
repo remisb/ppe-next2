@@ -540,12 +540,22 @@ func (r *PostgresRepository) SIMOwners(ctx context.Context, keys []string) (map[
 
 func (r *PostgresRepository) SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error) {
 	c := SealedCodes{AssetID: assetID}
-	err := r.pool.QueryRow(ctx, `SELECT sealed, key_id, updated_at, updated_by_user_id FROM asset_sim_codes WHERE asset_id = $1`,
-		assetID).Scan(&c.Sealed, &c.KeyID, &c.UpdatedAt, &c.UpdatedByUserID)
-	if errors.Is(err, pgx.ErrNoRows) {
+	var keyID *int16
+	var updatedAt *time.Time
+	var updatedBy *uuid.UUID
+	err := r.pool.QueryRow(ctx, `SELECT a.sim_no, c.sealed, c.key_id, c.updated_at, c.updated_by_user_id
+		FROM assets a LEFT JOIN asset_sim_codes c ON c.asset_id = a.id
+		WHERE a.id = $1 AND a.kind = 'SIM' AND `+live, assetID).Scan(&c.SimNo, &c.Sealed, &keyID, &updatedAt, &updatedBy)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return SealedCodes{}, ErrNotFound
+	case err != nil:
+		return SealedCodes{}, err
+	case c.Sealed == nil:
 		return SealedCodes{}, ErrNoSIMCodes
 	}
-	return c, err
+	c.KeyID, c.UpdatedAt, c.UpdatedByUserID = *keyID, *updatedAt, *updatedBy
+	return c, nil
 }
 
 func (r *PostgresRepository) PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error {

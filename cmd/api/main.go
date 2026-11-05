@@ -90,9 +90,15 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	} else {
 		logger.Info("file storage", slog.String("target", store.String()))
 	}
-	codes, err := simCodesBox(cfg.SIMCodesKey)
-	if err != nil {
-		return err
+	// The server always has the key (validate); a command that never touches
+	// PIN or PUK (-publish-app, -seed-admin…) runs without one.
+	var codes asset.Sealer
+	if cfg.SIMCodesKey != "" {
+		box, err := simCodesBox(cfg.SIMCodesKey)
+		if err != nil {
+			return err
+		}
+		codes = box
 	}
 	svc := newServices(
 		loc, cfg.ConfirmTTL, cfg.AuditRetention,

@@ -291,12 +291,13 @@ func (s *Service) GiveFeedback(ctx context.Context, user uuid.UUID, p FeedbackPa
 	if err != nil {
 		return Feedback{}, err
 	}
-	at := slices.IndexFunc(Visible(all, can), func(a App) bool { return a.Slug == p.App && a.Kind == KindApp })
+	shown := Visible(all, can)
+	at := slices.IndexFunc(shown, func(a App) bool { return a.Slug == p.App && a.Kind == KindApp })
 	if at < 0 {
 		return Feedback{}, ErrNotFound
 	}
 	f := Feedback{
-		ID: s.newID(), AppID: Visible(all, can)[at].ID, UserID: user, Rating: p.Rating, Text: p.Text,
+		ID: s.newID(), AppID: shown[at].ID, UserID: user, Rating: p.Rating, Text: p.Text,
 		Device: p.Device, Language: p.Language, CreatedAt: s.now(),
 	}
 	return f, s.repo.AddFeedback(ctx, f)

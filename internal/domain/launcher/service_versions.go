@@ -243,11 +243,12 @@ func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name 
 	if err != nil {
 		return err
 	}
-	at := slices.IndexFunc(Visible(all, can), func(a App) bool { return a.Slug == slug && a.Kind == KindApp })
+	shown := Visible(all, can)
+	at := slices.IndexFunc(shown, func(a App) bool { return a.Slug == slug && a.Kind == KindApp })
 	if at < 0 {
 		return ErrNotFound
 	}
-	a := Visible(all, can)[at]
+	a := shown[at]
 	if name == "" || name == ChannelStable {
 		return s.repo.SetChoice(ctx, user, a.ID, "")
 	}

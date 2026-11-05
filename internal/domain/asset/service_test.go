@@ -280,10 +280,15 @@ func (f *fakeRepo) SIMOwners(_ context.Context, keys []string) (map[string]uuid.
 func (f *fakeRepo) SIMCodes(_ context.Context, assetID uuid.UUID) (SealedCodes, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	a, ok := f.assets[assetID]
+	if !ok || a.Deleted() || a.Kind != KindSIM {
+		return SealedCodes{}, ErrNotFound
+	}
 	c, ok := f.codes[assetID]
 	if !ok {
 		return SealedCodes{}, ErrNoSIMCodes
 	}
+	c.SimNo = *a.SimNo
 	return c, nil
 }
 

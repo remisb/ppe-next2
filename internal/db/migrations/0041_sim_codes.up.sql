@@ -14,7 +14,21 @@ CREATE TABLE asset_sim_codes (
 
 -- One card, one SIM No.: a 20-character ICCID ends in the filler F, which a
 -- barcode or a typed number may leave out, so 8937…5135 and 8937…5135F are
--- the same card (asset.simKey).
+-- the same card (asset.simKey). Live cards that already differ only by that F
+-- stop the migration here, named, so they can be corrected first.
+DO $$
+DECLARE pairs TEXT;
+BEGIN
+    SELECT string_agg(numbers, '; ') INTO pairs FROM (
+        SELECT string_agg(inventory_no || ' ' || sim_no, ', ' ORDER BY inventory_no) AS numbers
+        FROM assets WHERE deleted_at IS NULL AND sim_no IS NOT NULL
+        GROUP BY regexp_replace(upper(replace(sim_no, ' ', '')), 'F$', '')
+        HAVING count(*) > 1
+    ) dup;
+    IF pairs IS NOT NULL THEN
+        RAISE EXCEPTION 'these SIM cards differ only by the filler F, so are the same card: %', pairs;
+    END IF;
+END $$;
 DROP INDEX assets_sim_no_live_idx;
 CREATE UNIQUE INDEX assets_sim_no_live_idx ON assets (regexp_replace(upper(replace(sim_no, ' ', '')), 'F$', ''))
     WHERE deleted_at IS NULL AND sim_no IS NOT NULL;

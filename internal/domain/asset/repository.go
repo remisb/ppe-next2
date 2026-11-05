@@ -80,7 +80,8 @@ type Repository interface {
 	SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error)
 	// SIMOwners are the live assets whose SIM numbers have the simKeys keys, by key.
 	SIMOwners(ctx context.Context, keys []string) (map[string]uuid.UUID, error)
-	// SIMCodes are the asset's sealed PIN and PUK, or ErrNoSIMCodes.
+	// SIMCodes are the live SIM card's sealed PIN and PUK with its SIM No.;
+	// ErrNotFound when there is no such card, ErrNoSIMCodes when it has none.
 	SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error)
 	// PutSIMCodes keeps c in place of the asset's codes, and ev, in one transaction.
 	PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error
