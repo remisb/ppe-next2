@@ -9,13 +9,14 @@
   which is 3 years after employment ends, and the app records when it ends (section 3, FR-20);
   **D4 decided**: colouring by OpenAI's image model with the company's API key, entered in
   Settings, and an **AI usage** ledger of every call's tokens, cost, time and user (sections 5.4
-  and 5.8, FR-21)).
+  and 5.8, FR-21); **D5–D11 decided** as recommended, the same day: every decision is made, so
+  this plan now becomes ADR 0007 and the spec).
   Revision 3 (the same day): phase 1, the reading spike, is done and its
   numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
   Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
   [section 0](#0-review-after-the-scan-sims-fixes-revision-2).
   It becomes ADR 0007 (Personnel files: identity documents) and a spec
-  `docs/specs/personnel-service.md` once the [open decisions](#11-open-decisions) are made.
+  `docs/specs/personnel-service.md`, now that the [decisions](#11-decisions) are made.
 - **Builds on:** [Scan SIMs review](sim-scan-review.md), [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.md)
   and the [context map](../architecture/context-map.md) (People, Personnel files),
   [ADR 0005](../architecture/adr/0005-sim-codes-and-scan-sims-trial.md) (sealed values, the device
@@ -798,7 +799,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 **Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**, **Mark Employment Ended**, **Legal Hold**, **AI Usage**, **OpenAI API
 Key**, **Monthly AI Budget**.
 
-## 11. Open decisions
+## 11. Decisions
 
 | # | Decision | Recommendation |
 | --- | --- | --- |
@@ -806,10 +807,10 @@ Key**, **Monthly AI Budget**.
 | D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | **Decided 2026-11-05: keep as much as the document gives**: names, date of birth, nationality, sex, document number, personal code, the MRZ, date of issue, place of birth, issuing authority, the portrait, and the document's own images (**Document Copies**). Sealed as section 3 sets out; the DPIA records why (PR-10) |
 | D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | **Decided 2026-11-05: as long as Lithuanian law and the GDPR permit**: employment and 3 years after (the personal file's period since 2024-10-01), a setting; the end of employment recorded by FR-20; legal holds respected (section 3) |
 | D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | **Decided 2026-11-05: OpenAI**, its image model (`gpt-image-2`, a setting) with the company's API key entered in Settings, under the luminance lock, off until switched on. Every AI call recorded with its tokens, cost, time and user in AI usage (sections 5.4 and 5.8, FR-21) |
-| D5 | Documents in v1 | TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
-| D6 | Can the app create **new** employees, or only update existing ones? | Both, under `personnel.documents.manage` (no employee permission exists to add to it) |
-| D7 | Who uses it | A new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
-| D8 | Its own app forever, or merge into the staff app after the trial | Trial first, as Scan SIMs did; decide in phase 6 |
-| D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | Not in v1. **Phase 1's input:** the browser failed 4 of 144 specimen photos, all both small and blurred, which a server would read no better from the same pixels; everything else read. Revisit only if the field test (§8, phones and real documents) fails often |
-| D11 | For a document added to the employee record (D1), which identity fields the employee page shows, and to whom | Document kind, issuing state, issue and expiry dates, place of birth and authority to holders of `personnel.documents.manage` or `.read`, not everyone (any signed-in user opens the employee page today); others see FR-15's line alone; the number, personal code and Document Copies only through Show Document (`personnel.documents.read`, recent sign-in, audited) |
-| D10 | What erasure means: "unreadable at once, gone from backups within 14 days" (data keys in the database), or keys kept outside the database and its backups (gone at once everywhere) | The first, stated plainly in the DPIA; the second only if the DPO requires it |
+| D5 | Documents in v1 | **Decided 2026-11-05, as recommended:** TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
+| D6 | Can the app create **new** employees, or only update existing ones? | **Decided 2026-11-05, as recommended:** both, under `personnel.documents.manage` (no employee permission exists to add to it) |
+| D7 | Who uses it | **Decided 2026-11-05, as recommended:** a new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
+| D8 | Its own app forever, or merge into the staff app after the trial | **Decided 2026-11-05, as recommended:** trial first, as Scan SIMs did; the merge is decided in phase 6 |
+| D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | **Decided 2026-11-05, as recommended:** not in v1. **Phase 1's input:** the browser failed 4 of 144 specimen photos, all both small and blurred, which a server would read no better from the same pixels; everything else read. Revisit only if the field test (§8, phones and real documents) fails often |
+| D11 | For a document added to the employee record (D1), which identity fields the employee page shows, and to whom | **Decided 2026-11-05, as recommended:** document kind, issuing state, issue and expiry dates, place of birth and authority to holders of `personnel.documents.manage` or `.read`, not everyone (any signed-in user opens the employee page today); others see FR-15's line alone; the number, personal code and Document Copies only through Show Document (`personnel.documents.read`, recent sign-in, audited) |
+| D10 | What erasure means: "unreadable at once, gone from backups within 14 days" (data keys in the database), or keys kept outside the database and its backups (gone at once everywhere) | **Decided 2026-11-05, as recommended:** the first, stated plainly in the DPIA; the second only if the DPO requires it |
