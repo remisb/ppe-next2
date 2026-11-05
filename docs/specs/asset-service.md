@@ -195,7 +195,7 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   (`CardFields`): the front's picture and **SIM No.** on one line; the back's picture, **PIN**
   and **PUK** on the next, each line's problems under it. The values are plain text, a dash
   for none, to take little room. Only the card being scanned is edited (**Edit** turns its
-  values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode, tesseract.js the PIN and PUK: each the number on its
+  values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`barcode.worker.ts`; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
   label's line, after it (`codesFromWords`). Their files are the app's own
   (`readers/` beside the build, under `/apps/files/device/sim-scan/<version>/`), and nothing read leaves the browser but the batch itself.
 - **The batch** shares what Add SIM asks per card, chosen once and filled in from Settings

@@ -49,14 +49,15 @@ export function LiveScan({
     const snapshot = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b ?? new Blob()), 'image/jpeg', 0.7))
     let alive = true
     void Promise.all([startCamera(el), loadReaders()]).then(
-      ([s, { barcodesIn, canvasOf, codesIn, imageDataOf, warmUpReaders }]) => {
+      ([s, { LIVE_BARCODE_SIDE, barcodesIn, canvasOf, codesIn, imageDataOf, warmUpReaders }]) => {
         if (!alive) return stopCamera(s)
         stream = s
         warmUpReaders()
         stop = eachFrame(el, async () => {
           if (!el.videoWidth) return
-          const canvas = canvasOf(el, guideCrop(el, GUIDE))
           const cur = stepRef.current
+          // The front's barcode is read smaller, and so sooner; the back's digits at full size.
+          const canvas = canvasOf(el, guideCrop(el, GUIDE), cur.side === 'front' ? LIVE_BARCODE_SIDE : undefined)
           if (cur.side === 'front') {
             const simNo = fronts.see(pickSimNo(await barcodesIn(imageDataOf(canvas))), (v) => v)
             if (!simNo) return

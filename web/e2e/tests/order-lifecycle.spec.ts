@@ -3484,6 +3484,8 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   // Photos taken earlier: front, back, card after card.
   await page.getByLabel('Choose Photos').setInputFiles(['card-2-front.png', 'card-2-back.png'].map(photo))
   await expect(rows).toHaveCount(2, { timeout: 90_000 })
+  // The barcodes were read in the barcode reader's own worker, not on the page's thread (behind Caddy, under the policy).
+  expect(page.workers().map((w) => w.url())).toContainEqual(expect.stringMatching(/barcode\.worker/))
   await expect(rows.nth(0).getByTestId('sim-no')).toHaveText('8937099000000000049')
   await expect(rows.nth(0).getByTestId('pin')).toHaveText('4826')
   await expect(rows.nth(0).getByTestId('puk')).toHaveText('31597264')

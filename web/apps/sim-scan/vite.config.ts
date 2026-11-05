@@ -33,6 +33,8 @@ export default defineConfig(({ command, mode }) => {
     base: command === 'build' ? './' : `/apps/${manifest.slug}/`,
     plugins: [react(), tailwindcss(), serveReaderFiles(), ...(https ? [basicSsl()] : [])],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+    // The barcode reader's worker (@ppe/sim-scan's barcode.worker.ts) is a module worker, built as one.
+    worker: { format: 'es' as const },
     server: {
       // PORT, when a tool that runs dev servers assigns one; else the app's own.
       port: Number(process.env['PORT'] ?? manifest.devPort),
