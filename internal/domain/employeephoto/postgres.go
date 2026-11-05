@@ -24,12 +24,12 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const columns = `p.id, p.employee_id, p.object_key, p.file_name, p.content_type, p.size_bytes, p.sha256, p.uses,
-	p.is_default, p.uploaded_at, p.uploaded_by_user_id`
+	p.is_default, p.uploaded_at, p.uploaded_by_user_id, p.ai_generated, p.consent`
 
 func scan(row pgx.Row) (Photo, error) {
 	var p Photo
 	err := row.Scan(&p.ID, &p.EmployeeID, &p.ObjectKey, &p.FileName, &p.ContentType, &p.SizeBytes, &p.SHA256, &p.Uses,
-		&p.IsDefault, &p.UploadedAt, &p.UploadedByUserID)
+		&p.IsDefault, &p.UploadedAt, &p.UploadedByUserID, &p.AIGenerated, &p.Consent)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Photo{}, ErrNotFound
 	}
@@ -114,12 +114,12 @@ func (r *PostgresRepository) Apply(ctx context.Context, employeeID uuid.UUID, fn
 				}
 				if _, err := tx.Exec(ctx, `
 					INSERT INTO employee_photos (id, employee_id, object_key, file_name, content_type, size_bytes, sha256,
-						uses, is_default, uploaded_at, uploaded_by_user_id, deleted_at, deleted_by_user_id)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+						uses, is_default, uploaded_at, uploaded_by_user_id, deleted_at, deleted_by_user_id, ai_generated, consent)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 					ON CONFLICT (id) DO UPDATE SET uses = EXCLUDED.uses, is_default = EXCLUDED.is_default,
 						deleted_at = EXCLUDED.deleted_at, deleted_by_user_id = EXCLUDED.deleted_by_user_id`,
 					p.ID, p.EmployeeID, p.ObjectKey, p.FileName, p.ContentType, p.SizeBytes, p.SHA256, p.Uses, p.IsDefault,
-					p.UploadedAt, p.UploadedByUserID, p.DeletedAt, p.DeletedByUserID); err != nil {
+					p.UploadedAt, p.UploadedByUserID, p.DeletedAt, p.DeletedByUserID, p.AIGenerated, p.Consent); err != nil {
 					return err
 				}
 			}

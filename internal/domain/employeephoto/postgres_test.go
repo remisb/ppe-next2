@@ -135,3 +135,30 @@ func TestPostgresPhotoLifecycle(t *testing.T) {
 		}
 	}
 }
+
+// An AI-coloured photo (ADR 0007, PR-6, PR-7): saved with the person's
+// consent, marked, and never the ID badge's.
+func TestPostgresAIColouredPhoto(t *testing.T) {
+	svc, _, emp, actor := setup(t)
+	ctx := context.Background()
+	if _, err := svc.Add(ctx, emp, Upload{FileName: "ai.png", Data: pngBytes(t, 30), AIGenerated: true}, nil, actor); !errors.Is(err, ErrInvalid) {
+		t.Errorf("without consent: %v, want ErrInvalid", err)
+	}
+	if _, err := svc.Add(ctx, emp, Upload{FileName: "ai.png", Data: pngBytes(t, 30), AIGenerated: true, ConsentBy: "verbal"}, []string{UseIDBadge}, actor); !errors.Is(err, ErrInvalid) {
+		t.Errorf("as the ID badge's: %v, want ErrInvalid", err)
+	}
+	if _, err := svc.Add(ctx, emp, Upload{FileName: "plain.png", Data: pngBytes(t, 31), ConsentBy: "verbal"}, nil, actor); !errors.Is(err, ErrInvalid) {
+		t.Errorf("consent on a plain photo: %v, want ErrInvalid", err)
+	}
+	p, err := svc.Add(ctx, emp, Upload{FileName: "ai.png", Data: pngBytes(t, 30), AIGenerated: true, ConsentBy: "written"}, []string{UseProfile}, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ps, err := svc.List(ctx, emp)
+	if err != nil || len(ps) != 1 || !ps[0].AIGenerated || ps[0].Consent == nil || ps[0].Consent.By != "written" || ps[0].Consent.RecordedBy != actor {
+		t.Fatalf("listed = %+v, %v", ps, err)
+	}
+	if _, err := svc.SetUses(ctx, emp, p.ID, []string{UseProfile, UseIDBadge}, actor); !errors.Is(err, ErrInvalid) {
+		t.Errorf("made the ID badge's later: %v, want ErrInvalid", err)
+	}
+}

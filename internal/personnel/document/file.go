@@ -279,6 +279,11 @@ func (s *Service) ShredDue(ctx context.Context, months int, logger *slog.Logger)
 			continue
 		}
 		res.Files++
+		if s.aiUsage != nil {
+			if err := s.aiUsage.ClearEmployee(context.WithoutCancel(ctx), employeeID); err != nil {
+				logger.Error("clearing a shredded person from AI usage failed", slog.String("employee", employeeID.String()), slog.Any("error", err))
+			}
+		}
 		if s.store != nil {
 			for _, k := range keys {
 				if err := s.store.Delete(context.WithoutCancel(ctx), k); err != nil {

@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/aiusage"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
@@ -39,6 +40,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/monitor"
+	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/security"
@@ -139,7 +141,25 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if store != nil {
 		documentStore = store
 	}
-	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc))
+	// AI usage and Settings → AI (ADR 0007): the OpenAI key sealed under API_SECRETS_KEY, when it is set.
+	secrets, err := secretsKeyring(cfg)
+	if err != nil {
+		return err
+	}
+	var sealer aiusage.Sealer
+	if secrets != nil {
+		sealer = secrets
+	}
+	aiStore := aiusage.NewPostgresStore(pool)
+	aiSettings := aiusage.NewSettingsService(aiStore, sealer)
+	aiLedger := aiusage.NewService(aiStore, aiusage.WithLocation(loc))
+	openAI := colour.NewOpenAI()
+	if cfg.OpenAIBaseURL != "" {
+		openAI.Base = cfg.OpenAIBaseURL
+	}
+	svc.ai = &aiHandler{settings: aiSettings, ledger: aiLedger, report: aiStore, checker: openAI, colour: colour.NewService(aiSettings, aiLedger, openAI)}
+	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc),
+		document.WithAIUsage(aiStore))
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
@@ -247,12 +267,14 @@ type services struct {
 	documents *document.Service
 	// personnelRetentionMonths is API_PERSONNEL_RETENTION_MONTHS, for the upkeep.
 	personnelRetentionMonths int
-	dashboard                *dashboard.Service
-	settings                 *settings.Service
-	templates                *mailtemplate.Service
-	launcher                 *launcher.Service
-	backups                  *backup.Service
-	audit                    *audit.Service
+	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
+	ai        *aiHandler
+	dashboard *dashboard.Service
+	settings  *settings.Service
+	templates *mailtemplate.Service
+	launcher  *launcher.Service
+	backups   *backup.Service
+	audit     *audit.Service
 	// system is the error list and the database's status; window and
 	// metrics are the API's own request figures (internal/monitor).
 	system  *system.Service
@@ -324,6 +346,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
+	registerAIRoutes(rt, svc.ai, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)

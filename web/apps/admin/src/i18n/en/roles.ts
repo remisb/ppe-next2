@@ -73,6 +73,7 @@ export const roles = {
       label: 'See Usage',
       grants: 'Who uses the apps and from what, sign-ins and changes over time, the confirmation-link funnel and data quality.',
     },
+    'ai_usage.read': { label: 'See AI Usage', grants: 'Every call the app made to an AI model (the colour photo), its tokens and cost, who and when.' },
     'apps.manage': { label: 'Manage apps', grants: 'App Launcher’s apps and shortcuts: register them, change them, who sees each, their order, and feedback on them.' },
     'apps.preview': { label: 'See apps in testing', grants: 'POC and In development apps in App Launcher, behind Show apps in testing.' },
     'employee_profiles.read': {

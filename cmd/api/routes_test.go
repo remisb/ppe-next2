@@ -773,6 +773,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
+	svc.ai = newTestAI()
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
 }
@@ -921,19 +922,29 @@ var policy = map[string]rule{
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
 	"POST /api/v1/catalogue/{id}/move":         {role.CatalogueManage, "managers"},
 
-	"GET /api/v1/item-sets":                                                     {role.ItemSetsRead, "staff"},
-	"GET /api/v1/item-sets/active":                                              {"", "any"},
-	"GET /api/v1/item-sets/{id}":                                                {role.ItemSetsRead, "staff"},
-	"POST /api/v1/item-sets":                                                    {role.ItemSetsManage, "managers"},
-	"PUT /api/v1/item-sets/{id}":                                                {role.ItemSetsManage, "managers"},
-	"DELETE /api/v1/item-sets/{id}":                                             {role.ItemSetsManage, "managers"},
-	"GET /api/v1/item-sets/{id}/apply/{employeeID}":                             {"", "any"},
-	"GET /api/v1/sizes":                                                         {"", "any"},
-	"POST /api/v1/orders/resolve":                                               {"", "any"},
-	"POST /api/v1/orders":                                                       {"", "any"},
-	"GET /api/v1/orders":                                                        {"", "any"},
-	"GET /api/v1/settings":                                                      {"", "any"},
-	"PUT /api/v1/settings/company":                                              {role.SettingsManage, "admins"},
+	"GET /api/v1/item-sets":                         {role.ItemSetsRead, "staff"},
+	"GET /api/v1/item-sets/active":                  {"", "any"},
+	"GET /api/v1/item-sets/{id}":                    {role.ItemSetsRead, "staff"},
+	"POST /api/v1/item-sets":                        {role.ItemSetsManage, "managers"},
+	"PUT /api/v1/item-sets/{id}":                    {role.ItemSetsManage, "managers"},
+	"DELETE /api/v1/item-sets/{id}":                 {role.ItemSetsManage, "managers"},
+	"GET /api/v1/item-sets/{id}/apply/{employeeID}": {"", "any"},
+	"GET /api/v1/sizes":                             {"", "any"},
+	"POST /api/v1/orders/resolve":                   {"", "any"},
+	"POST /api/v1/orders":                           {"", "any"},
+	"GET /api/v1/orders":                            {"", "any"},
+	"GET /api/v1/settings":                          {"", "any"},
+	"PUT /api/v1/settings/company":                  {role.SettingsManage, "admins"},
+	// Settings → AI and AI Usage (ADR 0007); colouring is given to no built-in role.
+	"GET /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},
+	"PUT /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},
+	"PUT /api/v1/settings/ai/key":                                               {role.SettingsManage, "admins"},
+	"DELETE /api/v1/settings/ai/key":                                            {role.SettingsManage, "admins"},
+	"POST /api/v1/settings/ai/key/test":                                         {role.SettingsManage, "admins"},
+	"GET /api/v1/ai-usage":                                                      {role.AIUsageRead, "admins"},
+	"GET /api/v1/ai-usage/calls":                                                {role.AIUsageRead, "admins"},
+	"GET /api/v1/ai-usage/calls.csv":                                            {role.AIUsageRead, "admins"},
+	"POST /api/v1/personnel/portraits/colorize":                                 {role.PersonnelPortraitsColorize, "nobody"},
 	"PUT /api/v1/settings/supplier-chat":                                        {role.SettingsManage, "admins"},
 	"PUT /api/v1/settings/sim-providers":                                        {role.SettingsManage, "admins"},
 	"POST /api/v1/orders/{id}/confirmation-link":                                {"", "any"},
@@ -1029,6 +1040,8 @@ var policy = map[string]rule{
 var allowedRoles = map[string][]string{
 	"any":       {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters, role.KeyPersonnel},
 	"personnel": {role.KeyPersonnel},
+	// "nobody": what no built-in role holds, given by an administrator (AI colouring).
+	"nobody": {},
 	// staff+personnel: an employee's photo, added by staff or by Import Documents' portrait.
 	"staff+personnel": {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyPersonnel},
 	"staff":           {role.KeyAdmin, role.KeyManager, role.KeyEmployee},

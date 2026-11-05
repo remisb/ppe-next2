@@ -48,11 +48,13 @@ const (
 	SecurityRead               Permission = "security.read"
 	SystemRead                 Permission = "system.read"
 	UsageRead                  Permission = "usage.read"
-	AppsManage                 Permission = "apps.manage"
-	AppsPreview                Permission = "apps.preview"
-	DashboardOverview          Permission = "dashboard.overview"
-	DashboardManager           Permission = "dashboard.manager"
-	DashboardEmployee          Permission = "dashboard.employee"
+	// AIUsageRead is the AI Usage screen (ADR 0007): every AI call, its tokens and cost.
+	AIUsageRead       Permission = "ai_usage.read"
+	AppsManage        Permission = "apps.manage"
+	AppsPreview       Permission = "apps.preview"
+	DashboardOverview Permission = "dashboard.overview"
+	DashboardManager  Permission = "dashboard.manager"
+	DashboardEmployee Permission = "dashboard.employee"
 )
 
 // Group is the heading a permission is listed under on Roles & permissions.
@@ -89,6 +91,7 @@ var catalogue = []Info{
 	{SecurityRead, GroupAdministration, nil},
 	{SystemRead, GroupAdministration, nil},
 	{UsageRead, GroupAdministration, nil},
+	{AIUsageRead, GroupAdministration, nil},
 	{AppsManage, GroupLauncher, nil},
 	{AppsPreview, GroupLauncher, nil},
 	{EmployeeProfilesRead, GroupWorkwear, nil},

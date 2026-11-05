@@ -15,6 +15,7 @@ export const PERMISSIONS = [
   'security.read',
   'system.read',
   'usage.read',
+  'ai_usage.read',
   'apps.manage',
   'apps.preview',
   'employee_profiles.read',

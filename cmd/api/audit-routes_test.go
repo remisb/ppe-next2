@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/remisb/ppe-next2/internal/aiusage"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -41,6 +42,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		asset.EventSignedCopyUploaded, asset.EventFormPrinted, asset.EventActivationEmailPrepared, asset.EventBlockingEmailPrepared,
 		asset.EventSIMCodesChanged, asset.EventSIMCodesShown,
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
+		aiusage.EventSettingsChanged, aiusage.EventKeySet, aiusage.EventKeyRemoved,
 		mailtemplate.EventChanged,
 		launcher.EventRegistered, launcher.EventChanged, launcher.EventAudienceChanged, launcher.EventMoved,
 		launcher.EventVersionPublished, launcher.EventChannelMoved, launcher.EventChannelChanged, launcher.EventVersionsPruned,

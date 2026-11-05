@@ -64,6 +64,7 @@ var events = []string{
 	"asset.signed_copy_uploaded", "asset.form_printed", "asset.activation_email_prepared", "asset.blocking_email_prepared",
 	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
+	"settings.ai_changed", "settings.ai_key_set", "settings.ai_key_removed",
 	"mail_template.changed",
 	"app.registered", "app.changed", "app.audience_changed", "app.moved",
 	"app.version_published", "app.channel_moved", "app.channel_changed", "app.versions_pruned",

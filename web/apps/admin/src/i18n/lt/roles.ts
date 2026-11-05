@@ -74,6 +74,7 @@ export const roles: RolesText = {
       label: 'Matyti naudojimą',
       grants: 'Kas ir iš ko naudojasi programomis, prisijungimai ir pakeitimai laike, patvirtinimo nuorodų eiga ir duomenų kokybė.',
     },
+    'ai_usage.read': { label: 'Matyti DI naudojimą', grants: 'Kiekvienas programos kreipimasis į DI modelį (spalvota nuotrauka), jo žetonai ir kaina, kas ir kada.' },
     'apps.manage': { label: 'Tvarkyti programas', grants: 'Programų sąrašo programos ir nuorodos: registruoti, keisti, kas kurią mato, tvarka ir atsiliepimai.' },
     'apps.preview': { label: 'Matyti bandomas programas', grants: 'Prototipai ir kuriamos programos programų sąraše, įjungus „Rodyti bandomas programas“.' },
     'employee_profiles.read': {

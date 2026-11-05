@@ -31,7 +31,18 @@ type Service struct {
 	now   func() time.Time
 	newID func() uuid.UUID
 	loc   *time.Location
+	// aiUsage forgets a shredded person in the AI usage ledger (their calls' employee link).
+	aiUsage EmployeeForgetter
 }
+
+// EmployeeForgetter is the AI usage ledger: a shredded person's calls keep
+// their cost and lose their employee (aiusage.PostgresStore.ClearEmployee).
+type EmployeeForgetter interface {
+	ClearEmployee(ctx context.Context, employeeID uuid.UUID) error
+}
+
+// WithAIUsage lets the shredding clear a person from the AI usage ledger too.
+func WithAIUsage(f EmployeeForgetter) Option { return func(s *Service) { s.aiUsage = f } }
 
 type Option func(*Service)
 

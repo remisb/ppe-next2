@@ -32,25 +32,40 @@ func Uses() []string { return slices.Clone(uses) }
 
 // Photo is one picture of an employee. The file is in the store under ObjectKey.
 type Photo struct {
-	ID               uuid.UUID  `json:"id"`
-	EmployeeID       uuid.UUID  `json:"employee_id"`
-	ObjectKey        string     `json:"-"`
-	FileName         string     `json:"file_name"`
-	ContentType      string     `json:"content_type"`
-	SizeBytes        int64      `json:"size_bytes"`
-	SHA256           string     `json:"sha256"`
-	Uses             []string   `json:"uses"`
-	IsDefault        bool       `json:"is_default"`
-	UploadedAt       time.Time  `json:"uploaded_at"`
-	UploadedByUserID uuid.UUID  `json:"uploaded_by_user_id"`
-	DeletedAt        *time.Time `json:"-"`
-	DeletedByUserID  *uuid.UUID `json:"-"`
+	ID               uuid.UUID `json:"id"`
+	EmployeeID       uuid.UUID `json:"employee_id"`
+	ObjectKey        string    `json:"-"`
+	FileName         string    `json:"file_name"`
+	ContentType      string    `json:"content_type"`
+	SizeBytes        int64     `json:"size_bytes"`
+	SHA256           string    `json:"sha256"`
+	Uses             []string  `json:"uses"`
+	IsDefault        bool      `json:"is_default"`
+	UploadedAt       time.Time `json:"uploaded_at"`
+	UploadedByUserID uuid.UUID `json:"uploaded_by_user_id"`
+	// AIGenerated marks a photo an AI coloured (ADR 0007, PR-7): labelled so
+	// everywhere, never the ID badge's, and kept with the person's Consent.
+	AIGenerated     bool       `json:"ai_generated"`
+	Consent         *Consent   `json:"consent,omitempty"`
+	DeletedAt       *time.Time `json:"-"`
+	DeletedByUserID *uuid.UUID `json:"-"`
 }
 
-// Upload is a file as it arrived: the name the user's device gave it, and its bytes.
+// Upload is a file as it arrived: the name the user's device gave it, and its
+// bytes; an AI-coloured one says so, with how the person consented (PR-6).
 type Upload struct {
-	FileName string
-	Data     []byte
+	FileName    string
+	Data        []byte
+	AIGenerated bool
+	// ConsentBy is how the person consented to the AI colouring: verbal or written.
+	ConsentBy string
+}
+
+// Consent is the person's consent to an AI-coloured photo: how, recorded by whom and when.
+type Consent struct {
+	By         string    `json:"by"`
+	RecordedBy uuid.UUID `json:"recorded_by_user_id"`
+	At         time.Time `json:"at"`
 }
 
 var (

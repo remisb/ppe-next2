@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/aiusage"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
@@ -25,6 +26,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/mrz"
 	"github.com/remisb/ppe-next2/internal/security"
@@ -132,6 +134,15 @@ var errorStatuses = []struct {
 	{document.ErrCopyTooLarge, http.StatusRequestEntityTooLarge},
 	{document.ErrCopyNotJPEG, http.StatusUnsupportedMediaType},
 	{document.ErrNotConfigured, http.StatusServiceUnavailable},
+	{aiusage.ErrNoSecretsKey, http.StatusServiceUnavailable},
+	{aiusage.ErrNoKey, http.StatusConflict},
+	{aiusage.ErrKeyUnopenable, http.StatusConflict},
+	{aiusage.ErrBudgetSpent, http.StatusTooManyRequests},
+	{aiusage.ErrNoPrices, http.StatusConflict},
+	{colour.ErrOff, http.StatusConflict},
+	{colour.ErrTooOften, http.StatusTooManyRequests},
+	{colour.ErrNotPortrait, http.StatusUnsupportedMediaType},
+	{errKeyRefused, http.StatusBadRequest},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -174,6 +185,7 @@ var errorStatuses = []struct {
 	{asset.ErrInvalid, http.StatusBadRequest},
 	{employeephoto.ErrInvalid, http.StatusBadRequest},
 	{document.ErrInvalid, http.StatusBadRequest},
+	{aiusage.ErrInvalid, http.StatusBadRequest},
 	{system.ErrNotFound, http.StatusNotFound},
 	{system.ErrInvalid, http.StatusBadRequest},
 }

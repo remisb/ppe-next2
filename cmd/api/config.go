@@ -49,7 +49,17 @@ type config struct {
 	// file is kept before the upkeep shreds it (D3: Lithuania's personal-file
 	// period, 3 years).
 	PersonnelRetentionMonths int
-	JWTTTL                   time.Duration
+	// SecretsKey seals the secrets an administrator enters in Settings, first
+	// the OpenAI API key (ADR 0007): 64 hex, with SecretsKeyID and
+	// SecretsPreviousKeys as the SIM codes key has. Optional: without it no
+	// key can be saved, and Settings → AI says so.
+	SecretsKey          string
+	SecretsKeyID        int
+	SecretsPreviousKeys string
+	// OpenAIBaseURL is where OpenAI's API is: https://api.openai.com, or a
+	// test's fake (the e2e suite's).
+	OpenAIBaseURL string
+	JWTTTL        time.Duration
 	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
 	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
@@ -189,6 +199,12 @@ func loadConfig(args []string) (config, error) {
 	if c.PersonnelRetentionMonths, err = envInt("API_PERSONNEL_RETENTION_MONTHS", 36); err != nil {
 		return c, err
 	}
+	c.SecretsKey = env("API_SECRETS_KEY", "")
+	c.OpenAIBaseURL = strings.TrimRight(env("API_OPENAI_BASE_URL", "https://api.openai.com"), "/")
+	c.SecretsPreviousKeys = env("API_SECRETS_PREVIOUS_KEYS", "")
+	if c.SecretsKeyID, err = envInt("API_SECRETS_KEY_ID", 1); err != nil {
+		return c, err
+	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {
 		return c, err
 	}
@@ -306,6 +322,10 @@ func (c config) validate() error {
 	}
 	errs = append(errs, c.simCodesKeyErrors()...)
 	errs = append(errs, c.personnelKeyErrors()...)
+	errs = append(errs, c.secretsKeyErrors()...)
+	if u, err := url.Parse(c.OpenAIBaseURL); c.OpenAIBaseURL != "" && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
+		errs = append(errs, errors.New("API_OPENAI_BASE_URL must be an http(s) address"))
+	}
 	if c.JWTTTL < time.Minute || c.JWTTTL > 24*time.Hour {
 		errs = append(errs, errors.New("API_JWT_TTL must be between 1m and 24h"))
 	}
@@ -450,6 +470,57 @@ func (c config) personnelKeyErrors() []error {
 		}
 	}
 	return errs
+}
+
+// secretsKeyErrors checks the Settings secrets' keyring: none, or the key
+// with its id and previous keys, none of them another key here.
+func (c config) secretsKeyErrors() []error {
+	if c.SecretsKey == "" && c.SecretsPreviousKeys == "" {
+		return nil
+	}
+	var errs []error
+	key, err := sealbox.ParseKey(c.SecretsKey)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("API_SECRETS_KEY %w", err))
+	}
+	for name, v := range map[string]string{"API_JWT_SECRET": c.JWTSecret, "API_SIM_CODES_KEY": c.SIMCodesKey, "API_PERSONNEL_KEY": c.PersonnelKey, "API_PERSONNEL_INDEX_KEY": c.PersonnelIndexKey} {
+		if v != "" && v == c.SecretsKey {
+			errs = append(errs, fmt.Errorf("API_SECRETS_KEY must not be %s", name))
+		}
+	}
+	if c.SecretsKeyID < 1 || c.SecretsKeyID > math.MaxInt16 {
+		errs = append(errs, fmt.Errorf("API_SECRETS_KEY_ID must be from 1 to %d", math.MaxInt16))
+	}
+	previous, err := sealbox.ParseKeys(c.SecretsPreviousKeys)
+	if err != nil {
+		return append(errs, fmt.Errorf("API_SECRETS_PREVIOUS_KEYS %w", err))
+	}
+	for id, k := range previous {
+		if int(id) == c.SecretsKeyID {
+			errs = append(errs, fmt.Errorf("API_SECRETS_PREVIOUS_KEYS has key %d, which is API_SECRETS_KEY_ID", id))
+		}
+		if key != nil && bytes.Equal(k, key) {
+			errs = append(errs, fmt.Errorf("API_SECRETS_PREVIOUS_KEYS key %d is API_SECRETS_KEY", id))
+		}
+	}
+	return errs
+}
+
+// secretsKeyring is the Settings secrets' keyring, or nil without API_SECRETS_KEY.
+func secretsKeyring(cfg config) (*sealbox.Keyring, error) {
+	if cfg.SecretsKey == "" {
+		return nil, nil
+	}
+	key, err := sealbox.ParseKey(cfg.SecretsKey)
+	if err != nil {
+		return nil, fmt.Errorf("API_SECRETS_KEY %w", err)
+	}
+	keys, err := sealbox.ParseKeys(cfg.SecretsPreviousKeys)
+	if err != nil {
+		return nil, fmt.Errorf("API_SECRETS_PREVIOUS_KEYS %w", err)
+	}
+	keys[int16(cfg.SecretsKeyID)] = key
+	return sealbox.NewKeyring(int16(cfg.SecretsKeyID), keys)
 }
 
 // personnelKeys are Personnel files' keys, validate having checked them; the

@@ -80,7 +80,9 @@ func (h *employeePhotoHandler) upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	p, err := h.photos.Add(r.Context(), id, employeephoto.Upload{FileName: header.Filename, Data: data}, r.MultipartForm.Value["uses"], actor)
+	// An AI-coloured photo (Import Documents' Make Colour Photo) says so, with how the person consented.
+	upload := employeephoto.Upload{FileName: header.Filename, Data: data, AIGenerated: r.FormValue("ai_generated") == "true", ConsentBy: r.FormValue("consent")}
+	p, err := h.photos.Add(r.Context(), id, upload, r.MultipartForm.Value["uses"], actor)
 	if err != nil {
 		writeError(w, r, err)
 		return

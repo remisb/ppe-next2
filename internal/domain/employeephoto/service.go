@@ -89,6 +89,15 @@ func (s *Service) Add(ctx context.Context, employeeID uuid.UUID, u Upload, usesI
 	if err != nil {
 		return Photo{}, err
 	}
+	if u.AIGenerated && u.ConsentBy != "verbal" && u.ConsentBy != "written" {
+		return Photo{}, fieldError("consent", "is required for an AI-coloured photo: verbal or written")
+	}
+	if !u.AIGenerated && u.ConsentBy != "" {
+		return Photo{}, fieldError("consent", "is for an AI-coloured photo only")
+	}
+	if u.AIGenerated && slices.Contains(uses, UseIDBadge) {
+		return Photo{}, fieldError("uses", "cannot make an AI-coloured photo the ID badge's")
+	}
 	if len(u.Data) == 0 {
 		return Photo{}, fieldError("file", "is empty")
 	}
@@ -111,6 +120,10 @@ func (s *Service) Add(ctx context.Context, employeeID uuid.UUID, u Upload, usesI
 	p := Photo{
 		ID: s.newID(), EmployeeID: employeeID, FileName: photoName(u.FileName, contentType), ContentType: contentType,
 		SizeBytes: int64(len(data)), SHA256: hex.EncodeToString(sum[:]), Uses: uses, UploadedAt: s.now(), UploadedByUserID: actor,
+		AIGenerated: u.AIGenerated,
+	}
+	if u.AIGenerated {
+		p.Consent = &Consent{By: u.ConsentBy, RecordedBy: actor, At: p.UploadedAt}
 	}
 	p.ObjectKey = "employee-photos/" + employeeID.String() + "/" + p.ID.String() + files.Ext(contentType)
 	if err := s.files.Put(ctx, p.ObjectKey, bytes.NewReader(data), p.SizeBytes, contentType); err != nil {
@@ -156,6 +169,9 @@ func (s *Service) SetUses(ctx context.Context, employeeID, photoID uuid.UUID, us
 		out = cur[i]
 		if slices.Equal(out.Uses, uses) {
 			return nil, nil, nil
+		}
+		if out.AIGenerated && slices.Contains(uses, UseIDBadge) {
+			return nil, nil, fieldError("uses", "cannot make an AI-coloured photo the ID badge's")
 		}
 		before := out.Uses
 		out.Uses = uses
@@ -257,8 +273,13 @@ func indexOf(ps []Photo, id uuid.UUID) int {
 }
 
 func photoFacts(p Photo) map[string]any {
-	return map[string]any{"photo_id": p.ID, "file_name": p.FileName, "content_type": p.ContentType,
+	facts := map[string]any{"photo_id": p.ID, "file_name": p.FileName, "content_type": p.ContentType,
 		"size_bytes": p.SizeBytes, "sha256": p.SHA256, "uses": p.Uses}
+	if p.AIGenerated {
+		facts["ai_generated"] = true
+		facts["consent"] = p.Consent.By
+	}
+	return facts
 }
 
 // photoName is the name a photo is listed under: the device's name without its
