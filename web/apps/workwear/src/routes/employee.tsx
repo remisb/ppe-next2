@@ -20,6 +20,7 @@ import { type FormEvent, useMemo, useRef, useState } from 'react'
 import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
 import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
+import { IdentitySection } from '@/components/identity-section'
 import { useFileDrop } from '@/lib/photo-drop'
 import { EmployeeForm } from '@/components/employee-form'
 import { HeldAssets } from '@/components/held-assets'
@@ -387,6 +388,8 @@ export function EmployeePage({
             {session.can('equipment.read') ? (
               <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
             ) : null}
+
+            <IdentitySection employeeId={e.id} timeZone={tz} />
 
             <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 

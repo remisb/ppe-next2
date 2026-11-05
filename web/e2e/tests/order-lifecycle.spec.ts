@@ -3662,6 +3662,34 @@ test('Import Documents: a passport and an ID card read from photos, checked and 
   // The employee made from the card is on the staff app's Employees, with the name as typed.
   await page.goto('/employees')
   await expect(page.getByRole('row', { name: /Eglė Pavyzdytė/ })).toBeVisible()
+
+  // On the passport holder's page, Identity: the document, never its number until Show Document,
+  // which is recorded and hides again; a copy shown; Mark Employment Ended for the cleanup to run from.
+  await page.getByRole('row', { name: /Jonas Pavyzdys/ }).click()
+  await openSection(/^Identity/)
+  const passport = page.getByRole('listitem', { name: 'Passport LTU' })
+  await expect(passport).toContainText('Valid until 2031-05-15')
+  await expect(passport).toContainText('On the employee record')
+  await expect(passport.getByText('91234567')).toHaveCount(0)
+  await passport.getByRole('button', { name: 'Show Document' }).click()
+  await expect(passport.getByText('91234567', { exact: true })).toBeVisible()
+  await expect(passport.getByText('33309240064', { exact: true })).toBeVisible()
+  await expect(passport.getByText('Vilnius')).toBeVisible()
+  await passport.getByRole('button', { name: 'Hide' }).click()
+  await expect(passport.getByText('91234567')).toHaveCount(0)
+  await passport.getByRole('button', { name: 'Show Page' }).click()
+  await expect(passport.getByRole('img', { name: 'Show Page' })).toBeVisible()
+  await passport.getByRole('button', { name: 'Hide' }).click()
+  await page.getByRole('button', { name: 'Mark Employment Ended' }).click()
+  await page.getByLabel('Ended on').fill('2026-10-31')
+  await page.getByRole('button', { name: 'Mark Employment Ended' }).last().click()
+  await expect(page.getByRole('region', { name: 'Retention' })).toContainText('2026-10-31')
+  await expect(page.getByRole('button', { name: 'Clear End of Employment' })).toBeVisible()
+  // The Changes say so, never what the document holds (read again: they load as the page opens).
+  await page.reload()
+  await openSection(/^Changes/)
+  await expect(page.getByText('Identity document shown').first()).toBeVisible()
+  await expect(page.getByText('Employment ended').first()).toBeVisible()
 })
 
 test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {

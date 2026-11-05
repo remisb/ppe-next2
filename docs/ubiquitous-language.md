@@ -1145,7 +1145,8 @@ Decided, being built; the app that reads them is **Import Documents** (docs-impo
 - **Detail:** off by default, chosen per document and saved with it. On: birth date, nationality
   and sex are offered for the employee, and the employee page's **Identity** section shows the
   document. Off: the document is filed only; the employee page says "valid until".
-- **Code:** `on_employee_record`. **UI:** Add to Employee Record; the section **Identity**.
+- **Code:** `on_employee_record`. **UI:** Add to Employee Record (on the scan's review and the
+  employee page), **Take Off Employee Record** (the employee page); the section **Identity**.
 
 ### Show Document
 - **Brief:** opening a document's sealed fields, or one of its copies.

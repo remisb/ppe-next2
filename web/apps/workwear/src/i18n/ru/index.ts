@@ -6,7 +6,8 @@ import { common } from './common'
 import { dashboard } from './dashboard'
 import { employees } from './employees'
 import { history } from './history'
+import { identity } from './identity'
 import { order } from './order'
 import { shell } from './shell'
 
-export const ru = { common, shell, order, history, dashboard, employees, catalogue, account, backups, assets }
+export const ru = { common, shell, order, history, dashboard, employees, catalogue, account, backups, assets, identity }

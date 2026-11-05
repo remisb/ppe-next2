@@ -24,9 +24,12 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
   `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
   `ppe_app` the schema, but not UPDATE on `subject_keys`. `employee_photos`' `ai_generated` and
   `consent` come with the colour photo.
-- **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`); the staff
-  app's employee page shows the **Identity** section; Administration shows nothing of it
-  except AI Usage and Settings → AI.
+- **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`; **built**); the staff
+  app's employee page shows the **Identity** section (`components/identity-section.tsx`, its rules
+  `lib/identity.ts`; **built**): the validity line for everyone, the documents and Show Document for
+  `personnel.documents.read` (those added to the employee record; every one for
+  `personnel.documents.manage`, with Add to / Take Off Employee Record, Remove, Mark Employment Ended
+  and Legal Hold); Administration shows nothing of it except AI Usage and Settings → AI.
 
 Nothing read from a document ever goes into an error, a log line, an audit event, System's
 error list or a URL. Problems are codes with a field's name (`@ppe/mrz`'s and
