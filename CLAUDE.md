@@ -240,7 +240,7 @@ make test-db          # all tests incl. Postgres ones (refuses if test DSN == ma
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
 make e2e-caddy        # the same behind deploy/Caddyfile, Caddy in Docker at CI's version (as CI runs it)
 go test ./internal/domain/user -run TestAuthenticate   # single test
-cd web/e2e && pnpm exec playwright test -g "paper confirmation"   # one e2e step (suite is serial)
+cd web/e2e && pnpm e2e -g "paper confirmation"   # one e2e step (suite is serial; pnpm e2e waits for the test database's lock)
 E2E_APPS= make e2e    # start or publish no published app (E2E_APPS=sim-scan: only it); their steps are skipped
 cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB; stamps its seals with DigiCert, so needs the internet; GUIDE_TSA_URL='' skips that)
 ```
@@ -436,6 +436,15 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   owner); `TestPostgresAPIRoleIsLeastPrivileged` pins what that role may not do.
 - Postgres tests in different packages share one database and truncate it, so always run
   them with `-p 1` (as `make test`/`make test-db` do).
+- **One run at a time on the test database.** Every session and worktree on the machine shares
+  `ppe2_test` and the e2e ports, and a run empties the database as it starts. `make test`,
+  `make test-db`, `make e2e`, `make e2e-caddy` and web/e2e's `pnpm e2e` and `pnpm guide` hold
+  its lock for the whole run (`cmd/testlock`, `internal/db/testlock`: a Postgres advisory lock
+  from a connection named after the run, freed when it ends or crashes), waiting while another
+  run holds it and saying which. Run single packages' Postgres tests through it too:
+  `go run ./cmd/testlock -- go test -p 1 ./internal/domain/asset`. e2e's `prepare-db.ts`
+  refuses to empty anything while another run holds the lock, so a bare `playwright test`
+  stops instead of wrecking it.
 - The Makefile exports `.env`, so tests that need a var unset must `t.Setenv(key, "")`.
 - CI has no compose service: it runs `make migrate PSQL='psql -d <dsn> ...'`, overriding the
   in-container psql the Makefile uses locally.
@@ -446,7 +455,8 @@ One serial spec drives the whole lifecycle through the real UI, API and a `*_tes
 database. Playwright starts its web servers before global setup, so the API's command
 first runs `web/e2e/prepare-db.ts` (empties the database, gives `ppe_app` its test password:
 the API connects as it); global setup then seeds a test admin via `api -seed-admin`. Run
-`pnpm exec playwright install chromium` once. Do not run it while `make test-db` runs.
+`pnpm exec playwright install chromium` once. It waits while `make test-db` or another e2e run
+holds the test database's lock (see Go above).
 The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
 needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`).

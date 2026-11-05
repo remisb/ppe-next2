@@ -27,7 +27,7 @@ assumed, and showed two mistakes in it. What changed:
 | R7 | **`make new-app` has no profile option**; its template is `standard` | Phase 3 sets `"profile": "device"` in `public/ppe-app.json` by hand and copies Scan SIMs' `csp.test.ts` (or `new-app` gains `--profile device`) |
 | R8 | **Reader files are downloaded again for every version.** Each published version's files live under `/apps/files/device/<slug>/<version>/`, so `readers/` (about 7 MB for Scan SIMs, likely similar for an OCR-B model) is a new URL after every deploy, and two apps never share it | A risk to measure now that there will be two such apps; a shared, content-addressed readers path is the fix if it matters (section 9) |
 | R9 | **Concurrent writes need a decision each.** Step 5 showed two Scan SIMs batches racing for numbers; the fix was a retry because numbers were the batch's own | docs-import numbers nothing, so it retries nothing: two people saving the same document at once is refused by a unique index and answered as "already on file" with the other's id (5.6) |
-| R10 | **e2e and Postgres tests share one database and one set of ports across every session and worktree.** Runs emptied each other's database three times on 2026-11-05 | A lock in the e2e and `test-db` set-up (refuse to start while another run holds it) before docs-import adds its own long e2e steps (section 8) |
+| R10 | **e2e and Postgres tests share one database and one set of ports across every session and worktree.** Runs emptied each other's database three times on 2026-11-05 | A lock in the e2e and `test-db` set-up (refuse to start while another run holds it) before docs-import adds its own long e2e steps (section 8). *Done 2026-11-05: `cmd/testlock` (see CLAUDE.md, Testing)* |
 | R11 | **"Stable follows deploys" is off for published apps**, so a deploy puts a new build on Preview only; Scan SIMs' fixes reached users only after someone pressed Make Stable | Phase 6 names that step; the trial is judged on Preview and Beta first anyway |
 | R12 | **The publish pipe could fail a deploy** on tar's padding (fixed in `b4fdc42`), and a local Caddy e2e served a stale build (fixed in `9ab5ee8`) | Nothing to change; docs-import inherits both fixes |
 
@@ -440,7 +440,7 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 
 | Phase | Content | Done when |
 | --- | --- | --- |
-| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) Add the e2e/test-db lock (R10) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check |
+| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) (The e2e/test-db lock, R10, is done.) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check |
 | **1. Reading spike** | `@ppe/mrz` (TS) with ICAO test vectors; band finding and threshold; choose the OCR-B model; a bare test page in the app reading specimens. Measure on synthetic specimens and on the team's **own** documents (read locally, never committed) | NFR-4 and NFR-5 numbers recorded; model and licence chosen. **Go / no-go gate** |
 | **2. Personnel backend** | ADR 0007; `internal/personnel/document` (five-file layout), Go MRZ parser on the shared vectors, keyring and subject keys, blind index, migrations, permissions, routes, audit events, `api-client` | Go service and Postgres tests pass, including PR-2's no-leak test; `routes_test.go` policy |
 | **3. docs-import app** | `make new-app`, then the device profile by hand (R7); Person → Capture → Review → Save as one screen's steps, without the portrait | e2e (Vite and Caddy): synthetic passport and ID card read from photos, checked, saved; the workers run; the employee shows "valid until" |
@@ -495,7 +495,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 | Tesseract too slow for live MRZ on phones (R3) | live scanning feels stuck | OCR the MRZ band only; a photo as the main path; phase 1 measures it on two phones |
 | Reader files downloaded again after every deploy and per app (R8) | several MB on mobile data per version | measure after phase 3; if it matters, a shared content-addressed `readers/` path for every published app |
 | Erasure takes until older backups expire (R1) | an erasure answer that claims too much | say "within 14 days" in the DPIA and the answer; the daily shredding job re-applies after a restore |
-| Parallel sessions empty each other's test database (R10) | false test failures, lost time | the lock in phase 0 |
+| Parallel sessions empty each other's test database (R10) | false test failures, lost time | the lock, `cmd/testlock` (done) |
 
 ## 10. Words to add to the glossary
 

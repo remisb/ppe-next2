@@ -30,13 +30,19 @@ run: ## Run the API (needs db-up + migrate)
 vet: ## go vet
 	go vet ./...
 
+# The test database (API_TEST_DB_DSN) and the e2e ports are shared by every
+# session and worktree on this machine, and a run empties the database as it
+# starts: these targets hold its lock for the whole run, waiting while another
+# run holds it (cmd/testlock; web/e2e's pnpm e2e and pnpm guide take it too).
+TESTLOCK = go run ./cmd/testlock
+
 test: ## Unit tests; Postgres tests skip unless API_TEST_DB_DSN is set
-	go test -p 1 ./...
+	$(TESTLOCK) -- go test -p 1 ./...
 
 test-db: ## All tests including Postgres ones against API_TEST_DB_DSN
 	@test -n "$(API_TEST_DB_DSN)" || { echo "API_TEST_DB_DSN is not set"; exit 1; }
 	@test "$(API_TEST_DB_DSN)" != "$(API_DB_DSN)" || { echo "API_TEST_DB_DSN must differ from API_DB_DSN (tests truncate)"; exit 1; }
-	go test -p 1 -count=1 ./...
+	$(TESTLOCK) -- go test -p 1 -count=1 ./...
 
 e2e: ## Playwright end-to-end tests (empties the _test database; needs db-test-create first)
 	cd web/e2e && pnpm e2e
@@ -46,7 +52,7 @@ e2e: ## Playwright end-to-end tests (empties the _test database; needs db-test-c
 # local Caddy is needed. Docker removes the container when the run ends.
 e2e-caddy: ## Playwright end-to-end behind deploy/Caddyfile, Caddy in Docker (as CI does)
 	cd web && pnpm build
-	cd web/e2e && E2E_WEB_SERVER=caddy E2E_CADDY=docker pnpm e2e; status=$$?; docker rm -f ppe-e2e-caddy >/dev/null 2>&1; exit $$status
+	$(TESTLOCK) -e2e -- sh -c 'cd web/e2e && E2E_WEB_SERVER=caddy E2E_CADDY=docker pnpm e2e; status=$$?; docker rm -f ppe-e2e-caddy >/dev/null 2>&1; exit $$status'
 
 db-up: ## Start Postgres 18 and wait until it is healthy
 	docker compose up -d --wait db

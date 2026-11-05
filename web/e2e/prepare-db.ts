@@ -10,23 +10,40 @@
 // (2026.01.01-e2e), and publishing keeps a version's folder that is already
 // there, so a folder left by an earlier run would serve that run's build. Its
 // contents go, not the folder: Caddy's container mounts it.
+//
+// Both are shared by every session and worktree on the machine, so neither is
+// emptied while another run holds the test database's lock (pnpm e2e and the
+// make targets take it, cmd/testlock): a run started some other way, with
+// `playwright test` itself, stops here instead of wrecking that one.
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import pg from 'pg'
 
-import { appsDir, caddyMode, dbDSN, prepareDatabase } from './env.ts'
+import { appsDir, caddyMode, dbDSN, prepareDatabase, testLockKey } from './env.ts'
 
 if (!new URL(dbDSN).pathname.endsWith('_test')) {
   throw new Error(`Refusing to empty ${dbDSN}: the e2e database name must end in _test`)
-}
-if (caddyMode && existsSync(appsDir)) {
-  for (const entry of readdirSync(appsDir)) rmSync(join(appsDir, entry), { recursive: true, force: true })
 }
 
 const client = new pg.Client({ connectionString: dbDSN })
 await client.connect()
 try {
+  const { rows } = await client.query<{ application_name: string }>(
+    `SELECT a.application_name FROM pg_locks l JOIN pg_stat_activity a USING (pid)
+     WHERE l.locktype = 'advisory' AND l.granted AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+     AND l.classid::bigint = 0 AND l.objid::bigint = $1 AND l.objsubid = 1`,
+    [testLockKey],
+  )
+  const holder = rows[0]?.application_name
+  const mine = process.env['PPE_TEST_LOCK']
+  if (holder !== undefined && (mine === undefined || !holder.startsWith(`ppe-test-lock ${mine} `))) {
+    throw new Error(`The test database is in use by another run (${holder.replace(/^ppe-test-lock \S+ /, '')}). Wait for it, or run through pnpm e2e or make, which wait for you.`)
+  }
+  if (holder === undefined) console.warn('prepare-db: no run holds the test database lock; run through pnpm e2e or make so the next run waits for this one')
+  if (caddyMode && existsSync(appsDir)) {
+    for (const entry of readdirSync(appsDir)) rmSync(join(appsDir, entry), { recursive: true, force: true })
+  }
   // The backup agent's tables reference no user; the guide's setup fills them.
   await prepareDatabase((sql) => client.query(sql), 'TRUNCATE dbbackup_runs, dbbackup_agents', 'TRUNCATE db_size_samples')
 } finally {

@@ -5,9 +5,9 @@
   "type": "module",
   "description": "End-to-end tests: the workwear app against the real Go API and a test Postgres database.",
   "scripts": {
-    "e2e": "playwright test",
+    "e2e": "go run ../../cmd/testlock -e2e -- playwright test",
     "typecheck": "tsc --noEmit",
-    "guide": "for d in phone tablet desktop; do for l in en lt ru; do GUIDE_DEVICE=$d GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done; done",
+    "guide": "go run ../../cmd/testlock -e2e -- sh -c 'for d in phone tablet desktop; do for l in en lt ru; do GUIDE_DEVICE=$d GUIDE_LANG=$l playwright test -c guide.config.ts || exit 1; done; done'",
     "sim-cards": "node --experimental-strip-types --no-warnings fixtures/sim-cards/make.ts"
   },
   "devDependencies": {

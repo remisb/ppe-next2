@@ -10,6 +10,13 @@ import { type PublishedApp, fixedApps, publishedApps as findPublishedApps } from
 export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe2:ppe2@localhost:5442/ppe2_test?sslmode=disable'
+/**
+ * The test database's lock (internal/db/testlock): a run holds it for its
+ * whole length (pnpm e2e runs through cmd/testlock), from a connection whose
+ * application_name is "ppe-test-lock <token> <what>"; PPE_TEST_LOCK is this
+ * run's token. The Go tests keep the key and the default DSN above equal.
+ */
+export const testLockKey = 0x50504554
 export const apiPort = 18090
 // Each app's e2e server takes the port after its dev server's (published-apps.ts' fixedApps).
 export const webPort = fixedApps.workwear + 1
