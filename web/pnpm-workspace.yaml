@@ -2,6 +2,8 @@ packages:
   - 'packages/*'
   - 'apps/*'
   - 'e2e'
+  # Throwaway spikes: typechecked and tested, never built into an image (web/Dockerfile builds apps/*).
+  - 'spikes/*'
   # _template is a recipe, not a package.
   - '!apps/_template'
 

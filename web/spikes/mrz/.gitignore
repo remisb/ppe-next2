@@ -1,0 +1,5 @@
+# Downloaded and trained models, generated photos, measurements: never committed.
+/.models/
+/.photos/
+/.results/
+/train/work/

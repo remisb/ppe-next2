@@ -1,0 +1,10 @@
+ocrb10.otf: OCR-B at 10 pt, from the CTAN package ocr-b-outline
+(https://ctan.org/pkg/ocr-b-outline, Z. Wagner, 6 Jan 2010), converted from
+Norbert Schwarz's METAFONT sources. Its README says:
+
+  "The license of the outline fonts is the same as for the original fonts,
+  i.e. you may freely use, modify, and/or distribute any of these files,
+  without limitation."
+
+Used only to draw the synthetic specimen documents (make.ts) and the lines a
+Tesseract model is trained on (web/spikes/mrz/train); never served by an app.

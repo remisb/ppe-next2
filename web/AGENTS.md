@@ -29,6 +29,12 @@ web/
                          the review list and its rules; the readers' files' Vite plugin
     launcher/            App Launcher's list of apps and shortcuts (who sees each, where it
                          opens), its words, and each user's pinned and recent apps
+    mrz/                 identity documents' MRZ (ICAO 9303): parsing, check digits, the
+                         corrections they confirm, the LT personal code, fold() for names;
+                         pure, no DOM, its test vectors shared with Go (testdata/mrz)
+  spikes/
+    mrz/                 docs-import phase 1, throwaway: a bare page reading specimen photos,
+                         and the scripts that measured it; never built into an image
   apps/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,

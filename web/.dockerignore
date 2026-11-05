@@ -12,3 +12,6 @@ e2e/*
 !e2e/package.json
 # make new-app's template: make new-app copies it into apps/, the image never builds it.
 templates
+# Throwaway spikes are never built into the image; the lockfile names them, so their manifests stay.
+spikes/*/*
+!spikes/*/package.json

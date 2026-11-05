@@ -1,0 +1,988 @@
+{
+  "$comment": "Test vectors for the MRZ parsers: @ppe/mrz (web/packages/mrz) reads them, and so will the Go API's (internal/personnel/document, docs-import plan phase 2), so the two cannot drift apart (NFR-7). Every document here is ICAO's specimen or made up; never put a real document's MRZ here. \"expect\" lists only the fields a case is about; null means the field is absent. problems, notes and corrections are compared as sets.",
+  "today": "2026-11-05",
+  "cases": [
+    {
+      "name": "ICAO TD3 specimen",
+      "source": "ICAO Doc 9303 Part 4, Appendix A",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD3",
+        "documentCode": "P",
+        "documentNumber": "L898902C3",
+        "surname": "ERIKSSON",
+        "givenNames": "ANNA MARIA",
+        "issuingState": "UTO",
+        "nationality": "UTO",
+        "birthDate": "1974-08-12",
+        "expiryDate": "2012-04-15",
+        "sex": "F",
+        "optionalData": [
+          "ZE184226B"
+        ],
+        "notes": [
+          {
+            "code": "specimen"
+          },
+          {
+            "code": "expired",
+            "field": "expiryDate"
+          }
+        ],
+        "checks": {
+          "documentNumber": true,
+          "birthDate": true,
+          "expiryDate": true,
+          "personalNumber": true,
+          "composite": true
+        }
+      }
+    },
+    {
+      "name": "ICAO TD1 specimen",
+      "source": "ICAO Doc 9303 Part 5, Appendix A",
+      "lines": [
+        "I<UTOD231458907<<<<<<<<<<<<<<<",
+        "7408122F1204159UTO<<<<<<<<<<<6",
+        "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD1",
+        "documentCode": "I",
+        "documentNumber": "D23145890",
+        "surname": "ERIKSSON",
+        "givenNames": "ANNA MARIA",
+        "issuingState": "UTO",
+        "nationality": "UTO",
+        "birthDate": "1974-08-12",
+        "expiryDate": "2012-04-15",
+        "sex": "F",
+        "optionalData": [
+          "",
+          ""
+        ],
+        "notes": [
+          {
+            "code": "specimen"
+          },
+          {
+            "code": "expired",
+            "field": "expiryDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ICAO TD2 specimen",
+      "source": "ICAO Doc 9303 Part 6, Appendix A",
+      "lines": [
+        "I<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<",
+        "D231458907UTO7408122F1204159<<<<<<<6"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD2",
+        "documentCode": "I",
+        "documentNumber": "D23145890",
+        "surname": "ERIKSSON",
+        "givenNames": "ANNA MARIA",
+        "issuingState": "UTO",
+        "nationality": "UTO",
+        "birthDate": "1974-08-12",
+        "expiryDate": "2012-04-15",
+        "sex": "F",
+        "optionalData": [
+          ""
+        ],
+        "notes": [
+          {
+            "code": "specimen"
+          },
+          {
+            "code": "expired",
+            "field": "expiryDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TD1 long document number continued in the optional data",
+      "source": "ICAO Doc 9303 Part 5 §4.2.4 (long document numbers)",
+      "lines": [
+        "I<UTOD23145890<7349<<<<<<<<<<<",
+        "7408122F1204159UTO<<<<<<<<<<<6",
+        "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD1",
+        "documentNumber": "D23145890734",
+        "optionalData": [
+          "",
+          ""
+        ],
+        "surname": "ERIKSSON",
+        "givenNames": "ANNA MARIA",
+        "issuingState": "UTO",
+        "nationality": "UTO",
+        "birthDate": "1974-08-12",
+        "expiryDate": "2012-04-15",
+        "sex": "F"
+      }
+    },
+    {
+      "name": "Lithuanian passport (made up) with the personal code",
+      "lines": [
+        "P<LTUPAVYZDYS<<JONAS<<<<<<<<<<<<<<<<<<<<<<<<",
+        "91234567<9LTU3309243M310515733309240064<<<42"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD3",
+        "surname": "PAVYZDYS",
+        "givenNames": "JONAS",
+        "issuingState": "LTU",
+        "nationality": "LTU",
+        "documentNumber": "91234567",
+        "birthDate": "1933-09-24",
+        "expiryDate": "2031-05-15",
+        "sex": "M",
+        "optionalData": [
+          "33309240064"
+        ],
+        "personalCode": {
+          "code": "33309240064",
+          "valid": true,
+          "birthDate": "1933-09-24",
+          "sex": "M"
+        },
+        "notes": []
+      }
+    },
+    {
+      "name": "Lithuanian ID card (made up) with the personal code",
+      "lines": [
+        "IDLTU91234567<933309240064<<<<",
+        "3309243M3105157LTU<<<<<<<<<<<4",
+        "PAVYZDYS<<JONAS<<<<<<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "format": "TD1",
+        "documentCode": "ID",
+        "surname": "PAVYZDYS",
+        "givenNames": "JONAS",
+        "issuingState": "LTU",
+        "nationality": "LTU",
+        "documentNumber": "91234567",
+        "birthDate": "1933-09-24",
+        "expiryDate": "2031-05-15",
+        "sex": "M",
+        "optionalData": [
+          "33309240064",
+          ""
+        ],
+        "personalCode": {
+          "code": "33309240064",
+          "valid": true,
+          "birthDate": "1933-09-24",
+          "sex": "M"
+        },
+        "notes": []
+      }
+    },
+    {
+      "name": "Lithuanian code that says another sex",
+      "lines": [
+        "IDLTU91234567<933309240064<<<<",
+        "3309243F3105157LTU<<<<<<<<<<<4",
+        "PAVYZDYS<<JONAS<<<<<<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "personal_code_sex",
+            "field": "sex"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Lithuanian code that says another birth date",
+      "lines": [
+        "IDLTU91234567<933309240064<<<<",
+        "3309254M3105157LTU<<<<<<<<<<<4",
+        "PAVYZDYS<<JONAS<<<<<<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "personal_code_birth_date",
+            "field": "birthDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Lithuanian code whose checksum fails",
+      "lines": [
+        "IDLTU91234567<933309240065<<<<",
+        "3309243M3105157LTU<<<<<<<<<<<5",
+        "PAVYZDYS<<JONAS<<<<<<<<<<<<<<<"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "personal_code_checksum",
+            "field": "optionalData1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Letter O read in a birth date: the layout corrects it, two check digits confirm it",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO74O8122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "birthDate",
+            "by": "layout"
+          }
+        ],
+        "needsSecondRead": false,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ]
+      }
+    },
+    {
+      "name": "Letter O read for the composite check digit",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F1204159ZE184226B<<<<<1O"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "compositeCheck",
+            "by": "layout"
+          }
+        ],
+        "needsSecondRead": false,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ]
+      }
+    },
+    {
+      "name": "Digit 5 read in a name: the layout corrects it (no check digit covers names)",
+      "lines": [
+        "P<UTOERIK5SON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "names",
+            "by": "layout"
+          }
+        ],
+        "needsSecondRead": false,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "surname": "ERIKSSON"
+      }
+    },
+    {
+      "name": "Misread fillers after the name",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<K<<C<<<<E<<<<<",
+        "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "names",
+            "by": "layout"
+          }
+        ],
+        "needsSecondRead": false,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "givenNames": "ANNA MARIA"
+      }
+    },
+    {
+      "name": "One look-alike in a document number: the search finds the one reading, which needs a second read",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "X7A3H4QOP5UTO7408122F3204153<<<<<<<<<<<<<<<6"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "documentNumber",
+            "by": "lookalike"
+          }
+        ],
+        "needsSecondRead": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+          "X7A3H4Q0P5UTO7408122F3204153<<<<<<<<<<<<<<<6"
+        ],
+        "documentNumber": "X7A3H4Q0P"
+      }
+    },
+    {
+      "name": "Look-alikes in a document number with several passing readings: none is taken",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L8989O2C36UTO7408122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": false,
+        "needsSecondRead": false,
+        "problems": [
+          {
+            "code": "check_digit",
+            "field": "documentNumber"
+          },
+          {
+            "code": "check_digit",
+            "field": "composite"
+          },
+          {
+            "code": "ambiguous_correction",
+            "field": "documentNumber"
+          }
+        ]
+      }
+    },
+    {
+      "name": "A digit misread as another digit cannot be corrected",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408132F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": false,
+        "corrections": [],
+        "problems": [
+          {
+            "code": "check_digit",
+            "field": "birthDate"
+          },
+          {
+            "code": "check_digit",
+            "field": "composite"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Two errors in a birth date that balance its own digit are caught by the composite",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO8508122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "check_digit",
+            "field": "composite"
+          }
+        ],
+        "checks": {
+          "birthDate": true,
+          "composite": false
+        }
+      }
+    },
+    {
+      "name": "K among a number's fillers is a filler",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "9123456<K8UTO7408122F3204153<<<<<<<<<<<<<<<0"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [
+          {
+            "field": "documentNumber",
+            "by": "layout"
+          }
+        ],
+        "needsSecondRead": false,
+        "documentNumber": "9123456"
+      }
+    },
+    {
+      "name": "Personal number left empty: its check digit may be a filler",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F3204153<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "optionalData": [
+          ""
+        ],
+        "checks": {
+          "documentNumber": true,
+          "birthDate": true,
+          "expiryDate": true,
+          "personalNumber": true,
+          "composite": true
+        }
+      }
+    },
+    {
+      "name": "A visa is not supported",
+      "lines": [
+        "V<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F3204153<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "unsupported_document",
+            "field": "documentCode"
+          }
+        ]
+      }
+    },
+    {
+      "name": "An unknown nationality code",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTQ7408122F3204153<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "unknown_state",
+            "field": "nationality"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Germany is D, followed by fillers",
+      "lines": [
+        "P<D<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<",
+        "C01X00T478D<<6408125F3108011<<<<<<<<<<<<<<<2"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "issuingState": "D",
+        "nationality": "D",
+        "surname": "MUSTERMANN",
+        "givenNames": "ERIKA",
+        "documentNumber": "C01X00T47",
+        "birthDate": "1964-08-12",
+        "expiryDate": "2031-08-01"
+      }
+    },
+    {
+      "name": "Century: a birth date this year but after today is the last century's; expiry 50 years ahead at most",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO2612018F7601015<<<<<<<<<<<<<<<2"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "birthDate": "1926-12-01",
+        "expiryDate": "2076-01-01"
+      }
+    },
+    {
+      "name": "Century: a birth date earlier this year is this century's; an expiry over 50 years ahead the last",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO2601010F7701018<<<<<<<<<<<<<<<8"
+      ],
+      "expect": {
+        "valid": false,
+        "birthDate": "2026-01-01",
+        "expiryDate": "1977-01-01",
+        "problems": [
+          {
+            "code": "expiry_before_birth",
+            "field": "expiryDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Expiry before birth",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO9001011F8501019<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": false,
+        "birthDate": "1990-01-01",
+        "expiryDate": "1985-01-01",
+        "problems": [
+          {
+            "code": "expiry_before_birth",
+            "field": "expiryDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "An expired document is a note, not a problem",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122F2512314<<<<<<<<<<<<<<<8"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "expiryDate": "2025-12-31",
+        "notes": [
+          {
+            "code": "specimen"
+          },
+          {
+            "code": "expired",
+            "field": "expiryDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "A date that is no date",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7413324F3204153<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": false,
+        "birthDate": null,
+        "problems": [
+          {
+            "code": "invalid_date",
+            "field": "birthDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "An unknown day and month of birth",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO74<<<<1F3204153<<<<<<<<<<<<<<<2"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "birthDate": null,
+        "notes": [
+          {
+            "code": "specimen"
+          },
+          {
+            "code": "incomplete_date",
+            "field": "birthDate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Sex unspecified",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "L898902C36UTO7408122<3204153<<<<<<<<<<<<<<<4"
+      ],
+      "expect": {
+        "valid": true,
+        "problems": [],
+        "corrections": [],
+        "needsSecondRead": false,
+        "sex": "X"
+      }
+    },
+    {
+      "name": "Fillers read as L: the names' shape gives it away (no check digit covers them)",
+      "lines": [
+        "P<UTOERIKSSON<<ANNA<MARIA<<LLLLLLLLLLLLLLLLL",
+        "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+      ],
+      "expect": {
+        "valid": false,
+        "problems": [
+          {
+            "code": "names_unreadable",
+            "field": "names"
+          }
+        ]
+      }
+    }
+  ],
+  "read": [
+    {
+      "name": "OCR text: lower case, spaces, a « for a filler and other lines above",
+      "today": "2026-11-05",
+      "text": "PASSPORT  PASS\nUtopia\np<utoeriksson<<anna<maria<<<«<<<<<<<<<<<<<<<\nL898902C36UTO 7408122F1204159ZE184226B<<<<<10\n",
+      "expect": {
+        "found": true,
+        "fitted": false,
+        "valid": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "needsSecondRead": false
+      }
+    },
+    {
+      "name": "OCR text: a filler lost from the personal number's run",
+      "today": "2026-11-05",
+      "text": "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nL898902C36UTO7408122F1204159ZE184226B<<<<10",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "needsSecondRead": false
+      }
+    },
+    {
+      "name": "OCR text: a filler too many",
+      "today": "2026-11-05",
+      "text": "I<UTOD231458907<<<<<<<<<<<<<<<<\n7408122F1204159UTO<<<<<<<<<<<6\nERIKSSON<<ANNA<MARIA<<<<<<<<<<",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "lines": [
+          "I<UTOD231458907<<<<<<<<<<<<<<<",
+          "7408122F1204159UTO<<<<<<<<<<<6",
+          "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+        ],
+        "needsSecondRead": false
+      }
+    },
+    {
+      "name": "OCR text: a name line short of its padding is padded",
+      "today": "2026-11-05",
+      "text": "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<\nL898902C36UTO7408122F1204159ZE184226B<<<<<10",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "needsSecondRead": false
+      }
+    },
+    {
+      "name": "OCR text without an MRZ",
+      "today": "2026-11-05",
+      "text": "PIN 1234\nPUK 12345678",
+      "expect": {
+        "found": false
+      }
+    },
+    {
+      "name": "OCR text: a stray mark read before each line: the number moved, so it needs a second read",
+      "today": "2026-11-05",
+      "text": "CP<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nI L898902C36UTO7408122F1204159ZE184226B<<<<<10",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "needsSecondRead": true
+      }
+    },
+    {
+      "name": "OCR text: a character read that is not there",
+      "today": "2026-11-05",
+      "text": "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nL898902C36UTO07408122F1204159ZE184226B<<<<<10",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "lines": [
+          "P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+          "L898902C36UTO7408122F1204159ZE184226B<<<<<10"
+        ],
+        "needsSecondRead": false
+      }
+    },
+    {
+      "name": "OCR text: a stray mark before a TD1 name line is dropped, not the padding",
+      "today": "2026-11-05",
+      "text": "I<UTOD231458907<<<<<<<<<<<<<<<\n7408122F1204159UTO<<<<<<<<<<<6\n<ERIKSSON<<ANNA<MARIA<<<<<<<<<<",
+      "expect": {
+        "found": true,
+        "fitted": true,
+        "valid": true,
+        "needsSecondRead": false,
+        "lines": [
+          "I<UTOD231458907<<<<<<<<<<<<<<<",
+          "7408122F1204159UTO<<<<<<<<<<<6",
+          "ERIKSSON<<ANNA<MARIA<<<<<<<<<<"
+        ]
+      }
+    }
+  ],
+  "ltPersonalCodes": [
+    {
+      "code": "33309240064",
+      "valid": true,
+      "birthDate": "1933-09-24",
+      "sex": "M",
+      "note": "second weight round (the first gives 10); the code in the Lithuanian Wikipedia's example"
+    },
+    {
+      "code": "38601010005",
+      "valid": true,
+      "birthDate": "1986-01-01",
+      "sex": "M",
+      "note": "first weight round"
+    },
+    {
+      "code": "38601010540",
+      "valid": true,
+      "birthDate": "1986-01-01",
+      "sex": "M",
+      "note": "both rounds give 10, so the check digit is 0"
+    },
+    {
+      "code": "60505051230",
+      "valid": true,
+      "birthDate": "2005-05-05",
+      "sex": "F"
+    },
+    {
+      "code": "90000000018",
+      "valid": true,
+      "note": "a 9-code: no birth date or sex"
+    },
+    {
+      "code": "38601010006",
+      "valid": false,
+      "birthDate": "1986-01-01",
+      "sex": "M"
+    },
+    {
+      "code": "3860101000",
+      "invalid": true,
+      "note": "ten digits: not a code"
+    }
+  ],
+  "checkDigits": [
+    [
+      "L898902C3",
+      "6"
+    ],
+    [
+      "740812",
+      "2"
+    ],
+    [
+      "120415",
+      "9"
+    ],
+    [
+      "ZE184226B<<<<<",
+      "1"
+    ],
+    [
+      "D23145890",
+      "7"
+    ],
+    [
+      "<<<<<<<<<<<<<<",
+      "0"
+    ],
+    [
+      "D23145890734",
+      "9"
+    ]
+  ],
+  "fold": [
+    {
+      "name": "Žukauskaitė",
+      "forms": [
+        "ZUKAUSKAITE"
+      ]
+    },
+    {
+      "name": "Ąžuolas Čėsnys",
+      "forms": [
+        "AZUOLAS<CESNYS"
+      ]
+    },
+    {
+      "name": "Šarūnas Įgaudas-Ūsas",
+      "forms": [
+        "SARUNAS<IGAUDAS<USAS"
+      ]
+    },
+    {
+      "name": "Müller-Lüdenscheidt",
+      "forms": [
+        "MUELLER<LUEDENSCHEIDT",
+        "MULLER<LUDENSCHEIDT"
+      ]
+    },
+    {
+      "name": "Åsa Ørsted",
+      "forms": [
+        "AASA<OERSTED",
+        "ASA<OERSTED"
+      ]
+    },
+    {
+      "name": "Straße",
+      "forms": [
+        "STRASSE"
+      ]
+    },
+    {
+      "name": "O'Brien",
+      "forms": [
+        "OBRIEN"
+      ]
+    },
+    {
+      "name": "Пётр",
+      "forms": [
+        "PETR"
+      ]
+    },
+    {
+      "name": "Юлия Щукина",
+      "forms": [
+        "IULIIA<SHCHUKINA",
+        "IULYIA<SHCHUKYNA"
+      ]
+    },
+    {
+      "name": "Григорій",
+      "forms": [
+        "GRIGORII",
+        "HRYHORII"
+      ]
+    }
+  ],
+  "nameMatch": [
+    {
+      "surname": "Eriksson",
+      "givenNames": "Anna Maria",
+      "field": "ERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<",
+      "expect": "same"
+    },
+    {
+      "surname": "Žukauskaitė",
+      "givenNames": "Miglė",
+      "field": "ZUKAUSKAITE<<MIGLE<<<<<<<<<<<<",
+      "expect": "same"
+    },
+    {
+      "surname": "Žukauskienė",
+      "givenNames": "Miglė",
+      "field": "ZUKAUSKAITE<<MIGLE<<<<<<<<<<<<",
+      "expect": "differs"
+    },
+    {
+      "surname": "Pavyzdytė-Bandomoji",
+      "givenNames": "Elžbieta Konstancija",
+      "field": "PAVYZDYTE<BANDOMOJI<<ELZBIETA<",
+      "expect": "truncated"
+    },
+    {
+      "surname": "Pavyzdytė-Bandomoji",
+      "givenNames": "Elžbieta Konstancija",
+      "field": "PAVYZDYTE<BANDOMOJI<<ELZBIET<K",
+      "expect": "truncated"
+    },
+    {
+      "surname": "Müller",
+      "givenNames": "Jürgen",
+      "field": "MUELLER<<JUERGEN<<<<<<<<<<<<<<",
+      "expect": "same"
+    },
+    {
+      "surname": "Müller",
+      "givenNames": "Jürgen",
+      "field": "MULLER<<JURGEN<<<<<<<<<<<<<<<<",
+      "expect": "same"
+    }
+  ]
+}

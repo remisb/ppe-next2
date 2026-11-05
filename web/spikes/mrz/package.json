@@ -1,0 +1,29 @@
+{
+  "name": "@ppe/mrz-spike",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "docs-import phase 1, the MRZ reading spike: a bare page reading synthetic specimen photos with tesseract.js and @ppe/mrz, and the scripts that measure it. Throwaway: not an app, never built or deployed; removed once docs-import exists.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "models": "node --experimental-strip-types --no-warnings scripts/fetch-models.ts",
+    "photos": "node --experimental-strip-types --no-warnings scripts/photos.ts",
+    "measure": "node --experimental-strip-types --no-warnings scripts/measure.ts",
+    "simulate": "node --experimental-strip-types --no-warnings scripts/simulate.ts"
+  },
+  "dependencies": {
+    "@ppe/mrz": "workspace:*",
+    "@tesseract.js-data/eng": "1.0.0",
+    "tesseract.js": "7.0.0",
+    "tesseract.js-core": "7.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1"
+  }
+}
