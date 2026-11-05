@@ -257,13 +257,13 @@ Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pa
 
 Nufotografuokite abi puses: **SIM Nr. nuotrauka**, tada **PIN ir PUK nuotrauka**. Kai SIM Nr., PIN ir PUK užpildyti, SIM patenka į sąrašą ir pradedama kita. Jei skaitmuo nuskaitytas klaidingai, pataisykite jį, tada pasirinkite **Kita SIM**. Taip pat galite skenuoti **Kamera** kortelę po kortelės arba **Pasirinkti nuotraukas**, padarytas anksčiau.
 
-Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeris nėra SIM Nr., nesutampa paskutinis skaitmuo, ta pati SIM du kartus arba ji jau yra **SIM kortelės**. Pašalinkite taisytiną SIM ir nuskenuokite ją dar kartą. **Pridėti 2 SIM** prideda visas iš karto, **Neaktyvuota**, biure; kol bent vieną reikia taisyti, nepridedama nieko.
+Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeris nėra SIM Nr., nesutampa paskutinis skaitmuo, ta pati SIM du kartus arba ji jau yra **SIM kortelės**. Pašalinkite taisytiną SIM ir nuskenuokite ją dar kartą. **Pridėti 2 SIM** prideda visas iš karto, **Neaktyvuota**, biure; kol bent vieną reikia taisyti, nepridedama nieko. Vienoje siuntoje telpa ne daugiau kaip 100 SIM: likusios praleidžiamos, ir sąrašas tai praneša.
 
 ![Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant](../../web/apps/workwear/public/help-img/lt/desktop/sim-scan.png)
 
 *Tik administratoriams:*
 
-**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**.
+**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
 
 ## 13. Administravimas
 

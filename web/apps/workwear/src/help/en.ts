@@ -332,11 +332,11 @@ export const en: Guide = {
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing.',
+          p: 'The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing. A batch takes at most 100 SIMs: more are left out, and the list says so.',
         },
         { shots: [{ name: 'sim-scan', alt: 'Scan SIMs: the SIMs read from photos, checked before they are added' }] },
         {
-          p: '**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**.',
+          p: '**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.',
           roles: ['admin'],
         },
       ],

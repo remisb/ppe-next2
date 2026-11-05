@@ -257,13 +257,13 @@ Search finds a SIM by its SIM, phone or inventory number, and an item by its inv
 
 Take a photo of each side: **Photo of the SIM No.**, then **Photo of the PIN and PUK**. Once the SIM No., PIN and PUK are filled in, the SIM goes to the list and the next one starts. If a digit was misread, correct it, then choose **Next SIM**. You can also scan with the **Camera**, card after card, or **Choose Photos** taken earlier.
 
-The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing.
+The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing. A batch takes at most 100 SIMs: more are left out, and the list says so.
 
 ![Scan SIMs: the SIMs read from photos, checked before they are added](../../web/apps/workwear/public/help-img/en/desktop/sim-scan.png)
 
 *Administrators only:*
 
-**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**.
+**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
 
 ## 13. Administration
 
