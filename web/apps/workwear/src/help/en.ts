@@ -23,8 +23,8 @@ export const en: Guide = {
             {
               text: 'Your first screen depends on your role:',
               items: [
-                { text: 'Administrators start on the **Dashboard**.', roles: ['admin'] },
-                { text: 'Managers start on the **Manager Dashboard**.', roles: ['manager'] },
+                { text: 'Administrators start on **Apps**, every app their roles open; Workwear & Equipment opens on the **Dashboard**.', roles: ['admin'] },
+                { text: 'Managers start on **Apps**; Workwear & Equipment opens on the **Manager Dashboard**.', roles: ['manager'] },
                 { text: 'The employee role starts on the **Employee Dashboard**.', roles: ['employee'] },
               ],
             },
@@ -41,6 +41,37 @@ export const en: Guide = {
             { name: 'sign-in', alt: 'The sign-in screen with email, password and Keep me signed in', phone: true },
             { name: 'sign-in-dark', alt: 'The same screen with the Dark theme', phone: true },
           ],
+        },
+      ],
+    },
+    {
+      id: 'launcher',
+      title: 'App Launcher',
+      roles: ['admin', 'manager'],
+      blocks: [
+        {
+          p: '**Apps** shows every app your roles open as big tiles, in groups: **Workwear & PPE**, **Company Assets**, **People & Crew** and **Administration**. Some tiles open one screen of an app, such as **Create Order** or **SIM Cards**. With more than one app, you start here when you sign in.',
+        },
+        { p: 'To come back to it, choose **Apps** in **More**, in Workwear & Equipment and in Administration alike.', devices: ['phone'] },
+        { p: 'To come back to it, choose **Apps** at the foot of the rail, in Workwear & Equipment and in Administration alike.', devices: ['tablet'] },
+        { p: 'To come back to it, choose **Apps** at the foot of the sidebar, in Workwear & Equipment and in Administration alike, or find **App Launcher** with `⌘K`.', devices: ['desktop'] },
+        { p: 'In Scan SIMs it is the grid icon at the top.' },
+        {
+          p: 'Type in **Search apps and screens** to narrow the tiles by name or group; `Enter` opens the first. A tile opens its app here. A tile with ↗ is another site with its own sign-in, such as **PPE Crew**, and opens in a new tab. A badge on a tile gives its stage, such as **Pilot**.',
+        },
+        { p: 'The groups on the left show one group at a time, or your **Pinned** tiles. `⌘K` or `/` puts the cursor in the search.', devices: ['desktop'] },
+        {
+          p: '**⋯** on a tile says where it runs and its address, with **Open** and **Pin**. Pinned tiles come first, under **Pinned**, on every device you sign in on; **Unpin** takes one away. Under **Recent** are the apps you opened last on this device.',
+        },
+        {
+          p: "An app's **⋯** also has **Feedback**: tell its team how it worked for you, **Works well**, **Confusing** or **Something broke**, and what you were trying to do. Administrators read it on **Manage apps**.",
+        },
+        { shots: [{ name: 'launcher', alt: 'App Launcher: the apps and shortcuts in groups, with the search' }] },
+        {
+          p: 'Apps still being tried, **POC** and **In development**, show only to people with the **Testers** role, once they turn on **Show apps in testing**.',
+        },
+        {
+          p: "Some apps, such as Scan SIMs, come in versions. **Stable** is the one everyone uses; **Beta**, **Preview** or a variant may be offered to testers, or to some roles, while it is tried. When an app has more than Stable for you, its **⋯** has **Versions**: choose one, and the app opens on it for you from then on, its tile saying which. Inside the app, a stripe at the top says **You are using Beta** and the version, with **Back to Stable**.",
         },
       ],
     },
@@ -279,15 +310,44 @@ export const en: Guide = {
       ],
     },
     {
+      id: 'sim-scan',
+      title: 'Scan SIMs',
+      roles: ['admin', 'manager'],
+      blocks: [
+        {
+          p: '**Scan SIMs** adds newly received SIMs from their cards: the SIM No. is read from the barcode on the front, the PIN and PUK from the back. It is an app of its own, still on trial, for those who manage Company Assets: open it from **Apps**. **SIM Cards** at its top takes you back to Workwear & Equipment.',
+        },
+        {
+          p: "**For every SIM** shows what the cards share: the provider, plan and non-return value from **Settings**, the received date and a comment. The pencil beside it changes them for this batch only.",
+        },
+        {
+          p: 'Scan with the **Camera**, card after card: hold the front in the frame, then turn the card over for the PIN and PUK; **No Back** goes on without them. Or use **Choose Photos** for photos taken earlier: front, then back, card after card. Photos stay on this phone.',
+          devices: ['phone'],
+        },
+        {
+          p: 'Take a photo of each side: **Photo of the SIM No.**, then **Photo of the PIN and PUK**. Once the SIM No., PIN and PUK are filled in, the SIM goes to the list and the next one starts. If a digit was misread, correct it, then choose **Next SIM**. You can also scan with the **Camera**, card after card, or **Choose Photos** taken earlier.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing.',
+        },
+        { shots: [{ name: 'sim-scan', alt: 'Scan SIMs: the SIMs read from photos, checked before they are added' }] },
+        {
+          p: '**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**.',
+          roles: ['admin'],
+        },
+      ],
+    },
+    {
       id: 'administration',
       title: 'Administration',
       roles: ['admin'],
       blocks: [
         {
-          p: "**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage** and **Settings**.",
+          p: "**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**.",
         },
         {
-          p: 'Open it from **More**. It has a bar of its own at the bottom, with **Overview**, **Users**, **Audit** and **Security**. Its **More** holds **Roles & permissions**, **System**, **Usage** and **Settings**, then **Workwear & Equipment**, which takes you back, your account and **Sign out**.',
+          p: 'Open it from **More**. It has a bar of its own at the bottom, with **Overview**, **Users**, **Audit** and **Security**. Its **More** holds **Roles & permissions**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**, then **Apps**, **Workwear & Equipment**, which takes you back, your account and **Sign out**.',
           devices: ['phone'],
         },
         { p: 'Open it with **Admin** at the foot of the rail. It has a rail of its own; **Workwear**, at its foot, takes you back.', devices: ['tablet'] },
@@ -501,6 +561,30 @@ export const en: Guide = {
         },
         { p: 'A card already registered keeps its provider, even one you remove from the list, and its non-return value.' },
         { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM providers, one of them the default, and the default non-return value' }] },
+      ],
+    },
+    {
+      id: 'manage-apps',
+      title: 'Manage apps',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: "**Manage apps**, in Administration, is App Launcher's list: every app and shortcut, in the launcher's order. Choose one to see where it runs, who sees it, its feedback and its **Changes**.",
+        },
+        {
+          p: '**Register app** adds a tile: its name in each language, its slug (its short name in addresses and records, set once), whether it is an app or a shortcut to one screen of an app, its group, stage, picture and colour, and where it runs: **On this site**, with a path such as /orders/new, or **Another site**, with its https address. **Edit** changes it later.',
+        },
+        {
+          p: "**Who sees it**: **Everyone signed in**, or people with any of the permissions you tick. Seeing a tile lets no one do more: what they can do inside an app is still decided by their roles. **POC** and **In development** show only to testers; **Retired** takes the tile away from everyone and keeps its records.",
+        },
+        { p: '**Move earlier** and **Move later** change its place in the launcher. **Feedback** lists what people sent from its tile, newest first.' },
+        {
+          p: '**Versions and channels**, for an app published in versions, such as Scan SIMs, lists its versions, newest first, and which one each channel opens. Each deploy publishes a new version to **Preview**, for testers. To give it to everyone, choose **⋯** beside it, then **Make Stable**; to roll back, choose **Make Stable** on an older one. **Make Beta** offers a version to testers before it becomes Stable.',
+        },
+        {
+          p: "**Add variant** adds a version some people try beside Stable, such as another design: its name in addresses, its label in each language, its version and who sees it. They choose it under **Versions** in App Launcher.",
+        },
+        { shots: [{ name: 'manage-apps', alt: 'Manage apps: Scan SIMs beside the list, with its versions and channels' }] },
       ],
     },
     {

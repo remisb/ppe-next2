@@ -8,8 +8,8 @@ Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemon
 
 1. Atidarykite **workwear.gavort.nl** ir prisijunkite savo el. paštu ir slaptažodžiu.
 2. Pirmasis ekranas priklauso nuo jūsų rolės:
-   - administratoriai pradeda ekrane **Suvestinė**;
-   - vadovai – ekrane **Vadovo suvestinė**;
+   - administratoriai pradeda ekrane **Programos** – visos jų rolių atveriamos programos; darbo drabužių programa atsidaro ekrane **Suvestinė**;
+   - vadovai – ekrane **Programos**; darbo drabužių programa atsidaro ekrane **Vadovo suvestinė**;
    - darbuotojo rolė – ekrane **Darbuotojo suvestinė**.
 
 Šoninėje juostoje yra visi skyriai ir **Ieškoti…** (`⌘K`). **Užsakymai**, **Prekių katalogas** ir **Prekių rinkiniai** išvardyti po **Darbo drabužiai**. Pasirinkę **Darbo drabužiai**, juos paslėpsite arba parodysite; kol jie paslėpti, rodomas patvirtinimo laukiančių užsakymų skaičius. **Pagalba**, **Spartieji klavišai**, jūsų paskyra ir **Atsijungti** yra jos apačioje.
@@ -23,7 +23,31 @@ Pažymėjus **Likti prisijungus**, šiame įrenginyje liekate prisijungę ir už
 ![Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“](../../web/apps/workwear/public/help-img/lt/phone/sign-in.png)
 ![Tas pats ekranas su tamsia tema](../../web/apps/workwear/public/help-img/lt/phone/sign-in-dark.png)
 
-## 2. Suvestinė
+## 2. Programų sąrašas
+
+*Tik administratoriams ir vadovams.*
+
+**Programos** rodo visas jūsų rolių atveriamas programas didelėmis plytelėmis, grupėmis: **Darbo drabužiai ir AAP**, **Įmonės turtas**, **Žmonės ir brigados** ir **Administravimas**. Kai kurios plytelės atveria vieną programos ekraną, pvz., **Kurti užsakymą** ar **SIM kortelės**. Jei turite daugiau nei vieną programą, prisijungę pradedate čia.
+
+Kad grįžtumėte, pasirinkite **Programos** šoninės juostos apačioje – ir darbo drabužių programoje, ir Administravime – arba suraskite **Programų sąrašas** su `⌘K`.
+
+Programoje „Skenuoti SIM“ tai tinklelio piktograma viršuje.
+
+Rašykite į **Ieškoti programų ir ekranų**, kad liktų plytelės su tuo pavadinimu ar grupe; `Enter` atveria pirmąją. Plytelė atveria savo programą čia pat. Plytelė su ↗ – kita svetainė su savu prisijungimu, pvz., **PPE Crew**; ji atsidaro naujame skirtuke. Ženklelis ant plytelės nurodo jos etapą, pvz., **Bandoma**.
+
+Grupės kairėje rodo po vieną grupę arba jūsų **Prisegtos** plyteles. `⌘K` arba `/` perkelia žymeklį į paiešką.
+
+**⋯** ant plytelės parodo, kur ji veikia, ir jos adresą, su **Atidaryti** ir **Prisegti**. Prisegtos plytelės rodomos pirmos, skiltyje **Prisegtos**, kiekviename įrenginyje, kuriame prisijungiate; **Atsegti** pašalina. Skiltyje **Neseniai atidarytos** – programos, kurias paskutines atidarėte šiame įrenginyje.
+
+Programos **⋯** dar turi **Atsiliepimas**: praneškite jos komandai, kaip sekėsi – **Veikia gerai**, **Neaišku** ar **Kažkas sugedo** – ir ką bandėte padaryti. Administratoriai juos skaito skiltyje **Programų tvarkymas**.
+
+![Programų sąrašas: programos ir nuorodos grupėmis, su paieška](../../web/apps/workwear/public/help-img/lt/desktop/launcher.png)
+
+Dar bandomos programos, **Prototipas** ir **Kuriama**, rodomos tik turintiems rolę **Bandytojai**, kai jie įjungia **Rodyti bandomas programas**.
+
+Kai kurios programos, pvz., „Skenuoti SIM“, turi versijas. **Stabili** – ta, kuria naudojasi visi; **Beta**, **Peržiūra** ar variantas gali būti siūlomi bandytojams ar kai kurioms rolėms, kol bandomi. Kai programa jums turi daugiau nei stabilią versiją, jos **⋯** turi **Versijos**: pasirinkite vieną, ir programa jums nuo tol atsidarys joje, o plytelė tai parodys. Programos viršuje juosta rašo **Naudojate: Beta** ir versiją, su **Grįžti į stabilią**.
+
+## 3. Suvestinė
 
 *Tik administratoriams:*
 
@@ -50,7 +74,7 @@ Kortelė **Atsarginės kopijos** rodo, ar duomenų bazė kopijuojama. Pasirinkit
 
 Jei turite daugiau nei vieną rolę, **Suvestinės** viršuje perjungia jūsų suvestines.
 
-## 3. Užsakymo kūrimas
+## 4. Užsakymo kūrimas
 
 1. Skyriuje **Užsakymai** viršuje pasirinkite **Kurti užsakymą**.
 2. Lauke **Kam skirta** įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite **+ Naujas darbuotojas**.
@@ -67,7 +91,7 @@ Kol dirbate, šis įrenginys saugo užsakymo juodraštį; **⋯ → Išvalyti u�
 
 ![Užsakymo kūrimas: pasirinktas darbuotojas, pritaikytas rinkinys ir dydžiai](../../web/apps/workwear/public/help-img/lt/desktop/create-order.png)
 
-## 4. Peržiūra ir „Pažymėti kaip užsakytą“
+## 5. Peržiūra ir „Pažymėti kaip užsakytą“
 
 1. Patikrinkite eilutes ir bendrą sumą.
 2. Pasirinkite **Pažymėti kaip užsakytą**. Užsakymo būsena tampa **Užsakyta**, ir jo nebegalima keisti. Programa kartu sukuria darbuotojo patvirtinimo nuorodą.
@@ -80,7 +104,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 ![Užsakymo peržiūros langas](../../web/apps/workwear/public/help-img/lt/desktop/review.png)
 ![Užsakytas užsakymas su patvirtinimo nuoroda](../../web/apps/workwear/public/help-img/lt/desktop/ordered.png)
 
-## 5. Darbuotojas patvirtina
+## 6. Darbuotojas patvirtina
 
 1. Darbuotojas atidaro nuorodą. Paskyros jam nereikia.
 2. Jis peržiūri prekes, jų kainas ir bendrą sumą anglų arba rusų kalba (**EN / RU**). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.
@@ -88,7 +112,7 @@ Jei darbuotojas pasirašys popieriuje, vietoj to pasirinkite **Spausdinti įraš
 
 ![Patvirtinimo puslapis telefone](../../web/apps/workwear/public/help-img/lt/phone/confirm-phone.png)
 
-## 6. Užsakymai
+## 7. Užsakymai
 
 **Užsakymuose** – visi pateikti užsakymai. **Kurti užsakymą** viršuje pradeda naują; telefone – **Užsakyti** apatinėje juostoje.
 
@@ -114,7 +138,7 @@ Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, suk
 
 ![Užsakymai su atidarytu užsakymu](../../web/apps/workwear/public/help-img/lt/desktop/history.png)
 
-## 7. Išdavimo įrašas
+## 8. Išdavimo įrašas
 
 Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.
 
@@ -125,7 +149,7 @@ Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašom
 
 ![Dvikalbis išdavimo įrašas](../../web/apps/workwear/public/help-img/lt/desktop/record.png)
 
-## 8. Darbuotojai
+## 9. Darbuotojai
 
 Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.
 
@@ -148,7 +172,7 @@ Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darb
 ![Darbuotojų sąrašas](../../web/apps/workwear/public/help-img/lt/desktop/employees.png)
 ![Darbuotojo puslapis su išduotomis prekėmis](../../web/apps/workwear/public/help-img/lt/desktop/employee.png)
 
-## 9. Prekių katalogas ir prekių rinkiniai
+## 10. Prekių katalogas ir prekių rinkiniai
 
 Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.
 
@@ -165,7 +189,7 @@ Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekran
 ![Prekių katalogas](../../web/apps/workwear/public/help-img/lt/desktop/catalogue.png)
 ![Prekių rinkiniai](../../web/apps/workwear/public/help-img/lt/desktop/item-sets.png)
 
-## 10. Įmonės turtas
+## 11. Įmonės turtas
 
 Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: **SIM kortelės** ir **Įranga**, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė **Įrangos išdavimai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
@@ -221,17 +245,35 @@ Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina ko
 
 Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.
 
-## 11. Administravimas
+## 12. Skenuoti SIM
+
+*Tik administratoriams ir vadovams.*
+
+**Skenuoti SIM** prideda naujai gautas SIM iš jų kortelių: SIM Nr. nuskaitomas iš brūkšninio kodo priekyje, PIN ir PUK – iš nugarėlės. Tai atskira, dar bandoma programa tiems, kurie tvarko įmonės turtą: atidarykite ją iš **Programos**. **SIM kortelės** viršuje grąžina į darbo drabužių programą.
+
+**Visoms SIM** rodo, kas kortelėms bendra: tiekėjas, planas ir negrąžinimo vertė iš **Nustatymai**, gavimo data ir pastaba. Pieštukas šalia keičia juos tik šiai siuntai.
+
+Nufotografuokite abi puses: **SIM Nr. nuotrauka**, tada **PIN ir PUK nuotrauka**. Kai SIM Nr., PIN ir PUK užpildyti, SIM patenka į sąrašą ir pradedama kita. Jei skaitmuo nuskaitytas klaidingai, pataisykite jį, tada pasirinkite **Kita SIM**. Taip pat galite skenuoti **Kamera** kortelę po kortelės arba **Pasirinkti nuotraukas**, padarytas anksčiau.
+
+Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeris nėra SIM Nr., nesutampa paskutinis skaitmuo, ta pati SIM du kartus arba ji jau yra **SIM kortelės**. Pašalinkite taisytiną SIM ir nuskenuokite ją dar kartą. **Pridėti 2 SIM** prideda visas iš karto, **Neaktyvuota**, biure; kol bent vieną reikia taisyti, nepridedama nieko.
+
+![Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant](../../web/apps/workwear/public/help-img/lt/desktop/sim-scan.png)
+
+*Tik administratoriams:*
+
+**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**.
+
+## 13. Administravimas
 
 *Tik administratoriams.*
 
-**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas** ir **Nustatymai**.
+**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**.
 
 Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.
 
 Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
 
-## 12. Apžvalga
+## 14. Apžvalga
 
 *Tik administratoriams.*
 
@@ -248,7 +290,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Apžvalga: kam reikia dėmesio, toliau rodikliai](../../web/apps/workwear/public/help-img/lt/desktop/overview.png)
 
-## 13. Naudotojai
+## 15. Naudotojai
 
 *Tik administratoriams.*
 
@@ -260,7 +302,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 14. Rolės ir teisės
+## 16. Rolės ir teisės
 
 *Tik administratoriams.*
 
@@ -275,7 +317,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 ![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
 ![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
 
-## 15. Audito žurnalas
+## 17. Audito žurnalas
 
 *Tik administratoriams.*
 
@@ -291,7 +333,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 
 ![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
 
-## 16. Sauga
+## 18. Sauga
 
 *Tik administratoriams.*
 
@@ -306,7 +348,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 ![Sauga: prisijungimai su adresu ir įrenginiu](../../web/apps/workwear/public/help-img/lt/desktop/security.png)
 ![Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas](../../web/apps/workwear/public/help-img/lt/desktop/access-review.png)
 
-## 17. Sistema
+## 19. Sistema
 
 *Tik administratoriams.*
 
@@ -321,7 +363,7 @@ Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9
 ![Sistema: programėlė, jos užklausos ir duomenų bazė](../../web/apps/workwear/public/help-img/lt/desktop/system.png)
 ![Klaidos: atidaryta klaida su nuoroda į užklausą](../../web/apps/workwear/public/help-img/lt/desktop/errors.png)
 
-## 18. Atsarginės kopijos
+## 20. Atsarginės kopijos
 
 *Tik administratoriams.*
 
@@ -340,7 +382,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 19. Naudojimas
+## 21. Naudojimas
 
 *Tik administratoriams.*
 
@@ -355,7 +397,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Naudojimas: aktyvūs asmenys, prisijungimai ir kita](../../web/apps/workwear/public/help-img/lt/desktop/usage.png)
 
-## 20. Nustatymai
+## 22. Nustatymai
 
 *Tik administratoriams.*
 
@@ -371,7 +413,25 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 ![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
-## 21. Jūsų paskyra
+## 23. Programų tvarkymas
+
+*Tik administratoriams.*
+
+**Programų tvarkymas** Administravime – tai programų sąrašo plytelės: kiekviena programa ir nuoroda, sąrašo tvarka. Pasirinkite vieną, kad pamatytumėte, kur ji veikia, kas ją mato, atsiliepimus ir **Pakeitimai**.
+
+**Registruoti programą** prideda plytelę: jos pavadinimą kiekviena kalba, trumpąjį vardą (jos vardas adresuose ir įrašuose, nustatomas vieną kartą), ar tai programa, ar nuoroda į vieną programos ekraną, grupę, etapą, paveikslėlį ir spalvą, ir kur ji veikia: **Šioje svetainėje**, su keliu, pvz., /orders/new, ar **Kitoje svetainėje**, su jos https adresu. **Redaguoti** pakeičia vėliau.
+
+**Kas mato**: **Visi prisijungę** arba turintys bet kurį pažymėtą leidimą. Plytelės matymas niekam neleidžia daugiau: ką jie gali daryti programoje, vis tiek lemia jų rolės. **Prototipas** ir **Kuriama** rodomi tik bandytojams; **Nebenaudojama** paslepia plytelę nuo visų ir išsaugo jos įrašus.
+
+**Perkelti aukščiau** ir **Perkelti žemiau** keičia jos vietą sąraše. **Atsiliepimai** rodo, ką žmonės atsiuntė iš jos plytelės, naujausius pirmus.
+
+**Versijos ir kanalai** programai, skelbiamai versijomis, pvz., „Skenuoti SIM“, rodo jos versijas, naujausias pirmas, ir kurią atidaro kiekvienas kanalas. Kiekvienas diegimas paskelbia naują versiją kanale **Peržiūra**, bandytojams. Kad ją gautų visi, pasirinkite **⋯** šalia jos, tada **Padaryti: Stabili**; norėdami grąžinti ankstesnę, pasirinkite **Padaryti: Stabili** ant senesnės. **Padaryti: Beta** pasiūlo versiją bandytojams, kol ji netapo stabili.
+
+**Pridėti variantą** prideda versiją, kurią kai kurie žmonės bando šalia stabilios, pvz., kitokį dizainą: jos pavadinimą adresuose, pavadinimą kiekviena kalba, versiją ir kas ją mato. Jie ją pasirenka programų sąraše, skiltyje **Versijos**.
+
+![Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais](../../web/apps/workwear/public/help-img/lt/desktop/manage-apps.png)
+
+## 24. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -382,7 +442,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 22. Paieška ir spartieji klavišai
+## 25. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |

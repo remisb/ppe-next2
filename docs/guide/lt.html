@@ -76,27 +76,30 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
   <p class="lede">Programa registruoja darbuotojams išduotus darbo drabužius ir apsaugos priemones. Paruošiate užsakymą ir pažymite jį kaip užsakytą. Gavęs prekes, darbuotojas patvirtina gavimą, o programa išsaugo užrakintą įrašą anglų ir rusų kalbomis. Ji taip pat registruoja įmonės SIM, įrangą ir baldus bei tai, pas ką yra kiekvienas daiktas.</p>
   <nav aria-label="Turinys"><ol>
     <li><a href="#sign-in"><b>1</b>Prisijungimas</a></li>
-    <li><a href="#dashboard"><b>2</b>Suvestinė</a></li>
-    <li><a href="#create"><b>3</b>Užsakymo kūrimas</a></li>
-    <li><a href="#review"><b>4</b>Peržiūra ir „Pažymėti kaip užsakytą“</a></li>
-    <li><a href="#confirm"><b>5</b>Darbuotojas patvirtina</a></li>
-    <li><a href="#orders"><b>6</b>Užsakymai</a></li>
-    <li><a href="#record"><b>7</b>Išdavimo įrašas</a></li>
-    <li><a href="#employees"><b>8</b>Darbuotojai</a></li>
-    <li><a href="#catalogue"><b>9</b>Prekių katalogas ir prekių rinkiniai</a></li>
-    <li><a href="#assets"><b>10</b>Įmonės turtas</a></li>
-    <li><a href="#administration"><b>11</b>Administravimas</a></li>
-    <li><a href="#overview"><b>12</b>Apžvalga</a></li>
-    <li><a href="#users"><b>13</b>Naudotojai</a></li>
-    <li><a href="#roles"><b>14</b>Rolės ir teisės</a></li>
-    <li><a href="#audit"><b>15</b>Audito žurnalas</a></li>
-    <li><a href="#security"><b>16</b>Sauga</a></li>
-    <li><a href="#system"><b>17</b>Sistema</a></li>
-    <li><a href="#backups"><b>18</b>Atsarginės kopijos</a></li>
-    <li><a href="#usage"><b>19</b>Naudojimas</a></li>
-    <li><a href="#settings"><b>20</b>Nustatymai</a></li>
-    <li><a href="#account"><b>21</b>Jūsų paskyra</a></li>
-    <li><a href="#shortcuts"><b>22</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#launcher"><b>2</b>Programų sąrašas</a></li>
+    <li><a href="#dashboard"><b>3</b>Suvestinė</a></li>
+    <li><a href="#create"><b>4</b>Užsakymo kūrimas</a></li>
+    <li><a href="#review"><b>5</b>Peržiūra ir „Pažymėti kaip užsakytą“</a></li>
+    <li><a href="#confirm"><b>6</b>Darbuotojas patvirtina</a></li>
+    <li><a href="#orders"><b>7</b>Užsakymai</a></li>
+    <li><a href="#record"><b>8</b>Išdavimo įrašas</a></li>
+    <li><a href="#employees"><b>9</b>Darbuotojai</a></li>
+    <li><a href="#catalogue"><b>10</b>Prekių katalogas ir prekių rinkiniai</a></li>
+    <li><a href="#assets"><b>11</b>Įmonės turtas</a></li>
+    <li><a href="#sim-scan"><b>12</b>Skenuoti SIM</a></li>
+    <li><a href="#administration"><b>13</b>Administravimas</a></li>
+    <li><a href="#overview"><b>14</b>Apžvalga</a></li>
+    <li><a href="#users"><b>15</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>16</b>Rolės ir teisės</a></li>
+    <li><a href="#audit"><b>17</b>Audito žurnalas</a></li>
+    <li><a href="#security"><b>18</b>Sauga</a></li>
+    <li><a href="#system"><b>19</b>Sistema</a></li>
+    <li><a href="#backups"><b>20</b>Atsarginės kopijos</a></li>
+    <li><a href="#usage"><b>21</b>Naudojimas</a></li>
+    <li><a href="#settings"><b>22</b>Nustatymai</a></li>
+    <li><a href="#manage-apps"><b>23</b>Programų tvarkymas</a></li>
+    <li><a href="#account"><b>24</b>Jūsų paskyra</a></li>
+    <li><a href="#shortcuts"><b>25</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -106,8 +109,8 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <li>Atidarykite <b>workwear.gavort.nl</b> ir prisijunkite savo el. paštu ir slaptažodžiu.</li>
       <li>Pirmasis ekranas priklauso nuo jūsų rolės:
         <ul>
-          <li>administratoriai pradeda ekrane <b>Suvestinė</b>;</li>
-          <li>vadovai – ekrane <b>Vadovo suvestinė</b>;</li>
+          <li>administratoriai pradeda ekrane <b>Programos</b> – visos jų rolių atveriamos programos; darbo drabužių programa atsidaro ekrane <b>Suvestinė</b>;</li>
+          <li>vadovai – ekrane <b>Programos</b>; darbo drabužių programa atsidaro ekrane <b>Vadovo suvestinė</b>;</li>
           <li>darbuotojo rolė – ekrane <b>Darbuotojo suvestinė</b>.</li>
         </ul>
       </li>
@@ -122,8 +125,25 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="launcher">
+  <h2><span class="n">2</span>Programų sąrašas</h2>
+  <p class="who">Tik administratoriams ir vadovams</p>
+    <p><b>Programos</b> rodo visas jūsų rolių atveriamas programas didelėmis plytelėmis, grupėmis: <b>Darbo drabužiai ir AAP</b>, <b>Įmonės turtas</b>, <b>Žmonės ir brigados</b> ir <b>Administravimas</b>. Kai kurios plytelės atveria vieną programos ekraną, pvz., <b>Kurti užsakymą</b> ar <b>SIM kortelės</b>. Jei turite daugiau nei vieną programą, prisijungę pradedate čia.</p>
+    <p>Kad grįžtumėte, pasirinkite <b>Programos</b> šoninės juostos apačioje – ir darbo drabužių programoje, ir Administravime – arba suraskite <b>Programų sąrašas</b> su <kbd>⌘K</kbd>.</p>
+    <p>Programoje „Skenuoti SIM“ tai tinklelio piktograma viršuje.</p>
+    <p>Rašykite į <b>Ieškoti programų ir ekranų</b>, kad liktų plytelės su tuo pavadinimu ar grupe; <kbd>Enter</kbd> atveria pirmąją. Plytelė atveria savo programą čia pat. Plytelė su ↗ – kita svetainė su savu prisijungimu, pvz., <b>PPE Crew</b>; ji atsidaro naujame skirtuke. Ženklelis ant plytelės nurodo jos etapą, pvz., <b>Bandoma</b>.</p>
+    <p>Grupės kairėje rodo po vieną grupę arba jūsų <b>Prisegtos</b> plyteles. <kbd>⌘K</kbd> arba <kbd>/</kbd> perkelia žymeklį į paiešką.</p>
+    <p><b>⋯</b> ant plytelės parodo, kur ji veikia, ir jos adresą, su <b>Atidaryti</b> ir <b>Prisegti</b>. Prisegtos plytelės rodomos pirmos, skiltyje <b>Prisegtos</b>, kiekviename įrenginyje, kuriame prisijungiate; <b>Atsegti</b> pašalina. Skiltyje <b>Neseniai atidarytos</b> – programos, kurias paskutines atidarėte šiame įrenginyje.</p>
+    <p>Programos <b>⋯</b> dar turi <b>Atsiliepimas</b>: praneškite jos komandai, kaip sekėsi – <b>Veikia gerai</b>, <b>Neaišku</b> ar <b>Kažkas sugedo</b> – ir ką bandėte padaryti. Administratoriai juos skaito skiltyje <b>Programų tvarkymas</b>.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/launcher.png" alt="Programų sąrašas: programos ir nuorodos grupėmis, su paieška" loading="lazy"></figure>
+    </div>
+    <p>Dar bandomos programos, <b>Prototipas</b> ir <b>Kuriama</b>, rodomos tik turintiems rolę <b>Bandytojai</b>, kai jie įjungia <b>Rodyti bandomas programas</b>.</p>
+    <p>Kai kurios programos, pvz., „Skenuoti SIM“, turi versijas. <b>Stabili</b> – ta, kuria naudojasi visi; <b>Beta</b>, <b>Peržiūra</b> ar variantas gali būti siūlomi bandytojams ar kai kurioms rolėms, kol bandomi. Kai programa jums turi daugiau nei stabilią versiją, jos <b>⋯</b> turi <b>Versijos</b>: pasirinkite vieną, ir programa jums nuo tol atsidarys joje, o plytelė tai parodys. Programos viršuje juosta rašo <b>Naudojate: Beta</b> ir versiją, su <b>Grįžti į stabilią</b>.</p>
+</section>
+
 <section id="dashboard">
-  <h2><span class="n">2</span>Suvestinė</h2>
+  <h2><span class="n">3</span>Suvestinė</h2>
     <p class="who">Tik administratoriams</p>
     <p>Viršuje rodomi patvirtinimo laukiantys užsakymai, šio mėnesio išlaidos ir artėjantys pakeitimai.</p>
     <p><b>Reikia jūsų dėmesio</b> rodo, ką daryti toliau, pradedant skubiausiais darbais. Kiekvienoje eilutėje yra jos užduoties mygtukas:</p>
@@ -145,7 +165,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="create">
-  <h2><span class="n">3</span>Užsakymo kūrimas</h2>
+  <h2><span class="n">4</span>Užsakymo kūrimas</h2>
     <ol>
       <li>Skyriuje <b>Užsakymai</b> viršuje pasirinkite <b>Kurti užsakymą</b>.</li>
       <li>Lauke <b>Kam skirta</b> įveskite darbuotojo vardo dalį. Naujam darbuotojui pasirinkite <b>+ Naujas darbuotojas</b>.</li>
@@ -171,7 +191,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="review">
-  <h2><span class="n">4</span>Peržiūra ir „Pažymėti kaip užsakytą“</h2>
+  <h2><span class="n">5</span>Peržiūra ir „Pažymėti kaip užsakytą“</h2>
     <ol>
       <li>Patikrinkite eilutes ir bendrą sumą.</li>
       <li>Pasirinkite <b>Pažymėti kaip užsakytą</b>. Užsakymo būsena tampa <b>Užsakyta</b>, ir jo nebegalima keisti. Programa kartu sukuria darbuotojo patvirtinimo nuorodą.</li>
@@ -186,7 +206,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="confirm">
-  <h2><span class="n">5</span>Darbuotojas patvirtina</h2>
+  <h2><span class="n">6</span>Darbuotojas patvirtina</h2>
     <ol>
       <li>Darbuotojas atidaro nuorodą. Paskyros jam nereikia.</li>
       <li>Jis peržiūri prekes, jų kainas ir bendrą sumą anglų arba rusų kalba (<b>EN / RU</b>). Puslapis atsidaro darbuotojo pageidaujama kalba, jei tai anglų ar rusų; lietuviškai jis nerodomas.</li>
@@ -198,7 +218,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="orders">
-  <h2><span class="n">6</span>Užsakymai</h2>
+  <h2><span class="n">7</span>Užsakymai</h2>
     <p><b>Užsakymuose</b> – visi pateikti užsakymai. <b>Kurti užsakymą</b> viršuje pradeda naują; telefone – <b>Užsakyti</b> apatinėje juostoje.</p>
     <p><b>Visi</b>, <b>Užsakyta</b> ir <b>Išduota</b> filtruoja užsakymus pagal būseną; užvedę žymeklį ant vieno, matysite, ką jis skaičiuoja. Taip pat galima filtruoti pagal darbuotoją ir datą. Spustelėjus įrašo numerį, užsakymas atsidaro šalia sąrašo. <kbd>J</kbd> ir <kbd>K</kbd> pereina tarp užsakymų, o <kbd>Esc</kbd> užsakymą uždaro.</p>
     <p><b>Data</b> iš pradžių rodo <b>Visos datos</b>; vietoj to galite pasirinkti <b>Paskutinės 7 dienos</b>, <b>Šis mėnuo</b> arba <b>Praėjęs mėnuo</b>. <b>Pasirinktas laikotarpis…</b> jo vietoje atveria <b>Nuo</b> ir <b>Iki</b>: <b>Taikyti</b> padaro tą laikotarpį rodomu pasirinkimu, pavyzdžiui, <b>2026.09.01 – 2026.09.30</b>, o <b>Atšaukti</b> palieka filtrą kaip buvo. Norėdami jį pakeisti, vėl pasirinkite <b>Pasirinktas laikotarpis…</b>.</p>
@@ -221,7 +241,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="record">
-  <h2><span class="n">7</span>Išdavimo įrašas</h2>
+  <h2><span class="n">8</span>Išdavimo įrašas</h2>
     <p>Užsakymas, kurio būsena <b>Išduota</b>, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku <b>Peržiūrėti užsakymą</b>.</p>
     <ul>
       <li><b>Spausdinti įrašą</b> atspausdina jį viename A4 lape; užsakyme tą patį daro <b>Spausdinti užsakymą</b>.</li>
@@ -234,7 +254,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="employees">
-  <h2><span class="n">8</span>Darbuotojai</h2>
+  <h2><span class="n">9</span>Darbuotojai</h2>
     <p>Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, <b>Visi</b> ir <b>Trūksta dydžio</b> virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.</p>
     <p>Darbuotojo puslapyje rodoma:</p>
     <ul>
@@ -255,7 +275,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="catalogue">
-  <h2><span class="n">9</span>Prekių katalogas ir prekių rinkiniai</h2>
+  <h2><span class="n">10</span>Prekių katalogas ir prekių rinkiniai</h2>
     <p>Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.</p>
     <p>Prekė gali turėti ir <b>Pirkimo kainą</b> – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Atidarytoje prekėje matyti abi kainos ir kaip jos keitėsi, o jos <b>Pakeitimai</b>, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.</p>
     <p>Spustelėjus prekę, ji atsidaro šalia sąrašo. <kbd>J</kbd> ir <kbd>K</kbd> pereina tarp prekių, o <kbd>Esc</kbd> prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta <b>Neužpildyta</b>; užvedę žymeklį ant žymos, matysite, ko trūksta.</p>
@@ -269,7 +289,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="assets">
-  <h2><span class="n">10</span>Įmonės turtas</h2>
+  <h2><span class="n">11</span>Įmonės turtas</h2>
     <p>Skyriuje <b>Įmonės turtas</b> registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: <b>SIM kortelės</b> ir <b>Įranga</b>, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė <b>Įrangos išdavimai</b>. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.</p>
     <p>Jį atidarysite šoninėje juostoje arba paspaudę <kbd>G</kbd>, tada <kbd>A</kbd>. Jei matote ir <b>Įranga</b>, ji ir <b>SIM kortelės</b> išvardytos po <b>Įmonės turtas</b>: pasirinkite vieną, kad atidarytumėte. Pasirinkę <b>Įmonės turtas</b>, jas paslėpsite arba parodysite.</p>
     <p class="who">Tik administratoriams ir vadovams</p>
@@ -311,16 +331,30 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.</p>
 </section>
 
+<section id="sim-scan">
+  <h2><span class="n">12</span>Skenuoti SIM</h2>
+  <p class="who">Tik administratoriams ir vadovams</p>
+    <p><b>Skenuoti SIM</b> prideda naujai gautas SIM iš jų kortelių: SIM Nr. nuskaitomas iš brūkšninio kodo priekyje, PIN ir PUK – iš nugarėlės. Tai atskira, dar bandoma programa tiems, kurie tvarko įmonės turtą: atidarykite ją iš <b>Programos</b>. <b>SIM kortelės</b> viršuje grąžina į darbo drabužių programą.</p>
+    <p><b>Visoms SIM</b> rodo, kas kortelėms bendra: tiekėjas, planas ir negrąžinimo vertė iš <b>Nustatymai</b>, gavimo data ir pastaba. Pieštukas šalia keičia juos tik šiai siuntai.</p>
+    <p>Nufotografuokite abi puses: <b>SIM Nr. nuotrauka</b>, tada <b>PIN ir PUK nuotrauka</b>. Kai SIM Nr., PIN ir PUK užpildyti, SIM patenka į sąrašą ir pradedama kita. Jei skaitmuo nuskaitytas klaidingai, pataisykite jį, tada pasirinkite <b>Kita SIM</b>. Taip pat galite skenuoti <b>Kamera</b> kortelę po kortelės arba <b>Pasirinkti nuotraukas</b>, padarytas anksčiau.</p>
+    <p>Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeris nėra SIM Nr., nesutampa paskutinis skaitmuo, ta pati SIM du kartus arba ji jau yra <b>SIM kortelės</b>. Pašalinkite taisytiną SIM ir nuskenuokite ją dar kartą. <b>Pridėti 2 SIM</b> prideda visas iš karto, <b>Neaktyvuota</b>, biure; kol bent vieną reikia taisyti, nepridedama nieko.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/sim-scan.png" alt="Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant" loading="lazy"></figure>
+    </div>
+    <p class="who">Tik administratoriams</p>
+    <p><b>PIN ir PUK</b> viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. <b>Rodyti PIN ir PUK</b> juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į <b>Audito žurnalas</b>. SIM be jų turi <b>Pridėti PIN ir PUK</b>. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar <b>Pakeitimai</b>.</p>
+</section>
+
 <section id="administration">
-  <h2><span class="n">11</span>Administravimas</h2>
+  <h2><span class="n">13</span>Administravimas</h2>
   <p class="who">Tik administratoriams</p>
-    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b> ir <b>Nustatymai</b>.</p>
+    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b>, <b>Nustatymai</b>, <b>Laiškų šablonai</b> ir <b>Programų tvarkymas</b>.</p>
     <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
     <p>Prisijungiate prie abiejų iš karto, o <b>Atsijungti</b> bet kuriame atjungia nuo abiejų. <b>Administravimą</b> mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.</p>
 </section>
 
 <section id="overview">
-  <h2><span class="n">12</span>Apžvalga</h2>
+  <h2><span class="n">14</span>Apžvalga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Apžvalga</b> atsako į klausimą: ar kas nors negerai? <b>Reikia dėmesio</b> išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma <b>Niekam nereikia jūsų dėmesio.</b></p>
     <ul>
@@ -338,7 +372,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">13</span>Naudotojai</h2>
+  <h2><span class="n">15</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
       <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
@@ -353,7 +387,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">14</span>Rolės ir teisės</h2>
+  <h2><span class="n">16</span>Rolės ir teisės</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
     <ul>
@@ -370,7 +404,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">15</span>Audito žurnalas</h2>
+  <h2><span class="n">17</span>Audito žurnalas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Audito žurnalas</b> rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje <b>Darbo drabužiai ir įranga</b>, <b>Administravime</b>, per darbuotojo <b>Patvirtinimo nuorodą</b> arba pačios <b>Sistemos</b>.</p>
     <p>Filtruokite pagal <b>Sritis</b>, <b>Pakeitimas</b>, <b>Naudotojas</b> ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o <b>Atidaryti programoje „Darbo drabužiai ir įranga“</b> atidaro įrašą. <b>Visi šio įrašo pakeitimai</b> susiaurina sąrašą iki jo.</p>
@@ -387,7 +421,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">16</span>Sauga</h2>
+  <h2><span class="n">18</span>Sauga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sauga</b> turi tris skirtukus:</p>
     <ul>
@@ -403,7 +437,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">17</span>Sistema</h2>
+  <h2><span class="n">19</span>Sistema</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema</b> rodo, kaip veikia programėlė. Ji turi tris skirtukus: <b>Būsena</b>, <b>Klaidos</b> ir <b>Atsarginės kopijos</b>.</p>
     <ul>
@@ -419,7 +453,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">18</span>Atsarginės kopijos</h2>
+  <h2><span class="n">20</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema → Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
@@ -437,7 +471,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">19</span>Naudojimas</h2>
+  <h2><span class="n">21</span>Naudojimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Naudojimas</b> rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.</p>
     <ul>
@@ -454,7 +488,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">20</span>Nustatymai</h2>
+  <h2><span class="n">22</span>Nustatymai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
     <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
@@ -468,8 +502,22 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="manage-apps">
+  <h2><span class="n">23</span>Programų tvarkymas</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Programų tvarkymas</b> Administravime – tai programų sąrašo plytelės: kiekviena programa ir nuoroda, sąrašo tvarka. Pasirinkite vieną, kad pamatytumėte, kur ji veikia, kas ją mato, atsiliepimus ir <b>Pakeitimai</b>.</p>
+    <p><b>Registruoti programą</b> prideda plytelę: jos pavadinimą kiekviena kalba, trumpąjį vardą (jos vardas adresuose ir įrašuose, nustatomas vieną kartą), ar tai programa, ar nuoroda į vieną programos ekraną, grupę, etapą, paveikslėlį ir spalvą, ir kur ji veikia: <b>Šioje svetainėje</b>, su keliu, pvz., /orders/new, ar <b>Kitoje svetainėje</b>, su jos https adresu. <b>Redaguoti</b> pakeičia vėliau.</p>
+    <p><b>Kas mato</b>: <b>Visi prisijungę</b> arba turintys bet kurį pažymėtą leidimą. Plytelės matymas niekam neleidžia daugiau: ką jie gali daryti programoje, vis tiek lemia jų rolės. <b>Prototipas</b> ir <b>Kuriama</b> rodomi tik bandytojams; <b>Nebenaudojama</b> paslepia plytelę nuo visų ir išsaugo jos įrašus.</p>
+    <p><b>Perkelti aukščiau</b> ir <b>Perkelti žemiau</b> keičia jos vietą sąraše. <b>Atsiliepimai</b> rodo, ką žmonės atsiuntė iš jos plytelės, naujausius pirmus.</p>
+    <p><b>Versijos ir kanalai</b> programai, skelbiamai versijomis, pvz., „Skenuoti SIM“, rodo jos versijas, naujausias pirmas, ir kurią atidaro kiekvienas kanalas. Kiekvienas diegimas paskelbia naują versiją kanale <b>Peržiūra</b>, bandytojams. Kad ją gautų visi, pasirinkite <b>⋯</b> šalia jos, tada <b>Padaryti: Stabili</b>; norėdami grąžinti ankstesnę, pasirinkite <b>Padaryti: Stabili</b> ant senesnės. <b>Padaryti: Beta</b> pasiūlo versiją bandytojams, kol ji netapo stabili.</p>
+    <p><b>Pridėti variantą</b> prideda versiją, kurią kai kurie žmonės bando šalia stabilios, pvz., kitokį dizainą: jos pavadinimą adresuose, pavadinimą kiekviena kalba, versiją ir kas ją mato. Jie ją pasirenka programų sąraše, skiltyje <b>Versijos</b>.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/manage-apps.png" alt="Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais" loading="lazy"></figure>
+    </div>
+</section>
+
 <section id="account">
-  <h2><span class="n">21</span>Jūsų paskyra</h2>
+  <h2><span class="n">24</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -484,7 +532,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">22</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">25</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>

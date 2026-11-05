@@ -8,8 +8,8 @@ The app records workwear and safety equipment given to employees. You prepare an
 
 1. Open **workwear.gavort.nl** and sign in with your email and password.
 2. Your first screen depends on your role:
-   - Administrators start on the **Dashboard**.
-   - Managers start on the **Manager Dashboard**.
+   - Administrators start on **Apps**, every app their roles open; Workwear & Equipment opens on the **Dashboard**.
+   - Managers start on **Apps**; Workwear & Equipment opens on the **Manager Dashboard**.
    - The employee role starts on the **Employee Dashboard**.
 
 The sidebar holds every section and **Search…** (`⌘K`). **Orders**, **Item Catalogue** and **Item Sets** are listed under **Workwear**. Choose **Workwear** to hide or show them; while they are hidden, it shows the number of orders waiting for confirmation. **Help**, **Keyboard shortcuts**, your account and **Sign out** are at its foot.
@@ -23,7 +23,31 @@ With **Keep me signed in** ticked, you stay signed in on this device after closi
 ![The sign-in screen with email, password and Keep me signed in](../../web/apps/workwear/public/help-img/en/phone/sign-in.png)
 ![The same screen with the Dark theme](../../web/apps/workwear/public/help-img/en/phone/sign-in-dark.png)
 
-## 2. Dashboard
+## 2. App Launcher
+
+*Administrators and managers only.*
+
+**Apps** shows every app your roles open as big tiles, in groups: **Workwear & PPE**, **Company Assets**, **People & Crew** and **Administration**. Some tiles open one screen of an app, such as **Create Order** or **SIM Cards**. With more than one app, you start here when you sign in.
+
+To come back to it, choose **Apps** at the foot of the sidebar, in Workwear & Equipment and in Administration alike, or find **App Launcher** with `⌘K`.
+
+In Scan SIMs it is the grid icon at the top.
+
+Type in **Search apps and screens** to narrow the tiles by name or group; `Enter` opens the first. A tile opens its app here. A tile with ↗ is another site with its own sign-in, such as **PPE Crew**, and opens in a new tab. A badge on a tile gives its stage, such as **Pilot**.
+
+The groups on the left show one group at a time, or your **Pinned** tiles. `⌘K` or `/` puts the cursor in the search.
+
+**⋯** on a tile says where it runs and its address, with **Open** and **Pin**. Pinned tiles come first, under **Pinned**, on every device you sign in on; **Unpin** takes one away. Under **Recent** are the apps you opened last on this device.
+
+An app's **⋯** also has **Feedback**: tell its team how it worked for you, **Works well**, **Confusing** or **Something broke**, and what you were trying to do. Administrators read it on **Manage apps**.
+
+![App Launcher: the apps and shortcuts in groups, with the search](../../web/apps/workwear/public/help-img/en/desktop/launcher.png)
+
+Apps still being tried, **POC** and **In development**, show only to people with the **Testers** role, once they turn on **Show apps in testing**.
+
+Some apps, such as Scan SIMs, come in versions. **Stable** is the one everyone uses; **Beta**, **Preview** or a variant may be offered to testers, or to some roles, while it is tried. When an app has more than Stable for you, its **⋯** has **Versions**: choose one, and the app opens on it for you from then on, its tile saying which. Inside the app, a stripe at the top says **You are using Beta** and the version, with **Back to Stable**.
+
+## 3. Dashboard
 
 *Administrators only:*
 
@@ -50,7 +74,7 @@ The **Employee Dashboard** starts with what needs doing: your orders still waiti
 
 If you hold more than one role, **Dashboards** at the top switches between your dashboards.
 
-## 3. Create an order
+## 4. Create an order
 
 1. On **Orders**, choose **Create Order** at the top.
 2. In **Assigned to**, type part of the employee's name. For someone new, choose **+ Add New Employee**.
@@ -67,7 +91,7 @@ This device keeps a draft of the order while you work; **⋯ → Clear order…*
 
 ![Create Order with an employee, a kit applied and sizes chosen](../../web/apps/workwear/public/help-img/en/desktop/create-order.png)
 
-## 4. Review and Mark as Ordered
+## 5. Review and Mark as Ordered
 
 1. Check the lines and the total.
 2. Choose **Mark as Ordered**. The order is now **Ordered**, and you can no longer edit it. The app also creates the employee's confirmation link.
@@ -80,7 +104,7 @@ If the employee will sign on paper, choose **Print Record** instead.
 ![The Review order dialog](../../web/apps/workwear/public/help-img/en/desktop/review.png)
 ![The ordered order with its confirmation link](../../web/apps/workwear/public/help-img/en/desktop/ordered.png)
 
-## 5. The employee confirms
+## 6. The employee confirms
 
 1. The employee opens the link. They don't need an account.
 2. They check the items, their prices and the total, in English or Russian (**EN / RU**). The page opens in their preferred language when it is English or Russian.
@@ -88,7 +112,7 @@ If the employee will sign on paper, choose **Print Record** instead.
 
 ![The confirmation page on a phone](../../web/apps/workwear/public/help-img/en/phone/confirm-phone.png)
 
-## 6. Orders
+## 7. Orders
 
 **Orders** lists every order placed. **Create Order**, at the top, starts a new one; on a phone, **New order** in the bar at the bottom does.
 
@@ -114,7 +138,7 @@ An order's **Changes** list what happened to it and who did it: ordered, a link 
 
 ![Orders with an ordered order open](../../web/apps/workwear/public/help-img/en/desktop/history.png)
 
-## 7. Items Given Record
+## 8. Items Given Record
 
 A **Given** order has a locked record in English and Russian. Open it with **View Order**.
 
@@ -125,7 +149,7 @@ Dates on the record, and on the printed and PDF assignment forms of Company Asse
 
 ![The bilingual Items Given Record](../../web/apps/workwear/public/help-img/en/desktop/record.png)
 
-## 8. Employees
+## 9. Employees
 
 The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.
 
@@ -148,7 +172,7 @@ An employee who still holds a company asset cannot be deleted: leaving never ret
 ![The Employees list](../../web/apps/workwear/public/help-img/en/desktop/employees.png)
 ![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
 
-## 9. Item Catalogue and Item Sets
+## 10. Item Catalogue and Item Sets
 
 Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.
 
@@ -165,7 +189,7 @@ You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 ![The Item Catalogue](../../web/apps/workwear/public/help-img/en/desktop/catalogue.png)
 ![Item Sets](../../web/apps/workwear/public/help-img/en/desktop/item-sets.png)
 
-## 10. Company Assets
+## 11. Company Assets
 
 **Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
@@ -221,17 +245,35 @@ Leaving never returns anything. When an employee does not give a card back, **Ma
 
 Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.
 
-## 11. Administration
+## 12. Scan SIMs
+
+*Administrators and managers only.*
+
+**Scan SIMs** adds newly received SIMs from their cards: the SIM No. is read from the barcode on the front, the PIN and PUK from the back. It is an app of its own, still on trial, for those who manage Company Assets: open it from **Apps**. **SIM Cards** at its top takes you back to Workwear & Equipment.
+
+**For every SIM** shows what the cards share: the provider, plan and non-return value from **Settings**, the received date and a comment. The pencil beside it changes them for this batch only.
+
+Take a photo of each side: **Photo of the SIM No.**, then **Photo of the PIN and PUK**. Once the SIM No., PIN and PUK are filled in, the SIM goes to the list and the next one starts. If a digit was misread, correct it, then choose **Next SIM**. You can also scan with the **Camera**, card after card, or **Choose Photos** taken earlier.
+
+The list below checks every SIM at once and says what needs fixing: a number that is not a SIM No., a last digit that does not check, the same SIM twice, or one already in **SIM Cards**. Remove a SIM that needs fixing and scan it again. **Add 2 SIMs** adds them all at once, **Not Activated**, in the Office; nothing is added while one needs fixing.
+
+![Scan SIMs: the SIMs read from photos, checked before they are added](../../web/apps/workwear/public/help-img/en/desktop/sim-scan.png)
+
+*Administrators only:*
+
+**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**.
+
+## 13. Administration
 
 *Administrators only.*
 
-**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage** and **Settings**.
+**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**.
 
 Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.
 
 You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
 
-## 12. Overview
+## 14. Overview
 
 *Administrators only.*
 
@@ -248,7 +290,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![Overview: what needs attention, then the figures](../../web/apps/workwear/public/help-img/en/desktop/overview.png)
 
-## 13. Users
+## 15. Users
 
 *Administrators only.*
 
@@ -260,7 +302,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 14. Roles & permissions
+## 16. Roles & permissions
 
 *Administrators only.*
 
@@ -275,7 +317,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 ![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
 ![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
 
-## 15. Audit log
+## 17. Audit log
 
 *Administrators only.*
 
@@ -291,7 +333,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)
 
-## 16. Security
+## 18. Security
 
 *Administrators only.*
 
@@ -306,7 +348,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 ![Security: sign-ins with their address and device](../../web/apps/workwear/public/help-img/en/desktop/security.png)
 ![The access review: users, their roles and last sign-in](../../web/apps/workwear/public/help-img/en/desktop/access-review.png)
 
-## 17. System
+## 19. System
 
 *Administrators only.*
 
@@ -321,7 +363,7 @@ When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. Th
 ![System: the app, its requests and the database](../../web/apps/workwear/public/help-img/en/desktop/system.png)
 ![Errors: an error open, with its reference](../../web/apps/workwear/public/help-img/en/desktop/errors.png)
 
-## 18. Backups
+## 20. Backups
 
 *Administrators only.*
 
@@ -340,7 +382,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 19. Usage
+## 21. Usage
 
 *Administrators only.*
 
@@ -355,7 +397,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Usage: active people, sign-ins and more](../../web/apps/workwear/public/help-img/en/desktop/usage.png)
 
-## 20. Settings
+## 22. Settings
 
 *Administrators only.*
 
@@ -371,7 +413,25 @@ A card already registered keeps its provider, even one you remove from the list,
 
 ![Settings: the SIM providers, one of them the default, and the default non-return value](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
-## 21. Your account
+## 23. Manage apps
+
+*Administrators only.*
+
+**Manage apps**, in Administration, is App Launcher's list: every app and shortcut, in the launcher's order. Choose one to see where it runs, who sees it, its feedback and its **Changes**.
+
+**Register app** adds a tile: its name in each language, its slug (its short name in addresses and records, set once), whether it is an app or a shortcut to one screen of an app, its group, stage, picture and colour, and where it runs: **On this site**, with a path such as /orders/new, or **Another site**, with its https address. **Edit** changes it later.
+
+**Who sees it**: **Everyone signed in**, or people with any of the permissions you tick. Seeing a tile lets no one do more: what they can do inside an app is still decided by their roles. **POC** and **In development** show only to testers; **Retired** takes the tile away from everyone and keeps its records.
+
+**Move earlier** and **Move later** change its place in the launcher. **Feedback** lists what people sent from its tile, newest first.
+
+**Versions and channels**, for an app published in versions, such as Scan SIMs, lists its versions, newest first, and which one each channel opens. Each deploy publishes a new version to **Preview**, for testers. To give it to everyone, choose **⋯** beside it, then **Make Stable**; to roll back, choose **Make Stable** on an older one. **Make Beta** offers a version to testers before it becomes Stable.
+
+**Add variant** adds a version some people try beside Stable, such as another design: its name in addresses, its label in each language, its version and who sees it. They choose it under **Versions** in App Launcher.
+
+![Manage apps: Scan SIMs beside the list, with its versions and channels](../../web/apps/workwear/public/help-img/en/desktop/manage-apps.png)
+
+## 24. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -382,7 +442,7 @@ A card already registered keeps its provider, even one you remove from the list,
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 22. Search and shortcuts
+## 25. Search and shortcuts
 
 | Key | Does |
 | --- | --- |

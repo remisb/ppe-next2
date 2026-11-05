@@ -1,9 +1,10 @@
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { type Browser, type Page, expect, test } from '@playwright/test'
 
 import { type ShotName, shotPath } from '../../apps/workwear/src/help/index.ts'
-import { admin } from '../env.ts'
+import { admin, repoRoot } from '../env.ts'
 import { writeDocs } from './docs.ts'
 import { A, S, T, agents, device, deviceWindow, lang, locale } from './lang.ts'
 
@@ -74,6 +75,8 @@ test('sign in and the dashboard', async () => {
   await page.getByRole('button', { name: S.signIn }).click()
   // An administrator lands on App Launcher (ADR 0006); the guide goes on in Workwear.
   await page.waitForURL(/\/apps\/$/)
+  await expect(page.getByRole('searchbox')).toBeVisible()
+  await shot('launcher')
   await page.goto('/')
   await expect(page.getByRole('heading', { name: T.dashboard.title })).toBeVisible()
   await shot('dashboard')
@@ -255,6 +258,38 @@ test('company assets: the SIMs, a card, giving one', async () => {
   if (device === 'desktop') await page.setViewportSize(deviceWindow.viewport)
   await give.getByRole('button', { name: T.common.cancel }).click()
   await expect(give).toBeHidden()
+})
+
+test('Scan SIMs and Manage apps', async () => {
+  // Scan SIMs, the trial: two made-up cards (fixtures/sim-cards/make.ts) read from photos and checked, not added.
+  await page.goto('/apps/sim-scan/')
+  const photos = ['card-1-front.png', 'card-1-back.png', 'card-2-front.png', 'card-2-back.png'].map((f) => join(repoRoot, 'web/e2e/fixtures/sim-cards', f))
+  await page.locator('input[type=file][multiple]').setInputFiles(photos)
+  await expect(page.getByText('8937099000000000056').first()).toBeVisible({ timeout: 120_000 })
+  await expect(page.getByRole('status').filter({ hasText: /\d+ \S+ \d+$/ })).toHaveCount(0, { timeout: 60_000 })
+  // Taller on a desktop, so the list shows under what every SIM shares; narrower, the list itself.
+  if (device === 'desktop') await page.setViewportSize({ width: 1280, height: 1150 })
+  else await page.locator('#cards').evaluate((e) => e.scrollIntoView({ block: 'start' }))
+  await shot('sim-scan')
+  if (device === 'desktop') await page.setViewportSize(deviceWindow.viewport)
+  // Cleared, so leaving does not ask first.
+  await page.getByRole('button', { name: /^(Clear List|Išvalyti sąrašą|Очистить список)$/ }).click()
+
+  // Scan SIMs' versions and channels, as guide/setup.ts published them.
+  await page.goto('/admin/apps/sim-scan')
+  const pane = page.getByRole('article', { name: /Scan SIMs|Skenuoti SIM|Сканировать SIM/ })
+  const releases = pane.getByRole('button', { name: new RegExp(`^${A.apps.releases}`) })
+  await expect(releases).toBeVisible()
+  if ((await releases.getAttribute('aria-expanded')) !== 'true') await releases.click()
+  await expect(pane.getByRole('row', { name: /a5e143a0b2d1/ })).toBeVisible()
+  // Its heading just below the pane's sticky header.
+  await releases.evaluate((e) => {
+    e.scrollIntoView({ block: 'start' })
+    let box = e.parentElement
+    while (box && box.scrollHeight <= box.clientHeight) box = box.parentElement
+    ;(box ?? document.scrollingElement)?.scrollBy(0, -96)
+  })
+  await shot('manage-apps')
 })
 
 test('account and the search', async ({ browser }) => {

@@ -59,7 +59,7 @@ describe('forReader', () => {
   const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
   it('keeps Administration, its screens and the Dashboard tour for administrators only', () => {
-    const administration = ['administration', 'overview', 'users', 'roles', 'audit', 'security', 'system', 'backups', 'usage', 'settings']
+    const administration = ['administration', 'overview', 'users', 'roles', 'audit', 'security', 'system', 'backups', 'usage', 'settings', 'manage-apps']
     expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(administration))
     for (const id of administration) {
       expect(ids(forRoles(guides.en, ['manager']))).not.toContain(id)
@@ -70,6 +70,14 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['employee']))).toContain('**Changes**')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Needs you')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
+  })
+
+  it('shows App Launcher and Scan SIMs to administrators and managers, who have several apps, and Show PIN and PUK to administrators', () => {
+    for (const roles of [['admin'], ['manager']] as const) expect(ids(forRoles(guides.en, roles))).toEqual(expect.arrayContaining(['launcher', 'sim-scan']))
+    expect(ids(forRoles(guides.en, ['employee']))).not.toContain('launcher')
+    expect(ids(forRoles(guides.en, ['employee']))).not.toContain('sim-scan')
+    expect(words(forRoles(guides.en, ['admin']))).toContain('**Show PIN and PUK**')
+    expect(words(forRoles(guides.en, ['manager']))).not.toContain('**Show PIN and PUK**')
   })
 
   it('shows Company Assets to everyone, and giving, returns and Not Returned to those who manage assets', () => {

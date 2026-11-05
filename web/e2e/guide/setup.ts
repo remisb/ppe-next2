@@ -38,6 +38,7 @@ export default async function guideSetup() {
     await again.query('UPDATE users SET language = $1', [lang])
     await again.query(demoBackups)
     await again.query(demoUse)
+    await again.query(demoReleases)
     execFileSync('go', ['run', './cmd/api', '-upkeep'], { cwd: repoRoot, env, stdio: 'inherit' })
     await again.query(demoQuality)
   } finally {
@@ -100,6 +101,26 @@ VALUES
 UPDATE order_confirmations
 SET first_opened_at = created_at + interval '2 hours'
 WHERE method = 'ELECTRONIC' AND (confirmed_at IS NOT NULL OR abs(hashtext(id::text)) % 3 <> 0);
+`
+
+/**
+ * Scan SIMs published twice, as deploys publish it (ADR 0006 phase 3): the
+ * older version Stable, the newer on Preview for testers, so Manage apps shows
+ * its versions and channels. The guide's web servers are Vite's, where no
+ * published build is served, so only the registry's rows are made.
+ */
+const demoReleases = `
+WITH app AS (SELECT id FROM launcher_apps WHERE slug = 'sim-scan'),
+v AS (
+  INSERT INTO launcher_versions (id, app_id, version, profile, capabilities, commit, published_at)
+  SELECT gen_random_uuid(), app.id, to_char(now() - x.ago::interval, 'YYYY.MM.DD') || '-' || x.commit, 'device',
+         ARRAY['wasm', 'workers', 'camera'], x.commit, now() - x.ago::interval
+  FROM app, (VALUES ('7d26056a1c3e', '6 days'), ('a5e143a0b2d1', '2 hours')) x(commit, ago)
+  RETURNING id, app_id, commit, published_at
+)
+INSERT INTO launcher_channels (id, app_id, name, version_id, updated_at)
+SELECT gen_random_uuid(), v.app_id, c.name, v.id, v.published_at
+FROM v JOIN (VALUES ('stable', '7d26056a1c3e'), ('preview', 'a5e143a0b2d1')) c(name, commit) ON c.commit = v.commit;
 `
 
 /** The data's quality before today, worse the further back, from the sample the upkeep took today. */

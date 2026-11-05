@@ -23,8 +23,8 @@ export const lt: Guide = {
             {
               text: 'Pirmasis ekranas priklauso nuo jūsų rolės:',
               items: [
-                { text: 'administratoriai pradeda ekrane **Suvestinė**;', roles: ['admin'] },
-                { text: 'vadovai – ekrane **Vadovo suvestinė**;', roles: ['manager'] },
+                { text: 'administratoriai pradeda ekrane **Programos** – visos jų rolių atveriamos programos; darbo drabužių programa atsidaro ekrane **Suvestinė**;', roles: ['admin'] },
+                { text: 'vadovai – ekrane **Programos**; darbo drabužių programa atsidaro ekrane **Vadovo suvestinė**;', roles: ['manager'] },
                 { text: 'darbuotojo rolė – ekrane **Darbuotojo suvestinė**.', roles: ['employee'] },
               ],
             },
@@ -41,6 +41,37 @@ export const lt: Guide = {
             { name: 'sign-in', alt: 'Prisijungimo ekranas su el. paštu, slaptažodžiu ir „Likti prisijungus“', phone: true },
             { name: 'sign-in-dark', alt: 'Tas pats ekranas su tamsia tema', phone: true },
           ],
+        },
+      ],
+    },
+    {
+      id: 'launcher',
+      title: 'Programų sąrašas',
+      roles: ['admin', 'manager'],
+      blocks: [
+        {
+          p: '**Programos** rodo visas jūsų rolių atveriamas programas didelėmis plytelėmis, grupėmis: **Darbo drabužiai ir AAP**, **Įmonės turtas**, **Žmonės ir brigados** ir **Administravimas**. Kai kurios plytelės atveria vieną programos ekraną, pvz., **Kurti užsakymą** ar **SIM kortelės**. Jei turite daugiau nei vieną programą, prisijungę pradedate čia.',
+        },
+        { p: 'Kad grįžtumėte, pasirinkite **Programos** skiltyje **Daugiau** – ir darbo drabužių programoje, ir Administravime.', devices: ['phone'] },
+        { p: 'Kad grįžtumėte, pasirinkite **Programos** juostos apačioje – ir darbo drabužių programoje, ir Administravime.', devices: ['tablet'] },
+        { p: 'Kad grįžtumėte, pasirinkite **Programos** šoninės juostos apačioje – ir darbo drabužių programoje, ir Administravime – arba suraskite **Programų sąrašas** su `⌘K`.', devices: ['desktop'] },
+        { p: 'Programoje „Skenuoti SIM“ tai tinklelio piktograma viršuje.' },
+        {
+          p: 'Rašykite į **Ieškoti programų ir ekranų**, kad liktų plytelės su tuo pavadinimu ar grupe; `Enter` atveria pirmąją. Plytelė atveria savo programą čia pat. Plytelė su ↗ – kita svetainė su savu prisijungimu, pvz., **PPE Crew**; ji atsidaro naujame skirtuke. Ženklelis ant plytelės nurodo jos etapą, pvz., **Bandoma**.',
+        },
+        { p: 'Grupės kairėje rodo po vieną grupę arba jūsų **Prisegtos** plyteles. `⌘K` arba `/` perkelia žymeklį į paiešką.', devices: ['desktop'] },
+        {
+          p: '**⋯** ant plytelės parodo, kur ji veikia, ir jos adresą, su **Atidaryti** ir **Prisegti**. Prisegtos plytelės rodomos pirmos, skiltyje **Prisegtos**, kiekviename įrenginyje, kuriame prisijungiate; **Atsegti** pašalina. Skiltyje **Neseniai atidarytos** – programos, kurias paskutines atidarėte šiame įrenginyje.',
+        },
+        {
+          p: 'Programos **⋯** dar turi **Atsiliepimas**: praneškite jos komandai, kaip sekėsi – **Veikia gerai**, **Neaišku** ar **Kažkas sugedo** – ir ką bandėte padaryti. Administratoriai juos skaito skiltyje **Programų tvarkymas**.',
+        },
+        { shots: [{ name: 'launcher', alt: 'Programų sąrašas: programos ir nuorodos grupėmis, su paieška' }] },
+        {
+          p: 'Dar bandomos programos, **Prototipas** ir **Kuriama**, rodomos tik turintiems rolę **Bandytojai**, kai jie įjungia **Rodyti bandomas programas**.',
+        },
+        {
+          p: 'Kai kurios programos, pvz., „Skenuoti SIM“, turi versijas. **Stabili** – ta, kuria naudojasi visi; **Beta**, **Peržiūra** ar variantas gali būti siūlomi bandytojams ar kai kurioms rolėms, kol bandomi. Kai programa jums turi daugiau nei stabilią versiją, jos **⋯** turi **Versijos**: pasirinkite vieną, ir programa jums nuo tol atsidarys joje, o plytelė tai parodys. Programos viršuje juosta rašo **Naudojate: Beta** ir versiją, su **Grįžti į stabilią**.',
         },
       ],
     },
@@ -282,12 +313,41 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'sim-scan',
+      title: 'Skenuoti SIM',
+      roles: ['admin', 'manager'],
+      blocks: [
+        {
+          p: '**Skenuoti SIM** prideda naujai gautas SIM iš jų kortelių: SIM Nr. nuskaitomas iš brūkšninio kodo priekyje, PIN ir PUK – iš nugarėlės. Tai atskira, dar bandoma programa tiems, kurie tvarko įmonės turtą: atidarykite ją iš **Programos**. **SIM kortelės** viršuje grąžina į darbo drabužių programą.',
+        },
+        {
+          p: '**Visoms SIM** rodo, kas kortelėms bendra: tiekėjas, planas ir negrąžinimo vertė iš **Nustatymai**, gavimo data ir pastaba. Pieštukas šalia keičia juos tik šiai siuntai.',
+        },
+        {
+          p: 'Skenuokite **Kamera** kortelę po kortelės: laikykite priekį rėmelyje, tada apverskite kortelę dėl PIN ir PUK; **Be nugarėlės** tęsia be jų. Arba naudokite **Pasirinkti nuotraukas** anksčiau padarytoms nuotraukoms: priekis, tada nugarėlė, kortelė po kortelės. Nuotraukos lieka šiame telefone.',
+          devices: ['phone'],
+        },
+        {
+          p: 'Nufotografuokite abi puses: **SIM Nr. nuotrauka**, tada **PIN ir PUK nuotrauka**. Kai SIM Nr., PIN ir PUK užpildyti, SIM patenka į sąrašą ir pradedama kita. Jei skaitmuo nuskaitytas klaidingai, pataisykite jį, tada pasirinkite **Kita SIM**. Taip pat galite skenuoti **Kamera** kortelę po kortelės arba **Pasirinkti nuotraukas**, padarytas anksčiau.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeris nėra SIM Nr., nesutampa paskutinis skaitmuo, ta pati SIM du kartus arba ji jau yra **SIM kortelės**. Pašalinkite taisytiną SIM ir nuskenuokite ją dar kartą. **Pridėti 2 SIM** prideda visas iš karto, **Neaktyvuota**, biure; kol bent vieną reikia taisyti, nepridedama nieko.',
+        },
+        { shots: [{ name: 'sim-scan', alt: 'Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant' }] },
+        {
+          p: '**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**.',
+          roles: ['admin'],
+        },
+      ],
+    },
+    {
       id: 'administration',
       title: 'Administravimas',
       roles: ['admin'],
       blocks: [
-        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas** ir **Nustatymai**.' },
-        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas** ir **Nustatymai**, toliau **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**.' },
+        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**, toliau **Programos**, **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Atidarykite jį mygtuku **Admin.** juostos apačioje. Jis turi savo juostą; **Drabužiai** jos apačioje grąžina atgal.', devices: ['tablet'] },
         { p: 'Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.', devices: ['desktop'] },
         { p: 'Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.' },
@@ -468,6 +528,30 @@ export const lt: Guide = {
         },
         { p: 'Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo, kaip ir savo negrąžinimo vertės.' },
         { shots: [{ name: 'sim-providers', alt: 'Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė' }] },
+      ],
+    },
+    {
+      id: 'manage-apps',
+      title: 'Programų tvarkymas',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Programų tvarkymas** Administravime – tai programų sąrašo plytelės: kiekviena programa ir nuoroda, sąrašo tvarka. Pasirinkite vieną, kad pamatytumėte, kur ji veikia, kas ją mato, atsiliepimus ir **Pakeitimai**.',
+        },
+        {
+          p: '**Registruoti programą** prideda plytelę: jos pavadinimą kiekviena kalba, trumpąjį vardą (jos vardas adresuose ir įrašuose, nustatomas vieną kartą), ar tai programa, ar nuoroda į vieną programos ekraną, grupę, etapą, paveikslėlį ir spalvą, ir kur ji veikia: **Šioje svetainėje**, su keliu, pvz., /orders/new, ar **Kitoje svetainėje**, su jos https adresu. **Redaguoti** pakeičia vėliau.',
+        },
+        {
+          p: '**Kas mato**: **Visi prisijungę** arba turintys bet kurį pažymėtą leidimą. Plytelės matymas niekam neleidžia daugiau: ką jie gali daryti programoje, vis tiek lemia jų rolės. **Prototipas** ir **Kuriama** rodomi tik bandytojams; **Nebenaudojama** paslepia plytelę nuo visų ir išsaugo jos įrašus.',
+        },
+        { p: '**Perkelti aukščiau** ir **Perkelti žemiau** keičia jos vietą sąraše. **Atsiliepimai** rodo, ką žmonės atsiuntė iš jos plytelės, naujausius pirmus.' },
+        {
+          p: '**Versijos ir kanalai** programai, skelbiamai versijomis, pvz., „Skenuoti SIM“, rodo jos versijas, naujausias pirmas, ir kurią atidaro kiekvienas kanalas. Kiekvienas diegimas paskelbia naują versiją kanale **Peržiūra**, bandytojams. Kad ją gautų visi, pasirinkite **⋯** šalia jos, tada **Padaryti: Stabili**; norėdami grąžinti ankstesnę, pasirinkite **Padaryti: Stabili** ant senesnės. **Padaryti: Beta** pasiūlo versiją bandytojams, kol ji netapo stabili.',
+        },
+        {
+          p: '**Pridėti variantą** prideda versiją, kurią kai kurie žmonės bando šalia stabilios, pvz., kitokį dizainą: jos pavadinimą adresuose, pavadinimą kiekviena kalba, versiją ir kas ją mato. Jie ją pasirenka programų sąraše, skiltyje **Versijos**.',
+        },
+        { shots: [{ name: 'manage-apps', alt: 'Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais' }] },
       ],
     },
     {

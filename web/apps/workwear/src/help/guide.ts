@@ -57,6 +57,7 @@ export function deviceFor(width: number): Device {
 
 export type SectionId =
   | 'sign-in'
+  | 'launcher'
   | 'dashboard'
   | 'create'
   | 'review'
@@ -66,6 +67,7 @@ export type SectionId =
   | 'employees'
   | 'catalogue'
   | 'assets'
+  | 'sim-scan'
   | 'administration'
   | 'overview'
   | 'users'
@@ -76,6 +78,7 @@ export type SectionId =
   | 'backups'
   | 'usage'
   | 'settings'
+  | 'manage-apps'
   | 'account'
   | 'shortcuts'
 
@@ -128,6 +131,9 @@ export type ShotName =
   | 'account'
   | 'devices'
   | 'palette'
+  | 'launcher'
+  | 'sim-scan'
+  | 'manage-apps'
 
 export interface Shot {
   name: ShotName
