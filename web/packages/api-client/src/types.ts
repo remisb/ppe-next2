@@ -1724,3 +1724,29 @@ export interface DocumentValidity {
   issuing_state: string
   expires_on: string
 }
+
+/** What Show Document opens (POST /api/v1/personnel/documents/{id}/show): the sealed fields. */
+export interface IdentityDocumentFields {
+  number: string
+  personal_code?: string
+  mrz: string[]
+  surname: string
+  given_names: string
+  birth_date?: string
+  nationality: string
+  sex?: 'M' | 'F' | 'X'
+  place_of_birth?: string
+  authority?: string
+}
+
+export interface ShownDocument {
+  document: IdentityDocument
+  fields: IdentityDocumentFields
+}
+
+/** A personnel file's retention: when employment ended, and a Legal Hold (ISO dates). */
+export interface PersonnelRetention {
+  employment_ended_on: string | null
+  hold_until: string | null
+  hold_reason: string | null
+}

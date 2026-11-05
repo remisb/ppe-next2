@@ -121,6 +121,18 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 	} else if err == nil && !v.OK {
 		logger.Error("audit seals do not match", slog.Time("day", v.Mismatch.Day), slog.String("problem", v.Mismatch.Problem))
 	}
+	// Personnel files whose retention has ended (D3) are shredded; a rule
+	// applied every run, so it shreds again after a restore.
+	if svc.documents != nil && svc.personnelRetentionMonths > 0 {
+		if res, err := svc.documents.ShredDue(ctx, svc.personnelRetentionMonths, logger); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("personnel files shredding failed", slog.Any("error", err))
+		} else if res.Failed > 0 {
+			run.Failed = true
+		} else if res.Files > 0 {
+			logger.Info("personnel files shredded", slog.Int("files", res.Files))
+		}
+	}
 	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {
 		logger.Info("purged", slog.Int64("security_events", run.AuthEventsDeleted), slog.Int64("error_events", run.ErrorEventsDeleted),
 			slog.Int64("audit_events", run.AuditEventsDeleted))

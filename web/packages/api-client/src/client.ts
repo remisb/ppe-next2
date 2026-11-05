@@ -5,6 +5,9 @@ import type {
   DocumentCheck,
   DocumentCheckInput,
   DocumentCopies,
+  DocumentCopySide,
+  PersonnelRetention,
+  ShownDocument,
   DocumentValidity,
   IdentityDocument,
   IdentityDocumentInput,
@@ -176,7 +179,11 @@ export function createClient(options: ClientOptions) {
   const base = options.baseUrl ?? ''
 
   /** A file the API sends as an attachment, and the name it gives it. */
-  async function download(path: string): Promise<{ blob: Blob; filename: string }> {
+  /**
+   * A file the API sends. A POST (Show Document's copy) is a sensitive read:
+   * a 403 asking for a recent sign-in confirms the password and tries again.
+   */
+  async function download(path: string, method: 'GET' | 'POST' = 'GET'): Promise<{ blob: Blob; filename: string }> {
     const get = async () => {
       const headers: Record<string, string> = {}
       if (options.app) headers['X-PPE-App'] = options.app
@@ -184,13 +191,17 @@ export function createClient(options: ClientOptions) {
       const token = options.getToken()
       if (token) headers['Authorization'] = `Bearer ${token}`
       try {
-        return await doFetch(base + path, { method: 'GET', headers })
+        return await doFetch(base + path, { method, headers })
       } catch (err) {
         throw new NetworkError(err)
       }
     }
     let res = await get()
     if (res.status === 401 && options.renew && (await options.renew())) res = await get()
+    if (res.status === 403 && method === 'POST' && options.confirmPassword) {
+      const text = await res.clone().text()
+      if (errorMessage(text, 403) === RECENT_SIGN_IN_REQUIRED && (await options.confirmPassword())) res = await get()
+    }
     if (!res.ok) {
       const text = await res.text()
       if (res.status === 401) options.onUnauthenticated?.()
@@ -434,6 +445,22 @@ export function createClient(options: ClientOptions) {
       /** The employee's current documents' kind, state and expiry, for anyone. */
       validity: (employeeId: string) =>
         request<DocumentValidity[]>('GET', `/api/v1/personnel/documents/by-employee/${seg(employeeId)}/validity`),
+      /** Show Document: the sealed fields (a recent sign-in; recorded; hide again after 60 s). */
+      show: (id: string) => request<ShownDocument>('POST', `/api/v1/personnel/documents/${seg(id)}/show`, {}),
+      /** One of its Document Copies, a JPEG (the same rules as show). */
+      showCopy: (id: string, side: DocumentCopySide) =>
+        download(`/api/v1/personnel/documents/${seg(id)}/copies/${seg(side)}/show`, 'POST'),
+      setEmployeeRecord: (id: string, on: boolean) =>
+        request<void>('PUT', `/api/v1/personnel/documents/${seg(id)}/employee-record`, { on }),
+      remove: (id: string) => request<void>('DELETE', `/api/v1/personnel/documents/${seg(id)}`),
+      /** The employee's personnel file's retention; 404 when they have none. */
+      retention: (employeeId: string) => request<PersonnelRetention>('GET', `/api/v1/personnel/subjects/${seg(employeeId)}`),
+      /** Mark Employment Ended (ISO date), or null to clear it. */
+      setEmploymentEnded: (employeeId: string, on: string | null) =>
+        request<PersonnelRetention>('PUT', `/api/v1/personnel/subjects/${seg(employeeId)}/employment-ended`, { on }),
+      /** Legal Hold until a date, with a reason; null clears it. */
+      setHold: (employeeId: string, until: string | null, reason = '') =>
+        request<PersonnelRetention>('PUT', `/api/v1/personnel/subjects/${seg(employeeId)}/hold`, { until, reason }),
     },
 
     catalogue: {

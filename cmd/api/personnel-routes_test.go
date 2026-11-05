@@ -14,7 +14,10 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/domain/session"
+	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 )
 
@@ -37,6 +40,37 @@ func (stubDocuments) Save(context.Context, document.SaveRecord) error { return n
 func (stubDocuments) Documents(context.Context, uuid.UUID) ([]document.Document, error) {
 	return []document.Document{}, nil
 }
+func (stubDocuments) Document(context.Context, uuid.UUID) (document.Opened, error) {
+	return document.Opened{}, document.ErrNotFound
+}
+func (stubDocuments) Record(context.Context, []audit.Event) error { return nil }
+func (stubDocuments) UpdateDocument(context.Context, uuid.UUID, func(document.Document) (document.DocumentChange, []audit.Event, error)) error {
+	return document.ErrNotFound
+}
+func (stubDocuments) UpdateSubject(context.Context, uuid.UUID, func(document.Retention) (document.Retention, []audit.Event, error)) error {
+	return document.ErrNotFound
+}
+func (stubDocuments) Retention(context.Context, uuid.UUID) (document.Retention, bool, error) {
+	return document.Retention{}, false, nil
+}
+func (stubDocuments) Due(context.Context, string, int) ([]uuid.UUID, error) { return nil, nil }
+func (stubDocuments) Shred(context.Context, uuid.UUID, func(int) []audit.Event) ([]string, error) {
+	return nil, nil
+}
+
+// tokenAs is a token for u carrying only perms, as tokenWith is for the administrator.
+func (a *testAPI) tokenAs(t *testing.T, u user.User, perms ...role.Permission) string {
+	t.Helper()
+	s, _, err := a.svc.sessions.Start(context.Background(), session.StartParams{UserID: u.ID, KeepSignedIn: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _, err := a.tokens.issue(u, perms, s.ID, s.AuthenticatedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tok
+}
 
 const (
 	testPersonnelKey      = "1111111111111111111111111111111111111111111111111111111111111111"
@@ -53,7 +87,7 @@ func testPersonnelKeys(t *testing.T) document.Keys {
 }
 
 func TestPersonnelKeyErrors(t *testing.T) {
-	ok := config{JWTSecret: strings.Repeat("s", 32), SIMCodesKey: strings.Repeat("ab", 32), PersonnelKeyID: 1}
+	ok := config{JWTSecret: strings.Repeat("s", 32), SIMCodesKey: strings.Repeat("ab", 32), PersonnelKeyID: 1, PersonnelRetentionMonths: 36}
 	if errs := ok.personnelKeyErrors(); len(errs) != 0 {
 		t.Errorf("no personnel keys (off) = %v", errs)
 	}
@@ -72,6 +106,7 @@ func TestPersonnelKeyErrors(t *testing.T) {
 		"previous is current":   func(c *config) { c.PersonnelPreviousKeys = "2:" + testPersonnelKey },
 		"previous has the id":   func(c *config) { c.PersonnelPreviousKeys = "1:" + strings.Repeat("cd", 32) },
 		"previous is malformed": func(c *config) { c.PersonnelPreviousKeys = "x" },
+		"retention of 6 months": func(c *config) { c.PersonnelRetentionMonths = 6 },
 	} {
 		c := on
 		change(&c)
@@ -218,5 +253,86 @@ func TestPersonnelOffWithoutKeys(t *testing.T) {
 	rec := api.do(t, "POST", "/api/v1/personnel/documents/check", clerk, map[string]any{"mrz": specimenPassport})
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Errorf("check without keys = %d %s", rec.Code, rec.Body)
+	}
+}
+
+// Show Document, a copy, the record switch, retention, Legal Hold and Remove,
+// through the real repositories.
+func TestPostgresPersonnelFileHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, clerk := api.userWith(t, role.KeyPersonnel)
+	_, admin := api.userWith(t, role.KeyAdmin)
+	doc := map[string]any{
+		"employee": map[string]any{"new": map[string]any{"first_name": "Jonas", "last_name": "Pavyzdys"}},
+		"mrz":      specimenPassport, "kind": "passport", "surname": "Pavyzdys", "given_names": "Jonas",
+		"place_of_birth": "Vilnius", "add_to_employee_record": false,
+	}
+	rec := api.saveDocument(t, clerk, doc, map[string][]byte{"copy_page": specimenJPEG(t)})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body)
+	}
+	saved := decode[map[string]any](t, rec.Body.Bytes())
+	id, emp := saved["id"].(string), saved["employee_id"].(string)
+
+	// Show Document: the sealed fields, never cached; an administrator without the role may not.
+	rec = api.do(t, "POST", "/api/v1/personnel/documents/"+id+"/show", clerk, map[string]any{})
+	shown := decode[map[string]any](t, rec.Body.Bytes())
+	fields, _ := shown["fields"].(map[string]any)
+	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "no-store" || fields["number"] != "91234567" ||
+		fields["personal_code"] != "33309240064" || fields["place_of_birth"] != "Vilnius" {
+		t.Errorf("show = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/personnel/documents/"+id+"/show", admin, map[string]any{}); rec.Code != http.StatusForbidden {
+		t.Errorf("show by an administrator = %d", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/personnel/documents/"+id+"/copies/page/show", clerk, map[string]any{})
+	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/jpeg" || !bytes.HasPrefix(rec.Body.Bytes(), []byte{0xff, 0xd8}) {
+		t.Errorf("show copy = %d %s", rec.Code, rec.Header())
+	}
+	if rec := api.do(t, "POST", "/api/v1/personnel/documents/"+id+"/copies/front/show", clerk, map[string]any{}); rec.Code != http.StatusNotFound {
+		t.Errorf("a side it has not = %d", rec.Code)
+	}
+
+	if rec := api.do(t, "PUT", "/api/v1/personnel/documents/"+id+"/employee-record", clerk, map[string]any{"on": true}); rec.Code != http.StatusNoContent {
+		t.Errorf("employee record = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/personnel/documents/"+id+"/employee-record", clerk, map[string]any{}); rec.Code != http.StatusBadRequest {
+		t.Errorf("employee record without on = %d", rec.Code)
+	}
+	rec = api.do(t, "PUT", "/api/v1/personnel/subjects/"+emp+"/employment-ended", clerk, map[string]any{"on": "2026-10-31"})
+	if r := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || r["employment_ended_on"] != "2026-10-31" {
+		t.Errorf("employment ended = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "PUT", "/api/v1/personnel/subjects/"+emp+"/hold", clerk, map[string]any{"until": "2099-01-01", "reason": "A dispute"})
+	if rec.Code != http.StatusOK {
+		t.Errorf("hold = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/personnel/subjects/"+emp+"/hold", clerk, map[string]any{"until": "2099-01-01"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("hold without a reason = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/personnel/subjects/"+emp, clerk, nil)
+	if r := decode[map[string]any](t, rec.Body.Bytes()); rec.Code != http.StatusOK || r["hold_until"] != "2099-01-01" || r["hold_reason"] != "A dispute" {
+		t.Errorf("retention = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/personnel/subjects/"+uuid.NewString(), clerk, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("an employee without a file = %d", rec.Code)
+	}
+
+	if rec := api.do(t, "DELETE", "/api/v1/personnel/documents/"+id, clerk, nil); rec.Code != http.StatusNoContent {
+		t.Errorf("remove = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/personnel/documents/"+id+"/show", clerk, map[string]any{}); rec.Code != http.StatusNotFound {
+		t.Errorf("show after remove = %d", rec.Code)
+	}
+	// The trail: every action, none of it holding a value read from the document.
+	rec = api.do(t, "GET", "/api/v1/audit-events/employees/"+emp, clerk, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "personnel.document_shown") ||
+		!strings.Contains(rec.Body.String(), "personnel.hold_set") {
+		t.Errorf("the employee's Changes = %d %.300s", rec.Code, rec.Body)
+	}
+	for _, v := range []string{"91234567", "33309240064", "Vilnius"} {
+		if strings.Contains(rec.Body.String(), v) {
+			t.Errorf("the employee's Changes hold %s", v)
+		}
 	}
 }

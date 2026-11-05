@@ -131,7 +131,9 @@ tools) waits for the open decisions.
 **Personnel files** (ADR 0007; specs `personnel-service.md`, `ai-usage-service.md`) is being built for the
 docs-import app: migration 0048 (schema `personnel`, the role Personnel Documents and its permissions),
 `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
-under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies; no routes yet).
+under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
+sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upkeep's shredding after
+`API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys they answer 503).
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins

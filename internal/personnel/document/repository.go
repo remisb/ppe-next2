@@ -80,4 +80,50 @@ type Repository interface {
 	// Documents are the employee's live documents, current ones first, then newest first,
 	// superseded ones included.
 	Documents(ctx context.Context, employeeID uuid.UUID) ([]Document, error)
+
+	// Document is a live document with its sealed fields and copies, and its
+	// subject's data key; ErrNotFound when there is none.
+	Document(ctx context.Context, id uuid.UUID) (Opened, error)
+	// Record writes events alone (Show Document's, recorded before the answer).
+	Record(ctx context.Context, events []audit.Event) error
+	// UpdateDocument locks a live document, and writes what mutate makes of
+	// it (OnEmployeeRecord, or its removal when Removed is set) with the events.
+	UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) error
+	// UpdateSubject locks the employee's subject (ErrNotFound when they have
+	// no personnel file) and writes what mutate makes of its retention.
+	UpdateSubject(ctx context.Context, employeeID uuid.UUID, mutate func(cur Retention) (Retention, []audit.Event, error)) error
+	// Retention is the employee's personnel file's retention; false when they have no file.
+	Retention(ctx context.Context, employeeID uuid.UUID) (Retention, bool, error)
+	// Due are the subjects whose retention has ended by today: their
+	// employment (or, without that, the employee's deletion) ended at least
+	// months before, and no Legal Hold runs past today.
+	Due(ctx context.Context, today string, months int) ([]uuid.UUID, error)
+	// Shred deletes the subject, their data key, documents and copies' rows,
+	// writes the events, and returns the copies' object keys, so their
+	// objects can go too. Idempotent: an employee with no file is no error.
+	Shred(ctx context.Context, employeeID uuid.UUID, events func(documents int) []audit.Event) ([]string, error)
+}
+
+// Opened is a document as Show Document opens it.
+type Opened struct {
+	Document  Document
+	Sealed    []byte
+	Copies    []Copy
+	SealedKey []byte
+	KeyID     int16
+}
+
+// DocumentChange is what a document becomes: its Add to Employee Record,
+// or removed.
+type DocumentChange struct {
+	OnEmployeeRecord bool
+	Removed          bool
+}
+
+// Retention is a personnel file's retention: when employment ended, and a
+// Legal Hold. Dates are ISO.
+type Retention struct {
+	EmploymentEndedOn *string `json:"employment_ended_on"`
+	HoldUntil         *string `json:"hold_until"`
+	HoldReason        *string `json:"hold_reason"`
 }

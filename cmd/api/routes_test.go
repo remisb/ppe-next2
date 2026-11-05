@@ -900,6 +900,13 @@ var policy = map[string]rule{
 	"POST /api/v1/personnel/documents":                          {role.PersonnelDocumentsManage, "personnel"},
 	"GET /api/v1/personnel/documents/by-employee/{id}":          {role.PersonnelDocumentsRead, "personnel"},
 	"GET /api/v1/personnel/documents/by-employee/{id}/validity": {"", "any"},
+	"POST /api/v1/personnel/documents/{id}/show":                {role.PersonnelDocumentsRead, "personnel"},
+	"POST /api/v1/personnel/documents/{id}/copies/{side}/show":  {role.PersonnelDocumentsRead, "personnel"},
+	"PUT /api/v1/personnel/documents/{id}/employee-record":      {role.PersonnelDocumentsManage, "personnel"},
+	"DELETE /api/v1/personnel/documents/{id}":                   {role.PersonnelDocumentsManage, "personnel"},
+	"GET /api/v1/personnel/subjects/{id}":                       {role.PersonnelDocumentsRead, "personnel"},
+	"PUT /api/v1/personnel/subjects/{id}/employment-ended":      {role.PersonnelDocumentsManage, "personnel"},
+	"PUT /api/v1/personnel/subjects/{id}/hold":                  {role.PersonnelDocumentsManage, "personnel"},
 
 	"GET /api/v1/catalogue":                    {"", "any"},
 	"GET /api/v1/catalogue/active":             {"", "any"},
@@ -1087,6 +1094,7 @@ func TestSeededRolesKeepPolicy(t *testing.T) {
 
 func TestRoutePolicy(t *testing.T) {
 	api := newTestAPI(t)
+	clerk, _ := api.userWith(t, role.KeyPersonnel)
 	roleTokens := map[string]string{}
 	for _, key := range role.BuiltinKeys() {
 		_, roleTokens[key] = api.userWith(t, key)
@@ -1145,7 +1153,13 @@ func TestRoutePolicy(t *testing.T) {
 				others := slices.DeleteFunc(slices.Clone(all), func(p role.Permission) bool { return slices.Contains(need, p) })
 				check("every other permission", api.tokenWith(t, others...), false)
 				for _, p := range need {
-					check("only "+string(p), api.tokenWith(t, p), true)
+					only := api.tokenWith(t, p)
+					if rule.audience == "personnel" {
+						// Show Document checks the user's roles as they are now
+						// (sensitive): the token's user must hold the permission too.
+						only = api.tokenAs(t, clerk, p)
+					}
+					check("only "+string(p), only, true)
 				}
 			} else {
 				check("no permissions", api.tokenWith(t), true)

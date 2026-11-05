@@ -10,9 +10,12 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 
 - **Packages:** `internal/personnel/mrz` (the MRZ parser, **built**), `internal/personnel/document`
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**
-  the keys and blind indexes, Check, Save with its copies, the summary and validity; Show, removal,
-  the employment end, holds and shredding to come), routes in `cmd/api/personnel-routes.go` (**built:**
-  check, save, the summary and validity), `@ppe/api-client`'s `personnel`.
+  the keys and blind indexes, Check, Save with its copies, the summary and validity, Show Document
+  and its copies, Add to Employee Record later, Remove, the retention, Mark Employment Ended, Legal
+  Hold and the shredding; `file.go`, `postgres_file.go`), routes in `cmd/api/personnel-routes.go`
+  (**built**, every route below but colouring), `@ppe/api-client`'s `personnel`. **To come:** the
+  Overview item, `api -reseal-personnel-keys`, deleting every version of a shredded object, and the
+  colour photo with AI usage.
 - **Keys:** optional. Without `API_PERSONNEL_KEY` and `API_PERSONNEL_INDEX_KEY` (both or neither,
   `config.personnelKeyErrors`) Check and Save answer 503 and nothing is kept; the summary and
   validity read what is there. A 409 says `conflict` (`document_on_file`, `other_employee`) and
@@ -161,17 +164,22 @@ opened with the person's key until it goes (retention); the screen says so.
 
 - **Mark Employment Ended** (`PUT …/subjects/{employee}/employment-ended` `{"on": "2026-11-30"}`,
   `null` to clear; `personnel.documents.manage`): `personnel.employment_ended` and
-  `personnel.employment_end_cleared`. Deleting an employee sets it to that day when empty
-  (the employee service calls Personnel files' recorder in the same transaction).
+  `personnel.employment_end_cleared`. A deleted employee without one counts as ended on the day of
+  the deletion: the shredding job's query reads it (`coalesce(employment_ended_on, deleted_at)`),
+  so the employee service needs no call into Personnel files. A person without a personnel file
+  has nothing to end (404). `GET …/subjects/{employee}` (`personnel.documents.read`) reads the file's
+  retention.
 - **Legal Hold** (`PUT …/subjects/{employee}/hold` `{"until": "…", "reason": "…"}`, `null`
   to clear; `personnel.documents.manage`): `personnel.hold_set`, `personnel.hold_cleared`. The
   reason is free text the user is told not to put identity data in; it is in the event.
-- **The shredding job** runs daily in the API (`cmd/api/jobs.go`). For each subject whose
-  `employment_ended_on + API_PERSONNEL_RETENTION_MONTHS` has passed and whose hold has ended:
-  delete the data key, the documents' rows and copies' rows, the objects (every version the
-  store lists), clear `ai_usage.employee_id` through `clear_ai_usage_employee` (an owner's
-  `SECURITY DEFINER` function), and record `personnel.file_shredded` (the employee and how many
-  documents). It is idempotent and runs again after a restore.
+- **The shredding job** runs with the API's hourly upkeep (`cmd/api/jobs.go`, `ShredDue`). For each
+  subject whose end of employment `+ API_PERSONNEL_RETENTION_MONTHS` has passed and whose hold has
+  ended: delete the data key, the documents' and copies' rows and the subject (hard deletes, the one
+  exception to soft delete, PR-8), then the objects' current versions, and record
+  `personnel.file_shredded` with no actor (the job's, as the audit purge's), the number of documents
+  and the period. It is idempotent and runs again after a restore. Still to come: deleting the
+  objects' older versions (they cannot be opened without the key), and clearing
+  `ai_usage.employee_id` once AI usage exists.
 - **The Overview** lists for `personnel.documents.manage` the people whose file goes within
   30 days.
 
@@ -202,6 +210,7 @@ opened with the person's key until it goes (retention); the screen says so.
 | `DELETE /api/v1/personnel/documents/{id}` | `personnel.documents.manage` | |
 | `PUT /api/v1/personnel/subjects/{employee}/employment-ended` | `personnel.documents.manage` | |
 | `PUT /api/v1/personnel/subjects/{employee}/hold` | `personnel.documents.manage` | |
+| `GET /api/v1/personnel/subjects/{employee}` | `personnel.documents.read` | the retention; 404 without a file |
 | `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | through AI usage |
 
 Every route goes into `routes_test.go`'s policy table; the errors (`ErrDocumentOnFile`,
@@ -239,7 +248,7 @@ never a number, code, name from the document or image:
 | --- | --- |
 | `API_PERSONNEL_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | the master keyring over the data keys (64 hex each); required once the feature is on (the routes answer 503 without it and the Overview says so); `api -reseal-personnel-keys` after a change; kept offline (`docs/backups.md`) |
 | `API_PERSONNEL_INDEX_KEY` | the blind indexes' HMAC key (64 hex); never rotated in place |
-| `API_PERSONNEL_RETENTION_MONTHS` | 36 (D3) |
+| `API_PERSONNEL_RETENTION_MONTHS` | 36 (D3); 12 to 1200, checked when the keys are set |
 
 Each is read in `loadConfig` and checked in `validate`. AI settings are in
 [ai-usage-service.md](ai-usage-service.md).

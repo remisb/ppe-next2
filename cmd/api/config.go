@@ -45,7 +45,11 @@ type config struct {
 	PersonnelKeyID        int
 	PersonnelPreviousKeys string
 	PersonnelIndexKey     string
-	JWTTTL                time.Duration
+	// PersonnelRetentionMonths is how long after employment ends a personnel
+	// file is kept before the upkeep shreds it (D3: Lithuania's personal-file
+	// period, 3 years).
+	PersonnelRetentionMonths int
+	JWTTTL                   time.Duration
 	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
 	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
@@ -180,6 +184,9 @@ func loadConfig(args []string) (config, error) {
 	c.PersonnelPreviousKeys = env("API_PERSONNEL_PREVIOUS_KEYS", "")
 	c.PersonnelIndexKey = env("API_PERSONNEL_INDEX_KEY", "")
 	if c.PersonnelKeyID, err = envInt("API_PERSONNEL_KEY_ID", 1); err != nil {
+		return c, err
+	}
+	if c.PersonnelRetentionMonths, err = envInt("API_PERSONNEL_RETENTION_MONTHS", 36); err != nil {
 		return c, err
 	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {
@@ -423,6 +430,9 @@ func (c config) personnelKeyErrors() []error {
 	}
 	if key != nil && index != nil && bytes.Equal(key, index) {
 		errs = append(errs, errors.New("API_PERSONNEL_INDEX_KEY must not be API_PERSONNEL_KEY"))
+	}
+	if c.PersonnelRetentionMonths < 12 || c.PersonnelRetentionMonths > 1200 {
+		errs = append(errs, errors.New("API_PERSONNEL_RETENTION_MONTHS must be from 12 to 1200"))
 	}
 	if c.PersonnelKeyID < 1 || c.PersonnelKeyID > math.MaxInt16 {
 		errs = append(errs, fmt.Errorf("API_PERSONNEL_KEY_ID must be from 1 to %d", math.MaxInt16))

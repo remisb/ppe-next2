@@ -202,3 +202,75 @@ func TestPostgresAppRoleMayNotChangeADataKey(t *testing.T) {
 		t.Errorf("ppe_app reading documents: %v", err)
 	}
 }
+
+func TestPostgresShowRemoveAndShred(t *testing.T) {
+	svc, owner, actor := pgSetup(t)
+	ctx := context.Background()
+	doc, err := svc.Save(ctx, passportParams(t, jonas, uuid.Nil), actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	shown, err := svc.Show(ctx, doc.ID, actor)
+	if err != nil || shown.Fields.Number != "91234567" {
+		t.Fatalf("show = %+v, %v", shown, err)
+	}
+	if jpg, err := svc.ShowCopy(ctx, doc.ID, SidePage, actor); err != nil || len(jpg) == 0 {
+		t.Fatalf("show copy = %d bytes, %v", len(jpg), err)
+	}
+	if n := count(t, owner, `SELECT count(*) FROM audit_events WHERE entity_id = $1 AND event = $2`, doc.EmployeeID, EventShown); n != 2 {
+		t.Errorf("shown events = %d, want 2", n)
+	}
+	if err := svc.SetEmployeeRecord(ctx, doc.ID, true, actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetEmploymentEnded(ctx, doc.EmployeeID, ptr("2023-02-01"), actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetHold(ctx, doc.EmployeeID, ptr("2027-01-31"), "A dispute", actor); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := svc.ShredDue(ctx, 36, quiet); err != nil || res.Files != 0 {
+		t.Errorf("held = %+v, %v", res, err)
+	}
+
+	// Ona: a second person, removed from the register (deleted) four years
+	// ago without an end date: her deletion counts as the end.
+	ona0, err := svc.Save(ctx, func() SaveParams {
+		p := passportParams(t, ona, uuid.Nil)
+		p.New = &NewEmployee{FirstName: "Ona", LastName: "Bandomoji"}
+		p.Surname, p.GivenNames = "Bandomoji", "Ona"
+		return p
+	}(), actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Remove(ctx, ona0.ID, actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(ctx, `UPDATE employees SET deleted_at = '2022-06-01', deleted_by_user_id = $2 WHERE id = $1`, ona0.EmployeeID, actor); err != nil {
+		t.Fatal(err)
+	}
+	res, err := svc.ShredDue(ctx, 36, quiet)
+	if err != nil || res.Files != 1 || res.Failed != 0 {
+		t.Fatalf("due = %+v, %v", res, err)
+	}
+	for _, q := range []string{
+		`SELECT count(*) FROM personnel.subjects WHERE employee_id = $1`,
+		`SELECT count(*) FROM personnel.subject_keys WHERE employee_id = $1`,
+		`SELECT count(*) FROM personnel.identity_documents WHERE employee_id = $1`,
+	} {
+		if n := count(t, owner, q, ona0.EmployeeID); n != 0 {
+			t.Errorf("%s = %d after shredding", q, n)
+		}
+		if n := count(t, owner, q, doc.EmployeeID); n == 0 {
+			t.Errorf("%s = 0 for the held file", q)
+		}
+	}
+	if n := count(t, owner, `SELECT count(*) FROM audit_events WHERE entity_id = $1 AND event = $2 AND actor_user_id IS NULL`,
+		ona0.EmployeeID, EventFileShredded); n != 1 {
+		t.Errorf("shredded events = %d, want 1", n)
+	}
+	if res, _ := svc.ShredDue(ctx, 36, quiet); res.Files != 0 {
+		t.Errorf("run again = %+v", res)
+	}
+}

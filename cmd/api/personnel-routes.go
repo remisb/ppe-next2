@@ -21,12 +21,23 @@ type personnelHandler struct {
 	documents *document.Service
 }
 
-func registerPersonnelRoutes(rt *router, documents *document.Service) {
+// Show Document and a copy are sensitive (FR-14): a recent sign-in, the
+// permission checked as the user's roles are now, recorded before the answer.
+func registerPersonnelRoutes(rt *router, documents *document.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &personnelHandler{documents: documents}
 	rt.restricted("POST /api/v1/personnel/documents/check", h.check, role.PersonnelDocumentsManage)
 	rt.restricted("POST /api/v1/personnel/documents", h.save, role.PersonnelDocumentsManage)
 	rt.restricted("GET /api/v1/personnel/documents/by-employee/{id}", h.documentsOf, role.PersonnelDocumentsRead)
 	rt.authenticated("GET /api/v1/personnel/documents/by-employee/{id}/validity", h.validity)
+	rt.restricted("POST /api/v1/personnel/documents/{id}/show",
+		sensitive(role.PersonnelDocumentsRead, h.show), role.PersonnelDocumentsRead)
+	rt.restricted("POST /api/v1/personnel/documents/{id}/copies/{side}/show",
+		sensitive(role.PersonnelDocumentsRead, h.showCopy), role.PersonnelDocumentsRead)
+	rt.restricted("PUT /api/v1/personnel/documents/{id}/employee-record", h.setEmployeeRecord, role.PersonnelDocumentsManage)
+	rt.restricted("DELETE /api/v1/personnel/documents/{id}", h.remove, role.PersonnelDocumentsManage)
+	rt.restricted("GET /api/v1/personnel/subjects/{id}", h.retention, role.PersonnelDocumentsRead)
+	rt.restricted("PUT /api/v1/personnel/subjects/{id}/employment-ended", h.setEmploymentEnded, role.PersonnelDocumentsManage)
+	rt.restricted("PUT /api/v1/personnel/subjects/{id}/hold", h.setHold, role.PersonnelDocumentsManage)
 }
 
 type checkRequest struct {
@@ -183,6 +194,141 @@ func (h *personnelHandler) validity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+func (h *personnelHandler) show(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	shown, err := h.documents.Show(r.Context(), id, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeNoStore(w)
+	writeJSON(w, http.StatusOK, shown)
+}
+
+func (h *personnelHandler) showCopy(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	jpg, err := h.documents.ShowCopy(r.Context(), id, document.Side(r.PathValue("side")), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeNoStore(w)
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jpg)
+}
+
+func (h *personnelHandler) setEmployeeRecord(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		On *bool `json:"on"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil || req.On == nil {
+		writeError(w, r, errBadRequest)
+		return
+	}
+	if err := h.documents.SetEmployeeRecord(r.Context(), id, *req.On, actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *personnelHandler) remove(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	if err := h.documents.Remove(r.Context(), id, actor); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *personnelHandler) retention(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	ret, err := h.documents.Retention(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeNoStore(w)
+	writeJSON(w, http.StatusOK, ret)
+}
+
+// setEmploymentEnded takes {"on": "2026-11-30"}, or {"on": null} to clear it.
+func (h *personnelHandler) setEmploymentEnded(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		On *string `json:"on"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	ret, err := h.documents.SetEmploymentEnded(r.Context(), id, req.On, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, ret)
+}
+
+// setHold takes {"until": "2027-06-30", "reason": "…"}, or {"until": null} to clear it.
+func (h *personnelHandler) setHold(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Until  *string `json:"until"`
+		Reason string  `json:"reason"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	ret, err := h.documents.SetHold(r.Context(), id, req.Until, req.Reason, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, ret)
+}
+
+// idAndActor reads the path's id and the signed-in actor, answering the error itself.
+func idAndActor(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, bool) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return uuid.Nil, uuid.Nil, false
+	}
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return uuid.Nil, uuid.Nil, false
+	}
+	return id, actor, true
 }
 
 // writeNoStore keeps an answer about a person's documents out of every cache.

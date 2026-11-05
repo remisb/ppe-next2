@@ -140,6 +140,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		documentStore = store
 	}
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc))
+	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -244,12 +245,14 @@ type services struct {
 	// documents are Personnel files' identity documents (ADR 0007); run sets
 	// them, as their keys are optional.
 	documents *document.Service
-	dashboard *dashboard.Service
-	settings  *settings.Service
-	templates *mailtemplate.Service
-	launcher  *launcher.Service
-	backups   *backup.Service
-	audit     *audit.Service
+	// personnelRetentionMonths is API_PERSONNEL_RETENTION_MONTHS, for the upkeep.
+	personnelRetentionMonths int
+	dashboard                *dashboard.Service
+	settings                 *settings.Service
+	templates                *mailtemplate.Service
+	launcher                 *launcher.Service
+	backups                  *backup.Service
+	audit                    *audit.Service
 	// system is the error list and the database's status; window and
 	// metrics are the API's own request figures (internal/monitor).
 	system  *system.Service
@@ -320,7 +323,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
-	registerPersonnelRoutes(rt, svc.documents)
+	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)

@@ -27,11 +27,14 @@ type fakeRepo struct {
 	copies    map[uuid.UUID][]Copy
 	events    []audit.Event
 	failSave  error
+	removed   map[uuid.UUID]bool
+	retention map[uuid.UUID]Retention
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{employees: map[uuid.UUID]EmployeeRecord{}, subjects: map[uuid.UUID]Subject{},
-		documents: map[uuid.UUID]Document{}, sealed: map[uuid.UUID][]byte{}, numbers: map[string]Ref{}, copies: map[uuid.UUID][]Copy{}}
+		documents: map[uuid.UUID]Document{}, sealed: map[uuid.UUID][]byte{}, numbers: map[string]Ref{}, copies: map[uuid.UUID][]Copy{},
+		removed: map[uuid.UUID]bool{}, retention: map[uuid.UUID]Retention{}}
 }
 
 func (r *fakeRepo) DocumentByNumber(_ context.Context, idx []byte, state string) (Ref, bool, error) {
@@ -126,6 +129,108 @@ func (r *fakeRepo) Save(_ context.Context, rec SaveRecord) error {
 	return nil
 }
 
+func (r *fakeRepo) Document(_ context.Context, id uuid.UUID) (Opened, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	d, ok := r.documents[id]
+	if !ok || r.removed[id] {
+		return Opened{}, ErrNotFound
+	}
+	sub := r.subjects[d.EmployeeID]
+	return Opened{Document: d, Sealed: r.sealed[id], Copies: r.copies[id], SealedKey: sub.SealedKey, KeyID: sub.KeyID}, nil
+}
+
+func (r *fakeRepo) Record(_ context.Context, events []audit.Event) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.events = append(r.events, events...)
+	return nil
+}
+
+func (r *fakeRepo) UpdateDocument(_ context.Context, id uuid.UUID, mutate func(Document) (DocumentChange, []audit.Event, error)) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	d, ok := r.documents[id]
+	if !ok || r.removed[id] {
+		return ErrNotFound
+	}
+	change, events, err := mutate(d)
+	if err != nil || len(events) == 0 {
+		return err
+	}
+	d.OnEmployeeRecord = change.OnEmployeeRecord
+	r.documents[id] = d
+	if change.Removed {
+		r.removed[id] = true
+	}
+	r.events = append(r.events, events...)
+	return nil
+}
+
+func (r *fakeRepo) UpdateSubject(_ context.Context, employeeID uuid.UUID, mutate func(Retention) (Retention, []audit.Event, error)) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.subjects[employeeID]; !ok {
+		return ErrNotFound
+	}
+	next, events, err := mutate(r.retention[employeeID])
+	if err != nil || len(events) == 0 {
+		return err
+	}
+	r.retention[employeeID] = next
+	r.events = append(r.events, events...)
+	return nil
+}
+
+func (r *fakeRepo) Retention(_ context.Context, id uuid.UUID) (Retention, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, ok := r.subjects[id]
+	return r.retention[id], ok, nil
+}
+
+func (r *fakeRepo) Due(_ context.Context, today string, months int) ([]uuid.UUID, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var out []uuid.UUID
+	for id := range r.subjects {
+		ret := r.retention[id]
+		if ret.EmploymentEndedOn == nil || (ret.HoldUntil != nil && *ret.HoldUntil >= today) {
+			continue
+		}
+		ended, _ := time.Parse(time.DateOnly, *ret.EmploymentEndedOn)
+		if ended.AddDate(0, months, 0).Format(time.DateOnly) <= today {
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+func (r *fakeRepo) Shred(_ context.Context, employeeID uuid.UUID, events func(int) []audit.Event) ([]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.subjects[employeeID]; !ok {
+		return nil, nil
+	}
+	var keys []string
+	n := 0
+	for id, d := range r.documents {
+		if d.EmployeeID == employeeID {
+			for _, c := range r.copies[id] {
+				keys = append(keys, c.ObjectKey)
+			}
+			delete(r.documents, id)
+			delete(r.sealed, id)
+			delete(r.copies, id)
+			n++
+		}
+	}
+	delete(r.subjects, employeeID)
+	delete(r.retention, employeeID)
+	r.events = append(r.events, events(n)...)
+	return keys, nil
+}
+
 // fakeStore is the files store in memory.
 type fakeStore struct {
 	mu      sync.Mutex
@@ -141,6 +246,16 @@ func (s *fakeStore) Put(_ context.Context, key string, body io.Reader, _ int64, 
 	defer s.mu.Unlock()
 	s.objects[key] = b
 	return nil
+}
+
+func (s *fakeStore) Get(_ context.Context, key string) (io.ReadCloser, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	b, ok := s.objects[key]
+	if !ok {
+		return nil, errors.New("no such object")
+	}
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
 func (s *fakeStore) Delete(_ context.Context, key string) error {
