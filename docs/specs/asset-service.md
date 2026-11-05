@@ -214,7 +214,9 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   note, not a problem. **Add N SIMs** waits until no card has a problem. Add and Edit SIM keep
   their own rules: only a scanned card must be an ICCID.
 - **Add** (`asset.Service.AddSIMs`, the import's core): all or none, in one transaction, at most
-  100 cards; each numbered on from the SIM counter, Not Activated, in the Office, recording
+  100 cards; each numbered on from the SIM counter (read before the write: a batch whose numbers
+  another batch took at the same moment has written nothing and is numbered again, up to 3 more
+  times, as the go-live import is), Not Activated, in the Office, recording
   `asset.registered` (with `"sim_codes": "set"` when it has codes, never the codes) and its
   sealed PIN and PUK. A card refused there is a 400 or 409 with its `index`; one already in the
   register names it (`existing_id`).

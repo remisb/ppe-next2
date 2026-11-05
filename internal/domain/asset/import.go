@@ -86,14 +86,38 @@ func (s *Service) ImportSIMs(ctx context.Context, p ImportParams, actor uuid.UUI
 	if len(p.SIMs) == 0 {
 		return ImportResult{}, fieldError("sims", "are required")
 	}
-	items, sims, err := s.registerSIMs(ctx, p.SIMs, p.Comment, actor)
+	sims, err := s.numberAndWriteSIMs(ctx, p.SIMs, p.Comment, actor, p.Commit)
 	if err != nil {
 		return ImportResult{}, err
 	}
-	if err := s.writeSIMs(ctx, items, p.Commit); err != nil {
-		return ImportResult{}, err
-	}
 	return ImportResult{SIMs: sims, Committed: p.Commit}, nil
+}
+
+// numberRetries is how many more times a batch of SIM cards is numbered
+// when another batch took its numbers first.
+const numberRetries = 3
+
+// numberAndWriteSIMs numbers, builds and writes list, all or none (kept when
+// commit is set), for ImportSIMs and AddSIMs. The numbers come from the SIM
+// counter, read before the write's transaction, so a batch written at the
+// same moment can take them first: the write then refuses one
+// (ErrInventoryNoTaken) and has written nothing, and the batch is numbered
+// on from the counter again, which now counts the other batch's. Only these
+// numbers are the batch's own; any other refusal is the caller's.
+func (s *Service) numberAndWriteSIMs(ctx context.Context, list []ImportSIM, comment string, actor uuid.UUID, commit bool) ([]ImportedSIM, error) {
+	for attempt := 0; ; attempt++ {
+		items, sims, err := s.registerSIMs(ctx, list, comment, actor)
+		if err != nil {
+			return nil, err
+		}
+		err = s.writeSIMs(ctx, items, commit)
+		if err == nil {
+			return sims, nil
+		}
+		if attempt == numberRetries || !errors.Is(err, ErrInventoryNoTaken) {
+			return nil, err
+		}
+	}
 }
 
 // registerSIMs builds what ImportSIMs and AddSIMs write: each card numbered on

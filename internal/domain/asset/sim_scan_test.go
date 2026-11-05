@@ -2,6 +2,7 @@ package asset
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -179,6 +180,66 @@ func TestAddSIMs(t *testing.T) {
 	}
 	if _, err := f.svc.AddSIMs(f.ctx, batch(ScannedSIM{SimNo: scanC}), uuid.Nil); !errors.Is(err, ErrInvalid) {
 		t.Errorf("no actor = %v", err)
+	}
+}
+
+// racingRepo is a repository where another batch takes the next SIM numbers
+// between this batch's reading of the counter and its write, races times.
+type racingRepo struct {
+	*fakeRepo
+	races int
+	reads int
+}
+
+func (r *racingRepo) LastNumber(ctx context.Context, prefix string) (int64, error) {
+	last, err := r.fakeRepo.LastNumber(ctx, prefix)
+	r.reads++
+	if r.races > 0 {
+		r.races--
+		// The other batch: two cards, numbered on from the same counter, written first.
+		for n := last + 1; n <= last+2; n++ {
+			r.numbers[FormatNumber(prefix, n)] = uuid.New()
+		}
+		r.counters[prefix] = last + 2
+	}
+	return last, err
+}
+
+func TestAddSIMsNumbersAgainWhenAnotherBatchTookItsNumbers(t *testing.T) {
+	f := scanFixture(t)
+	race := &racingRepo{fakeRepo: f.repo, races: 1}
+	f.svc.repo = race
+	added, err := f.svc.AddSIMs(f.ctx, batch(ScannedSIM{SimNo: scanA, PIN: "0306", PUK: "93691381"}, ScannedSIM{SimNo: scanB}), testActor)
+	if err != nil {
+		t.Fatalf("a batch whose numbers were taken: %v", err)
+	}
+	// Numbered on after the other batch's two, once read again; nothing of the first try was kept.
+	if race.reads != 2 || added[0].InventoryNo != "SIM-000003" || added[1].InventoryNo != "SIM-000004" {
+		t.Fatalf("reads = %d, added = %+v", race.reads, added)
+	}
+	if len(f.repo.assets) != 2 || len(f.repo.codes) != 1 || len(f.repo.events) != 2 {
+		t.Errorf("written: %d assets, %d sealed codes, %d events", len(f.repo.assets), len(f.repo.codes), len(f.repo.events))
+	}
+
+	// Taken every time: after numberRetries more tries, the conflict is the answer, naming the card.
+	f = scanFixture(t)
+	race = &racingRepo{fakeRepo: f.repo, races: 100}
+	f.svc.repo = race
+	_, err = f.svc.AddSIMs(f.ctx, batch(ScannedSIM{SimNo: scanA}), testActor)
+	var row *ImportRowError
+	if !errors.Is(err, ErrInventoryNoTaken) || !errors.As(err, &row) || row.Index != 0 || race.reads != 1+numberRetries {
+		t.Fatalf("err = %v, reads = %d", err, race.reads)
+	}
+
+	// Any other refusal is not tried again: a card already in the register.
+	f = scanFixture(t)
+	if _, err := f.svc.AddSIMs(f.ctx, batch(ScannedSIM{SimNo: scanA}), testActor); err != nil {
+		t.Fatal(err)
+	}
+	race = &racingRepo{fakeRepo: f.repo}
+	f.svc.repo = race
+	if _, err := f.svc.AddSIMs(f.ctx, batch(ScannedSIM{SimNo: scanA}), testActor); !errors.Is(err, ErrSIMNoTaken) || race.reads != 1 {
+		t.Fatalf("err = %v, reads = %d", err, race.reads)
 	}
 }
 

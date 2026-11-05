@@ -255,7 +255,8 @@ func (s *Service) CheckSIMs(ctx context.Context, p AddSIMsParams) ([]SIMProblem,
 // counter, with what the batch shares and its sealed PIN and PUK. Each card
 // records asset.registered, as Add SIM does. A card's problem is an
 // *ImportRowError with its index; one in the register, a DuplicateError
-// inside it.
+// inside it. A batch added at the same moment that took its numbers first
+// makes it number its cards again (numberAndWriteSIMs).
 func (s *Service) AddSIMs(ctx context.Context, p AddSIMsParams, actor uuid.UUID) ([]AddedSIM, error) {
 	if actor == uuid.Nil {
 		return nil, fieldError("actor", "is required")
@@ -278,11 +279,8 @@ func (s *Service) AddSIMs(ctx context.Context, p AddSIMsParams, actor uuid.UUID)
 			Codes:  c.codes(),
 		}
 	}
-	items, registered, err := s.registerSIMs(ctx, sims, "", actor)
+	registered, err := s.numberAndWriteSIMs(ctx, sims, "", actor, true)
 	if err != nil {
-		return nil, err
-	}
-	if err := s.writeSIMs(ctx, items, true); err != nil {
 		return nil, err
 	}
 	out := make([]AddedSIM, len(registered))

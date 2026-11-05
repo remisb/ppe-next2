@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"slices"
@@ -597,5 +598,80 @@ func TestPostgresScanSIMs(t *testing.T) {
 	owners, err := repo.SIMOwners(ctx, []string{simKey(scanA), simKey(scanB + "F"), simKey(scanC)})
 	if err != nil || len(owners) != 2 || owners[simKey(scanA)] != added[0].ID || owners[simKey(scanB)] != added[1].ID {
 		t.Errorf("SIMOwners = %v, %v", owners, err)
+	}
+}
+
+// barrierRepo holds a batch, once it has read the SIM counter, until every
+// batch has read it, so they all number their cards from the same counter.
+type barrierRepo struct {
+	Repository
+	read  bool
+	ready *sync.WaitGroup
+}
+
+func (r *barrierRepo) LastNumber(ctx context.Context, prefix string) (int64, error) {
+	last, err := r.Repository.LastNumber(ctx, prefix)
+	if !r.read {
+		r.read = true
+		r.ready.Done()
+		r.ready.Wait()
+	}
+	return last, err
+}
+
+// iccid is a made-up SIM No. whose check digit checks: 89, then n, then the check digit.
+func iccid(n int) string {
+	prefix := fmt.Sprintf("8937099%011d", n)
+	for d := '0'; d <= '9'; d++ {
+		if luhn(prefix + string(d)) {
+			return prefix + string(d)
+		}
+	}
+	panic("no check digit")
+}
+
+// Batches added at the same moment, all numbered from the same counter: each
+// one whose numbers another took is numbered again, and every card is added
+// once, with numbers of its own (docs/apps/sim-scan-review.md F10).
+func TestPostgresAddSIMsAtTheSameMoment(t *testing.T) {
+	app, owner, actor, _ := newTestPool(t)
+	ctx := context.Background()
+	const batches, cards = 3, 5
+	var ready, done sync.WaitGroup
+	ready.Add(batches)
+	errs := make([]error, batches)
+	added := make([][]AddedSIM, batches)
+	for b := range batches {
+		done.Add(1)
+		go func() {
+			defer done.Done()
+			svc := NewService(&barrierRepo{Repository: NewPostgresRepository(app), ready: &ready}, WithLocation(vilnius))
+			p := AddSIMsParams{Provider: sp("Bitė")}
+			for c := range cards {
+				p.Cards = append(p.Cards, ScannedSIM{SimNo: iccid(100*b + c)})
+			}
+			added[b], errs[b] = svc.AddSIMs(ctx, p, actor)
+		}()
+	}
+	done.Wait()
+	numbers := map[string]bool{}
+	for b := range batches {
+		if errs[b] != nil {
+			t.Fatalf("batch %d: %v", b, errs[b])
+		}
+		for _, a := range added[b] {
+			numbers[a.InventoryNo] = true
+		}
+	}
+	if len(numbers) != batches*cards {
+		t.Errorf("%d numbers for %d cards: %v", len(numbers), batches*cards, numbers)
+	}
+	var rows, last int64
+	if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM assets WHERE kind = 'SIM'),
+		(SELECT last FROM asset_number_counters WHERE prefix = $1)`, PrefixSIM).Scan(&rows, &last); err != nil {
+		t.Fatal(err)
+	}
+	if rows != batches*cards || last != batches*cards {
+		t.Errorf("%d SIM cards, the counter at %d; want %d each", rows, last, batches*cards)
 	}
 }
