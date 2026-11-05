@@ -8,7 +8,7 @@ import { t } from '@/i18n'
 import { type Route, linkTo, useRouter } from '@/lib/router'
 
 import { FindPage } from './routes/find'
-import { ScanPage } from './routes/scan'
+import { ScanPage } from './routes/scan/scan-page'
 
 /*
  * The trial, in a small app's frame (@ppe/launcher's SignedIn and AppFrame):

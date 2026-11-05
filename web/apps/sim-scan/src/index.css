@@ -10,7 +10,7 @@
 @source '../../../packages/sim-scan/src';
 
 /*
- * For every SIM flips between its summary and its form (routes/scan.tsx):
+ * For every SIM flips between its summary and its form (routes/scan/batch-card.tsx):
  * each side turns in about its top edge. Only with motion-safe, so a device
  * that asks for reduced motion just swaps them.
  */

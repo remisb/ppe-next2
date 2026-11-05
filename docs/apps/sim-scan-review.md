@@ -57,7 +57,9 @@ web/apps/sim-scan/                 the published app (slug sim-scan, profile dev
   src/app.tsx                      SignedIn + AppFrame, two tabs gated by permission
   src/lib/router.ts                two addresses: / and /find
   src/lib/readers.ts               lazy import of @ppe/sim-scan/readers, configured with filesBase
-  src/routes/scan.tsx              ScanPage, LiveScan, CardInProgress, BatchCard (719 lines)
+  src/routes/scan.tsx              ScanPage, LiveScan, CardInProgress, BatchCard (719 lines; split
+                                   in step 3 into src/routes/scan/: scan-page, scan-list (reducer),
+                                   picture-store, live-scan, card-in-progress, batch-card)
   src/routes/find.tsx              FindPage, SimRow, Code
   src/csp.test.ts                  the device policy = staff policy + wasm + worker, nothing else
 web/packages/sim-scan/             everything that moves into the staff app later
@@ -237,14 +239,15 @@ plaintext is `"PIN PUK"`. That is safe because both have been checked to be digi
 ## 6. Findings
 
 Severity: **M** medium (fix before the merge or before sharing the code), **L** low (tidy-up).
-**Fixed in step 1** (2026-11-05): F3, F5, F6, F7, F8, F11; **step 2**: F1 (marked ✅ below).
+**Fixed in step 1** (2026-11-05): F3, F5, F6, F7, F8, F11; **step 2**: F1; **step 3**: F4, F14 in part (marked ✅ below).
+Line numbers in `scan.tsx` are as reviewed; that file is now `src/routes/scan/`.
 
 | # | Sev | Finding | Where | Suggested fix |
 | --- | --- | --- | --- | --- |
 | F1 ✅ | M | **The scanned list is lost without a warning when the user switches to the PIN and PUK tab.** `beforeunload` only covers leaving the page. The tab change is in-app navigation, which unmounts `ScanPage` and with it every card and picture | `app.tsx:48`, `scan.tsx:104-109` | Keep both screens mounted (hide the inactive one), or keep the list in a context above the router, or ask before navigating when `cards.length > 0` (a guard in `useAddressRouter`, which docs-import needs too) |
 | F2 | M | **The barcode is decoded on the main thread on every live frame,** with `tryHarder` on frames up to 2000 px. On mid-range phones this makes the video and the UI stutter. Tesseract already runs in a worker | `readers.ts:23`, `scan.tsx:334` | Run zxing in a dedicated worker (`zxing-wasm` works in workers) and send it an `ImageBitmap` (transferable). Read live frames at ~1280 px and keep 2000 px for photos |
 | F3 ✅ | M | **The API check can return out of order.** The debounced `checkSimCards` has no cancellation and no sequence number, so a slow earlier answer can overwrite a later one. Its `index` values then mark the wrong rows, for example after a removal | `scan.tsx:111-119` | Use an `AbortController` per request, or keep a request counter and ignore stale answers |
-| F4 | M | **`routes/scan.tsx` is 719 lines** with four components. `ScanPage` alone has ten `useState`s, a ref-held `Map` of pictures, and a `redraw` counter to force renders when the map changes | `scan.tsx:47-287`, `:54` | Split into `scan/` files. Put the list's state (cards, pictures, API problems) in a `useReducer` or a small store with `add/remove/clear` that owns the blob URLs (`usePictureStore`). docs-import needs the same thing, so it belongs in the shared kit (see the plan) |
+| F4 ✅ | M | **`routes/scan.tsx` is 719 lines** with four components. `ScanPage` alone has ten `useState`s, a ref-held `Map` of pictures, and a `redraw` counter to force renders when the map changes | `scan.tsx:47-287`, `:54` | Split into `scan/` files. Put the list's state (cards, pictures, API problems) in a `useReducer` or a small store with `add/remove/clear` that owns the blob URLs (`usePictureStore`). docs-import needs the same thing, so it belongs in the shared kit (see the plan) |
 | F5 ✅ | L | **Photos beyond the limit are dropped without a message, and their blob URLs leak.** `choosePhotos` keeps up to 200 files and then cuts the cards to 100 overall. The dropped photos' URLs stay until the screen unmounts | `scan.tsx:127`, `:144` | Tell the user ("Only the first N were read") and `forget` the pictures of dropped cards |
 | F6 ✅ | L | The error title `SIM ${n}` is hard-coded English | `scan.tsx:289-291` | Use `t.currentCard(n)` |
 | F7 ✅ | L | Live-scan keys are `c${Date.now()}f/b`, while the rest of the screen uses `newKey()`. Two cards within the same millisecond would collide. That is unlikely, but the two styles are inconsistent | `scan.tsx:353-354`, `:387` | Use `newKey()` |
@@ -254,7 +257,7 @@ Severity: **M** medium (fix before the merge or before sharing the code), **L** 
 | F11 ✅ | L | **Docs are out of date:** ADR 0005 §3–4 and the spec still say `/sim-scan/readers/` and "reports as `workwear`". The app now lives at `/apps/sim-scan/` and sends `X-PPE-App: sim-scan` (`main.tsx`). `@ppe/sim-scan`'s `package.json` and the header of `text.ts` still say `/sim-scan/` | ADR 0005 l. 54, 61; `asset-service.md:200, 224`; `packages/sim-scan/package.json:6` | Update the text and note the change in the ADR's status line |
 | F12 | L | Only one sealing key, and no re-seal tool (already listed in the ADR's consequences) | `sim_scan.go:25` | Add a keyring (key id → key) and an `api -reseal` command before docs-import adds more sealed data (see the plan) |
 | F13 | L | The main chunk is 542 kB (178 kB gzipped) for two screens. Vite warns about it | build | Split routes with `React.lazy` (Find is rarely opened) or set `manualChunks` for `@ppe/ui`. Low priority, because the build is cached immutably |
-| F14 | L | The screen's state logic (`withPhoto` → `cardComplete` → `finish`, the live state machine) is tested only through e2e. `readers.ts` and `camera.ts` have no unit tests (`guideCrop` is pure maths) | | Add a test for `guideCrop`. When F4 is done, a reducer gives a pure function to test |
+| F14 ✅ in part | L | The screen's state logic (`withPhoto` → `cardComplete` → `finish`, the live state machine) is tested only through e2e. `readers.ts` and `camera.ts` have no unit tests (`guideCrop` is pure maths) | | Add a test for `guideCrop`. When F4 is done, a reducer gives a pure function to test. *Done: `camera.test.ts`, `scan-list.test.ts`, `picture-store.test.ts`; the live state machine is still e2e only* |
 
 Things checked and found **correct**: Luhn in both languages; `simKey` ignoring the filler F
 (it matches the unique index from migration 0041); duplicates counted once in `CheckSIMs`
