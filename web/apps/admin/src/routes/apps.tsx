@@ -180,6 +180,9 @@ function AppPane({
   const { client } = useApi()
   const action = useAction()
   const [moved, setMoved] = useState<string>()
+  // A channel moved: Trials and Changes read it again (the tile itself, and
+  // so its updated_at, did not change).
+  const [released, setReleased] = useState(0)
   const order = all.map((a) => a.slug)
   const place = order.indexOf(app.slug) + 1
   const parent = app.parent ? all.find((a) => a.slug === app.parent) : undefined
@@ -254,13 +257,20 @@ function AppPane({
         </Fact>
       </FactGrid>
       <ActionError error={action.error} />
-      {app.kind === 'app' && app.tier === 'here' ? <AppReleases app={app} timeZone={timeZone} onChanged={onMoved} /> : null}
-      {app.kind === 'app' && app.tier === 'here' ? <AppTrials app={app} timeZone={timeZone} /> : null}
+      {app.kind === 'app' && app.tier === 'here' ? <AppReleases
+          app={app}
+          timeZone={timeZone}
+          onChanged={() => {
+            setReleased((n) => n + 1)
+            onMoved()
+          }}
+        /> : null}
+      {app.kind === 'app' && app.tier === 'here' ? <AppTrials app={app} timeZone={timeZone} revision={released} /> : null}
       {app.kind === 'app' ? <Feedback slug={app.slug} timeZone={timeZone} /> : null}
       <RecordChanges
         className="mb-0"
         load={() => client.audit.history('apps', app.id)}
-        deps={[app.id, app.updated_at, app.position]}
+        deps={[app.id, app.updated_at, app.position, released]}
         timeZone={timeZone}
         rememberAs="app-changes"
       />

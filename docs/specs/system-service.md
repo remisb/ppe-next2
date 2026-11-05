@@ -153,6 +153,7 @@ areas the token's permissions open, so the employee role gets an empty Overview.
 | `database_growth` | info | over 20 % growth since the comparison sample, at least 7 days old | `system.read` |
 | `audit_seal_mismatch` | critical | the latest Verify found a sealed day that does not match (audit-service.md) | `audit.read` |
 | `database_owner_rights` | warning | the API connects as the owner or a superuser, not `ppe_app` | `system.read` |
+| `stable_behind` | info | a published app's Preview has been newer than its Stable for 3 days, with Stable follows deploys off (app-launcher.md) | `apps.manage` |
 
 The figures cover the same areas:
 - active and inactive users (`users.read`);

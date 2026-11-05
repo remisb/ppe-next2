@@ -41,14 +41,19 @@ func TestAttention(t *testing.T) {
 		Errors:   &Errors{LastHourRequests: 200, LastHourErrors: 3, NewKinds: 2},
 		Database: &Database{Bytes: 130, EarlierBytes: 100, EarlierDay: now.Add(-30 * 24 * time.Hour), OwnerRights: true},
 	}
+	busy.Apps = &Apps{BehindSince: []time.Time{now.Add(-5 * 24 * time.Hour), now.Add(-24 * time.Hour), now.Add(-4 * 24 * time.Hour)}}
 	got := Attention(busy, now)
 	want := []string{
 		"critical:audit_seal_mismatch", "critical:copied_sign_in", "warning:last_backup_failed", "warning:failed_sign_ins",
 		"warning:review_overdue", "warning:error_rate", "warning:new_errors", "warning:database_owner_rights", "warning:audit_not_timestamped",
-		"info:database_growth",
+		"info:database_growth", "info:stable_behind",
 	}
 	if !slices.Equal(keys(got), want) {
 		t.Fatalf("items = %v\nwant %v", keys(got), want)
+	}
+	// Two apps behind for over StableBehindAfter (one only a day, testers may still be trying it), the oldest five days.
+	if last := got[len(got)-1]; last.Count != 2 || last.Days != 5 {
+		t.Errorf("stable_behind = %+v", last)
 	}
 	if got[4].Days != 100 || got[5].Percent != 1.5 || got[5].Count != 3 || got[8].Count != 2 || got[9].Percent != 30 || got[9].Days != 30 || got[0].Since == nil {
 		t.Errorf("figures = %+v", got)

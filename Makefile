@@ -161,6 +161,15 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 			$(PROD) up -d --force-recreate --no-deps $$svc || exit 1; \
 		fi; \
 	done
+	@# The Caddyfile is mounted from the checkout, so a change to it alone
+	@# (a security policy, say) changes no image: compare what Caddy runs with.
+	@# A single-file mount keeps the file it started with, so recreate, not reload.
+	@want=$$(sha256sum deploy/Caddyfile | cut -d' ' -f1); \
+	have=$$($(PROD) exec -T caddy sha256sum /etc/caddy/Caddyfile | cut -d' ' -f1); \
+	if [ "$$want" != "$$have" ]; then \
+		echo "caddy runs an older Caddyfile: recreating it"; \
+		$(PROD) up -d --force-recreate --no-deps caddy || exit 1; \
+	fi
 	@for i in $$(seq 1 60); do \
 		if out=$$($(PROD) exec -T api /api -healthcheck 2>/dev/null); then echo "api ready: $$out"; exit 0; fi; \
 		sleep 1; \
@@ -173,6 +182,10 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 	@# channel opens are pruned.
 	@case "$(PROD_COMMIT)" in *-dirty) \
 		echo "the checkout has local changes: the apps are deployed but not published (commit or discard them, then make prod-up)" >&2; exit 1;; esac
+	@built=$$($(PROD) exec -T caddy cat /srv/build/.commit 2>/dev/null); \
+	if [ "$$built" != "$(PROD_COMMIT)" ]; then \
+		echo "the web image was built from $${built:-an unknown commit}, not $(PROD_COMMIT): nothing published (make prod-build, then make prod-up)" >&2; exit 1; \
+	fi
 	@set -o pipefail; for app in $(PUBLISHED_APPS); do \
 		$(PROD) exec -T caddy tar -C "/srv/build/$$app" -cf - . | \
 		$(PROD) run --rm --no-deps -T api -publish-app "$$app" -version "$(call app_version,HEAD)" \
@@ -183,7 +196,7 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 # Builds the app at REF with that commit's web/Dockerfile (deploy/build-app.sh)
 # and publishes it; fetch the ref first. An app's new version reaches no one
 # until a channel points at it: CHANNEL, or Manage apps later.
-prod-publish: ## Publish an app built at a git ref: APP=<slug> REF=<commit, tag or branch> [CHANNEL=<stable|beta|preview|variant>]
+prod-publish: ## Publish an app built at a git ref: APP=<slug> REF=<commit, tag or branch> [CHANNEL=<stable|beta|preview>]
 	@test -n "$(APP)" -a -n "$(REF)" || { echo "usage: make prod-publish APP=<slug> REF=<git ref> [CHANNEL=<name>]" >&2; exit 2; }
 	@git rev-parse --verify --quiet "$(REF)^{commit}" >/dev/null || { echo "$(REF) is not a commit here: git fetch first" >&2; exit 2; }
 	set -o pipefail; deploy/build-app.sh "$(APP)" "$(REF)" | $(PROD) run --rm --no-deps -T api -publish-app "$(APP)" \

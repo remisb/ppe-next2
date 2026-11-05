@@ -109,7 +109,9 @@ After losing the server, `make prod-up` publishes the deployed commit again, and
 registry rows (versions, channels) are in the database backups. Publishing a version the
 restored database already records writes its files again ("published again: its files were
 missing"), so do that for every version a channel points at (Manage apps lists them) before
-opening the app: until then its page answers 500.
+opening the app: until then its page answers 500. `make prod-up` checks this: its prune step
+names each channel whose version's files are missing, with the `make prod-publish` command
+that puts them back, and fails.
 
 ### Encryption (optional)
 

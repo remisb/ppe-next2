@@ -158,7 +158,8 @@ stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public
 with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
-Preview, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
+Preview, **Stable follows deploys**: migration 0044, a deploy's new version then moves Stable too, a re-run
+never; the Overview's `stable_behind` says when Preview has been ahead for 3 days);
 the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
 and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. A channel's audience decides who
 sees it, not who may open it: the page and files are public, the data the API's (the stripe fails
@@ -169,7 +170,9 @@ Defaults are the code's until an administrator changes one (`EnsureDefaults` syn
 tiles, audited). Manage apps' **Trials** (migration 0045: `user_version_activity`,
 `launcher_feedback.version`) shows each version's people, errors and feedback.
 `make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app,
-removes folders no version names) and publishes nothing from a checkout with local changes; a
+removes folders no version names, fails naming the `prod-publish` command when a channel's files
+are missing) and publishes nothing from a checkout with local changes or from a web image built from
+another commit (`/srv/build/.commit`); a
 publish writes a recorded version's files again when they are missing (a restore, a lost volume).
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
@@ -301,7 +304,9 @@ cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 `prod-up` runs migrations before the API starts and recreates what changed; then, because compose
 has left `api` or `caddy` running the previous image after a rebuild, it recreates each of `api`,
 `caddy` and `backup` whose container still runs another image than its tag names, once (about a
-second of downtime each; certificates live in the `caddy-data` volume). `db` is recreated only when its
+second of downtime each; certificates live in the `caddy-data` volume), and `caddy` again when the
+Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image) differs
+from the checkout's. `db` is recreated only when its
 config changes. It ends when the API's `GET /ready` answers (database reachable, every
 migration the build embeds applied; `internal/db.Migrations`), else it fails with the API's
 log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the

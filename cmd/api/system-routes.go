@@ -308,6 +308,16 @@ func buildOverview(r *http.Request, svc services, tok *tokens) (Overview, error)
 			in.Audit.StampsOverdue = v.StampsOverdue
 		}
 	}
+	if can(role.AppsManage) {
+		behind, err := svc.launcher.StableBehind(ctx)
+		if err != nil {
+			return out, err
+		}
+		in.Apps = &overview.Apps{BehindSince: []time.Time{}}
+		for _, b := range behind {
+			in.Apps.BehindSince = append(in.Apps.BehindSince, b.Since)
+		}
+	}
 	out.Attention = overview.Attention(in, now)
 	return out, nil
 }

@@ -80,6 +80,15 @@ export const overview = {
       detail: ({ percent, days }) => `It grew ${percent}% in ${days} days. Check that the disk has room.`,
       action: 'Open System',
     },
+    stable_behind: {
+      title: 'Stable is behind Preview',
+      detail: ({ count, days }) =>
+        plural(count, {
+          one: `An app's Preview has had a newer version than its Stable for ${days} days. Make it Stable when it is ready, or turn on Stable follows deploys.`,
+          other: `# apps' Previews have had newer versions than their Stable, the oldest for ${days} days. Make them Stable when they are ready, or turn on Stable follows deploys.`,
+        }),
+      action: 'Open Manage apps',
+    },
   } satisfies Record<AttentionKey, ItemText>,
   figures: 'Figures',
   activeUsers: 'Active users',

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -231,6 +232,44 @@ func TestStableFollowsDeploys(t *testing.T) {
 	_, chans, _ := svc.Releases(ctx, "sim-scan")
 	if got := names(chans); !slices.Equal(got, []string{"stable=2026.11.05-bbb", "preview=2026.11.05-bbb", "beta=2026.11.06-ccc"}) {
 		t.Errorf("channels %v", got)
+	}
+	// An administrator rolls Stable back; the same deploy run again (its
+	// version recorded already) must not undo that.
+	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.04-aaa"}, admin); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	_, chans, _ = svc.Releases(ctx, "sim-scan")
+	if got := names(chans); !slices.Contains(got, "stable=2026.11.04-aaa") {
+		t.Errorf("a re-run deploy undid the roll-back: %v", got)
+	}
+}
+
+// Stable is behind while Preview has a newer version and Stable does not
+// follow deploys, since the first version published after Stable's.
+func TestStableBehind(t *testing.T) {
+	repo := newMem()
+	clock := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	svc := NewService(repo, WithClock(func() time.Time { clock = clock.Add(24 * time.Hour); return clock }))
+	ctx := context.Background()
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.02-aaa", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	if behind, err := svc.StableBehind(ctx); err != nil || len(behind) != 0 {
+		t.Errorf("Stable and Preview on one version: %+v, %v", behind, err)
+	}
+	b, _ := svc.Publish(ctx, scanSIMs("2026.11.03-bbb", ChannelPreview), nil)
+	_, _ = svc.Publish(ctx, scanSIMs("2026.11.04-ccc", ChannelPreview), nil)
+	behind, err := svc.StableBehind(ctx)
+	if err != nil || len(behind) != 1 || behind[0].Slug != "sim-scan" || !behind[0].Since.Equal(b.PublishedAt) {
+		t.Errorf("StableBehind = %+v, %v (want since %v)", behind, err, b.PublishedAt)
+	}
+	// Each channel opens its version, for checking their files.
+	opened, err := svc.OpenedVersions(ctx)
+	if err != nil || len(opened) != 2 {
+		t.Errorf("OpenedVersions = %+v, %v", opened, err)
 	}
 }
 

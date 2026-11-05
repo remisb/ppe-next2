@@ -80,7 +80,10 @@ export default defineConfig({
   // One shared database: specs run in order, not in parallel.
   fullyParallel: false,
   workers: 1,
-  retries: process.env['CI'] ? 1 : 0,
+  // No retries: the suite is one serial story over one database, emptied only
+  // when the API starts, so a retry would start mid-story on the first run's
+  // data, could not pass, and only doubled a failed run's time.
+  retries: 0,
   reporter: process.env['CI'] ? [['list'], ['html', { open: 'never' }]] : 'list',
   globalSetup: './global-setup.ts',
   use: {

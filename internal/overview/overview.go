@@ -46,13 +46,17 @@ const (
 	// NotTimestamped: seals have waited for their trusted timestamp longer
 	// than audit.StampOverdue (the timestamp service does not answer).
 	NotTimestamped = "audit_not_timestamped"
+	// StableBehind: a published app's Preview has been newer than its Stable
+	// for StableBehindAfter, with Stable follows deploys off: no one has made
+	// the deployed build Stable.
+	StableBehind = "stable_behind"
 )
 
 // keys is every item, in the order Attention can list them; @ppe/api-client's
 // ATTENTION_KEYS mirrors it (TestWebClientListsTheKeys).
 var allKeys = []string{
 	SealMismatch, BackupsNotRunning, LastBackupFailed, CopiedSignIn, FailedSignIns,
-	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, NotTimestamped, DatabaseGrowth,
+	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, NotTimestamped, DatabaseGrowth, StableBehind,
 }
 
 // Keys returns every item's key.
@@ -71,6 +75,9 @@ const (
 	ErrorRateMinRequests = 50
 	ReviewEvery          = 90 * 24 * time.Hour
 	GrowthShare          = 0.20
+	// StableBehindAfter is how long Preview may be ahead (testers trying it)
+	// before the Overview says so.
+	StableBehindAfter = 3 * 24 * time.Hour
 )
 
 // Item is one thing that needs attention. Count, Percent and Days carry the
@@ -123,6 +130,12 @@ type Audit struct {
 	StampsOverdue int
 }
 
+// Apps are App Launcher's published apps whose Stable is behind their
+// Preview: since when, for each (launcher.Service.StableBehind).
+type Apps struct {
+	BehindSince []time.Time
+}
+
 // Inputs are the figures the reader may see; nil leaves an area out.
 type Inputs struct {
 	Backups  *Backups
@@ -130,6 +143,7 @@ type Inputs struct {
 	Errors   *Errors
 	Database *Database
 	Audit    *Audit
+	Apps     *Apps
 }
 
 // Attention is what needs attention at now, critical first.
@@ -186,6 +200,23 @@ func Attention(in Inputs, now time.Time) []Item {
 				Key: DatabaseGrowth, Severity: Info, Percent: float64(int(grew*1000)) / 10,
 				Days: int(now.Sub(day).Hours() / 24), Since: &day,
 			})
+		}
+	}
+	if a := in.Apps; a != nil {
+		var oldest *time.Time
+		count := 0
+		for _, since := range a.BehindSince {
+			if now.Sub(since) < StableBehindAfter {
+				continue
+			}
+			count++
+			if oldest == nil || since.Before(*oldest) {
+				at := since
+				oldest = &at
+			}
+		}
+		if count > 0 {
+			out = append(out, Item{Key: StableBehind, Severity: Info, Count: count, Days: int(now.Sub(*oldest).Hours() / 24), Since: oldest})
 		}
 	}
 	slices.SortStableFunc(out, func(a, b Item) int {

@@ -16,9 +16,10 @@ import { t } from '@/i18n'
  * window), the errors last seen on it and the feedback given on it, so a
  * Beta or a variant is judged on what happened rather than by asking around.
  */
-export function AppTrials({ app, timeZone }: { app: LauncherApp; timeZone: string | undefined }) {
+export function AppTrials({ app, timeZone, revision = 0 }: { app: LauncherApp; timeZone: string | undefined; revision?: number }) {
   const { client } = useApi()
-  const trials = useLoad(() => client.apps.trials(app.slug), [app.slug, app.updated_at])
+  // revision: a channel moved, which leaves the tile (and its updated_at) as it was.
+  const trials = useLoad(() => client.apps.trials(app.slug), [app.slug, app.updated_at, revision])
   const versions = trials.data?.versions ?? []
   return (
     <DisclosureSection id="app-trials" title={t.apps.trials} rememberAs="app-trials" className="mb-0">

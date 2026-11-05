@@ -1,5 +1,6 @@
 # The staff app, Administration and App Launcher, built and baked into the Caddy image that
-# serves them, so a deploy replaces the files and the proxy config in one step.
+# serves them, so a deploy replaces the files in one step. The proxy config (deploy/Caddyfile)
+# is mounted from the checkout instead: make prod-up recreates Caddy when it changed.
 # Every published app (ADR 0006: an apps/<slug> with public/ppe-app.json, such
 # as Scan SIMs) rides along at /srv/build/<slug> for `make prod-up` to
 # publish, and is served from the published volume; none is named here.
@@ -41,3 +42,8 @@ COPY --from=build /web/apps/workwear/dist /srv/workwear/dist
 COPY --from=build /web/apps/admin/dist /srv/admin/dist
 COPY --from=build /web/apps/launcher/dist /srv/launcher/dist
 COPY --from=build /out/build /srv/build
+# The commit these builds are of: make prod-up publishes them under its name
+# only when it is the checkout's (a skipped or failed prod-build would publish
+# the previous build as the new commit's version, for good).
+ARG WEB_COMMIT=""
+RUN echo "$WEB_COMMIT" > /srv/build/.commit

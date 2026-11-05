@@ -15,6 +15,7 @@ export const ATTENTION_KEYS = [
   'database_owner_rights',
   'audit_not_timestamped',
   'database_growth',
+  'stable_behind',
 ] as const
 
 export type AttentionKey = (typeof ATTENTION_KEYS)[number]

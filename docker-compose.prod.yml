@@ -170,7 +170,12 @@ services:
       - backups:/backups
 
   caddy:
-    build: web
+    build:
+      context: web
+      args:
+        # The commit the apps were built from (make prod-build), which
+        # make prod-up checks before publishing them under its name.
+        WEB_COMMIT: ${API_COMMIT:-}
     image: ppe-next2-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     logging: *logging

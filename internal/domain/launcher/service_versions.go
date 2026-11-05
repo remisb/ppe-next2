@@ -101,8 +101,10 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		return Version{}, err
 	}
 	targets := []string{}
+	// Stable follows a deploy only for a version published now: re-running a
+	// deploy (the same commit, already recorded) never undoes a roll-back.
 	if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == ChannelStable }) ||
-		(a.StableFollowsDeploys && p.Channel == ChannelPreview) {
+		(a.StableFollowsDeploys && p.Channel == ChannelPreview && !found) {
 		targets = append(targets, ChannelStable)
 	}
 	if p.Channel != "" && !slices.Contains(targets, p.Channel) {
@@ -145,6 +147,93 @@ func (s *Service) SetStableFollowsDeploys(ctx context.Context, slug string, on b
 type AppVersion struct {
 	Slug    string
 	Version Version
+}
+
+// Opened is a channel and the version it opens, with its app's slug.
+type Opened struct {
+	Slug    string
+	Channel string
+	Version Version
+}
+
+// OpenedVersions is every channel of every app with the version it opens,
+// for checking that their files are there (a restore, a lost volume).
+func (s *Service) OpenedVersions(ctx context.Context) ([]Opened, error) {
+	apps, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []Opened{}
+	for _, a := range apps {
+		if a.Kind != KindApp {
+			continue
+		}
+		channels, err := s.repo.AppChannels(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		if len(channels) == 0 {
+			continue
+		}
+		versions, err := s.repo.Versions(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range channels {
+			if at := slices.IndexFunc(versions, func(v Version) bool { return v.ID == c.VersionID }); at >= 0 {
+				out = append(out, Opened{a.Slug, c.Name, versions[at]})
+			}
+		}
+	}
+	return out, nil
+}
+
+// Behind is a published app whose Stable is older than its Preview, and
+// since when: the first version published after Stable's.
+type Behind struct {
+	Slug  string
+	Since time.Time
+}
+
+// StableBehind lists the apps whose Preview is newer than their Stable,
+// except those whose Stable follows deploys: someone is to Make Stable.
+func (s *Service) StableBehind(ctx context.Context) ([]Behind, error) {
+	apps, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []Behind{}
+	for _, a := range apps {
+		if a.Kind != KindApp || a.StableFollowsDeploys || a.Stage == StageRetired {
+			continue
+		}
+		channels, err := s.repo.AppChannels(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		at := func(name string) *Channel {
+			if i := slices.IndexFunc(channels, func(c Channel) bool { return c.Name == name }); i >= 0 {
+				return &channels[i]
+			}
+			return nil
+		}
+		stable, preview := at(ChannelStable), at(ChannelPreview)
+		if stable == nil || preview == nil || preview.VersionID == stable.VersionID || !preview.PublishedAt.After(stable.PublishedAt) {
+			continue
+		}
+		versions, err := s.repo.Versions(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		since := preview.PublishedAt
+		for _, v := range versions {
+			if v.PublishedAt.After(stable.PublishedAt) && v.PublishedAt.Before(since) {
+				since = v.PublishedAt
+			}
+		}
+		out = append(out, Behind{a.Slug, since})
+	}
+	return out, nil
 }
 
 // Recorded is every published version of every app, for finding files no

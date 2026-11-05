@@ -242,14 +242,19 @@ tests and build, and is then removed.
   only points the channel). The files are decided by the folder, not the registry: a recorded
   version whose folder is gone (a restore, a lost volume) gets its files back, under the profile
   it was recorded with (another is refused); a folder without `index.html` is replaced; the first version of an app also becomes
-  Stable, and so does every version published to Preview while the app's **Stable follows
-  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). Any
+  Stable, and so does every version newly published to Preview while the app's **Stable follows
+  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default); a
+  version recorded already (the same deploy run again) moves no channel but the one named, so a
+  roll-back on Manage apps survives a re-run. Any
   other channel is refused before any file is written or version recorded. The Makefile runs each publish pipe
   (`tar | api -publish-app`) under bash with `pipefail`, so a failed or cut-off build stream
   fails the target instead of publishing a partial build.
   `make prod-up` publishes each app in `PUBLISHED_APPS` from the image's
-  `/srv/build/<app>` to Preview (and publishes nothing from a checkout with local changes:
-  `git describe --dirty`), then runs `api -prune-apps`; `make prod-publish APP= REF= [CHANNEL=]` builds the app at a
+  `/srv/build/<app>` to Preview, and publishes nothing from a checkout with local changes
+  (`git describe --dirty`) or from a web image built from another commit (the image records its
+  own in `/srv/build/.commit`, the `WEB_COMMIT` build argument `make prod-build` passes; a skipped
+  or failed `prod-build` would otherwise publish the previous build under the new commit's
+  version, for good), then runs `api -prune-apps`; `make prod-publish APP= REF= [CHANNEL=]` builds the app at a
   git ref (`deploy/build-app.sh`, the ref's `web/Dockerfile` stage `app-dist`); `make
   publish-app APP= [CHANNEL=]` publishes a local `pnpm build` into a development
   `API_APPS_DIR`.
@@ -288,6 +293,14 @@ tests and build, and is then removed.
   It then removes what no version names once it is an hour old (younger may be a publish under
   way): folders under `.incoming/` left by a killed publish, `<profile>/<slug>/<version>`
   folders the registry does not know, which Caddy would go on serving, and an app's
-  `<profile>/<slug>/` folder left empty.
+  `<profile>/<slug>/` folder left empty. Last, it checks that every channel's version has its
+  files: one without (a restore; the volume is not backed up) is named with the command that
+  puts them back (`make prod-publish APP=<slug> REF=<its commit>`) and fails the prune, so a
+  deploy does not end green while that channel answers 500.
+- **Stable behind.** While an app's Preview has a newer version than its Stable and Stable does
+  not follow deploys, Manage apps says so; after `overview.StableBehindAfter` (3 days, time for
+  testers) Administration's Overview does too (`stable_behind`, info, `apps.manage`: how many
+  apps, and the oldest's days since the first version published after Stable's;
+  `launcher.Service.StableBehind`).
 - Published builds are not backed up: they are rebuilt from git (`docs/backups.md`), since
   publishing a recorded version again writes its missing files.

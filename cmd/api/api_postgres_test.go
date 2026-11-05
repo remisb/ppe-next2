@@ -2349,4 +2349,16 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 			t.Errorf("a recorded version's files after pruning: %v", err)
 		}
 	}
+
+	// A channel whose version's files are gone (a restore; the volume is not
+	// backed up) fails the prune, so a deploy does not end green while the
+	// app answers 500, and says how to put them back.
+	if err := os.RemoveAll(cfg.AppsDir + "/device/sim-scan/" + stableIs()); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	err := pruneApps(ctx, api.svc, cfg, &out)
+	if err == nil || !strings.Contains(out.String(), "sim-scan: stable opens 2026.11.12-v12, whose files are missing; publish it again: make prod-publish APP=sim-scan REF=abc1234") {
+		t.Errorf("prune with Stable's files missing = %v, %s", err, out.String())
+	}
 }

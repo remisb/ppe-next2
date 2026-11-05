@@ -196,6 +196,27 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 		}
 		fmt.Fprintf(out, "%s, which no version names, removed\n", rel)
 	}
+	// Every channel's version must have its files, or its page answers 500:
+	// after a restore or a lost volume (not backed up), publishing the same
+	// commit again puts them back. Said loudly, so a deploy does not end
+	// green while an app is down.
+	opened, err := svc.launcher.OpenedVersions(ctx)
+	if err != nil {
+		return err
+	}
+	missing := 0
+	for _, o := range opened {
+		if complete(filepath.Join(cfg.AppsDir, string(o.Version.Profile), o.Slug, o.Version.Version)) {
+			continue
+		}
+		missing++
+		ref := o.Version.Commit
+		if ref == "" {
+			ref = "<its commit>"
+		}
+		fmt.Fprintf(out, "%s: %s opens %s, whose files are missing; publish it again: make prod-publish APP=%s REF=%s\n",
+			o.Slug, o.Channel, o.Version.Version, o.Slug, ref)
+	}
 	// An app's folder with no version left in it (all pruned, or strays
 	// removed), as old: os.Remove takes only an empty one.
 	for _, profile := range launcher.Profiles {
@@ -210,6 +231,9 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 				fmt.Fprintf(out, "%s, empty, removed\n", rel)
 			}
 		}
+	}
+	if missing > 0 {
+		return fmt.Errorf("%d channel(s) open a version whose files are missing", missing)
 	}
 	return nil
 }

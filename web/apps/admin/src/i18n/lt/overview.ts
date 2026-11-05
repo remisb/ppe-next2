@@ -82,6 +82,16 @@ export const overview: OverviewText = {
       detail: ({ percent, days }) => `Per ${days} d. ji padidėjo ${percent} %. Patikrinkite, ar diske užtenka vietos.`,
       action: 'Atidaryti sistemą',
     },
+    stable_behind: {
+      title: 'Stabili atsilieka nuo peržiūros',
+      detail: ({ count, days }) =>
+        plural(count, {
+          one: `Programos peržiūroje jau ${days} d. yra naujesnė versija nei stabili. Kai ji bus paruošta, padarykite ją stabilia arba įjunkite „Stabili seka diegimus“.`,
+          few: `# programų peržiūrose yra naujesnės versijos nei stabilios, seniausia – ${days} d. Kai jos bus paruoštos, padarykite jas stabiliomis arba įjunkite „Stabili seka diegimus“.`,
+          other: `# programų peržiūrose yra naujesnės versijos nei stabilios, seniausia – ${days} d. Kai jos bus paruoštos, padarykite jas stabiliomis arba įjunkite „Stabili seka diegimus“.`,
+        }),
+      action: 'Atidaryti programų tvarkymą',
+    },
   },
   figures: 'Rodikliai',
   activeUsers: 'Aktyvūs naudotojai',

@@ -64,7 +64,7 @@ export function ChannelStripe({ slug }: { slug: string }) {
           aria-label={t.versions}
           value={appChannel}
           onChange={(e) => go(e.target.value)}
-          className="rounded border border-amber-950/30 bg-transparent px-1 py-0.5 text-xs dark:border-amber-50/30"
+          className="rounded border border-amber-950/30 bg-transparent px-1 py-0.5 text-xs pointer-coarse:min-h-11 dark:border-amber-50/30"
         >
           {channels.map((c) => (
             <option key={c.name} value={c.name}>
@@ -81,7 +81,7 @@ export function ChannelStripe({ slug }: { slug: string }) {
           e.preventDefault()
           go('stable')
         }}
-        className="font-medium underline underline-offset-2"
+        className="inline-flex items-center font-medium underline underline-offset-2 pointer-coarse:min-h-11"
       >
         {t.backToStable}
       </a>

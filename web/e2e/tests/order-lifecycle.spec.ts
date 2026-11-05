@@ -3608,6 +3608,11 @@ test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a t
   await expect(tried).toContainText('Beta')
   await expect(tried.getByRole('cell').nth(1)).toHaveText(/^1/)
   await asTester(false)
+  // No longer a tester: Beta's address sends them to Stable, with no stripe (the page is public; the list decides).
+  await page.goto('/apps/sim-scan/beta/find')
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/find$/)
+  await expect(page.getByRole('heading', { name: 'Show PIN and PUK' })).toBeVisible()
+  await expect(page.getByText('You are using')).toHaveCount(0)
 
   // Stable follows deploys: on, a deploy's publish to Preview makes its version Stable too; off again for the rest.
   await page.goto('/admin/apps/sim-scan')
