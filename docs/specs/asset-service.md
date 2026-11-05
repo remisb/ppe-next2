@@ -172,7 +172,7 @@ included, prints each card's number, status and holder, and writes nothing.
 ### Scan SIM cards (a trial, ADR 0005)
 
 Newly received SIM cards are added in a batch from their carriers, so no SIM No. is typed:
-**Scan SIMs**, the trial app at `/sim-scan/` (`web/apps/sim-scan`, on the package
+**Scan SIMs**, the trial app at `/apps/sim-scan/` (`web/apps/sim-scan`, a published app, ADR 0006; on the package
 `@ppe/sim-scan`). If the trial passes, its screens move into the staff app beside SIM Cards
 (Scan SIMs beside Add SIM, Show PIN and PUK on a SIM's page); the API stays as it is.
 
@@ -197,7 +197,7 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   for none, to take little room. Only the card being scanned is edited (**Edit** turns its
   values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode, tesseract.js the PIN and PUK: each the number on its
   label's line, after it (`codesFromWords`). Their files are the app's own
-  (`/sim-scan/readers/`), and nothing read leaves the browser but the batch itself.
+  (`readers/` beside the build, under `/apps/files/device/sim-scan/<version>/`), and nothing read leaves the browser but the batch itself.
 - **The batch** shares what Add SIM asks per card, chosen once and filled in from Settings
   (the default provider, its plan, the default Non-return Value, today): provider (required),
   plan, Non-return Value, Received Date (not later than today) and comment. Each card is its
@@ -221,14 +221,20 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
 - **One card, one SIM No.** A 20-character ICCID ends in the filler `F`, which a barcode or a
   typed number may leave out, so `…5135` and `…5135F` are the same card everywhere: the unique
   index (migration 0041) and `simKey` compare without it. Add SIM refuses the other form too.
-- **The trial reports as the staff app** (`X-App: workwear`), so the Audit log's sources and
-  Usage's apps are unchanged until it is merged. Its batch settings are its own small logic,
+- **The trial reports as itself** (`X-PPE-App: sim-scan`, its App Launcher slug), so the Audit
+  log's sources, the error list and Usage name it Scan SIMs. Its batch settings are its own small logic,
   not the staff app's helpers (a recorded deviation from "shared code is in packages" for the
   trial; the merge uses the staff app's).
 - **In the browser** pictures and codes live in the screen's memory only (never localStorage,
   sessionStorage or IndexedDB), go when the screen is left or the batch is added, and leaving
   with cards not yet added asks first. Nothing read is ever put in an error, since browser
   errors reach System's error list.
+- **At most 100 cards** a batch (`MAX_CARDS`, `asset.MaxScannedSIMs`): Choose Photos reads only the
+  photos the list still has room for, the camera takes no card once it is full, and the screen says
+  so ("At most 100 SIMs can be added at once").
+- **The API's check** answers by index, but the list may change before it arrives: the screen keeps
+  the cards found in the register by SIM No. (`registeredOf`, `registeredMarks`), and drops an
+  answer to a list that has changed since.
 
 ### PIN and PUK
 
@@ -241,7 +247,8 @@ has them). They are never in an asset's JSON, an event, an error or a log line.
   alone when installed), checked against the user's roles as they are now, and a **recent
   sign-in** (`API_RECENT_SIGN_IN`): otherwise the app asks Confirm your password. Each Show
   records `asset.sim_codes_shown` (the SIM No., never the codes) before it answers, and the
-  answer is `Cache-Control: no-store`. A card without codes is 404, recorded nothing.
+  answer is `Cache-Control: no-store`. A card without codes is 404, recorded nothing. Shown codes
+  hide again after a minute, or as soon as the tab goes to the background.
 - **Set** (`PUT …/sim-codes`, `{pin, puk}`) keeps them in place of any, and **clear**
   (`DELETE`) forgets them, each recording `asset.sim_codes_changed` with `{"sim_codes":
   "set"|"cleared"}`; both need `assets.manage`, on SIM cards only. In the trial, Show PIN and

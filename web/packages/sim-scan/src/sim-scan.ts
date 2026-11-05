@@ -232,6 +232,43 @@ export function rowMarks(cards: readonly ScanCard[], fromApi: readonly SimProble
   return marks
 }
 
+/**
+ * The cards the API found in the register, by the card they name (simKey)
+ * and with the register's id: the check answers by index, but the list may
+ * have changed by the time it arrives, so the answer is kept by SIM No. and
+ * stays with its card when a row above it is removed.
+ */
+export function registeredOf(sent: readonly ScannedSimInput[], problems: readonly SimProblem[]): Map<string, string | undefined> {
+  const out = new Map<string, string | undefined>()
+  for (const p of problems) {
+    const card = sent[p.index]
+    if (p.code === 'registered' && card) out.set(simKey(card.sim_no), p.existing_id)
+  }
+  return out
+}
+
+/**
+ * The registered cards as the API would mark the list as it is now: each on
+ * the first row with its SIM No. (a later row is the batch's duplicate), for
+ * rowMarks.
+ */
+export function registeredMarks(cards: readonly ScanCard[], registered: ReadonlyMap<string, string | undefined>): SimProblem[] {
+  const out: SimProblem[] = []
+  const seen = new Set<string>()
+  cards.forEach((c, index) => {
+    if (c.simNo === '') return
+    const key = simKey(c.simNo)
+    if (seen.has(key)) return
+    seen.add(key)
+    if (!registered.has(key)) return
+    const p: SimProblem = { index, field: 'sim_no', code: 'registered' }
+    const id = registered.get(key)
+    if (id !== undefined) p.existing_id = id
+    out.push(p)
+  })
+  return out
+}
+
 /** Whether a mark stops Add: everything but the notes on a missing side. */
 export function blocks(mark: RowMark): boolean {
   return mark.code !== 'no_back' && mark.code !== 'no_front'

@@ -9,11 +9,15 @@ import { ActionError, PageHeader } from '@ppe/ui/components/states'
 import { Copy, Eye, EyeOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+/** How long shown codes stay on screen: long enough to type them into a phone. */
+const CODES_SHOWN_MS = 60_000
+
 /**
  * Show PIN and PUK: a SIM found by its number, then its codes, after the
  * password is confirmed when the sign-in is not recent (the API asks; the
  * shell's Confirm your password answers). Each Show is recorded; the codes
- * stay on screen until hidden or the SIM is left.
+ * stay on screen until hidden, the SIM is left, a minute has passed or the
+ * tab is left (CODES_SHOWN_MS).
  */
 export function FindPage() {
   const { client } = useApi()
@@ -24,6 +28,8 @@ export function FindPage() {
 
   useEffect(() => {
     const digits = q.replace(/\s+/g, '')
+    // A new search starts clean: an earlier one's error is not this one's.
+    setError(null)
     if (digits.length < 4) return setFound(null)
     let live = true
     const timer = setTimeout(() => {
@@ -69,6 +75,19 @@ function SimRow({ sim }: { sim: Asset }) {
   const [error, setError] = useState<unknown>(null)
   const [draft, setDraft] = useState<SimCodes | null>(null)
   const [saved, setSaved] = useState(false)
+
+  // Shown codes hide again after a minute, or as soon as the tab is in the background.
+  useEffect(() => {
+    if (!codes) return
+    const hide = () => setCodes(null)
+    const timer = setTimeout(hide, CODES_SHOWN_MS)
+    const onVisibility = () => document.visibilityState === 'hidden' && hide()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [codes])
 
   const show = async () => {
     setBusy(true)

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Scan SIMs: reading SIM card carriers (the SIM No. barcode, the printed PIN and PUK) in the browser, pairing fronts and backs, and the review list's rules. Used by the trial app at /sim-scan/, later by the staff app.",
+  "description": "Scan SIMs: reading SIM card carriers (the SIM No. barcode, the printed PIN and PUK) in the browser, pairing fronts and backs, and the review list's rules. Used by the trial app at /apps/sim-scan/, later by the staff app.",
   "exports": {
     ".": "./src/index.ts",
     "./readers": "./src/readers.ts",

@@ -2,7 +2,7 @@ import { localized, plural } from '@ppe/i18n'
 
 /**
  * Scan SIMs' words, in each language: the screens of the trial app at
- * /sim-scan/ and, later, the staff app's (docs/ubiquitous-language.md §12).
+ * /apps/sim-scan/ and, later, the staff app's (docs/ubiquitous-language.md §12).
  */
 const en = {
   scanTitle: 'Scan SIMs',
@@ -43,6 +43,7 @@ const en = {
   aimBack: (simNo: string) => `Read ${simNo}. Turn the card over: PIN and PUK in the frame.`,
   skipBack: 'No Back',
   readingPhotos: (done: number, all: number) => `Reading photos… ${done} of ${all}`,
+  tooMany: (max: number) => `At most ${max} SIMs can be added at once: the rest were left out.`,
   readBack: 'Back read: PIN and PUK',
   // The review list.
   cards: (n: number) => plural(n, { one: '# SIM', other: '# SIMs' }),
@@ -87,7 +88,7 @@ const en = {
   codesSaved: 'PIN and PUK saved.',
   copy: (what: string) => `Copy ${what}`,
   copied: 'Copied',
-  shownRecorded: 'Shown and recorded in the Audit log.',
+  shownRecorded: 'Shown and recorded in the Audit log. Hidden again after a minute or when you leave this tab.',
 }
 
 export type SimScanText = typeof en
@@ -128,6 +129,7 @@ const lt: SimScanText = {
   aimBack: (simNo: string) => `Nuskaityta ${simNo}. Apverskite kortelę: PIN ir PUK rėmelyje.`,
   skipBack: 'Be nugarėlės',
   readingPhotos: (done: number, all: number) => `Skaitomos nuotraukos… ${done} iš ${all}`,
+  tooMany: (max: number) => `Vienu kartu galima pridėti ne daugiau kaip ${max} SIM: likusios praleistos.`,
   readBack: 'Nugarėlė nuskaityta: PIN ir PUK',
   cards: (n: number) => plural(n, { one: '# SIM', few: '# SIM', other: '# SIM' }),
   noCards: 'Dar nėra SIM. Nuskenuokite korteles kamera arba pasirinkite jų nuotraukas.',
@@ -170,7 +172,7 @@ const lt: SimScanText = {
   codesSaved: 'PIN ir PUK išsaugoti.',
   copy: (what: string) => `Kopijuoti ${what}`,
   copied: 'Nukopijuota',
-  shownRecorded: 'Parodyta ir įrašyta į Audito žurnalą.',
+  shownRecorded: 'Parodyta ir įrašyta į Audito žurnalą. Vėl paslepiama po minutės arba išėjus iš šio skirtuko.',
 }
 
 const ru: SimScanText = {
@@ -209,6 +211,7 @@ const ru: SimScanText = {
   aimBack: (simNo: string) => `Считан ${simNo}. Переверните карточку: PIN и PUK в рамке.`,
   skipBack: 'Без обратной стороны',
   readingPhotos: (done: number, all: number) => `Читаются фото… ${done} из ${all}`,
+  tooMany: (max: number) => `За один раз можно добавить не больше ${max} SIM: остальные пропущены.`,
   readBack: 'Обратная сторона считана: PIN и PUK',
   cards: (n: number) => plural(n, { one: '# SIM', few: '# SIM', many: '# SIM', other: '# SIM' }),
   noCards: 'Пока нет SIM. Отсканируйте карточки камерой или выберите их фото.',
@@ -253,7 +256,7 @@ const ru: SimScanText = {
   codesSaved: 'PIN и PUK сохранены.',
   copy: (what: string) => `Копировать ${what}`,
   copied: 'Скопировано',
-  shownRecorded: 'Показано и записано в журнал аудита.',
+  shownRecorded: 'Показано и записано в журнал аудита. Снова скрывается через минуту или когда вы уходите с этой вкладки.',
 }
 
 export const dictionaries = { en, lt, ru }

@@ -1,4 +1,4 @@
-import type { AddedSim, Settings, SimProblem } from '@ppe/api-client'
+import type { AddedSim, Settings } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { euroInput, formatEuro, parseEuro } from '@ppe/i18n'
@@ -14,6 +14,8 @@ import {
   cardComplete,
   pairPhotos,
   pickSimNo,
+  registeredMarks,
+  registeredOf,
   rowMarks,
   simKey,
   simScanText,
@@ -52,7 +54,10 @@ export function ScanPage() {
   const [cards, setCards] = useState<ScanCard[]>([])
   const pictures = useRef(new Map<string, string>())
   const [, redraw] = useState(0)
-  const [apiProblems, setApiProblems] = useState<SimProblem[]>([])
+  // The cards the API found in the register, by SIM No. (registeredOf), so a late answer stays with its card.
+  const [registered, setRegistered] = useState<ReadonlyMap<string, string | undefined>>(() => new Map())
+  // Said once when photos or cards went beyond what one batch holds.
+  const [notice, setNotice] = useState<string | null>(null)
   const [reading, setReading] = useState<{ done: number; all: number } | null>(null)
   const [camera, setCamera] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -96,7 +101,8 @@ export function ScanPage() {
   const clearAll = useCallback(() => {
     forget([...pictures.current.keys()])
     setCards([])
-    setApiProblems([])
+    setRegistered(new Map())
+    setNotice(null)
   }, [forget])
   useEffect(() => () => forget([...pictures.current.keys()]), [forget])
 
@@ -109,22 +115,34 @@ export function ScanPage() {
   }, [cards.length])
 
   // The API's check, a moment after the list or the settings change: it alone knows the register.
+  // An answer to an earlier list is dropped (live): the list it was for has changed since.
   const request = useMemo(() => batchRequest(batch, cards), [batch, cards])
   useEffect(() => {
-    if (cards.length === 0 || request.provider === '') return setApiProblems([])
+    if (cards.length === 0 || request.provider === '') return setRegistered(new Map())
+    let live = true
     const timer = setTimeout(() => {
-      client.assets.checkSimCards(request).then(setApiProblems, () => setApiProblems([]))
+      client.assets.checkSimCards(request).then(
+        (problems) => live && setRegistered(registeredOf(request.cards, problems)),
+        () => live && setRegistered(new Map()),
+      )
     }, 400)
-    return () => clearTimeout(timer)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
   }, [client, request, cards.length])
 
-  const marks = useMemo(() => rowMarks(cards, apiProblems), [cards, apiProblems])
+  const marks = useMemo(() => rowMarks(cards, registeredMarks(cards, registered)), [cards, registered])
   const toFix = marks.filter((row) => row.some(blocks)).length
 
   const choosePhotos = async (files: FileList | null) => {
     if (!files || files.length === 0) return
     setAdded(null)
-    const list = [...files].slice(0, 2 * MAX_CARDS)
+    setNotice(null)
+    // At most two photos a card, for the cards the batch still has room for.
+    const room = MAX_CARDS - cards.length
+    const list = [...files].slice(0, 2 * Math.max(0, room))
+    if (list.length === 0) return setNotice(t.tooMany(MAX_CARDS))
     const reads: PictureRead[] = []
     setReading({ done: 0, all: list.length })
     let readers: Awaited<ReturnType<typeof loadReaders>>
@@ -141,7 +159,12 @@ export function ScanPage() {
       setReading({ done: reads.length, all: list.length })
     }
     setReading(null)
-    setCards((cur) => [...cur, ...pairPhotos(reads)].slice(0, MAX_CARDS))
+    // A photo on which nothing was read is a row of its own, so the pairs may still be more than the room.
+    const paired = pairPhotos(reads)
+    const dropped = paired.slice(room)
+    forget(dropped.flatMap((c) => [c.front, c.back]))
+    if (dropped.length > 0 || list.length < files.length) setNotice(t.tooMany(MAX_CARDS))
+    setCards((cur) => [...cur, ...paired.slice(0, room)].slice(0, MAX_CARDS))
   }
 
   const add = async () => {
@@ -189,6 +212,7 @@ export function ScanPage() {
           picture={(id) => pictures.current.get(id)}
           onDone={(card) => {
             setAdded(null)
+            setNotice(null)
             setCards((cur) => (cur.length >= MAX_CARDS ? cur : [...cur, card]))
           }}
         />
@@ -232,10 +256,17 @@ export function ScanPage() {
             {t.readingPhotos(reading.done, reading.all)}
           </p>
         ) : null}
+        {notice ? (
+          <p role="status" className="text-sm text-warning">
+            {notice}
+          </p>
+        ) : null}
         {camera ? (
           <LiveScan
             known={cards.map((c) => simKey(c.simNo))}
             onCard={(card, frontBlob, backBlob) => {
+              // A full batch takes no more: the card is not kept, and the screen says why.
+              if (cards.length >= MAX_CARDS) return setNotice(t.tooMany(MAX_CARDS))
               keep(card.front!, frontBlob)
               if (backBlob && card.back) keep(card.back, backBlob)
               setCards((cur) => (cur.length >= MAX_CARDS ? cur : [...cur, card]))
@@ -285,9 +316,9 @@ export function ScanPage() {
   )
 }
 
-/** A refused batch names its row: "SIM 3: …". */
+/** A refused batch names its row, as the list does: "SIM 3: …". */
 function addErrorTitle(error: unknown): string | undefined {
-  return error instanceof ApiError && error.index !== undefined ? `SIM ${error.index + 1}` : undefined
+  return error instanceof ApiError && error.index !== undefined ? simScanText().currentCard(error.index + 1) : undefined
 }
 
 /**
@@ -350,8 +381,8 @@ function LiveScan({
           if (!got) return
           beep()
           backs.reset()
-          const front = `c${Date.now()}f`
-          const back = `c${Date.now()}b`
+          const front = newKey()
+          const back = newKey()
           onCardRef.current({ key: front, simNo: cur.simNo, pin: got.pin, puk: got.puk, front, back }, cur.front, await snapshot(canvas))
           setStep({ side: 'front' })
           setStatus(t.readBack)
@@ -384,7 +415,7 @@ function LiveScan({
           <Button
             variant="outline"
             onClick={() => {
-              const front = `c${Date.now()}f`
+              const front = newKey()
               onCard({ key: front, simNo: step.simNo, pin: '', puk: '', front }, step.front, null)
               setStep({ side: 'front' })
               setStatus(t.aimFront)

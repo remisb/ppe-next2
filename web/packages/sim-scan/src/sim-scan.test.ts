@@ -10,6 +10,8 @@ import {
   luhn,
   pairPhotos,
   pickSimNo,
+  registeredMarks,
+  registeredOf,
   rowMarks,
   simKey,
   simNoProblem,
@@ -149,6 +151,16 @@ describe('rowMarks', () => {
   it("adds the API's registered cards", () => {
     const marks = rowMarks([card(A)], [{ index: 0, field: 'sim_no', code: 'registered', existing_id: 'id-1' }])
     expect(marks[0]).toEqual([{ field: 'sim_no', code: 'registered', existingId: 'id-1' }])
+  })
+
+  it('keeps a registered mark with its card when the list changed before the answer', () => {
+    // Checked as [B, A]; A is in the register. Then B is removed before the answer arrives.
+    const sent = [B, A].map((sim_no) => ({ sim_no, pin: '', puk: '' }))
+    const registered = registeredOf(sent, [{ index: 1, field: 'sim_no', code: 'registered', existing_id: 'id-a' }])
+    expect(registeredMarks([card(A)], registered)).toEqual([{ index: 0, field: 'sim_no', code: 'registered', existing_id: 'id-a' }])
+    // The filler F names the same card; only its first row is marked, a later one is the duplicate.
+    const marks = rowMarks([card(B), card(`${A}F`), card(A)], registeredMarks([card(B), card(`${A}F`), card(A)], registered))
+    expect(marks.map((row) => row.map((m) => m.code))).toEqual([[], ['registered'], ['duplicate']])
   })
 })
 

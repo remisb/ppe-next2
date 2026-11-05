@@ -51,14 +51,17 @@ Three constraints shape this:
 3. **Reading happens in the browser, from the app's own files.** zxing-wasm reads the
    barcode and tesseract.js (English data, digits and the letters of PIN and PUK) reads the
    back. The PIN and PUK are placed by their words' boxes, next to their labels. Their
-   files are served under `/sim-scan/readers/` (`@ppe/sim-scan/reader-files`), never from a
+   files are served under `/sim-scan/readers/` (since ADR 0006, `readers/` beside each published
+   version's files; `@ppe/sim-scan/reader-files`), never from a
    CDN, and load only once a card is scanned. What was read reaches the API only as the
    batch the user adds.
-4. **A trial app, `/sim-scan/`, with its own policy.** It is a third app on the staff app's
+4. **A trial app, `/sim-scan/` (since 2026-11-04 `/apps/sim-scan/`, a published app with the
+   `device` profile), with its own policy.** It is a third app on the staff app's
    origin and sign-in. Its policy is the staff app's plus `'wasm-unsafe-eval'` (compiling
    WebAssembly, still no `eval`) and `worker-src 'self'`. It alone may use the camera. The
    staff app and Administration keep their policy unchanged, and tests pin both. The trial
-   reports as `workwear`, so the audit sources and Usage need no new app.
+   reports as `workwear`, so the audit sources and Usage need no new app. (Superseded by ADR
+   0006: it reports as `sim-scan`, a registered app slug.)
 5. **Built to merge.** The rules, readers, wording and review list are in the package
    `@ppe/sim-scan`, and the API is final. When the trial passes:
    - The staff app gains Scan SIMs beside Add SIM, and Show PIN and PUK on a SIM's page.

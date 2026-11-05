@@ -795,7 +795,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Brief:** adding newly received SIM cards in a batch by reading their carriers: the
   **front** (the SIM No.'s barcode) and the **back** (PIN and PUK), with the **Camera** or from
   photos (**Choose Photos**), checked in a list, then **Add N SIMs**.
-- **Detail:** a trial app at `/sim-scan/` for now (ADR 0005); what the batch shares is **For
+- **Detail:** a trial app at `/apps/sim-scan/` for now (ADR 0005, 0006); what the batch shares is **For
   every SIM**, read only (a label and its value a line) until **Edit For every SIM** opens its form (**Save**,
   **Cancel**). A card read without its back is added without PIN and PUK (**No Back**).
 - **UI:** **Scan SIMs**, **SIM N** (the card being scanned), **Photo of the SIM No.**, **Photo
