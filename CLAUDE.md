@@ -150,7 +150,9 @@ Preview, named variants with a label and audience; events `app.version_published
 `GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
 `ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`)
 and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
-stdin into `API_APPS_DIR`; `make prod-up` publishes `PUBLISHED_APPS` from the web image's
+stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
+(slug, capabilities, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
+(`@ppe/launcher`'s `published-apps.ts`); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
 Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
@@ -455,7 +457,8 @@ pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one t
 
 The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
 in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TARGET`
-(default `http://localhost:5182`), `/apps/sim-scan` to `VITE_SIM_SCAN_TARGET` (5184) and the rest of `/apps` to
+(default `http://localhost:5182`), each published app's `/apps/<slug>` to its manifest's `devPort` (Scan SIMs 5184;
+`VITE_APP_<SLUG>_TARGET`, such as `VITE_APP_SIM_SCAN_TARGET`, overrides it) and the rest of `/apps` to
 `VITE_LAUNCHER_TARGET` (5186). `.claude/launch.json` has `api` (port 8090), `workwear`
 (port 5180), `admin` (port 5182), `sim-scan` (5184) and `launcher` (5186) configs.
 

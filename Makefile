@@ -105,8 +105,10 @@ import-sims: ## Import SIM cards from a CSV list as the seed admin: FILE=<csv> C
 # A published app's version (ADR 0006, phase 3): its commit's date and short
 # hash, YYYY.MM.DD-<hash>, for the ref $(1).
 app_version = $(shell git log -1 --format=%cd-%h --date=format:%Y.%m.%d --abbrev=12 $(1) 2>/dev/null)
-# The apps published under /apps/<slug>/ rather than baked into the web image.
-PUBLISHED_APPS := sim-scan
+# The apps published under /apps/<slug>/ rather than baked into the web image:
+# every web/apps/<slug> with a public/ppe-app.json (@ppe/launcher's
+# published-apps.ts finds the same ones for the dev proxy and e2e).
+PUBLISHED_APPS := $(patsubst web/apps/%/public/ppe-app.json,%,$(wildcard web/apps/*/public/ppe-app.json))
 
 publish-app: ## Build an app and publish it to API_APPS_DIR (for Caddy locally): APP=<slug> [CHANNEL=<name>]
 	@test -n "$(APP)" || { echo "APP=<slug> is required, one of: $(PUBLISHED_APPS)" >&2; exit 2; }

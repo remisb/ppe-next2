@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
@@ -21,17 +22,20 @@ import { serveReaderFiles } from '../../packages/sim-scan/src/reader-files.ts'
 // served at /apps/sim-scan/readers/ (serveReaderFiles). A phone's camera needs
 // a secure address: VITE_HTTPS=1 serves this port over https with a throwaway
 // certificate, on the LAN, to try it on a phone (https://<this machine>:5184/apps/sim-scan/).
+// Its slug and dev port are its manifest's, as the staff app's proxy and the e2e servers read them.
+const manifest = JSON.parse(readFileSync(new URL('./public/ppe-app.json', import.meta.url), 'utf8')) as { slug: string; devPort: number }
+
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
   const https = env['VITE_HTTPS'] === '1'
   return {
-    base: command === 'build' ? './' : '/apps/sim-scan/',
+    base: command === 'build' ? './' : `/apps/${manifest.slug}/`,
     plugins: [react(), tailwindcss(), serveReaderFiles(), ...(https ? [basicSsl()] : [])],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: {
       // PORT, when a tool that runs dev servers assigns one; else the app's own.
-      port: Number(process.env['PORT'] ?? 5184),
+      port: Number(process.env['PORT'] ?? manifest.devPort),
       strictPort: true,
       host: https,
       proxy: { '/api': { target, changeOrigin: false }, '/health': target, '/ready': target },

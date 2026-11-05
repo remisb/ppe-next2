@@ -3,7 +3,8 @@ import { join } from 'node:path'
 
 import { defineConfig, devices } from '@playwright/test'
 
-import { adminPort, apiEnv, apiPort, appsDir, caddyMode, launcherPort, repoRoot, simScanDist, simScanPort, webPort, webURL } from './env.ts'
+import { targetEnv } from '../packages/launcher/src/published-apps.ts'
+import { adminPort, apiEnv, apiPort, appsDir, caddyMode, launcherPort, publishedApps, repoRoot, webPort, webURL } from './env.ts'
 
 // E2E_WEB_SERVER=caddy serves the production bundle through deploy/Caddyfile,
 // as in a deployment (CI does this); the default is the Vite dev server.
@@ -11,7 +12,7 @@ const webRoot = join(repoRoot, 'web/apps/workwear/dist')
 const adminRoot = join(repoRoot, 'web/apps/admin/dist')
 const launcherRoot = join(repoRoot, 'web/apps/launcher/dist')
 const caddy = caddyMode
-for (const root of caddy ? [webRoot, adminRoot, simScanDist, launcherRoot] : []) {
+for (const root of caddy ? [webRoot, adminRoot, launcherRoot, ...publishedApps.map((a) => join(a.dir, 'dist'))] : []) {
   if (!existsSync(join(root, 'index.html'))) throw new Error(`E2E_WEB_SERVER=caddy needs a web build at ${root}: run pnpm build first`)
 }
 // Scan SIMs is published there by global setup (the API must find the folder at start).
@@ -51,7 +52,7 @@ const webServerEnv: Record<string, string> = caddy
   : {
       VITE_API_TARGET: `http://localhost:${apiPort}`,
       VITE_ADMIN_TARGET: `http://localhost:${adminPort}`,
-      VITE_SIM_SCAN_TARGET: `http://localhost:${simScanPort}`,
+      ...Object.fromEntries(publishedApps.map((a) => [targetEnv(a.slug), `http://localhost:${a.e2ePort}`])),
       VITE_LAUNCHER_TARGET: `http://localhost:${launcherPort}`,
     }
 
@@ -65,15 +66,15 @@ const adminServer = {
   timeout: 120_000,
 }
 
-// And so does Scan SIMs, the trial, at /apps/sim-scan (behind Caddy, a published app).
-const simScanServer = {
-  command: `${join(repoRoot, 'web/apps/sim-scan/node_modules/.bin/vite')} --port ${simScanPort} --strictPort`,
-  cwd: join(repoRoot, 'web/apps/sim-scan'),
+// And so does each published app (Scan SIMs), at /apps/<slug> (behind Caddy, published instead).
+const publishedServers = publishedApps.map((a) => ({
+  command: `${join(a.dir, 'node_modules/.bin/vite')} --port ${a.e2ePort} --strictPort`,
+  cwd: a.dir,
   env: { ...(process.env as Record<string, string>), VITE_API_TARGET: `http://localhost:${apiPort}` },
-  url: `http://localhost:${simScanPort}/apps/sim-scan/`,
+  url: `http://localhost:${a.e2ePort}/apps/${a.slug}/`,
   reuseExistingServer: false,
   timeout: 120_000,
-}
+}))
 
 // And App Launcher, at /apps.
 const launcherServer = {
@@ -117,6 +118,6 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
     },
-    ...(caddy ? [] : [adminServer, simScanServer, launcherServer]),
+    ...(caddy ? [] : [adminServer, ...publishedServers, launcherServer]),
   ],
 })

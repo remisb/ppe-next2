@@ -145,9 +145,16 @@ development the staff app's Vite server proxies `/apps` and `/apps/…` to the l
 ## Published apps: versions and channels
 
 Phase 3 (ADR 0006, "As built, phase 3"). An app on this site may be **published**: built with
-Vite's `base: './'` and a `ppe-app.json` (`{"slug", "capabilities"}`) in its `dist/`, each
-build a **version** that never changes, and **channels** that point at versions. Scan SIMs is
-the first; every other app keeps its fixed address (and its tile's `href`).
+Vite's `base: './'` and a `ppe-app.json` (`{"slug", "capabilities", "devPort"}`, from its
+`public/`) in its `dist/`, each build a **version** that never changes, and **channels** that
+point at versions. Scan SIMs is the first; every other app keeps its fixed address (and its
+tile's `href`). **A published app is found from its manifest**: every `web/apps/<slug>` with a
+`public/ppe-app.json` (`@ppe/launcher`'s `published-apps.ts`, which also checks the slug is the
+folder's and that no two share a port). The Makefile's `PUBLISHED_APPS`, the web image (it builds
+every `apps/*` and copies each published app's `dist/` to `/srv/build/<slug>`), the staff app's
+dev proxy (`/apps/<slug>` to the app's `devPort`, or `VITE_APP_<SLUG>_TARGET`) and the e2e servers
+(each on `devPort + 1`) all read it, so a new published app needs no edit outside its folder.
+The API ignores `devPort`.
 
 - **Registry** (migration 0043): `launcher_versions` (app, version `YYYY.MM.DD-<commit>`,
   profile, capabilities, commit, published, by whom: nobody for a deploy's),

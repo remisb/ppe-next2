@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
-import { admin, apiEnv, caddyMode, publishSimScan, repoRoot, webURL } from '../env.ts'
+import { admin, apiEnv, caddyMode, publishBuild, repoRoot, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -3530,7 +3530,7 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
 test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; Make Stable promotes and rolls back', async () => {
   test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
   // A second build, as make prod-publish publishes one: no channel points at it yet.
-  expect(publishSimScan('2026.01.02-e2e')).toContain('sim-scan 2026.01.02-e2e published (device)')
+  expect(publishBuild('sim-scan', '2026.01.02-e2e')).toContain('sim-scan 2026.01.02-e2e published (device)')
   await page.goto('/admin/apps/sim-scan')
   const pane = page.getByRole('article', { name: 'Scan SIMs' })
   await openSection(/^Versions and channels/)
@@ -3588,7 +3588,7 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   await openSection(/^Versions and channels/)
   await pane.getByRole('checkbox', { name: /Stable follows deploys/ }).check()
   await expect(pane.getByRole('checkbox', { name: /Stable follows deploys/ })).toBeChecked()
-  expect(publishSimScan('2026.01.03-e2e', 'preview')).toContain('2026.01.03-e2e published')
+  expect(publishBuild('sim-scan', '2026.01.03-e2e', 'preview')).toContain('2026.01.03-e2e published')
   expect(await (await page.request.get('/apps/sim-scan/')).text()).toContain('content="2026.01.03-e2e"')
   await page.reload()
   await openSection(/^Versions and channels/)

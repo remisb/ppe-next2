@@ -1,4 +1,5 @@
 {
   "slug": "sim-scan",
-  "capabilities": ["wasm", "workers", "camera"]
+  "capabilities": ["wasm", "workers", "camera"],
+  "devPort": 5184
 }

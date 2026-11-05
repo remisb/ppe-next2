@@ -51,7 +51,9 @@ trial is a third app on the same terms, published at `/apps/sim-scan/` (`simScan
 5184, `pnpm --dir apps/sim-scan dev`, proxied from 5180 for `/apps/sim-scan` before the
 launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-launcher.md`)
 builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
-`public/ppe-app.json` (`slug`, `capabilities`), and reads where it is mounted and where its
+`public/ppe-app.json` (`slug`, the folder's name; `capabilities`; `devPort`, its dev server's,
+the e2e server taking the next), which is all the build, the deploy, the staff app's dev proxy
+and e2e need to find it, and reads where it is mounted and where its
 files are from `@ppe/routing`'s `basePath` and `filesBase` (the API's meta tags), never from
 `import.meta.env.BASE_URL`; its frame is `@ppe/launcher`'s `SignedIn` and `AppFrame` (the
 channel stripe, a way back, the Apps entry, Sign out, tabs), never one of its own: the frame's

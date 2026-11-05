@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { type PublishedApp, publishedApps as findPublishedApps } from '../packages/launcher/src/published-apps.ts'
+
 export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe2:ppe2@localhost:5442/ppe2_test?sslmode=disable'
@@ -12,8 +14,6 @@ export const apiPort = 18090
 export const webPort = 5181
 /** Administration's Vite server; the staff app's proxies /admin to it, so tests open it at webURL/admin/. */
 export const adminPort = 5183
-/** Scan SIMs' Vite server; the staff app's proxies /apps/sim-scan to it, so tests open it at webURL/apps/sim-scan/. */
-export const simScanPort = 5185
 /** App Launcher's Vite server; the staff app's proxies /apps to it, so tests open it at webURL/apps/. */
 export const launcherPort = 5187
 export const webURL = `http://localhost:${webPort}`
@@ -27,7 +27,14 @@ export const caddyMode = process.env['E2E_WEB_SERVER'] === 'caddy'
  * Vite it is its own dev server instead.
  */
 export const appsDir = join(tmpdir(), 'ppe-next2-e2e-published')
-export const simScanDist = join(fileURLToPath(new URL('../..', import.meta.url)), 'web/apps/sim-scan/dist')
+
+/**
+ * The published apps (every web/apps/<slug> with a public/ppe-app.json, such
+ * as Scan SIMs). With Vite each runs its own server on its e2ePort, which the
+ * staff app's proxies /apps/<slug> to; behind Caddy global setup publishes each
+ * one's pnpm build, as a deploy does.
+ */
+export const publishedApps: PublishedApp[] = findPublishedApps(fileURLToPath(new URL('..', import.meta.url)))
 
 // A test-only account created by global setup; not a real credential.
 export const admin = { email: 'e2e-admin@example.com', password: 'e2e-password-123', name: 'E2E Admin' }
@@ -98,10 +105,10 @@ export function apiEnv(): Record<string, string> {
   }
 }
 
-/** Publishes Scan SIMs' build (pnpm build) as version, pointing channel at it, as `make prod-up` does (Caddy mode). */
-export function publishSimScan(version: string, channel = ''): string {
-  const build = execFileSync('tar', ['-C', simScanDist, '-cf', '-', '.'], { maxBuffer: 512 << 20 })
-  return execFileSync('go', ['run', './cmd/api', '-publish-app', 'sim-scan', '-version', version, '-channel', channel, '-from-commit', 'e2e'], {
+/** Publishes a published app's build (pnpm build) as version, pointing channel at it, as `make prod-up` does (Caddy mode). */
+export function publishBuild(slug: string, version: string, channel = ''): string {
+  const build = execFileSync('tar', ['-C', join(repoRoot, 'web/apps', slug, 'dist'), '-cf', '-', '.'], { maxBuffer: 512 << 20 })
+  return execFileSync('go', ['run', './cmd/api', '-publish-app', slug, '-version', version, '-channel', channel, '-from-commit', 'e2e'], {
     cwd: repoRoot,
     env: apiEnv(),
     input: build,

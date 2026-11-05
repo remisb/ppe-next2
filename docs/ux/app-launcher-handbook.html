@@ -126,7 +126,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
 <header class="top">
   <div class="top-row">
     <div class="logo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></div>
-    <div><div class="top-title">App Launcher Handbook</div><div class="top-sub">Workwear &amp; Equipment · 5 November 2026 · seven of nine improvements built</div></div>
+    <div><div class="top-title">App Launcher Handbook</div><div class="top-sub">Workwear &amp; Equipment · 5 November 2026 · eight of nine improvements built</div></div>
   </div>
   <nav class="toc" aria-label="Sections">
     <a href="#overview">Overview</a>
@@ -302,13 +302,12 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
     <h3>Checklist for a published app</h3>
     <ol class="steps">
       <li><span>Start <code>web/apps/&lt;slug&gt;/</code> from Scan SIMs' layout: <code>ApiProvider app="&lt;slug&gt;"</code>, <code>@ppe/ui</code>, words in EN, LT and RU.</span></li>
-      <li><span><code>vite.config.ts</code>: <code>base: command === 'build' ? './' : '/apps/&lt;slug&gt;/'</code>.</span></li>
-      <li><span><code>public/ppe-app.json</code>: <code>{"slug": "&lt;slug&gt;", "capabilities": []}</code>. Add a capability only when needed: each one widens the policy.</span></li>
+      <li><span><code>vite.config.ts</code>: <code>base: command === 'build' ? './' : '/apps/&lt;slug&gt;/'</code> and the manifest's <code>devPort</code>, as Scan SIMs' reads them.</span></li>
+      <li><span><code>public/ppe-app.json</code>: <code>{"slug": "&lt;slug&gt;", "capabilities": [], "devPort": 5188}</code>. Add a capability only when needed: each one widens the policy. This file is what makes it a published app: the build, the deploy, the dev proxy and e2e find it from here.</span></li>
       <li><span>Use <code>basePath</code> for the router and <code>filesBase</code> for your own static files, never <code>import.meta.env.BASE_URL</code>.</span></li>
       <li><span>Wrap it in <code>@ppe/launcher</code>'s <code>SignedIn</code> and <code>AppFrame</code> (the channel stripe, a way back, the Apps entry, Sign out, tabs) instead of building a frame.</span></li>
       <li><span>Let each screen's <code>PageHeader</code> be the only sticky header; <code>AppFrame</code>'s bar scrolls away.</span></li>
       <li><span>Register the tile on Manage apps (<i>On this site</i>, <code>/apps/&lt;slug&gt;/</code>), or add it to <code>defaults.go</code> if every installation needs it.</span></li>
-      <li><span>Add the slug to <code>PUBLISHED_APPS</code>, the build filters and a <code>COPY</code> line in <code>web/Dockerfile</code>, a dev proxy rule and port, and its e2e Vite server.</span></li>
       <li><span>Tests: unit tests, <code>csp.test.ts</code>, an e2e step (Vite mode uses the dev server; Caddy mode publishes it).</span></li>
       <li><span>Ship: deploy → Preview → try it → <b>Make Stable</b>.</span></li>
     </ol>
@@ -331,7 +330,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
     <p class="verdict prose">What works: the trust boundary is explicit; the registry is plain SQL with an audit trail; rolling back moves a pointer; the security policy comes from a closed, tested list; people get exactly their apps with no new sign-in.</p>
     <div class="crit">
       <div class="card"><span class="n">1</span><div><h3>Deploys do not reach users by themselves <span class="chip bad">High</span></h3><p class="small muted">A deploy moves Preview only, so a fix reaches no one until someone remembers Make Stable. On 5 November the Scan SIMs header fix was deployed, but Stable stayed on the old build. Safe, but easy to forget.</p><p class="small" style="color:var(--ok)">Eased: Stable follows deploys, and a note while Preview is ahead (improvement 1).</p></div></div>
-      <div class="card"><span class="n">2</span><div><h3>"No config per app" is not true yet <span class="chip warn">Medium</span></h3><p class="small muted">A new published app still needs edits in five places outside its folder (Makefile list, Dockerfile build filter and copy, Vite proxy, e2e server and port), besides its tile. ADR 0006 promised a registration and a publish.</p></div></div>
+      <div class="card"><span class="n">2</span><div><h3>"No config per app" is not true yet <span class="chip warn">Medium</span></h3><p class="small muted">A new published app still needs edits in five places outside its folder (Makefile list, Dockerfile build filter and copy, Vite proxy, e2e server and port), besides its tile. ADR 0006 promised a registration and a publish.</p><p class="small" style="color:var(--ok)">Fixed: published apps are found from their manifest (improvement 2).</p></div></div>
       <div class="card"><span class="n">3</span><div><h3>A lot of machinery for one app <span class="chip warn">Medium</span></h3><p class="small muted">A volume, the API page route and its link rewriting, two copies of each policy, a publish command, a build script and three tables. Justified only if a second and third published app follow; today only Scan SIMs uses them.</p></div></div>
       <div class="card"><span class="n">4</span><div><h3>Each app copies its own frame <span class="chip warn">Medium</span></h3><p class="small muted">Workwear, Administration, Scan SIMs and the launcher each build their own header, Apps entry, sign-out and gates. The overlapping headers came from exactly this: a shared screen header met a copied frame that no test scrolled.</p><p class="small" style="color:var(--ok)">Fixed for small apps: <code>AppFrame</code> (improvement 3). The staff app, Administration and the launcher keep their own.</p></div></div>
       <div class="card"><span class="n">5</span><div><h3>Versions are hard to find <span class="chip">Low</span></h3><p class="small muted">A tester has to open ··· on the tile to discover Beta, and bookmarks and the staff app's links always open Stable, whatever the tester chose.</p><p class="small" style="color:var(--ok)">Eased: the choice is honoured at the app's own address and the stripe switches channels (improvement 5). Finding Beta still needs ···.</p></div></div>
@@ -350,7 +349,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
       <thead><tr><th>#</th><th>Change</th><th>Fixes</th><th>Effort</th><th>Status</th></tr></thead>
       <tbody>
         <tr><td>1</td><td><b>Promote after deploy, per app.</b> A Manage apps switch, "Stable follows deploys", on for apps without testers; otherwise the Overview lists "Preview is newer than Stable for N days".</td><td>1</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
-        <tr><td>2</td><td><b>Find published apps from the build.</b> Every <code>web/apps/*/public/ppe-app.json</code> is published; the Dockerfile copies them all; one generic dev proxy and e2e entry per manifest.</td><td>2</td><td><span class="chip m">Medium</span></td><td><span class="chip">Proposed</span></td></tr>
+        <tr><td>2</td><td><b>Find published apps from the build.</b> Every <code>web/apps/*/public/ppe-app.json</code> is published; the Dockerfile copies them all; one generic dev proxy and e2e entry per manifest.</td><td>2</td><td><span class="chip m">Medium</span></td><td><span class="chip ok">Built</span></td></tr>
         <tr><td>3</td><td><b>One shared frame for small apps.</b> <code>AppFrame</code> in <code>@ppe/app-shell</code>: a bar that scrolls away, tabs, the Apps entry, ChannelStripe, sign-out and gates, used by Scan SIMs and the launcher, with a scroll test.</td><td>4</td><td><span class="chip m">Medium</span></td><td><span class="chip ok">Built</span></td></tr>
         <tr><td>4</td><td><b><code>make new-app SLUG=</code></b> scaffolds the folder, manifest, words, policy test and tile from Scan SIMs.</td><td>2</td><td><span class="chip s">Small</span></td><td><span class="chip">Proposed</span></td></tr>
         <tr><td>5</td><td><b>Honour the choice everywhere.</b> <code>/apps/&lt;slug&gt;/</code> sends a tester to the channel they chose; the stripe also offers Versions.</td><td>5</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
@@ -362,7 +361,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
     </table></div>
     <div class="callout">
       <h3>Simplicity check before building more</h3>
-      <p class="small">All but 2 and 4 are built: today's one published app is safe, invisible to users, measured per version and tested locally as in production. 2 and 4 automate adding a second published app; build them the week one is approved. Until then, a handful of manual edits costs less than automating them.</p>
+      <p class="small">All but 4 are built: today's one published app is safe, invisible to users, measured per version and tested locally as in production, and a second one needs no edit outside its folder. 4, a scaffold, is worth it once apps are added often; copying Scan SIMs' folder does the same today.</p>
     </div>
   </section>
 </main>
