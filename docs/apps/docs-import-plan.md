@@ -1,8 +1,10 @@
 # docs-import: requirements and plan
 
 - **Date:** 2026-11-05
-- **Status:** proposal, **revision 2** (2026-11-05, reviewed after the Scan SIMs fixes were built
-  and deployed; what changed is in [section 0](#0-review-after-the-scan-sims-fixes-revision-2)).
+- **Status:** proposal, **revision 3** (2026-11-05: phase 1, the reading spike, is done and its
+  numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate)).
+  Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
+  [section 0](#0-review-after-the-scan-sims-fixes-revision-2).
   It becomes ADR 0007 (Personnel files: identity documents) and a spec
   `docs/specs/personnel-service.md` once the [open decisions](#11-open-decisions) are made.
 - **Builds on:** [Scan SIMs review](sim-scan-review.md), [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.md)
@@ -20,7 +22,7 @@ assumed, and showed two mistakes in it. What changed:
 | --- | --- | --- |
 | R1 | **Crypto-shredding was overstated.** Revision 1 said destroying a person's key row "makes every copy unreadable, including copies in backups". It does not: the row is in every backup taken before, sealed by the same master key, so a backup still opens it. A restore would even bring the person's data back | Erasure is complete once the last backup holding the key has expired (`DBBACKUP_KEEP_DAYS`, 14 days), and shredding is a **rule a daily job applies**, not a one-off action, so it applies again after a restore (section 3, PR-8, D10) |
 | R2 | **The keyring now exists.** `sealbox.Keyring` (key ids on rows, previous keys only open) and the re-seal pattern (`api -reseal-sim-codes`: counts only, nothing audited, a row changed meanwhile left as set) are built and tested | Phase 0 no longer adds a keyring. The master key follows the SIM codes key's settings exactly; rotating it re-seals only the per-person keys, which is cheap (sections 3, 5.7) |
-| R3 | **Live OCR is slower than the plan assumed.** Barcode decoding measured 10–16 ms a frame on a Mac; Tesseract on a back is roughly a second on a phone (not measured), and the plan asked for "≥ 3 live attempts a second" | NFR-4 now asks for ≥ 1 attempt a second, reading only the MRZ band (a narrow crop), with the number fixed in phase 1. A still photo stays the main path; live scanning is a convenience (5.2) |
+| R3 | **Live OCR is slower than the plan assumed.** Barcode decoding measured 10–16 ms a frame on a Mac; Tesseract on a back is roughly a second on a phone (not measured), and the plan asked for "≥ 3 live attempts a second" | NFR-4 now asks for ≥ 1 attempt a second, reading only the MRZ band (a narrow crop), with the number fixed in phase 1. A still photo stays the main path; live scanning is a convenience (5.2). **Phase 1:** a live attempt (the guide's strip of a 1280 px frame) takes about 160 ms on an M3 Max, most of it OCR; about 0.5 s estimated on a mid-range phone, to be measured there |
 | R4 | **The worker pattern is proven.** `barcode.worker.ts` with a typed protocol file, pixels transferred, a fallback to the page's thread, and an e2e check that the worker really runs (`page.workers()`), under the device policy behind Caddy | Image work and OCR follow the same pattern, with the same e2e check (NFR-3, 5.2, section 8) |
 | R5 | **F1 was fixed without a router guard**: Scan stays mounted, hidden, while the other tab is open. No leave guard exists in `@ppe/app-shell` | docs-import keeps its steps (Person → Capture → Review → Portrait → Save) as one screen's state, not routes, plus `beforeunload`; no router guard is needed (PR-1) |
 | R6 | **The picture store and list reducer exist, but in the app** (`apps/sim-scan/src/routes/scan/`), not in a package | Phase 0 moves `PictureStore`/`usePictureStore` and the "released pictures" reducer pattern into `@ppe/scan-kit` (section 6) |
@@ -33,6 +35,129 @@ assumed, and showed two mistakes in it. What changed:
 
 Unchanged: the MRZ-and-check-digits approach, the data split (Personnel files), the AI rules
 (luminance lock, labels, consent), and the open decisions D1–D8.
+
+## Phase 1 results (revision 3): the go / no-go gate
+
+**Verdict: go**, with two changes to the rules below. A browser reads the MRZ well enough: with
+DoubangoTelecom's MRZ model (BSD-3-Clause), 140 of 144 synthetic specimen photos (97.2 %) were
+read with every check digit passing, all 135 that were not both small and blurred, and **no wrong
+value was accepted in a field a check digit covers**, in Chromium and WebKit alike. A photo takes
+about 0.2 s to read on the Mac; the first use downloads 5.3 MB (about 2.8 MB on the wire). The
+two changes: **every reading is accepted only when two reads agree** (live: two frames, as
+planned; a photo: read twice, which the plan did not ask for), and **the names, document code
+and sex, which no check digit covers, are checked by the person** on the review screen. Phones and
+the team's own documents were not measured yet (no phone was at hand and no documents were
+offered); both are needed before the trial (phase 6), and neither blocks phase 2.
+
+### What was built
+
+| Piece | Where | What it is |
+| --- | --- | --- |
+| `@ppe/mrz` | `web/packages/mrz` | the parser: TD1/TD2/TD3, check digits, FR-5's corrections, century rules, the Lithuanian personal code, `fold()` and `nameMatch()`, `readMrz()` from OCR text. Pure TypeScript, no DOM; 64 tests |
+| shared vectors | `testdata/mrz/vectors.json` | 30 cases (ICAO's three specimens, a long document number, corrections taken and refused, dates, codes), 8 read-from-text cases, LT codes, fold and name cases, for the Go parser of phase 2 too (NFR-7) |
+| specimens | `web/e2e/fixtures/documents` (`specimens.ts`, `make.ts`) | a TD3 passport page and TD1 ID card fronts and backs at ICAO sizes, made-up people, OCR-B (`ocrb10.otf`, CTAN *ocr-b-outline*: "freely use, modify, and/or distribute"), every page marked SPECIMEN; three with planted misreads (an `O` for a `0` in a number, an `I` for a `1` in a date, a `9` for a `4` in an expiry date) |
+| reading spike | `web/spikes/mrz` (throwaway, never in the image) | a bare page; the image work (grey, Sauvola, skew, the MRZ band, the cut-out at 32 px a character) in plain TypeScript in a worker (`image.worker.ts`, the `barcode.worker.ts` pattern, 9 tests); `createTextReader()`, the factory §6 asks for; scripts that make the test set, measure, simulate, and train a model |
+
+### The test set
+
+The specimens drawn as phone photos (2000 × 1500, seeded): on a table, turned up to 10°, tilted
+up to 14°, blurred up to 2.2 px, lit unevenly, with glare, dimmed, noisy, JPEG at 55–90 %, the
+document filling 40–90 % of the width. 144 photos should read (6 documents × 24), 24 carry the
+planted error no reader may accept, 6 are card fronts (no MRZ). Live: 36 frames of 1280 × 720
+with the document in the guide, of which only the guide's lower 40 % is read (30 pairs of
+consecutive frames for the two-frame rule).
+
+### Models
+
+| Model | Licence | Size (gz) | Photos read, every digit passing | Wrong accepted, one read (of them in checked fields) | Two agreeing reads: read / wrong | Live frames: one (wrong) / Steady pairs (wrong) |
+| --- | --- | --- | --- | --- | --- | --- |
+| **DoubangoTelecom `mrz`** (tesseractMRZ, `tessdata_fast`, commit `0f039b6`) | **BSD-3-Clause** | 1.31 MB | **140 / 144 (97.2 %)** | **0 (0)** | 140 / 0 | 33 / 36 (3, names); 26 / 30 (0) |
+| Shreeshrii `ocrb_int` (tessdata_ocrb, `9135a9e`) | none stated: not shippable | 1.31 MB | 134 / 144 (93.1 %) | 2 (1) | 130 / 0 | 29 / 36 (3); 21 / 30 (0) |
+| Tesseract `eng` (best_int, as Scan SIMs) | Apache-2.0 | 2.95 MB | 0 / 72 (fillers read as `L` and `C`) | 6 (0: names, before the names rule below) | – | 0 |
+| ours, `ppe_ocrb` (`eng` fine-tuned with tesstrain on 8 000 synthetic OCR-B lines) | Apache-2.0 + the font's | 1.34 MB | 120 / 144 (83.3 %; WebKit 86.1 %) | 17 (0: names and document code) | 105 / 2 (names) | 24 / 36 (6); 16 / 30 (0; WebKit 1) |
+
+Every model refused all 24 planted errors and found no MRZ on the 6 fronts. WebKit gave the same
+counts as Chromium for `mrz`, and within four photos for the others. The `eng` row was measured on the first,
+72-photo set; it is not a candidate.
+
+**Chosen: DoubangoTelecom `mrz`.** It reads best, it is the smallest, and its licence lets us ship
+it (keep the licence text beside it in `readers/`). Two cautions: its training data is "~7 000
+images from Google image, augmented with few synthetic data" (its README), so its provenance is
+weaker than its licence; and it was last changed in January 2020. `ppe_ocrb` is the fallback
+with a clean provenance (our lines, our font, Apache-2.0 `eng`) and is reproducible from
+`web/spikes/mrz/train`; but this first run (6 000 iterations on 8 000 drawn lines, 25 minutes in Docker, 0.02 % character error on its own lines) reads the photos far worse, misreading names above all, and is not a candidate. Training it on bands cut from photos by the reader itself, rather than on drawn lines, is the next step should the Doubango model ever have to go.
+
+### Time and size (NFR-4)
+
+Measured on an Apple M3 Max (macOS 27), Playwright's Chromium 153 and WebKit 26.6, model `mrz`,
+medians:
+
+| Step | Photo (2000 px) | Live attempt (1280 px frame, the guide's strip) |
+| --- | --- | --- |
+| decode and scale | 8 ms | – |
+| image worker: grey 13, Sauvola 8, skew 11, band 5, cut-out 4 (with the transfer) | 48 ms (WebKit 56) | 22 ms |
+| OCR of the band (tesseract.js 7, `PSM.SINGLE_BLOCK`, MRZ whitelist, no dictionaries) | 140 ms | ≈ 135 ms |
+| parse and correct | 0.2 ms | 0.2 ms |
+| **one read** | **≈ 200 ms (Chromium 196, WebKit 207)** | **≈ 160 ms (Chromium 156, WebKit 160)** |
+| the second read (another threshold) | + 186 ms: **≈ 380 ms** | the next frame |
+| first-use download | `worker.min.js` 0.11 MB, `tesseract-core-relaxedsimd-lstm.wasm.js` 3.91 MB, `mrz.traineddata.gz` 1.31 MB: **5.33 MB**, about **2.8 MB on the wire** (Caddy compresses the core and worker: 1.46 MB + 0.03 MB) | the same |
+| model load (download from localhost and start) | 120–150 ms | |
+
+Not measured on a phone. DevTools' CPU slowdown was tried as a stand-in and does not work: it
+slows only the page's main thread, and both the image work and the OCR run in workers (4× made
+140 ms of OCR 143 ms). Estimated from single-thread speed, a mid-range Android phone is about 3×
+slower than this Mac: a photo read twice about 1.2 s plus decoding a 12 MP photo, within NFR-4's
+2 s; a live attempt about 0.5 s, so about 2 attempts a second, above NFR-4's 1. **Run the
+specimen photos** on the spike's page (`pnpm dev --host`, then the phone's browser) replaces
+these estimates with measurements; do it on an iPhone and a mid-range Android before the trial.
+
+### Accuracy (NFR-5), and what check digits cannot see
+
+With the chosen model the measured wrong-value rate is 0 for every field a check digit covers,
+with one read and with two (the Shreeshrii model let one through on one read, which the second
+read caught). But the spike showed that the plan's "the check digits guarantee this" is too
+strong, in three ways, each now a rule:
+
+1. **Some misreads are invisible to check digits.** Characters whose values differ by 10 or 20
+   give the same digit in any place: `K`/`<`, `G`/`6`, `L`/`1`, `U`/`0`, `A`/`<`. And the composite
+   digit weighs the **document number** exactly as the number's own digit does (the number starts
+   the composite, at a multiple of three), so two misreads in the number that balance its digit
+   pass the composite too. A live frame showed this: `C4H7K2M95` read as `C4M7K2R95` (+5 at
+   weight 1, +35 at weight 7) passed every digit. Dates are safe: their place in the composite
+   gives them other weights, so the composite is a second, independent check.
+2. **FR-5's search spends the number's one check digit.** Trying 64 combinations of look-alikes
+   in a number finds a reading that passes about one time in ten even when it is wrong, and the
+   composite cannot object (point 1). Usually several pass and the parser takes none (the ICAO
+   specimen's `L898902C3` read as `L8989O2C3` has three); when exactly one passes, it is taken but
+   marked `needsSecondRead`. The same mark goes on a fitting that moved the number's characters
+   (a stray mark before the line). On random misreads (`pnpm simulate`, 40 000 lines a row) one
+   read accepts 0.03 % to 3 % wrong lines, as the misread rate rises; **two independent reads that
+   must agree accept none** at every rate.
+3. **Names, document code and sex have no check digit at all.** With a poor model (`eng`), fillers
+   read as `L` gave names like `JONAS LLLLLLLL` that passed every check; with the chosen model,
+   single live frames gave `JORAS` and `JOMAS`. The parser now refuses names with a letter three
+   times running, `<<<` between parts, or a filler first (`names_unreadable`), and with the
+   chosen model the two-read rule caught every misread name in the set. With `ppe_ocrb`, two
+   photos gave the same wrong name in both reads: only the person can confirm a name, by typing
+   it as printed (FR-7, `nameMatch`).
+
+### What this changes in the plan
+
+| Where | Change |
+| --- | --- |
+| FR-4 | A **photo is read twice** (two thresholds of the same band) and accepted only when both readings are the same lines; live keeps two equal frames in a row. In the set this cost no correct reads (140 either way) and about 190 ms |
+| FR-5 | A correction in a **number's field** (letters and digits both allowed) rests on that field's one check digit: it is taken only when it is the one passing combination, and then needs the second read; corrections where the layout allows only digits or only letters (dates, check digits, names, state codes) are certain. Corrected fields stay shown |
+| FR-7 | The review screen says which fields **no check digit covers** (names, document code, sex, and nationality, which only the state list checks) and the person confirms the names by typing them as printed; a `names_unreadable` reading is never offered |
+| NFR-4 | Numbers fixed for this Mac (one read ≈ 0.2 s, two ≈ 0.4 s; live attempt ≈ 0.16 s; first use 5.3 MB, 2.8 MB on the wire); the phone numbers to be measured with the spike's page before the trial |
+| NFR-5 | "0 % accepted with a wrong value" holds **for the fields check digits cover, under the two-read rule**, measured on the set and by the simulation; it is not a guarantee of the check digits alone. Names are the person's check. ≥ 98 % of good photos: 97.2 % on a deliberately harsh set, 100 % (135 / 135) without the small-and-blurred photos; the capture guidance ("fill the frame, hold still") and live mode are the answer to those |
+| §5.2 step 4 | The model is DoubangoTelecom's `mrz`, `PSM.SINGLE_BLOCK`, the MRZ whitelist, every dictionary off (they are load-time settings in tesseract.js, `createWorker`'s fourth argument) |
+| §5.2 step 5 | `readMrz` fits lines in tiers: fillers in or out of runs and a stray mark at either end first, any one character only if that finds nothing; each tier taken only when one fitting alone passes every digit |
+| §5.2 steps 2–3 | The band finder looks for 2 or 3 rows of an MRZ's length; a pair of TD1 length is a TD1 that lost its top row, which is given back. Margins round the cut-out under a character, as wider ones took in the card's edge as a stray character |
+| R3 | Measured: OCR of the band about 140 ms on the Mac in both browsers, the image work 20–50 ms; a live attempt about 160 ms |
+| D9 | Input: the browser failed only small and blurred photos (4 of 144), which a server would read no better from the same pixels; **a server-side reader is not needed for v1** |
+| §6 | `src/image.ts` and its worker move to `@ppe/scan-kit`'s image module unchanged; `createTextReader()` is as `src/ocr.ts` |
+| §8 | The shared vectors and the specimens exist; e2e (phase 3) can use `fixtures/documents/*.jpg` as they are |
+| §9 | New risk: check digits' blind spots (above), mitigated by the two-read rule and the person's check of names |
 
 ## 1. Goal
 
@@ -168,8 +293,8 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-1 | M | The user chooses the person: search existing employees (name or code), or **New employee from document** (D6) |
 | FR-2 | M | Capture with the **live camera**, with a guide frame shaped like the document (ID-1 card 85.6 × 54 mm, passport page 125 × 88 mm) and an MRZ band near its bottom, or with **Take Photo** (`capture="environment"`) or **Choose Photo** |
 | FR-3 | M | Supports TD3 passports and TD1 ID cards and residence permits. TD2 is parsed but not tested in v1. A TD1 card needs its back (MRZ) and front (portrait). The side is detected (MRZ found = back), and the photos are paired in either order, as `pairPhotos` does |
-| FR-4 | M | The MRZ is read in the browser. A live reading is accepted once **every check digit passes** and the same result has been read in **two frames in a row** (`Steady`). A photo is read once |
-| FR-5 | M | **Deterministic correction:** inside fields that must be digits or letters, look-alikes are swapped and every combination is tried, up to a small limit (≤ 64 per field). A correction is taken only if it makes that field's check digit **and** the composite check digit pass. The fields that were corrected are shown |
+| FR-4 | M | The MRZ is read in the browser. A live reading is accepted once **every check digit passes** and the same result has been read in **two frames in a row** (`Steady`). A photo is read **twice**, with two thresholds of the same band, and accepted only when both give the same lines (phase 1: check digits cannot see every misread) |
+| FR-5 | M | **Deterministic correction:** inside fields that must be digits or letters, look-alikes are swapped and every combination is tried, up to a small limit (≤ 64 per field). A correction is taken only if it makes that field's check digit **and** the composite check digit pass, and no other combination does. In a document or personal number the composite adds nothing (phase 1), so such a correction also needs the second read (`needsSecondRead`). The fields that were corrected are shown |
 | FR-6 | M | Cross-checks: dates are valid (birth in the past, expiry after birth); the personal code's checksum, birth date and sex agree with the MRZ when there is a code; an **expired** document is a warning, not a stop |
 | FR-7 | M | The **review screen** shows the MRZ lines in a monospaced, editable field, with each field underlined in place. The parsed fields are below, with marks: problem (stops Save) or note. Editing the MRZ re-parses it. Names are a separate field, pre-filled from the MRZ, where the user types the diacritics (`Ž`, `Ė`, …). Their diacritic-free form must equal the MRZ name, or a note says that it does not |
 | FR-8 | M | The review compares the result with the chosen person's current data and shows only the differences (name, birth date…). The user chooses, field by field, to take the document's value or keep the current one |
@@ -191,8 +316,8 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | NFR-1 | M | **Same stack as Scan SIMs:** React 19, TypeScript, Vite, Tailwind, `@ppe/ui`, `@ppe/app-shell`, `@ppe/launcher` (`SignedIn`, `AppFrame`), `@ppe/i18n`, published with the **device** profile. No new CSP directive: colouring goes through the API, so `connect-src 'self'` is enough |
 | NFR-2 | M | Readers come from the app's own files (`readers/`), loaded on first use. No CDN |
 | NFR-3 | M | Image work (thresholding, band finding) and OCR run **in workers**, as Scan SIMs' barcode reader now does (`barcode.worker.ts`: a protocol file, pixels transferred, a fallback to the page's thread). The camera preview stays smooth; the e2e step checks the workers run (`page.workers()`) |
-| NFR-4 | M | Speed on a mid-range Android phone (benchmarked in phase 1, numbers then fixed here): first MRZ read ≤ 2 s from a photo; live, ≥ 1 attempt a second on the MRZ band alone; first-use download ≤ 6 MB. A photo is the main path; live scanning is a convenience |
-| NFR-5 | M | Accuracy on the test set (phase 1): ≥ 98 % of good photos read with every check digit passing, **0 %** accepted with a wrong value (the check digits guarantee this; tests prove it) |
+| NFR-4 | M | Speed on a mid-range Android phone: first MRZ read ≤ 2 s from a photo (read twice, FR-4); live, ≥ 1 attempt a second on the MRZ band alone; first-use download ≤ 6 MB. A photo is the main path; live scanning is a convenience. **Phase 1** (M3 Max, Chromium 153 and WebKit 26.6): a photo read once ≈ 0.2 s, twice ≈ 0.4 s; a live attempt ≈ 0.16 s; first use 5.33 MB (≈ 2.8 MB on the wire). Estimated on a mid-range phone at about 3× slower: ≈ 1.2 s and ≈ 2 attempts a second; **still to be measured on two phones** with the spike's page |
+| NFR-5 | M | Accuracy on the test set: ≥ 98 % of good photos read with every check digit passing, **0 %** accepted with a wrong value in a field a check digit covers, under FR-4's two-read rule (the check digits alone do not guarantee it, phase 1). **Phase 1:** 97.2 % (140 / 144) of a deliberately harsh specimen set, 100 % (135 / 135) without the photos both small and blurred; 0 wrong values; the names, document code and sex are under no check digit and are the person's to confirm (FR-7) |
 | NFR-6 | M | EN / LT / RU from typed dictionaries; mobile first; 44 px touch targets; no sideways scroll at the e2e widths; WCAG 2.1 AA (status texts announced, crop box usable with the keyboard) |
 | NFR-7 | M | Server rules mirrored: the Go API re-parses the MRZ and re-checks every digit and the personal code. A shared test-vector file (`testdata/mrz/*.json`) is read by both the TS and Go test suites, so the two parsers cannot drift apart |
 | NFR-8 | S | Telemetry without personal data: counts of reads, check-digit failures, corrections and time to read, per version, for App Launcher's Trials page |
@@ -260,9 +385,8 @@ flowchart LR
    guilloche backgrounds needs a local threshold, not a global one). All of this is plain
    TypeScript on `ImageData`, with no OpenCV, which would add ~8 MB.
 4. **OCR** (OCR worker): tesseract.js with an **OCR-B model**, `PSM.SINGLE_BLOCK`, whitelist
-   `ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<`. Model choice is decided in phase 1: a community
-   OCR-B / MRZ traineddata (check its licence), or one trained by us with `tesstrain` from
-   synthetic MRZ lines in a free OCR-B font, which is reproducible and has a known licence.
+   `ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<`, every dictionary off. Phase 1 chose DoubangoTelecom's
+   `mrz` (BSD-3-Clause, 1.31 MB); see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
 5. **Normalise lines:** pick the 2 or 3 lines of the expected length and pad or trim the `<`s.
    Common misreads such as `«`, `K` inside filler runs, and spaces are fixed before parsing.
 6. **Parse and correct** (`@ppe/mrz`, pure): format by line count and length, then fields,
@@ -441,7 +565,7 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 | Phase | Content | Done when |
 | --- | --- | --- |
 | **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) (The e2e/test-db lock, R10, is done.) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check |
-| **1. Reading spike** | `@ppe/mrz` (TS) with ICAO test vectors; band finding and threshold; choose the OCR-B model; a bare test page in the app reading specimens. Measure on synthetic specimens and on the team's **own** documents (read locally, never committed) | NFR-4 and NFR-5 numbers recorded; model and licence chosen. **Go / no-go gate** |
+| **1. Reading spike** | `@ppe/mrz` (TS) with ICAO test vectors; band finding and threshold; choose the OCR-B model; a bare test page in the app reading specimens. Measure on synthetic specimens and on the team's **own** documents (read locally, never committed) | NFR-4 and NFR-5 numbers recorded; model and licence chosen. **Go / no-go gate.** Done 2026-11-05: **go** ([Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate)); phones and the team's own documents still to be measured |
 | **2. Personnel backend** | ADR 0007; `internal/personnel/document` (five-file layout), Go MRZ parser on the shared vectors, keyring and subject keys, blind index, migrations, permissions, routes, audit events, `api-client` | Go service and Postgres tests pass, including PR-2's no-leak test; `routes_test.go` policy |
 | **3. docs-import app** | `make new-app`, then the device profile by hand (R7); Person → Capture → Review → Save as one screen's steps, without the portrait | e2e (Vite and Caddy): synthetic passport and ID card read from photos, checked, saved; the workers run; the employee shows "valid until" |
 | **4. Portrait** | crop from MRZ geometry, adjust, save the grey portrait as a photo | e2e with a specimen portrait; crop usable with keyboard and touch |
@@ -485,6 +609,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 
 | Risk | Effect | Mitigation |
 | --- | --- | --- |
+| Check digits' blind spots: `K`/`<`, `G`/`6`, `L`/`1`, `U`/`0` change no digit, the composite weighs the document number as its own digit does, and names, document code and sex have none (phase 1) | a wrong value accepted from one read | two agreeing reads (FR-4), `needsSecondRead` on number corrections, the names' shape rules, the person typing the printed names (FR-7) |
 | OCR-B accuracy on phone photos (glare from laminate, holograms, guilloche) | slow or failed reads | adaptive threshold, the two-frame rule, correction by check digits, guidance text ("tilt to remove glare"), and typing the MRZ by hand as the last resort |
 | Keeping ID copies breaks data-protection rules | legal | keep only what D2 and D3 allow; seal it; crypto-shredding; DPIA |
 | AI changes the person's likeness | misleading photo | luminance lock, before and after view, labels, refusing the photo for ID badges, a live photo as the alternative |
@@ -516,5 +641,5 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1–D3 are decided.
 | D6 | Can the app create **new** employees, or only update existing ones? | Both. New employees need `employees.manage` too |
 | D7 | Who uses it | A new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
 | D8 | Its own app forever, or merge into the staff app after the trial | Trial first, as Scan SIMs did; decide in phase 6 |
-| D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | Not in v1. Decide after phase 1's numbers: worth it only if photos fail often in the browser |
+| D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | Not in v1. **Phase 1's input:** the browser failed 4 of 144 specimen photos, all both small and blurred, which a server would read no better from the same pixels; everything else read. Revisit only if the field test (§8, phones and real documents) fails often |
 | D10 | What erasure means: "unreadable at once, gone from backups within 14 days" (data keys in the database), or keys kept outside the database and its backups (gone at once everywhere) | The first, stated plainly in the DPIA; the second only if the DPO requires it |
