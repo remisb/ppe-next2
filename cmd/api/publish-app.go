@@ -142,8 +142,8 @@ const staleAfter = time.Hour
 // pruneApps removes the versions launcher.Service.Prune drops from the
 // registry, then their files; then what no version names: a killed publish's
 // folder under .incoming/, and a version folder the registry does not know
-// (which Caddy would otherwise go on serving). A folder that will not go is
-// reported, not fatal.
+// (which Caddy would otherwise go on serving), and an app's folder left empty.
+// A folder that will not go is reported, not fatal.
 func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) error {
 	removed, err := svc.launcher.Prune(ctx)
 	if err != nil {
@@ -191,6 +191,21 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 			continue
 		}
 		fmt.Fprintf(out, "%s, which no version names, removed\n", rel)
+	}
+	// An app's folder with no version left in it (all pruned, or strays
+	// removed), as old: os.Remove takes only an empty one.
+	for _, profile := range launcher.Profiles {
+		apps, _ := filepath.Glob(filepath.Join(cfg.AppsDir, string(profile), "*"))
+		for _, dir := range apps {
+			info, err := os.Stat(dir)
+			if err != nil || !info.IsDir() || time.Since(info.ModTime()) < staleAfter {
+				continue
+			}
+			if os.Remove(dir) == nil {
+				rel, _ := filepath.Rel(cfg.AppsDir, dir)
+				fmt.Fprintf(out, "%s, empty, removed\n", rel)
+			}
+		}
 	}
 	return nil
 }

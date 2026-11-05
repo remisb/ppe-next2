@@ -286,7 +286,8 @@ tests and build, and is then removed.
   the app's lock so no channel moves onto one meanwhile (`PruneVersions`), recorded as one
   `app.versions_pruned` by no one, then their folders. A removed version's address answers 404.
   It then removes what no version names once it is an hour old (younger may be a publish under
-  way): folders under `.incoming/` left by a killed publish, and `<profile>/<slug>/<version>`
-  folders the registry does not know, which Caddy would go on serving.
+  way): folders under `.incoming/` left by a killed publish, `<profile>/<slug>/<version>`
+  folders the registry does not know, which Caddy would go on serving, and an app's
+  `<profile>/<slug>/` folder left empty.
 - Published builds are not backed up: they are rebuilt from git (`docs/backups.md`), since
   publishing a recorded version again writes its missing files.

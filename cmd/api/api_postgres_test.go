@@ -2314,14 +2314,17 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	}
 
 	// What no version names goes once it is an hour old: a killed publish's
-	// folder and a version folder the registry does not know. A fresh one may
-	// be a publish under way, and stays.
+	// folder, a version folder the registry does not know, and an app's empty
+	// folder. A fresh one may be a publish under way, and stays.
 	old := time.Now().Add(-2 * time.Hour)
 	stray := map[string]time.Time{
 		"/.incoming/sim-scan-123":            old,
 		"/device/sim-scan/2026.10.01-gone":   old,
 		"/standard/size-helper/2026.10.01-x": old,
 		"/device/sim-scan/2026.10.02-fresh":  time.Now(),
+		// An app's folder with nothing left in it, and one still being filled.
+		"/standard/retired-app":  old,
+		"/standard/new-app-here": time.Now(),
 	}
 	for dir, at := range stray {
 		if err := os.MkdirAll(cfg.AppsDir+dir, 0o755); err != nil {
