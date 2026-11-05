@@ -83,11 +83,14 @@ type App struct {
 	Stage Stage  `json:"stage"`
 	Names Names  `json:"names"`
 	// AnyOf: seen by a user holding any of these; none, by every signed-in user.
-	AnyOf           []role.Permission `json:"any_of"`
-	Position        int               `json:"position"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
-	UpdatedByUserID *uuid.UUID        `json:"updated_by_user_id"`
+	AnyOf    []role.Permission `json:"any_of"`
+	Position int               `json:"position"`
+	// StableFollowsDeploys: a deploy's publish to Preview moves Stable too
+	// (migration 0044); for a published app no one tries first.
+	StableFollowsDeploys bool       `json:"stable_follows_deploys"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+	UpdatedByUserID      *uuid.UUID `json:"updated_by_user_id"`
 }
 
 // Fields are what Manage apps edits; the slug and kind are set once.

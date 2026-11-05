@@ -3,7 +3,6 @@ const shell = {
   appName: 'Scan SIMs',
   signInTagline: 'Add newly received SIMs from their cards, for Workwear & Equipment.',
   mainNav: 'Main',
-  skipToContent: 'Skip to content',
   scan: 'Scan',
   find: 'PIN and PUK',
   simCards: 'SIM Cards',

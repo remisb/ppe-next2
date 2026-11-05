@@ -24,8 +24,9 @@ import { permissionLabel } from '@/lib/roles'
  * A published app's versions and channels (ADR 0006, phase 3): which version
  * each channel opens and who sees it; Make Stable, Beta or Preview on any
  * version (promoting, or rolling back to an older one), and variants with
- * their own label and audience. An app on an address of its own has none,
- * and says how one is published.
+ * their own label and audience. Stable follows deploys moves Stable with
+ * every deploy; off, a note says when Preview is newer than Stable. An app on
+ * an address of its own has none, and says how one is published.
  */
 export function AppReleases({ app, timeZone, onChanged }: { app: LauncherApp; timeZone: string | undefined; onChanged: () => void }) {
   const { client } = useApi()
@@ -35,6 +36,26 @@ export function AppReleases({ app, timeZone, onChanged }: { app: LauncherApp; ti
   const [variant, setVariant] = useState<AppChannel | 'new' | null>(null)
   const channels = releases.data?.channels ?? []
   const versions = releases.data?.versions ?? []
+
+  const stable = channels.find((c) => c.name === 'stable')
+  const preview = channels.find((c) => c.name === 'preview')
+  // A deploy reaches only Preview: say so while Stable is behind it.
+  // Ticked at once; put back if saving fails.
+  const [follows, setFollows] = useState(app.stable_follows_deploys)
+  useEffect(() => setFollows(app.stable_follows_deploys), [app.stable_follows_deploys])
+  const behind = !follows && stable && preview && preview.version_id !== stable.version_id && preview.published_at > stable.published_at
+  const follow = (on: boolean) => {
+    setFollows(on)
+    void action.run(async () => {
+      try {
+        await client.apps.setStableFollowsDeploys(app.slug, on)
+      } catch (err) {
+        setFollows(!on)
+        throw err
+      }
+      onChanged()
+    })
+  }
 
   const point = (name: string, version: AppVersion) =>
     void action.run(async () => {
@@ -62,6 +83,23 @@ export function AppReleases({ app, timeZone, onChanged }: { app: LauncherApp; ti
                 {t.apps.addVariant}
               </Button>
             </div>
+            <label className="flex min-h-11 items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-5 shrink-0 accent-primary"
+                checked={follows}
+                onChange={(e) => follow(e.target.checked)}
+              />
+              <span>
+                <span className="font-medium">{t.apps.stableFollowsDeploys}</span>
+                <span className="block text-xs text-muted-foreground">{t.apps.stableFollowsDeploysHint}</span>
+              </span>
+            </label>
+            {behind ? (
+              <p role="status" className="rounded-lg bg-warning/10 px-3 py-2 text-sm">
+                {t.apps.previewAhead(preview.version)}
+              </p>
+            ) : null}
             <ul className="flex flex-col gap-2">
               {channels.map((c) => (
                 <li key={c.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border p-3 text-sm">

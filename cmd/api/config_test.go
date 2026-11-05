@@ -96,6 +96,14 @@ func TestConfigValidate(t *testing.T) {
 	if err := pub.validate(); err != nil {
 		t.Errorf("-publish-app needs only the database, the folder and the version: %v", err)
 	}
+	prune := config{DBDSN: "postgres://x", DBMaxConns: 1, PruneApps: true}
+	if prune.validate() == nil {
+		t.Error("-prune-apps without API_APPS_DIR should fail")
+	}
+	prune.AppsDir = t.TempDir()
+	if err := prune.validate(); err != nil {
+		t.Errorf("-prune-apps needs only the database and the folder: %v", err)
+	}
 	withDir := ok
 	withDir.AppsDir = t.TempDir()
 	if err := withDir.validate(); err != nil {

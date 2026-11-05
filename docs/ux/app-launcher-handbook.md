@@ -4,7 +4,7 @@ How App Launcher works today, how people use it, how an app joins it, how new
 apps should be designed, and what should change next. For everyone who uses the
 apps, administers them or builds them.
 
-As of 2026-11-05, production `b276a0a`. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
+As of 2026-11-05: production `b276a0a`; improvements 1, 3, 5 and 6 built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
 Rules and routes: [the spec](../specs/app-launcher.md). The research and options
 that led here: [the decision guide](app-launcher.md). Terms: glossary §13.
 
@@ -64,8 +64,9 @@ plus a sentence on what you were trying to do. The app's owner reads it on Manag
 **Testers.** With the **Testers** role, turn on **Show apps in testing** to see POC and
 In development apps. When an app has versions you may try, its **⋯** shows **Versions**:
 pick **Beta**, **Preview** or a named variant and the app opens on it for you from then
-on. Inside the app an amber stripe says *You are using Beta · Version 2026.11.05-…*
-with **Back to Stable**.
+on, even from a bookmark or another app's link. Inside the app an amber stripe says
+*You are using Beta · Version 2026.11.05-…*, with a switch between your channels and
+**Back to Stable**.
 
 ## 4. For administrators: Manage apps
 
@@ -88,7 +89,7 @@ are for Testers only; **Retired** hides the tile from everyone and keeps its his
 
 | Channel | Who sees it | Moves when |
 |---|---|---|
-| **Stable** | Everyone who sees the tile | You choose **Make Stable** (the first publish sets it once) |
+| **Stable** | Everyone who sees the tile | You choose **Make Stable** (the first publish sets it once), or every deploy while **Stable follows deploys** is on |
 | **Beta** | Testers, or the permissions you name | You choose **Make Beta** |
 | **Preview** | Testers, or the permissions you name | Every deploy publishes the deployed build here |
 | *Variant* (e.g. `photos-first`) | The permissions you name, else Testers | **Add variant** / **Make …** |
@@ -96,7 +97,9 @@ are for Testers only; **Retired** hides the tile from everyone and keeps its his
 Recipes:
 
 1. **Ship a new build to everyone.** Deploy (it lands on Preview). Try it yourself
-   (`/apps/sim-scan/preview/`), then ⋯ beside the version → **Make Stable**.
+   (`/apps/sim-scan/preview/`), then ⋯ beside the version → **Make Stable**. A note
+   says when Preview is ahead of Stable. For an app no one tries first, turn on
+   **Stable follows deploys** and every deploy reaches everyone.
 2. **Let a few people try it first.** **Make Beta** on the new version; give those people
    the Testers role, or name a permission on the channel. They choose Beta under
    **Versions** in the launcher.
@@ -157,7 +160,9 @@ on standard input (≤ 5000 files, 300 MB, no links, nothing outside it), moves 
 `API_APPS_DIR/<profile>/<slug>/<version>/` and records it. A version is never replaced.
 `make prod-up` publishes `PUBLISHED_APPS` from the deployed image to Preview;
 `make prod-publish APP= REF= [CHANNEL=]` builds any git ref on the droplet and publishes it.
-Builds are not backed up: they are rebuilt from git.
+Then `prod-up` prunes: per app it keeps every version a channel points at and the newest
+five. It publishes nothing from a checkout with local changes. Builds are not backed up:
+they are rebuilt from git.
 
 **In every app.** `@ppe/app-shell` sends `X-PPE-App: <slug>` (and `X-PPE-App-Version` from a
 published page), so the Audit log, Security, System's errors and Usage name the app and
@@ -188,8 +193,8 @@ another team or another feature.
 2. `vite.config.ts`: `base: command === 'build' ? './' : '/apps/<slug>/'`.
 3. `public/ppe-app.json`: `{"slug": "<slug>", "capabilities": []}`; add capabilities only when needed (they widen the policy).
 4. Never read `import.meta.env.BASE_URL` for addresses: use `basePath` (router) and `filesBase` (your own static files).
-5. Render `<ChannelStripe slug="<slug>" />` at the top of the frame and an **Apps** entry for users with several apps.
-6. Let the screen's `PageHeader` be the only sticky header (Scan SIMs' fix, `8eb4fc0`).
+5. Wrap it in `@ppe/launcher`'s `SignedIn` and `AppFrame` (the channel stripe, a way back, the Apps entry, Sign out, tabs) instead of building a frame.
+6. Let each screen's `PageHeader` be the only sticky header; `AppFrame`'s bar scrolls away.
 7. Register the tile on Manage apps (*On this site*, href `/apps/<slug>/`), or add it to `defaults.go` if every installation needs it.
 8. Add the slug to `PUBLISHED_APPS` (Makefile), to the build filters and a `COPY` line in `web/Dockerfile`, a dev proxy rule (and port) in `apps/workwear/vite.config.ts`, and its Vite server and port in the e2e config.
 9. Tests: the app's unit tests, its `csp.test.ts`, an e2e step (Vite mode serves the dev server; Caddy mode publishes it).
@@ -211,7 +216,7 @@ and tested against Caddy; users get exactly their apps with no new sign-in.
 
 What does not, in order of impact:
 
-1. **Deploys do not reach users by themselves.** A deploy moves Preview only, so a fix
+1. **Deploys do not reach users by themselves.** *Eased: Stable follows deploys and the Preview-ahead note (improvement 1).* A deploy moves Preview only, so a fix
    reaches nobody until someone remembers **Make Stable**. This happened on 2026-11-05:
    the Scan SIMs header fix was deployed but Stable stayed on the old build. Safe, but easy to forget.
 2. **"No config per app" is not true yet.** A new published app still needs edits in
@@ -221,12 +226,12 @@ What does not, in order of impact:
 3. **A lot of machinery for one app.** Volume, API page route, rewriting, two policy
    copies, publish command, build script, three tables: justified only if a second and
    third published app follow. Today Scan SIMs alone uses it.
-4. **Each app copies its own frame.** Workwear, Administration, Scan SIMs and the launcher
+4. **Each app copies its own frame.** *Fixed for small apps: `AppFrame` (improvement 3); the staff app, Administration and the launcher keep theirs.* Workwear, Administration, Scan SIMs and the launcher
    each build header, Apps entry, sign-out and gates. The overlapping-headers bug came
    from exactly this: a shared screen header met a copied frame no test scrolled.
-5. **Versions are hard to find.** A tester must open ⋯ on the tile to discover Beta;
+5. **Versions are hard to find.** *Eased: the choice is honoured at the app's own address and the stripe switches channels (improvement 5); discovering Beta still needs ⋯.* A tester must open ⋯ on the tile to discover Beta;
    bookmarks and the staff app's links always open Stable, whatever the tester chose.
-6. **Old versions pile up.** Nothing prunes the `published` volume (about 16 MB per Scan
+6. **Old versions pile up.** *Fixed: pruning and the dirty-checkout check (improvement 6).* Nothing prunes the `published` volume (about 16 MB per Scan
    SIMs build); a build from a dirty checkout gets a clean-looking version name.
 7. **Two sources for tiles.** Default tiles live in code and in the database; renaming a
    default in code does not rename it where it already exists.
@@ -239,19 +244,19 @@ What does not, in order of impact:
 
 Sorted by value for effort. Each keeps or reduces moving parts.
 
-| # | Change | Fixes | Effort |
-|---|---|---|---|
-| 1 | **Promote after deploy, per app**: a switch "Stable follows deploys" on Manage apps (on for apps with no testers); otherwise the Overview lists "Preview is newer than Stable for N days" | 1 | S |
-| 2 | **Discover published apps from the build**: any `web/apps/*/public/ppe-app.json` is published; Dockerfile copies `apps/*/dist` with a manifest; one generic Vite proxy and e2e server entry per manifest | 2 | M |
-| 3 | **One shared frame for small apps**: `AppFrame` in `@ppe/app-shell` (bar that scrolls away, tabs, Apps entry, ChannelStripe, sign-out, gates) used by Scan SIMs and the launcher, with a scroll test | 4 | M |
-| 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from Scan SIMs | 2 | S |
-| 5 | **Honour the choice everywhere**: `/apps/<slug>/` redirects a tester to their chosen channel; the stripe also offers **Versions** | 5 | S |
-| 6 | **Prune**: `api -prune-apps` keeps every version a channel points at plus the last N, run by `prod-up`; refuse dirty builds in `prod-up` | 6 | S |
-| 7 | **Defaults as a migration-like seed**: insert once by key, then the database is the only source (drop the at-start-up sync) | 7 | S |
-| 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M |
-| 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S |
+| # | Change | Fixes | Effort | Status |
+|---|---|---|---|---|
+| 1 | **Promote after deploy, per app**: a switch "Stable follows deploys" on Manage apps (on for apps with no testers); otherwise the Overview lists "Preview is newer than Stable for N days" | 1 | S | Built 2026-11-05 |
+| 2 | **Discover published apps from the build**: any `web/apps/*/public/ppe-app.json` is published; Dockerfile copies `apps/*/dist` with a manifest; one generic Vite proxy and e2e server entry per manifest | 2 | M | Proposed |
+| 3 | **One shared frame for small apps**: `AppFrame` in `@ppe/app-shell` (bar that scrolls away, tabs, Apps entry, ChannelStripe, sign-out, gates) used by Scan SIMs and the launcher, with a scroll test | 4 | M | Built 2026-11-05 |
+| 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from Scan SIMs | 2 | S | Proposed |
+| 5 | **Honour the choice everywhere**: `/apps/<slug>/` redirects a tester to their chosen channel; the stripe also offers **Versions** | 5 | S | Built 2026-11-05 |
+| 6 | **Prune**: `api -prune-apps` keeps every version a channel points at plus the last N, run by `prod-up`; refuse dirty builds in `prod-up` | 6 | S | Built 2026-11-05 |
+| 7 | **Defaults as a migration-like seed**: insert once by key, then the database is the only source (drop the at-start-up sync) | 7 | S | Proposed |
+| 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M | Proposed |
+| 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S | Proposed |
 
-**Simplicity check before building more.** If no second published app is planned in the
-next quarter, do 1, 3, 5 and 6 only and stop: they make today's single published app
-safe and invisible to users. Do 2 and 4 the week a second app is approved; until then the
+**Simplicity check before building more.** 1, 3, 5 and 6 are built: they make today's single
+published app safe and invisible to users. If no second published app is planned in the
+next quarter, stop here. Do 2 and 4 the week a second app is approved; until then the
 handful of manual edits is cheaper than the automation.

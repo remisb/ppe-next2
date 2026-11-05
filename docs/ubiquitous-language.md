@@ -1063,6 +1063,9 @@ The front door of the company's apps (ADR 0006; rules in
   **Make Stable** (and Beta, Preview) points it at a version: promoting is making a newer
   one Stable, rolling back an older one. Stable is for whoever sees the app; the others for
   testers or the permissions they name. Not "branch", "track" or "environment".
+- **Stable follows deploys:** a published app's switch on Manage apps: each deploy's build
+  becomes Stable as well as Preview. **UI:** **Stable follows deploys** (LT *Stabili seka
+  diegimus*, RU *Стабильная следует за развёртываниями*).
 - **Variant:** another design of an app tried side by side, a channel with its own name in
   addresses (`photos-first`), label and audience. **UI:** **Add variant** (LT *Pridėti
   variantą*, RU *Добавить вариант*).

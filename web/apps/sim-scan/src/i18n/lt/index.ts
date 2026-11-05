@@ -4,7 +4,6 @@ const shell: Messages['shell'] = {
   appName: 'Skenuoti SIM',
   signInTagline: 'Pridėkite naujai gautas SIM iš jų kortelių, sistemai „Darbo drabužiai ir įranga“.',
   mainNav: 'Pagrindinis',
-  skipToContent: 'Pereiti prie turinio',
   scan: 'Skenuoti',
   find: 'PIN ir PUK',
   simCards: 'SIM kortelės',

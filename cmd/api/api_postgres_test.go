@@ -6,10 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -2166,5 +2168,41 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	}
 	if rec := get("/apps/sim-scan/photos-first/"); !strings.Contains(rec.Body.String(), `<meta name="ppe-channel" content="photos-first">`) {
 		t.Errorf("the variant = %s", rec.Body)
+	}
+
+	// Stable follows deploys: a publish to Preview moves Stable too.
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/stable-follows-deploys", manager, map[string]bool{"on": true}); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager turning it on = %d", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/stable-follows-deploys", admin, map[string]bool{"on": true}); rec.Code != http.StatusOK ||
+		!strings.Contains(rec.Body.String(), `"stable_follows_deploys":true`) {
+		t.Fatalf("turning it on = %d %s", rec.Code, rec.Body)
+	}
+	stableIs := func() string {
+		return regexp.MustCompile(`ppe-version" content="([^"]+)"`).FindStringSubmatch(get("/apps/sim-scan/").Body.String())[1]
+	}
+	for i := 6; i <= 12; i++ {
+		if _, err := publish("sim-scan", fmt.Sprintf("2026.11.%02d-v%d", i, i), "preview", scanSIMs); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := stableIs(); got != "2026.11.12-v12" {
+		t.Errorf("Stable after a deploy = %s", got)
+	}
+
+	// Pruning keeps what a channel opens (the variant's 2026.11.04-aaa) and the newest five.
+	var out bytes.Buffer
+	if err := pruneApps(ctx, api.svc, cfg, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "sim-scan 2026.11.06-v6 removed") || !strings.Contains(out.String(), "sim-scan 2026.11.07-v7 removed") ||
+		strings.Contains(out.String(), "2026.11.04-aaa") || strings.Contains(out.String(), "2026.11.08-v8") {
+		t.Errorf("pruned %s", out.String())
+	}
+	if _, err := os.Stat(cfg.AppsDir + "/device/sim-scan/2026.11.06-v6"); !os.IsNotExist(err) {
+		t.Errorf("a pruned version's files: %v", err)
+	}
+	if rec := get("/apps/sim-scan/@2026.11.06-v6/"); rec.Code != http.StatusNotFound {
+		t.Errorf("a pruned version's address = %d", rec.Code)
 	}
 }

@@ -692,6 +692,9 @@ func (stubLauncher) Versions(context.Context, uuid.UUID) ([]launcher.Version, er
 	return []launcher.Version{}, nil
 }
 func (stubLauncher) AddVersion(context.Context, launcher.Version, audit.Event) error { return nil }
+func (stubLauncher) PruneVersions(context.Context, uuid.UUID, launcher.PruneMutation) ([]launcher.Version, error) {
+	return []launcher.Version{}, nil
+}
 func (stubLauncher) Channels(context.Context) ([]launcher.Channel, error) {
 	return []launcher.Channel{}, nil
 }
@@ -948,6 +951,7 @@ var policy = map[string]rule{
 	"PUT /api/v1/launcher/choices/{slug}":                                       {"", "any"},
 	"GET /api/v1/apps/{slug}/releases":                                          {role.AppsManage, "admins"},
 	"PUT /api/v1/apps/{slug}/channels/{name}":                                   {role.AppsManage, "admins"},
+	"PUT /api/v1/apps/{slug}/stable-follows-deploys":                            {role.AppsManage, "admins"},
 	"GET /apps/{slug}/{rest...}":                                                {"", "public"},
 	"GET /api/v1/apps":                                                          {role.AppsManage, "admins"},
 	"POST /api/v1/apps":                                                         {role.AppsManage, "admins"},

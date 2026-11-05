@@ -28,7 +28,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const columns = `id, slug, kind, parent, app_group, icon, color, href, tier, stage, name_en, name_lt, name_ru, any_of,
-	position, created_at, updated_at, updated_by_user_id`
+	position, stable_follows_deploys, created_at, updated_at, updated_by_user_id`
 
 const byPosition = ` ORDER BY position, slug`
 
@@ -36,7 +36,7 @@ func scan(row pgx.Row) (App, error) {
 	var a App
 	var anyOf []string
 	err := row.Scan(&a.ID, &a.Slug, &a.Kind, &a.Parent, &a.Group, &a.Icon, &a.Color, &a.Href, &a.Tier, &a.Stage,
-		&a.Names.EN, &a.Names.LT, &a.Names.RU, &anyOf, &a.Position, &a.CreatedAt, &a.UpdatedAt, &a.UpdatedByUserID)
+		&a.Names.EN, &a.Names.LT, &a.Names.RU, &anyOf, &a.Position, &a.StableFollowsDeploys, &a.CreatedAt, &a.UpdatedAt, &a.UpdatedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return App{}, ErrNotFound
 	}
@@ -126,10 +126,12 @@ func (r *PostgresRepository) Update(ctx context.Context, slug string, m Mutation
 		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE launcher_apps SET parent = $2, app_group = $3, icon = $4, color = $5, href = $6, tier = $7, stage = $8,
-				name_en = $9, name_lt = $10, name_ru = $11, any_of = $12, updated_at = $13, updated_by_user_id = $14
+				name_en = $9, name_lt = $10, name_ru = $11, any_of = $12, updated_at = $13, updated_by_user_id = $14,
+				stable_follows_deploys = $15
 			WHERE id = $1`,
 			cur.ID, next.Parent, next.Group, next.Icon, next.Color, next.Href, next.Tier, next.Stage,
-			next.Names.EN, next.Names.LT, next.Names.RU, role.Strings(next.AnyOf), next.UpdatedAt, next.UpdatedByUserID); err != nil {
+			next.Names.EN, next.Names.LT, next.Names.RU, role.Strings(next.AnyOf), next.UpdatedAt, next.UpdatedByUserID,
+			next.StableFollowsDeploys); err != nil {
 			return err
 		}
 		out = next
@@ -190,17 +192,19 @@ func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps [
 
 const versionColumns = `id, app_id, version, profile, capabilities, commit, published_at, published_by_user_id`
 
+func scanVersion(row pgx.CollectableRow) (Version, error) {
+	var v Version
+	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
+	v.PublishedAt = v.PublishedAt.UTC()
+	return v, err
+}
+
 func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Version, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+versionColumns+` FROM launcher_versions WHERE app_id = $1 ORDER BY published_at DESC, version DESC`, app)
 	if err != nil {
 		return nil, err
 	}
-	out, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Version, error) {
-		var v Version
-		err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
-		v.PublishedAt = v.PublishedAt.UTC()
-		return v, err
-	})
+	out, err := pgx.CollectRows(rows, scanVersion)
 	if out == nil {
 		out = []Version{}
 	}
@@ -215,6 +219,49 @@ func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit
 		}
 		return audit.Insert(ctx, tx, ev)
 	}))
+}
+
+func (r *PostgresRepository) PruneVersions(ctx context.Context, app uuid.UUID, m PruneMutation) ([]Version, error) {
+	var removed []Version
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		// The app's row first, as PutChannel locks it: no channel moves onto a version while it goes.
+		if _, err := tx.Exec(ctx, `SELECT 1 FROM launcher_apps WHERE id = $1 FOR UPDATE`, app); err != nil {
+			return err
+		}
+		rows, err := tx.Query(ctx, `SELECT `+versionColumns+` FROM launcher_versions WHERE app_id = $1 ORDER BY published_at DESC, version DESC`, app)
+		if err != nil {
+			return err
+		}
+		versions, err := pgx.CollectRows(rows, scanVersion)
+		if err != nil {
+			return err
+		}
+		rows, err = tx.Query(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id WHERE c.app_id = $1`+channelOrder, app)
+		if err != nil {
+			return err
+		}
+		channels, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Channel, error) { return scanChannel(row) })
+		if err != nil {
+			return err
+		}
+		remove, ev, err := m(versions, channels)
+		if err != nil || len(remove) == 0 {
+			return err
+		}
+		ids := make([]uuid.UUID, len(remove))
+		for i, v := range remove {
+			ids[i] = v.ID
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM launcher_versions WHERE app_id = $1 AND id = ANY($2)`, app, ids); err != nil {
+			return err
+		}
+		removed = remove
+		if ev == nil {
+			return nil
+		}
+		return audit.Insert(ctx, tx, *ev)
+	})
+	return removed, translate(err)
 }
 
 // channelColumns are a channel's (c), with its version's name and date (v).

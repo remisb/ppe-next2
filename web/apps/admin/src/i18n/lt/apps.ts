@@ -99,4 +99,7 @@ export const apps: AppsText = {
   variantTaken: 'Šis pavadinimas užimtas: pasirinkite kitą.',
   chooseVersion: 'Pasirinkite versiją.',
   actionsColumn: 'Veiksmai',
+  stableFollowsDeploys: 'Stabili seka diegimus',
+  stableFollowsDeploysHint: 'Kiekvienas diegimas savo versiją padaro stabilia visiems, kartu ir peržiūros. Palikite išjungtą, kad bandytojai pirma išbandytų.',
+  previewAhead: (version) => `Peržiūroje naujesnė versija nei stabili: ${version}. Kai ji bus paruošta, padarykite ją stabilia.`,
 }

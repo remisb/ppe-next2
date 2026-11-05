@@ -120,6 +120,9 @@ type config struct {
 	PublishVersion string
 	PublishChannel string
 	PublishCommit  string
+	// PruneApps removes published versions no channel points at beyond each
+	// app's newest launcher.KeepVersions, files and all, and exits.
+	PruneApps bool
 }
 
 // loadConfig reads env vars, then lets flags override the non-secret ones.
@@ -193,6 +196,7 @@ func loadConfig(args []string) (config, error) {
 	fs.StringVar(&c.PublishVersion, "version", "", "with -publish-app: the version, YYYY.MM.DD-<commit>")
 	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta, preview or a variant)")
 	fs.StringVar(&c.PublishCommit, "from-commit", "", "with -publish-app: the commit it was built from")
+	fs.BoolVar(&c.PruneApps, "prune-apps", false, "remove published versions no channel points at, beyond each app's newest, and exit")
 	if err := fs.Parse(args); err != nil {
 		return c, err
 	}
@@ -218,6 +222,12 @@ func (c config) validate() error {
 		return errors.Join(errs...)
 	}
 	if c.VerifyAudit || c.Upkeep {
+		return errors.Join(errs...)
+	}
+	if c.PruneApps {
+		if c.AppsDir == "" {
+			errs = append(errs, errors.New("-prune-apps needs API_APPS_DIR"))
+		}
 		return errors.Join(errs...)
 	}
 	if c.PublishApp != "" {

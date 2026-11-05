@@ -154,6 +154,8 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['label_en', 'text'],
   ['label_lt', 'text'],
   ['label_ru', 'text'],
+  ['versions', 'list'],
+  ['stable_follows_deploys', 'bool'],
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */

@@ -3,6 +3,7 @@ package launcher
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 
@@ -175,5 +176,69 @@ func TestReservedSlugs(t *testing.T) {
 		if err := p.Validate(); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%s: %v", slug, err)
 		}
+	}
+}
+
+func TestStableFollowsDeploys(t *testing.T) {
+	repo := newMem()
+	svc := NewService(repo)
+	ctx, admin := context.Background(), uuid.New()
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetStableFollowsDeploys(ctx, "crew", true, admin); err == nil {
+		t.Error("a linked site follows deploys")
+	}
+	a, err := svc.SetStableFollowsDeploys(ctx, "sim-scan", true, admin)
+	if err != nil || !a.StableFollowsDeploys {
+		t.Fatalf("SetStableFollowsDeploys = %+v, %v", a, err)
+	}
+	events := len(repo.events)
+	if _, err := svc.SetStableFollowsDeploys(ctx, "sim-scan", true, admin); err != nil || len(repo.events) != events {
+		t.Errorf("no change recorded %d events, %v", len(repo.events)-events, err)
+	}
+	// A deploy's Preview moves Stable too; a publish to Beta does not.
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelPreview), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Publish(ctx, scanSIMs("2026.11.06-ccc", ChannelBeta), nil); err != nil {
+		t.Fatal(err)
+	}
+	_, chans, _ := svc.Releases(ctx, "sim-scan")
+	if got := names(chans); !slices.Equal(got, []string{"stable=2026.11.05-bbb", "preview=2026.11.05-bbb", "beta=2026.11.06-ccc"}) {
+		t.Errorf("channels %v", got)
+	}
+}
+
+func TestPrune(t *testing.T) {
+	repo := newMem()
+	svc := NewService(repo)
+	ctx := context.Background()
+	for i := 1; i <= 8; i++ {
+		if _, err := svc.Publish(ctx, scanSIMs(fmt.Sprintf("2026.11.%02d-v%d", i, i), ChannelPreview), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Stable stays on the first (set by the first publish), Preview on the eighth.
+	removed, err := svc.Prune(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := []string{}
+	for _, p := range removed {
+		got = append(got, p.Slug+" "+p.Version.Version)
+	}
+	if !slices.Equal(got, []string{"sim-scan 2026.11.03-v3", "sim-scan 2026.11.02-v2"}) {
+		t.Errorf("pruned %v", got)
+	}
+	vs, _, _ := svc.Releases(ctx, "sim-scan")
+	if len(vs) != KeepVersions+1 || vs[len(vs)-1].Version != "2026.11.01-v1" {
+		t.Errorf("kept %d, oldest %s", len(vs), vs[len(vs)-1].Version)
+	}
+	if last := repo.events[len(repo.events)-1]; last.Event != EventVersionsPruned || last.ActorUserID != nil {
+		t.Errorf("last event %s by %v", last.Event, last.ActorUserID)
+	}
+	if again, err := svc.Prune(ctx); err != nil || len(again) != 0 {
+		t.Errorf("pruning again = %v, %v", again, err)
 	}
 }

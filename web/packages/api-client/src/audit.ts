@@ -66,6 +66,7 @@ export const AUDIT_EVENTS = [
   'app.version_published',
   'app.channel_moved',
   'app.channel_changed',
+  'app.versions_pruned',
   'access_review.completed',
   'audit.exported',
   'audit.purged',

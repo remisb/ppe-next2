@@ -4,7 +4,6 @@ const shell: Messages['shell'] = {
   appName: 'Сканировать SIM',
   signInTagline: 'Добавляйте полученные SIM с их карточек, для «Спецодежда и снаряжение».',
   mainNav: 'Главное',
-  skipToContent: 'Перейти к содержимому',
   scan: 'Сканировать',
   find: 'PIN и PUK',
   simCards: 'SIM-карты',

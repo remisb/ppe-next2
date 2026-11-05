@@ -53,7 +53,9 @@ launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-laun
 builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
 `public/ppe-app.json` (`slug`, `capabilities`), and reads where it is mounted and where its
 files are from `@ppe/routing`'s `basePath` and `filesBase` (the API's meta tags), never from
-`import.meta.env.BASE_URL`; its frame shows `@ppe/launcher`'s `ChannelStripe`. A phone's camera needs a secure address:
+`import.meta.env.BASE_URL`; its frame is `@ppe/launcher`'s `SignedIn` and `AppFrame` (the
+channel stripe, a way back, the Apps entry, Sign out, tabs), never one of its own: the frame's
+bar scrolls away so the screen's `PageHeader` is the only sticky header. A phone's camera needs a secure address:
 `VITE_HTTPS=1 pnpm --dir apps/sim-scan dev` serves it on the LAN over https with a throwaway
 certificate. App Launcher is a fourth, at `/apps/` (`launcherHref`; port 5186,
 `pnpm --dir apps/launcher dev`, proxied from 5180 for `/apps` and `/apps/…` only).

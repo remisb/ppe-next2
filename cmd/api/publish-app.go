@@ -95,6 +95,28 @@ func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out
 	return err
 }
 
+// pruneApps removes the versions launcher.Service.Prune drops from the
+// registry, then their files. A folder that will not go is reported, not
+// fatal: no version names it any more.
+func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) error {
+	removed, err := svc.launcher.Prune(ctx)
+	if err != nil {
+		return err
+	}
+	for _, p := range removed {
+		dir := filepath.Join(cfg.AppsDir, string(p.Version.Profile), p.Slug, p.Version.Version)
+		if err := os.RemoveAll(dir); err != nil {
+			fmt.Fprintf(out, "%s %s removed; its files stay: %v\n", p.Slug, p.Version.Version, err)
+			continue
+		}
+		fmt.Fprintf(out, "%s %s removed\n", p.Slug, p.Version.Version)
+	}
+	if len(removed) == 0 {
+		_, err = fmt.Fprintln(out, "no published version to remove")
+	}
+	return err
+}
+
 // untar writes the tar's directories and regular files under dir: no
 // absolute names, none outside dir, no links or devices, within the limits.
 func untar(in io.Reader, dir string) error {

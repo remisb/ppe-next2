@@ -174,17 +174,28 @@ the first; every other app keeps its fixed address (and its tile's `href`).
 - **In the app.** `@ppe/routing`'s `basePath`, `filesBase`, `appVersion` and `appChannel` read
   the meta tags (else Vite's `BASE_URL`); `@ppe/app-shell` sends `X-PPE-App-Version`, which
   System's error list records (`error_events.app_version`). `@ppe/launcher`'s `ChannelStripe`
-  shows, off Stable, the channel and version with **Back to Stable** (which also makes Stable the
-  user's choice), and moves a user who does not see the channel (or, at a version's address,
-  is neither a tester nor holds `apps.manage`) to Stable.
+  shows, off Stable, the channel and version, a switch between the channels the user sees (three
+  or more) and **Back to Stable**; choosing one also makes it the user's choice. It moves a user
+  who does not see the channel (or, at a version's address, is neither a tester nor holds
+  `apps.manage`) to Stable, and one who opens the app's Stable address (`/apps/<slug>/…`, a
+  bookmark or a link from another app; not `/apps/<slug>/stable/…`) while having chosen another
+  channel they see, to that channel on the same screen (`chosenHref`).
+- **The frame.** A small app on this site uses `@ppe/launcher`'s `SignedIn` (the sign-in gates,
+  density, Confirm your password) and `AppFrame` (the stripe, its name, a way back, the Apps
+  entry, Sign out, its screens as tabs). The frame's bar scrolls away: each screen's
+  `PageHeader` is the only sticky header (two covered each other in Scan SIMs, fixed in
+  `8eb4fc0`; the e2e Scan SIMs step scrolls and checks it).
 - **Publishing.** `api -publish-app <slug> -version <v> [-channel <name>] [-from-commit <sha>]`
   reads a tar of `dist/` on standard input (at most 5000 files and 300 MB; no links, nothing
   outside it), needs `API_APPS_DIR`, checks the manifest against the slug and the app (here,
   an app), puts the files in place under `.incoming` then renames them, and records the version
   (publishing it again only points the channel); the first version of an app also becomes
-  Stable. A variant must be added on Manage apps before a publish names it.
+  Stable, and so does every version published to Preview while the app's **Stable follows
+  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). A
+  variant must be added on Manage apps before a publish names it.
   `make prod-up` publishes each app in `PUBLISHED_APPS` from the image's
-  `/srv/build/<app>` to Preview; `make prod-publish APP= REF= [CHANNEL=]` builds the app at a
+  `/srv/build/<app>` to Preview (and publishes nothing from a checkout with local changes:
+  `git describe --dirty`), then runs `api -prune-apps`; `make prod-publish APP= REF= [CHANNEL=]` builds the app at a
   git ref (`deploy/build-app.sh`, the ref's `web/Dockerfile` stage `app-dist`); `make
   publish-app APP= [CHANNEL=]` publishes a local `pnpm build` into a development
   `API_APPS_DIR`.
@@ -199,9 +210,15 @@ the first; every other app keeps its fixed address (and its tile's `href`).
   (`apps.manage`): each version's ⋯ has **Make Stable**, **Make Beta**, **Make Preview** and
   one per variant (promoting, or rolling back by making an older version Stable again);
   **Add variant** and a variant's **Edit** set its name (once), label, version and audience.
+  **Stable follows deploys** (`PUT /api/v1/apps/{slug}/stable-follows-deploys` `{"on"}`,
+  recorded as `app.changed`) is a switch above the channels; while it is off and Preview has a
+  newer version than Stable, a note says so.
 - **Development.** Scan SIMs' Vite server mounts it at `/apps/sim-scan/`, and the staff app's
   proxies `/apps/sim-scan` to it before the launcher's `/apps`. e2e publishes its build in
   Caddy mode (global setup, `API_APPS_DIR` a temporary folder) and drives a variant, Make
   Stable and its roll-back.
-- Published builds are not backed up: they are rebuilt from git (`docs/backups.md`). Old
-  versions stay until a prune command (not built).
+- **Pruning.** `api -prune-apps` (run by `make prod-up` after publishing) removes, per app, the
+  versions no channel points at beyond the newest `launcher.KeepVersions` (5): rows first, under
+  the app's lock so no channel moves onto one meanwhile (`PruneVersions`), recorded as one
+  `app.versions_pruned` by no one, then their folders. A removed version's address answers 404.
+- Published builds are not backed up: they are rebuilt from git (`docs/backups.md`).

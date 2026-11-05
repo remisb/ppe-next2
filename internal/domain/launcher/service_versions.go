@@ -16,7 +16,12 @@ const (
 	EventVersionPublished = "app.version_published"
 	EventChannelMoved     = "app.channel_moved"
 	EventChannelChanged   = "app.channel_changed"
+	EventVersionsPruned   = "app.versions_pruned"
 )
+
+// KeepVersions is how many of an app's newest versions Prune keeps besides
+// those a channel points at.
+const KeepVersions = 5
 
 // publishable is an app whose builds the API serves under /apps/<slug>/.
 func publishable(a App) error {
@@ -58,7 +63,8 @@ func (s *Service) CheckPublish(ctx context.Context, p PublishParams) (App, error
 
 // Publish records a published build (app.version_published), unless that
 // version is recorded already, and points p.Channel at it; an app with no
-// Stable yet gets Stable too. Actor is nil for a deploy's.
+// Stable yet gets Stable too, and so does an app whose Stable follows deploys
+// when it goes to Preview. Actor is nil for a deploy's.
 func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID) (Version, error) {
 	p.Slug, p.Channel = strings.TrimSpace(p.Slug), strings.TrimSpace(p.Channel)
 	a, err := s.CheckPublish(ctx, p)
@@ -92,7 +98,8 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		return Version{}, err
 	}
 	targets := []string{}
-	if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == ChannelStable }) {
+	if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == ChannelStable }) ||
+		(a.StableFollowsDeploys && p.Channel == ChannelPreview) {
 		targets = append(targets, ChannelStable)
 	}
 	if p.Channel != "" && !slices.Contains(targets, p.Channel) {
@@ -107,6 +114,75 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		}
 	}
 	return v, nil
+}
+
+// SetStableFollowsDeploys turns on or off whether a deploy's publish to
+// Preview moves Stable too (app.changed, with stable_follows_deploys).
+func (s *Service) SetStableFollowsDeploys(ctx context.Context, slug string, on bool, actor uuid.UUID) (App, error) {
+	if actor == uuid.Nil {
+		return App{}, fieldError("actor", "is required")
+	}
+	return s.repo.Update(ctx, slug, func(cur App) (App, []audit.Event, error) {
+		if err := publishable(cur); err != nil {
+			return App{}, nil, err
+		}
+		if cur.StableFollowsDeploys == on {
+			return cur, nil, nil
+		}
+		now := s.now()
+		ev, err := audit.New(s.newID(), &actor, EventChanged, auditEntity, cur.ID, now, follows{cur.StableFollowsDeploys}, follows{on})
+		if err != nil {
+			return App{}, nil, err
+		}
+		next := cur
+		next.StableFollowsDeploys, next.UpdatedAt, next.UpdatedByUserID = on, now, &actor
+		return next, []audit.Event{ev}, nil
+	})
+}
+
+// Pruned is a version Prune removed: its files go too.
+type Pruned struct {
+	Slug    string
+	Version Version
+}
+
+// Prune removes, from every app, the versions no channel points at beyond
+// the newest KeepVersions (app.versions_pruned, by no one), and returns them
+// so their files can go. A version's address then answers 404.
+func (s *Service) Prune(ctx context.Context) ([]Pruned, error) {
+	apps, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []Pruned{}
+	for _, a := range apps {
+		if a.Kind != KindApp {
+			continue
+		}
+		removed, err := s.repo.PruneVersions(ctx, a.ID, func(versions []Version, channels []Channel) ([]Version, *audit.Event, error) {
+			var remove []Version
+			names := []string{}
+			for i, v := range versions {
+				if i < KeepVersions || slices.ContainsFunc(channels, func(c Channel) bool { return c.VersionID == v.ID }) {
+					continue
+				}
+				remove = append(remove, v)
+				names = append(names, v.Version)
+			}
+			if len(remove) == 0 {
+				return nil, nil, nil
+			}
+			ev, err := audit.New(s.newID(), nil, EventVersionsPruned, auditEntity, a.ID, s.now(), nil, pruned{names})
+			return remove, &ev, err
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range removed {
+			out = append(out, Pruned{a.Slug, v})
+		}
+	}
+	return out, nil
 }
 
 // pointAt points a channel at v (app.channel_moved when it moves), keeping
@@ -338,6 +414,14 @@ type published struct {
 	Profile      Profile  `json:"profile"`
 	Capabilities []string `json:"capabilities"`
 	Commit       string   `json:"commit"`
+}
+
+type follows struct {
+	StableFollowsDeploys bool `json:"stable_follows_deploys"`
+}
+
+type pruned struct {
+	Versions []string `json:"versions"`
 }
 
 type channelAt struct {

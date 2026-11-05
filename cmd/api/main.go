@@ -142,6 +142,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.PublishApp != "" {
 		return publishApp(ctx, svc, cfg, os.Stdin, os.Stdout)
 	}
+	if cfg.PruneApps {
+		return pruneApps(ctx, svc, cfg, os.Stdout)
+	}
 	if cfg.SeedAdmin {
 		return seedAdmin(ctx, pool, svc.users, cfg, logger)
 	}

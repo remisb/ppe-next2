@@ -3487,6 +3487,12 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   // A card in the list is not edited, only removed.
   await expect(rows.nth(1).getByRole('button', { name: /^Edit/ })).toHaveCount(0)
   await expect(rows.nth(1).getByRole('textbox')).toHaveCount(0)
+  // Scrolled, the screen's own header alone is at the top: the app's bar scrolls away (AppFrame).
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await expect
+    .poll(() => page.evaluate(() => document.elementFromPoint(window.innerWidth / 2, 8)?.closest('[data-slot=page-header]') !== null))
+    .toBe(true)
+  await expect(page.locator('[data-slot=app-frame-bar]')).not.toBeInViewport()
   await page.getByRole('button', { name: 'Add 2 SIMs' }).click()
   await expect(page.getByText('2 SIMs added, Not Activated:')).toBeVisible()
   await expect(rows).toHaveCount(0)
@@ -3557,13 +3563,28 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   await expect(page).toHaveURL(/\/apps\/sim-scan\/photos-first\/$/)
   await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'You are using Photos first' })).toContainText('2026.01.02-e2e')
-  // Back to Stable, from now on.
+  // A link to Scan SIMs' own address, from another app or a bookmark, opens the chosen channel on the same screen.
+  await page.goto('/apps/sim-scan/find')
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/photos-first\/find$/)
+  // Back to Stable, on the same screen, from now on.
   await page.getByRole('link', { name: 'Back to Stable' }).click()
-  await expect(page).toHaveURL(/\/apps\/sim-scan\/$/)
-  await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/find$/)
+  await expect(page.getByRole('heading', { name: 'Show PIN and PUK' })).toBeVisible()
   await expect(page.getByText('You are using')).toHaveCount(0)
   await page.goto('/apps/')
   await expect(page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()).toHaveAttribute('href', '/apps/sim-scan/')
+
+  // Stable follows deploys: on, a deploy's publish to Preview makes its version Stable too; off again for the rest.
+  await page.goto('/admin/apps/sim-scan')
+  await openSection(/^Versions and channels/)
+  await pane.getByRole('checkbox', { name: /Stable follows deploys/ }).check()
+  await expect(pane.getByRole('checkbox', { name: /Stable follows deploys/ })).toBeChecked()
+  expect(publishSimScan('2026.01.03-e2e', 'preview')).toContain('2026.01.03-e2e published')
+  expect(await (await page.request.get('/apps/sim-scan/')).text()).toContain('content="2026.01.03-e2e"')
+  await page.reload()
+  await openSection(/^Versions and channels/)
+  await pane.getByRole('checkbox', { name: /Stable follows deploys/ }).uncheck()
+  await expect(pane.getByRole('checkbox', { name: /Stable follows deploys/ })).not.toBeChecked()
 
   // Make Stable promotes the new version for everyone; Make Stable on the first rolls it back.
   const stableOpens = async () => /name="ppe-version" content="([^"]+)"/.exec(await (await page.request.get('/apps/sim-scan/')).text())?.[1]

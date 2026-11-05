@@ -1,12 +1,8 @@
-import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { ChannelStripe, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
-import { launcherHref, staffHref } from '@ppe/routing'
+import { type Session, useApi } from '@ppe/app-shell'
+import { AppFrame, SignedIn } from '@ppe/launcher'
+import { staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { Brand } from '@ppe/ui/components/main-nav'
 import { EmptyState, PageHeader } from '@ppe/ui/components/states'
-import { cn } from '@ppe/ui/lib/utils'
-import { ArrowLeft, Grip, LogOut } from 'lucide-react'
-import { useEffect } from 'react'
 
 import { t } from '@/i18n'
 import { type Route, linkTo, useRouter } from '@/lib/router'
@@ -15,80 +11,42 @@ import { FindPage } from './routes/find'
 import { ScanPage } from './routes/scan'
 
 /*
- * The trial's frame, kept small: its name, its two screens as tabs (Scan,
- * which needs assets.manage, and PIN and PUK, which needs sim_codes.read),
- * the way back to SIM Cards, App Launcher and Sign out. It shares the staff app's sign-in,
- * so signing in or out here does so there too. Published under App Launcher
- * (ADR 0006, phase 3): off Stable, a stripe says which channel and version.
+ * The trial, in a small app's frame (@ppe/launcher's SignedIn and AppFrame):
+ * its name, its two screens as tabs (Scan, which needs assets.manage, and PIN
+ * and PUK, which needs sim_codes.read), the way back to SIM Cards, App
+ * Launcher and Sign out. It shares the staff app's sign-in, so signing in or
+ * out here does so there too. Published under App Launcher (ADR 0006): off
+ * Stable, the frame's stripe says which channel and version.
  */
 export function App() {
-  const { session, status, retry, signOut, passwordPrompt } = useApi()
-  const severalApps = hasSeveralApps(useLauncher().list?.apps ?? [])
+  return (
+    <SignedIn appName={t.shell.appName} tagline={t.shell.signInTagline}>
+      {(session) => <Screens session={session} />}
+    </SignedIn>
+  )
+}
+
+function Screens({ session }: { session: Session }) {
+  const { signOut } = useApi()
   const { route: asked, navigate } = useRouter()
-
-  useEffect(() => applyDensity(session ? loadDensity(session.userId) : null), [session?.userId])
-
-  if (status === 'starting') return <CheckingSignIn />
-  if (status === 'offline') return <Offline onRetry={retry} />
-  if (!session) return <SignIn appName={t.shell.appName} tagline={t.shell.signInTagline} />
-
   const tabs: { route: Route; label: string; shown: boolean }[] = [
     { route: { name: 'scan' }, label: t.shell.scan, shown: session.can('assets.manage') },
     { route: { name: 'find' }, label: t.shell.find, shown: session.can('sim_codes.read') },
   ]
   const shown = tabs.filter((x) => x.shown)
   const route = shown.find((x) => x.route.name === asked.name)?.route ?? shown[0]?.route
-  if (!route) return <NotForYou onSignOut={signOut} />
+  if (!route) return <NotForYou onSignOut={() => void signOut()} />
 
   return (
-    <div className="min-h-dvh">
-      <a
-        href="#main"
-        className="sr-only z-50 rounded-md bg-background px-4 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
-      >
-        {t.shell.skipToContent}
-      </a>
-      {/* Scrolls away: the screen's own header (PageHeader) is the one that sticks, as in the staff app. */}
-      <header className="border-b border-border bg-background pt-[env(safe-area-inset-top)]">
-        <ChannelStripe slug="sim-scan" />
-        <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 md:px-6">
-          <Brand name={t.shell.appName} />
-          <a href={staffHref('/assets/sim-cards')} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'ml-auto')}>
-            <ArrowLeft aria-hidden className="size-4" />
-            {t.shell.simCards}
-          </a>
-          {severalApps ? (
-            <a href={launcherHref('/')} aria-label={launcherText().apps} title={launcherText().apps} className={buttonVariants({ variant: 'ghost', size: 'icon' })}>
-              <Grip aria-hidden className="size-4" />
-            </a>
-          ) : null}
-          <Button variant="ghost" size="icon" aria-label={t.shell.signOut} title={t.shell.signOut} onClick={() => void signOut()}>
-            <LogOut aria-hidden className="size-4" />
-          </Button>
-        </div>
-        {shown.length > 1 ? (
-          <nav aria-label={t.shell.mainNav} className="mx-auto flex max-w-5xl gap-1 px-4 pb-2 md:px-6">
-            {shown.map((x) => (
-              <a
-                key={x.route.name}
-                {...linkTo(x.route, navigate)}
-                aria-current={route.name === x.route.name ? 'page' : undefined}
-                className={cn(
-                  buttonVariants({ variant: route.name === x.route.name ? 'secondary' : 'ghost', size: 'sm' }),
-                  'aria-[current=page]:font-semibold',
-                )}
-              >
-                {x.label}
-              </a>
-            ))}
-          </nav>
-        ) : null}
-      </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl min-w-0 px-4 pt-5 pb-10 outline-none md:px-6 md:py-8">
-        {route.name === 'scan' ? <ScanPage /> : <FindPage />}
-      </main>
-      <ConfirmPassword prompt={passwordPrompt} />
-    </div>
+    <AppFrame
+      slug="sim-scan"
+      name={t.shell.appName}
+      back={{ href: staffHref('/assets/sim-cards'), label: t.shell.simCards }}
+      navLabel={t.shell.mainNav}
+      tabs={shown.map((x) => ({ key: x.route.name, label: x.label, current: route.name === x.route.name, ...linkTo(x.route, navigate) }))}
+    >
+      {route.name === 'scan' ? <ScanPage /> : <FindPage />}
+    </AppFrame>
   )
 }
 

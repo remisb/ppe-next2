@@ -26,6 +26,7 @@ func registerLauncherRoutes(rt *router, svc *launcher.Service) {
 	rt.restricted("GET /api/v1/apps/{slug}/feedback", h.feedback, role.AppsManage)
 	rt.restricted("GET /api/v1/apps/{slug}/releases", h.releases, role.AppsManage)
 	rt.restricted("PUT /api/v1/apps/{slug}/channels/{name}", h.pointChannel, role.AppsManage)
+	rt.restricted("PUT /api/v1/apps/{slug}/stable-follows-deploys", h.stableFollowsDeploys, role.AppsManage)
 }
 
 // can is what the request's token grants, as the registry asks it.
@@ -287,4 +288,29 @@ func (h *launcherHandler) pointChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, c)
+}
+
+type followsRequest struct {
+	On bool `json:"on"`
+}
+
+// stableFollowsDeploys turns on or off whether a deploy's publish to Preview
+// moves Stable too; it answers the tile.
+func (h *launcherHandler) stableFollowsDeploys(w http.ResponseWriter, r *http.Request) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	var req followsRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	a, err := h.apps.SetStableFollowsDeploys(r.Context(), r.PathValue("slug"), req.On, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, a)
 }

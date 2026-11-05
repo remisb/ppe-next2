@@ -1,5 +1,6 @@
 import type { AppChannel, LauncherApp, LauncherList } from '@ppe/api-client'
 import { currentLang } from '@ppe/i18n'
+import { stripBase } from '@ppe/routing'
 
 import { launcherText } from './text.ts'
 
@@ -52,4 +53,23 @@ export function mayOpenChannel(list: LauncherList, slug: string, channel: string
   if (!channel || channel === 'stable') return true
   if (channel.startsWith('@')) return list.preview || managesApps
   return channelsOf(list, slug).some((c) => c.name === channel)
+}
+
+/** A channel's address for the screen open now: /apps/<slug>/<channel>/<path>, Stable at /apps/<slug>/<path>. */
+export function channelPath(slug: string, channel: string, rest: string, search = ''): string {
+  const tail = rest === '/' ? '/' : rest
+  return channel === 'stable' ? `/apps/${slug}${tail}${search}` : `/apps/${slug}/${channel}${tail}${search}`
+}
+
+/**
+ * Where a page opened at an app's Stable address (/apps/<slug>/…, a bookmark
+ * or a link from another app) goes for a user who chose another channel they
+ * see: that channel, on the same screen. Null to stay, as at
+ * /apps/<slug>/stable/…, which asks for Stable on purpose.
+ */
+export function chosenHref(list: LauncherList | null, slug: string, channel: string | null, mount: string, pathname: string, search = ''): string | null {
+  if (channel !== 'stable' || mount !== `/apps/${slug}`) return null
+  const chosen = chosenChannel(list, slug)
+  if (chosen === 'stable' || !channelsOf(list, slug).some((c) => c.name === chosen)) return null
+  return channelPath(slug, chosen, stripBase(pathname, mount), search)
 }

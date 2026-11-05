@@ -1496,6 +1496,8 @@ export interface LauncherApp {
   /** Seen by holders of any of these; none: every signed-in user. */
   any_of: Permission[]
   position: number
+  /** A published app: a deploy's publish to Preview moves Stable too. */
+  stable_follows_deploys: boolean
   created_at: string
   updated_at: string
   updated_by_user_id: string | null

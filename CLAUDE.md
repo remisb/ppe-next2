@@ -153,8 +153,12 @@ and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` re
 stdin into `API_APPS_DIR`; `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
-Preview, Add variant); the launcher's **Versions** keeps each user's choice (by the API), and a
-published app off Stable shows `@ppe/launcher`'s `ChannelStripe`.
+Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
+the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
+and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. Small apps use
+`@ppe/launcher`'s `SignedIn` and `AppFrame` (its bar scrolls away; the screen's header alone sticks).
+`make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app) and
+publishes nothing from a checkout with local changes.
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which

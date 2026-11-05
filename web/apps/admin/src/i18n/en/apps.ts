@@ -101,6 +101,9 @@ export const apps = {
   variantTaken: 'This name is taken: choose another.',
   chooseVersion: 'Choose a version.',
   actionsColumn: 'Actions',
+  stableFollowsDeploys: 'Stable follows deploys',
+  stableFollowsDeploysHint: 'Each deploy makes its build Stable for everyone, as well as Preview. Leave it off to let testers try a build first.',
+  previewAhead: (version: string) => `Preview has a newer version than Stable: ${version}. Make it Stable when it is ready.`,
 }
 
 export type AppsText = typeof apps

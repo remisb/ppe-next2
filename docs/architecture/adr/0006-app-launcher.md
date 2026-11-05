@@ -103,7 +103,11 @@ app, without DNS or address work for each.
 - **Who sees a channel:** Stable whoever sees the tile; Beta, Preview and variants testers,
   or the permissions a channel names. A tester's choice is kept per user by the API and
   opens the tile on it; a published app moves anyone on a channel they do not see to Stable.
-- Not built: a manifest's oldest API (decision 6); old versions are kept until a prune command.
+- Not built: a manifest's oldest API (decision 6).
+- Since 2026-11-05 (the handbook's improvements 1, 3, 5 and 6): a per-app **Stable follows
+  deploys** switch; small apps share `AppFrame`, whose bar scrolls away; a tester's channel
+  choice is honoured at the app's own address; `make prod-up` prunes versions no channel opens
+  beyond the newest five and publishes nothing from a dirty checkout.
 
 ## Consequences
 

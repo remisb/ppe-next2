@@ -63,7 +63,7 @@ var events = []string{
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
 	"mail_template.changed",
 	"app.registered", "app.changed", "app.audience_changed", "app.moved",
-	"app.version_published", "app.channel_moved", "app.channel_changed",
+	"app.version_published", "app.channel_moved", "app.channel_changed", "app.versions_pruned",
 	"access_review.completed",
 	EventExported, EventPurged,
 }

@@ -145,12 +145,18 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 	done; \
 	echo "the API is not ready after 60s" >&2; $(PROD) logs --tail=30 api >&2; exit 1
 	@# The deployed commit's published apps go to Preview (and Stable, for an
-	@# app with none yet); Stable and Beta move on Manage apps.
+	@# app with none yet or one whose Stable follows deploys); Stable and Beta
+	@# otherwise move on Manage apps. A version is named by its commit, so a
+	@# checkout with local changes publishes nothing; then old versions no
+	@# channel opens are pruned.
+	@case "$(PROD_COMMIT)" in *-dirty) \
+		echo "the checkout has local changes: the apps are deployed but not published (commit or discard them, then make prod-up)" >&2; exit 1;; esac
 	@for app in $(PUBLISHED_APPS); do \
 		$(PROD) exec -T caddy tar -C "/srv/build/$$app" -cf - . | \
 		$(PROD) run --rm --no-deps -T api -publish-app "$$app" -version "$(call app_version,HEAD)" \
 			-channel preview -from-commit "$(PROD_COMMIT)" || exit 1; \
 	done
+	@$(PROD) run --rm --no-deps -T api -prune-apps
 
 # Builds the app at REF with that commit's web/Dockerfile (deploy/build-app.sh)
 # and publishes it; fetch the ref first. An app's new version reaches no one

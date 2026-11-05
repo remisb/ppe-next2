@@ -20,6 +20,11 @@ type OrderMutation func(cur []App) (changed []App, evs []audit.Event, err error)
 // (nil when the app has no channel by that name yet) and the events to record.
 type ChannelMutation func(cur *Channel) (Channel, []audit.Event, error)
 
+// PruneMutation picks, from an app's versions (newest first) and its
+// channels, read under the app's lock, the versions to remove and the event
+// that records it (nil when none go).
+type PruneMutation func(versions []Version, channels []Channel) (remove []Version, ev *audit.Event, err error)
+
 // Repository stores tiles in launcher_apps, pins in launcher_pins and
 // feedback in launcher_feedback (migration 0042), versions, channels and
 // channel choices (0043). Implementations translate storage errors to this
@@ -44,6 +49,9 @@ type Repository interface {
 	Versions(ctx context.Context, app uuid.UUID) ([]Version, error)
 	// AddVersion stores a newly published version with its event.
 	AddVersion(ctx context.Context, v Version, ev audit.Event) error
+	// PruneVersions locks the app (as PutChannel does), applies m and deletes
+	// the versions it picks with its event, returning them.
+	PruneVersions(ctx context.Context, app uuid.UUID, m PruneMutation) ([]Version, error)
 	// Channels returns every app's channels, each with its version's name.
 	Channels(ctx context.Context) ([]Channel, error)
 	// PutChannel locks the app's channel by that name, applies m and writes
