@@ -296,9 +296,13 @@ func (s *Service) GiveFeedback(ctx context.Context, user uuid.UUID, p FeedbackPa
 	if at < 0 {
 		return Feedback{}, ErrNotFound
 	}
+	version, err := s.openedVersion(ctx, user, shown[at], can)
+	if err != nil {
+		return Feedback{}, err
+	}
 	f := Feedback{
 		ID: s.newID(), AppID: shown[at].ID, UserID: user, Rating: p.Rating, Text: p.Text,
-		Device: p.Device, Language: p.Language, CreatedAt: s.now(),
+		Device: p.Device, Language: p.Language, Version: version, CreatedAt: s.now(),
 	}
 	return f, s.repo.AddFeedback(ctx, f)
 }

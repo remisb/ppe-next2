@@ -72,6 +72,7 @@ import type {
   LauncherList,
   AppChannel,
   AppReleases,
+  AppTrials,
   ChannelInput,
   AppFeedback,
   AppFeedbackInput,
@@ -295,6 +296,8 @@ export function createClient(options: ClientOptions) {
       /** Points a channel at a version: promote, roll back, or add or change a variant. */
       pointChannel: (slug: string, name: string, input: ChannelInput) =>
         request<AppChannel>('PUT', `/api/v1/apps/${seg(slug)}/channels/${seg(name)}`, input),
+      /** Each version's use, errors and feedback, newest first. */
+      trials: (slug: string) => request<AppTrials>('GET', `/api/v1/apps/${seg(slug)}/trials`),
       /** Whether a deploy's publish to Preview moves Stable too; answers the tile. */
       setStableFollowsDeploys: (slug: string, on: boolean) => request<LauncherApp>('PUT', `/api/v1/apps/${seg(slug)}/stable-follows-deploys`, { on }),
     },

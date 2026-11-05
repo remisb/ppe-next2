@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -336,6 +337,86 @@ func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name 
 		return fieldError("channel", "is not one of the app's channels you see")
 	}
 	return s.repo.SetChoice(ctx, user, a.ID, name)
+}
+
+// Trial is one version of a published app as its Trials view reads it: when
+// it was published, the channels opening it and the feedback given on it.
+// Who used it and its errors are Usage's and System's.
+type Trial struct {
+	Version     string    `json:"version"`
+	PublishedAt time.Time `json:"published_at"`
+	// Channels are those opening it, with a variant's label.
+	Channels []Channel      `json:"channels"`
+	Feedback FeedbackCounts `json:"feedback"`
+}
+
+// FeedbackCounts counts feedback by rating.
+type FeedbackCounts struct {
+	Works     int `json:"works"`
+	Confusing int `json:"confusing"`
+	Broken    int `json:"broken"`
+}
+
+// Trials returns an app's versions, newest first, each with the channels
+// opening it and its feedback (feedback from before versions were recorded,
+// or on an app with none, counts for no version).
+func (s *Service) Trials(ctx context.Context, slug string) ([]Trial, error) {
+	versions, channels, err := s.Releases(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	a, err := s.repo.Get(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	feedback, err := s.repo.Feedback(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Trial, 0, len(versions))
+	for _, v := range versions {
+		t := Trial{Version: v.Version, PublishedAt: v.PublishedAt, Channels: []Channel{}}
+		for _, c := range channels {
+			if c.VersionID == v.ID {
+				t.Channels = append(t.Channels, c)
+			}
+		}
+		for _, f := range feedback {
+			if f.Version == nil || *f.Version != v.Version {
+				continue
+			}
+			switch f.Rating {
+			case "works":
+				t.Feedback.Works++
+			case "confusing":
+				t.Feedback.Confusing++
+			case "broken":
+				t.Feedback.Broken++
+			}
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+// openedVersion is the version a's tile opens for the user: their chosen
+// channel's, if they still see it, else Stable's; nil for an app with no
+// versions. Feedback is given on it.
+func (s *Service) openedVersion(ctx context.Context, user uuid.UUID, a App, can func(role.Permission) bool) (*string, error) {
+	seen, chosen, err := s.ChannelsFor(ctx, user, []App{a}, can)
+	if err != nil {
+		return nil, err
+	}
+	name := chosen[a.Slug]
+	if name == "" {
+		name = ChannelStable
+	}
+	at := slices.IndexFunc(seen[a.Slug], func(c Channel) bool { return c.Name == name })
+	if at < 0 {
+		return nil, nil
+	}
+	v := seen[a.Slug][at].Version
+	return &v, nil
 }
 
 // Resolved is what an address under /apps/<slug>/ opens: the app, the

@@ -28,6 +28,7 @@ import { permissionLabel } from '@/lib/roles'
 import { type Route, linkTo } from '@/lib/router'
 
 import { AppReleases } from './app-releases'
+import { AppTrials } from './app-trials'
 
 type Navigate = (to: Route, options?: { scroll?: boolean }) => void
 
@@ -254,6 +255,7 @@ function AppPane({
       </FactGrid>
       <ActionError error={action.error} />
       {app.kind === 'app' && app.tier === 'here' ? <AppReleases app={app} timeZone={timeZone} onChanged={onMoved} /> : null}
+      {app.kind === 'app' && app.tier === 'here' ? <AppTrials app={app} timeZone={timeZone} /> : null}
       {app.kind === 'app' ? <Feedback slug={app.slug} timeZone={timeZone} /> : null}
       <RecordChanges
         className="mb-0"
@@ -286,6 +288,7 @@ function Feedback({ slug, timeZone }: { slug: string; timeZone: string | undefin
                 <span className="font-medium">{f.user_name}</span>
                 <span className="text-muted-foreground">
                   {t.apps.devices[f.device]} · {f.language.toUpperCase()} · <RelativeDate iso={f.created_at} timeZone={timeZone} />
+                  {f.version ? <code className="text-xs"> · {f.version}</code> : null}
                 </span>
               </p>
               {f.text ? <p className="mt-1 whitespace-pre-wrap">{f.text}</p> : null}

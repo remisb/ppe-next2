@@ -14,7 +14,7 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
+.PHONY: help build run vet test test-db e2e e2e-caddy db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
 	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
@@ -40,6 +40,13 @@ test-db: ## All tests including Postgres ones against API_TEST_DB_DSN
 
 e2e: ## Playwright end-to-end tests (empties the _test database; needs db-test-create first)
 	cd web/e2e && pnpm e2e
+
+# As CI runs it: the production build behind deploy/Caddyfile, published apps
+# included, with Caddy from its official image at CI's pinned version, so no
+# local Caddy is needed. Docker removes the container when the run ends.
+e2e-caddy: ## Playwright end-to-end behind deploy/Caddyfile, Caddy in Docker (as CI does)
+	cd web && pnpm build
+	cd web/e2e && E2E_WEB_SERVER=caddy E2E_CADDY=docker pnpm e2e; status=$$?; docker rm -f ppe-e2e-caddy >/dev/null 2>&1; exit $$status
 
 db-up: ## Start Postgres 18 and wait until it is healthy
 	docker compose up -d --wait db

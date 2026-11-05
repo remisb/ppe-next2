@@ -18,7 +18,7 @@ type countingStore struct {
 	writes int
 }
 
-func (c *countingStore) RecordActivity(context.Context, time.Time, uuid.UUID, string) error {
+func (c *countingStore) RecordActivity(context.Context, time.Time, uuid.UUID, string, string) error {
 	c.writes++
 	return nil
 }
@@ -31,15 +31,15 @@ func TestSeenWritesOncePerDay(t *testing.T) {
 	ona, jonas := uuid.New(), uuid.New()
 	ctx := context.Background()
 	for range 3 {
-		_ = svc.Seen(ctx, ona, "workwear")
+		_ = svc.Seen(ctx, ona, "workwear", "")
 	}
-	_ = svc.Seen(ctx, ona, "admin")
-	_ = svc.Seen(ctx, jonas, "workwear")
+	_ = svc.Seen(ctx, ona, "admin", "")
+	_ = svc.Seen(ctx, jonas, "workwear", "")
 	if store.writes != 3 {
 		t.Errorf("writes = %d, want 3", store.writes)
 	}
 	now = now.Add(24 * time.Hour)
-	_ = svc.Seen(ctx, ona, "workwear")
+	_ = svc.Seen(ctx, ona, "workwear", "")
 	if store.writes != 4 {
 		t.Errorf("the next day: writes = %d, want 4", store.writes)
 	}
@@ -80,13 +80,22 @@ func TestPostgresReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, a := range []string{"workwear", "workwear", "admin"} {
-		if err := svc.Seen(ctx, ona, a); err != nil {
+		if err := svc.Seen(ctx, ona, a, ""); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if err := NewService(NewPostgresStore(app), WithLocation(vilnius), WithClock(func() time.Time { return now.AddDate(0, 0, -3) })).
-		Seen(ctx, ona, "workwear"); err != nil {
+		Seen(ctx, ona, "workwear", ""); err != nil {
 		t.Fatal(err)
+	}
+	// A published app's versions: who used each, on how many days (App Launcher's Trials view).
+	for _, who := range []uuid.UUID{ona, ona} {
+		if err := svc.Seen(ctx, who, "sim-scan", "2026.11.04-aaa"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if use, err := svc.VersionUse(ctx, "sim-scan"); err != nil || use["2026.11.04-aaa"] != (VersionUse{People: 1, Days: 1}) || len(use) != 1 {
+		t.Errorf("VersionUse = %+v, %v", use, err)
 	}
 	if err := svc.SampleQuality(ctx, Quality{Employees: 4, EmployeesMissingSizes: 1, CatalogueActive: 9, CatalogueUnpriced: 2, ItemSetsActive: 1}); err != nil {
 		t.Fatal(err)

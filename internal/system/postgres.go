@@ -200,3 +200,22 @@ func (s *PostgresStore) SampleSize(ctx context.Context, day time.Time) error {
 		ON CONFLICT (day) DO UPDATE SET bytes = EXCLUDED.bytes`, day.Format("2006-01-02"))
 	return err
 }
+
+func (s *PostgresStore) VersionErrors(ctx context.Context, source string) (map[string]VersionErrors, error) {
+	rows, err := s.pool.Query(ctx, `SELECT app_version, count(*), sum(count) FROM error_events
+		WHERE source = $1 AND app_version IS NOT NULL GROUP BY app_version`, source)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]VersionErrors{}
+	for rows.Next() {
+		var v string
+		var e VersionErrors
+		if err := rows.Scan(&v, &e.Kinds, &e.Occurrences); err != nil {
+			return nil, err
+		}
+		out[v] = e
+	}
+	return out, rows.Err()
+}

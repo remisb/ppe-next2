@@ -1,20 +1,30 @@
 package main
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/system"
+	"github.com/remisb/ppe-next2/internal/usage"
 )
 
 // App Launcher's registry (ADR 0006, phase 2; docs/specs/app-launcher.md):
 // what each user sees, their pins and feedback, and Manage apps.
 type launcherHandler struct {
 	apps *launcher.Service
+	// For the Trials view: who used each version (Usage) and its errors (System).
+	use interface {
+		VersionUse(context.Context, string) (map[string]usage.VersionUse, error)
+	}
+	errors interface {
+		VersionErrors(context.Context, string) (map[string]system.VersionErrors, error)
+	}
 }
 
-func registerLauncherRoutes(rt *router, svc *launcher.Service) {
-	h := &launcherHandler{apps: svc}
+func registerLauncherRoutes(rt *router, svc *launcher.Service, use *usage.Service, errs *system.Service) {
+	h := &launcherHandler{apps: svc, use: use, errors: errs}
 	rt.authenticated("GET /api/v1/launcher", h.forUser)
 	rt.authenticated("PUT /api/v1/launcher/pins", h.setPins)
 	rt.authenticated("POST /api/v1/launcher/feedback", h.giveFeedback)
@@ -27,6 +37,7 @@ func registerLauncherRoutes(rt *router, svc *launcher.Service) {
 	rt.restricted("GET /api/v1/apps/{slug}/releases", h.releases, role.AppsManage)
 	rt.restricted("PUT /api/v1/apps/{slug}/channels/{name}", h.pointChannel, role.AppsManage)
 	rt.restricted("PUT /api/v1/apps/{slug}/stable-follows-deploys", h.stableFollowsDeploys, role.AppsManage)
+	rt.restricted("GET /api/v1/apps/{slug}/trials", h.trials, role.AppsManage)
 }
 
 // can is what the request's token grants, as the registry asks it.
@@ -313,4 +324,46 @@ func (h *launcherHandler) stableFollowsDeploys(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, a)
+}
+
+// trial is one version in an app's Trials view (ADR 0006, phase 5): the
+// launcher's (channels, feedback), Usage's (people and days over the last
+// usage.Days) and System's (the kinds of error last seen on it).
+type trial struct {
+	launcher.Trial
+	People     int `json:"people"`
+	Days       int `json:"days"`
+	ErrorKinds int `json:"error_kinds"`
+	Errors     int `json:"errors"`
+}
+
+type trials struct {
+	// Days is the window people and days are counted over.
+	Days     int     `json:"days"`
+	Versions []trial `json:"versions"`
+}
+
+func (h *launcherHandler) trials(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	list, err := h.apps.Trials(r.Context(), slug)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	use, err := h.use.VersionUse(r.Context(), slug)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	errs, err := h.errors.VersionErrors(r.Context(), slug)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	out := trials{Days: usage.Days, Versions: make([]trial, 0, len(list))}
+	for _, t := range list {
+		u, e := use[t.Version], errs[t.Version]
+		out.Versions = append(out.Versions, trial{Trial: t, People: u.People, Days: u.Days, ErrorKinds: e.Kinds, Errors: e.Occurrences})
+	}
+	writeJSON(w, http.StatusOK, out)
 }

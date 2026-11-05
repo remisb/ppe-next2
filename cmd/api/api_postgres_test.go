@@ -2170,6 +2170,59 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 		t.Errorf("the variant = %s", rec.Body)
 	}
 
+	// The Trials view: a tester on Preview used it, reported an error from it and sent feedback on it.
+	fromScanSIMs := func(method, path string, body any) *httptest.ResponseRecorder {
+		b, _ := json.Marshal(body)
+		req := httptest.NewRequest(method, path, bytes.NewReader(b))
+		req.Header.Set("Authorization", "Bearer "+tester)
+		req.Header.Set(appHeader, "sim-scan")
+		req.Header.Set(appVersionHeader, "2026.11.04-aaa")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		return rec
+	}
+	if rec := fromScanSIMs("GET", "/api/v1/users/me", nil); rec.Code != http.StatusOK {
+		t.Fatalf("a request from Scan SIMs = %d", rec.Code)
+	}
+	if rec := fromScanSIMs("POST", "/api/v1/client-errors", map[string]string{"message": "TypeError: x", "path": "/find"}); rec.Code != http.StatusNoContent {
+		t.Fatalf("an error from Scan SIMs = %d %s", rec.Code, rec.Body)
+	}
+	broken := map[string]any{"app": "sim-scan", "rating": "broken", "text": "The camera stays black", "device": "phone", "language": "en"}
+	if rec := api.do(t, "POST", "/api/v1/launcher/feedback", tester, broken); rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"version":"2026.11.04-aaa"`) {
+		t.Fatalf("feedback = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/apps/sim-scan/trials", manager, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager's Trials = %d", rec.Code)
+	}
+	rec := api.do(t, "GET", "/api/v1/apps/sim-scan/trials", admin, nil)
+	var tr struct {
+		Days     int `json:"days"`
+		Versions []struct {
+			Version  string `json:"version"`
+			Channels []struct {
+				Name string `json:"name"`
+			} `json:"channels"`
+			People     int `json:"people"`
+			Days       int `json:"days"`
+			ErrorKinds int `json:"error_kinds"`
+			Errors     int `json:"errors"`
+			Feedback   struct {
+				Broken int `json:"broken"`
+			} `json:"feedback"`
+		} `json:"versions"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &tr); err != nil || rec.Code != http.StatusOK || len(tr.Versions) != 1 {
+		t.Fatalf("Trials = %d %s", rec.Code, rec.Body)
+	}
+	if v := tr.Versions[0]; v.Version != "2026.11.04-aaa" || v.People != 1 || v.Days != 1 || v.ErrorKinds != 1 || v.Errors != 1 || v.Feedback.Broken != 1 ||
+		!slices.ContainsFunc(v.Channels, func(c struct {
+			Name string `json:"name"`
+		}) bool {
+			return c.Name == "photos-first"
+		}) || tr.Days != 30 {
+		t.Errorf("Trials = %s", rec.Body)
+	}
+
 	// Stable follows deploys: a publish to Preview moves Stable too.
 	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/stable-follows-deploys", manager, map[string]bool{"on": true}); rec.Code != http.StatusForbidden {
 		t.Errorf("a manager turning it on = %d", rec.Code)

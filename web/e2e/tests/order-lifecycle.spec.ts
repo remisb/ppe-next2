@@ -719,6 +719,8 @@ test('Item Catalogue: a row opens the item beside the list, at its own address',
   await expect(pane).toHaveCount(0)
   await expect(page.getByRole('columnheader', { name: /Details/ })).toBeVisible()
   await page.getByRole('link', { name: 'Safety helmet' }).click()
+  // Once the item is in: while it loads, the pane's own Close shows, then the record header's takes over.
+  await expect(pane.getByRole('heading', { name: 'Safety helmet' })).toBeVisible()
   await page.getByRole('button', { name: 'Close item' }).click()
   await expect(pane).toHaveCount(0)
 })
@@ -3573,6 +3575,13 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   await expect(page.getByText('You are using')).toHaveCount(0)
   await page.goto('/apps/')
   await expect(page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()).toHaveAttribute('href', '/apps/sim-scan/')
+
+  // Trials: the variant's version, opened above, counts its one person and the channel opening it.
+  await page.goto('/admin/apps/sim-scan')
+  await openSection(/^Trials/)
+  const tried = pane.getByRole('region', { name: /^Trials/ }).getByRole('row', { name: /2026\.01\.02-e2e/ })
+  await expect(tried).toContainText('Photos first')
+  await expect(tried.getByRole('cell').nth(1)).toHaveText(/^1/)
 
   // Stable follows deploys: on, a deploy's publish to Preview makes its version Stable too; off again for the rest.
   await page.goto('/admin/apps/sim-scan')

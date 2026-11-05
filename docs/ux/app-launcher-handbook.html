@@ -126,7 +126,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
 <header class="top">
   <div class="top-row">
     <div class="logo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></div>
-    <div><div class="top-title">App Launcher Handbook</div><div class="top-sub">Workwear &amp; Equipment · 5 November 2026 · improvements 1, 3, 5, 6 built</div></div>
+    <div><div class="top-title">App Launcher Handbook</div><div class="top-sub">Workwear &amp; Equipment · 5 November 2026 · seven of nine improvements built</div></div>
   </div>
   <nav class="toc" aria-label="Sections">
     <a href="#overview">Overview</a>
@@ -271,7 +271,7 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
     </div>
 
     <div class="grid g2">
-      <div class="card"><h3>Registry</h3><p class="small"><code>internal/domain/launcher</code>, migrations 0042–0043: tiles, pins, feedback, versions, channels and each user's channel choice. Every change is an audit event (<code>app.*</code>). Default tiles live in <code>defaults.go</code> and are inserted at start-up when missing, never over an administrator's change.</p></div>
+      <div class="card"><h3>Registry</h3><p class="small"><code>internal/domain/launcher</code>, migrations 0042–0043: tiles, pins, feedback, versions, channels and each user's channel choice. Every change is an audit event (<code>app.*</code>). Default tiles live in <code>defaults.go</code>; code owns each until an administrator changes it: untouched ones follow the code at start-up, audited, and edited ones are never overwritten.</p></div>
       <div class="card"><h3>API</h3><p class="small"><code>GET /api/v1/launcher</code> (tiles, pins, channels, choices), <code>PUT …/pins</code>, <code>POST …/feedback</code>, <code>PUT …/choices/{slug}</code>; Manage apps under <code>/api/v1/apps…</code>; the public page route <code>GET /apps/{slug}/{rest...}</code>.</p></div>
       <div class="card"><h3>Addresses</h3><p class="small"><code>/apps/&lt;slug&gt;/</code> is Stable, <code>/&lt;channel&gt;/</code> a channel, <code>/@&lt;version&gt;/</code> one exact build; anything after is the app's own screen. Meta tags: <code>ppe-mount</code>, <code>ppe-files</code>, <code>ppe-version</code>, <code>ppe-channel</code>.</p></div>
       <div class="card"><h3>Publishing</h3><p class="small"><code>api -publish-app</code> reads a tar of <code>dist/</code> on standard input (up to 5000 files and 300 MB, no links) and never replaces a version. <code>make prod-up</code> publishes to Preview, then prunes what no channel opens beyond the newest five, and publishes nothing from a checkout with local changes; <code>make prod-publish APP= REF= CHANNEL=</code> builds any git ref on the droplet.</p></div>
@@ -336,9 +336,9 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
       <div class="card"><span class="n">4</span><div><h3>Each app copies its own frame <span class="chip warn">Medium</span></h3><p class="small muted">Workwear, Administration, Scan SIMs and the launcher each build their own header, Apps entry, sign-out and gates. The overlapping headers came from exactly this: a shared screen header met a copied frame that no test scrolled.</p><p class="small" style="color:var(--ok)">Fixed for small apps: <code>AppFrame</code> (improvement 3). The staff app, Administration and the launcher keep their own.</p></div></div>
       <div class="card"><span class="n">5</span><div><h3>Versions are hard to find <span class="chip">Low</span></h3><p class="small muted">A tester has to open ··· on the tile to discover Beta, and bookmarks and the staff app's links always open Stable, whatever the tester chose.</p><p class="small" style="color:var(--ok)">Eased: the choice is honoured at the app's own address and the stripe switches channels (improvement 5). Finding Beta still needs ···.</p></div></div>
       <div class="card"><span class="n">6</span><div><h3>Old versions pile up <span class="chip">Low</span></h3><p class="small muted">Nothing prunes the published volume (about 16 MB per Scan SIMs build), and a build from a dirty checkout gets a clean-looking version name.</p><p class="small" style="color:var(--ok)">Fixed: pruning and the dirty-checkout check (improvement 6).</p></div></div>
-      <div class="card"><span class="n">7</span><div><h3>Two sources for tiles <span class="chip">Low</span></h3><p class="small muted">Default tiles live both in code and in the database. Renaming a default in code does not rename it where it already exists.</p></div></div>
-      <div class="card"><span class="n">8</span><div><h3>Feedback and errors are not read together <span class="chip">Low</span></h3><p class="small muted">Until the Trials view (phase 5), whether Beta is better is answered by hand.</p></div></div>
-      <div class="card"><span class="n">9</span><div><h3>Published serving is rarely tested locally <span class="chip">Low</span></h3><p class="small muted">Caddy-mode tests need Caddy, so most local runs never exercise published serving; CI does.</p></div></div>
+      <div class="card"><span class="n">7</span><div><h3>Two sources for tiles <span class="chip">Low</span></h3><p class="small muted">Default tiles live both in code and in the database. Renaming a default in code does not rename it where it already exists.</p><p class="small" style="color:var(--ok)">Fixed: code owns a default until an administrator changes it (improvement 7).</p></div></div>
+      <div class="card"><span class="n">8</span><div><h3>Feedback and errors are not read together <span class="chip">Low</span></h3><p class="small muted">Until the Trials view (phase 5), whether Beta is better is answered by hand.</p><p class="small" style="color:var(--ok)">Fixed: Trials on Manage apps (improvement 8).</p></div></div>
+      <div class="card"><span class="n">9</span><div><h3>Published serving is rarely tested locally <span class="chip">Low</span></h3><p class="small muted">Caddy-mode tests need Caddy, so most local runs never exercise published serving; CI does.</p><p class="small" style="color:var(--ok)">Fixed: <code>make e2e-caddy</code> (improvement 9); it also found a racy Item Catalogue step.</p></div></div>
     </div>
   </section>
 
@@ -355,14 +355,14 @@ ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius
         <tr><td>4</td><td><b><code>make new-app SLUG=</code></b> scaffolds the folder, manifest, words, policy test and tile from Scan SIMs.</td><td>2</td><td><span class="chip s">Small</span></td><td><span class="chip">Proposed</span></td></tr>
         <tr><td>5</td><td><b>Honour the choice everywhere.</b> <code>/apps/&lt;slug&gt;/</code> sends a tester to the channel they chose; the stripe also offers Versions.</td><td>5</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
         <tr><td>6</td><td><b>Prune.</b> <code>api -prune-apps</code> keeps every version a channel points at plus the last few, run by <code>prod-up</code>; <code>prod-up</code> refuses dirty builds.</td><td>6</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
-        <tr><td>7</td><td><b>Seed defaults once.</b> Insert them once, by key, like a migration; then the database is the only source.</td><td>7</td><td><span class="chip s">Small</span></td><td><span class="chip">Proposed</span></td></tr>
-        <tr><td>8</td><td><b>Trials view</b> (phase 5): opens, errors and feedback per app and version, side by side.</td><td>8</td><td><span class="chip m">Medium</span></td><td><span class="chip">Proposed</span></td></tr>
-        <tr><td>9</td><td><b><code>make e2e-caddy</code></b> runs the suite through the pinned <code>caddy:2</code> image locally.</td><td>9</td><td><span class="chip s">Small</span></td><td><span class="chip">Proposed</span></td></tr>
+        <tr><td>7</td><td><b>Code owns a default until an administrator changes it.</b> Untouched default tiles follow <code>defaults.go</code> at start-up, audited; edited ones are never overwritten.</td><td>7</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
+        <tr><td>8</td><td><b>Trials view</b> (phase 5): opens, errors and feedback per app and version, side by side.</td><td>8</td><td><span class="chip m">Medium</span></td><td><span class="chip ok">Built</span></td></tr>
+        <tr><td>9</td><td><b><code>make e2e-caddy</code></b> runs the suite through the pinned <code>caddy:2</code> image locally.</td><td>9</td><td><span class="chip s">Small</span></td><td><span class="chip ok">Built</span></td></tr>
       </tbody>
     </table></div>
     <div class="callout">
       <h3>Simplicity check before building more</h3>
-      <p class="small">1, 3, 5 and 6 are built: they make today's one published app safe and invisible to users. If no second published app is planned for the next quarter, stop here. Do 2 and 4 the week a second app is approved; until then, a handful of manual edits costs less than automating them.</p>
+      <p class="small">All but 2 and 4 are built: today's one published app is safe, invisible to users, measured per version and tested locally as in production. 2 and 4 automate adding a second published app; build them the week one is approved. Until then, a handful of manual edits costs less than automating them.</p>
     </div>
   </section>
 </main>

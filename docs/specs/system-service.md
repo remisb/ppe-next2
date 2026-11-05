@@ -58,6 +58,7 @@ the outer `Recoverer` cannot reach that goroutine. A panic now:
 | `route`, `method`, `status` | The route pattern, or for a client error the page's path with its ids replaced (`system.ClientRoute`) |
 | `message`, `stack` | The latest occurrence's, cut to 1,000 and 8,000 bytes |
 | `first_seen`, `last_seen`, `count` | An occurrence within an hour (`FoldWithin`) of a row's last one with the same fingerprint is counted on that row |
+| `app_version` | The published app's version the latest occurrence came from (migration 0043, `X-PPE-App-Version`); App Launcher's Trials view counts each row for it (`system.Service.VersionErrors`) |
 | `last_request_id`, `last_user_id`, `last_user_agent`, `source` | The latest occurrence's request: the reference, the signed-in user, the browser and the app |
 
 - Rows not seen for 30 days (`system.Retention`) are deleted by the API's hourly upkeep.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -361,15 +362,15 @@ func (r *PostgresRepository) SetChoice(ctx context.Context, user, app uuid.UUID,
 
 func (r *PostgresRepository) AddFeedback(ctx context.Context, f Feedback) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO launcher_feedback (id, app_id, user_id, rating, text, device, language, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		f.ID, f.AppID, f.UserID, f.Rating, f.Text, f.Device, f.Language, f.CreatedAt)
+		INSERT INTO launcher_feedback (id, app_id, user_id, rating, text, device, language, version, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		f.ID, f.AppID, f.UserID, f.Rating, f.Text, f.Device, f.Language, f.Version, f.CreatedAt)
 	return translate(err)
 }
 
 func (r *PostgresRepository) Feedback(ctx context.Context, app uuid.UUID) ([]Feedback, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT f.id, f.app_id, f.user_id, u.name, f.rating, f.text, f.device, f.language, f.created_at
+		SELECT f.id, f.app_id, f.user_id, u.name, f.rating, f.text, f.device, f.language, f.version, f.created_at
 		FROM launcher_feedback f JOIN users u ON u.id = f.user_id
 		WHERE f.app_id = $1 ORDER BY f.created_at DESC, f.id`, app)
 	if err != nil {
@@ -377,7 +378,7 @@ func (r *PostgresRepository) Feedback(ctx context.Context, app uuid.UUID) ([]Fee
 	}
 	out, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (Feedback, error) {
 		var f Feedback
-		err := row.Scan(&f.ID, &f.AppID, &f.UserID, &f.UserName, &f.Rating, &f.Text, &f.Device, &f.Language, &f.CreatedAt)
+		err := row.Scan(&f.ID, &f.AppID, &f.UserID, &f.UserName, &f.Rating, &f.Text, &f.Device, &f.Language, &f.Version, &f.CreatedAt)
 		f.CreatedAt = f.CreatedAt.UTC()
 		return f, err
 	})
@@ -387,29 +388,76 @@ func (r *PostgresRepository) Feedback(ctx context.Context, app uuid.UUID) ([]Fee
 	return out, err
 }
 
-// EnsureDefaults inserts the default tiles that are missing, by slug, after
-// the tiles already there; it never changes one that exists. The API runs it
-// at start-up, and tests after emptying the database.
+// EnsureDefaults brings the registry in line with Defaults at start-up (and
+// after a test empties it). Code owns a default tile until an administrator
+// changes it: a missing default is inserted, last; one no administrator has
+// touched (updated_by_user_id is NULL) takes the code's fields if they
+// differ, recorded as app.changed and app.audience_changed by no one; one an
+// administrator edited, moved or switched is left as it is. Its place in the
+// order is never changed here.
 func EnsureDefaults(ctx context.Context, pool *pgxpool.Pool) error {
 	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		// One start-up at a time, so two never number the same new tiles.
 		if _, err := tx.Exec(ctx, `LOCK TABLE launcher_apps IN SHARE ROW EXCLUSIVE MODE`); err != nil {
 			return err
 		}
-		var last int
-		if err := tx.QueryRow(ctx, `SELECT coalesce(max(position), 0) FROM launcher_apps`).Scan(&last); err != nil {
+		have, err := query(ctx, tx, `SELECT `+columns+` FROM launcher_apps`+byPosition)
+		if err != nil {
 			return err
+		}
+		last := 0
+		for _, a := range have {
+			last = max(last, a.Position)
 		}
 		now := time.Now().UTC().Truncate(time.Microsecond)
 		for _, d := range Defaults {
-			a := d
-			a.ID, a.CreatedAt, a.UpdatedAt, a.Position = uuid.New(), now, now, last+positionStep
-			tag, err := insert(ctx, tx, a, ` ON CONFLICT (slug) DO NOTHING`)
-			if err != nil {
+			at := slices.IndexFunc(have, func(a App) bool { return a.Slug == d.Slug })
+			if at < 0 {
+				a := d
+				last += positionStep
+				a.ID, a.CreatedAt, a.UpdatedAt, a.Position = uuid.New(), now, now, last
+				if _, err := insert(ctx, tx, a, ""); err != nil {
+					return fmt.Errorf("default tile %s: %w", d.Slug, err)
+				}
+				continue
+			}
+			cur := have[at]
+			if cur.UpdatedByUserID != nil || cur.Kind != d.Kind {
+				continue
+			}
+			next := cur
+			next.Parent, next.Group, next.Icon, next.Color, next.Href = d.Parent, d.Group, d.Icon, d.Color, d.Href
+			next.Tier, next.Stage, next.Names, next.AnyOf = d.Tier, d.Stage, d.Names, role.Known(role.Strings(d.AnyOf))
+			var evs []audit.Event
+			if before, after := shown(cur), shown(next); before != after {
+				ev, err := audit.New(uuid.New(), nil, EventChanged, auditEntity, cur.ID, now, before, after)
+				if err != nil {
+					return err
+				}
+				evs = append(evs, ev)
+			}
+			if !slices.Equal(cur.AnyOf, next.AnyOf) {
+				ev, err := audit.New(uuid.New(), nil, EventAudienceChanged, auditEntity, cur.ID, now,
+					audience{role.Strings(cur.AnyOf)}, audience{role.Strings(next.AnyOf)})
+				if err != nil {
+					return err
+				}
+				evs = append(evs, ev)
+			}
+			if len(evs) == 0 {
+				continue
+			}
+			// updated_by stays NULL: the code still owns it.
+			if _, err := tx.Exec(ctx, `
+				UPDATE launcher_apps SET parent = $2, app_group = $3, icon = $4, color = $5, href = $6, tier = $7, stage = $8,
+					name_en = $9, name_lt = $10, name_ru = $11, any_of = $12, updated_at = $13
+				WHERE id = $1`,
+				cur.ID, next.Parent, next.Group, next.Icon, next.Color, next.Href, next.Tier, next.Stage,
+				next.Names.EN, next.Names.LT, next.Names.RU, role.Strings(next.AnyOf), now); err != nil {
 				return fmt.Errorf("default tile %s: %w", d.Slug, err)
 			}
-			if tag.RowsAffected() == 1 {
-				last += positionStep
+			if err := audit.InsertAll(ctx, tx, evs); err != nil {
+				return err
 			}
 		}
 		return nil

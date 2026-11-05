@@ -17,9 +17,13 @@ Terms: `docs/ubiquitous-language.md` §13. How people use it, how a new app is b
 ## The registry
 
 `launcher_apps`: one row per tile, in `position` order. The API inserts the defaults below
-at start-up (`launcher.EnsureDefaults`: missing slugs only, after the rest; a tile changed
-on Manage apps is never put back), and Postgres tests and e2e get them back after
-emptying the database. Tiles are never deleted: **Retired** takes one away from everyone.
+at start-up (`launcher.EnsureDefaults`), and Postgres tests and e2e get them back after
+emptying the database. **Code owns a default tile until an administrator changes it**: a
+missing default is inserted, last; one no administrator has touched (`updated_by_user_id` is
+NULL) takes the code's fields when they differ, recorded as `app.changed` (and
+`app.audience_changed`) by no one; one an administrator edited, moved or switched is never
+overwritten, and its place is never changed. So a default renamed in `defaults.go` reaches
+every installation where no one changed it, and is audited. Tiles are never deleted: **Retired** takes one away from everyone.
 
 A tile: a **slug** (`^[a-z][a-z0-9-]{1,30}$`, set once), a **kind** (app or shortcut, set
 once), a shortcut's **app** (an app on this site), names in EN, LT and RU (1–60
@@ -213,10 +217,21 @@ the first; every other app keeps its fixed address (and its tile's `href`).
   **Stable follows deploys** (`PUT /api/v1/apps/{slug}/stable-follows-deploys` `{"on"}`,
   recorded as `app.changed`) is a switch above the channels; while it is off and Preview has a
   newer version than Stable, a note says so.
-- **Development.** Scan SIMs' Vite server mounts it at `/apps/sim-scan/`, and the staff app's
+- **Development.** `make e2e-caddy` runs the suite behind `deploy/Caddyfile` as CI does, with
+  Caddy from its official image at CI's pinned version (`E2E_CADDY=docker`; no local Caddy).
+  Scan SIMs' Vite server mounts it at `/apps/sim-scan/`, and the staff app's
   proxies `/apps/sim-scan` to it before the launcher's `/apps`. e2e publishes its build in
   Caddy mode (global setup, `API_APPS_DIR` a temporary folder) and drives a variant, Make
   Stable and its roll-back.
+- **Trials** (phase 5). `GET /api/v1/apps/{slug}/trials` (`apps.manage`) lists each version,
+  newest first, with the channels opening it, the people who used it and on how many days over
+  Usage's window (`usage.Days`, from `user_version_activity`, migration 0045: the request
+  middleware's daily note also records `X-PPE-App-Version`), the kinds of error last seen on it
+  and their occurrences (System's `error_events.app_version`; a kind counts for the version of
+  its latest occurrence), and the feedback given on it (`launcher_feedback.version`, migration
+  0045: the version the sender's tile opened, their chosen channel's if they still see it, else
+  Stable's). Manage apps shows it as **Trials**, beside Versions and channels; each feedback
+  item names its version.
 - **Pruning.** `api -prune-apps` (run by `make prod-up` after publishing) removes, per app, the
   versions no channel points at beyond the newest `launcher.KeepVersions` (5): rows first, under
   the app's lock so no channel moves onto one meanwhile (`PruneVersions`), recorded as one

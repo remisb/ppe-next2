@@ -21,15 +21,48 @@ var _ Store = (*PostgresStore)(nil)
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
 
-func (s *PostgresStore) RecordActivity(ctx context.Context, day time.Time, userID uuid.UUID, app string) error {
-	_, err := s.pool.Exec(ctx, `INSERT INTO user_activity (day, user_id, app) VALUES ($1::date, $2, $3)
-		ON CONFLICT DO NOTHING`, day.Format(time.DateOnly), userID, app)
+func (s *PostgresStore) RecordActivity(ctx context.Context, day time.Time, userID uuid.UUID, app, version string) error {
+	if _, err := s.pool.Exec(ctx, `INSERT INTO user_activity (day, user_id, app) VALUES ($1::date, $2, $3)
+		ON CONFLICT DO NOTHING`, day.Format(time.DateOnly), userID, app); err != nil || version == "" {
+		return err
+	}
+	_, err := s.pool.Exec(ctx, `INSERT INTO user_version_activity (day, user_id, app, version) VALUES ($1::date, $2, $3, $4)
+		ON CONFLICT DO NOTHING`, day.Format(time.DateOnly), userID, app, version)
 	return err
 }
 
+func (s *PostgresStore) VersionUse(ctx context.Context, app string, since time.Time) (map[string]VersionUse, error) {
+	rows, err := s.pool.Query(ctx, `SELECT version, count(DISTINCT user_id), count(DISTINCT day) FROM user_version_activity
+		WHERE app = $1 AND day >= $2::date GROUP BY version`, app, since.Format(time.DateOnly))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]VersionUse{}
+	for rows.Next() {
+		var v string
+		var u VersionUse
+		if err := rows.Scan(&v, &u.People, &u.Days); err != nil {
+			return nil, err
+		}
+		out[v] = u
+	}
+	return out, rows.Err()
+}
+
 func (s *PostgresStore) PurgeActivity(ctx context.Context, before time.Time) (int64, error) {
-	tag, err := s.pool.Exec(ctx, `DELETE FROM user_activity WHERE day < $1::date`, before.Format(time.DateOnly))
-	return tag.RowsAffected(), err
+	var n int64
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		for _, table := range []string{"user_activity", "user_version_activity"} {
+			tag, err := tx.Exec(ctx, `DELETE FROM `+table+` WHERE day < $1::date`, before.Format(time.DateOnly))
+			if err != nil {
+				return err
+			}
+			n += tag.RowsAffected()
+		}
+		return nil
+	})
+	return n, err
 }
 
 func (s *PostgresStore) SampleQuality(ctx context.Context, q Quality) error {

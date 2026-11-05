@@ -24,7 +24,7 @@ const (
 	FunnelDays = 90
 	// QualityDays is how far back the data-quality trend reaches.
 	QualityDays = 90
-	// ActivityKept is how long user_activity rows are kept.
+	// ActivityKept is how long user_activity (and user_version_activity) rows are kept.
 	ActivityKept = 400 * 24 * time.Hour
 	// TopPeople is how many of the most active people the report names.
 	TopPeople = 8
@@ -135,8 +135,12 @@ type Window struct {
 
 // Store reads the report and writes activity and quality samples.
 type Store interface {
-	// RecordActivity notes userID used app on day; again is a no-op.
-	RecordActivity(ctx context.Context, day time.Time, userID uuid.UUID, app string) error
+	// RecordActivity notes userID used app on day, and that version of it
+	// when version is not ""; again is a no-op.
+	RecordActivity(ctx context.Context, day time.Time, userID uuid.UUID, app, version string) error
+	// VersionUse returns, for each version of app used since day, how many
+	// people used it and on how many days.
+	VersionUse(ctx context.Context, app string, since time.Time) (map[string]VersionUse, error)
 	// PurgeActivity deletes the activity before day.
 	PurgeActivity(ctx context.Context, before time.Time) (int64, error)
 	// SampleQuality records q for its day, replacing that day's.
@@ -178,11 +182,13 @@ func (s *Service) dayOf(t time.Time) time.Time {
 	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-// Seen notes that userID used app now. It writes once per user, app and day
-// in this process; the database ignores a repeat from another.
-func (s *Service) Seen(ctx context.Context, userID uuid.UUID, app string) error {
+// Seen notes that userID used app now, and that version of it when version
+// is not "" (a published app's page, X-PPE-App-Version). It writes once per
+// user, app, version and day in this process; the database ignores a repeat
+// from another.
+func (s *Service) Seen(ctx context.Context, userID uuid.UUID, app, version string) error {
 	day := s.dayOf(s.now())
-	key := userID.String() + "|" + app
+	key := userID.String() + "|" + app + "|" + version
 	s.mu.Lock()
 	if d := day.Format(time.DateOnly); s.day != d {
 		s.day, s.seen = d, map[string]bool{}
@@ -193,13 +199,25 @@ func (s *Service) Seen(ctx context.Context, userID uuid.UUID, app string) error 
 	}
 	s.seen[key] = true
 	s.mu.Unlock()
-	if err := s.store.RecordActivity(ctx, day, userID, app); err != nil {
+	if err := s.store.RecordActivity(ctx, day, userID, app, version); err != nil {
 		s.mu.Lock()
 		delete(s.seen, key)
 		s.mu.Unlock()
 		return err
 	}
 	return nil
+}
+
+// VersionUse is how much one version of a published app was used: by how
+// many people, on how many days (App Launcher's Trials view).
+type VersionUse struct {
+	People int `json:"people"`
+	Days   int `json:"days"`
+}
+
+// VersionUse returns the use of each version of app over the last Days days.
+func (s *Service) VersionUse(ctx context.Context, app string) (map[string]VersionUse, error) {
+	return s.store.VersionUse(ctx, app, s.dayOf(s.now()).AddDate(0, 0, -(Days-1)))
 }
 
 // PurgeActivity deletes activity older than ActivityKept.

@@ -104,6 +104,12 @@ export const apps = {
   stableFollowsDeploys: 'Stable follows deploys',
   stableFollowsDeploysHint: 'Each deploy makes its build Stable for everyone, as well as Preview. Leave it off to let testers try a build first.',
   previewAhead: (version: string) => `Preview has a newer version than Stable: ${version}. Make it Stable when it is ready.`,
+  trials: 'Trials',
+  trialsHint: (days: number) => `Each version side by side: who used it in the last ${days} days, the errors last seen on it and the feedback sent from its tile.`,
+  trialPeople: 'People',
+  trialDays: (n: number) => (n === 1 ? 'on 1 day' : `on ${n} days`),
+  trialErrors: 'Errors',
+  trialOccurrences: (n: number) => (n === 1 ? 'once' : `${n} times`),
 }
 
 export type AppsText = typeof apps

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { defineConfig, devices } from '@playwright/test'
@@ -16,14 +16,38 @@ for (const root of caddy ? [webRoot, adminRoot, simScanDist, launcherRoot] : [])
 }
 // Scan SIMs is published there by global setup (the API must find the folder at start).
 if (caddy) mkdirSync(appsDir, { recursive: true })
-const webServerCommand = caddy
-  ? `caddy run --adapter caddyfile --config ${join(repoRoot, 'deploy/Caddyfile')}`
+
+/**
+ * E2E_CADDY=docker (make e2e-caddy) runs Caddy from its official image instead
+ * of a caddy on the PATH: the version CI pins (ci.yml's CADDY_VERSION), or
+ * E2E_CADDY_IMAGE. The repository and the published folder are mounted at
+ * their own paths, read only, and the API is reached on the host.
+ */
+const caddyInDocker = caddy && process.env['E2E_CADDY'] === 'docker'
+const caddyVersion = /CADDY_VERSION: (\S+)/.exec(readFileSync(join(repoRoot, '.github/workflows/ci.yml'), 'utf8'))?.[1]
+const caddyImage = process.env['E2E_CADDY_IMAGE'] ?? `caddy:${caddyVersion}-alpine`
+const caddyEnvNames = ['SITE_ADDRESS', 'API_UPSTREAM', 'WEB_ROOT', 'ADMIN_ROOT', 'LAUNCHER_ROOT', 'PUBLISHED_ROOT']
+const caddyRun = `caddy run --adapter caddyfile --config ${join(repoRoot, 'deploy/Caddyfile')}`
+const webServerCommand = caddyInDocker
+  ? // A container left by a run that was stopped would hold the port.
+    `docker rm -f ppe-e2e-caddy >/dev/null 2>&1; exec docker run --rm --name ppe-e2e-caddy -p ${webPort}:${webPort} ` +
+    `--add-host=host.docker.internal:host-gateway ${caddyEnvNames.map((n) => `-e ${n}`).join(' ')} ` +
+    `-v ${repoRoot}:${repoRoot}:ro -v ${appsDir}:${appsDir}:ro ${caddyImage} ${caddyRun}`
+  : caddy
+  ? caddyRun
   : // The app's own vite binary, not `pnpm exec vite`: pnpm 12 starts the
     // child in its own process group and exits, so Playwright's shutdown never
     // reaches vite and the run hangs after the last test.
     `${join(repoRoot, 'web/apps/workwear/node_modules/.bin/vite')} --port ${webPort} --strictPort`
 const webServerEnv: Record<string, string> = caddy
-  ? { SITE_ADDRESS: webURL, API_UPSTREAM: `localhost:${apiPort}`, WEB_ROOT: webRoot, ADMIN_ROOT: adminRoot, LAUNCHER_ROOT: launcherRoot, PUBLISHED_ROOT: appsDir }
+  ? {
+      SITE_ADDRESS: webURL,
+      API_UPSTREAM: `${caddyInDocker ? 'host.docker.internal' : 'localhost'}:${apiPort}`,
+      WEB_ROOT: webRoot,
+      ADMIN_ROOT: adminRoot,
+      LAUNCHER_ROOT: launcherRoot,
+      PUBLISHED_ROOT: appsDir,
+    }
   : {
       VITE_API_TARGET: `http://localhost:${apiPort}`,
       VITE_ADMIN_TARGET: `http://localhost:${adminPort}`,

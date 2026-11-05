@@ -216,9 +216,10 @@ One serial Playwright spec drives the whole order lifecycle through the real UI,
 and the `_test` database. The setup empties that database first. The suite starts its own
 API on port 18090 and Vite on port 5181.
 
-To test the production setup instead, build the bundle with `pnpm build` and run with
-`E2E_WEB_SERVER=caddy`. The suite then serves the build through `deploy/Caddyfile` on port
-5181, as CI does. This needs `caddy` on your `PATH`.
+To test the production setup instead, run `make e2e-caddy`: it builds the bundle and serves it
+through `deploy/Caddyfile` on port 5181, as CI does, with Caddy from its official image (CI's
+pinned version) in Docker. With `caddy` on your `PATH`, `pnpm build` then
+`E2E_WEB_SERVER=caddy pnpm e2e` in `web/e2e` does the same without Docker.
 
 ```bash
 cd web/e2e && pnpm exec playwright install chromium

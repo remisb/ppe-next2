@@ -157,6 +157,9 @@ Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then 
 the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
 and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. Small apps use
 `@ppe/launcher`'s `SignedIn` and `AppFrame` (its bar scrolls away; the screen's header alone sticks).
+Defaults are the code's until an administrator changes one (`EnsureDefaults` syncs untouched
+tiles, audited). Manage apps' **Trials** (migration 0045: `user_version_activity`,
+`launcher_feedback.version`) shows each version's people, errors and feedback.
 `make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app) and
 publishes nothing from a checkout with local changes.
 
@@ -222,6 +225,7 @@ make test             # go test -p 1 ./... — Postgres tests skip without API_T
 make db-test-create   # create + migrate the <POSTGRES_DB>_test database
 make test-db          # all tests incl. Postgres ones (refuses if test DSN == main DSN)
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
+make e2e-caddy        # the same behind deploy/Caddyfile, Caddy in Docker at CI's version (as CI runs it)
 go test ./internal/domain/user -run TestAuthenticate   # single test
 cd web/e2e && pnpm exec playwright test -g "paper confirmation"   # one e2e step (suite is serial)
 cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB; stamps its seals with DigiCert, so needs the internet; GUIDE_TSA_URL='' skips that)
@@ -427,7 +431,7 @@ the API connects as it); global setup then seeds a test admin via `api -seed-adm
 `pnpm exec playwright install chromium` once. Do not run it while `make test-db` runs.
 The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
-needs `caddy` on your `PATH`. CI pins the Caddy version and its SHA-512 checksum in
+needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`). CI pins the Caddy version and its SHA-512 checksum in
 `ci.yml`, so a Caddy upgrade must update both.
 The Vite web servers are started from `apps/<app>/node_modules/.bin/vite`, not `pnpm exec`:
 pnpm 12 detaches the child, so Playwright could not stop it and the run hung after the last test.

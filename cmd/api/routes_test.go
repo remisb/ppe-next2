@@ -352,6 +352,9 @@ func (m *memSystem) ListErrors(context.Context, system.ErrorQuery) ([]system.Err
 func (m *memSystem) NewErrorKinds(context.Context, time.Time) (int, error) { return 0, nil }
 func (m *memSystem) PurgeErrors(context.Context, time.Time) (int64, error) { return 0, nil }
 func (m *memSystem) SampleSize(context.Context, time.Time) error           { return nil }
+func (m *memSystem) VersionErrors(context.Context, string) (map[string]system.VersionErrors, error) {
+	return map[string]system.VersionErrors{}, nil
+}
 func (m *memSystem) Database(context.Context, time.Time) (system.Database, error) {
 	return system.Database{Connections: map[string]int{}, Tables: []system.Table{}}, nil
 }
@@ -359,10 +362,15 @@ func (m *memSystem) Database(context.Context, time.Time) (system.Database, error
 // memUsage records nothing and reports an empty Usage screen.
 type memUsage struct{}
 
-func (memUsage) RecordActivity(context.Context, time.Time, uuid.UUID, string) error { return nil }
-func (memUsage) PurgeActivity(context.Context, time.Time) (int64, error)            { return 0, nil }
-func (memUsage) SampleQuality(context.Context, usage.Quality) error                 { return nil }
-func (memUsage) Read(context.Context, usage.Window) (usage.Report, error)           { return usage.Report{}, nil }
+func (memUsage) RecordActivity(context.Context, time.Time, uuid.UUID, string, string) error {
+	return nil
+}
+func (memUsage) VersionUse(context.Context, string, time.Time) (map[string]usage.VersionUse, error) {
+	return map[string]usage.VersionUse{}, nil
+}
+func (memUsage) PurgeActivity(context.Context, time.Time) (int64, error)  { return 0, nil }
+func (memUsage) SampleQuality(context.Context, usage.Quality) error       { return nil }
+func (memUsage) Read(context.Context, usage.Window) (usage.Report, error) { return usage.Report{}, nil }
 
 // memSecurity is an in-memory security.Store holding the events written, so
 // the per-email sign-in limit works in the HTTP tests. Its reads for the
@@ -952,6 +960,7 @@ var policy = map[string]rule{
 	"GET /api/v1/apps/{slug}/releases":                                          {role.AppsManage, "admins"},
 	"PUT /api/v1/apps/{slug}/channels/{name}":                                   {role.AppsManage, "admins"},
 	"PUT /api/v1/apps/{slug}/stable-follows-deploys":                            {role.AppsManage, "admins"},
+	"GET /api/v1/apps/{slug}/trials":                                            {role.AppsManage, "admins"},
 	"GET /apps/{slug}/{rest...}":                                                {"", "public"},
 	"GET /api/v1/apps":                                                          {role.AppsManage, "admins"},
 	"POST /api/v1/apps":                                                         {role.AppsManage, "admins"},

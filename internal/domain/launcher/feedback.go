@@ -20,6 +20,9 @@ type Feedback struct {
 	Text     string    `json:"text"`
 	Device   string    `json:"device"`
 	Language string    `json:"language"`
+	// Version is the published version the sender's tile opened (migration
+	// 0045); nil for an app with no versions.
+	Version *string `json:"version"`
 	// CreatedAt is when it was sent.
 	CreatedAt time.Time `json:"created_at"`
 }

@@ -302,7 +302,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)
-	registerLauncherRoutes(rt, svc.launcher)
+	registerLauncherRoutes(rt, svc.launcher, svc.usage, svc.system)
 	registerPublishedAppRoutes(rt, svc.launcher, cfg.AppsDir)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)

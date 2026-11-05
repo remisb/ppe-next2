@@ -4,7 +4,7 @@ How App Launcher works today, how people use it, how an app joins it, how new
 apps should be designed, and what should change next. For everyone who uses the
 apps, administers them or builds them.
 
-As of 2026-11-05: production `b276a0a`; improvements 1, 3, 5 and 6 built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
+As of 2026-11-05: production `b276a0a`; improvements 1, 3, 5, 6, 7, 8 and 9 built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
 Rules and routes: [the spec](../specs/app-launcher.md). The research and options
 that led here: [the decision guide](app-launcher.md). Terms: glossary §13.
 
@@ -132,8 +132,9 @@ Recipes:
 
 Every change is audited (`app.registered`, `app.changed`, `app.audience_changed`,
 `app.moved`, `app.version_published`, `app.channel_moved`, `app.channel_changed`).
-Default tiles live in code (`defaults.go`) and are inserted at start-up when missing,
-never over an administrator's change.
+Default tiles live in code (`defaults.go`), and code owns each one until an administrator
+changes it: at start-up a missing default is inserted and an untouched one takes the code's
+fields (audited by no one); one an administrator edited is never overwritten.
 
 **API.** `GET /api/v1/launcher` (the user's tiles, pins, the channels they see and their
 choices), `PUT /api/v1/launcher/pins`, `POST /api/v1/launcher/feedback`,
@@ -233,11 +234,11 @@ What does not, in order of impact:
    bookmarks and the staff app's links always open Stable, whatever the tester chose.
 6. **Old versions pile up.** *Fixed: pruning and the dirty-checkout check (improvement 6).* Nothing prunes the `published` volume (about 16 MB per Scan
    SIMs build); a build from a dirty checkout gets a clean-looking version name.
-7. **Two sources for tiles.** Default tiles live in code and in the database; renaming a
+7. **Two sources for tiles.** *Fixed: code owns a default until an administrator changes it; untouched defaults follow the code, audited (improvement 7).* Default tiles live in code and in the database; renaming a
    default in code does not rename it where it already exists.
-8. **Feedback and errors are not yet read together** per version (phase 5, the Trials view),
+8. **Feedback and errors are not yet read together** *Fixed: Trials on Manage apps (improvement 8).* per version (phase 5, the Trials view),
    so "is Beta better?" is still answered by hand.
-9. **Caddy-mode tests need Caddy**, so most local runs never exercise published serving;
+9. **Caddy-mode tests need Caddy** *Fixed: `make e2e-caddy` (improvement 9); it also found a racy Item Catalogue step.*, so most local runs never exercise published serving;
    CI does.
 
 ## 8. Proposed improvements
@@ -252,11 +253,11 @@ Sorted by value for effort. Each keeps or reduces moving parts.
 | 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from Scan SIMs | 2 | S | Proposed |
 | 5 | **Honour the choice everywhere**: `/apps/<slug>/` redirects a tester to their chosen channel; the stripe also offers **Versions** | 5 | S | Built 2026-11-05 |
 | 6 | **Prune**: `api -prune-apps` keeps every version a channel points at plus the last N, run by `prod-up`; refuse dirty builds in `prod-up` | 6 | S | Built 2026-11-05 |
-| 7 | **Defaults as a migration-like seed**: insert once by key, then the database is the only source (drop the at-start-up sync) | 7 | S | Proposed |
-| 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M | Proposed |
-| 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S | Proposed |
+| 7 | **Code owns a default until an administrator changes it**: untouched default tiles follow `defaults.go` at start-up, audited; edited ones are never overwritten (instead of seeding once, which would need a migration per rename) | 7 | S | Built 2026-11-05 |
+| 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M | Built 2026-11-05 |
+| 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S | Built 2026-11-05 |
 
-**Simplicity check before building more.** 1, 3, 5 and 6 are built: they make today's single
-published app safe and invisible to users. If no second published app is planned in the
-next quarter, stop here. Do 2 and 4 the week a second app is approved; until then the
+**Simplicity check before building more.** All but 2 and 4 are built: today's single published
+app is safe, invisible to users, measured per version and tested locally as in production.
+2 and 4 automate adding a second published app; build them the week one is approved. Do 2 and 4 the week a second app is approved; until then the
 handful of manual edits is cheaper than the automation.

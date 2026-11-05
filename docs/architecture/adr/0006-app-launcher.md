@@ -107,7 +107,10 @@ app, without DNS or address work for each.
 - Since 2026-11-05 (the handbook's improvements 1, 3, 5 and 6): a per-app **Stable follows
   deploys** switch; small apps share `AppFrame`, whose bar scrolls away; a tester's channel
   choice is honoured at the app's own address; `make prod-up` prunes versions no channel opens
-  beyond the newest five and publishes nothing from a dirty checkout.
+  beyond the newest five and publishes nothing from a dirty checkout. Then 7, 8 and 9: code owns
+  a default tile until an administrator changes it (synced at start-up, audited); phase 5's
+  **Trials** view on Manage apps (each version's people, errors and feedback; migration 0045);
+  `make e2e-caddy` runs the suite behind the production Caddy config from Docker.
 
 ## Consequences
 

@@ -1599,5 +1599,27 @@ export interface AppFeedback {
   text: string
   device: FeedbackDevice
   language: 'en' | 'lt' | 'ru'
+  /** The published version the sender's tile opened; null for an app with no versions. */
+  version: string | null
   created_at: string
+}
+
+/** One version in a published app's Trials view (ADR 0006, phase 5). */
+export interface AppTrial {
+  version: string
+  published_at: string
+  /** The channels opening it now, with a variant's label. */
+  channels: AppChannel[]
+  /** People who used it, and on how many days, over the last `days`. */
+  people: number
+  days: number
+  /** Kinds of error last seen on it, and how often they came. */
+  error_kinds: number
+  errors: number
+  feedback: { works: number; confusing: number; broken: number }
+}
+
+export interface AppTrials {
+  days: number
+  versions: AppTrial[]
 }

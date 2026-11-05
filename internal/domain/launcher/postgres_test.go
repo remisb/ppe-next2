@@ -75,6 +75,28 @@ func TestPostgresRegistry(t *testing.T) {
 		t.Errorf("after EnsureDefaults: crew %+v, last %s", crew, list[len(list)-1].Slug)
 	}
 
+	// A default no administrator touched follows the code (as an older release left it, here by hand),
+	// recorded by no one; crew, edited above, stays as the administrator left it.
+	if _, err := pool.Exec(ctx, `UPDATE launcher_apps SET name_en = 'Old name', any_of = '{users.manage}' WHERE slug = 'orders'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := EnsureDefaults(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	orders, _ := svc.Get(ctx, "orders")
+	want := Defaults[slices.IndexFunc(Defaults, func(d App) bool { return d.Slug == "orders" })]
+	if orders.Names != want.Names || !slices.Equal(orders.AnyOf, want.AnyOf) || orders.UpdatedByUserID != nil {
+		t.Errorf("orders after EnsureDefaults: %+v", orders)
+	}
+	var synced, byNoOne int
+	if err := pool.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE actor_user_id IS NULL) FROM audit_events
+		WHERE entity_id = $1 AND event IN ('app.changed', 'app.audience_changed')`, orders.ID).Scan(&synced, &byNoOne); err != nil || synced != 2 || byNoOne != 2 {
+		t.Errorf("events for the synced default = %d (%d by no one), %v", synced, byNoOne, err)
+	}
+	if crew, _ := svc.Get(ctx, "crew"); crew.Href != "https://crew.example.org/" {
+		t.Errorf("an administrator's change was overwritten: %s", crew.Href)
+	}
+
 	a, err := svc.Create(ctx, valid(), actor)
 	if err != nil {
 		t.Fatal(err)

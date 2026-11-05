@@ -102,4 +102,10 @@ export const apps: AppsText = {
   stableFollowsDeploys: 'Stabili seka diegimus',
   stableFollowsDeploysHint: 'Kiekvienas diegimas savo versiją padaro stabilia visiems, kartu ir peržiūros. Palikite išjungtą, kad bandytojai pirma išbandytų.',
   previewAhead: (version) => `Peržiūroje naujesnė versija nei stabili: ${version}. Kai ji bus paruošta, padarykite ją stabilia.`,
+  trials: 'Bandymai',
+  trialsHint: (days) => `Kiekviena versija greta kitų: kas ja naudojosi per paskutines ${days} dienas, paskutinį kartą joje matytos klaidos ir atsiliepimai iš jos plytelės.`,
+  trialPeople: 'Žmonės',
+  trialDays: (n) => (n === 1 ? '1 dieną' : `${n} d.`),
+  trialErrors: 'Klaidos',
+  trialOccurrences: (n) => (n === 1 ? 'kartą' : `${n} k.`),
 }

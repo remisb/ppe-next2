@@ -165,7 +165,7 @@ func noteActivity(r *http.Request, svc services, logger *slog.Logger) {
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 3*time.Second)
 	defer cancel()
-	if err := svc.usage.Seen(ctx, req.UserID, app); err != nil {
+	if err := svc.usage.Seen(ctx, req.UserID, app, req.AppVersion); err != nil {
 		logger.ErrorContext(ctx, "usage: activity not recorded", slog.Any("error", err))
 	}
 }

@@ -29,6 +29,16 @@ type Store interface {
 	Database(ctx context.Context, now time.Time) (Database, error)
 	// SampleSize records the database's size for day (replacing that day's).
 	SampleSize(ctx context.Context, day time.Time) error
+	// VersionErrors counts, for each version of source's app, the kinds of
+	// error whose latest occurrence came from it and their occurrences.
+	VersionErrors(ctx context.Context, source string) (map[string]VersionErrors, error)
+}
+
+// VersionErrors is the error list as one version of a published app left it:
+// the kinds of error last seen on it (one row each) and how often they came.
+type VersionErrors struct {
+	Kinds       int `json:"kinds"`
+	Occurrences int `json:"occurrences"`
 }
 
 // Service records and reads the error list and the database's status.
@@ -100,6 +110,13 @@ func (s *Service) Record(ctx context.Context, r Report) error {
 }
 
 // Errors is one page of the error list, the latest occurrence first.
+// VersionErrors returns the error list by version of a published app
+// (App Launcher's Trials view): each kind counts for the version its latest
+// occurrence came from, as error_events.app_version keeps only that one.
+func (s *Service) VersionErrors(ctx context.Context, app string) (map[string]VersionErrors, error) {
+	return s.store.VersionErrors(ctx, app)
+}
+
 func (s *Service) Errors(ctx context.Context, f ErrorFilter) (ErrorPage, error) {
 	switch {
 	case f.Kind != "" && !IsKind(f.Kind):

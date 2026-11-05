@@ -18,7 +18,11 @@ script in any case.
 
 `internal/usage` is infrastructure, like `internal/audit`.
 
-**`user_activity(day, user_id, app)`** (migration 0027) records a user's app on a day.
+**`user_activity(day, user_id, app)`** (migration 0027) records a user's app on a day, and
+**`user_version_activity(day, user_id, app, version)`** (migration 0045) which version of a
+published app (the page's `X-PPE-App-Version`), written by the same call and purged with it;
+`usage.Service.VersionUse` counts people and days per version over `Days` for App Launcher's
+Trials view.
 - `observe` (`cmd/api/observe.go`) calls `usage.Service.Seen` for every request with a valid
   access token from an app: `workwear`, `admin` or `api` (the `X-PPE-App` header,
   `audit.Request.Source`).
