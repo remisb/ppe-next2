@@ -4,7 +4,7 @@ How App Launcher works today, how people use it, how an app joins it, how new
 apps should be designed, and what should change next. For everyone who uses the
 apps, administers them or builds them.
 
-As of 2026-11-05: production `b276a0a`; all nine improvements built on main since. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
+As of 2026-11-05: production `b276a0a`; improvements 1–9 built on main since; a second review proposes 10–23. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
 Rules and routes: [the spec](../specs/app-launcher.md). The research and options
 that led here: [the decision guide](app-launcher.md). Terms: glossary §13.
 
@@ -119,7 +119,7 @@ Recipes:
    /api/*               ──► Go API: registry, pins, choices, feedback, everything else
 ```
 
-**Registry** (`internal/domain/launcher`, migrations 0042–0043):
+**Registry** (`internal/domain/launcher`, migrations 0042–0045):
 
 | Table | Holds |
 |---|---|
@@ -129,6 +129,7 @@ Recipes:
 | `launcher_versions` | Published builds: `YYYY.MM.DD-<commit>`, profile, capabilities, commit, when, by whom |
 | `launcher_channels` | stable/beta/preview/variants → a version, with label and audience |
 | `launcher_channel_choices` | Each user's chosen channel per app |
+| `user_version_activity` | Who opened which version on which day (Trials) |
 
 Every change is audited (`app.registered`, `app.changed`, `app.audience_changed`,
 `app.moved`, `app.version_published`, `app.channel_moved`, `app.channel_changed`).
@@ -163,7 +164,8 @@ on standard input (≤ 5000 files, 300 MB, no links, nothing outside it), moves 
 `make prod-publish APP= REF= [CHANNEL=]` builds any git ref on the droplet and publishes it.
 Then `prod-up` prunes: per app it keeps every version a channel points at and the newest
 five. It publishes nothing from a checkout with local changes. Builds are not backed up:
-they are rebuilt from git.
+they are meant to be rebuilt from git, which today works only for a version not yet
+recorded (critique S1).
 
 **In every app.** `@ppe/app-shell` sends `X-PPE-App: <slug>` (and `X-PPE-App-Version` from a
 published page), so the Audit log, Security, System's errors and Usage name the app and
@@ -216,53 +218,95 @@ another team or another feature.
 
 ## 7. Critique
 
-What works well: the trust boundary is explicit; the registry is boring SQL with an
-audit trail; rollback is a pointer move; the security policy is chosen by a closed list
-and tested against Caddy; users get exactly their apps with no new sign-in.
+Reviewed again on 2026-11-05, after improvements 1–9, through four lenses: **safety**, **simplicity**,
+**efficiency** and **maintainability**. Each finding was checked against the code and names where it is.
 
-What does not, in order of impact:
+### What works well (keep it)
 
-1. **Deploys do not reach users by themselves.** *Eased: Stable follows deploys and the Preview-ahead note (improvement 1).* A deploy moves Preview only, so a fix
-   reaches nobody until someone remembers **Make Stable**. This happened on 2026-11-05:
-   the Scan SIMs header fix was deployed but Stable stayed on the old build. Safe, but easy to forget.
-2. **"No config per app" is not true yet.** *Fixed: published apps are found from their manifest (improvement 2), and `make new-app` starts one (improvement 4).* A new published app still needs edits in
-   five places outside its folder (Makefile list, Dockerfile build filter and copy, Vite
-   proxy, e2e server and port), besides registering its tile.
-   ADR 0006 promised a registration and a publish.
-3. **A lot of machinery for one app.** Volume, API page route, rewriting, two policy
-   copies, publish command, build script, three tables: justified only if a second and
-   third published app follow. Today Scan SIMs alone uses it.
-4. **Each app copies its own frame.** *Fixed for small apps: `AppFrame` (improvement 3); the staff app, Administration and the launcher keep theirs.* Workwear, Administration, Scan SIMs and the launcher
-   each build header, Apps entry, sign-out and gates. The overlapping-headers bug came
-   from exactly this: a shared screen header met a copied frame no test scrolled.
-5. **Versions are hard to find.** *Eased: the choice is honoured at the app's own address and the stripe switches channels (improvement 5); discovering Beta still needs ⋯.* A tester must open ⋯ on the tile to discover Beta;
-   bookmarks and the staff app's links always open Stable, whatever the tester chose.
-6. **Old versions pile up.** *Fixed: pruning and the dirty-checkout check (improvement 6).* Nothing prunes the `published` volume (about 16 MB per Scan
-   SIMs build); a build from a dirty checkout gets a clean-looking version name.
-7. **Two sources for tiles.** *Fixed: code owns a default until an administrator changes it; untouched defaults follow the code, audited (improvement 7).* Default tiles live in code and in the database; renaming a
-   default in code does not rename it where it already exists.
-8. **Feedback and errors are not yet read together** *Fixed: Trials on Manage apps (improvement 8).* per version (phase 5, the Trials view),
-   so "is Beta better?" is still answered by hand.
-9. **Caddy-mode tests need Caddy** *Fixed: `make e2e-caddy` (improvement 9); it also found a racy Item Catalogue step.*, so most local runs never exercise published serving;
-   CI does.
+- **The trust boundary is explicit**: only code reviewed here runs on the site, with the user's sign-in; anything else is a linked site.
+- **Publishing is careful**: `untar` refuses links, devices, `..` and absolute names, caps size and file count, extracts beside the destination and renames it into place; a version is never replaced.
+- **Rolling back moves a pointer**: pruning and moving a channel lock the same app row, a foreign key backs it, and choices are kept by channel name, so pruning never strands one.
+- **Policies come from a closed list**: files live under their profile, Caddy serves only the known ones, and tests keep the Go and Caddy copies (and the icon lists) equal.
+- **Cheap where it is used most**: one `GET /api/v1/launcher` per page, shared by the frame, the stripe and the staff app's sign-in.
+- **A new app is one command**, and CI builds the template, so it cannot rot unnoticed.
+
+### Safety
+
+- **S1. A lost `published` volume is never rebuilt** (High). The docs say builds are rebuilt from git rather than backed up, but `api -publish-app` writes files only for a version it has no row for. After a restore onto a new droplet, or a lost volume, the database names versions whose folders are gone: `/apps/sim-scan/` answers 500, and `prod-up` or `prod-publish` reports "already published" and writes nothing. *Where:* `cmd/api/publish-app.go:61-81`.
+- **S2. Signing in as someone else on the same page shows the previous user's launcher** (Medium). `useLauncher` keeps the last list until the new user's arrives, the launcher copies pins and choices into state once, and signing out does not reload the page. On a shared tablet, B briefly sees A's tiles and pins; pinning then saves A's pins to B's account. Every app's Apps entry and channel stripe read the same stale list. *Where:* `@ppe/launcher` `load.ts:57-68`; `apps/launcher/src/app.tsx:80,84`.
+- **S3. A channel's audience decides who sees it, not who can open it, and the check fails open** (Medium). The page route is public by design (the data stays behind the API's permissions), so the stripe's redirect is the only gate, and it lets anyone stay while the list loads or fails. A Preview or variant build, or any kept `@<version>`, opens for anyone with the link, signed out included. Nothing in the spec says so. *Where:* `channel-stripe.tsx:27`; `published-app-routes.go:41,54`.
+- **S4. Gaps in the audit trail and half-done publishes** (Low). A new variant's audience is not recorded (only `app.channel_moved`). Publishing to an unknown variant records the version before refusing. Two publishes of one version at once can delete the first one's files. The `prod-up` publish pipe has no `pipefail`, so a cut-off tar might be published as complete (suspected, not shown). *Where:* `service_versions.go:93,107,201`; `publish-app.go:71`; `Makefile` prod-up.
+- **S5. Production runs a Caddy no test ran** (Low). The web image is `FROM caddy:2-alpine`, while CI and `make e2e-caddy` pin `CADDY_VERSION` and its checksum. A rebuild can pick up a Caddy the policies and redirects were never tested on. *Where:* `web/Dockerfile:33`.
+- **S6. Failures the user never sees** (Low). Saving pins or a channel choice reverts silently when it fails. **Back to Stable** swallows a failed save, and the Stable address then sends the user straight back to the channel they chose. Device pins from phase 1 are deleted before the API has saved them. *Where:* `apps/launcher/src/app.tsx:98-118`; `channel-stripe.tsx:43-47`.
+
+### Simplicity
+
+- **P1. A lot of machinery for one app** (Medium). About 1,900 lines (versions, channels, the page route, publishing and pruning, the stripe, Releases, Trials, three migrations) serve Scan SIMs alone. Variants with audiences, per-user choices, Stable follows deploys and Trials have not been needed by a second app yet. Capabilities are decorative: declaring any one gives the whole device profile. *Where:* `internal/domain/launcher/versions.go:31-41`.
+- **P2. Fixed ports are written in six places** (Medium). The staff app's, Administration's and the launcher's ports are listed in `new-app.ts`, `e2e/env.ts`, two Vite configs, `.claude/launch.json` and CLAUDE.md; `make new-app` adds nothing to `launch.json`. *Where:* `new-app.ts:55`; `e2e/env.ts:14-18`.
+- **P3. Repeated code** (Low). The launcher repeats `SignedIn`; Administration repeats the launcher's stage and rating words in three languages; three Playwright server entries are near copies; the template's Vite config is Scan SIMs' minus two plugins. *Where:* `apps/launcher/src/app.tsx:48-73`; `e2e/playwright.config.ts:60-87`.
+
+### Efficiency
+
+- **E1. Every page load redoes the same work** (Low). Opening a published app runs three queries (one loads every app's channels and filters in Go), reads `index.html` from disk and rewrites it, and is sent `no-cache` without an ETag, so it is never a 304. A version's page never changes. *Where:* `service_versions.go:258-270,439`; `published-app-routes.go:72-96`.
+- **E2. One dev and e2e server per published app** (Low). Every published app starts its own Vite server in development and e2e, whether a test uses it or not; the cost grows with each app. *Where:* `e2e/playwright.config.ts:70-77`.
+
+### Maintainability
+
+- **M1. Rules copied by hand with no test** (Medium). The slug rule and reserved slugs are in Go, in `new-app.ts` and in Administration (for slugs and variant names), and must also match Caddy's `/apps/` paths. The profile's policy is an if/else, so a third profile would silently get the staff policy. *Where:* `app.go:120,123`; `apps/admin/src/lib/apps.ts:90,137`; `published-app-routes.go:89-94`.
+- **M2. A variant can take a screen's address** (Low). The first path segment is a channel when one has that name, so a variant called `find` would take over Scan SIMs' `/find` for everyone. *Where:* `service_versions.go:478-481`.
+- **M3. Leftovers are never cleaned** (Low). A killed publish leaves `.incoming/` behind, and folders no version names stay, and Caddy serves them. *Where:* `publish-app.go`; `Caddyfile:60-65`.
+- **M4. Risky paths without tests** (Low). `untar` is tested only with `../`: not with links, absolute names, duplicates or its caps. Nothing tests publishing a recorded version whose files are gone, a page with no `</head>` (its meta tags are dropped silently), the stripe's redirects, or `useLauncher` when the user changes; S1, S2 and S6 would have shown there. *Where:* `api_postgres_test.go:2082`.
+- **M5. Small slips** (Low). `X-PPE-App-Version` is set twice on downloads; Scan SIMs' `package.json` still says `/sim-scan`; `make new-app` copies the template before checking its placeholders, so a bad template leaves a half-made folder. *Where:* `api-client/src/client.ts:176-177`; `new-app.ts:96-102`.
+
+### The first review, and where it stands
+
+| # | Finding | Now |
+|---|---|---|
+| 1 | Deploys did not reach users by themselves | Stable follows deploys; a note while Preview is ahead (1) |
+| 2 | A new published app needed edits in five places | Found from its manifest (2); `make new-app` (4) |
+| 3 | A lot of machinery for one app | Still open: P1 |
+| 4 | Each app copied its own frame | `AppFrame` for small apps (3) |
+| 5 | Versions were hard to find | The choice is honoured at the app's address; the stripe switches (5) |
+| 6 | Old versions piled up | Pruning and the dirty-checkout check (6) |
+| 7 | Two sources for tiles | Code owns a default until an administrator changes it (7) |
+| 8 | Feedback and errors were read apart | Trials on Manage apps (8) |
+| 9 | Published serving was rarely tested locally | `make e2e-caddy` (9) |
 
 ## 8. Proposed improvements
 
-Sorted by value for effort. Each keeps or reduces moving parts.
+Sorted by value for effort; each keeps the number of moving parts the same or lowers it.
 
-| # | Change | Fixes | Effort | Status |
-|---|---|---|---|---|
-| 1 | **Promote after deploy, per app**: a switch "Stable follows deploys" on Manage apps (on for apps with no testers); otherwise the Overview lists "Preview is newer than Stable for N days" | 1 | S | Built 2026-11-05 |
-| 2 | **Discover published apps from the build**: any `web/apps/*/public/ppe-app.json` is published; Dockerfile copies `apps/*/dist` with a manifest; one generic Vite proxy and e2e server entry per manifest | 2 | M | Built 2026-11-05 |
-| 3 | **One shared frame for small apps**: `AppFrame` in `@ppe/app-shell` (bar that scrolls away, tabs, Apps entry, ChannelStripe, sign-out, gates) used by Scan SIMs and the launcher, with a scroll test | 4 | M | Built 2026-11-05 |
-| 4 | **`make new-app SLUG=`**: scaffolds the folder, manifest, i18n, csp test and tile from a template; CI checks the template still builds | 2 | S | Built 2026-11-05 |
-| 5 | **Honour the choice everywhere**: `/apps/<slug>/` redirects a tester to their chosen channel; the stripe also offers **Versions** | 5 | S | Built 2026-11-05 |
-| 6 | **Prune**: `api -prune-apps` keeps every version a channel points at plus the last N, run by `prod-up`; refuse dirty builds in `prod-up` | 6 | S | Built 2026-11-05 |
-| 7 | **Code owns a default until an administrator changes it**: untouched default tiles follow `defaults.go` at start-up, audited; edited ones are never overwritten (instead of seeding once, which would need a migration per rename) | 7 | S | Built 2026-11-05 |
-| 8 | **Trials view** (phase 5): opens, errors and feedback per app and version side by side | 8 | M | Built 2026-11-05 |
-| 9 | **A pinned Caddy for local e2e**: `make e2e-caddy` runs the suite through the `caddy:2` image | 9 | S | Built 2026-11-05 |
+| # | Change | Fixes | Lens | Effort | Status |
+|---|---|---|---|---|---|
+| 10 | **Rebuild what is missing**: `-publish-app` writes the files whenever `<version>/index.html` is missing, recorded or not, and skips a complete folder; `-prune-apps` removes `.incoming/` and folders no version names; tests for both | S1, S4, M3 | Safety | S | Proposed |
+| 11 | **One launcher list per user**: `useLauncher` returns a list only for the signed-in user; `<Launcher key={userId}>`; a test that changes the user | S2 | Safety | S | Proposed |
+| 12 | **Pin production's Caddy**: `FROM caddy:${CADDY_VERSION}-alpine`, from the value `ci.yml` pins and checks | S5 | Safety | S | Proposed |
+| 13 | **Say what an audience is, and fail closed**: The spec and this handbook: an audience chooses who sees a channel, not who may open it; off Stable with the list failed, go to Stable; the stripe links to `/stable/`, which keeps the choice from sending the user back | S3, S6 | Safety | S | Proposed |
+| 14 | **Finish publishes in the right order**: `app.channel_changed` for a new variant's audience; the variant checked in `CheckPublish`; `pipefail` on the publish pipe | S4 | Safety | S | Proposed |
+| 15 | **Show failures in the launcher**: A message when saving pins or a choice fails; device pins removed only after the save | S6 | Safety | S | Proposed |
+| 16 | **One slug rule, one profile map**: The slug rule and reserved slugs exported once from `@ppe/launcher` and read by a Go test (as the icons are); `map[Profile]policy` with a test that every profile has a policy and a Caddy matcher, and that reserved slugs match Caddy's `/apps/` paths | M1 | Maintainability | S | Proposed |
+| 17 | **Fill the test gaps**: `untar` with links, absolute names, duplicates and its caps; a recorded version without files; a page without `</head>`; the stripe's redirects | M4 | Maintainability | S | Proposed |
+| 18 | **Cache a version's page**: The rewritten `index.html` kept in memory by version id with an `ETag`; channels read for one app | E1 | Efficiency | S | Proposed |
+| 19 | **Small tidy-ups**: The launcher on `SignedIn`; Administration reads the launcher's words; one Playwright server helper; the slips in M5 | P3, M5 | Simplicity | S | Proposed |
+| 20 | **Ports in one place**: The staff app, Administration and the launcher declare their `devPort` like published apps, read by the Vite configs, e2e and `new-app.ts`; `launch.json` checked against them | P2 | Simplicity | M | Proposed |
+| 21 | **Freeze channel features until a second app**: No new channel features until a second published app needs them; the manifest names its profile instead of capabilities that all mean `device` | P1 | Simplicity | S | Proposed |
+| 22 | **Channels apart from screens**: Refuse a variant named like one of the app's first-level screens, or move channels under a prefix (`/apps/<slug>/~beta/`, old addresses redirected) | M2 | Maintainability | S–M | Proposed |
+| 23 | **Start only the servers a run needs**: An `E2E_APPS=` filter, once a third app makes startup noticeable | E2 | Efficiency | S | Proposed |
 
-**Simplicity check before building more.** All nine are built: today's single published app
-is safe, invisible to users, measured per version and tested locally as in production, and a
-second one is one command (`make new-app`) with no edit outside its folder but its tile. What
-remains is critique 3: the machinery pays off only when a second and third app use it.
+**Order.** 10, 11 and 12 first (one each, small, and S1 and S2 can hurt today), then 13–16, then the rest as the code is touched. 20–23 can wait for a second published app.
+
+### Built (2026-11-05)
+
+| # | Change |
+|---|---|
+| 1 | Promote after deploy, per app: **Stable follows deploys**; a note while Preview is ahead |
+| 2 | Published apps found from their manifest by the build, deploy, dev proxy and e2e |
+| 3 | `AppFrame` in `@ppe/launcher`, shared by Scan SIMs and the launcher, with a scroll test |
+| 4 | `make new-app SLUG=` from a template; CI builds the template |
+| 5 | The choice honoured at the app's own address; the stripe switches channels |
+| 6 | `api -prune-apps` in `prod-up`; no publishing from a dirty checkout |
+| 7 | Code owns a default tile until an administrator changes it, audited |
+| 8 | Trials on Manage apps: opens, errors and feedback per version |
+| 9 | `make e2e-caddy`: the suite behind Caddy at CI's pinned version, in Docker |
+
+**Simplicity check before building more.** Most findings are small and safety comes first: three of them (S1, S2, S5) can bite today and each fix is a few lines. The structural question is still P1. Before a second published app, decide which channel features earn their keep; if none of variants, per-user choices and Trials is used in three months, remove them rather than maintain them.
