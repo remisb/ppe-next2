@@ -60,11 +60,11 @@ func TestPostgresLedger(t *testing.T) {
 		t.Errorf("spent = %d, %v", spent, err)
 	}
 	r, err := s.Report(ctx, store, nil)
-	if err != nil || r.ThisMonth.Calls != 2 || len(r.ByOperation) != 1 || r.ByOperation[0].Key != "portrait.colorize" || r.ByUser[0].Key != user.String() {
+	if err != nil || r.ThisMonth.Calls != 2 || len(r.ByOperation) != 1 || r.ByOperation[0].Key != "portrait.colorize" || r.ByUser[0].Key != user.String() || r.ByUser[0].Name != "Ai" || r.ByModel[0].Name != "" {
 		t.Errorf("report = %+v, %v", r, err)
 	}
 	calls, err := store.Calls(ctx, Filter{Operation: PortraitColorize, UserID: user})
-	if err != nil || len(calls) != 2 || calls[0].Prices != prices || calls[0].ProviderRequestID != "req_x" || *calls[0].EmployeeID != emp {
+	if err != nil || len(calls) != 2 || calls[0].Prices != prices || calls[0].ProviderRequestID != "req_x" || *calls[0].EmployeeID != emp || calls[0].UserName != "Ai" {
 		t.Errorf("calls = %+v, %v", calls, err)
 	}
 	if got, _ := store.Calls(ctx, Filter{Outcome: Failed}); len(got) != 0 {

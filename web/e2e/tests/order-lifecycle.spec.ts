@@ -1,12 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, chromium, expect, test } from '@playwright/test'
 import pg from 'pg'
 
-import { admin, apiEnv, caddyMode, dbDSN, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
+import { admin, apiEnv, caddyMode, dbDSN, openAIPort, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -3776,6 +3777,135 @@ test('Import Documents, live: the camera reads a passport held inside its frame,
     await expect(live.getByRole('checkbox', { name: /I have compared the code lines/ })).toHaveCount(0)
   } finally {
     await camera.close()
+  }
+})
+
+test('Import Documents, AI colour photo: Settings → AI with a key, a portrait coloured with consent, labelled, and its cost on AI Usage', async ({ browser }) => {
+  test.skip(!runsApp('docs-import'), 'Import Documents is not started (E2E_APPS)')
+  test.setTimeout(240_000)
+  // OpenAI is a fake here (API_OPENAI_BASE_URL): it takes one key and answers an edit with a flat
+  // skin-coloured picture and its usage, as OpenAI's image edits answer.
+  const shot = await (await browser.newContext({ viewport: { width: 64, height: 96 } })).newPage()
+  await shot.setContent('<body style="margin:0;background:#c8875a"></body>')
+  const coloured = (await shot.screenshot({ type: 'png' })).toString('base64')
+  await shot.context().close()
+  const key = 'sk-e2e-0123456789abcdef4f2a'
+  const edits: string[] = []
+  const openAI = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => chunks.push(c))
+    req.on('end', () => {
+      res.setHeader('Content-Type', 'application/json')
+      if (req.headers.authorization !== `Bearer ${key}`) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ error: { code: 'invalid_api_key', type: 'invalid_request_error' } }))
+      }
+      if (req.method === 'GET' && req.url === '/v1/models') return res.end(JSON.stringify({ data: [] }))
+      if (req.method === 'POST' && req.url === '/v1/images/edits') {
+        edits.push(Buffer.concat(chunks).toString('latin1'))
+        res.setHeader('x-request-id', 'req_e2e')
+        return res.end(
+          JSON.stringify({
+            data: [{ b64_json: coloured }],
+            usage: { input_tokens: 1050, input_tokens_details: { text_tokens: 50, image_tokens: 1000 }, output_tokens: 4160 },
+          }),
+        )
+      }
+      res.statusCode = 404
+      res.end('{}')
+    })
+  })
+  await new Promise<void>((resolve) => openAI.listen(openAIPort, '127.0.0.1', resolve))
+  try {
+    // Colouring takes its own permission, in no built-in role: a role of the administrator's for it,
+    // made in the database and seen at the next sign-in refresh (the page loads below), with
+    // Personnel Documents (role.PersonnelID), as the first Import Documents step gives it.
+    const db = new pg.Client({ connectionString: dbDSN })
+    await db.connect()
+    try {
+      await db.query(`INSERT INTO user_roles (user_id, role_id) SELECT id, $2 FROM users WHERE email = $1 ON CONFLICT DO NOTHING`, [
+        admin.email,
+        'a0e1d000-0000-4000-8000-000000000006',
+      ])
+      await db.query(
+        `WITH u AS (SELECT id FROM users WHERE email = $1),
+              r AS (INSERT INTO roles (id, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
+                    SELECT gen_random_uuid(), 'AI colour photos', now(), now(), id, id FROM u RETURNING id),
+              p AS (INSERT INTO role_permissions (role_id, permission) SELECT id, 'personnel.portraits.colorize' FROM r)
+         INSERT INTO user_roles (user_id, role_id) SELECT u.id, r.id FROM u, r`,
+        [admin.email],
+      )
+    } finally {
+      await db.end()
+    }
+
+    // Settings → AI: the key is checked with OpenAI, then shown only by its end; colouring on, low quality, a budget.
+    await page.goto('/admin/settings')
+    const ai = page.getByRole('region', { name: 'AI colour photos' })
+    await expect(ai).toContainText('No OpenAI key saved')
+    await ai.getByLabel('OpenAI API key').fill('sk-e2e-not-the-key-000000')
+    await ai.getByRole('button', { name: 'Save key' }).click()
+    await expect(ai).toContainText('OpenAI refused this key')
+    await ai.getByLabel('OpenAI API key').fill(key)
+    await ai.getByRole('button', { name: 'Save key' }).click()
+    await expect(ai).toContainText('Saved. The key works.')
+    await expect(ai).toContainText('An OpenAI key ending 4f2a is saved')
+    await expect(ai.getByLabel('Replace the key')).toHaveValue('')
+    await ai.getByRole('checkbox', { name: /Make Colour Photo \(AI\) is on/ }).check()
+    await ai.getByLabel('Quality').selectOption('low')
+    await ai.getByLabel('Monthly budget (US$)').fill('5')
+    await ai.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(ai).toContainText('Spent this month: US$0.00 of US$5.00.')
+
+    // Import Documents: a new employee's passport; on the portrait, Make Colour Photo waits for the consent.
+    const specimen = (name: string) => join(repoRoot, 'web/e2e/fixtures/documents', name)
+    await page.goto('/apps/docs-import/')
+    await page.getByRole('button', { name: 'New Employee from Document' }).click()
+    await page.getByLabel('Choose Photo').setInputFiles(specimen('passport-de.jpg'))
+    await expect(page.getByText(/^Code lines found\./)).toBeVisible({ timeout: 90_000 })
+    await page.getByRole('button', { name: 'Review' }).click()
+    await page.getByLabel('Surname').fill('Müller')
+    await page.getByLabel('Given names').fill('Jürgen')
+    const compared = page.getByRole('checkbox', { name: /I have compared the code lines/ })
+    if (await compared.isVisible()) await compared.check()
+    await page.getByRole('button', { name: 'Next: Portrait' }).click()
+    const colour = page.getByRole('region', { name: 'Colour photo (AI)' })
+    await expect(colour.getByRole('button', { name: 'Make Colour Photo (AI)' })).toBeDisabled()
+    await colour.getByRole('radio', { name: 'Verbally, here and now' }).check()
+    await colour.getByRole('button', { name: 'Make Colour Photo (AI)' }).click()
+    // Before and after, side by side, the colour labelled AI-made.
+    await expect(colour.getByRole('img', { name: 'The grey portrait from the document' })).toBeVisible()
+    await expect(colour.getByRole('img', { name: 'The AI-coloured photo' })).toBeVisible()
+    await expect(colour.getByText('AI-coloured', { exact: true })).toBeVisible()
+    // OpenAI got the portrait and the fixed prompt, never the person's name.
+    expect(edits).toHaveLength(1)
+    expect(edits[0]).toContain('Colourise this black-and-white portrait')
+    expect(edits[0]).not.toMatch(/MUELLER|Müller|JUERGEN|Jürgen/)
+    await colour.getByRole('button', { name: 'Use' }).click()
+    await expect(colour).toContainText('marked AI-coloured. Consent: verbal.')
+    await page.getByRole('button', { name: 'Save Document' }).click()
+    await expect(page.getByRole('heading', { name: 'Document saved' })).toBeVisible()
+
+    // The staff app: the photo says it is AI-coloured, and is never the ID badge's.
+    await page.goto('/employees')
+    await page.getByRole('row', { name: /Jürgen Müller/ }).click()
+    await openSection(/^Photos/)
+    await expect(page.getByRole('img', { name: 'AI-coloured photo of Jürgen Müller' })).toBeVisible()
+    await expect(page.getByText('AI-coloured', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'ID badge' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-pressed', 'true')
+
+    // Usage → AI Usage: the call, by whom, its tokens and its cost by the prices in Settings
+    // (50 × $5 + 1000 × $8 + 4160 × $30 a million tokens = $0.13305).
+    await page.goto('/admin/usage')
+    const usage = page.getByRole('region', { name: 'AI Usage' })
+    await expect(usage).toContainText('3% of the US$5.00 budget')
+    const call = usage.getByRole('row', { name: /Colour photo/ })
+    await expect(call).toContainText(admin.name)
+    await expect(call).toContainText('5,210')
+    await expect(call).toContainText('US$0.133')
+  } finally {
+    await new Promise((resolve) => openAI.close(resolve))
   }
 })
 

@@ -25,6 +25,8 @@ export const adminPort = fixedApps.admin + 1
 /** App Launcher's Vite server; the staff app's proxies /apps to it, so tests open it at webURL/apps/. */
 export const launcherPort = fixedApps.launcher + 1
 export const webURL = `http://localhost:${webPort}`
+/** A fake OpenAI the API calls for the AI colour photo (API_OPENAI_BASE_URL), started by its step. */
+export const openAIPort = 18095
 
 /** E2E_WEB_SERVER=caddy: the production bundle behind deploy/Caddyfile, as CI runs it. */
 export const caddyMode = process.env['E2E_WEB_SERVER'] === 'caddy'
@@ -114,6 +116,9 @@ export function apiEnv(): Record<string, string> {
     // Personnel files (ADR 0007): on, for Import Documents' steps.
     API_PERSONNEL_KEY: 'e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1',
     API_PERSONNEL_INDEX_KEY: 'e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2',
+    // Settings → AI seals the OpenAI key with it; OpenAI is the step's fake.
+    API_SECRETS_KEY: 'e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3e2e3',
+    API_OPENAI_BASE_URL: `http://127.0.0.1:${openAIPort}`,
     API_JWT_TTL: '1h',
     API_PUBLIC_BASE_URL: webURL,
     API_ORG_TIMEZONE: 'Europe/Vilnius',

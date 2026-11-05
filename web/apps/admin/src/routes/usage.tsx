@@ -15,6 +15,8 @@ import { intlLocale, t } from '@/i18n'
 import { type Route, linkTo } from '@/lib/router'
 import { roleName } from '@/lib/users'
 
+import { AIUsage } from './usage-ai'
+
 const percent = (part: number, whole: number) => (whole > 0 ? Math.round((100 * part) / whole) : 0)
 
 /** A calendar day (YYYY-MM-DD) as people read it: "7 Oct" short, for an axis; long, as every date is written (formatDay). */
@@ -53,6 +55,7 @@ export function UsagePage({ navigate }: { navigate: (to: Route) => void }) {
               <Languages r={r} />
               <Quality r={r} />
             </div>
+            {session.can('ai_usage.read') ? <AIUsage timeZone={r.timezone} /> : null}
           </div>
         )}
       </Loaded>

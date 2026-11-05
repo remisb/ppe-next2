@@ -149,32 +149,34 @@ func (p *PostgresStore) Sums(ctx context.Context, from time.Time, tz string) ([]
 	if err := rows.Err(); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	by := func(column string) ([]KeySum, error) {
+	// by sums per column; name is what names a part (the user's name, by user).
+	by := func(column, name string) ([]KeySum, error) {
 		out := []KeySum{}
-		rows, err := p.pool.Query(ctx, `SELECT `+column+`::text, count(*), coalesce(sum(cost_micro_usd), 0) FROM ai_usage
-			WHERE at >= $1 GROUP BY 1 ORDER BY 3 DESC, 1`, from)
+		rows, err := p.pool.Query(ctx, `SELECT a.`+column+`::text, `+name+`, count(*), coalesce(sum(a.cost_micro_usd), 0)
+			FROM ai_usage a LEFT JOIN users u ON u.id = a.user_id
+			WHERE a.at >= $1 GROUP BY 1 ORDER BY 4 DESC, 1`, from)
 		if err != nil {
 			return nil, err
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var k KeySum
-			if err := rows.Scan(&k.Key, &k.Calls, &k.CostMicroUSD); err != nil {
+			if err := rows.Scan(&k.Key, &k.Name, &k.Calls, &k.CostMicroUSD); err != nil {
 				return nil, err
 			}
 			out = append(out, k)
 		}
 		return out, rows.Err()
 	}
-	byOp, err := by("operation")
+	byOp, err := by("operation", "''")
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	byUser, err := by("user_id")
+	byUser, err := by("user_id", "coalesce(min(u.name), '')")
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	byModel, err := by("model")
+	byModel, err := by("model", "''")
 	return months, byOp, byUser, byModel, err
 }
 
@@ -203,13 +205,13 @@ func (p *PostgresStore) Calls(ctx context.Context, f Filter) ([]Call, error) {
 	if f.UserID != uuid.Nil {
 		user = &f.UserID
 	}
-	rows, err := p.pool.Query(ctx, `SELECT id, at, operation, provider, model, outcome, coalesce(error_code, ''),
-		input_text_tokens, input_image_tokens, output_text_tokens, output_image_tokens, cost_micro_usd, prices,
-		duration_ms, user_id, source, request_id, coalesce(provider_request_id, ''), employee_id
-		FROM ai_usage
-		WHERE ($1::timestamptz IS NULL OR at >= $1) AND ($2::timestamptz IS NULL OR at < $2)
-		  AND ($3::text IS NULL OR operation = $3) AND ($4::uuid IS NULL OR user_id = $4) AND ($5::text IS NULL OR outcome = $5)
-		ORDER BY at DESC, id LIMIT $6 OFFSET $7`, from, to, op, user, outcome, limit, f.Offset)
+	rows, err := p.pool.Query(ctx, `SELECT a.id, a.at, a.operation, a.provider, a.model, a.outcome, coalesce(a.error_code, ''),
+		a.input_text_tokens, a.input_image_tokens, a.output_text_tokens, a.output_image_tokens, a.cost_micro_usd, a.prices,
+		a.duration_ms, a.user_id, coalesce(u.name, ''), a.source, a.request_id, coalesce(a.provider_request_id, ''), a.employee_id
+		FROM ai_usage a LEFT JOIN users u ON u.id = a.user_id
+		WHERE ($1::timestamptz IS NULL OR a.at >= $1) AND ($2::timestamptz IS NULL OR a.at < $2)
+		  AND ($3::text IS NULL OR a.operation = $3) AND ($4::uuid IS NULL OR a.user_id = $4) AND ($5::text IS NULL OR a.outcome = $5)
+		ORDER BY a.at DESC, a.id LIMIT $6 OFFSET $7`, from, to, op, user, outcome, limit, f.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +222,7 @@ func (p *PostgresStore) Calls(ctx context.Context, f Filter) ([]Call, error) {
 		var prices []byte
 		if err := rows.Scan(&c.ID, &c.At, &c.Operation, &c.Provider, &c.Model, &c.Outcome, &c.ErrorCode,
 			&c.Tokens.InputText, &c.Tokens.InputImage, &c.Tokens.OutputText, &c.Tokens.OutputImage, &c.CostMicroUSD, &prices,
-			&c.DurationMS, &c.UserID, &c.Source, &c.RequestID, &c.ProviderRequestID, &c.EmployeeID); err != nil {
+			&c.DurationMS, &c.UserID, &c.UserName, &c.Source, &c.RequestID, &c.ProviderRequestID, &c.EmployeeID); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal(prices, &c.Prices); err != nil {

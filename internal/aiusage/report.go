@@ -26,6 +26,8 @@ type MonthSum struct {
 // KeySum is a part of the period's: an operation, a model, or a user (by id).
 type KeySum struct {
 	Key string `json:"key"`
+	// Name is the user's name, for a part by user.
+	Name string `json:"name,omitempty"`
 	Sum
 }
 

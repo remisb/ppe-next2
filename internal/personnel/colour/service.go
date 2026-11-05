@@ -85,6 +85,16 @@ func (s *Service) allow(user uuid.UUID) bool {
 	return true
 }
 
+// Available is whether colouring is offered: AI colour photos on, and a key
+// saved. The budget and the rate limit still refuse a call.
+func (s *Service) Available(ctx context.Context) (bool, error) {
+	cfg, err := s.settings.Settings(ctx)
+	if err != nil {
+		return false, err
+	}
+	return cfg.Enabled && cfg.Key != nil, nil
+}
+
 // Colorize colours a portrait (a JPEG) for employee, as actor, and answers a
 // JPEG with the portrait's own lightness.
 func (s *Service) Colorize(ctx context.Context, portrait []byte, employee, actor uuid.UUID) ([]byte, error) {

@@ -143,6 +143,14 @@ Ended and Legal Hold for the personnel permissions. `internal/personnel/mrz` (th
 under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
 sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upkeep's shredding after
 `API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys they answer 503).
+**AI usage** (ADR 0007 D4, D8; spec `ai-usage-service.md`; migration 0051): `internal/aiusage` records every AI call
+(`ai_usage`, append-only, its tokens and cost in micro-dollars by Settings' prices, a monthly budget) and keeps Settings → AI
+(`ai_settings`: the switch, model, quality, prices, budget, and the company's OpenAI key sealed with the optional
+`API_SECRETS_KEY`, never returned); routes `cmd/api/ai-routes.go`; Administration's Settings has the card and Usage the
+**AI Usage** section (`ai_usage.read`). The **AI colour photo** (`internal/personnel/colour`: OpenAI's image edit at
+`API_OPENAI_BASE_URL`, then the luminance lock) is Import Documents' Make Colour Photo (AI) on the Portrait step, for
+`personnel.portraits.colorize` (no built-in role), with the person's consent; the photo is saved `ai_generated`, labelled
+AI-coloured in the staff app and never the ID badge's. e2e runs a fake OpenAI on 18095.
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins

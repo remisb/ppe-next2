@@ -104,9 +104,20 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
               {list.map((p) => (
                 // One column the card's width: a long file name or the uses never widen it past the card, so the photo scales to fit.
                 <li key={p.id} className="grid grid-cols-[minmax(0,1fr)] gap-2 rounded-lg border border-border p-3">
-                  <PhotoImage employeeId={employee.id} photoId={p.id} alt={tx.alt(employee.full_name)} className="aspect-square w-full rounded-md" />
+                  <PhotoImage
+                    employeeId={employee.id}
+                    photoId={p.id}
+                    alt={p.ai_generated ? tx.aiAlt(employee.full_name) : tx.alt(employee.full_name)}
+                    className="aspect-square w-full rounded-md"
+                  />
                   <div className="flex flex-wrap items-center gap-2">
                     {p.is_default ? <Badge variant="secondary">{tx.default}</Badge> : null}
+                    {/* An AI-coloured photo says so wherever it is shown (PR-7). */}
+                    {p.ai_generated ? (
+                      <Badge variant="outline" title={tx.aiHint(p.consent?.by ?? 'verbal')}>
+                        {tx.aiGenerated}
+                      </Badge>
+                    ) : null}
                     <span className="min-w-0 truncate text-xs text-muted-foreground" title={p.file_name}>
                       {p.file_name}
                     </span>
@@ -119,7 +130,8 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
                           key={u}
                           type="button"
                           aria-pressed={p.uses.includes(u)}
-                          disabled={action.pending || !canManage}
+                          disabled={action.pending || !canManage || (p.ai_generated && u === 'id_badge')}
+                          title={p.ai_generated && u === 'id_badge' ? tx.aiNoBadge : undefined}
                           onClick={() => toggle(p, u)}
                           className="min-h-11 cursor-pointer rounded-full border border-border px-3 text-xs aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:font-medium md:min-h-7"
                         >

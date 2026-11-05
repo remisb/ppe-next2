@@ -125,6 +125,27 @@ const portrait: Messages['portrait'] = {
     type === 'passport' ? 'Нет изображения страницы с фото: сохраняется без портрета.' : 'Нет изображения лицевой стороны карты: сохраняется без портрета.',
 }
 
+const colour: Messages['colour'] = {
+  title: 'Цветное фото (ИИ)',
+  hint: 'OpenAI раскрашивает серый портрет без имени; каждая черта лица остаётся как в документе. Только с согласия человека.',
+  consent: 'Человек согласен',
+  consents: { verbal: 'Устно, здесь и сейчас', written: 'Письменно' },
+  given: { verbal: 'устное', written: 'письменное' },
+  consentHint: 'Он может отказаться: тогда используется серый портрет.',
+  make: 'Цветное фото (ИИ)',
+  making: 'Раскрашивание…',
+  before: 'Документ',
+  beforeAlt: 'Серый портрет из документа',
+  afterAlt: 'Фото, раскрашенное ИИ',
+  label: 'Раскрашено ИИ',
+  guess: 'Цвета угаданы: глаза, волосы и кожа могут быть неточными.',
+  use: 'Использовать',
+  again: 'Попробовать ещё раз',
+  discard: 'Отбросить',
+  chosen: (how: string) => `Сохраняется как фото сотрудника с пометкой «Раскрашено ИИ». Согласие: ${how}.`,
+  dontUse: 'Не использовать',
+}
+
 const blockers: Messages['blockers'] = {
   no_mrz: 'Введите кодовые строки из документа.',
   problems: 'Исправьте то, что кодовые строки отмечают как ошибку.',
@@ -199,4 +220,4 @@ const errors: Messages['errors'] = {
   notConfigured: 'Личные дела на этом сервере ещё не настроены.',
 }
 
-export const ru = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const ru = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

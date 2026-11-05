@@ -82,6 +82,7 @@ type Call struct {
 	Prices            Prices     `json:"prices"`
 	DurationMS        int        `json:"duration_ms"`
 	UserID            uuid.UUID  `json:"user_id"`
+	UserName          string     `json:"user_name,omitempty"` // read back with the call, never stored with it
 	Source            string     `json:"source"`
 	RequestID         string     `json:"request_id"`
 	ProviderRequestID string     `json:"provider_request_id,omitempty"`

@@ -114,6 +114,11 @@ export const employees = {
     fileTooLarge: 'The photo is larger than 10 MB.',
     fileType: 'Choose a JPEG or PNG image.',
     noStorage: 'File storage is not set up, so photos cannot be added.',
+    aiGenerated: 'AI-coloured',
+    aiHint: (by: 'verbal' | 'written'): string =>
+      `Coloured by AI from a document's grey portrait: the colours are a guess. Consent ${by === 'written' ? 'in writing' : 'given verbally'}.`,
+    aiAlt: (name: string) => `AI-coloured photo of ${name}`,
+    aiNoBadge: 'An AI-coloured photo is never used for an ID badge.',
     uses: { profile: 'Profile', id_badge: 'ID badge', sizing: 'Sizing', receipt: 'Receipt' },
   },
 }

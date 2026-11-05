@@ -166,6 +166,12 @@ func TestAISettingsKeyAndColouring(t *testing.T) {
 	if rec.Code != 200 || got["enabled"] != false || got["model"] != "gpt-image-2" || got["can_save_key"] != true || got["key"] != nil {
 		t.Fatalf("settings = %d %s", rec.Code, rec.Body)
 	}
+	available := func() string {
+		return api.do(t, "GET", "/api/v1/personnel/portraits/colorize", colourer, nil).Body.String()
+	}
+	if got := available(); !strings.Contains(got, `"available":false`) {
+		t.Errorf("available while off = %s", got)
+	}
 	// Colouring while it is off, then without a key.
 	if rec := api.colorize(t, colourer, portraitJPEG(t)); rec.Code != http.StatusConflict {
 		t.Errorf("colour while off = %d %s", rec.Code, rec.Body)
@@ -194,6 +200,9 @@ func TestAISettingsKeyAndColouring(t *testing.T) {
 		t.Errorf("test key = %d %s", rec.Code, rec.Body)
 	}
 
+	if got := available(); !strings.Contains(got, `"available":true`) {
+		t.Errorf("available with a key = %s", got)
+	}
 	// Colouring: a JPEG of the portrait's size, not cached; recorded with its cost.
 	rec = api.colorize(t, colourer, portraitJPEG(t))
 	if rec.Code != 200 || rec.Header().Get("Content-Type") != "image/jpeg" || rec.Header().Get("Cache-Control") != "no-store" {
@@ -227,6 +236,9 @@ func TestAISettingsKeyAndColouring(t *testing.T) {
 	}
 	if rec := api.colorize(t, colourer, portraitJPEG(t)); rec.Code != http.StatusConflict {
 		t.Errorf("colour after removal = %d", rec.Code)
+	}
+	if got := available(); !strings.Contains(got, `"available":false`) {
+		t.Errorf("available after removal = %s", got)
 	}
 }
 

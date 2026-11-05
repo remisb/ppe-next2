@@ -10,6 +10,7 @@ import { COPY_PARTS, parseDraft, saveInput, type Box, type Draft, type Holder, t
 import { PORTRAIT_WIDTH, cropRect, portraitBox } from '@/lib/portrait'
 import { todayHere } from '@/lib/reader'
 
+import { type Colour, ColourPhoto } from './colour-photo'
 import { saveErrorText } from './issues'
 import { HolderLine } from './person-step'
 import { PortraitCrop } from './portrait-crop'
@@ -47,6 +48,7 @@ export function PortraitStep({
   const [box, setBox] = useState<Box | null>(null)
   const [keep, setKeep] = useState(true)
   const [asPhoto, setAsPhoto] = useState(false)
+  const [colour, setColour] = useState<Colour | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const m = useMemo(() => parseDraft(draft, todayHere()), [draft])
@@ -82,7 +84,12 @@ export function PortraitStep({
       if (blob) parts.portrait = blob
       const doc = await client.personnel.save(saveInput(holder, draft, m), parts)
       // The employee's photo after the document: the document is what must not be lost.
-      if (blob && asPhoto) {
+      // A colour photo chosen with Use is it, marked AI-coloured with the consent.
+      if (blob && colour) {
+        await client.employeePhotos.upload(doc.employee_id, new File([colour.blob], 'portrait-ai.jpg', { type: 'image/jpeg' }), ['profile'], {
+          consent: colour.consent,
+        })
+      } else if (blob && asPhoto) {
         await client.employeePhotos.upload(doc.employee_id, new File([blob], 'portrait.jpg', { type: 'image/jpeg' }), ['profile'])
       }
       onSaved(doc)
@@ -109,14 +116,31 @@ export function PortraitStep({
             </label>
             {keep ? (
               <>
-                <PortraitCrop src={src} aspect={aspect} box={box} onBox={setBox} />
-                <label className="flex min-h-11 items-start gap-2">
-                  <input type="checkbox" className="mt-1 size-4" checked={asPhoto} onChange={(e) => setAsPhoto(e.target.checked)} />
-                  <span>
-                    <span className="font-medium">{t.portrait.asPhoto}</span>
-                    <span className="block text-sm text-muted-foreground">{t.portrait.asPhotoHint}</span>
-                  </span>
-                </label>
+                <PortraitCrop
+                  src={src}
+                  aspect={aspect}
+                  box={box}
+                  onBox={(b) => {
+                    setBox(b)
+                    setColour(null)
+                  }}
+                />
+                {colour ? null : (
+                  <label className="flex min-h-11 items-start gap-2">
+                    <input type="checkbox" className="mt-1 size-4" checked={asPhoto} onChange={(e) => setAsPhoto(e.target.checked)} />
+                    <span>
+                      <span className="font-medium">{t.portrait.asPhoto}</span>
+                      <span className="block text-sm text-muted-foreground">{t.portrait.asPhotoHint}</span>
+                    </span>
+                  </label>
+                )}
+                <ColourPhoto
+                  grey={() => (source ? portraitOf(file(source.id), box) : Promise.resolve(undefined))}
+                  stamp={JSON.stringify(box)}
+                  employeeId={holder.kind === 'existing' ? holder.employee.id : undefined}
+                  value={colour}
+                  onChange={setColour}
+                />
               </>
             ) : null}
           </>

@@ -125,6 +125,27 @@ const portrait: Messages['portrait'] = {
     type === 'passport' ? 'Nėra puslapio su nuotrauka vaizdo: išsaugoma be portreto.' : 'Nėra kortelės priekinės pusės vaizdo: išsaugoma be portreto.',
 }
 
+const colour: Messages['colour'] = {
+  title: 'Spalvota nuotrauka (DI)',
+  hint: 'OpenAI nuspalvina pilką portretą be vardo; kiekviena veido linija lieka dokumento. Tik žmogui sutikus.',
+  consent: 'Žmogus sutinka',
+  consents: { verbal: 'Žodžiu, čia ir dabar', written: 'Raštu' },
+  given: { verbal: 'žodžiu', written: 'raštu' },
+  consentHint: 'Jis gali atsisakyti: tada naudojamas pilkas portretas.',
+  make: 'Spalvota nuotrauka (DI)',
+  making: 'Spalvinama…',
+  before: 'Dokumentas',
+  beforeAlt: 'Pilkas portretas iš dokumento',
+  afterAlt: 'DI nuspalvinta nuotrauka',
+  label: 'Nuspalvinta DI',
+  guess: 'Spalvos spėjamos: akys, plaukai ir oda gali būti netikslūs.',
+  use: 'Naudoti',
+  again: 'Bandyti dar kartą',
+  discard: 'Atmesti',
+  chosen: (how: string) => `Išsaugoma kaip darbuotojo nuotrauka, pažymėta „Nuspalvinta DI“. Sutikimas: ${how}.`,
+  dontUse: 'Nenaudoti',
+}
+
 const blockers: Messages['blockers'] = {
   no_mrz: 'Įveskite kodo eilutes iš dokumento.',
   problems: 'Pataisykite, kas kodo eilutėse nurodyta kaip klaida.',
@@ -199,4 +220,4 @@ const errors: Messages['errors'] = {
   notConfigured: 'Šiame serveryje asmens bylos dar neparuoštos.',
 }
 
-export const lt = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const lt = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

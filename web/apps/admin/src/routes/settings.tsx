@@ -31,6 +31,8 @@ import {
 } from '@/lib/sim-providers'
 import { type SupplierChatErrors, checkSupplierChat } from '@/lib/supplier-chat'
 
+import { AISettingsCard } from './settings-ai'
+
 /**
  * Settings (/settings, administrators only): the organisation's settings. The
  * company's name, which mail templates write; the supplier's WhatsApp group,
@@ -51,6 +53,7 @@ export function SettingsPage() {
             <CompanyCard settings={data} onSaved={settings.reload} />
             <SupplierChatCard settings={data} onSaved={settings.reload} />
             <SimProvidersCard settings={data} onSaved={settings.reload} />
+            <AISettingsCard timeZone={data.timezone} />
           </div>
         )}
       </Loaded>

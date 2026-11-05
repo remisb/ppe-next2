@@ -1,6 +1,11 @@
 import { ApiError, NetworkError } from './errors.ts'
 import type { PhotoUse } from './photo-uses.ts'
 import type {
+  AICall,
+  AICallsQuery,
+  AISettings,
+  AISettingsInput,
+  AIUsageReport,
   AccessReview,
   DocumentCheck,
   DocumentCheckInput,
@@ -183,7 +188,7 @@ export function createClient(options: ClientOptions) {
    * A file the API sends. A POST (Show Document's copy) is a sensitive read:
    * a 403 asking for a recent sign-in confirms the password and tries again.
    */
-  async function download(path: string, method: 'GET' | 'POST' = 'GET'): Promise<{ blob: Blob; filename: string }> {
+  async function download(path: string, method: 'GET' | 'POST' = 'GET', body?: FormData): Promise<{ blob: Blob; filename: string }> {
     const get = async () => {
       const headers: Record<string, string> = {}
       if (options.app) headers['X-PPE-App'] = options.app
@@ -191,7 +196,7 @@ export function createClient(options: ClientOptions) {
       const token = options.getToken()
       if (token) headers['Authorization'] = `Bearer ${token}`
       try {
-        return await doFetch(base + path, { method, headers })
+        return await doFetch(base + path, { method, headers, ...(body ? { body } : {}) })
       } catch (err) {
         throw new NetworkError(err)
       }
@@ -411,10 +416,15 @@ export function createClient(options: ClientOptions) {
     employeePhotos: {
       /** The employee's photos, the default first. */
       list: (employeeId: string) => request<EmployeePhoto[]>('GET', `/api/v1/employee-photos/${seg(employeeId)}`),
-      upload: (employeeId: string, file: File, uses: PhotoUse[] = []) => {
+      /** An AI-coloured photo says so, with how the person consented (verbal or written). */
+      upload: (employeeId: string, file: File, uses: PhotoUse[] = [], ai?: { consent: 'verbal' | 'written' }) => {
         const body = new FormData()
         body.append('file', file)
         for (const u of uses) body.append('uses', u)
+        if (ai) {
+          body.append('ai_generated', 'true')
+          body.append('consent', ai.consent)
+        }
         return request<EmployeePhoto>('POST', `/api/v1/employee-photos/${seg(employeeId)}`, body)
       },
       /** The picture itself. */
@@ -447,6 +457,15 @@ export function createClient(options: ClientOptions) {
         request<DocumentValidity[]>('GET', `/api/v1/personnel/documents/by-employee/${seg(employeeId)}/validity`),
       /** Show Document: the sealed fields (a recent sign-in; recorded; hide again after 60 s). */
       show: (id: string) => request<ShownDocument>('POST', `/api/v1/personnel/documents/${seg(id)}/show`, {}),
+      /** Whether Make Colour Photo (AI) is offered: AI colour photos on in Settings, and a key saved. */
+      colorizeAvailable: () => request<{ available: boolean }>('GET', '/api/v1/personnel/portraits/colorize'),
+      /** Make Colour Photo (AI): the grey portrait in, its AI-coloured JPEG out, kept nowhere. */
+      colorize: (portrait: Blob, employeeId?: string) => {
+        const body = new FormData()
+        body.append('portrait', portrait, 'portrait.jpg')
+        if (employeeId) body.append('employee_id', employeeId)
+        return download('/api/v1/personnel/portraits/colorize', 'POST', body).then((r) => r.blob)
+      },
       /** One of its Document Copies, a JPEG (the same rules as show). */
       showCopy: (id: string, side: DocumentCopySide) =>
         download(`/api/v1/personnel/documents/${seg(id)}/copies/${seg(side)}/show`, 'POST'),
@@ -461,6 +480,19 @@ export function createClient(options: ClientOptions) {
       /** Legal Hold until a date, with a reason; null clears it. */
       setHold: (employeeId: string, until: string | null, reason = '') =>
         request<PersonnelRetention>('PUT', `/api/v1/personnel/subjects/${seg(employeeId)}/hold`, { until, reason }),
+    },
+
+    /** Settings → AI and AI Usage (ADR 0007). */
+    ai: {
+      settings: () => request<AISettings>('GET', '/api/v1/settings/ai'),
+      updateSettings: (input: AISettingsInput) => request<AISettings>('PUT', '/api/v1/settings/ai', input),
+      /** Checked with OpenAI first; a recent sign-in. */
+      setKey: (key: string) => request<AISettings>('PUT', '/api/v1/settings/ai/key', { key }),
+      removeKey: () => request<AISettings>('DELETE', '/api/v1/settings/ai/key'),
+      testKey: () => request<{ ok: boolean; error_code?: string }>('POST', '/api/v1/settings/ai/key/test', {}),
+      report: () => request<AIUsageReport>('GET', '/api/v1/ai-usage'),
+      calls: (q: AICallsQuery = {}) => request<AICall[]>('GET', `/api/v1/ai-usage/calls${historyQueryString(q)}`),
+      callsCsv: (q: AICallsQuery = {}) => download(`/api/v1/ai-usage/calls.csv${historyQueryString(q)}`),
     },
 
     catalogue: {
@@ -609,7 +641,7 @@ export function createClient(options: ClientOptions) {
 export type Client = ReturnType<typeof createClient>
 
 /** The query string for a list's filters (Orders, the Audit log, Security), with empty filters left out. */
-export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery | AssetQuery | SimCardsReportQuery): string {
+export function historyQueryString(query: HistoryQuery | AuditQuery | SecurityQuery | ErrorQuery | AssetQuery | SimCardsReportQuery | AICallsQuery): string {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== '') params.set(k, String(v))

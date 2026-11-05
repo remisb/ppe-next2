@@ -944,6 +944,7 @@ var policy = map[string]rule{
 	"GET /api/v1/ai-usage":                                                      {role.AIUsageRead, "admins"},
 	"GET /api/v1/ai-usage/calls":                                                {role.AIUsageRead, "admins"},
 	"GET /api/v1/ai-usage/calls.csv":                                            {role.AIUsageRead, "admins"},
+	"GET /api/v1/personnel/portraits/colorize":                                  {role.PersonnelPortraitsColorize, "nobody"},
 	"POST /api/v1/personnel/portraits/colorize":                                 {role.PersonnelPortraitsColorize, "nobody"},
 	"PUT /api/v1/settings/supplier-chat":                                        {role.SettingsManage, "admins"},
 	"PUT /api/v1/settings/sim-providers":                                        {role.SettingsManage, "admins"},

@@ -149,6 +149,9 @@ export interface EmployeePhoto {
   uses: PhotoUse[]
   is_default: boolean
   uploaded_at: string
+  /** Coloured by AI from a document's portrait (ADR 0007): labelled AI-coloured everywhere, never the ID badge's. */
+  ai_generated: boolean
+  consent?: { by: 'verbal' | 'written'; recorded_by_user_id: string; at: string }
 }
 
 /** Body of POST /employees and PUT /employees/{id} (full replace). */
@@ -1749,4 +1752,85 @@ export interface PersonnelRetention {
   employment_ended_on: string | null
   hold_until: string | null
   hold_reason: string | null
+}
+
+// Settings → AI and AI Usage (ADR 0007, docs/specs/ai-usage-service.md).
+
+/** USD per million tokens of each kind. */
+export interface AIPrices {
+  input_text: number
+  input_image: number
+  output_text: number
+  output_image: number
+}
+
+/** Settings → AI: the key is never sent, only which it is. */
+export interface AISettings {
+  enabled: boolean
+  model: string
+  quality: 'low' | 'medium' | 'high'
+  prices: Record<string, AIPrices>
+  /** The monthly budget in micro-dollars; null for none. */
+  budget_micro_usd: number | null
+  key: { last4: string; set_at: string; set_by_user_id: string } | null
+  /** Whether this server can seal a key (API_SECRETS_KEY). */
+  can_save_key: boolean
+  spent_this_month_micro_usd: number
+}
+
+export interface AISettingsInput {
+  enabled: boolean
+  model: string
+  quality: 'low' | 'medium' | 'high'
+  prices: Record<string, AIPrices>
+  budget_micro_usd: number | null
+}
+
+export type AIOperation = (typeof import('./ai.ts').AI_OPERATIONS)[number]
+
+export interface AISum {
+  calls: number
+  cost_micro_usd: number
+}
+
+/** The AI Usage screen's figures: this month against the budget, the months, and the split over them. */
+export interface AIUsageReport {
+  this_month: AISum
+  budget_micro_usd: number | null
+  months: (AISum & { month: string })[]
+  by_operation: (AISum & { key: string })[]
+  /** key is the user's id, name their name. */
+  by_user: (AISum & { key: string; name?: string })[]
+  by_model: (AISum & { key: string })[]
+}
+
+/** One AI call as recorded: never its prompt, image or answer. */
+export interface AICall {
+  id: string
+  at: string
+  operation: AIOperation
+  provider: string
+  model: string
+  outcome: 'ok' | 'failed' | 'refused'
+  error_code?: string
+  tokens: { input_text: number; input_image: number; output_text: number; output_image: number }
+  cost_micro_usd: number
+  prices: AIPrices
+  duration_ms: number
+  user_id: string
+  user_name?: string
+  source: string
+  request_id: string
+  provider_request_id?: string
+  employee_id: string | null
+}
+
+export interface AICallsQuery {
+  from?: string
+  to?: string
+  operation?: AIOperation
+  user?: string
+  outcome?: 'ok' | 'failed' | 'refused'
+  limit?: number
+  offset?: number
 }

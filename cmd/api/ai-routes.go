@@ -43,6 +43,7 @@ func registerAIRoutes(rt *router, h *aiHandler, sensitive func(role.Permission, 
 	rt.restricted("GET /api/v1/ai-usage", h.getReport, role.AIUsageRead)
 	rt.restricted("GET /api/v1/ai-usage/calls", h.getCalls, role.AIUsageRead)
 	rt.restricted("GET /api/v1/ai-usage/calls.csv", h.getCallsCSV, role.AIUsageRead)
+	rt.restricted("GET /api/v1/personnel/portraits/colorize", h.colorizeAvailable, role.PersonnelPortraitsColorize)
 	rt.restricted("POST /api/v1/personnel/portraits/colorize", h.colorize, role.PersonnelPortraitsColorize)
 }
 
@@ -249,7 +250,7 @@ func (h *aiHandler) getCallsCSV(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="ai-usage.csv"`)
 	cw := csv.NewWriter(w)
 	_ = cw.Write([]string{"at", "operation", "model", "outcome", "error_code", "input_text_tokens", "input_image_tokens",
-		"output_text_tokens", "output_image_tokens", "cost_usd", "duration_ms", "user_id", "source", "request_id", "provider_request_id", "employee_id"})
+		"output_text_tokens", "output_image_tokens", "cost_usd", "duration_ms", "user_id", "user_name", "source", "request_id", "provider_request_id", "employee_id"})
 	for _, c := range calls {
 		employee := ""
 		if c.EmployeeID != nil {
@@ -257,10 +258,23 @@ func (h *aiHandler) getCallsCSV(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = cw.Write([]string{c.At.Format(time.RFC3339), string(c.Operation), c.Model, string(c.Outcome), c.ErrorCode,
 			strconv.Itoa(c.Tokens.InputText), strconv.Itoa(c.Tokens.InputImage), strconv.Itoa(c.Tokens.OutputText), strconv.Itoa(c.Tokens.OutputImage),
-			strconv.FormatFloat(float64(c.CostMicroUSD)/1e6, 'f', 6, 64), strconv.Itoa(c.DurationMS), c.UserID.String(), c.Source, c.RequestID,
+			strconv.FormatFloat(float64(c.CostMicroUSD)/1e6, 'f', 6, 64), strconv.Itoa(c.DurationMS), c.UserID.String(), c.UserName, c.Source, c.RequestID,
 			c.ProviderRequestID, employee})
 	}
 	cw.Flush()
+}
+
+// colorizeAvailable tells Import Documents whether to offer Make Colour Photo
+// (AI): {available}, without saying why not (Settings are the administrator's).
+func (h *aiHandler) colorizeAvailable(w http.ResponseWriter, r *http.Request) {
+	ok, err := h.colour.Available(r.Context())
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Available bool `json:"available"`
+	}{ok})
 }
 
 // colorize takes the grey portrait (multipart "portrait", a JPEG, and the

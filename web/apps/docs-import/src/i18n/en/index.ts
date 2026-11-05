@@ -131,6 +131,28 @@ const portrait = {
     type === 'passport' ? 'No picture of the photo page: saved without a portrait.' : "No picture of the card's front: saved without a portrait.",
 }
 
+/** Make Colour Photo (AI), on the portrait step (FR-12, PR-6, PR-7). */
+const colour = {
+  title: 'Colour photo (AI)',
+  hint: 'OpenAI colours the grey portrait, without the name; every line of the face stays the document’s. Only with the person’s consent.',
+  consent: 'The person agrees',
+  consents: { verbal: 'Verbally, here and now', written: 'In writing' },
+  given: { verbal: 'verbal', written: 'written' },
+  consentHint: 'They may refuse: then the grey portrait is used.',
+  make: 'Make Colour Photo (AI)',
+  making: 'Colouring…',
+  before: 'Document',
+  beforeAlt: 'The grey portrait from the document',
+  afterAlt: 'The AI-coloured photo',
+  label: 'AI-coloured',
+  guess: 'The colours are a guess: eyes, hair and skin may be wrong.',
+  use: 'Use',
+  again: 'Try Again',
+  discard: 'Discard',
+  chosen: (how: string): string => `Saved as the employee’s photo, marked AI-coloured. Consent: ${how}.`,
+  dontUse: 'Don’t use it',
+}
+
 /** What stops Save, said on the review. */
 const blockers = {
   no_mrz: 'Type the code lines from the document.',
@@ -210,4 +232,4 @@ const errors = {
   notConfigured: 'Personnel files is not set up on this server yet.',
 }
 
-export const en = { shell, steps, person, capture, review, portrait, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+export const en = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

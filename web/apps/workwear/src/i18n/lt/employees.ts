@@ -112,6 +112,11 @@ export const employees: EmployeesText = {
     fileTooLarge: 'Nuotrauka didesnė nei 10 MB.',
     fileType: 'Pasirinkite JPEG arba PNG paveikslėlį.',
     noStorage: 'Failų saugykla nesukonfigūruota, todėl nuotraukų pridėti negalima.',
+    aiGenerated: 'Nuspalvinta DI',
+    aiHint: (by: 'verbal' | 'written') =>
+      `DI nuspalvino iš pilko dokumento portreto: spalvos spėjamos. Sutikimas ${by === 'written' ? 'raštu' : 'žodžiu'}.`,
+    aiAlt: (name: string) => `DI nuspalvinta ${name} nuotrauka`,
+    aiNoBadge: 'DI nuspalvinta nuotrauka niekada nenaudojama ID kortelei.',
     uses: { profile: 'Profilis', id_badge: 'Pažymėjimas', sizing: 'Dydžių matavimas', receipt: 'Gavimo patvirtinimas' },
   },
 }
