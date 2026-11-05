@@ -71,7 +71,10 @@ export const en: Guide = {
           p: 'Apps still being tried, **POC** and **In development**, show only to people with the **Testers** role, once they turn on **Show apps in testing**.',
         },
         {
-          p: "Some apps, such as Scan SIMs, come in versions. **Stable** is the one everyone uses; **Beta**, **Preview** or a variant may be offered to testers, or to some roles, while it is tried. When an app has more than Stable for you, its **⋯** has **Versions**: choose one, and the app opens on it for you from then on, its tile saying which. Inside the app, a stripe at the top says **You are using Beta** and the version, with **Back to Stable**.",
+          p: "Some apps, such as Scan SIMs, come in versions. **Stable** is the one everyone uses; testers may also be offered **Beta** and **Preview** while a new version is tried. When an app has more than Stable for you, its **⋯** has **Versions**: choose one, and the app opens on it for you from then on, even from a bookmark or another app's link, its tile saying which. Inside the app, a stripe at the top says **You are using Beta** and the version; switch versions there, or choose **Back to Stable**.",
+        },
+        {
+          p: 'If your pins or your choice of version cannot be saved, App Launcher puts them back as they were and says so: **Your pins could not be saved.** Try again in a moment.',
         },
       ],
     },
@@ -579,10 +582,10 @@ export const en: Guide = {
         },
         { p: '**Move earlier** and **Move later** change its place in the launcher. **Feedback** lists what people sent from its tile, newest first.' },
         {
-          p: '**Versions and channels**, for an app published in versions, such as Scan SIMs, lists its versions, newest first, and which one each channel opens. Each deploy publishes a new version to **Preview**, for testers. To give it to everyone, choose **⋯** beside it, then **Make Stable**; to roll back, choose **Make Stable** on an older one. **Make Beta** offers a version to testers before it becomes Stable.',
+          p: '**Versions and channels**, for an app published in versions, such as Scan SIMs, lists its versions, newest first, and which one each channel opens: **Stable** for everyone who sees the app, **Beta** and **Preview** for testers. Each deploy publishes a new version to **Preview**. To give it to everyone, choose **⋯** beside it, then **Make Stable**; to roll back, choose **Make Stable** on an older one. **Make Beta** offers a version to testers before it becomes Stable. While Preview has a newer version than Stable, a note says so.',
         },
         {
-          p: "**Add variant** adds a version some people try beside Stable, such as another design: its name in addresses, its label in each language, its version and who sees it. They choose it under **Versions** in App Launcher.",
+          p: "Turn on **Stable follows deploys** for an app no one tries first: each deploy's version then becomes Stable too, for everyone. **Trials** sets the versions side by side: for each, who used it in the last 30 days, the errors last seen in it and the feedback sent from it, to tell whether a version on Beta or Preview is ready for everyone.",
         },
         { shots: [{ name: 'manage-apps', alt: 'Manage apps: Scan SIMs beside the list, with its versions and channels' }] },
       ],

@@ -71,7 +71,10 @@ export const lt: Guide = {
           p: 'Dar bandomos programos, **Prototipas** ir **Kuriama**, rodomos tik turintiems rolę **Bandytojai**, kai jie įjungia **Rodyti bandomas programas**.',
         },
         {
-          p: 'Kai kurios programos, pvz., „Skenuoti SIM“, turi versijas. **Stabili** – ta, kuria naudojasi visi; **Beta**, **Peržiūra** ar variantas gali būti siūlomi bandytojams ar kai kurioms rolėms, kol bandomi. Kai programa jums turi daugiau nei stabilią versiją, jos **⋯** turi **Versijos**: pasirinkite vieną, ir programa jums nuo tol atsidarys joje, o plytelė tai parodys. Programos viršuje juosta rašo **Naudojate: Beta** ir versiją, su **Grįžti į stabilią**.',
+          p: 'Kai kurios programos, pvz., „Skenuoti SIM“, turi versijas. **Stabili** – ta, kuria naudojasi visi; bandytojams, kol bandoma nauja versija, gali būti siūlomos ir **Beta** bei **Peržiūra**. Kai programa jums turi daugiau nei stabilią versiją, jos **⋯** turi **Versijos**: pasirinkite vieną, ir programa jums nuo tol atsidarys joje, net iš žymės ar kitos programos nuorodos, o plytelė tai parodys. Programos viršuje juosta rašo **Naudojate: Beta** ir versiją; ten galite perjungti versiją arba pasirinkti **Grįžti į stabilią**.',
+        },
+        {
+          p: 'Jei prisegtų programų ar pasirinktos versijos išsaugoti nepavyksta, programų sąrašas grąžina viską kaip buvo ir tai praneša: **Nepavyko išsaugoti prisegtų programų.** Po akimirkos bandykite dar kartą.',
         },
       ],
     },
@@ -546,10 +549,10 @@ export const lt: Guide = {
         },
         { p: '**Perkelti aukščiau** ir **Perkelti žemiau** keičia jos vietą sąraše. **Atsiliepimai** rodo, ką žmonės atsiuntė iš jos plytelės, naujausius pirmus.' },
         {
-          p: '**Versijos ir kanalai** programai, skelbiamai versijomis, pvz., „Skenuoti SIM“, rodo jos versijas, naujausias pirmas, ir kurią atidaro kiekvienas kanalas. Kiekvienas diegimas paskelbia naują versiją kanale **Peržiūra**, bandytojams. Kad ją gautų visi, pasirinkite **⋯** šalia jos, tada **Padaryti: Stabili**; norėdami grąžinti ankstesnę, pasirinkite **Padaryti: Stabili** ant senesnės. **Padaryti: Beta** pasiūlo versiją bandytojams, kol ji netapo stabili.',
+          p: '**Versijos ir kanalai** programai, skelbiamai versijomis, pvz., „Skenuoti SIM“, rodo jos versijas, naujausias pirmas, ir kurią atidaro kiekvienas kanalas: **Stabili** – visiems, kurie mato programą, **Beta** ir **Peržiūra** – bandytojams. Kiekvienas diegimas paskelbia naują versiją kanale **Peržiūra**. Kad ją gautų visi, pasirinkite **⋯** šalia jos, tada **Padaryti: Stabili**; norėdami grąžinti ankstesnę, pasirinkite **Padaryti: Stabili** ant senesnės. **Padaryti: Beta** pasiūlo versiją bandytojams, kol ji netapo stabili. Kai peržiūroje yra naujesnė versija nei stabili, tai parašoma.',
         },
         {
-          p: '**Pridėti variantą** prideda versiją, kurią kai kurie žmonės bando šalia stabilios, pvz., kitokį dizainą: jos pavadinimą adresuose, pavadinimą kiekviena kalba, versiją ir kas ją mato. Jie ją pasirenka programų sąraše, skiltyje **Versijos**.',
+          p: 'Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tada kiekvieno diegimo versija visiems tampa ir stabilia. **Bandymai** pateikia versijas greta: kiekvienos – kas ja naudojosi per paskutines 30 dienų, paskutinį kartą joje matytas klaidas ir iš jos atsiųstus atsiliepimus, kad matytumėte, ar Beta ar Peržiūros versija jau tinka visiems.',
         },
         { shots: [{ name: 'manage-apps', alt: 'Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais' }] },
       ],
