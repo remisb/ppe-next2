@@ -38,7 +38,14 @@ type Employee struct {
 	PreferredLanguage *string `json:"preferred_language"`
 	// DefaultPhotoID is the employee's default photo (internal/domain/employeephoto);
 	// reads fill it, nothing accepts it.
-	DefaultPhotoID  *uuid.UUID `json:"default_photo_id"`
+	DefaultPhotoID *uuid.UUID `json:"default_photo_id"`
+	// BirthDate (ISO), Nationality (ICAO code) and Sex (M, F, X) come only
+	// from an identity document saved with Add to Employee Record (ADR 0007,
+	// Personnel files); reads fill them, the employee's own routes never
+	// accept or change them.
+	BirthDate       *string    `json:"birth_date"`
+	Nationality     *string    `json:"nationality"`
+	Sex             *string    `json:"sex"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 	DeletedAt       *time.Time `json:"deleted_at,omitempty"`

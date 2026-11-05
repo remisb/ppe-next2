@@ -2,6 +2,13 @@ import { ApiError, NetworkError } from './errors.ts'
 import type { PhotoUse } from './photo-uses.ts'
 import type {
   AccessReview,
+  DocumentCheck,
+  DocumentCheckInput,
+  DocumentCopies,
+  DocumentValidity,
+  IdentityDocument,
+  IdentityDocumentInput,
+  MrzIssue,
   Asset,
   AssetDetail,
   AssetInput,
@@ -224,7 +231,7 @@ export function createClient(options: ClientOptions) {
     if (res.status === 204) return undefined as T
     if (!res.ok) {
       if (res.status === 401 && handling.signOut) options.onUnauthenticated?.()
-      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), errorField(text, 'existing_id'), errorIndex(text))
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), errorField(text, 'existing_id'), errorIndex(text), errorDetails(text))
     }
     return (text ? JSON.parse(text) : undefined) as T
   }
@@ -410,6 +417,25 @@ export function createClient(options: ClientOptions) {
         request<void>('DELETE', `/api/v1/employee-photos/${seg(employeeId)}/${seg(photoId)}`),
     },
 
+    /** Personnel files: identity documents (ADR 0007). */
+    personnel: {
+      /** Re-reads the lines and says what is wrong or already on file; writes nothing. */
+      check: (input: DocumentCheckInput) => request<DocumentCheck>('POST', '/api/v1/personnel/documents/check', input),
+      /** Saves a reviewed document and its copies, all or none (a 409's conflict says which duplicate). */
+      save: (input: IdentityDocumentInput, copies: DocumentCopies = {}) => {
+        const body = new FormData()
+        body.append('document', JSON.stringify(input))
+        for (const [part, blob] of Object.entries(copies)) if (blob) body.append(part, blob, `${part}.jpg`)
+        return request<IdentityDocument>('POST', '/api/v1/personnel/documents', body)
+      },
+      /** The employee's documents, current first (personnel.documents.read). */
+      documents: (employeeId: string) =>
+        request<IdentityDocument[]>('GET', `/api/v1/personnel/documents/by-employee/${seg(employeeId)}`),
+      /** The employee's current documents' kind, state and expiry, for anyone. */
+      validity: (employeeId: string) =>
+        request<DocumentValidity[]>('GET', `/api/v1/personnel/documents/by-employee/${seg(employeeId)}/validity`),
+    },
+
     catalogue: {
       list: () => request<CatalogueItem[]>('GET', '/api/v1/catalogue'),
       listActive: () => request<CatalogueItem[]>('GET', '/api/v1/catalogue/active'),
@@ -576,6 +602,19 @@ function errorField(text: string, key: 'reference' | 'existing_id'): string | un
     return typeof v === 'string' && v !== '' ? v : undefined
   } catch {
     return undefined
+  }
+}
+
+/** A refused identity document's conflict (document_on_file, other_employee) and MRZ problems. */
+function errorDetails(text: string): { conflict?: string; problems?: MrzIssue[] } {
+  try {
+    const parsed = JSON.parse(text) as { conflict?: unknown; problems?: unknown }
+    const out: { conflict?: string; problems?: MrzIssue[] } = {}
+    if (typeof parsed.conflict === 'string') out.conflict = parsed.conflict
+    if (Array.isArray(parsed.problems)) out.problems = parsed.problems as MrzIssue[]
+    return out
+  } catch {
+    return {}
   }
 }
 

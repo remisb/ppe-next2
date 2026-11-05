@@ -10,8 +10,13 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 
 - **Packages:** `internal/personnel/mrz` (the MRZ parser, **built**), `internal/personnel/document`
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**
-  the keys and blind indexes, Check, Save with its copies, and the summary; Show, removal, the
-  employment end, holds and shredding to come), routes in `cmd/api/personnel-routes.go` (to come).
+  the keys and blind indexes, Check, Save with its copies, the summary and validity; Show, removal,
+  the employment end, holds and shredding to come), routes in `cmd/api/personnel-routes.go` (**built:**
+  check, save, the summary and validity), `@ppe/api-client`'s `personnel`.
+- **Keys:** optional. Without `API_PERSONNEL_KEY` and `API_PERSONNEL_INDEX_KEY` (both or neither,
+  `config.personnelKeyErrors`) Check and Save answer 503 and nothing is kept; the summary and
+  validity read what is there. A 409 says `conflict` (`document_on_file`, `other_employee`) and
+  `existing_id`; a 400 for the MRZ lists `problems` as codes and fields.
 - **Migrations:** `0048_personnel` (schema `personnel`, its tables, the employee's `birth_date`,
   `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
   `ppe_app` the schema, but not UPDATE on `subject_keys`. `employee_photos`' `ai_generated` and

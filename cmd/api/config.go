@@ -16,6 +16,7 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
@@ -36,7 +37,15 @@ type config struct {
 	SIMCodesKey          string
 	SIMCodesKeyID        int
 	SIMCodesPreviousKeys string
-	JWTTTL               time.Duration
+	// PersonnelKey seals each person's data key in Personnel files (ADR 0007),
+	// with PersonnelKeyID and PersonnelPreviousKeys as the SIM codes key has;
+	// PersonnelIndexKey is the blind indexes' HMAC key. Both or neither: without
+	// them Personnel files' routes answer that it is not configured.
+	PersonnelKey          string
+	PersonnelKeyID        int
+	PersonnelPreviousKeys string
+	PersonnelIndexKey     string
+	JWTTTL                time.Duration
 	// SessionMaxAge ends a sign-in without "Keep me signed in" this long after
 	// it began; its cookie also ends with the browser.
 	SessionMaxAge time.Duration
@@ -167,6 +176,12 @@ func loadConfig(args []string) (config, error) {
 	if c.SIMCodesKeyID, err = envInt("API_SIM_CODES_KEY_ID", 1); err != nil {
 		return c, err
 	}
+	c.PersonnelKey = env("API_PERSONNEL_KEY", "")
+	c.PersonnelPreviousKeys = env("API_PERSONNEL_PREVIOUS_KEYS", "")
+	c.PersonnelIndexKey = env("API_PERSONNEL_INDEX_KEY", "")
+	if c.PersonnelKeyID, err = envInt("API_PERSONNEL_KEY_ID", 1); err != nil {
+		return c, err
+	}
 	if c.DBMaxConns, err = envInt("API_DB_MAX_CONNS", 10); err != nil {
 		return c, err
 	}
@@ -283,6 +298,7 @@ func (c config) validate() error {
 		errs = append(errs, errors.New("API_JWT_SECRET must be at least 32 bytes"))
 	}
 	errs = append(errs, c.simCodesKeyErrors()...)
+	errs = append(errs, c.personnelKeyErrors()...)
 	if c.JWTTTL < time.Minute || c.JWTTTL > 24*time.Hour {
 		errs = append(errs, errors.New("API_JWT_TTL must be between 1m and 24h"))
 	}
@@ -382,6 +398,74 @@ func splitList(s string) []string {
 		}
 	}
 	return out
+}
+
+// personnelKeyErrors checks Personnel files' keys (ADR 0007): none, or the
+// master key with its id and previous keys and the index key, each its own.
+func (c config) personnelKeyErrors() []error {
+	if c.PersonnelKey == "" && c.PersonnelIndexKey == "" && c.PersonnelPreviousKeys == "" {
+		return nil
+	}
+	var errs []error
+	key, err := sealbox.ParseKey(c.PersonnelKey)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("API_PERSONNEL_KEY %w", err))
+	}
+	index, err := sealbox.ParseKey(c.PersonnelIndexKey)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("API_PERSONNEL_INDEX_KEY %w", err))
+	}
+	others := map[string]string{"API_JWT_SECRET": c.JWTSecret, "API_SIM_CODES_KEY": c.SIMCodesKey}
+	for name, v := range others {
+		if v != "" && (v == c.PersonnelKey || v == c.PersonnelIndexKey) {
+			errs = append(errs, fmt.Errorf("Personnel files' keys must not be %s", name))
+		}
+	}
+	if key != nil && index != nil && bytes.Equal(key, index) {
+		errs = append(errs, errors.New("API_PERSONNEL_INDEX_KEY must not be API_PERSONNEL_KEY"))
+	}
+	if c.PersonnelKeyID < 1 || c.PersonnelKeyID > math.MaxInt16 {
+		errs = append(errs, fmt.Errorf("API_PERSONNEL_KEY_ID must be from 1 to %d", math.MaxInt16))
+	}
+	previous, err := sealbox.ParseKeys(c.PersonnelPreviousKeys)
+	if err != nil {
+		return append(errs, fmt.Errorf("API_PERSONNEL_PREVIOUS_KEYS %w", err))
+	}
+	for id, k := range previous {
+		if int(id) == c.PersonnelKeyID {
+			errs = append(errs, fmt.Errorf("API_PERSONNEL_PREVIOUS_KEYS has key %d, which is API_PERSONNEL_KEY_ID: a previous key needs an id of its own", id))
+		}
+		if key != nil && bytes.Equal(k, key) {
+			errs = append(errs, fmt.Errorf("API_PERSONNEL_PREVIOUS_KEYS key %d is API_PERSONNEL_KEY", id))
+		}
+	}
+	return errs
+}
+
+// personnelKeys are Personnel files' keys, validate having checked them; the
+// zero Keys (Personnel files off) when none is set.
+func personnelKeys(cfg config) (document.Keys, error) {
+	if cfg.PersonnelKey == "" {
+		return document.Keys{}, nil
+	}
+	key, err := sealbox.ParseKey(cfg.PersonnelKey)
+	if err != nil {
+		return document.Keys{}, fmt.Errorf("API_PERSONNEL_KEY %w", err)
+	}
+	keys, err := sealbox.ParseKeys(cfg.PersonnelPreviousKeys)
+	if err != nil {
+		return document.Keys{}, fmt.Errorf("API_PERSONNEL_PREVIOUS_KEYS %w", err)
+	}
+	keys[int16(cfg.PersonnelKeyID)] = key
+	master, err := sealbox.NewKeyring(int16(cfg.PersonnelKeyID), keys)
+	if err != nil {
+		return document.Keys{}, err
+	}
+	index, err := sealbox.ParseKey(cfg.PersonnelIndexKey)
+	if err != nil {
+		return document.Keys{}, fmt.Errorf("API_PERSONNEL_INDEX_KEY %w", err)
+	}
+	return document.Keys{Master: master, Index: index}, nil
 }
 
 // location loads OrgTimezone; validate has already checked it loads.

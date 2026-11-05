@@ -79,3 +79,18 @@ func (e *DuplicateError) Error() string {
 var ErrDuplicate = errors.New("identity document conflict")
 
 func (e *DuplicateError) Unwrap() error { return ErrDuplicate }
+
+// ExistingID is the document already on file, else the other employee: what
+// the app opens (the API's error body's existing_id).
+func (e *DuplicateError) ExistingID() uuid.UUID {
+	if e.DocumentID != uuid.Nil {
+		return e.DocumentID
+	}
+	return e.EmployeeID
+}
+
+// Conflict says which duplicate it is: document_on_file or other_employee.
+func (e *DuplicateError) Conflict() string { return e.What }
+
+// MRZProblems are the problems, for the API's error body.
+func (e *ProblemsError) MRZProblems() []mrz.Issue { return e.Problems }

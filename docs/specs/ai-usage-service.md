@@ -10,7 +10,7 @@ plan's FR-21 and section 5.8. The first and, for now, only operation is the colo
 - **Package:** `internal/aiusage` (platform, like `internal/usage`): the ledger, prices,
   budget and the operations' list. The OpenAI client is `cmd/api/openai.go`, the only code that
   talks to OpenAI; it writes a row for every call, so no caller can forget one.
-- **Migrations:** `0049_ai_usage` (the table, its append-only grants, the settings columns,
+- **Migrations:** the next free number (0049 is SIM cards' permissions), `…_ai_usage` (the table, its append-only grants, the settings columns,
   `ai_usage.read`), planned.
 
 ## Operations

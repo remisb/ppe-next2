@@ -356,6 +356,30 @@ func summaryOf(d Document) map[string]any {
 	}
 }
 
+// Validity is what anyone may know of a person's documents: each current
+// one's kind, issuing state and expiry date (FR-15), never more.
+type Validity struct {
+	Kind         Kind   `json:"kind"`
+	IssuingState string `json:"issuing_state"`
+	ExpiresOn    string `json:"expires_on"`
+}
+
+// Validity is the employee's current documents' validity, for the employee
+// page's "valid until" line.
+func (s *Service) Validity(ctx context.Context, employeeID uuid.UUID) ([]Validity, error) {
+	docs, err := s.repo.Documents(ctx, employeeID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Validity, 0, len(docs))
+	for _, d := range docs {
+		if d.SupersededAt == nil {
+			out = append(out, Validity{Kind: d.Kind, IssuingState: d.IssuingState, ExpiresOn: d.ExpiresOn})
+		}
+	}
+	return out, nil
+}
+
 // Documents are the employee's live documents (the summary; FR-15, D11).
 func (s *Service) Documents(ctx context.Context, employeeID uuid.UUID) ([]Document, error) {
 	return s.repo.Documents(ctx, employeeID)

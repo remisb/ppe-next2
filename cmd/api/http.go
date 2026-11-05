@@ -25,6 +25,8 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
+	"github.com/remisb/ppe-next2/internal/personnel/mrz"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 )
@@ -92,6 +94,7 @@ var errorStatuses = []struct {
 	{role.ErrActorNotFound, http.StatusUnauthorized},
 	{asset.ErrActorNotFound, http.StatusUnauthorized},
 	{employeephoto.ErrActorNotFound, http.StatusUnauthorized},
+	{document.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
 	{role.ErrNotFound, http.StatusNotFound},
@@ -121,6 +124,11 @@ var errorStatuses = []struct {
 	{employeephoto.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
 	{employeephoto.ErrFileType, http.StatusUnsupportedMediaType},
 	{employeephoto.ErrNoStorage, http.StatusServiceUnavailable},
+	{document.ErrNotFound, http.StatusNotFound},
+	{document.ErrEmployeeNotFound, http.StatusNotFound},
+	{document.ErrCopyTooLarge, http.StatusRequestEntityTooLarge},
+	{document.ErrCopyNotJPEG, http.StatusUnsupportedMediaType},
+	{document.ErrNotConfigured, http.StatusServiceUnavailable},
 
 	{user.ErrEmailTaken, http.StatusConflict},
 	{user.ErrLastAdministrator, http.StatusConflict},
@@ -142,6 +150,8 @@ var errorStatuses = []struct {
 	{asset.ErrNotGiven, http.StatusConflict},
 	{asset.ErrAlreadyMarked, http.StatusConflict},
 	{asset.ErrFormChanged, http.StatusConflict},
+	{document.ErrDuplicate, http.StatusConflict},
+	{document.ErrEmployeeCodeTaken, http.StatusConflict},
 	{order.ErrLinkExpired, http.StatusGone},
 
 	{user.ErrInvalid, http.StatusBadRequest},
@@ -160,6 +170,7 @@ var errorStatuses = []struct {
 	{security.ErrInvalid, http.StatusBadRequest},
 	{asset.ErrInvalid, http.StatusBadRequest},
 	{employeephoto.ErrInvalid, http.StatusBadRequest},
+	{document.ErrInvalid, http.StatusBadRequest},
 	{system.ErrNotFound, http.StatusNotFound},
 	{system.ErrInvalid, http.StatusBadRequest},
 }
@@ -179,6 +190,16 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 			var existing interface{ ExistingID() uuid.UUID }
 			if errors.As(err, &existing) {
 				body.ExistingID = existing.ExistingID().String()
+			}
+			// A duplicate identity document says which kind; an MRZ the API
+			// refuses lists its problems as codes, never what was read.
+			var conflict interface{ Conflict() string }
+			if errors.As(err, &conflict) {
+				body.Conflict = conflict.Conflict()
+			}
+			var problems interface{ MRZProblems() []mrz.Issue }
+			if errors.As(err, &problems) {
+				body.Problems = problems.MRZProblems()
 			}
 			// A refused row of a batch is named by its index.
 			var row interface{ RowIndex() int }
@@ -212,6 +233,10 @@ type errorBody struct {
 	ExistingID string `json:"existing_id,omitempty"`
 	// Index is the refused row of a batch (Scan SIMs), counted from 0.
 	Index *int `json:"index,omitempty"`
+	// Conflict is which duplicate an identity document is (document_on_file,
+	// other_employee); Problems are an MRZ's, as codes and fields.
+	Conflict string      `json:"conflict,omitempty"`
+	Problems []mrz.Issue `json:"problems,omitempty"`
 }
 
 // parseUUIDPath reads path wildcard key as a UUID; a malformed one is a 400.

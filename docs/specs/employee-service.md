@@ -17,6 +17,7 @@ and §4.1.
 | `shoe_size` | Optional: 39–46 |
 | `notes` | Optional free text |
 | `preferred_language` | Optional: `en`, `lt` or `ru`, the languages the app speaks (else 400); `null` when not recorded. A CHECK in migration `0017_employee_language` holds it too. Update replaces every field, so a PUT without it clears it. The confirmation page and hand-over mode open in it when it is `en` or `ru` (order records carry it as `employee_language`) |
+| `birth_date`, `nationality`, `sex` | Response only, `null` until an identity document saved with Add to Employee Record fills them (Personnel files, [personnel-service.md](personnel-service.md); migration 0048). The employee's routes never accept or change them |
 | `full_name` | Derived, response only |
 
 There is no glove size: gloves and similar PPE are no-size items.

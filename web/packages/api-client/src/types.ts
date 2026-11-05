@@ -126,6 +126,14 @@ export interface Employee {
   preferred_language: Language | null
   /** The employee's default photo (see EmployeePhoto); null when they have none. */
   default_photo_id: string | null
+  /**
+   * From an identity document saved with Add to Employee Record (Personnel files,
+   * ADR 0007), else null; read only: EmployeeInput never sets them.
+   */
+  birth_date: string | null
+  /** An ICAO code, as on the document (LTU). */
+  nationality: string | null
+  sex: 'M' | 'F' | 'X' | null
   created_at: string
   updated_at: string
 }
@@ -1632,4 +1640,87 @@ export interface AppTrial {
 export interface AppTrials {
   days: number
   versions: AppTrial[]
+}
+
+// Personnel files: identity documents (ADR 0007, docs/specs/personnel-service.md).
+// Nothing here ever carries a document's number, personal code or images:
+// those open only with Show Document.
+
+export type IdentityDocumentKind = 'passport' | 'id_card' | 'residence_permit'
+
+/** A Document Copy's side: a passport's data page, a card's front and back, and the portrait. */
+export type DocumentCopySide = 'page' | 'front' | 'back' | 'portrait'
+
+/** An employee field a document may fill, with Add to Employee Record on. */
+export type DocumentTake = 'names' | 'birth_date' | 'nationality' | 'sex'
+
+/** An MRZ's problem or note: a code and the field it is about (@ppe/mrz's Issue). */
+export interface MrzIssue {
+  code: string
+  field?: string
+}
+
+/** POST /api/v1/personnel/documents/check: what docs-import asks before Save. */
+export interface DocumentCheckInput {
+  /** The chosen employee; left out for a new one. */
+  employee_id?: string
+  mrz: string[]
+  surname?: string
+  given_names?: string
+}
+
+/** The API's reading of the lines, and what only it knows; never a value read. */
+export interface DocumentCheck {
+  valid: boolean
+  problems: MrzIssue[]
+  notes: MrzIssue[]
+  needs_second_read: boolean
+  /** The typed names against the MRZ's; '' when no surname was sent. */
+  name_match: 'same' | 'truncated' | 'differs' | ''
+  document_on_file: { employee_id: string; document_id: string } | null
+  /** The employee the personal code belongs to, when not the chosen one. */
+  other_employee: string | null
+  /** For a new employee: live employees with the same names, or last name and birth date. */
+  possible_duplicates: string[]
+}
+
+/** Save's "document" part (POST /api/v1/personnel/documents, multipart). */
+export interface IdentityDocumentInput {
+  employee: { id: string } | { new: { first_name: string; last_name: string; code?: string | null } }
+  mrz: string[]
+  kind: IdentityDocumentKind
+  /** As printed, with diacritics. */
+  surname: string
+  given_names: string
+  /** Not in the MRZ: typed, optional. */
+  issued_on?: string
+  place_of_birth?: string
+  authority?: string
+  add_to_employee_record: boolean
+  take?: DocumentTake[]
+}
+
+/** Save's copies, JPEG, each at most 5 MB and 2400 px. */
+export type DocumentCopies = Partial<Record<'copy_page' | 'copy_front' | 'copy_back' | 'portrait', Blob>>
+
+/** An identity document as its summary shows it. */
+export interface IdentityDocument {
+  id: string
+  employee_id: string
+  kind: IdentityDocumentKind
+  issuing_state: string
+  issued_on: string | null
+  expires_on: string
+  on_employee_record: boolean
+  copies: DocumentCopySide[]
+  superseded_at: string | null
+  created_at: string
+  created_by_user_id: string
+}
+
+/** What anyone may know of a current document: the employee page's "valid until" line. */
+export interface DocumentValidity {
+  kind: IdentityDocumentKind
+  issuing_state: string
+  expires_on: string
 }

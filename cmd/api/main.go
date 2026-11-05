@@ -39,6 +39,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/monitor"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
@@ -127,6 +128,18 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		pool,
 	)
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
+	personnel, err := personnelKeys(cfg)
+	if err != nil {
+		return err
+	}
+	if personnel.Master == nil {
+		logger.Info("personnel files are off: API_PERSONNEL_KEY and API_PERSONNEL_INDEX_KEY are not set")
+	}
+	var documentStore document.Store
+	if store != nil {
+		documentStore = store
+	}
+	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc))
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -228,6 +241,9 @@ type services struct {
 	itemSets  *itemset.Service
 	orders    *order.Service
 	assets    *asset.Service
+	// documents are Personnel files' identity documents (ADR 0007); run sets
+	// them, as their keys are optional.
+	documents *document.Service
 	dashboard *dashboard.Service
 	settings  *settings.Service
 	templates *mailtemplate.Service
@@ -304,6 +320,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
+	registerPersonnelRoutes(rt, svc.documents)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)

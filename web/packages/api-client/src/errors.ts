@@ -10,14 +10,27 @@ export class ApiError extends Error {
   readonly existingId: string | undefined
   /** On a refused batch (Scan SIMs), the refused row, counted from 0. */
   readonly index: number | undefined
+  /** On a 409 for an identity document, which duplicate: document_on_file or other_employee. */
+  readonly conflict: string | undefined
+  /** On a 400 for an identity document, its MRZ's problems, as codes and fields. */
+  readonly problems: { code: string; field?: string }[] | undefined
 
-  constructor(status: number, message: string, reference?: string, existingId?: string, index?: number) {
+  constructor(
+    status: number,
+    message: string,
+    reference?: string,
+    existingId?: string,
+    index?: number,
+    details: { conflict?: string; problems?: { code: string; field?: string }[] } = {},
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.reference = reference
     this.existingId = existingId
     this.index = index
+    this.conflict = details.conflict
+    this.problems = details.problems
   }
 
   /** The reference as people quote it: its first 8 characters, enough to grep the log. */

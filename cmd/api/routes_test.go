@@ -33,6 +33,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
@@ -771,6 +772,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	}
 	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
+	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
 }
@@ -893,6 +895,11 @@ var policy = map[string]rule{
 	"PUT /api/v1/employee-photos/{id}/{photoID}":         {"", "any"},
 	"PUT /api/v1/employee-photos/{id}/{photoID}/default": {"", "any"},
 	"DELETE /api/v1/employee-photos/{id}/{photoID}":      {"", "any"},
+	// Personnel files (ADR 0007): Personnel Documents alone; the validity line, anyone.
+	"POST /api/v1/personnel/documents/check":                    {role.PersonnelDocumentsManage, "personnel"},
+	"POST /api/v1/personnel/documents":                          {role.PersonnelDocumentsManage, "personnel"},
+	"GET /api/v1/personnel/documents/by-employee/{id}":          {role.PersonnelDocumentsRead, "personnel"},
+	"GET /api/v1/personnel/documents/by-employee/{id}/validity": {"", "any"},
 
 	"GET /api/v1/catalogue":                    {"", "any"},
 	"GET /api/v1/catalogue/active":             {"", "any"},
