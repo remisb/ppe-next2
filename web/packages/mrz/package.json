@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Reading identity documents' machine-readable zone (ICAO Doc 9303): TD1, TD2 and TD3 parsing, check digits, the look-alike corrections that check digits confirm, date centuries, the Lithuanian personal code and the folding of printed names to their MRZ form. Pure TypeScript, no DOM; the Go API's parser reads the same test vectors (testdata/mrz).",
+  "description": "Reading identity documents' machine-readable zone (ICAO Doc 9303): TD1, TD2 and TD3 parsing, check digits, the look-alike corrections that check digits confirm, date centuries, the Lithuanian personal code and the folding of printed names to their MRZ form. The parser is pure TypeScript, no DOM, and the Go API's parser reads the same test vectors (testdata/mrz); ./image finds the MRZ band in pixels, and ./reader reads a photo's MRZ in the browser with @ppe/scan-kit's text reader and the OCR-B model in readers/.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./image": "./src/image.ts",
+    "./reader": "./src/reader/reader.ts",
+    "./reader-files": "./src/reader/reader-files.ts"
   },
   "types": "./src/index.ts",
   "scripts": {
@@ -13,7 +16,11 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "@ppe/scan-kit": "workspace:*"
   }
 }

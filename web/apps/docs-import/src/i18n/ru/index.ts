@@ -1,0 +1,172 @@
+import type { Messages } from '../index'
+
+const shell: Messages['shell'] = {
+  appName: 'Импорт документов',
+  signInTagline: 'Часть системы «Спецодежда и снаряжение».',
+  mainNav: 'Основное',
+  employees: 'Сотрудники',
+  notForYouTitle: 'Импорт документов не для вашей роли',
+  notForYou: 'Для чтения документов личности нужна роль «Личные документы». Обратитесь к администратору, если она вам нужна.',
+  backToWorkwear: 'Вернуться в «Спецодежду и снаряжение»',
+  signOut: 'Выйти',
+}
+
+const steps: Messages['steps'] = {
+  label: 'Шаги',
+  person: 'Человек',
+  capture: 'Документ',
+  review: 'Проверка',
+  done: 'Сохранено',
+}
+
+const person: Messages['person'] = {
+  title: 'Чей это документ?',
+  description: 'Выберите сотрудника или создайте нового по документу.',
+  search: 'Найти сотрудника',
+  searchHint: 'Имя, фамилия или код.',
+  noMatch: 'Такого сотрудника нет.',
+  choose: 'Выбрать',
+  newEmployee: 'Новый сотрудник по документу',
+  newEmployeeHint: 'Сотрудник создаётся с именем и фамилией из документа.',
+  chosen: 'Для',
+  newChosen: 'Новый сотрудник по документу',
+  change: 'Изменить',
+}
+
+const capture: Messages['capture'] = {
+  title: 'Сфотографируйте документ',
+  description: 'На фото должна быть вся страница или карта, ровно, без бликов на строках из букв и < внизу.',
+  passport: 'Паспорт',
+  card: 'ID-карта или вид на жительство',
+  typeLabel: 'Документ',
+  page: 'Страница паспорта с фото',
+  back: 'Обратная сторона, с кодовыми строками',
+  front: 'Лицевая сторона, с фото',
+  takePhoto: 'Сфотографировать',
+  choosePhoto: 'Выбрать фото',
+  reading: 'Документ читается…',
+  readerFailed: 'Не удалось запустить чтение. Проверьте связь и попробуйте снова.',
+  found: 'Кодовые строки найдены.',
+  agreedNote: 'Прочитано дважды, оба раза одинаково.',
+  notAgreed: 'Прочитано, но дважды по-разному: на следующем шаге сравните с документом.',
+  noMrz: 'На этом фото кодовые строки не найдены.',
+  frontOnly: 'Это лицевая сторона. Сфотографируйте и обратную, с кодовыми строками.',
+  typeInstead: 'Ввести строки вручную',
+  continue: 'Проверить',
+}
+
+const review: Messages['review'] = {
+  title: 'Проверьте прочитанное',
+  description: 'Номер и даты определяют кодовые строки. Имя и фамилию введите как напечатано, со всеми буквами (Ž, Ė…).',
+  lines: 'Кодовые строки (MRZ)',
+  linesHint: 'Две или три строки из заглавных букв, цифр и <. Измените символ, и поля ниже обновятся.',
+  checked: 'Я сравнил(а) кодовые строки с документом.',
+  checkedHint: 'Нужно, когда два прочтения различались или номер был исправлен.',
+  fields: 'Прочитано из кодовых строк',
+  kind: 'Вид',
+  number: 'Номер',
+  issuingState: 'Выдан',
+  nationality: 'Гражданство',
+  birthDate: 'Дата рождения',
+  sex: 'Пол',
+  expiresOn: 'Действует до',
+  personalCode: 'Личный код',
+  corrected: 'Исправлено',
+  names: 'Имя и фамилия, как напечатано',
+  surname: 'Фамилия',
+  givenNames: 'Имена',
+  namesDiffer: 'Имя или фамилия отличаются от кода документа: проверьте.',
+  namesTruncated: 'Код сократил имена; сохраняются напечатанные.',
+  optional: 'Нет в кодовых строках (необязательно)',
+  issuedOn: 'Дата выдачи',
+  placeOfBirth: 'Место рождения',
+  authority: 'Орган, выдавший документ',
+  addToRecord: 'Добавить в данные сотрудника',
+  addToRecordHint: 'Выключено: документ хранится только в личных делах. Включено: он виден на странице сотрудника, и ниже можно перенести его данные.',
+  differences: 'Отличается от данных сотрудника',
+  takeLabel: (field: string) => `Перенести: ${field}`,
+  current: 'Сейчас',
+  document: 'В документе',
+  none: 'нет',
+  checking: 'Проверка в реестре…',
+  save: 'Сохранить документ',
+  saving: 'Сохранение…',
+  back: 'Назад',
+  photos: 'Фото',
+}
+
+const blockers: Messages['blockers'] = {
+  no_mrz: 'Введите кодовые строки из документа.',
+  problems: 'Исправьте то, что кодовые строки отмечают как ошибку.',
+  surname: 'Введите фамилию.',
+  given_names: 'Введите имена: по ним создаётся новый сотрудник.',
+  issued_on: 'Дата выдачи должна быть датой раньше окончания срока.',
+  not_checked: 'Сравните кодовые строки с документом и отметьте это.',
+  document_on_file: 'Этот документ уже сохранён.',
+  other_employee: 'Этот личный код принадлежит другому сотруднику.',
+}
+
+const problems: Messages['problems'] = {
+  check_digit: 'Контрольная цифра не совпадает: какой-то символ прочитан неверно. Сравните с документом.',
+  ambiguous_correction: 'Контрольной цифре подходят несколько вариантов. Введите символы из документа.',
+  invalid_character: 'Здесь такой символ невозможен.',
+  invalid_date: 'Это не дата.',
+  invalid_sex: 'Должно быть M, F или <.',
+  unknown_state: 'Неизвестный код государства.',
+  no_surname: 'Нет фамилии.',
+  names_unreadable: 'Имена, похоже, прочитаны неверно (заполнители прочитаны как буквы).',
+  expiry_before_birth: 'Срок действия раньше даты рождения.',
+  birth_in_future: 'Дата рождения в будущем.',
+  unsupported_document: 'Визы здесь не читаются.',
+  personal_code_checksum: 'Контрольная цифра личного кода не совпадает.',
+  personal_code_birth_date: 'Личный код указывает другую дату рождения.',
+  personal_code_sex: 'Личный код указывает другой пол.',
+}
+
+const notes: Messages['notes'] = {
+  expired: 'Срок действия документа истёк. Его всё равно можно сохранить.',
+  specimen: 'Образец документа (Утопия).',
+  incomplete_date: 'В документе дата рождения неполная.',
+  corrected: 'Исправлено с похожего символа.',
+}
+
+const fieldNames: Messages['fieldNames'] = {
+  documentCode: 'Код документа',
+  issuingState: 'Государство выдачи',
+  documentNumber: 'Номер документа',
+  documentNumberCheck: 'Контрольная цифра номера',
+  optionalData1: 'Дополнительные данные',
+  birthDate: 'Дата рождения',
+  birthDateCheck: 'Контрольная цифра даты рождения',
+  sex: 'Пол',
+  expiryDate: 'Окончание срока',
+  expiryDateCheck: 'Контрольная цифра окончания срока',
+  nationality: 'Гражданство',
+  optionalData2: 'Дополнительные данные',
+  personalNumber: 'Личный номер',
+  personalNumberCheck: 'Контрольная цифра личного номера',
+  compositeCheck: 'Итоговая контрольная цифра',
+  names: 'Имя и фамилия',
+  composite: 'Итоговая контрольная цифра',
+}
+
+const kinds: Messages['kinds'] = { passport: 'Паспорт', id_card: 'ID-карта', residence_permit: 'Вид на жительство' }
+const sexes: Messages['sexes'] = { M: 'Мужской', F: 'Женский', X: 'Не указан' }
+const takes: Messages['takes'] = { names: 'имя и фамилию', birth_date: 'дату рождения', nationality: 'гражданство', sex: 'пол' }
+
+const done: Messages['done'] = {
+  title: 'Документ сохранён',
+  description: (kind: string, state: string, until: string) => `${kind} · ${state} · действует до ${until}`,
+  sealed: 'Его номер, личный код и копии зашифрованы в личных делах.',
+  openEmployee: 'Открыть сотрудника',
+  another: 'Импортировать ещё',
+}
+
+const errors: Messages['errors'] = {
+  title: 'Не сохранено',
+  conflictDocument: 'Этот документ уже сохранён.',
+  conflictEmployee: 'Этот личный код принадлежит другому сотруднику.',
+  notConfigured: 'Личные дела на этом сервере ещё не настроены.',
+}
+
+export const ru = { shell, steps, person, capture, review, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }

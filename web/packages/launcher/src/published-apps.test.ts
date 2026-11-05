@@ -21,8 +21,11 @@ function workspace(apps: Record<string, object | null>): string {
 }
 
 describe('published apps', () => {
-  it('are the apps with a manifest: Scan SIMs today', () => {
-    expect(publishedApps(web).map((a) => [a.slug, a.devPort, a.e2ePort])).toEqual([['sim-scan', 5184, 5185]])
+  it('are the apps with a manifest: Import Documents and Scan SIMs today', () => {
+    expect(publishedApps(web).map((a) => [a.slug, a.devPort, a.e2ePort])).toEqual([
+      ['docs-import', 5188, 5189],
+      ['sim-scan', 5184, 5185],
+    ])
   })
 
   it('are found by folder, the others left out', () => {

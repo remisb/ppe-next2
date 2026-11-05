@@ -130,7 +130,10 @@ PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-
 tools) waits for the open decisions.
 **Personnel files** (ADR 0007; specs `personnel-service.md`, `ai-usage-service.md`) is being built for the
 docs-import app: migration 0048 (schema `personnel`, the role Personnel Documents and its permissions),
-`internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
+**Import Documents** (`web/apps/docs-import`, published, device profile, POC; for `personnel.documents.manage`) reads
+a passport's or ID card's MRZ from photos in the browser (`@ppe/mrz/reader`: an image worker and tesseract.js with the
+OCR-B model `mrz` committed in `web/packages/mrz/readers`, BSD-3), each photo read twice, and saves it through the routes
+below; its rules are `src/lib/flow.ts`. `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
 under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
 sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upkeep's shredding after
 `API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys they answer 503).
@@ -257,8 +260,9 @@ cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, L
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
 8080, 5173–5175): Postgres 5442, API 8090, Vite 5180 (Administration 5182, reached through
-5180 at `/admin/`; Scan SIMs 5184, at `/apps/sim-scan/`; App Launcher 5186, at `/apps/`), e2e
-18090/5181 (Administration 5183, Scan SIMs 5185, App Launcher 5187), compose project
+5180 at `/admin/`; Scan SIMs 5184, at `/apps/sim-scan/`; App Launcher 5186, at `/apps/`; Import Documents
+5188, at `/apps/docs-import/`), e2e 18090/5181 (Administration 5183, Scan SIMs 5185, App Launcher 5187,
+Import Documents 5189), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
 new ports out of PPE-next's range.
 
@@ -493,6 +497,7 @@ pnpm --dir apps/workwear dev                         # http://localhost:5180, pr
 pnpm --dir apps/admin dev                            # Administration on 5182; open it at http://localhost:5180/admin/
 pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/apps/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
 pnpm --dir apps/launcher dev                         # App Launcher on 5186; open it at http://localhost:5180/apps/
+pnpm --dir apps/docs-import dev                      # Import Documents on 5188; open it at http://localhost:5180/apps/docs-import/ (VITE_HTTPS=1 for a phone's camera)
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 

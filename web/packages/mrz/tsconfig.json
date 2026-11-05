@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // No DOM: the parser runs on the page, in a worker, and later beside a Go twin.
-    "lib": ["ES2022"],
-    "types": ["vitest/globals"]
+    // The parser and ./image use no DOM (they run on the page, in a worker, and beside a Go
+    // twin); ./reader is the browser's glue, and reader-files.ts runs in Vite's Node.
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "types": ["vitest/globals", "node"]
   },
   "include": ["src/**/*.ts", "vitest.config.ts"]
 }

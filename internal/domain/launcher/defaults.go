@@ -37,5 +37,8 @@ var Defaults = []App{
 		Names: Names{"PPE Crew", "PPE Crew", "PPE Crew"}, AnyOf: []role.Permission{role.DashboardOverview, role.DashboardManager}},
 	{Slug: "admin", Kind: KindApp, Group: "admin", Icon: "admin", Color: "#3b4256", Href: "/admin/", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Administration", "Administravimas", "Администрирование"}, AnyOf: administration},
+	// Identity documents read from passports and ID cards (ADR 0007): Personnel Documents' alone.
+	{Slug: "docs-import", Kind: KindApp, Group: "people", Icon: "scan", Color: "#5b3f8c", Href: "/apps/docs-import/", Tier: TierHere, Stage: StagePOC,
+		Names: Names{"Import Documents", "Dokumentų importas", "Импорт документов"}, AnyOf: []role.Permission{role.PersonnelDocumentsManage}},
 	// make new-app adds each new published app's tile above this line, in POC (Testers only).
 }

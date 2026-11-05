@@ -111,6 +111,9 @@ export function apiEnv(): Record<string, string> {
     API_DB_DSN: appDSN(),
     API_JWT_SECRET: 'e2e-secret-e2e-secret-e2e-secret-e2e',
     API_SIM_CODES_KEY: 'e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0',
+    // Personnel files (ADR 0007): on, for Import Documents' steps.
+    API_PERSONNEL_KEY: 'e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1e2e1',
+    API_PERSONNEL_INDEX_KEY: 'e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2',
     API_JWT_TTL: '1h',
     API_PUBLIC_BASE_URL: webURL,
     API_ORG_TIMEZONE: 'Europe/Vilnius',

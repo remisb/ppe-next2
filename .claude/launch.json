@@ -30,6 +30,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "web/apps/launcher", "dev"],
       "port": 5186
+    },
+    {
+      "name": "docs-import",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/docs-import", "dev"],
+      "port": 5188
     }
   ]
 }

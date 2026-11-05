@@ -3573,6 +3573,97 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(page.getByText('4826')).toHaveCount(0)
 })
 
+test('Import Documents: a passport and an ID card read from photos, checked and saved to Personnel files', async () => {
+  test.skip(!runsApp('docs-import'), 'Import Documents is not started (E2E_APPS)')
+  // Each photo is read twice in the browser (FR-4): a few seconds each.
+  test.setTimeout(240_000)
+  // The documents are made up (fixtures/documents/make.ts), in OCR-B, marked SPECIMEN.
+  const specimen = (name: string) => join(repoRoot, 'web/e2e/fixtures/documents', name)
+  // Without Personnel Documents, an administrator included, the app says it is not for them.
+  await page.goto('/apps/docs-import/')
+  await expect(page.getByRole('heading', { name: 'Import Documents is not for your role' })).toBeVisible()
+  // The built-in role Personnel Documents (role.PersonnelID), given in the database and seen at the next sign-in refresh.
+  const db = new pg.Client({ connectionString: dbDSN })
+  await db.connect()
+  try {
+    await db.query(`INSERT INTO user_roles (user_id, role_id) SELECT id, $2 FROM users WHERE email = $1 ON CONFLICT DO NOTHING`, [
+      admin.email,
+      'a0e1d000-0000-4000-8000-000000000006',
+    ])
+  } finally {
+    await db.end()
+  }
+  await page.reload()
+
+  // A passport, for an employee made from it: one photo of its data page, read twice in the browser.
+  await expect(page.getByRole('heading', { name: 'Whose document is it?' })).toBeVisible()
+  await page.getByRole('button', { name: 'New Employee from Document' }).click()
+  await expect(page.getByText('A new employee, from the document')).toBeVisible()
+  await page.getByLabel('Choose Photo').setInputFiles(specimen('passport-lt.jpg'))
+  await expect(page.getByText('Code lines found. Read twice, the same both times.')).toBeVisible({ timeout: 90_000 })
+  // The MRZ was found in the image worker, not on the page's thread (behind Caddy, under the device policy).
+  expect(page.workers().map((w) => w.url())).toContainEqual(expect.stringMatching(/image\.worker/))
+  await page.getByRole('button', { name: 'Review' }).click()
+  await expect(page.getByRole('heading', { name: 'Check what was read' })).toBeVisible()
+  await expect(page.getByLabel('Code lines (MRZ)')).toHaveValue(/^P<LTUPAVYZDYS<<JONAS/)
+  await expect(page.getByLabel('Surname')).toHaveValue('Pavyzdys')
+  await expect(page.getByLabel('Given names')).toHaveValue('Jonas')
+  const read = page.getByRole('region', { name: 'Read from the code lines' })
+  await expect(read).toContainText('91234567')
+  await expect(read).toContainText('1933-09-24')
+  await expect(read).toContainText('33309240064')
+  // A character changed by hand fails its check digit, and Save waits; put back, it passes.
+  const lines = page.getByLabel('Code lines (MRZ)')
+  const original = await lines.inputValue()
+  await lines.fill(original.replace('3309243', '3309253'))
+  await expect(page.getByText(/check digit does not match/).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save Document' })).toBeDisabled()
+  await lines.fill(original)
+  // Both reads agreed, so no comparison with the document is asked for.
+  await expect(page.getByRole('checkbox', { name: /I have compared the code lines/ })).toHaveCount(0)
+  await page.getByLabel('Place of Birth').fill('Vilnius')
+  await page.getByRole('checkbox', { name: /Add to Employee Record/ }).check()
+  await page.getByRole('button', { name: 'Save Document' }).click()
+  await expect(page.getByRole('heading', { name: 'Document saved' })).toBeVisible()
+  await expect(page.getByText('Passport · LTU · valid until 2031-05-15')).toBeVisible()
+  await expect(page.getByText('91234567')).toHaveCount(0)
+
+  // The same passport again: the register knows it, and Save is not offered.
+  await page.getByRole('button', { name: 'Import Another' }).click()
+  await page.getByRole('button', { name: 'New Employee from Document' }).click()
+  await page.getByLabel('Choose Photo').setInputFiles(specimen('passport-lt.jpg'))
+  await page.getByRole('button', { name: 'Review' }).click({ timeout: 90_000 })
+  await expect(page.getByText('This document is already on file.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Save Document' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Back' }).click()
+  await page.getByRole('button', { name: 'Change' }).click()
+
+  // An ID card for a new employee: its front, then its back, which has the code lines; the names typed as printed.
+  await page.getByRole('button', { name: 'New Employee from Document' }).click()
+  await page.getByRole('button', { name: 'ID card or residence permit' }).click()
+  await page.getByLabel('Choose Photo').setInputFiles(specimen('id-lt-front.jpg'))
+  await expect(page.getByText('This is the front. Photograph the back too, with the code lines.')).toBeVisible({ timeout: 90_000 })
+  await page.getByLabel('Choose Photo').setInputFiles(specimen('id-lt-back.jpg'))
+  await expect(page.getByText(/^Code lines found\./)).toBeVisible({ timeout: 90_000 })
+  await page.getByRole('button', { name: 'Review' }).click()
+  await expect(page.getByLabel('Surname')).toHaveValue('Pavyzdyte')
+  await page.getByLabel('Surname').fill('Pavyzdytė')
+  await page.getByLabel('Given names').fill('Eglė')
+  const compared = page.getByRole('checkbox', { name: /I have compared the code lines/ })
+  if (await compared.isVisible()) await compared.check()
+  // On a phone the review fits the screen: nothing scrolls sideways.
+  const desktop = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.setViewportSize(desktop)
+  await page.getByRole('button', { name: 'Save Document' }).click()
+  await expect(page.getByText('ID card · LTU · valid until 2033-03-03')).toBeVisible()
+
+  // The employee made from the card is on the staff app's Employees, with the name as typed.
+  await page.goto('/employees')
+  await expect(page.getByRole('row', { name: /Eglė Pavyzdytė/ })).toBeVisible()
+})
+
 test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {
   test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
   test.skip(!runsApp('sim-scan'), 'Scan SIMs is not published (E2E_APPS)')
