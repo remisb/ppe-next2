@@ -48,23 +48,29 @@ export interface Launcher {
   retry: () => void
 }
 
-/** The signed-in user's launcher list (null for no one). */
+/**
+ * The signed-in user's launcher list (null for no one). The list is kept with
+ * whose it is and given only to that user: signing out does not reload the
+ * page, so on a shared device the next person to sign in would otherwise see
+ * the previous one's tiles, pins and channels until theirs arrived.
+ */
 export function useLauncher(): Launcher {
   const { client, session } = useApi()
   const userId = session?.userId
-  const [state, setState] = useState<{ list: LauncherList | null; failed: boolean }>({ list: null, failed: false })
+  const [state, setState] = useState<{ userId: string; list: LauncherList | null; failed: boolean } | null>(null)
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     if (!userId) return
     let live = true
-    setState((s) => (s.failed ? { list: null, failed: false } : s))
+    setState((s) => (s?.userId === userId && !s.failed ? s : null))
     loadLauncher(client, userId).then(
-      (list) => live && setState({ list, failed: false }),
-      () => live && setState({ list: null, failed: true }),
+      (list) => live && setState({ userId, list, failed: false }),
+      () => live && setState({ userId, list: null, failed: true }),
     )
     return () => {
       live = false
     }
   }, [client, userId, attempt])
-  return { ...state, retry: () => setAttempt((n) => n + 1) }
+  const mine = state !== null && state.userId === userId
+  return { list: mine ? state.list : null, failed: mine && state.failed, retry: () => setAttempt((n) => n + 1) }
 }

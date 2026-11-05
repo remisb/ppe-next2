@@ -163,8 +163,9 @@ and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. Small ap
 Defaults are the code's until an administrator changes one (`EnsureDefaults` syncs untouched
 tiles, audited). Manage apps' **Trials** (migration 0045: `user_version_activity`,
 `launcher_feedback.version`) shows each version's people, errors and feedback.
-`make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app) and
-publishes nothing from a checkout with local changes.
+`make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app,
+removes folders no version names) and publishes nothing from a checkout with local changes; a
+publish writes a recorded version's files again when they are missing (a restore, a lost volume).
 
 Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
 `audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
@@ -436,7 +437,8 @@ the API connects as it); global setup then seeds a test admin via `api -seed-adm
 The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
 needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`). CI pins the Caddy version and its SHA-512 checksum in
-`ci.yml`, so a Caddy upgrade must update both.
+`ci.yml`, so a Caddy upgrade must update both, and `web/Dockerfile`'s `CADDY_VERSION`, the
+production image's (`TestWebImageRunsCIsCaddy` keeps them equal).
 The Vite web servers are started from `apps/<app>/node_modules/.bin/vite`, not `pnpm exec`:
 pnpm 12 detaches the child, so Playwright could not stop it and the run hung after the last test.
 With Vite, Administration runs on 5183 and the staff app's server proxies `/admin` to it, so

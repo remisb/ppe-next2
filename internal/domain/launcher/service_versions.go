@@ -141,21 +141,45 @@ func (s *Service) SetStableFollowsDeploys(ctx context.Context, slug string, on b
 	})
 }
 
-// Pruned is a version Prune removed: its files go too.
-type Pruned struct {
+// AppVersion is one of an app's published versions, with the app's slug:
+// where its files are (<profile>/<slug>/<version>).
+type AppVersion struct {
 	Slug    string
 	Version Version
+}
+
+// Recorded is every published version of every app, for finding files no
+// version names.
+func (s *Service) Recorded(ctx context.Context) ([]AppVersion, error) {
+	apps, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []AppVersion{}
+	for _, a := range apps {
+		if a.Kind != KindApp {
+			continue
+		}
+		versions, err := s.repo.Versions(ctx, a.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range versions {
+			out = append(out, AppVersion{a.Slug, v})
+		}
+	}
+	return out, nil
 }
 
 // Prune removes, from every app, the versions no channel points at beyond
 // the newest KeepVersions (app.versions_pruned, by no one), and returns them
 // so their files can go. A version's address then answers 404.
-func (s *Service) Prune(ctx context.Context) ([]Pruned, error) {
+func (s *Service) Prune(ctx context.Context) ([]AppVersion, error) {
 	apps, err := s.repo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := []Pruned{}
+	out := []AppVersion{}
 	for _, a := range apps {
 		if a.Kind != KindApp {
 			continue
@@ -180,7 +204,7 @@ func (s *Service) Prune(ctx context.Context) ([]Pruned, error) {
 			return nil, err
 		}
 		for _, v := range removed {
-			out = append(out, Pruned{a.Slug, v})
+			out = append(out, AppVersion{a.Slug, v})
 		}
 	}
 	return out, nil

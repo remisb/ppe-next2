@@ -106,7 +106,10 @@ The `published` volume (App Launcher's published apps, such as Scan SIMs; `API_A
 not backed up: every version is a build of a commit, named by it (`YYYY.MM.DD-<commit>`).
 After losing the server, `make prod-up` publishes the deployed commit again, and
 `make prod-publish APP=<slug> REF=<commit>` any older version a channel pointed at; the
-registry rows (versions, channels) are in the database backups.
+registry rows (versions, channels) are in the database backups. Publishing a version the
+restored database already records writes its files again ("published again: its files were
+missing"), so do that for every version a channel points at (Manage apps lists them) before
+opening the app: until then its page answers 500.
 
 ### Encryption (optional)
 

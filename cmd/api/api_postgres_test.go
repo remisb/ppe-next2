@@ -2079,6 +2079,25 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	if out, err := publish("sim-scan", "2026.11.04-aaa", "beta", scanSIMs); err != nil || !strings.Contains(out, "already published") {
 		t.Errorf("publish again = %q, %v", out, err)
 	}
+	// The published volume is not backed up: after a restore its folders may be
+	// gone while the database still names the versions. Publishing again puts
+	// the files back, also over a folder without index.html (a publish killed
+	// while moving it).
+	if err := os.RemoveAll(cfg.AppsDir + "/device/sim-scan/2026.11.04-aaa"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cfg.AppsDir+"/device/sim-scan/2026.11.04-aaa/assets", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := publish("sim-scan", "2026.11.04-aaa", "beta", scanSIMs); err != nil || !strings.Contains(out, "published again: its files were missing") {
+		t.Errorf("publish after the files were lost = %q, %v", out, err)
+	}
+	if _, err := os.Stat(cfg.AppsDir + "/device/sim-scan/2026.11.04-aaa/assets/index.js"); err != nil {
+		t.Errorf("the files put back: %v", err)
+	}
+	if _, err := publish("sim-scan", "2026.11.04-aaa", "", map[string]string{"index.html": "<head></head>", "ppe-app.json": `{"slug":"sim-scan"}`}); err == nil {
+		t.Error("a recorded version was published again with another profile")
+	}
 	evil := map[string]string{"../evil.js": "x", "index.html": "<head></head>", "ppe-app.json": `{"slug":"sim-scan"}`}
 	if _, err := publish("sim-scan", "2026.11.05-bad", "", evil); err == nil {
 		t.Error("a build writing outside its folder was published")
@@ -2257,5 +2276,39 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	}
 	if rec := get("/apps/sim-scan/@2026.11.06-v6/"); rec.Code != http.StatusNotFound {
 		t.Errorf("a pruned version's address = %d", rec.Code)
+	}
+
+	// What no version names goes once it is an hour old: a killed publish's
+	// folder and a version folder the registry does not know. A fresh one may
+	// be a publish under way, and stays.
+	old := time.Now().Add(-2 * time.Hour)
+	stray := map[string]time.Time{
+		"/.incoming/sim-scan-123":            old,
+		"/device/sim-scan/2026.10.01-gone":   old,
+		"/standard/size-helper/2026.10.01-x": old,
+		"/device/sim-scan/2026.10.02-fresh":  time.Now(),
+	}
+	for dir, at := range stray {
+		if err := os.MkdirAll(cfg.AppsDir+dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(cfg.AppsDir+dir, at, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out.Reset()
+	if err := pruneApps(ctx, api.svc, cfg, &out); err != nil {
+		t.Fatal(err)
+	}
+	for dir, at := range stray {
+		_, err := os.Stat(cfg.AppsDir + dir)
+		if gone := os.IsNotExist(err); gone != at.Equal(old) {
+			t.Errorf("%s gone = %v after pruning: %s", dir, gone, out.String())
+		}
+	}
+	for _, kept := range []string{"/device/sim-scan/2026.11.04-aaa/index.html", "/device/sim-scan/2026.11.12-v12/index.html"} {
+		if _, err := os.Stat(cfg.AppsDir + kept); err != nil {
+			t.Errorf("a recorded version's files after pruning: %v", err)
+		}
 	}
 }

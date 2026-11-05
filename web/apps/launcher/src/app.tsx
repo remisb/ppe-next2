@@ -57,7 +57,8 @@ export function App() {
   return (
     <>
       {launcher.list ? (
-        <Launcher session={session} list={launcher.list} onSignOut={() => void signOut()} />
+        // Keyed by user: its pins and choices are state taken from the list once.
+        <Launcher key={session.userId} session={session} list={launcher.list} onSignOut={() => void signOut()} />
       ) : (
         <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
           {launcher.failed ? (

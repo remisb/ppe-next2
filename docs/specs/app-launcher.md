@@ -206,8 +206,11 @@ tests and build, and is then removed.
 - **Publishing.** `api -publish-app <slug> -version <v> [-channel <name>] [-from-commit <sha>]`
   reads a tar of `dist/` on standard input (at most 5000 files and 300 MB; no links, nothing
   outside it), needs `API_APPS_DIR`, checks the manifest against the slug and the app (here,
-  an app), puts the files in place under `.incoming` then renames them, and records the version
-  (publishing it again only points the channel); the first version of an app also becomes
+  an app), unpacks it under `.incoming`, renames it into `<profile>/<slug>/<version>/` unless a
+  complete folder (one with `index.html`) is there, and records the version (publishing it again
+  only points the channel). The files are decided by the folder, not the registry: a recorded
+  version whose folder is gone (a restore, a lost volume) gets its files back, under the profile
+  it was recorded with (another is refused); a folder without `index.html` is replaced; the first version of an app also becomes
   Stable, and so does every version published to Preview while the app's **Stable follows
   deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). A
   variant must be added on Manage apps before a publish names it.
@@ -250,4 +253,8 @@ tests and build, and is then removed.
   versions no channel points at beyond the newest `launcher.KeepVersions` (5): rows first, under
   the app's lock so no channel moves onto one meanwhile (`PruneVersions`), recorded as one
   `app.versions_pruned` by no one, then their folders. A removed version's address answers 404.
-- Published builds are not backed up: they are rebuilt from git (`docs/backups.md`).
+  It then removes what no version names once it is an hour old (younger may be a publish under
+  way): folders under `.incoming/` left by a killed publish, and `<profile>/<slug>/<version>`
+  folders the registry does not know, which Caddy would go on serving.
+- Published builds are not backed up: they are rebuilt from git (`docs/backups.md`), since
+  publishing a recorded version again writes its missing files.

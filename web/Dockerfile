@@ -5,6 +5,12 @@
 # publish, and is served from the published volume; none is named here.
 # `make prod-publish` builds one app at another commit with the app-dist
 # stage. Build context: the web/ directory.
+#
+# Caddy is the version CI's e2e runs behind and make e2e-caddy uses
+# (ci.yml's CADDY_VERSION; cmd/api's TestWebImageRunsCIsCaddy keeps them
+# equal), so production never runs a Caddy no test ran.
+ARG CADDY_VERSION=2.11.4
+
 FROM node:22-alpine AS build
 RUN npm install -g pnpm@12.6.0
 WORKDIR /web
@@ -30,7 +36,7 @@ FROM scratch AS app-dist
 ARG APP=sim-scan
 COPY --from=build /web/apps/${APP}/dist /
 
-FROM caddy:2-alpine
+FROM caddy:${CADDY_VERSION}-alpine
 COPY --from=build /web/apps/workwear/dist /srv/workwear/dist
 COPY --from=build /web/apps/admin/dist /srv/admin/dist
 COPY --from=build /web/apps/launcher/dist /srv/launcher/dist

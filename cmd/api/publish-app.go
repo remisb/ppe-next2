@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/remisb/ppe-next2/internal/domain/launcher"
 )
@@ -23,9 +24,14 @@ const (
 
 // publishApp publishes an app's build, a tar of its dist/ read from in (the
 // API's image has no shell, so the build arrives on standard input): the
-// files go to API_APPS_DIR/<profile>/<slug>/<version>/, unless that version
-// is published already, then the version is recorded and -channel pointed at
-// it (launcher.Service.Publish). A deploy's publish is recorded by no one.
+// files go to API_APPS_DIR/<profile>/<slug>/<version>/ unless they are there
+// already, then the version is recorded and -channel pointed at it
+// (launcher.Service.Publish). A deploy's publish is recorded by no one.
+//
+// The files are decided by the folder, not the registry: the published
+// volume is not backed up, so after a restore or a lost volume the database
+// names versions whose folders are gone, and publishing the same commit
+// again (make prod-up, make prod-publish) puts them back.
 func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out io.Writer) error {
 	incoming := filepath.Join(cfg.AppsDir, ".incoming")
 	if err := os.MkdirAll(incoming, 0o755); err != nil {
@@ -58,33 +64,27 @@ func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out
 	if err != nil {
 		return err
 	}
-	_, found, err := svc.launcher.Version(ctx, p.Slug, p.Version)
+	recorded, found, err := svc.launcher.Version(ctx, p.Slug, p.Version)
 	if err != nil {
 		return err
 	}
-	if !found {
-		dest := filepath.Join(cfg.AppsDir, string(profile), p.Slug, p.Version)
-		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-			return err
-		}
-		// A folder no version names was left by a publish that failed before it was recorded.
-		if err := os.RemoveAll(dest); err != nil {
-			return err
-		}
-		if err := os.Rename(tmp, dest); err != nil {
-			return err
-		}
-		// Caddy, another user, reads the files.
-		if err := os.Chmod(dest, 0o755); err != nil {
-			return err
-		}
+	if found && recorded.Profile != profile {
+		return fmt.Errorf("version %s is recorded with the %s profile, this build asks for %s", p.Version, recorded.Profile, profile)
+	}
+	dest := filepath.Join(cfg.AppsDir, string(profile), p.Slug, p.Version)
+	wrote, err := placeBuild(tmp, dest)
+	if err != nil {
+		return err
 	}
 	v, err := svc.launcher.Publish(ctx, p, nil)
 	if err != nil {
 		return err
 	}
 	state := "published"
-	if found {
+	switch {
+	case found && wrote:
+		state = "published again: its files were missing"
+	case found:
 		state = "already published"
 	}
 	channel := ""
@@ -95,9 +95,46 @@ func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out
 	return err
 }
 
+// placeBuild moves the unpacked build at tmp to dest, unless dest holds a
+// build already (its index.html; a build is moved in whole, so a folder with
+// one is complete), and says whether it did. A folder without one is a
+// leftover and is replaced. Two publishes of one version at once: the second
+// finds the first's folder, complete, and keeps it.
+func placeBuild(tmp, dest string) (bool, error) {
+	if complete(dest) {
+		return false, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return false, err
+	}
+	if err := os.RemoveAll(dest); err != nil {
+		return false, err
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		if complete(dest) {
+			return false, nil
+		}
+		return false, err
+	}
+	// Caddy, another user, reads the files.
+	return true, os.Chmod(dest, 0o755)
+}
+
+func complete(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, "index.html"))
+	return err == nil && info.Mode().IsRegular()
+}
+
+// staleAfter is how old a folder no version names must be before -prune-apps
+// removes it: a publish moves its folder into place a moment before it
+// records the version, and one may be running beside the prune.
+const staleAfter = time.Hour
+
 // pruneApps removes the versions launcher.Service.Prune drops from the
-// registry, then their files. A folder that will not go is reported, not
-// fatal: no version names it any more.
+// registry, then their files; then what no version names: a killed publish's
+// folder under .incoming/, and a version folder the registry does not know
+// (which Caddy would otherwise go on serving). A folder that will not go is
+// reported, not fatal.
 func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) error {
 	removed, err := svc.launcher.Prune(ctx)
 	if err != nil {
@@ -112,9 +149,41 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 		fmt.Fprintf(out, "%s %s removed\n", p.Slug, p.Version.Version)
 	}
 	if len(removed) == 0 {
-		_, err = fmt.Fprintln(out, "no published version to remove")
+		fmt.Fprintln(out, "no published version to remove")
 	}
-	return err
+	recorded, err := svc.launcher.Recorded(ctx)
+	if err != nil {
+		return err
+	}
+	known := map[string]bool{}
+	for _, r := range recorded {
+		known[filepath.Join(string(r.Version.Profile), r.Slug, r.Version.Version)] = true
+	}
+	var stray []string
+	if dirs, err := filepath.Glob(filepath.Join(cfg.AppsDir, ".incoming", "*")); err == nil {
+		stray = append(stray, dirs...)
+	}
+	for _, profile := range []launcher.Profile{launcher.ProfileStandard, launcher.ProfileDevice} {
+		dirs, _ := filepath.Glob(filepath.Join(cfg.AppsDir, string(profile), "*", "*"))
+		for _, dir := range dirs {
+			if rel, _ := filepath.Rel(cfg.AppsDir, dir); !known[rel] {
+				stray = append(stray, dir)
+			}
+		}
+	}
+	for _, dir := range stray {
+		info, err := os.Stat(dir)
+		if err != nil || time.Since(info.ModTime()) < staleAfter {
+			continue
+		}
+		rel, _ := filepath.Rel(cfg.AppsDir, dir)
+		if err := os.RemoveAll(dir); err != nil {
+			fmt.Fprintf(out, "%s, which no version names, stays: %v\n", rel, err)
+			continue
+		}
+		fmt.Fprintf(out, "%s, which no version names, removed\n", rel)
+	}
+	return nil
 }
 
 // untar writes the tar's directories and regular files under dir: no
