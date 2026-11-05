@@ -185,6 +185,9 @@ Rules for using it:
   preferred language. An employee does not sign in. Deleting one is a soft delete; their
   orders keep the name snapshot. Full name is derived, never stored. Planned: an employee
   may also hold [company assets](#12-company-assets), and leaving never returns them.
+  The name is everyone's; the rest is the employee's **profile** (code, notes, language,
+  photos, an identity document's details), with **See employee profiles** and **Manage
+  employee profiles** (`employee_profiles.read`/`.manage`, migration 0050).
 - **Code:** `internal/domain/employee`, table `employees`. **UI:** Employees, an employee's
   page, **Add New Employee**, **Edit details**, **Delete employee…**.
 
@@ -192,7 +195,9 @@ Rules for using it:
 - **Brief:** the employee's reusable sizes that Create Order resolves lines from.
 - **Detail:** height (100–250 cm), clothing size (even EU 44–66) and shoe size (39–46).
   Changing them affects future orders only; order lines snapshot the size they used. There
-  is deliberately no glove size.
+  is deliberately no glove size. Seen with **See employee sizes** and changed with **Manage
+  employee sizes** (`employee_sizes.read`/`.manage`, migration 0050); Create Order resolves
+  from them either way.
 - **Code:** `size.Defaults`, `employee.SizesParams`. **UI:** **Edit Sizes** (a sheet from the Employees
   list; on the employee page, the **Sizes** card's **Edit**, in place), "Affects future orders only."
 

@@ -53,14 +53,19 @@ export function Employees({
 }) {
   const { client } = useApi()
   const session = useSession()
+  // Names are everyone's; sizes take See employee sizes, the code, notes and photos See employee profiles (the API leaves them blank).
+  const seesSizes = session.can('employee_sizes.read')
+  const seesProfile = session.can('employee_profiles.read')
+  const managesSizes = session.can('employee_sizes.manage')
+  const managesProfile = session.can('employee_profiles.manage')
   const employees = useLoad(() => client.employees.list())
   const sizes = useLoad(() => client.sizes())
   // Clothing sizes are named as the pickers name them: 46 is "S (44–46)".
   const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
-  const columns = employeeColumns()
+  const columns = employeeColumns().filter((c) => (c.key === 'code' ? seesProfile : c.key === 'name' || seesSizes))
   const [filter, setFilter] = useState('')
   // Only those Create Order would flag for a missing size.
-  const [onlyMissing, setOnlyMissing] = useState(missing)
+  const [onlyMissing, setOnlyMissing] = useState(missing && seesSizes)
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const action = useAction()
@@ -88,7 +93,7 @@ export function Employees({
     })
   }, [employees.data, filter, onlyMissing, sort])
   const sortProps = { sort, onSort: setSort }
-  const missingCount = (employees.data ?? []).filter(isMissingASize).length
+  const missingCount = seesSizes ? (employees.data ?? []).filter(isMissingASize).length : 0
 
   const remove = (e: Employee) =>
     action.run(
@@ -138,7 +143,7 @@ export function Employees({
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
-        primary={{ label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
+        primary={managesProfile ? { label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       {/* As on every list: the tabs first, then the search. */}
       <div data-slot="filter-bar" className="mb-4 flex flex-col gap-3">
@@ -196,14 +201,14 @@ export function Employees({
             </TableHeader>
             <TableBody>
               {shown.map((e) => {
-                const missing = missingSizes(e)
-                const flag = missingLabel(e)
+                const missing = seesSizes ? missingSizes(e) : { clothing: false, shoes: false }
+                const flag = seesSizes ? missingLabel(e) : undefined
                 return (
                   <TableRow
                     key={e.id}
                     data-state={selected === e.id ? 'selected' : undefined}
                     aria-current={selected === e.id ? 'true' : undefined}
-                    {...photoDrop.rowProps(e.id)}
+                    {...(managesProfile ? photoDrop.rowProps(e.id) : {})}
                     className={cn(
                       'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
                       // Photos dragged over the row: dropping adds them to this employee.
@@ -241,36 +246,46 @@ export function Employees({
                       ) : null}
                     </TableCell>
                     <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                      {employeeFacts(e, bands) || t.employees.noSizesSaved}
+                      {employeeFacts(e, bands) || (seesSizes ? t.employees.noSizesSaved : null)}
                     </TableCell>
                     {e.notes ? (
                       <TableCell title={e.notes} className="hidden stacked:col-start-2 stacked:row-start-3 stacked:block stacked:truncate stacked:text-xs stacked:text-muted-foreground">
                         {e.notes}
                       </TableCell>
                     ) : null}
-                    <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell>
-                    {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
-                    <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
-                    <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
-                    <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
+                    {seesProfile ? <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell> : null}
+                    {seesSizes ? (
+                      <>
+                        {/* A height alone is not needed once the clothing size is saved, so then its badge is grey. */}
+                        <TableCell className="stacked:hidden">{e.height_cm ? t.employees.heightCm(e.height_cm) : <MissingBadge optional={!missing.clothing} />}</TableCell>
+                        <TableCell className="stacked:hidden">{missing.clothing ? <MissingBadge /> : clothingSizeLabel(bands, e.clothing_size)}</TableCell>
+                        <TableCell className="stacked:hidden">{missing.shoes ? <MissingBadge /> : formatSize(e.shoe_size)}</TableCell>
+                      </>
+                    ) : null}
                     <TableCell aria-hidden className="hidden stacked:col-start-3 stacked:flex stacked:[grid-row:1/span_3]">
                       <ChevronRight className="size-4 text-muted-foreground" />
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                      <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
-                        {t.employees.editSizes}
-                      </Button>{' '}
-                      <MoreActions label={t.common.moreActions(e.full_name)}>
-                        <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem>
-                        {session.can('employees.delete') ? (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                              {t.employees.deleteEmployee}
-                            </DropdownMenuItem>
-                          </>
-                        ) : null}
-                      </MoreActions>
+                      {managesSizes ? (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
+                            {t.employees.editSizes}
+                          </Button>{' '}
+                        </>
+                      ) : null}
+                      {managesProfile || session.can('employees.delete') ? (
+                        <MoreActions label={t.common.moreActions(e.full_name)}>
+                          {managesProfile ? <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem> : null}
+                          {session.can('employees.delete') ? (
+                            <>
+                              {managesProfile ? <DropdownMenuSeparator /> : null}
+                              <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                                {t.employees.deleteEmployee}
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
+                        </MoreActions>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 )

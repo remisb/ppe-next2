@@ -11,17 +11,31 @@ type employeeHandler struct {
 	employees *employee.Service
 }
 
-// registerEmployeeRoutes mounts /api/v1/employees. Staff who prepare orders
-// (every role) maintain employees and their sizes; deleting needs a manager.
+// registerEmployeeRoutes mounts /api/v1/employees. Any signed-in user reads
+// employees' names (Create Order, Orders and search need them); their sizes
+// need employee_sizes.read and the rest of the profile employee_profiles.read
+// (employee.Sight, blank otherwise). Adding and editing employees needs
+// employee_profiles.manage, and the size defaults employee_sizes.manage
+// (employee.Rights: Edit keeps them without it); deleting needs a manager.
 func registerEmployeeRoutes(rt *router, employees *employee.Service) {
 	h := &employeeHandler{employees: employees}
 	rt.authenticated("GET /api/v1/employees", h.list)
 	rt.authenticated("GET /api/v1/employees/{id}", h.get)
 	rt.authenticated("GET /api/v1/employees/by-name/{q}", h.search)
-	rt.authenticated("POST /api/v1/employees", h.create)
-	rt.authenticated("PUT /api/v1/employees/{id}", h.update)
-	rt.authenticated("PUT /api/v1/employees/{id}/sizes", h.updateSizes)
+	rt.restricted("POST /api/v1/employees", h.create, role.EmployeeProfilesManage)
+	rt.restricted("PUT /api/v1/employees/{id}", h.update, role.EmployeeProfilesManage)
+	rt.restricted("PUT /api/v1/employees/{id}/sizes", h.updateSizes, role.EmployeeSizesManage)
 	rt.restricted("DELETE /api/v1/employees/{id}", h.delete, role.EmployeesDelete)
+}
+
+// employeeSight is which of an employee's data the request's user may see.
+func employeeSight(r *http.Request) employee.Sight {
+	return employee.Sight{Sizes: holds(r, role.EmployeeSizesRead), Profile: holds(r, role.EmployeeProfilesRead)}
+}
+
+// employeeRights is which of an employee's data the request's user may change.
+func employeeRights(r *http.Request) employee.Rights {
+	return employee.Rights{Sizes: holds(r, role.EmployeeSizesManage), Profile: holds(r, role.EmployeeProfilesManage)}
 }
 
 // employeeJSON adds derived fields to the response; they are never accepted.
@@ -30,14 +44,15 @@ type employeeJSON struct {
 	FullName string `json:"full_name"`
 }
 
-func toEmployeeJSON(e employee.Employee) employeeJSON {
-	return employeeJSON{Employee: e, FullName: e.FullName()}
+// toEmployeeJSON is e as the request's user may see it.
+func toEmployeeJSON(r *http.Request, e employee.Employee) employeeJSON {
+	return employeeJSON{Employee: employeeSight(r).Show(e), FullName: e.FullName()}
 }
 
-func toEmployeesJSON(es []employee.Employee) []employeeJSON {
+func toEmployeesJSON(r *http.Request, es []employee.Employee) []employeeJSON {
 	out := make([]employeeJSON, len(es))
 	for i, e := range es {
-		out[i] = toEmployeeJSON(e)
+		out[i] = toEmployeeJSON(r, e)
 	}
 	return out
 }
@@ -74,7 +89,7 @@ func (h *employeeHandler) list(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmployeesJSON(es))
+	writeJSON(w, http.StatusOK, toEmployeesJSON(r, es))
 }
 
 func (h *employeeHandler) get(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +103,7 @@ func (h *employeeHandler) get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmployeeJSON(e))
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
 }
 
 // search is a filter for the Assigned to selector: no match is 200 [].
@@ -98,7 +113,7 @@ func (h *employeeHandler) search(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmployeesJSON(es))
+	writeJSON(w, http.StatusOK, toEmployeesJSON(r, es))
 }
 
 func (h *employeeHandler) create(w http.ResponseWriter, r *http.Request) {
@@ -112,13 +127,13 @@ func (h *employeeHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	e, err := h.employees.Create(r.Context(), req.params(), actor)
+	e, err := h.employees.Create(r.Context(), req.params(), employeeRights(r), actor)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 	w.Header().Set("Location", "/api/v1/employees/"+e.ID.String())
-	writeJSON(w, http.StatusCreated, toEmployeeJSON(e))
+	writeJSON(w, http.StatusCreated, toEmployeeJSON(r, e))
 }
 
 func (h *employeeHandler) update(w http.ResponseWriter, r *http.Request) {
@@ -137,12 +152,12 @@ func (h *employeeHandler) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	e, err := h.employees.Update(r.Context(), id, req.params(), actor)
+	e, err := h.employees.Update(r.Context(), id, req.params(), employeeRights(r), actor)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmployeeJSON(e))
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
 }
 
 // updateSizes is Edit Sizes and Save as Employee Default. It replaces all three
@@ -170,7 +185,7 @@ func (h *employeeHandler) updateSizes(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toEmployeeJSON(e))
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
 }
 
 func (h *employeeHandler) delete(w http.ResponseWriter, r *http.Request) {

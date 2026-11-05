@@ -102,7 +102,8 @@ func registerAuditRoutes(rt *router, svc services) {
 		}
 	}, role.AuditExport)
 
-	history := func(entityType string, exists func(ctx context.Context, id uuid.UUID) error) http.HandlerFunc {
+	// history is a record's Changes; shown, when given, keeps what the reader may see of them.
+	history := func(entityType string, exists func(ctx context.Context, id uuid.UUID) error, shown ...func(*http.Request, []audit.Entry) []audit.Entry) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			id, err := parseUUIDPath(r, "id")
 			if err != nil {
@@ -118,13 +119,17 @@ func registerAuditRoutes(rt *router, svc services) {
 				writeError(w, r, err)
 				return
 			}
+			for _, keep := range shown {
+				events = keep(r, events)
+			}
 			writeJSON(w, http.StatusOK, events)
 		}
 	}
+	// An employee's Changes show only what the reader may see of them (employee.Sight).
 	rt.authenticated("GET /api/v1/audit-events/employees/{id}", history("employee", func(ctx context.Context, id uuid.UUID) error {
 		_, err := svc.employees.Get(ctx, id)
 		return err
-	}))
+	}, func(r *http.Request, es []audit.Entry) []audit.Entry { return employeeSight(r).Changes(es) }))
 	rt.authenticated("GET /api/v1/audit-events/catalogue/{id}", history("catalogue_item", func(ctx context.Context, id uuid.UUID) error {
 		_, err := svc.catalogue.Get(ctx, id)
 		return err

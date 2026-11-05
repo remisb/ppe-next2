@@ -233,8 +233,9 @@ export function CreateOrder({
     setConflicts((cs) => cs.filter((c) => c.catalogueItemId !== line.catalogueItemId))
     const emp = order.employee
     const group = line.sizeGroup
-    // A size other than the employee's saved one asks to save it to the profile.
-    const asks = emp && size && (group === 'CLOTHING' || group === 'SHOES') && differsFromSaved(emp, group, size, bands)
+    // A size other than the employee's saved one asks to save it to the profile, for whoever may (Manage employee sizes).
+    const asks =
+      session.can('employee_sizes.manage') && emp && size && (group === 'CLOTHING' || group === 'SHOES') && differsFromSaved(emp, group, size, bands)
     setPendingDefault(asks ? { catalogueItemId: line.catalogueItemId, group, size } : null)
   }
 
@@ -341,7 +342,8 @@ export function CreateOrder({
             selected={order.employee}
             disabled={busy}
             onSelect={(e) => void selectEmployee(e.id)}
-            onAddNew={() => setAddingEmployee(true)}
+            // Adding an employee takes Manage employee profiles.
+            {...(session.can('employee_profiles.manage') ? { onAddNew: () => setAddingEmployee(true) } : {})}
           />
         </div>
         <div>

@@ -97,10 +97,18 @@ func detailsChange(cur, next Employee) (before, after map[string]any) {
 	return before, after
 }
 
-// Create adds an employee. Only first and last name are required.
-func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (Employee, error) {
+// Create adds an employee. Only first and last name are required. It needs
+// may.Profile; without may.Sizes the employee starts with no size defaults,
+// whatever p says.
+func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.UUID) (Employee, error) {
 	if actor == uuid.Nil {
 		return Employee{}, fieldError("actor", "is required")
+	}
+	if !may.Profile {
+		return Employee{}, ErrNotPermitted
+	}
+	if !may.Sizes {
+		p.HeightCm, p.ClothingSize, p.ShoeSize = nil, nil, nil
 	}
 	if err := p.Validate(); err != nil {
 		return Employee{}, err
@@ -141,9 +149,17 @@ func (s *Service) Search(ctx context.Context, q string) ([]Employee, error) {
 
 // Update replaces every mutable field. A change to any size default records
 // employee.sizes_changed; it never touches existing orders, which hold snapshots.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid.UUID) (Employee, error) {
+// It needs may.Profile; without may.Sizes the size defaults stay as they are,
+// whatever p says (the writer may not even see them).
+func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights, actor uuid.UUID) (Employee, error) {
 	if actor == uuid.Nil {
 		return Employee{}, fieldError("actor", "is required")
+	}
+	if !may.Profile {
+		return Employee{}, ErrNotPermitted
+	}
+	if !may.Sizes {
+		p.HeightCm, p.ClothingSize, p.ShoeSize = nil, nil, nil
 	}
 	if err := p.Validate(); err != nil {
 		return Employee{}, err
@@ -152,7 +168,9 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 		next := cur
 		next.FirstName, next.LastName, next.Code, next.Notes = p.FirstName, p.LastName, p.Code, p.Notes
 		next.PreferredLanguage = p.PreferredLanguage
-		next.HeightCm, next.ClothingSize, next.ShoeSize = p.HeightCm, p.ClothingSize, p.ShoeSize
+		if may.Sizes {
+			next.HeightCm, next.ClothingSize, next.ShoeSize = p.HeightCm, p.ClothingSize, p.ShoeSize
+		}
 		return s.touch(cur, next, actor)
 	})
 }

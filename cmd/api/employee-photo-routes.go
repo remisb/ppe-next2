@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 type employeePhotoHandler struct {
@@ -16,16 +17,19 @@ type employeePhotoHandler struct {
 }
 
 // registerEmployeePhotoRoutes mounts /api/v1/employee-photos/{employee id}
-// (under /employees/{id}/… it would clash with /employees/by-name/{q}). Like
-// the employee's other details, any signed-in user reads and maintains them.
+// (under /employees/{id}/… it would clash with /employees/by-name/{q}). They
+// are the employee's profile: seen with employee_profiles.read, added,
+// changed and removed with employee_profiles.manage. Import Documents adds a
+// document's portrait as a photo, so adding one also takes
+// personnel.documents.manage (ADR 0007).
 func registerEmployeePhotoRoutes(rt *router, photos *employeephoto.Service) {
 	h := &employeePhotoHandler{photos: photos}
-	rt.authenticated("GET /api/v1/employee-photos/{id}", h.list)
-	rt.authenticated("POST /api/v1/employee-photos/{id}", h.upload)
-	rt.authenticated("GET /api/v1/employee-photos/{id}/{photoID}", h.file)
-	rt.authenticated("PUT /api/v1/employee-photos/{id}/{photoID}", h.update)
-	rt.authenticated("PUT /api/v1/employee-photos/{id}/{photoID}/default", h.setDefault)
-	rt.authenticated("DELETE /api/v1/employee-photos/{id}/{photoID}", h.remove)
+	rt.restricted("GET /api/v1/employee-photos/{id}", h.list, role.EmployeeProfilesRead)
+	rt.restrictedAny("POST /api/v1/employee-photos/{id}", h.upload, role.EmployeeProfilesManage, role.PersonnelDocumentsManage)
+	rt.restricted("GET /api/v1/employee-photos/{id}/{photoID}", h.file, role.EmployeeProfilesRead)
+	rt.restricted("PUT /api/v1/employee-photos/{id}/{photoID}", h.update, role.EmployeeProfilesManage)
+	rt.restricted("PUT /api/v1/employee-photos/{id}/{photoID}/default", h.setDefault, role.EmployeeProfilesManage)
+	rt.restricted("DELETE /api/v1/employee-photos/{id}/{photoID}", h.remove, role.EmployeeProfilesManage)
 }
 
 func (h *employeePhotoHandler) list(w http.ResponseWriter, r *http.Request) {

@@ -272,7 +272,7 @@ func (s *seeder) employee(first, last, code string, heightCm, clothing int, shoe
 	e, err := s.employees.Create(s.ctx, employee.Params{
 		FirstName: first, LastName: last, Code: optional(code), HeightCm: &heightCm,
 		ClothingSize: optionalInt(clothing), ShoeSize: optional(shoe), Notes: notes, PreferredLanguage: optional(lang),
-	}, s.actor)
+	}, employee.Rights{Sizes: true, Profile: true}, s.actor)
 	s.fail("employee "+first+" "+last, err)
 	return e
 }

@@ -1,6 +1,6 @@
 import type { Employee, EmployeeInput, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
@@ -49,9 +49,11 @@ function draftOf(e: Employee | undefined): Draft {
 /**
  * Add New Employee / edit employee. Only first and last name are required;
  * height, clothing and shoe size are optional defaults. There is no glove size.
+ * The sizes are on it only with Manage employee sizes; without, the API keeps them as they are.
  */
 export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel }: Props) {
   const { client } = useApi()
+  const managesSizes = useSession().can('employee_sizes.manage')
   const [d, setD] = useState<Draft>(() => draftOf(employee))
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
@@ -72,7 +74,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (heightError) return
+    if (managesSizes && heightError) return
     const input: EmployeeInput = {
       first_name: d.first_name,
       last_name: d.last_name,
@@ -110,33 +112,37 @@ footer={<FormSheetActions form="employee-form" onCancel={onClose} busy={busy} di
           {(p) => <Input {...controlProps(p)} value={d.last_name} onChange={set('last_name')} />}
         </Field>
         <Field label={t.employees.employeeCode}>{(p) => <Input {...controlProps(p)} value={d.code} onChange={set('code')} />}</Field>
-        <Field label={t.employees.heightLabel} error={heightError}>
-          {(p) => <Input {...controlProps(p)} inputMode="numeric" value={d.height_cm} onChange={set('height_cm')} />}
-        </Field>
-        <Field label={t.employees.clothingSize}>
-          {(p) => (
-            <Select {...controlProps(p)} value={clothingBandValue(bands, d.clothing_size)} onChange={set('clothing_size')}>
-              <option value="">{t.employees.notSet}</option>
-              {bands.map((b) => (
-                <option key={b.value} value={b.value}>
-                  {b.label}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-        <Field label={t.employees.shoeSize}>
-          {(p) => (
-            <Select {...controlProps(p)} value={d.shoe_size} onChange={set('shoe_size')}>
-              <option value="">{t.employees.notSet}</option>
-              {sizes?.shoes.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.code}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
+        {managesSizes ? (
+          <>
+            <Field label={t.employees.heightLabel} error={heightError}>
+              {(p) => <Input {...controlProps(p)} inputMode="numeric" value={d.height_cm} onChange={set('height_cm')} />}
+            </Field>
+            <Field label={t.employees.clothingSize}>
+              {(p) => (
+                <Select {...controlProps(p)} value={clothingBandValue(bands, d.clothing_size)} onChange={set('clothing_size')}>
+                  <option value="">{t.employees.notSet}</option>
+                  {bands.map((b) => (
+                    <option key={b.value} value={b.value}>
+                      {b.label}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label={t.employees.shoeSize}>
+              {(p) => (
+                <Select {...controlProps(p)} value={d.shoe_size} onChange={set('shoe_size')}>
+                  <option value="">{t.employees.notSet}</option>
+                  {sizes?.shoes.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.code}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </>
+        ) : null}
         <Field label={t.employees.preferredLanguage}>
           {(p) => (
             // Each language named in itself, as on Account.

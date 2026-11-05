@@ -884,17 +884,17 @@ var policy = map[string]rule{
 	"GET /api/v1/employees":             {"", "any"},
 	"GET /api/v1/employees/{id}":        {"", "any"},
 	"GET /api/v1/employees/by-name/{q}": {"", "any"},
-	"POST /api/v1/employees":            {"", "any"},
-	"PUT /api/v1/employees/{id}":        {"", "any"},
-	"PUT /api/v1/employees/{id}/sizes":  {"", "any"},
+	"POST /api/v1/employees":            {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}":        {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}/sizes":  {role.EmployeeSizesManage, "staff"},
 	"DELETE /api/v1/employees/{id}":     {role.EmployeesDelete, "managers"},
 
-	"GET /api/v1/employee-photos/{id}":                   {"", "any"},
-	"POST /api/v1/employee-photos/{id}":                  {"", "any"},
-	"GET /api/v1/employee-photos/{id}/{photoID}":         {"", "any"},
-	"PUT /api/v1/employee-photos/{id}/{photoID}":         {"", "any"},
-	"PUT /api/v1/employee-photos/{id}/{photoID}/default": {"", "any"},
-	"DELETE /api/v1/employee-photos/{id}/{photoID}":      {"", "any"},
+	"GET /api/v1/employee-photos/{id}":                   {role.EmployeeProfilesRead, "staff"},
+	"POST /api/v1/employee-photos/{id}":                  {"", "staff+personnel"},
+	"GET /api/v1/employee-photos/{id}/{photoID}":         {role.EmployeeProfilesRead, "staff"},
+	"PUT /api/v1/employee-photos/{id}/{photoID}":         {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employee-photos/{id}/{photoID}/default": {role.EmployeeProfilesManage, "staff"},
+	"DELETE /api/v1/employee-photos/{id}/{photoID}":      {role.EmployeeProfilesManage, "staff"},
 	// Personnel files (ADR 0007): Personnel Documents alone; the validity line, anyone.
 	"POST /api/v1/personnel/documents/check":                    {role.PersonnelDocumentsManage, "personnel"},
 	"POST /api/v1/personnel/documents":                          {role.PersonnelDocumentsManage, "personnel"},
@@ -1029,11 +1029,13 @@ var policy = map[string]rule{
 var allowedRoles = map[string][]string{
 	"any":       {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters, role.KeyPersonnel},
 	"personnel": {role.KeyPersonnel},
-	"staff":     {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
-	"managers":  {role.KeyAdmin, role.KeyManager},
-	"admins":    {role.KeyAdmin},
-	"manager":   {role.KeyManager},
-	"employee":  {role.KeyEmployee},
+	// staff+personnel: an employee's photo, added by staff or by Import Documents' portrait.
+	"staff+personnel": {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyPersonnel},
+	"staff":           {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
+	"managers":        {role.KeyAdmin, role.KeyManager},
+	"admins":          {role.KeyAdmin},
+	"manager":         {role.KeyManager},
+	"employee":        {role.KeyEmployee},
 }
 
 // anyOf is the routes open to any of several permissions (router.restrictedAny):
@@ -1044,6 +1046,7 @@ var anyOf = map[string][]role.Permission{}
 
 func init() {
 	managers := []role.Permission{role.SIMCardsManage, role.AssetsManage}
+	anyOf["POST /api/v1/employee-photos/{id}"] = []role.Permission{role.EmployeeProfilesManage, role.PersonnelDocumentsManage}
 	for _, pattern := range []string{
 		"GET /api/v1/assets/next-number/{prefix}",
 		"POST /api/v1/assets",

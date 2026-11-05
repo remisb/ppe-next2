@@ -65,6 +65,11 @@ export function EmployeePage({
 }) {
   const { client } = useApi()
   const session = useSession()
+  // The name is everyone's; sizes take See employee sizes, the language, notes and photos See employee profiles.
+  const seesSizes = session.can('employee_sizes.read')
+  const seesProfile = session.can('employee_profiles.read')
+  const managesSizes = session.can('employee_sizes.manage')
+  const managesProfile = session.can('employee_profiles.manage')
   const employee = useLoad(() => client.employees.get(id), [id])
   const orders = useLoad(() => loadAllOrders(client, { employee_id: id }), [id])
   const settings = useLoad(() => client.settings())
@@ -80,7 +85,7 @@ export function EmployeePage({
     employee.reload()
     onChanged()
   })
-  const drop = useFileDrop((files) => void photos.add(files), employee.data !== undefined)
+  const drop = useFileDrop((files) => void photos.add(files), employee.data !== undefined && managesProfile)
   // The card's Edit buttons turn its sizes, or the preferred language, into their fields in
   // place, one at a time. Closing gives focus back to the Edit the form hid.
   const [inPlace, setInPlace] = useState<'sizes' | 'language' | null>(null)
@@ -138,7 +143,7 @@ export function EmployeePage({
   const dueByLine = useMemo(() => new Map(due.map((d) => [d.item.key, d])), [due])
   const tz = settings.data?.timezone
   const e = employee.data
-  const missing = e ? missingSizes(e) : { clothing: false, shoes: false }
+  const missing = e && seesSizes ? missingSizes(e) : { clothing: false, shoes: false }
 
   // Delete is here and under ⋯ in the table, never on a list row a phone scrolls past.
   const remove = (emp: Employee) =>
@@ -179,17 +184,19 @@ export function EmployeePage({
                   <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
                     <Plus aria-hidden /> {t.employees.newOrder}
                   </Button>
-                  <MoreActions label={t.common.moreActions(e.full_name)}>
-                    <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem>
-                    {session.can('employees.delete') ? (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                          {t.employees.deleteEmployee}
-                        </DropdownMenuItem>
-                      </>
-                    ) : null}
-                  </MoreActions>
+                  {managesProfile || session.can('employees.delete') ? (
+                    <MoreActions label={t.common.moreActions(e.full_name)}>
+                      {managesProfile ? <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem> : null}
+                      {session.can('employees.delete') ? (
+                        <>
+                          {managesProfile ? <DropdownMenuSeparator /> : null}
+                          <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
+                            {t.employees.deleteEmployee}
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
+                    </MoreActions>
+                  ) : null}
                 </>
               }
             >
@@ -197,128 +204,140 @@ export function EmployeePage({
             </RecordHeader>
             {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
             {/* Flat, between two rules, as a pane's facts; while one part is edited in place, its rules are the focus colour. */}
-            <div className={cn('mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
-              <section aria-labelledby="sizes-heading">
-                <div className="flex min-h-12 items-center justify-between gap-3 pt-2">
-                  <h2 id="sizes-heading" className="font-semibold">
-                    {t.employees.sizes}
-                  </h2>
-                  {sizing ? (
-                    <p className="text-muted-foreground">{t.employees.futureOnly}</p>
-                  ) : (
-                    <Button ref={editSizesButton} size="sm" variant="outline" aria-label={t.employees.editSizes} onClick={() => openSizes('height')}>
-                      <Pencil aria-hidden /> {t.common.edit}
-                    </Button>
-                  )}
-                </div>
-                {sizing ? (
-                  <form
-                    aria-label={t.employees.editSizesTitle(e.full_name)}
-                    onSubmit={draft.submit}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Escape') {
-                        ev.preventDefault()
-                        closeInPlace()
-                      }
-                    }}
-                    className="grid gap-3 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
-                  >
-                    <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
-                    {draft.error ? (
-                      <p role="alert" className="col-span-full text-destructive">
-                        {draft.error}
-                      </p>
-                    ) : null}
-                    <div className="col-span-full flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={closeInPlace}>
-                        {t.common.cancel}
-                      </Button>
-                      <Button type="submit" disabled={draft.busy}>
-                        {draft.busy ? t.common.saving : t.common.save}
-                      </Button>
+            {seesSizes || seesProfile ? (
+              <div className={cn('mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
+                {seesSizes ? (
+                  <section aria-labelledby="sizes-heading">
+                    <div className="flex min-h-12 items-center justify-between gap-3 pt-2">
+                      <h2 id="sizes-heading" className="font-semibold">
+                        {t.employees.sizes}
+                      </h2>
+                      {sizing ? (
+                        <p className="text-muted-foreground">{t.employees.futureOnly}</p>
+                      ) : managesSizes ? (
+                        <Button ref={editSizesButton} size="sm" variant="outline" aria-label={t.employees.editSizes} onClick={() => openSizes('height')}>
+                          <Pencil aria-hidden /> {t.common.edit}
+                        </Button>
+                      ) : null}
                     </div>
-                  </form>
-                ) : (
-                  <FactGrid ruled={false} className="grid-cols-3 pt-2 pb-4">
-                    {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
-                    <Fact label={t.employees.height}>
-                      {e.height_cm ? (
-                        t.employees.heightCm(e.height_cm)
-                      ) : (
-                        <SetMissing label={t.employees.height} optional={!missing.clothing} onClick={() => openSizes('height')} />
-                      )}
-                    </Fact>
-                    <Fact label={t.employees.clothing}>
-                      {missing.clothing ? (
-                        <SetMissing label={t.employees.clothing} onClick={() => openSizes('clothing')} />
-                      ) : (
-                        clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)
-                      )}
-                    </Fact>
-                    <Fact label={t.employees.shoes}>
-                      {missing.shoes ? <SetMissing label={t.employees.shoes} onClick={() => openSizes('shoe')} /> : formatSize(e.shoe_size)}
-                    </Fact>
-                  </FactGrid>
-                )}
-              </section>
-              <div className="grid gap-4 border-t border-border py-4">
-                {inPlace === 'language' ? (
-                  <form
-                    aria-label={t.employees.editLanguage}
-                    onSubmit={(ev) => void saveLanguage(ev, e)}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Escape') {
-                        ev.preventDefault()
-                        closeInPlace()
-                      }
-                    }}
-                    className="grid gap-4 sm:grid-cols-3 sm:items-end"
-                  >
-                    <Field label={t.employees.preferredLanguage}>
-                      {(p) => (
-                        // Each language named in itself, as on Account.
-                        <Select {...controlProps(p)} autoFocus value={language} onChange={(ev) => setLanguage(ev.target.value)}>
-                          <option value="">{t.employees.notSet}</option>
-                          {languages.map((l) => (
-                            <option key={l.value} value={l.value} lang={l.value}>
-                              {l.label}
-                            </option>
-                          ))}
-                        </Select>
-                      )}
-                    </Field>
-                    <div className="flex justify-end gap-2 sm:col-span-2">
-                      <Button type="button" variant="outline" onClick={closeInPlace}>
-                        {t.common.cancel}
-                      </Button>
-                      <Button type="submit">{t.common.save}</Button>
-                    </div>
-                    {languageError ? (
-                      <p role="alert" className="col-span-full text-destructive">
-                        {languageError}
-                      </p>
+                    {sizing ? (
+                      <form
+                        aria-label={t.employees.editSizesTitle(e.full_name)}
+                        onSubmit={draft.submit}
+                        onKeyDown={(ev) => {
+                          if (ev.key === 'Escape') {
+                            ev.preventDefault()
+                            closeInPlace()
+                          }
+                        }}
+                        className="grid gap-3 pt-2 pb-4 sm:grid-cols-3 sm:gap-4"
+                      >
+                        <SizeFields draft={draft} sizes={sizes.data} autoFocus={focusField} />
+                        {draft.error ? (
+                          <p role="alert" className="col-span-full text-destructive">
+                            {draft.error}
+                          </p>
+                        ) : null}
+                        <div className="col-span-full flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={closeInPlace}>
+                            {t.common.cancel}
+                          </Button>
+                          <Button type="submit" disabled={draft.busy}>
+                            {draft.busy ? t.common.saving : t.common.save}
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <FactGrid ruled={false} className="grid-cols-3 pt-2 pb-4">
+                        {/* As in the list: grey when a saved clothing size makes the height unnecessary. A missing size opens its field. */}
+                        <Fact label={t.employees.height}>
+                          {e.height_cm ? (
+                            t.employees.heightCm(e.height_cm)
+                          ) : (
+                            <SetMissing label={t.employees.height} optional={!missing.clothing} onClick={managesSizes ? () => openSizes('height') : undefined} />
+                          )}
+                        </Fact>
+                        <Fact label={t.employees.clothing}>
+                          {missing.clothing ? (
+                            <SetMissing label={t.employees.clothing} onClick={managesSizes ? () => openSizes('clothing') : undefined} />
+                          ) : (
+                            clothingSizeLabel(clothingBands(sizes.data?.clothing ?? []), e.clothing_size)
+                          )}
+                        </Fact>
+                        <Fact label={t.employees.shoes}>
+                          {missing.shoes ? (
+                            <SetMissing label={t.employees.shoes} onClick={managesSizes ? () => openSizes('shoe') : undefined} />
+                          ) : (
+                            formatSize(e.shoe_size)
+                          )}
+                        </Fact>
+                      </FactGrid>
+                    )}
+                  </section>
+                ) : null}
+                {seesProfile ? (
+                  <div className={cn('grid gap-4 py-4', seesSizes && 'border-t border-border')}>
+                    {inPlace === 'language' ? (
+                      <form
+                        aria-label={t.employees.editLanguage}
+                        onSubmit={(ev) => void saveLanguage(ev, e)}
+                        onKeyDown={(ev) => {
+                          if (ev.key === 'Escape') {
+                            ev.preventDefault()
+                            closeInPlace()
+                          }
+                        }}
+                        className="grid gap-4 sm:grid-cols-3 sm:items-end"
+                      >
+                        <Field label={t.employees.preferredLanguage}>
+                          {(p) => (
+                            // Each language named in itself, as on Account.
+                            <Select {...controlProps(p)} autoFocus value={language} onChange={(ev) => setLanguage(ev.target.value)}>
+                              <option value="">{t.employees.notSet}</option>
+                              {languages.map((l) => (
+                                <option key={l.value} value={l.value} lang={l.value}>
+                                  {l.label}
+                                </option>
+                              ))}
+                            </Select>
+                          )}
+                        </Field>
+                        <div className="flex justify-end gap-2 sm:col-span-2">
+                          <Button type="button" variant="outline" onClick={closeInPlace}>
+                            {t.common.cancel}
+                          </Button>
+                          <Button type="submit">{t.common.save}</Button>
+                        </div>
+                        {languageError ? (
+                          <p role="alert" className="col-span-full text-destructive">
+                            {languageError}
+                          </p>
+                        ) : null}
+                      </form>
+                    ) : (
+                      <div className="flex items-start justify-between gap-3">
+                        <dl>
+                          <Fact label={t.employees.preferredLanguage}>
+                            <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '–'}</span>
+                          </Fact>
+                        </dl>
+                        {managesProfile ? (
+                          <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
+                            <Pencil aria-hidden /> {t.common.edit}
+                          </Button>
+                        ) : null}
+                      </div>
+                    )}
+                    {e.notes ? (
+                      <dl>
+                        <dt className="text-muted-foreground">{t.employees.notes}</dt>
+                        <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
+                      </dl>
                     ) : null}
-                  </form>
-                ) : (
-                  <div className="flex items-start justify-between gap-3">
-                    <dl>
-                      <Fact label={t.employees.preferredLanguage}>
-                        <span lang={e.preferred_language ?? undefined}>{languages.find((l) => l.value === e.preferred_language)?.label ?? '–'}</span>
-                      </Fact>
-                    </dl>
-                    <Button ref={editLanguageButton} size="sm" variant="outline" aria-label={t.employees.editLanguage} onClick={() => openLanguage(e)}>
-                      <Pencil aria-hidden /> {t.common.edit}
-                    </Button>
                   </div>
-                )}
-                {e.notes ? (
-                  <dl>
-                    <dt className="text-muted-foreground">{t.employees.notes}</dt>
-                    <dd className="mt-0.5 whitespace-pre-line">{e.notes}</dd>
-                  </dl>
                 ) : null}
               </div>
-            </div>
+            ) : null}
 
             {reorder.length > 0 ? (
               // A ruled callout, not a box: what is due, and Reorder beside it.
@@ -353,7 +372,7 @@ export function EmployeePage({
             ) : null}
             <ActionError error={action.error} />
 
-            <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} />
+            {seesProfile ? <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} /> : null}
 
             {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
             <DisclosureSection
@@ -559,8 +578,9 @@ function DueCell({ due, tz }: { due: Due | undefined; tz: string | undefined }) 
   )
 }
 
-/** A missing size: its badge, which opens Edit Sizes at that size's field. */
-function SetMissing({ label, optional = false, onClick }: { label: string; optional?: boolean; onClick: () => void }) {
+/** A missing size: its badge, which opens Edit Sizes at that size's field; without onClick (no Manage employee sizes), the badge alone. */
+function SetMissing({ label, optional = false, onClick }: { label: string; optional?: boolean; onClick?: (() => void) | undefined }) {
+  if (!onClick) return <MissingBadge optional={optional} />
   return (
     <button
       type="button"

@@ -42,7 +42,9 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
   Sets) and `item_prices.manage` (every role with `catalogue.manage`). Migration 0049 added
   `sim_cards.read` (every role but Equipment Assignments, Testers and Personnel Documents,
   since every signed-in user saw SIM cards) and `sim_cards.manage` (every role with
-  `assets.manage`, which since changes Equipment & Furniture only).
+  `assets.manage`, which since changes Equipment & Furniture only). Migration 0050 added
+  `employee_profiles.read`/`.manage` and `employee_sizes.read`/`.manage` (every role but the
+  three add-on roles, since every signed-in user saw and changed employees).
 - **Equipment Assignments** (key `equipment`, migration 0032) grants `equipment.read` alone:
   seeing Equipment & Furniture and who holds each item (`docs/specs/asset-service.md`).
   No other built-in role has it, Administrator included; an administrator gives it on Users,

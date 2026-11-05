@@ -1,5 +1,5 @@
 import { PHOTO_USES, type Employee, type EmployeePhoto, type PhotoUse } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
@@ -20,7 +20,9 @@ export type EmployeePhotosState = ReturnType<typeof useEmployeePhotos>
 /** An employee's photos and the actions on them; onChanged reloads what shows the default photo. */
 export function useEmployeePhotos(employee: Pick<Employee, 'id' | 'full_name'>, onChanged: () => void) {
   const { client } = useApi()
-  const photos = useLoad(() => client.employeePhotos.list(employee.id), [employee.id])
+  // Photos are the profile's: without See employee profiles there are none to load.
+  const seen = useSession().can('employee_profiles.read')
+  const photos = useLoad(() => (seen ? client.employeePhotos.list(employee.id) : Promise.resolve([])), [employee.id, seen])
   const action = useAction()
   const [message, setMessage] = useState<string>()
 
@@ -50,7 +52,9 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
   const { client } = useApi()
   const { photos, action, message, run, add } = state
   const input = useRef<HTMLInputElement>(null)
-  const drop = useFileDrop((files) => void add(files))
+  // Adding, choosing uses, the default and removing take Manage employee profiles.
+  const canManage = useSession().can('employee_profiles.manage')
+  const drop = useFileDrop((files) => void add(files), canManage)
   const tx = t.employees.photos
 
   const toggle = (p: EmployeePhoto, use: PhotoUse) => {
@@ -61,31 +65,37 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
   return (
     <div {...drop.props} className={cn('rounded-lg transition-shadow', drop.over && 'ring-2 ring-ring ring-offset-4 ring-offset-background')}>
       <DisclosureSection id="photos" title={tx.title} count={photos.data?.length} description={tx.hint} rememberAs={rememberAs}>
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <input
-            ref={input}
-            type="file"
-            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-            className="hidden"
-            multiple
-            aria-label={tx.add}
-            onChange={(e) => {
-              const files = [...(e.target.files ?? [])]
-              e.target.value = ''
-              if (files.length > 0) void add(files)
-            }}
-          />
-          <Button variant="outline" size="sm" disabled={action.pending} onClick={() => input.current?.click()}>
-            <Plus aria-hidden /> {action.pending ? tx.adding : tx.add}
-          </Button>
-          {/* Dragging and dropping needs a mouse; a phone has Add Photo. */}
-          <span className="hidden text-xs text-muted-foreground pointer-fine:inline">{tx.dropHint}</span>
-          {message ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {message}
-            </p>
-          ) : null}
-        </div>
+        {canManage || message ? (
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            {canManage ? (
+              <>
+                <input
+                  ref={input}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  className="hidden"
+                  multiple
+                  aria-label={tx.add}
+                  onChange={(e) => {
+                    const files = [...(e.target.files ?? [])]
+                    e.target.value = ''
+                    if (files.length > 0) void add(files)
+                  }}
+                />
+                <Button variant="outline" size="sm" disabled={action.pending} onClick={() => input.current?.click()}>
+                  <Plus aria-hidden /> {action.pending ? tx.adding : tx.add}
+                </Button>
+                {/* Dragging and dropping needs a mouse; a phone has Add Photo. */}
+                <span className="hidden text-xs text-muted-foreground pointer-fine:inline">{tx.dropHint}</span>
+              </>
+            ) : null}
+            {message ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                {message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <ActionError error={action.error} />
         <Loaded load={photos} empty={photos.data?.length === 0} emptyState={tx.none(employee.first_name)}>
           {(list) => (
@@ -109,7 +119,7 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
                           key={u}
                           type="button"
                           aria-pressed={p.uses.includes(u)}
-                          disabled={action.pending}
+                          disabled={action.pending || !canManage}
                           onClick={() => toggle(p, u)}
                           className="min-h-11 cursor-pointer rounded-full border border-border px-3 text-xs aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:font-medium md:min-h-7"
                         >
@@ -118,21 +128,23 @@ export function EmployeePhotos({ employee, state, rememberAs }: { employee: Empl
                       ))}
                     </div>
                   </fieldset>
-                  <div className="flex flex-wrap gap-2">
-                    {p.is_default ? null : (
-                      <Button variant="outline" size="sm" disabled={action.pending} onClick={() => void run(() => client.employeePhotos.setDefault(employee.id, p.id))}>
-                        {tx.makeDefault}
+                  {canManage ? (
+                    <div className="flex flex-wrap gap-2">
+                      {p.is_default ? null : (
+                        <Button variant="outline" size="sm" disabled={action.pending} onClick={() => void run(() => client.employeePhotos.setDefault(employee.id, p.id))}>
+                          {tx.makeDefault}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={action.pending}
+                        onClick={() => void run(() => client.employeePhotos.remove(employee.id, p.id), tx.confirmRemove)}
+                      >
+                        {tx.remove}
                       </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={action.pending}
-                      onClick={() => void run(() => client.employeePhotos.remove(employee.id, p.id), tx.confirmRemove)}
-                    >
-                      {tx.remove}
-                    </Button>
-                  </div>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>

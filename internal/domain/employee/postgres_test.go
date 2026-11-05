@@ -52,7 +52,7 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 	svc := NewService(NewPostgresRepository(pool))
 	ctx := context.Background()
 
-	e, err := svc.Create(ctx, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1"), HeightCm: ip(181)}, actor)
+	e, err := svc.Create(ctx, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1"), HeightCm: ip(181)}, everything, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,13 +83,13 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 	}
 
 	// The preferred language is stored, replaced by an update and cleared by one without it.
-	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1"), PreferredLanguage: sp2("ru")}, actor); err != nil {
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1"), PreferredLanguage: sp2("ru")}, everything, actor); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := svc.Get(ctx, e.ID); err != nil || got.PreferredLanguage == nil || *got.PreferredLanguage != "ru" {
 		t.Errorf("preferred language = %v, %v; want ru", got.PreferredLanguage, err)
 	}
-	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1")}, actor); err != nil {
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-1")}, everything, actor); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := svc.Get(ctx, e.ID); got.PreferredLanguage != nil {
@@ -100,7 +100,7 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 		t.Error("preferred_language 'de' was accepted")
 	}
 
-	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, actor); !errors.Is(err, ErrCodeTaken) {
+	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, everything, actor); !errors.Is(err, ErrCodeTaken) {
 		t.Errorf("duplicate code err = %v", err)
 	}
 	if err := svc.Delete(ctx, e.ID, actor); err != nil {
@@ -109,7 +109,7 @@ func TestPostgresEmployeeLifecycle(t *testing.T) {
 	if _, err := svc.Get(ctx, e.ID); !errors.Is(err, ErrNotFound) {
 		t.Errorf("get deleted err = %v", err)
 	}
-	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, actor); err != nil {
+	if _, err := svc.Create(ctx, Params{FirstName: "X", LastName: "Y", Code: sp2("w-1")}, everything, actor); err != nil {
 		t.Errorf("code reuse after delete: %v", err)
 	}
 }
@@ -120,7 +120,7 @@ func TestPostgresClothingSizeCheck(t *testing.T) {
 	pool, actor := newTestPool(t)
 	svc := NewService(NewPostgresRepository(pool))
 	ctx := context.Background()
-	e, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, actor)
+	e, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, everything, actor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestPostgresFailedWriteRecordsNoEvent(t *testing.T) {
 	ghost := uuid.New() // not a user: the actor FK fails
 	id := uuid.New()
 	svc.newID = func() uuid.UUID { return id }
-	if _, err := svc.Create(context.Background(), Params{FirstName: "A", LastName: "B"}, ghost); !errors.Is(err, ErrActorNotFound) {
+	if _, err := svc.Create(context.Background(), Params{FirstName: "A", LastName: "B"}, everything, ghost); !errors.Is(err, ErrActorNotFound) {
 		t.Fatalf("err = %v, want ErrActorNotFound", err)
 	}
 	if countEvents(t, pool, id, EventCreated) != 0 {

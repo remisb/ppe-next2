@@ -13,6 +13,9 @@ var (
 	// ErrHoldsAssets refuses deleting an employee who holds company assets;
 	// the message names them.
 	ErrHoldsAssets = errors.New("employee holds company assets")
+	// ErrNotPermitted refuses adding or editing an employee without Manage
+	// employee profiles (employee_profiles.manage).
+	ErrNotPermitted = errors.New("adding and editing employees needs Manage employee profiles")
 )
 
 func fieldError(field, problem string) error {

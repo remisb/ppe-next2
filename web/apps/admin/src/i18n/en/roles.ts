@@ -75,6 +75,22 @@ export const roles = {
     },
     'apps.manage': { label: 'Manage apps', grants: 'App Launcher’s apps and shortcuts: register them, change them, who sees each, their order, and feedback on them.' },
     'apps.preview': { label: 'See apps in testing', grants: 'POC and In development apps in App Launcher, behind Show apps in testing.' },
+    'employee_profiles.read': {
+      label: 'See employee profiles',
+      grants: 'An employee’s code, notes, preferred language and photos, and the birth date, nationality and sex from an identity document. Names are everyone’s.',
+    },
+    'employee_profiles.manage': {
+      label: 'Manage employee profiles',
+      grants: 'Add New Employee, edit an employee’s name, code, notes and language, and add, change and remove their photos. Needs See employee profiles.',
+    },
+    'employee_sizes.read': {
+      label: 'See employee sizes',
+      grants: 'An employee’s height, clothing and shoe size, and who is missing one. Create Order still uses them without it.',
+    },
+    'employee_sizes.manage': {
+      label: 'Manage employee sizes',
+      grants: 'Edit Sizes, the sizes on Add New Employee and Edit, and Save as Employee Default in Create Order. Needs See employee sizes.',
+    },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',

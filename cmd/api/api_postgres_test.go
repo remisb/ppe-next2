@@ -685,6 +685,79 @@ func TestPostgresSIMCardsNeedTheirPermissions(t *testing.T) {
 	}
 }
 
+// An employee's profile and sizes have their own pairs (migration 0050): the
+// name is everyone's, the rest blank without the read permission, in the
+// employee, the list, search and their Changes; adding and editing need
+// employee_profiles.manage, the sizes employee_sizes.manage, and Edit
+// without it keeps them.
+func TestPostgresEmployeeDataNeedsItsPermissions(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	namesOnly := api.tokenWith(t, role.ItemSetsRead)
+	profileClerk := api.tokenWith(t, role.EmployeeProfilesRead, role.EmployeeProfilesManage)
+	sizer := api.tokenWith(t, role.EmployeeSizesRead, role.EmployeeSizesManage)
+
+	full := map[string]any{"first_name": "Ona", "last_name": "Jonaitė", "code": "E-7", "height_cm": 170, "clothing_size": 48, "shoe_size": "39",
+		"notes": "left-handed", "preferred_language": "lt"}
+	if rec := api.do(t, "POST", "/api/v1/employees", sizer, full); rec.Code != http.StatusForbidden {
+		t.Errorf("add without employee_profiles.manage = %d %s", rec.Code, rec.Body)
+	}
+	rec := api.do(t, "POST", "/api/v1/employees", staff, full)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add = %d %s", rec.Code, rec.Body)
+	}
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	for _, path := range []string{"/api/v1/employees/" + id, "/api/v1/employees", "/api/v1/employees/by-name/Jonait"} {
+		body := api.do(t, "GET", path, namesOnly, nil).Body.String()
+		if !strings.Contains(body, "Jonaitė") {
+			t.Errorf("GET %s: the name is everyone's: %s", path, body)
+		}
+		for _, hidden := range []string{"E-7", "left-handed", `"lt"`, `"height_cm":170`, `"clothing_size":48`, `"shoe_size":"39"`} {
+			if strings.Contains(body, hidden) {
+				t.Errorf("GET %s without the read permissions shows %s: %s", path, hidden, body)
+			}
+		}
+	}
+	if body := api.do(t, "GET", "/api/v1/employees/"+id, sizer, nil).Body.String(); !strings.Contains(body, `"height_cm":170`) || strings.Contains(body, "E-7") {
+		t.Errorf("sizes only = %s", body)
+	}
+	if body := api.do(t, "GET", "/api/v1/employees/"+id, profileClerk, nil).Body.String(); strings.Contains(body, `"height_cm":170`) || !strings.Contains(body, "E-7") {
+		t.Errorf("profile only = %s", body)
+	}
+
+	// Edit without employee_sizes.manage keeps the sizes, whatever it sends.
+	edit := map[string]any{"first_name": "Ona", "last_name": "Petraitė", "code": "E-8", "notes": "", "height_cm": nil, "clothing_size": nil, "shoe_size": nil}
+	if rec := api.do(t, "PUT", "/api/v1/employees/"+id, sizer, edit); rec.Code != http.StatusForbidden {
+		t.Errorf("edit without employee_profiles.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/employees/"+id, profileClerk, edit); rec.Code != http.StatusOK {
+		t.Fatalf("edit = %d %s", rec.Code, rec.Body)
+	}
+	if body := api.do(t, "GET", "/api/v1/employees/"+id, staff, nil).Body.String(); !strings.Contains(body, "Petraitė") || !strings.Contains(body, `"height_cm":170`) {
+		t.Errorf("after an edit without sizes = %s", body)
+	}
+	sizes := map[string]any{"height_cm": 176, "clothing_size": 50, "shoe_size": "40"}
+	if rec := api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", profileClerk, sizes); rec.Code != http.StatusForbidden {
+		t.Errorf("sizes without employee_sizes.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/employees/"+id+"/sizes", sizer, sizes); rec.Code != http.StatusOK {
+		t.Errorf("sizes = %d %s", rec.Code, rec.Body)
+	}
+
+	// Changes: the name's change for everyone; sizes and the code only for their readers.
+	body := api.do(t, "GET", "/api/v1/audit-events/employees/"+id, namesOnly, nil).Body.String()
+	if !strings.Contains(body, "Petraitė") || strings.Contains(body, "employee.sizes_changed") || strings.Contains(body, "E-8") || strings.Contains(body, `"height_cm"`) {
+		t.Errorf("Changes without the read permissions = %s", body)
+	}
+	if body := api.do(t, "GET", "/api/v1/audit-events/employees/"+id, staff, nil).Body.String(); !strings.Contains(body, "employee.sizes_changed") || !strings.Contains(body, "E-8") {
+		t.Errorf("Changes with them = %s", body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/employee-photos/"+id, namesOnly, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("photos without employee_profiles.read = %d", rec.Code)
+	}
+}
+
 // upload sends one file as multipart/form-data, as the app's Upload Signed Form does.
 func (a *testAPI) upload(t *testing.T, path, token, name string, data []byte) *httptest.ResponseRecorder {
 	t.Helper()
@@ -1542,7 +1615,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) || claims.Roles != nil {
+	if err != nil || !slices.Equal(claims.Perms, []string{"employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) || claims.Roles != nil {
 		t.Errorf("k's token perms %v roles %v, %v", claims.Perms, claims.Roles, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {

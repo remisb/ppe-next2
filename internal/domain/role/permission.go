@@ -12,15 +12,22 @@ import "slices"
 type Permission string
 
 const (
-	UsersRead        Permission = "users.read"
-	UsersManage      Permission = "users.manage"
-	RolesManage      Permission = "roles.manage"
-	EmployeesDelete  Permission = "employees.delete"
-	CatalogueManage  Permission = "catalogue.manage"
-	ItemPricesManage Permission = "item_prices.manage"
-	ItemSetsRead     Permission = "item_sets.read"
-	ItemSetsManage   Permission = "item_sets.manage"
-	OrdersDelete     Permission = "orders.delete"
+	UsersRead   Permission = "users.read"
+	UsersManage Permission = "users.manage"
+	RolesManage Permission = "roles.manage"
+	// An employee's name is everyone's; their profile (code, notes, language,
+	// photos, identity document's details) and size defaults have a pair each
+	// since migration 0050.
+	EmployeeProfilesRead   Permission = "employee_profiles.read"
+	EmployeeProfilesManage Permission = "employee_profiles.manage"
+	EmployeeSizesRead      Permission = "employee_sizes.read"
+	EmployeeSizesManage    Permission = "employee_sizes.manage"
+	EmployeesDelete        Permission = "employees.delete"
+	CatalogueManage        Permission = "catalogue.manage"
+	ItemPricesManage       Permission = "item_prices.manage"
+	ItemSetsRead           Permission = "item_sets.read"
+	ItemSetsManage         Permission = "item_sets.manage"
+	OrdersDelete           Permission = "orders.delete"
 	// AssetsManage changes Equipment & Furniture; SIM cards have their own
 	// pair since migration 0049 (sim_cards.read, sim_cards.manage).
 	AssetsManage   Permission = "assets.manage"
@@ -84,6 +91,10 @@ var catalogue = []Info{
 	{UsageRead, GroupAdministration, nil},
 	{AppsManage, GroupLauncher, nil},
 	{AppsPreview, GroupLauncher, nil},
+	{EmployeeProfilesRead, GroupWorkwear, nil},
+	{EmployeeProfilesManage, GroupWorkwear, []Permission{EmployeeProfilesRead}},
+	{EmployeeSizesRead, GroupWorkwear, nil},
+	{EmployeeSizesManage, GroupWorkwear, []Permission{EmployeeSizesRead}},
 	{EmployeesDelete, GroupWorkwear, nil},
 	{CatalogueManage, GroupWorkwear, nil},
 	{ItemPricesManage, GroupWorkwear, []Permission{CatalogueManage}},

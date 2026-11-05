@@ -76,6 +76,22 @@ export const roles: RolesText = {
     },
     'apps.manage': { label: 'Tvarkyti programas', grants: 'Programų sąrašo programos ir nuorodos: registruoti, keisti, kas kurią mato, tvarka ir atsiliepimai.' },
     'apps.preview': { label: 'Matyti bandomas programas', grants: 'Prototipai ir kuriamos programos programų sąraše, įjungus „Rodyti bandomas programas“.' },
+    'employee_profiles.read': {
+      label: 'Matyti darbuotojų profilius',
+      grants: 'Darbuotojo kodą, pastabas, pageidaujamą kalbą ir nuotraukas, taip pat gimimo datą, pilietybę ir lytį iš asmens dokumento. Vardus mato visi.',
+    },
+    'employee_profiles.manage': {
+      label: 'Tvarkyti darbuotojų profilius',
+      grants: 'Pridėti naują darbuotoją, keisti darbuotojo vardą, kodą, pastabas ir kalbą, pridėti, keisti ir šalinti jo nuotraukas. Reikia leidimo „Matyti darbuotojų profilius“.',
+    },
+    'employee_sizes.read': {
+      label: 'Matyti darbuotojų dydžius',
+      grants: 'Darbuotojo ūgį, drabužių ir avalynės dydį ir kam jų trūksta. Kuriant užsakymą jie naudojami ir be šio leidimo.',
+    },
+    'employee_sizes.manage': {
+      label: 'Tvarkyti darbuotojų dydžius',
+      grants: '„Keisti dydžius“, dydžiai pridedant ir keičiant darbuotoją, „Išsaugoti kaip numatytąjį“ kuriant užsakymą. Reikia leidimo „Matyti darbuotojų dydžius“.',
+    },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',

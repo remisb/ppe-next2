@@ -40,6 +40,10 @@ roles did:
 | `backups.read` | read Backups | ✓ | | |
 | `audit.read` | read the Audit log | ✓ | | |
 | `security.read` | read Security: sign-ins, everyone's signed-in devices, the access review | ✓ | | |
+| `employee_profiles.read` | see employees' code, notes, language, photos, identity details (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ |
+| `employee_profiles.manage` | add and edit employees, their photos (needs `employee_profiles.read`) | ✓ | ✓ | ✓ |
+| `employee_sizes.read` | see employees' size defaults (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ |
+| `employee_sizes.manage` | Edit Sizes, Save as Employee Default, sizes on Add and Edit (needs `employee_sizes.read`) | ✓ | ✓ | ✓ |
 | `employees.delete` | delete employees | ✓ | ✓ | |
 | `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
 | `item_prices.manage` | set and change an item's prices (needs `catalogue.manage`; migration 0038) | ✓ | ✓ | |

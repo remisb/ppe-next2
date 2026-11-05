@@ -126,7 +126,7 @@ func newTestService() (*Service, *fakeRepo) {
 
 func TestCreateRecordsEvent(t *testing.T) {
 	svc, repo := newTestService()
-	e, err := svc.Create(context.Background(), Params{FirstName: "Jonas", LastName: "Petraitis", ShoeSize: sp2("43")}, testActor)
+	e, err := svc.Create(context.Background(), Params{FirstName: "Jonas", LastName: "Petraitis", ShoeSize: sp2("43")}, everything, testActor)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,16 +144,16 @@ func TestCreateRecordsEvent(t *testing.T) {
 func TestCreateErrors(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	if _, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, uuid.Nil); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, everything, uuid.Nil); !errors.Is(err, ErrInvalid) {
 		t.Errorf("nil actor err = %v", err)
 	}
-	if _, err := svc.Create(ctx, Params{FirstName: "A"}, testActor); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.Create(ctx, Params{FirstName: "A"}, everything, testActor); !errors.Is(err, ErrInvalid) {
 		t.Errorf("missing last name err = %v", err)
 	}
-	if _, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B", Code: sp2("E-1")}, testActor); err != nil {
+	if _, err := svc.Create(ctx, Params{FirstName: "A", LastName: "B", Code: sp2("E-1")}, everything, testActor); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Create(ctx, Params{FirstName: "C", LastName: "D", Code: sp2("e-1")}, testActor); !errors.Is(err, ErrCodeTaken) {
+	if _, err := svc.Create(ctx, Params{FirstName: "C", LastName: "D", Code: sp2("e-1")}, everything, testActor); !errors.Is(err, ErrCodeTaken) {
 		t.Errorf("duplicate code err = %v", err)
 	}
 }
@@ -161,11 +161,11 @@ func TestCreateErrors(t *testing.T) {
 func TestSizeChangesAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, testActor)
+	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, everything, testActor)
 	repo.events = nil
 
 	// Renaming without touching sizes records no size change.
-	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "A2", LastName: "B"}, testActor); err != nil {
+	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "A2", LastName: "B"}, everything, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 1 || repo.events[0].Event != EventUpdated {
@@ -210,8 +210,8 @@ func TestSizeChangesAudited(t *testing.T) {
 func TestSearch(t *testing.T) {
 	svc, _ := newTestService()
 	ctx := context.Background()
-	svc.Create(ctx, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-17")}, testActor)
-	svc.Create(ctx, Params{FirstName: "Ona", LastName: "Kazlauskienė"}, testActor)
+	svc.Create(ctx, Params{FirstName: "Jonas", LastName: "Petraitis", Code: sp2("W-17")}, everything, testActor)
+	svc.Create(ctx, Params{FirstName: "Ona", LastName: "Kazlauskienė"}, everything, testActor)
 
 	for q, want := range map[string]int{"jon": 1, "ONA": 2, "w-17": 1, "jonas pet": 1, "  ": 0, "zzz": 0} {
 		got, err := svc.Search(ctx, q)
@@ -224,7 +224,7 @@ func TestSearch(t *testing.T) {
 func TestDeleteIsSoft(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B", Code: sp2("X")}, testActor)
+	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B", Code: sp2("X")}, everything, testActor)
 	if err := svc.Delete(ctx, e.ID, testActor); err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestDeleteIsSoft(t *testing.T) {
 	if repo.rows[e.ID].DeletedByUserID == nil || repo.events[len(repo.events)-1].Event != EventDeleted {
 		t.Errorf("delete not recorded: %+v", repo.rows[e.ID])
 	}
-	if _, err := svc.Create(ctx, Params{FirstName: "C", LastName: "D", Code: sp2("x")}, testActor); err != nil {
+	if _, err := svc.Create(ctx, Params{FirstName: "C", LastName: "D", Code: sp2("x")}, everything, testActor); err != nil {
 		t.Errorf("code reuse after delete: %v", err)
 	}
 }
@@ -254,7 +254,7 @@ func TestDeleteRefusedWhileHoldingAssets(t *testing.T) {
 	held := holdings{}
 	svc := NewService(repo, WithHoldings(held))
 	ctx := context.Background()
-	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, testActor)
+	e, _ := svc.Create(ctx, Params{FirstName: "A", LastName: "B"}, everything, testActor)
 	held[e.ID] = []string{"SIM-000001", "PC-000002"}
 	err := svc.Delete(ctx, e.ID, testActor)
 	if !errors.Is(err, ErrHoldsAssets) || !strings.Contains(err.Error(), "SIM-000001, PC-000002") {
@@ -272,12 +272,12 @@ func TestDeleteRefusedWhileHoldingAssets(t *testing.T) {
 func TestDetailChangesAudited(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	e, _ := svc.Create(ctx, Params{FirstName: "Ona", LastName: "B", Notes: "left-handed"}, testActor)
+	e, _ := svc.Create(ctx, Params{FirstName: "Ona", LastName: "B", Notes: "left-handed"}, everything, testActor)
 	repo.events = nil
 
 	// Name, notes and a size in one save: two events, the notes text in neither.
 	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Ona", LastName: "Jonaitė", Code: sp2("E-7"),
-		Notes: "allergic to latex", ShoeSize: sp2("40")}, testActor); err != nil {
+		Notes: "allergic to latex", ShoeSize: sp2("40")}, everything, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 2 || repo.events[0].Event != EventUpdated || repo.events[1].Event != EventSizesChanged {
@@ -296,10 +296,13 @@ func TestDetailChangesAudited(t *testing.T) {
 	// Saving the same values records nothing.
 	repo.events = nil
 	if _, err := svc.Update(ctx, e.ID, Params{FirstName: "Ona", LastName: "Jonaitė", Code: sp2("E-7"),
-		Notes: "allergic to latex", ShoeSize: sp2("40")}, testActor); err != nil {
+		Notes: "allergic to latex", ShoeSize: sp2("40")}, everything, testActor); err != nil {
 		t.Fatal(err)
 	}
 	if len(repo.events) != 0 {
 		t.Errorf("an unchanged save recorded %+v", repo.events)
 	}
 }
+
+// everything is a writer allowed every change (Administrator, Manager, Employee).
+var everything = Rights{Sizes: true, Profile: true}

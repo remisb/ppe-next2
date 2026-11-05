@@ -66,22 +66,28 @@ func BuiltinID(key string) uuid.UUID {
 // permissions existed, with Equipment & Furniture since taken from them, and
 // hold what was split off later (item_sets.read, item_prices.manage: 0038)
 // or added since (sim_codes.read, Administrator's: 0041; apps.manage, Administrator's: 0042;
-// sim_cards.read and sim_cards.manage, split off in 0049 like 0038's);
+// sim_cards.read and sim_cards.manage, split off in 0049 like 0038's; the employee
+// profile and size pairs, split off in 0050);
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
 	KeyAdmin: {
 		UsersRead, UsersManage, RolesManage, SettingsManage, MailTemplatesManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead,
 		AppsManage,
+		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
 		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage, SIMCardsRead, SIMCardsManage, SIMCodesRead,
 		DashboardOverview,
 	},
 	KeyManager: {
 		UsersRead,
+		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
 		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, OrdersDelete, AssetsManage, SIMCardsRead, SIMCardsManage,
 		DashboardManager,
 	},
-	KeyEmployee: {ItemSetsRead, SIMCardsRead, DashboardEmployee},
+	KeyEmployee: {
+		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
+		ItemSetsRead, SIMCardsRead, DashboardEmployee,
+	},
 	// Not even Administrator sees Equipment & Furniture without this role.
 	KeyEquipment: {EquipmentRead},
 	// Apps in testing are for the people trying them, administrators included only when they hold it.
