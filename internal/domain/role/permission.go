@@ -12,31 +12,36 @@ import "slices"
 type Permission string
 
 const (
-	UsersRead           Permission = "users.read"
-	UsersManage         Permission = "users.manage"
-	RolesManage         Permission = "roles.manage"
-	EmployeesDelete     Permission = "employees.delete"
-	CatalogueManage     Permission = "catalogue.manage"
-	ItemPricesManage    Permission = "item_prices.manage"
-	ItemSetsRead        Permission = "item_sets.read"
-	ItemSetsManage      Permission = "item_sets.manage"
-	OrdersDelete        Permission = "orders.delete"
-	AssetsManage        Permission = "assets.manage"
-	SIMCodesRead        Permission = "sim_codes.read"
-	EquipmentRead       Permission = "equipment.read"
-	SettingsManage      Permission = "settings.manage"
-	MailTemplatesManage Permission = "mail_templates.manage"
-	BackupsRead         Permission = "backups.read"
-	AuditRead           Permission = "audit.read"
-	AuditExport         Permission = "audit.export"
-	SecurityRead        Permission = "security.read"
-	SystemRead          Permission = "system.read"
-	UsageRead           Permission = "usage.read"
-	AppsManage          Permission = "apps.manage"
-	AppsPreview         Permission = "apps.preview"
-	DashboardOverview   Permission = "dashboard.overview"
-	DashboardManager    Permission = "dashboard.manager"
-	DashboardEmployee   Permission = "dashboard.employee"
+	UsersRead        Permission = "users.read"
+	UsersManage      Permission = "users.manage"
+	RolesManage      Permission = "roles.manage"
+	EmployeesDelete  Permission = "employees.delete"
+	CatalogueManage  Permission = "catalogue.manage"
+	ItemPricesManage Permission = "item_prices.manage"
+	ItemSetsRead     Permission = "item_sets.read"
+	ItemSetsManage   Permission = "item_sets.manage"
+	OrdersDelete     Permission = "orders.delete"
+	AssetsManage     Permission = "assets.manage"
+	SIMCodesRead     Permission = "sim_codes.read"
+	EquipmentRead    Permission = "equipment.read"
+	// Personnel files (ADR 0007): see a person's identity documents and Show
+	// Document; scan and save them; colour a document's portrait with AI.
+	PersonnelDocumentsRead     Permission = "personnel.documents.read"
+	PersonnelDocumentsManage   Permission = "personnel.documents.manage"
+	PersonnelPortraitsColorize Permission = "personnel.portraits.colorize"
+	SettingsManage             Permission = "settings.manage"
+	MailTemplatesManage        Permission = "mail_templates.manage"
+	BackupsRead                Permission = "backups.read"
+	AuditRead                  Permission = "audit.read"
+	AuditExport                Permission = "audit.export"
+	SecurityRead               Permission = "security.read"
+	SystemRead                 Permission = "system.read"
+	UsageRead                  Permission = "usage.read"
+	AppsManage                 Permission = "apps.manage"
+	AppsPreview                Permission = "apps.preview"
+	DashboardOverview          Permission = "dashboard.overview"
+	DashboardManager           Permission = "dashboard.manager"
+	DashboardEmployee          Permission = "dashboard.employee"
 )
 
 // Group is the heading a permission is listed under on Roles & permissions.
@@ -45,8 +50,10 @@ type Group string
 const (
 	GroupAdministration Group = "administration"
 	// GroupLauncher is App Launcher's (ADR 0006): managing its list, and seeing apps in testing.
-	GroupLauncher   Group = "launcher"
-	GroupWorkwear   Group = "workwear"
+	GroupLauncher Group = "launcher"
+	GroupWorkwear Group = "workwear"
+	// GroupPersonnel is Personnel files' (ADR 0007): identity documents.
+	GroupPersonnel  Group = "personnel"
 	GroupDashboards Group = "dashboards"
 )
 
@@ -82,6 +89,9 @@ var catalogue = []Info{
 	{AssetsManage, GroupWorkwear, nil},
 	{SIMCodesRead, GroupWorkwear, []Permission{AssetsManage}},
 	{EquipmentRead, GroupWorkwear, nil},
+	{PersonnelDocumentsRead, GroupPersonnel, nil},
+	{PersonnelDocumentsManage, GroupPersonnel, []Permission{PersonnelDocumentsRead}},
+	{PersonnelPortraitsColorize, GroupPersonnel, []Permission{PersonnelDocumentsManage}},
 	{DashboardOverview, GroupDashboards, nil},
 	{DashboardManager, GroupDashboards, nil},
 	{DashboardEmployee, GroupDashboards, nil},

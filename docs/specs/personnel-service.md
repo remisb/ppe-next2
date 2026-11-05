@@ -9,10 +9,13 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 [ai-usage-service.md](ai-usage-service.md).
 
 - **Packages:** `internal/personnel/mrz` (the MRZ parser, **built**), `internal/personnel/document`
-  (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`),
-  routes in `cmd/api/personnel-routes.go`.
-- **Migrations:** `0048_personnel` (schema, tables, grants, permissions, the built-in role),
-  planned.
+  (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**
+  the keys and blind indexes, Check, Save with its copies, and the summary; Show, removal, the
+  employment end, holds and shredding to come), routes in `cmd/api/personnel-routes.go` (to come).
+- **Migrations:** `0048_personnel` (schema `personnel`, its tables, the employee's `birth_date`,
+  `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
+  `ppe_app` the schema, but not UPDATE on `subject_keys`. `employee_photos`' `ai_generated` and
+  `consent` come with the colour photo.
 - **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`); the staff
   app's employee page shows the **Identity** section; Administration shows nothing of it
   except AI Usage and Settings → AI.

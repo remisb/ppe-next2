@@ -118,6 +118,15 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['connection_status', 'status'],
   ['received_date', 'text'],
   ['comment_changed', 'changed'],
+  // An identity document's (personnel.document_recorded …): never a sealed field.
+  ['issuing_state', 'text'],
+  ['issued_on', 'text'],
+  ['expires_on', 'text'],
+  ['copies', 'text'],
+  ['on_employee_record', 'bool'],
+  ['birth_date_changed', 'changed'],
+  ['nationality_changed', 'changed'],
+  ['sex_changed', 'changed'],
   ['sim_codes', 'simCodes'],
   ['employee_name', 'text'],
   ['given_date', 'text'],
@@ -159,7 +168,7 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
-const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'photo_id', 'currency'])
+const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'photo_id', 'document_id', 'currency'])
 
 /** Events from before migration 0021 hold the accounting price under this key. */
 const legacyKeys: Record<string, string> = { unit_price_cents: 'accounting_price_cents' }

@@ -9,7 +9,7 @@ import type { AppIcon } from './app-icons.ts'
 import type { Permission } from './permissions.ts'
 
 /** A built-in role's key; a role an administrator added has none. */
-export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment' | 'testers'
+export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment' | 'testers' | 'personnel'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
 /** A user's interface language; each user sets their own. */
@@ -72,7 +72,7 @@ export interface RoleInput {
 /** GET /api/v1/permissions: one permission of the catalogue, and those it cannot work without. */
 export interface PermissionInfo {
   key: Permission
-  group: 'administration' | 'launcher' | 'workwear' | 'dashboards'
+  group: 'administration' | 'launcher' | 'workwear' | 'personnel' | 'dashboards'
   requires: Permission[]
 }
 

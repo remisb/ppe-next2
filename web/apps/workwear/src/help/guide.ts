@@ -1,7 +1,7 @@
 import type { Permission, RoleKey } from '@ppe/api-client'
 
 /** Who Help writes for: the three built-in roles that set a reader's work apart. */
-export type Role = Exclude<RoleKey, 'equipment' | 'testers'>
+export type Role = Exclude<RoleKey, 'equipment' | 'testers' | 'personnel'>
 
 /**
  * The user guide as data, one Guide per language (help/en.ts, lt.ts, ru.ts):

@@ -43,6 +43,7 @@ export const roles = {
     administration: 'Administration',
     launcher: 'App Launcher',
     workwear: 'Workwear & Equipment',
+    personnel: 'Personnel files',
     dashboards: 'Dashboards',
   } satisfies Record<PermissionInfo['group'], string>,
   permission: {
@@ -97,6 +98,18 @@ export const roles = {
     'equipment.read': {
       label: 'See Equipment & Furniture',
       grants: 'Each item and who holds it: in Company Assets, on employee pages and in search. Without it, not even an administrator sees them.',
+    },
+    'personnel.documents.read': {
+      label: 'See identity documents',
+      grants: 'A person’s identity documents on their page, and Show Document: the number, personal code and copies, after Confirm your password. Each showing is recorded.',
+    },
+    'personnel.documents.manage': {
+      label: 'Import identity documents',
+      grants: 'Scan and save passports and ID cards in Import Documents, add or update the employee, Mark Employment Ended and Legal Hold.',
+    },
+    'personnel.portraits.colorize': {
+      label: 'Make AI colour photos',
+      grants: 'Colour a document’s portrait with AI (OpenAI), with the person’s consent. Each use is counted in AI Usage.',
     },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },

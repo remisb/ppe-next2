@@ -36,6 +36,8 @@ export const users = {
   equipmentGrants: 'Sees Equipment & Furniture: each item and who holds it.',
   testers: 'Testers',
   testersGrants: 'Sees App Launcher’s apps in testing.',
+  personnel: 'Personnel Documents',
+  personnelGrants: 'Scans, saves and shows identity documents.',
 
   // Add User / Edit User
   editUser: (name: string) => `Edit User: ${name}`,

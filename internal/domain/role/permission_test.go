@@ -50,11 +50,12 @@ func TestBuiltinsGrantKnownPermissionsWithTheirRequirements(t *testing.T) {
 	}
 	// The administrator holds everything but the other roles' own dashboards,
 	// deleting orders, which is the manager's, seeing Equipment &
-	// Furniture, which only Equipment Assignments grants, and seeing apps in
-	// testing, which only Testers grants.
+	// Furniture, which only Equipment Assignments grants, seeing apps in
+	// testing, which only Testers grants, and Personnel files (ADR 0007).
 	admin := BuiltinPermissions([]string{KeyAdmin})
 	for _, p := range Catalogue() {
-		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead && p.Key != AppsPreview
+		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead && p.Key != AppsPreview &&
+			p.Group != GroupPersonnel
 		if slices.Contains(admin, p.Key) != want {
 			t.Errorf("admin has %s = %v, want %v", p.Key, !want, want)
 		}
@@ -114,5 +115,21 @@ func TestWebClientListsTheCatalogue(t *testing.T) {
 	}
 	if !slices.Equal(web, want) {
 		t.Errorf("permissions.ts lists %v, the catalogue %v", web, want)
+	}
+}
+
+// Personnel Documents is the only built-in role with identity documents, and
+// no built-in role colours portraits: an administrator gives that on its own.
+func TestOnlyPersonnelDocumentsSeesIdentityDocuments(t *testing.T) {
+	for _, key := range BuiltinKeys() {
+		perms := BuiltinPermissions([]string{key})
+		for _, p := range []Permission{PersonnelDocumentsRead, PersonnelDocumentsManage} {
+			if got, want := slices.Contains(perms, p), key == KeyPersonnel; got != want {
+				t.Errorf("built-in role %s has %s = %v, want %v", key, p, got, want)
+			}
+		}
+		if slices.Contains(perms, PersonnelPortraitsColorize) {
+			t.Errorf("built-in role %s has %s", key, PersonnelPortraitsColorize)
+		}
 	}
 }

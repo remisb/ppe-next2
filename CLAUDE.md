@@ -125,6 +125,10 @@ PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-
 `API_SIM_CODES_KEY`, required, never in the database or its backups) in `asset_sim_codes`
 (migration 0041, which also makes `…5` and `…5F` the same SIM No.: `asset.simKey`). Slice 8 (go-live
 tools) waits for the open decisions.
+**Personnel files** (ADR 0007; specs `personnel-service.md`, `ai-usage-service.md`) is being built for the
+docs-import app: migration 0048 (schema `personnel`, the role Personnel Documents and its permissions),
+`internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
+under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies; no routes yet).
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins

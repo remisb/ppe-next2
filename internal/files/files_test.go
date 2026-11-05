@@ -145,6 +145,18 @@ func TestDirStore(t *testing.T) {
 	if matches, _ := filepath.Glob(filepath.Join(root, "signed-copies", "a", ".upload-*")); len(matches) != 0 {
 		t.Errorf("temporary files left: %v", matches)
 	}
+	if err := s.Delete(ctx, "signed-copies/a/b.pdf"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Get(ctx, "signed-copies/a/b.pdf"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("deleted key: %v", err)
+	}
+	if err := s.Delete(ctx, "signed-copies/a/b.pdf"); err != nil {
+		t.Errorf("deleting a missing key: %v", err)
+	}
+	if err := s.Delete(ctx, "../outside"); err == nil {
+		t.Error("a key leaving the folder was deleted")
+	}
 }
 
 func TestOpen(t *testing.T) {

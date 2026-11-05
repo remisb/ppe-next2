@@ -17,6 +17,9 @@ const (
 	// KeyTesters is Testers (migration 0042): sees App Launcher's apps in
 	// testing (POC, In development).
 	KeyTesters = "testers"
+	// KeyPersonnel is Personnel Documents (migration 0048, ADR 0007): the only
+	// built-in role that sees, scans and saves identity documents.
+	KeyPersonnel = "personnel"
 )
 
 // The built-in roles' fixed ids, the same in every database.
@@ -26,9 +29,11 @@ var (
 	EmployeeID  = uuid.MustParse("a0e1d000-0000-4000-8000-000000000003")
 	EquipmentID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000004")
 	TestersID   = uuid.MustParse("a0e1d000-0000-4000-8000-000000000005")
+	PersonnelID = uuid.MustParse("a0e1d000-0000-4000-8000-000000000006")
 )
 
-// builtin is a built-in role as migration 0022 (Equipment Assignments, 0032; Testers, 0042) creates it. Its name and
+// builtin is a built-in role as migration 0022 (Equipment Assignments, 0032; Testers, 0042;
+// Personnel Documents, 0048) creates it. Its name and
 // description never change; the apps translate them by key (Administration's
 // users dictionaries hold the same English).
 type builtin struct {
@@ -43,6 +48,7 @@ var builtinRoles = []builtin{
 	{EmployeeID, KeyEmployee, "Employee", "Prepares orders and follows them in Orders, manages employees and sizes."},
 	{EquipmentID, KeyEquipment, "Equipment Assignments", "Sees Equipment & Furniture: each item and who holds it."},
 	{TestersID, KeyTesters, "Testers", "Sees App Launcher's apps in testing."},
+	{PersonnelID, KeyPersonnel, "Personnel Documents", "Scans, saves and shows identity documents."},
 }
 
 // BuiltinID is the id of the built-in role with key, or uuid.Nil.
@@ -79,11 +85,14 @@ var builtins = map[string][]Permission{
 	KeyEquipment: {EquipmentRead},
 	// Apps in testing are for the people trying them, administrators included only when they hold it.
 	KeyTesters: {AppsPreview},
+	// Identity documents are for the people who handle them, administrators included only when
+	// they hold it; AI colouring is given separately (personnel.portraits.colorize).
+	KeyPersonnel: {PersonnelDocumentsRead, PersonnelDocumentsManage},
 }
 
 // BuiltinKeys returns the built-in role keys in display order.
 func BuiltinKeys() []string {
-	return []string{KeyAdmin, KeyManager, KeyEmployee, KeyEquipment, KeyTesters}
+	return []string{KeyAdmin, KeyManager, KeyEmployee, KeyEquipment, KeyTesters, KeyPersonnel}
 }
 
 // BuiltinPermissions returns the permissions the built-in roles named by keys

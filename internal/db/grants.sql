@@ -30,5 +30,12 @@ REVOKE INSERT, DELETE ON catalogue_pictures FROM ppe_app;
 REVOKE INSERT, UPDATE, DELETE ON schema_migrations, dbbackup_runs, dbbackup_agents FROM ppe_app;
 REVOKE EXECUTE ON FUNCTION purge_audit_events(TIMESTAMPTZ), purge_auth_events(TIMESTAMPTZ) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION purge_audit_events(TIMESTAMPTZ), purge_auth_events(TIMESTAMPTZ) TO ppe_app;
+-- Personnel files (ADR 0007), in its own schema: the same DML, except that a
+-- person's data key is written once and deleted by the shredding, never
+-- changed in place (re-sealing under a new master key is the owner's).
+GRANT USAGE ON SCHEMA personnel TO ppe_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA personnel TO ppe_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA personnel GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ppe_app;
+REVOKE UPDATE ON personnel.subject_keys FROM ppe_app;
 -- Other sessions' state on System (connections, the oldest transaction).
 GRANT pg_read_all_stats TO ppe_app;

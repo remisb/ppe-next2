@@ -44,6 +44,7 @@ export const roles: RolesText = {
     administration: 'Administravimas',
     launcher: 'Programų sąrašas',
     workwear: 'Darbo drabužiai ir įranga',
+    personnel: 'Asmens bylos',
     dashboards: 'Suvestinės',
   },
   permission: {
@@ -98,6 +99,18 @@ export const roles: RolesText = {
     'equipment.read': {
       label: 'Matyti įrangą ir baldus',
       grants: 'Kiekvieną daiktą ir pas ką jis yra: įmonės turte, darbuotojų puslapiuose ir paieškoje. Be šio leidimo jų nemato net administratorius.',
+    },
+    'personnel.documents.read': {
+      label: 'Matyti asmens dokumentus',
+      grants: 'Asmens dokumentus jo puslapyje ir „Rodyti dokumentą“: numerį, asmens kodą ir kopijas, patvirtinus slaptažodį. Kiekvienas parodymas įrašomas.',
+    },
+    'personnel.documents.manage': {
+      label: 'Importuoti asmens dokumentus',
+      grants: 'Nuskaityti ir išsaugoti pasus ir asmens tapatybės korteles „Dokumentų importe“, pridėti ar atnaujinti darbuotoją, pažymėti darbo pabaigą ir draudimą naikinti.',
+    },
+    'personnel.portraits.colorize': {
+      label: 'Kurti DI spalvotas nuotraukas',
+      grants: 'Nuspalvinti dokumento portretą DI (OpenAI), asmeniui sutikus. Kiekvienas naudojimas skaičiuojamas „DI naudojime“.',
     },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },

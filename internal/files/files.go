@@ -26,6 +26,9 @@ var ErrNotFound = errors.New("files: not found")
 type Store interface {
 	Put(ctx context.Context, key string, body io.Reader, size int64, contentType string) error
 	Get(ctx context.Context, key string) (io.ReadCloser, error)
+	// Delete removes the file under key; a key the store does not have is no
+	// error. A versioned bucket keeps its older versions (docs/backups.md).
+	Delete(ctx context.Context, key string) error
 	// String names where files go, for logs; never the keys.
 	String() string
 }
@@ -131,6 +134,10 @@ func (s *S3) Get(ctx context.Context, key string) (io.ReadCloser, error) {
 	return obj, nil
 }
 
+func (s *S3) Delete(ctx context.Context, key string) error {
+	return s.client.RemoveObject(ctx, s.bucket, s.key(key), minio.RemoveObjectOptions{})
+}
+
 func (s *S3) String() string { return fmt.Sprintf("s3://%s (%s)", s.bucket, s.endpoint) }
 
 // Dir is a folder on this machine: development and tests only, as files on
@@ -187,6 +194,17 @@ func (d *Dir) Get(_ context.Context, key string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("%w: %s", ErrNotFound, key)
 	}
 	return f, err
+}
+
+func (d *Dir) Delete(_ context.Context, key string) error {
+	p, err := d.path(key)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func (d *Dir) String() string { return "file://" + d.root }

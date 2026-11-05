@@ -1010,13 +1010,16 @@ var policy = map[string]rule{
 // allowedRoles is who each audience was before permissions: the three fixed
 // roles, and Equipment Assignments, which reaches what any signed-in user does
 // but not "staff", what only the three fixed roles do (seeing Item Sets).
+// Testers and Personnel Documents reach what any signed-in user does, and
+// "personnel" is what Personnel Documents alone reaches (ADR 0007).
 var allowedRoles = map[string][]string{
-	"any":      {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters},
-	"staff":    {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
-	"managers": {role.KeyAdmin, role.KeyManager},
-	"admins":   {role.KeyAdmin},
-	"manager":  {role.KeyManager},
-	"employee": {role.KeyEmployee},
+	"any":       {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters, role.KeyPersonnel},
+	"personnel": {role.KeyPersonnel},
+	"staff":     {role.KeyAdmin, role.KeyManager, role.KeyEmployee},
+	"managers":  {role.KeyAdmin, role.KeyManager},
+	"admins":    {role.KeyAdmin},
+	"manager":   {role.KeyManager},
+	"employee":  {role.KeyEmployee},
 }
 
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)

@@ -35,6 +35,8 @@ export const users: UsersText = {
   equipmentGrants: 'Mato įrangą ir baldus: kiekvieną daiktą ir pas ką jis yra.',
   testers: 'Bandytojai',
   testersGrants: 'Mato bandomas programas programų sąraše.',
+  personnel: 'Asmens dokumentai',
+  personnelGrants: 'Nuskaito, išsaugo ir rodo asmens dokumentus.',
 
   editUser: (name: string) => `Redaguoti naudotoją: ${name}`,
   editDescription: 'Rolės pakeitimas naudotoją pasiekia per kelias minutes, iš naujo jungtis nereikia.',

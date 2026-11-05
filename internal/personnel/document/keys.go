@@ -1,0 +1,107 @@
+package document
+
+import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"errors"
+	"fmt"
+	"image"
+	_ "image/jpeg" // the JPEG decoder, for image.DecodeConfig
+
+	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/sealbox"
+)
+
+// Sealer is the master keyring over the people's data keys
+// (API_PERSONNEL_KEY, a sealbox.Keyring): it seals and opens data keys only.
+type Sealer interface {
+	Seal(plain, context []byte) (sealed []byte, keyID int16, err error)
+	Open(sealed []byte, keyID int16, context []byte) ([]byte, error)
+}
+
+// Keys are what Personnel files seals and looks up with.
+type Keys struct {
+	// Master seals each person's data key.
+	Master Sealer
+	// Index is the blind indexes' HMAC key (API_PERSONNEL_INDEX_KEY), 32 bytes.
+	Index []byte
+}
+
+func (k Keys) configured() bool { return k.Master != nil && len(k.Index) == sealbox.KeySize }
+
+// The contexts each sealed value is bound to, so none opens in another row.
+func subjectKeyContext(employee uuid.UUID) []byte {
+	return []byte("ppe.personnel.subject_key.v1|" + employee.String())
+}
+func documentContext(document uuid.UUID) []byte {
+	return []byte("ppe.personnel.document.v1|" + document.String())
+}
+func copyContext(copyID uuid.UUID) []byte { return []byte("ppe.personnel.copy.v1|" + copyID.String()) }
+
+// numberIndex is the blind index of a document number: HMAC-SHA256 under the
+// index key, the number's purpose and issuing state in the message so an
+// index never matches across them.
+func (k Keys) numberIndex(issuingState, number string) []byte {
+	return k.hmac("number|" + issuingState + "|" + number)
+}
+
+// personalIndex is the blind index of a personal code.
+func (k Keys) personalIndex(code string) []byte { return k.hmac("personal_code|" + code) }
+
+func (k Keys) hmac(msg string) []byte {
+	m := hmac.New(sha256.New, k.Index)
+	m.Write([]byte(msg))
+	return m.Sum(nil)
+}
+
+// newDataKey is a fresh data key for employee, and it sealed by the master.
+func (k Keys) newDataKey(employee uuid.UUID) (*sealbox.Box, []byte, int16, error) {
+	raw := make([]byte, sealbox.KeySize)
+	if _, err := rand.Read(raw); err != nil {
+		return nil, nil, 0, err
+	}
+	sealed, keyID, err := k.Master.Seal(raw, subjectKeyContext(employee))
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	box, err := sealbox.New(raw)
+	return box, sealed, keyID, err
+}
+
+// openDataKey opens employee's sealed data key.
+func (k Keys) openDataKey(employee uuid.UUID, sealed []byte, keyID int16) (*sealbox.Box, error) {
+	raw, err := k.Master.Open(sealed, keyID, subjectKeyContext(employee))
+	if err != nil {
+		if errors.Is(err, sealbox.ErrOpen) {
+			return nil, ErrUnopenable
+		}
+		return nil, err
+	}
+	return sealbox.New(raw)
+}
+
+// checkJPEG: a Document Copy is a JPEG, read from its own bytes, at most
+// maxCopySide on its longer side (the phone re-encodes it so, without metadata).
+func checkJPEG(b []byte) error {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(b))
+	if err != nil || format != "jpeg" {
+		return ErrCopyNotJPEG
+	}
+	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > maxCopySide || cfg.Height > maxCopySide {
+		return ErrCopyNotJPEG
+	}
+	return nil
+}
+
+func sha256Of(b []byte) []byte {
+	s := sha256.Sum256(b)
+	return s[:]
+}
+
+// objectKey is where a copy's sealed object is kept in the files store.
+func objectKey(employee, document uuid.UUID, side Side, copyID uuid.UUID) string {
+	return fmt.Sprintf("personnel/%s/%s/%s-%s", employee, document, side, copyID)
+}
