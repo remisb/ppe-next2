@@ -1,19 +1,28 @@
 # SIM Card ER diagram
 
-The tables behind a SIM card in Company Assets (`internal/domain/asset`, ADR 0004): the
-card, its assignments and their signed copies, its inventory numbers, and the Settings
-columns Add SIM and Give SIM fill in from. A SIM card is an `assets` row with
-`kind = 'SIM'`; Equipment & Furniture share the tables
+The tables behind a SIM card in Company Assets (`internal/domain/asset`, ADRs 0004 and
+0005): the card, its assignments and their signed copies, its inventory numbers, its sealed
+PIN and PUK, the Settings Add SIM and Give SIM fill in from, and the mail templates its
+provider emails come from. A SIM card is an `assets` row with `kind = 'SIM'`; Equipment &
+Furniture share the tables but have no PIN and PUK
 ([equipment-er-diagram.md](equipment-er-diagram.md)). Built from migrations
 `0029_company_assets`, `0030_asset_signed_copies`, `0031_default_sim_provider`,
-`0033_sim_providers`, `0034_default_sim_non_return_value` and `0035_default_sim_plan`. The
-rules behind the columns are in [asset-service.md](../specs/asset-service.md); the same
-diagram as a page is [sim-card-er-diagram.html](sim-card-er-diagram.html).
+`0033_sim_providers`, `0034_default_sim_non_return_value`, `0035_default_sim_plan`,
+`0039_company_and_sim_providers` (which made the providers rows of `sim_providers`, each
+with its own default plan, replacing the array and the one default plan),
+`0040_mail_templates` and `0041_sim_codes`. The rules behind the columns are in
+[asset-service.md](../specs/asset-service.md), the settings in
+[settings-service.md](../specs/settings-service.md) and the templates in
+[mail-template-service.md](../specs/mail-template-service.md); the same diagram as a page is
+[sim-card-er-diagram.html](sim-card-er-diagram.html).
 
 Only the columns a SIM card uses are shown: `category`, `name` and `serial_no` are always
 null for one. `employees` and `users` are shown by their keys only. Location, the holder and
 Days Held are not columns: they are derived from the open assignment. A card's Changes are
 `audit_events` rows with `entity_type = 'asset'` and its id, which no foreign key ties to it.
+The dashed lines are links no foreign key makes: a card's provider is free text matched to a
+`sim_providers` row by name, and its activation and blocking emails are rendered from the
+`mail_templates` rows `sim.activation` and `sim.blocking`.
 
 ## Diagram
 
@@ -24,17 +33,22 @@ erDiagram
   employees ||--o{ asset_assignments : "holds"
   asset_assignments ||--o{ asset_signed_copies : "signed copies"
   assets ||--|{ asset_numbers : "numbers used"
+  assets ||--o| asset_sim_codes : "PIN and PUK (sealed)"
   asset_number_counters ||..o{ assets : "suggests SIM-NNNNNN"
-  app_settings ||..o{ assets : "providers and defaults"
+  app_settings ||..o{ assets : "default provider and value"
+  app_settings ||--o{ sim_providers : "lists"
+  sim_providers ||..o{ assets : "provider by name, its plan and e-mail"
+  mail_templates ||..o{ assets : "activation and blocking emails"
   users ||--o{ assets : "created, updated, deleted, written off by"
   users ||--o{ asset_assignments : "given, marked, returned by"
   users ||--o{ asset_signed_copies : "uploaded by"
+  users ||--o{ asset_sim_codes : "set by"
 
   assets {
     uuid id PK
     text kind "SIM"
     text inventory_no UK "SIM-000001"
-    text sim_no UK "as typed, unique while live"
+    text sim_no UK "as typed, unique while live, a trailing F aside"
     text phone_no "null until the provider assigns it"
     text provider
     text plan "null"
@@ -87,6 +101,14 @@ erDiagram
     uuid uploaded_by_user_id FK
   }
 
+  asset_sim_codes {
+    uuid asset_id PK, FK "one row per card that has them"
+    bytea sealed "PIN and PUK, AES-256-GCM"
+    smallint key_id "API_SIM_CODES_KEY is 1"
+    timestamptz updated_at
+    uuid updated_by_user_id FK
+  }
+
   asset_numbers {
     text number UK "every number ever used"
     uuid asset_id FK
@@ -100,10 +122,28 @@ erDiagram
 
   app_settings {
     boolean singleton PK "one row"
-    text_array sim_providers "0033"
-    text default_sim_provider "0031"
+    text company_name "0039, for mail templates"
+    text default_sim_provider "0031, a provider's name or empty"
     bigint default_sim_non_return_value_cents "0034"
-    text default_sim_plan "0035"
+  }
+
+  sim_providers {
+    boolean singleton PK, FK "the settings row"
+    int position PK "the list's order"
+    text name UK "unique, case aside"
+    text email "where its emails go, or empty"
+    text default_plan "Add SIM and Give SIM fill it in"
+  }
+
+  mail_templates {
+    text key PK "sim.activation, sim.blocking"
+    uuid id UK "its audit events' entity"
+    text recipient
+    text cc
+    text subject
+    text body
+    timestamptz updated_at
+    uuid updated_by_user_id FK
   }
 
   employees {
@@ -120,7 +160,8 @@ erDiagram
 | --- | --- | --- |
 | `assets` | a SIM card has `sim_no`, `provider`, `connection_status` and `received_date`, and no `category`, `name` or `serial_no` | CHECK `assets_kind_fields` |
 | `assets` | `inventory_no` is unique over every asset, case aside, deleted ones included | UNIQUE index `assets_inventory_no_idx` |
-| `assets` | `sim_no` is unique among live cards, spaces and case aside; it is stored as typed, leading zeros included | partial UNIQUE index `assets_sim_no_live_idx` |
+| `assets` | `sim_no` is unique among live cards, spaces, case and a 20-character ICCID's trailing filler `F` aside, so `…5135` and `…5135F` are the same card; it is stored as typed, leading zeros included | partial UNIQUE index `assets_sim_no_live_idx` on `regexp_replace(upper(replace(sim_no, ' ', '')), 'F$', '')` (0041; `asset.simKey`), whose migration stops, naming them, on live cards that already collide |
+| `assets` | a card added by Scan SIMs has an ICCID for its SIM No. (`89` and 17 more digits, an optional `F`) whose 19th digit checks (Luhn); Add SIM and Edit do not ask it | service (`CheckSIMs`, `AddSIMs`) |
 | `assets` | `deleted_at` and `deleted_by_user_id` are set together, as are `written_off_at` and `written_off_by_user_id`; reads leave both out. No route deletes or writes off an asset yet | CHECKs `assets_deleted`, `assets_written_off`, queries |
 | `assets` | `currency` is `EUR`; `non_return_value_cents` is not negative | CHECKs |
 | `assets` | a card is given only when `ACTIVE`, with a value; the phone number and plan may be blank on the form | service (`Give`) |
@@ -137,7 +178,12 @@ erDiagram
 | `asset_assignments` | neither date is in the future in the organisation timezone | service |
 | `asset_signed_copies` | never changed or deleted: uploading again adds a row, the newest shown | trigger `asset_signed_copies_guard`; `ppe_app` has no UPDATE or DELETE |
 | `asset_signed_copies` | a PDF, JPEG or PNG of 1 byte to 10 MB, with a 64-hex SHA-256 | CHECKs; the type read from the file's first bytes by the service |
-| `app_settings` | `default_sim_provider` is empty or one of `sim_providers` | CHECK `app_settings_default_sim_provider_listed` |
+| `asset_sim_codes` | the PIN (4 to 8 digits) and PUK (8 digits) are sealed together, bound to the card's id, so neither opens on another row; the key is never in the database or its backups, and no column, event, error or log line holds the codes | `internal/sealbox`, service (`seal`); CHECK `asset_sim_codes_sealed_check` (29 to 200 bytes) |
+| `asset_sim_codes` | rows belong to SIM cards only; setting replaces the row, clearing deletes it, each with `asset.sim_codes_changed`; showing records `asset.sim_codes_shown` | service (`SetSIMCodes`, `ClearSIMCodes`, `ShowSIMCodes`) |
+| `app_settings` | `default_sim_provider` is empty or one of the `sim_providers` names | service (`settings.SIMProvidersParams.Validate`; the array's CHECK went with the array in 0039) |
+| `sim_providers` | at most one per name, case aside; written again as a whole list under the settings row's lock; emptied with the settings row | UNIQUE index `sim_providers_name_key` on `lower(name)`; FK `ON DELETE CASCADE` |
+| `sim_providers` | the name up to 100 characters, the e-mail up to 254, the plan up to 100 | CHECKs |
+| `mail_templates` | one row per use case once saved; a use case without one reads as its default, kept in code; every `{{field}}` is one of its use case's | service (`mailtemplate`) |
 | `employees` | an employee holding a card cannot be deleted | service (`employee.ErrHoldsAssets`) |
 
 Indexes for reading: `assets_kind_idx` on `kind, upper(inventory_no)` for live assets,
