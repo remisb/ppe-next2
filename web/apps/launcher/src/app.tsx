@@ -317,7 +317,9 @@ function Grid({ apps, list, onOpen, onAbout }: { apps: LauncherApp[]; list: Laun
   const text = launcherText()
   const all = list.apps
   return (
-    <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 md:gap-4 xl:grid-cols-6 2xl:grid-cols-8">
+    // Four on a tablet and five from lg (beside the rail), so a long name has room; a word that still
+    // does not fit is hyphenated in the page's language, and broken only as a last resort.
+    <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
       {apps.map((app) => {
         const Icon = appIcons[app.icon] ?? Box
         const name = appName(app)
@@ -337,7 +339,7 @@ function Grid({ apps, list, onOpen, onAbout }: { apps: LauncherApp[]; list: Laun
             >
               <Icon aria-hidden className="size-7 md:size-9" />
               <span className="flex min-w-0 flex-col items-start gap-1">
-                <span className="text-sm leading-tight font-semibold text-balance [overflow-wrap:anywhere] md:text-base">{name}</span>
+                <span className="text-sm leading-tight font-semibold text-balance hyphens-auto [overflow-wrap:anywhere] xl:text-base">{name}</span>
                 {app.stage !== 'live' ? (
                   <span className="rounded-md bg-white/20 px-1.5 py-px text-[11px] font-semibold tracking-wide uppercase">{text.stages[app.stage]}</span>
                 ) : null}

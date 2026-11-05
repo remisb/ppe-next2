@@ -48,7 +48,8 @@ export function App() {
       >
         {t.shell.skipToContent}
       </a>
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      {/* Scrolls away: the screen's own header (PageHeader) is the one that sticks, as in the staff app. */}
+      <header className="border-b border-border bg-background pt-[env(safe-area-inset-top)]">
         <ChannelStripe slug="sim-scan" />
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 md:px-6">
           <Brand name={t.shell.appName} />
