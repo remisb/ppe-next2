@@ -199,11 +199,11 @@ func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps [
 	}))
 }
 
-const versionColumns = `id, app_id, version, profile, capabilities, screens, commit, published_at, published_by_user_id`
+const versionColumns = `id, app_id, version, profile, capabilities, commit, published_at, published_by_user_id`
 
 func scanVersion(row pgx.CollectableRow) (Version, error) {
 	var v Version
-	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Screens, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
+	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
 	v.PublishedAt = v.PublishedAt.UTC()
 	return v, err
 }
@@ -222,8 +222,8 @@ func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Ver
 
 func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-			v.ID, v.AppID, v.Version, v.Profile, v.Capabilities, v.Screens, v.Commit, v.PublishedAt, v.PublishedByUserID); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+			v.ID, v.AppID, v.Version, v.Profile, v.Capabilities, v.Commit, v.PublishedAt, v.PublishedByUserID); err != nil {
 			return err
 		}
 		return audit.Insert(ctx, tx, ev)
@@ -274,18 +274,14 @@ func (r *PostgresRepository) PruneVersions(ctx context.Context, app uuid.UUID, m
 }
 
 // channelColumns are a channel's (c), with its version's name and date (v).
-const channelColumns = `c.id, c.app_id, c.name, c.label_en, c.label_lt, c.label_ru, c.version_id, v.version, v.published_at, c.any_of,
-	c.updated_at, c.updated_by_user_id`
+const channelColumns = `c.id, c.app_id, c.name, c.version_id, v.version, v.published_at, c.updated_at, c.updated_by_user_id`
 
-// channelOrder: Stable, Beta, Preview, then variants by name.
+// channelOrder: Stable, Beta, Preview.
 const channelOrder = ` ORDER BY c.app_id, array_position(ARRAY['stable','beta','preview'], c.name) NULLS LAST, c.name`
 
 func scanChannel(row pgx.Row) (Channel, error) {
 	var c Channel
-	var anyOf []string
-	err := row.Scan(&c.ID, &c.AppID, &c.Name, &c.Label.EN, &c.Label.LT, &c.Label.RU, &c.VersionID, &c.Version, &c.PublishedAt, &anyOf,
-		&c.UpdatedAt, &c.UpdatedByUserID)
-	c.AnyOf = role.Known(anyOf)
+	err := row.Scan(&c.ID, &c.AppID, &c.Name, &c.VersionID, &c.Version, &c.PublishedAt, &c.UpdatedAt, &c.UpdatedByUserID)
 	c.PublishedAt, c.UpdatedAt = c.PublishedAt.UTC(), c.UpdatedAt.UTC()
 	return c, err
 }
@@ -335,11 +331,10 @@ func (r *PostgresRepository) PutChannel(ctx context.Context, app uuid.UUID, name
 			return nil
 		}
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO launcher_channels (id, app_id, name, label_en, label_lt, label_ru, version_id, any_of, updated_at, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-			ON CONFLICT (app_id, name) DO UPDATE SET label_en = $4, label_lt = $5, label_ru = $6, version_id = $7, any_of = $8,
-				updated_at = $9, updated_by_user_id = $10`,
-			next.ID, app, name, next.Label.EN, next.Label.LT, next.Label.RU, next.VersionID, role.Strings(next.AnyOf), next.UpdatedAt, next.UpdatedByUserID); err != nil {
+			INSERT INTO launcher_channels (id, app_id, name, version_id, updated_at, updated_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (app_id, name) DO UPDATE SET version_id = $4, updated_at = $5, updated_by_user_id = $6`,
+			next.ID, app, name, next.VersionID, next.UpdatedAt, next.UpdatedByUserID); err != nil {
 			return err
 		}
 		return audit.InsertAll(ctx, tx, evs)

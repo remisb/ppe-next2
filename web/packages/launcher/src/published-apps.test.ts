@@ -27,13 +27,12 @@ describe('published apps', () => {
 
   it('are found by folder, the others left out', () => {
     const dir = workspace({ workwear: null, 'size-helper': { slug: 'size-helper', profile: 'standard', devPort: 5188 } })
-    expect(publishedApps(dir)).toEqual([{ slug: 'size-helper', dir: join(dir, 'apps', 'size-helper'), profile: 'standard', screens: [], devPort: 5188, e2ePort: 5189 }])
+    expect(publishedApps(dir)).toEqual([{ slug: 'size-helper', dir: join(dir, 'apps', 'size-helper'), profile: 'standard', devPort: 5188, e2ePort: 5189 }])
   })
 
   it('refuse a manifest that does not fit', () => {
     expect(() => publishedApps(workspace({ a1: { slug: 'other', profile: 'standard', devPort: 5188 } }))).toThrow(/folder's name/)
     expect(() => publishedApps(workspace({ a1: { slug: 'a1', devPort: 5188 } }))).toThrow(/profile/)
-    expect(() => publishedApps(workspace({ a1: { slug: 'a1', profile: 'standard', screens: 'find', devPort: 5188 } }))).toThrow(/screens/)
     expect(() => publishedApps(workspace({ a1: { slug: 'a1', profile: 'standard' } }))).toThrow(/devPort/)
     expect(() =>
       publishedApps(workspace({ a1: { slug: 'a1', profile: 'standard', devPort: 5188 }, a2: { slug: 'a2', profile: 'standard', devPort: 5189 } })),

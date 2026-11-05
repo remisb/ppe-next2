@@ -9,9 +9,9 @@ export function tile(slug: string, more: Partial<LauncherApp> = {}): LauncherApp
 }
 
 /** A channel as the API sends it, pointing at version. */
-export function channel(name: string, version: string, more: Partial<AppChannel> = {}): AppChannel {
+export function channel(name: AppChannel['name'], version: string, more: Partial<AppChannel> = {}): AppChannel {
   return {
-    id: name, app_id: 'app', name, label: { en: '', lt: '', ru: '' }, version_id: version, version, published_at: '2026-11-04T09:00:00Z',
-    any_of: [], updated_at: '', updated_by_user_id: null, ...more,
+    id: name, app_id: 'app', name, version_id: version, version, published_at: '2026-11-04T09:00:00Z',
+    updated_at: '', updated_by_user_id: null, ...more,
   }
 }

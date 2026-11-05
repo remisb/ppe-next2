@@ -2112,12 +2112,12 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	if _, err := publish("crew", "2026.11.05-ccc", "", scanSIMs); err == nil {
 		t.Error("a linked site was published")
 	}
-	// A channel that does not exist is refused before any file is written or version recorded.
-	if _, err := publish("sim-scan", "2026.11.05-nov", "no-such-variant", scanSIMs); err == nil {
-		t.Error("a publish to an unknown variant succeeded")
+	// A channel other than Stable, Beta or Preview is refused before any file is written or version recorded.
+	if _, err := publish("sim-scan", "2026.11.05-nov", "photos-first", scanSIMs); err == nil {
+		t.Error("a publish to a named channel succeeded (variants were removed)")
 	}
 	if _, err := os.Stat(cfg.AppsDir + "/device/sim-scan/2026.11.05-nov"); !os.IsNotExist(err) {
-		t.Errorf("a publish refused for its variant left files: %v", err)
+		t.Errorf("a publish refused for its channel left files: %v", err)
 	}
 
 	// Stable (set by the first publish), a deep link, a channel and a version, each with where it is mounted.
@@ -2182,22 +2182,27 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 		t.Errorf("a tester sees %d channels, chose %v", len(seen["sim-scan"]), chosen)
 	}
 
-	// Manage apps: the releases, and a variant for those who manage assets.
+	// Manage apps: the releases; Stable, Beta and Preview only, each just a version.
 	if rec := api.do(t, "GET", "/api/v1/apps/sim-scan/releases", admin, nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"profile":"device"`) {
 		t.Errorf("releases = %d %s", rec.Code, rec.Body)
 	}
-	variant := map[string]any{"version": "2026.11.04-aaa", "label": map[string]string{"en": "Photos first", "lt": "Pirmiausia nuotraukos", "ru": "Сначала фото"}, "any_of": []string{"assets.manage"}}
-	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/photos-first", admin, variant); rec.Code != http.StatusOK {
-		t.Fatalf("variant = %d %s", rec.Code, rec.Body)
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/photos-first", admin, map[string]any{"version": "2026.11.04-aaa"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a named channel = %d", rec.Code)
+	}
+	withAudience := map[string]any{"version": "2026.11.04-aaa", "any_of": []string{"assets.manage"}}
+	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/beta", admin, withAudience); rec.Code != http.StatusBadRequest {
+		t.Errorf("a channel with an audience of its own = %d", rec.Code)
 	}
 	if rec := api.do(t, "PUT", "/api/v1/apps/sim-scan/channels/beta", admin, map[string]any{"version": "2026.01.01-zzz"}); rec.Code != http.StatusBadRequest {
 		t.Errorf("an unpublished version = %d", rec.Code)
 	}
-	if seen, _ := channelsOf(manager); len(seen["sim-scan"]) != 2 {
-		t.Errorf("a manager sees %+v", seen["sim-scan"])
+	if seen, _ := channelsOf(manager); len(seen["sim-scan"]) != 1 {
+		t.Errorf("a manager (no tester) sees %+v", seen["sim-scan"])
 	}
-	if rec := get("/apps/sim-scan/photos-first/"); !strings.Contains(rec.Body.String(), `<meta name="ppe-channel" content="photos-first">`) {
-		t.Errorf("the variant = %s", rec.Body)
+	// A name that is no channel is one of the app's own screens, on Stable.
+	if rec := get("/apps/sim-scan/photos-first/"); !strings.Contains(rec.Body.String(), `<meta name="ppe-channel" content="stable">`) ||
+		!strings.Contains(rec.Body.String(), `<meta name="ppe-mount" content="/apps/sim-scan/">`) {
+		t.Errorf("a screen's address = %s", rec.Body)
 	}
 
 	// The Trials view: a tester on Preview used it, reported an error from it and sent feedback on it.
@@ -2248,7 +2253,7 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 		!slices.ContainsFunc(v.Channels, func(c struct {
 			Name string `json:"name"`
 		}) bool {
-			return c.Name == "photos-first"
+			return c.Name == "beta"
 		}) || tr.Days != 30 {
 		t.Errorf("Trials = %s", rec.Body)
 	}
@@ -2292,7 +2297,7 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 		t.Errorf("the old ETag once Stable moved = %d %s", moved.Code, moved.Header().Get("ETag"))
 	}
 
-	// Pruning keeps what a channel opens (the variant's 2026.11.04-aaa) and the newest five.
+	// Pruning keeps what a channel opens (Beta's 2026.11.04-aaa) and the newest five.
 	var out bytes.Buffer
 	if err := pruneApps(ctx, api.svc, cfg, &out); err != nil {
 		t.Fatal(err)

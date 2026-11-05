@@ -1,4 +1,4 @@
-import type { AppChannel, AppGroup, AppIcon, AppInput, AppKind, AppStage, AppTier, AppVersion, LauncherApp, NewAppInput, Permission } from '@ppe/api-client'
+import type { AppGroup, AppIcon, AppInput, AppKind, AppStage, AppTier, LauncherApp, NewAppInput, Permission } from '@ppe/api-client'
 import { APP_SLUG_PATTERN, RESERVED_APP_SLUGS } from '@ppe/api-client'
 
 import { t } from '@/i18n'
@@ -114,30 +114,4 @@ export function moveTarget(order: readonly string[], slug: string, by: -1 | 1): 
   if (by === -1) return at === 0 ? null : order[at - 1]!
   if (at === order.length - 1) return null
   return order[at + 2] ?? ''
-}
-
-/** A variant channel as Add variant and Edit edit it. */
-export interface VariantDraft {
-  name: string
-  label: { en: string; lt: string; ru: string }
-  version: string
-  /** Who sees it beside the app's audience; none: testers. */
-  anyOf: Permission[]
-}
-
-export function variantDraftOf(c: AppChannel | undefined, versions: readonly AppVersion[]): VariantDraft {
-  if (c) return { name: c.name, label: { ...c.label }, version: c.version, anyOf: [...c.any_of] }
-  return { name: '', label: { en: '', lt: '', ru: '' }, version: versions[0]?.version ?? '', anyOf: [] }
-}
-
-/** A variant's name is a slug, not a fixed channel's and not taken; its label is in each language. */
-export function validateVariant(d: VariantDraft, taken: readonly string[]): Partial<Record<'name' | 'label' | 'version', string>> {
-  const errors: Partial<Record<'name' | 'label' | 'version', string>> = {}
-  const name = d.name.trim()
-  if (!name) errors.name = t.apps.enterVariantName
-  else if (!APP_SLUG_PATTERN.test(name)) errors.name = t.apps.badSlug
-  else if (['stable', 'beta', 'preview'].includes(name) || taken.includes(name)) errors.name = t.apps.variantTaken
-  if (!d.label.en.trim() || !d.label.lt.trim() || !d.label.ru.trim()) errors.label = t.apps.enterName
-  if (!d.version) errors.version = t.apps.chooseVersion
-  return errors
 }

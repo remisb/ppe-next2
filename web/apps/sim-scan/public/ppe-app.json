@@ -1,6 +1,5 @@
 {
   "slug": "sim-scan",
   "profile": "device",
-  "screens": ["find"],
   "devPort": 5184
 }

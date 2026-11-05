@@ -366,7 +366,7 @@ function Grid({ apps, list, onOpen, onAbout }: { apps: LauncherApp[]; list: Laun
                   <span className="rounded-md bg-white/20 px-1.5 py-px text-[11px] font-semibold tracking-wide uppercase">{text.stages[app.stage]}</span>
                 ) : null}
                 {channel !== 'stable' ? (
-                  <span className="rounded-md bg-amber-200 px-1.5 py-px text-[11px] font-semibold text-amber-950">{channelName(channel, channelsOf(list, app.slug))}</span>
+                  <span className="rounded-md bg-amber-200 px-1.5 py-px text-[11px] font-semibold text-amber-950">{channelName(channel)}</span>
                 ) : null}
               </span>
             </a>
@@ -512,7 +512,7 @@ function Versions({ channels, chosen, onChoose }: { channels: AppChannel[]; chos
         >
           <input type="radio" name="channel" value={c.name} checked={chosen === c.name} onChange={() => onChoose(c.name)} className="size-4 accent-primary" />
           <span className="min-w-0 flex-1">
-            <span className="block font-medium">{channelName(c.name, channels)}</span>
+            <span className="block font-medium">{channelName(c.name)}</span>
             <span className="block text-xs text-muted-foreground">
               {text.version} {c.version} · {text.published(formatDate(c.published_at, undefined))}
             </span>

@@ -1055,23 +1055,23 @@ The front door of the company's apps (ADR 0006; rules in
 - **Code:** `launcher_versions`, `api -publish-app`, `PUBLISHED_APPS`. **UI:** *Published*
   (a version's date).
 
-### Version, Channel, Variant; Audience
+### Version, Channel; Audience
 - **Version:** one published build of an app, named by its commit's date and hash
   (`2026.11.04-1c7f2a1ee57c`), never changed. **UI:** **Version** (LT *Versija*, RU *Версия*).
 - **Channel:** a name that points at one version: **Stable** (LT *Stabili*, RU
   *Стабильная*), **Beta** (*Beta*, *Бета*), **Preview** (*Peržiūra*, *Предпросмотр*).
   **Make Stable** (and Beta, Preview) points it at a version: promoting is making a newer
-  one Stable, rolling back an older one. Stable is for whoever sees the app; the others for
-  testers or the permissions they name. Not "branch", "track" or "environment".
+  one Stable, rolling back an older one. Stable is for whoever sees the app; Beta and Preview
+  for testers. Not "branch", "track" or "environment".
 - **Trials:** Manage apps' view of a published app's versions side by side: who used each
   (over Usage's 30 days), the errors last seen on it and the feedback given on it. **UI:**
   **Trials** (LT *Bandymai*, RU *Испытания*). Not "experiments" or "A/B tests".
 - **Stable follows deploys:** a published app's switch on Manage apps: each deploy's build
   becomes Stable as well as Preview. **UI:** **Stable follows deploys** (LT *Stabili seka
   diegimus*, RU *Стабильная следует за развёртываниями*).
-- **Variant:** another design of an app tried side by side, a channel with its own name in
-  addresses (`photos-first`), label and audience. **UI:** **Add variant** (LT *Pridėti
-  variantą*, RU *Добавить вариант*).
+- **Variant:** removed on 2026-11-05 (a channel with its own name, label and audience); an
+  app's channels are Stable, Beta and Preview only. Older Audit log entries still say
+  *Channel changed* for one.
 - **Versions** (in a tile's ⋯): where a user chooses the channel an app opens on for them;
   kept per user. Off Stable, the app shows a stripe: *You are using Beta · Version …* with
   **Back to Stable**.

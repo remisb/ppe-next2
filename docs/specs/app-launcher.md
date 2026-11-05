@@ -149,7 +149,7 @@ development the staff app's Vite server proxies `/apps` and `/apps/…` to the l
 ## Published apps: versions and channels
 
 Phase 3 (ADR 0006, "As built, phase 3"). An app on this site may be **published**: built with
-Vite's `base: './'` and a `ppe-app.json` (`{"slug", "profile", "screens", "devPort"}`, from its
+Vite's `base: './'` and a `ppe-app.json` (`{"slug", "profile", "devPort"}`, from its
 `public/`) in its `dist/`, each build a **version** that never changes, and **channels** that
 point at versions. Scan SIMs is the first; every other app keeps its fixed address (and its
 tile's `href`). **A published app is found from its manifest**: every `web/apps/<slug>` with a
@@ -172,25 +172,24 @@ tests and build, and is then removed.
 
 - **Registry** (migration 0043): `launcher_versions` (app, version `YYYY.MM.DD-<commit>`,
   profile, capabilities, commit, published, by whom: nobody for a deploy's),
-  `launcher_channels` (app, name, label for a variant, version, audience) and
-  `launcher_channel_choices` (user, app, channel). Events `app.version_published`,
-  `app.channel_moved` (a channel set or pointed at another version) and `app.channel_changed`
-  (a variant's label or audience, also when the variant is added: before is then empty).
-- **Channels.** `stable`, `beta`, `preview`, and **variants**: any other slug, with a label in
-  EN/LT/RU. Stable is seen by whoever sees the tile; the others by holders of the permissions
-  they name, or by testers (`apps.preview`) when they name none. Stable has no audience of its
-  own and no label; a fixed channel has no label; a variant needs one. **An audience decides
+  `launcher_channels` (app, name: `stable`, `beta` or `preview`, version) and
+  `launcher_channel_choices` (user, app, channel: `beta` or `preview`). Events
+  `app.version_published` and `app.channel_moved` (a channel set or pointed at another
+  version); `app.channel_changed` (a variant's label or audience) is no longer recorded but
+  still reads in older trails.
+- **Channels.** `stable`, `beta` and `preview`: Stable is seen by whoever sees the tile, Beta
+  and Preview by testers (`apps.preview`). **Named variants were removed** on 2026-11-05 (the
+  handbook's critique P1; migration 0047): never used in production, they cost about 400 lines,
+  their own labels and audiences, and a rule keeping their names off the app's screens
+  (migration 0046's `screens`, dropped with them). A build's manifest may still list
+  `screens`; it is ignored. **The audience decides
   who sees a channel and is sent to it, not who may open it**: the page route and the files are
   public (the data behind them is the API's, by permission), so anyone with a channel's or a
   kept version's address can load that build. Do not put anything in a build that its audience
-  alone may see. **No new channel feature until a second published app needs one**: variants,
-  per-user choices, Stable follows deploys and Trials serve Scan SIMs alone.
-- **Screens.** The manifest lists the first-level path segments its router uses (`screens`,
-  Scan SIMs' `["find"]`; each like a slug, never `stable`, `beta` or `preview`, each once; kept in
-  `launcher_versions.screens`, migration 0046). `/apps/<slug>/<name>/` opens a channel before a
-  screen, so a variant is never named like a screen of any of the app's versions, and a build is
-  refused when a screen of it is a variant's name; the app's router test keeps `screens` equal to
-  its routes.
+  alone may see. **No new channel feature until a second published app needs one**: per-user
+  choices, Stable follows deploys and Trials serve Scan SIMs alone; review their use by
+  2027-02-05 and remove what is unused. An app's own screen may not be named `stable`, `beta`
+  or `preview` (`/apps/<slug>/<name>/` opens a channel first).
 - **Profiles.** The manifest names its profile: `standard` (the staff app's policy) or `device`
   (Scan SIMs' policy: WebAssembly, workers from its own files, the camera). Builds from before
   name capabilities instead (`wasm`, `workers`, `camera`; none means `standard`, any `device`),
@@ -244,9 +243,8 @@ tests and build, and is then removed.
   version whose folder is gone (a restore, a lost volume) gets its files back, under the profile
   it was recorded with (another is refused); a folder without `index.html` is replaced; the first version of an app also becomes
   Stable, and so does every version published to Preview while the app's **Stable follows
-  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). A
-  variant must be added on Manage apps before a publish names it; that is checked before any
-  file is written or version recorded (`CheckPublish`). The Makefile runs each publish pipe
+  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). Any
+  other channel is refused before any file is written or version recorded. The Makefile runs each publish pipe
   (`tar | api -publish-app`) under bash with `pipefail`, so a failed or cut-off build stream
   fails the target instead of publishing a partial build.
   `make prod-up` publishes each app in `PUBLISHED_APPS` from the image's
@@ -262,10 +260,9 @@ tests and build, and is then removed.
   channels with their versions and dates.
 - **Manage apps.** An app on this site has **Versions and channels**:
   `GET /api/v1/apps/{slug}/releases` (versions newest first, channels) and
-  `PUT /api/v1/apps/{slug}/channels/{name}` `{"version", "label"?, "any_of"?}`
-  (`apps.manage`): each version's ⋯ has **Make Stable**, **Make Beta**, **Make Preview** and
-  one per variant (promoting, or rolling back by making an older version Stable again);
-  **Add variant** and a variant's **Edit** set its name (once), label, version and audience.
+  `PUT /api/v1/apps/{slug}/channels/{name}` `{"version"}` (`apps.manage`; `name` stable, beta
+  or preview): each version's ⋯ has **Make Stable**, **Make Beta** and **Make Preview**
+  (promoting, or rolling back by making an older version Stable again).
   **Stable follows deploys** (`PUT /api/v1/apps/{slug}/stable-follows-deploys` `{"on"}`,
   recorded as `app.changed`) is a switch above the channels; while it is off and Preview has a
   newer version than Stable, a note says so.
@@ -273,8 +270,8 @@ tests and build, and is then removed.
   Caddy from its official image at CI's pinned version (`E2E_CADDY=docker`; no local Caddy).
   Scan SIMs' Vite server mounts it at `/apps/sim-scan/`, and the staff app's
   proxies `/apps/sim-scan` to it before the launcher's `/apps`. e2e publishes its build in
-  Caddy mode (global setup, `API_APPS_DIR` a temporary folder) and drives a variant, Make
-  Stable and its roll-back.
+  Caddy mode (global setup, `API_APPS_DIR` a temporary folder) and drives Beta for a tester,
+  Make Stable and its roll-back.
 - **Trials** (phase 5). `GET /api/v1/apps/{slug}/trials` (`apps.manage`) lists each version,
   newest first, with the channels opening it, the people who used it and on how many days over
   Usage's window (`usage.Days`, from `user_version_activity`, migration 0045: the request

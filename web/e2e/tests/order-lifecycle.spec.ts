@@ -3,8 +3,9 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
+import pg from 'pg'
 
-import { admin, apiEnv, caddyMode, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
+import { admin, apiEnv, caddyMode, dbDSN, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -3530,7 +3531,7 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(page.getByText('4826')).toHaveCount(0)
 })
 
-test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; Make Stable promotes and rolls back', async () => {
+test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {
   test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
   test.skip(!runsApp('sim-scan'), 'Scan SIMs is not published (E2E_APPS)')
   // A second build, as make prod-publish publishes one: no channel points at it yet.
@@ -3541,37 +3542,49 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   await expect(pane.getByRole('row', { name: /2026\.01\.02-e2e/ })).toBeVisible()
   await expect(pane.getByRole('row', { name: /2026\.01\.01-e2e/ })).toContainText('Stable')
 
-  // Add variant: a version some people try beside Stable, here those who manage Company Assets.
-  await pane.getByRole('button', { name: 'Add variant' }).click()
-  const form = page.getByRole('dialog', { name: 'Add variant' })
-  await form.getByLabel(/^Name in addresses/).fill('photos-first')
-  await form.getByLabel(/^English/).fill('Photos first')
-  await form.getByLabel(/^Lithuanian/).fill('Pirmiausia nuotraukos')
-  await form.getByLabel(/^Russian/).fill('Сначала фото')
-  await form.getByLabel(/^Version/).selectOption('2026.01.02-e2e')
-  await form.getByRole('checkbox', { name: 'Manage Company Assets' }).check()
-  await form.getByRole('button', { name: 'Add variant' }).click()
-  await expect(form).toBeHidden()
-  await expect(pane.getByText('People with: Manage Company Assets')).toBeVisible()
+  // Beta: the new version for testers to try beside Stable. Beta and Preview are for testers
+  // (Testers, apps.preview), so the administrator is one for this step: set up in the database,
+  // seen at the next sign-in refresh (a reload).
+  const asTester = async (on: boolean) => {
+    const db = new pg.Client({ connectionString: dbDSN })
+    await db.connect()
+    try {
+      const testers = 'a0e1d000-0000-4000-8000-000000000005' // role.TestersID
+      await db.query(
+        on
+          ? `INSERT INTO user_roles (user_id, role_id) SELECT id, $2 FROM users WHERE email = $1 ON CONFLICT DO NOTHING`
+          : `DELETE FROM user_roles WHERE role_id = $2 AND user_id = (SELECT id FROM users WHERE email = $1)`,
+        [admin.email, testers],
+      )
+    } finally {
+      await db.end()
+    }
+  }
+  await asTester(true)
+  await pane.getByRole('button', { name: 'More actions for 2026.01.02-e2e' }).click()
+  await page.getByRole('menuitem', { name: 'Make Beta' }).click()
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  await expect(pane.getByRole('status').filter({ hasText: 'now opens' })).toHaveText('Beta now opens 2026.01.02-e2e.')
+  await expect(pane.getByRole('listitem').filter({ hasText: /^Beta/ })).toContainText('Testers')
 
-  // App Launcher: Versions offers Stable and the variant; the choice is kept and the tile says so.
+  // App Launcher: Versions offers Stable, Beta and Preview; the choice is kept and the tile says so.
   await page.goto('/apps/')
   await page.getByRole('button', { name: 'More about Scan SIMs' }).click()
   const about = page.getByRole('dialog', { name: 'Scan SIMs' })
   await about.getByRole('button', { name: 'Versions' }).click()
-  await about.getByRole('radio', { name: /Photos first/ }).check()
+  await about.getByRole('radio', { name: /^Beta/ }).check()
   await about.getByRole('button', { name: 'Close' }).click()
   await page.reload()
   const tile = page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()
-  await expect(tile).toHaveAttribute('href', '/apps/sim-scan/photos-first/')
-  await expect(tile).toContainText('Photos first')
+  await expect(tile).toHaveAttribute('href', '/apps/sim-scan/beta/')
+  await expect(tile).toContainText('Beta')
   await tile.click()
-  await expect(page).toHaveURL(/\/apps\/sim-scan\/photos-first\/$/)
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/beta\/$/)
   await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'You are using Photos first' })).toContainText('2026.01.02-e2e')
+  await expect(page.getByRole('status').filter({ hasText: 'You are using Beta' })).toContainText('2026.01.02-e2e')
   // A link to Scan SIMs' own address, from another app or a bookmark, opens the chosen channel on the same screen.
   await page.goto('/apps/sim-scan/find')
-  await expect(page).toHaveURL(/\/apps\/sim-scan\/photos-first\/find$/)
+  await expect(page).toHaveURL(/\/apps\/sim-scan\/beta\/find$/)
   // Back to Stable, on the same screen, from now on.
   await page.getByRole('link', { name: 'Back to Stable' }).click()
   await expect(page).toHaveURL(/\/apps\/sim-scan\/find$/)
@@ -3580,12 +3593,13 @@ test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; 
   await page.goto('/apps/')
   await expect(page.getByRole('main').getByRole('link', { name: /^Scan SIMs/ }).last()).toHaveAttribute('href', '/apps/sim-scan/')
 
-  // Trials: the variant's version, opened above, counts its one person and the channel opening it.
+  // Trials: Beta's version, opened above, counts its one person and the channel opening it.
   await page.goto('/admin/apps/sim-scan')
   await openSection(/^Trials/)
   const tried = pane.getByRole('region', { name: /^Trials/ }).getByRole('row', { name: /2026\.01\.02-e2e/ })
-  await expect(tried).toContainText('Photos first')
+  await expect(tried).toContainText('Beta')
   await expect(tried.getByRole('cell').nth(1)).toHaveText(/^1/)
+  await asTester(false)
 
   // Stable follows deploys: on, a deploy's publish to Preview makes its version Stable too; off again for the rest.
   await page.goto('/admin/apps/sim-scan')

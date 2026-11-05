@@ -48,7 +48,7 @@ export function AppTrials({ app, timeZone }: { app: LauncherApp; timeZone: strin
                     <span className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                       {v.channels.map((c) => (
                         <Badge key={c.name} variant={c.name === 'stable' ? 'default' : 'secondary'}>
-                          {channelName(c.name, v.channels)}
+                          {channelName(c.name)}
                         </Badge>
                       ))}
                       <RelativeDate iso={v.published_at} timeZone={timeZone} />

@@ -141,11 +141,11 @@ someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/`
 (the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
 Phase 3, **published apps** (migration 0043: `launcher_versions`, `launcher_channels`,
 `launcher_channel_choices`; `error_events.app_version`): an app on this site may be published as
-immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` declaring its slug, its
-**profile** (`standard` or `device`; older builds' capabilities still read) and its first-level
-**screens**, which no variant may be named like; migration 0046) and **channels** (Stable, Beta,
-Preview, named variants with a label and audience; events `app.version_published`,
-`app.channel_moved`, `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/` (the old
+immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` declaring its slug and
+**profile**, `standard` or `device`; older builds' capabilities still read) and **channels**
+(Stable for whoever sees the tile, Beta and Preview for testers; named variants were removed,
+migration 0047; events `app.version_published`,
+`app.channel_moved`; older trails also hold `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/` (the old
 `/sim-scan/…` redirects). Caddy serves a version's files from the `published` volume at
 `/apps/files/<profile>/<slug>/<version>/`; the API (`cmd/api/published-app-routes.go`, public
 `GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
@@ -153,12 +153,12 @@ Preview, named variants with a label and audience; events `app.version_published
 kept in memory per version, with an `ETag`)
 and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
 stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
-(slug, profile, screens, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
+(slug, profile, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
 (`@ppe/launcher`'s `published-apps.ts`), and `make new-app` starts one from `web/templates/published-app`
 with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
-Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
+Preview, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
 the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
 and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. A channel's audience decides who
 sees it, not who may open it: the page and files are public, the data the API's (the stripe fails

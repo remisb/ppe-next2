@@ -52,8 +52,7 @@ trial is a third app on the same terms, published at `/apps/sim-scan/` (`simScan
 launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-launcher.md`)
 builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
 `public/ppe-app.json` (`slug`, the folder's name; `profile`, `standard` or `device`;
-`screens`, the first-level path segments its router uses, which its router test keeps true and
-no variant may be named like; `devPort`, its dev server's, the e2e server taking the next; the
+`devPort`, its dev server's, the e2e server taking the next; the
 staff app's, Administration's and App Launcher's are `published-apps.ts`' `fixedApps`), which is all the build, the deploy, the staff app's dev proxy
 and e2e need to find it (start one with `make new-app SLUG= NAME=`, from
 `web/templates/published-app`, which also adds its tile in POC; change the template when the

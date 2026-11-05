@@ -1546,8 +1546,6 @@ export interface AppVersion {
   profile: AppProfile
   /** What builds declared before they named a profile; none for newer ones. */
   capabilities: string[]
-  /** The first-level screens its router uses: no variant is named like one. */
-  screens: string[]
   commit: string
   published_at: string
   /** null for a deploy's. */
@@ -1558,14 +1556,11 @@ export interface AppVersion {
 export interface AppChannel {
   id: string
   app_id: string
-  name: string
-  /** A variant's name in each language; empty for the fixed channels. */
-  label: AppNames
+  /** stable, beta or preview. */
+  name: 'stable' | 'beta' | 'preview'
   version_id: string
   version: string
   published_at: string
-  /** Who sees it beside the tile's audience; none: testers. Stable follows the tile. */
-  any_of: Permission[]
   updated_at: string
   updated_by_user_id: string | null
 }
@@ -1578,8 +1573,6 @@ export interface AppReleases {
 /** Points a channel at a version; a variant needs a label, the fixed channels have none. */
 export interface ChannelInput {
   version: string
-  label?: AppNames
-  any_of?: Permission[]
 }
 
 export type FeedbackRating = 'works' | 'confusing' | 'broken'

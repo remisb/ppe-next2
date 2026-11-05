@@ -274,12 +274,9 @@ func (h *launcherHandler) releases(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, releases{Versions: versions, Channels: channels})
 }
 
-// channelRequest points a channel at a version; a variant's label and
-// audience come with it.
+// channelRequest points a channel (stable, beta or preview) at a version.
 type channelRequest struct {
-	Version string         `json:"version"`
-	Label   launcher.Names `json:"label"`
-	AnyOf   []string       `json:"any_of"`
+	Version string `json:"version"`
 }
 
 func (h *launcherHandler) pointChannel(w http.ResponseWriter, r *http.Request) {

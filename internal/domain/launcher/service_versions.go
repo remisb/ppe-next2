@@ -16,8 +16,10 @@ import (
 const (
 	EventVersionPublished = "app.version_published"
 	EventChannelMoved     = "app.channel_moved"
-	EventChannelChanged   = "app.channel_changed"
-	EventVersionsPruned   = "app.versions_pruned"
+	// EventChannelChanged was a variant's label or audience changed: no longer
+	// recorded (variants were removed), kept so older events still read.
+	EventChannelChanged = "app.channel_changed"
+	EventVersionsPruned = "app.versions_pruned"
 )
 
 // KeepVersions is how many of an app's newest versions Prune keeps besides
@@ -59,29 +61,8 @@ func (s *Service) CheckPublish(ctx context.Context, p PublishParams) (App, error
 	if err != nil {
 		return App{}, err
 	}
-	if err := publishable(a); err != nil {
-		return App{}, err
-	}
-	// Before anything is written or recorded: a publish that would fail on its
-	// channel, or whose screens a variant's address would take, leaves no
-	// files and no version behind.
-	channels, err := s.appChannels(ctx, a.ID)
-	if err != nil {
-		return App{}, err
-	}
-	if name := strings.TrimSpace(p.Channel); name != "" && !slices.Contains(fixedChannels, name) &&
-		!slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name }) {
-		return App{}, errUnknownVariant
-	}
-	for _, c := range channels {
-		if slices.Contains(p.Manifest.Screens, c.Name) {
-			return App{}, fieldError("screens", "names "+c.Name+", the address of the variant "+c.Name+": rename one of them")
-		}
-	}
-	return a, nil
+	return a, publishable(a)
 }
-
-var errUnknownVariant = fieldError("channel", "is not one of the app's channels: add the variant on Manage apps first")
 
 // Publish records a published build (app.version_published), unless that
 // version is recorded already, and points p.Channel at it; an app with no
@@ -101,13 +82,10 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		profile, _ := p.Manifest.ProfileOf()
 		v = Version{
 			ID: s.newID(), AppID: a.ID, Version: p.Version, Profile: profile, Capabilities: slices.Clone(p.Manifest.Capabilities),
-			Screens: slices.Clone(p.Manifest.Screens), Commit: p.Commit, PublishedAt: s.now(), PublishedByUserID: actor,
+			Commit: p.Commit, PublishedAt: s.now(), PublishedByUserID: actor,
 		}
 		if v.Capabilities == nil {
 			v.Capabilities = []string{}
-		}
-		if v.Screens == nil {
-			v.Screens = []string{}
 		}
 		ev, err := audit.New(s.newID(), actor, EventVersionPublished, auditEntity, a.ID, v.PublishedAt, nil,
 			published{v.Version, v.Profile, v.Capabilities, v.Commit})
@@ -128,13 +106,10 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		targets = append(targets, ChannelStable)
 	}
 	if p.Channel != "" && !slices.Contains(targets, p.Channel) {
-		if !slices.Contains(fixedChannels, p.Channel) && !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == p.Channel }) {
-			return Version{}, errUnknownVariant
-		}
 		targets = append(targets, p.Channel)
 	}
 	for _, name := range targets {
-		if _, err := s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, actor, nil)); err != nil {
+		if _, err := s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, actor)); err != nil {
 			return Version{}, err
 		}
 	}
@@ -234,51 +209,26 @@ func (s *Service) Prune(ctx context.Context) ([]AppVersion, error) {
 	return out, nil
 }
 
-// pointAt points a channel at v (app.channel_moved when it moves), keeping
-// its label and audience, or setting them when p is given.
-func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID, p *ChannelParams) ChannelMutation {
+// pointAt points a channel at v (app.channel_moved when it moves).
+func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID) ChannelMutation {
 	return func(cur *Channel) (Channel, []audit.Event, error) {
+		if cur != nil && cur.VersionID == v.ID {
+			return *cur, nil, nil
+		}
 		now := s.now()
-		next := Channel{ID: s.newID(), AppID: a.ID, Name: name, AnyOf: []role.Permission{}}
+		next := Channel{ID: s.newID(), AppID: a.ID, Name: name}
+		var before any
 		if cur != nil {
 			next = *cur
+			before = channelAt{name, cur.Version}
 		}
-		var evs []audit.Event
-		if p != nil {
-			label, anyOf := p.Label, role.Known(p.AnyOf)
-			// A new channel's label and audience are recorded too (before: none),
-			// so the trail says who a variant was given to from the start.
-			created := cur == nil && (label != Names{} || len(anyOf) > 0)
-			if created || cur != nil && (label != cur.Label || !slices.Equal(anyOf, cur.AnyOf)) {
-				var before any
-				if cur != nil {
-					before = shownAs(name, cur.Label, cur.AnyOf)
-				}
-				ev, err := audit.New(s.newID(), actor, EventChannelChanged, auditEntity, a.ID, now, before, shownAs(name, label, anyOf))
-				if err != nil {
-					return Channel{}, nil, err
-				}
-				evs = append(evs, ev)
-			}
-			next.Label, next.AnyOf = label, anyOf
-		}
-		if cur == nil || cur.VersionID != v.ID {
-			var before any
-			if cur != nil {
-				before = channelAt{name, cur.Version}
-			}
-			ev, err := audit.New(s.newID(), actor, EventChannelMoved, auditEntity, a.ID, now, before, channelAt{name, v.Version})
-			if err != nil {
-				return Channel{}, nil, err
-			}
-			evs = append(evs, ev)
-		}
-		if len(evs) == 0 {
-			return *cur, nil, nil
+		ev, err := audit.New(s.newID(), actor, EventChannelMoved, auditEntity, a.ID, now, before, channelAt{name, v.Version})
+		if err != nil {
+			return Channel{}, nil, err
 		}
 		next.VersionID, next.Version, next.PublishedAt = v.ID, v.Version, v.PublishedAt
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
-		return next, evs, nil
+		return next, []audit.Event{ev}, nil
 	}
 }
 
@@ -306,18 +256,7 @@ func (s *Service) PointChannel(ctx context.Context, slug, name string, p Channel
 	if !found {
 		return Channel{}, fieldError("version", "is not a published version of "+slug)
 	}
-	// /apps/<slug>/<name>/ opens a channel before a screen: a variant named
-	// like a screen of any version would take that screen's address.
-	if !slices.Contains(fixedChannels, name) {
-		versions, err := s.repo.Versions(ctx, a.ID)
-		if err != nil {
-			return Channel{}, err
-		}
-		if slices.ContainsFunc(versions, func(v Version) bool { return slices.Contains(v.Screens, name) }) {
-			return Channel{}, fieldError("name", "is a screen of "+slug+" (/"+name+"): a variant there would take its address")
-		}
-	}
-	return s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, &actor, &p))
+	return s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, &actor))
 }
 
 func (s *Service) appChannels(ctx context.Context, app uuid.UUID) ([]Channel, error) {
@@ -563,16 +502,4 @@ type pruned struct {
 type channelAt struct {
 	Channel string `json:"channel"`
 	Version string `json:"version"`
-}
-
-type channelShown struct {
-	Channel string   `json:"channel"`
-	LabelEN string   `json:"label_en"`
-	LabelLT string   `json:"label_lt"`
-	LabelRU string   `json:"label_ru"`
-	AnyOf   []string `json:"any_of"`
-}
-
-func shownAs(name string, label Names, anyOf []role.Permission) channelShown {
-	return channelShown{name, label.EN, label.LT, label.RU, role.Strings(anyOf)}
 }

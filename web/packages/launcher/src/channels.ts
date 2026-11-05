@@ -1,5 +1,4 @@
 import type { AppChannel, LauncherApp, LauncherList } from '@ppe/api-client'
-import { currentLang } from '@ppe/i18n'
 import { stripBase } from '@ppe/routing'
 
 import { launcherText } from './text.ts'
@@ -11,10 +10,8 @@ import { launcherText } from './text.ts'
  * the ones each user sees and the one they chose.
  */
 
-/** The fixed channels; any other name is a variant. */
+/** An app's channels: Stable for whoever sees its tile, Beta and Preview for testers. */
 export const FIXED_CHANNELS = ['stable', 'beta', 'preview'] as const
-
-export const isVariant = (name: string) => !(FIXED_CHANNELS as readonly string[]).includes(name)
 
 /** The channels of a published app the user sees, Stable first; none for an app on an address of its own. */
 export const channelsOf = (list: LauncherList | null, slug: string): AppChannel[] => list?.channels?.[slug] ?? []
@@ -34,13 +31,11 @@ export function openHref(app: LauncherApp, list: LauncherList | null): string {
   return channelHref(app, chosenChannel(list, app.slug))
 }
 
-/** A channel's name in the language in use: Stable, Beta, Preview, a variant's label, or a version's name. */
-export function channelName(name: string, channels: readonly AppChannel[] = []): string {
+/** A channel's name in the language in use: Stable, Beta, Preview, or a version's name (@<version>). */
+export function channelName(name: string): string {
   const t = launcherText()
   if (name === 'stable' || name === 'beta' || name === 'preview') return t.channels[name]
-  if (name.startsWith('@')) return name.slice(1)
-  const c = channels.find((x) => x.name === name)
-  return (c && (c.label[currentLang()] || c.label.en)) || name
+  return name.startsWith('@') ? name.slice(1) : name
 }
 
 /**

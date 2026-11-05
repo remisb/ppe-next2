@@ -6,12 +6,12 @@ import { channelHref, channelName, channelPath, chosenHref, mayOpenChannel, mayS
 import { channel, tile } from './testing.ts'
 
 const scan = tile('sim-scan', { href: '/apps/sim-scan/' })
-const photos = channel('photos-first', '2026.11.03-aaa', { label: { en: 'Photos first', lt: 'Pirmiausia nuotraukos', ru: 'Сначала фото' } })
+const preview = channel('preview', '2026.11.03-aaa')
 const list = (more: Partial<LauncherList> = {}): LauncherList => ({
   apps: [scan, tile('admin', { href: '/admin/' })],
   pins: [],
   preview: false,
-  channels: { 'sim-scan': [channel('stable', '2026.11.04-bbb'), photos] },
+  channels: { 'sim-scan': [channel('stable', '2026.11.04-bbb'), preview] },
   choices: {},
   ...more,
 })
@@ -26,23 +26,22 @@ describe('channels', () => {
 
   it('opens a published app on the channel the user chose, and anything else at its address', () => {
     expect(openHref(scan, list())).toBe('/apps/sim-scan/')
-    expect(openHref(scan, list({ choices: { 'sim-scan': 'photos-first' } }))).toBe('/apps/sim-scan/photos-first/')
+    expect(openHref(scan, list({ choices: { 'sim-scan': 'preview' } }))).toBe('/apps/sim-scan/preview/')
     expect(openHref(tile('admin', { href: '/admin/' }), list({ choices: { admin: 'beta' } }))).toBe('/admin/')
   })
 
-  it('names the fixed channels in the language in use, a variant by its label and a version by itself', () => {
+  it('names the channels in the language in use, and a version by itself', () => {
     expect(channelName('beta')).toBe('Beta')
-    expect(channelName('photos-first', [photos])).toBe('Photos first')
+    expect(channelName('preview')).toBe('Preview')
     expect(channelName('@2026.11.03-aaa')).toBe('2026.11.03-aaa')
     applyLanguage('lt')
     expect(channelName('stable')).toBe('Stabili')
-    expect(channelName('photos-first', [photos])).toBe('Pirmiausia nuotraukos')
   })
 
   it('lets a user stay on Stable and the channels they see; a version’s address is for testers and app managers', () => {
     expect(mayOpenChannel(list(), 'sim-scan', null, false)).toBe(true)
     expect(mayOpenChannel(list(), 'sim-scan', 'stable', false)).toBe(true)
-    expect(mayOpenChannel(list(), 'sim-scan', 'photos-first', false)).toBe(true)
+    expect(mayOpenChannel(list(), 'sim-scan', 'preview', false)).toBe(true)
     expect(mayOpenChannel(list(), 'sim-scan', 'beta', false)).toBe(false)
     expect(mayOpenChannel(list(), 'sim-scan', '@2026.11.03-aaa', false)).toBe(false)
     expect(mayOpenChannel(list({ preview: true }), 'sim-scan', '@2026.11.03-aaa', false)).toBe(true)
@@ -55,16 +54,16 @@ describe('channels', () => {
     expect(mayStay(null, true, 'sim-scan', '@2026.11.03-aaa', true)).toBe(false)
     expect(mayStay(null, true, 'sim-scan', 'stable', false)).toBe(true)
     expect(mayStay(null, true, 'sim-scan', null, false)).toBe(true)
-    expect(mayStay(list(), false, 'sim-scan', 'photos-first', false)).toBe(true)
+    expect(mayStay(list(), false, 'sim-scan', 'preview', false)).toBe(true)
     expect(mayStay(list(), false, 'sim-scan', 'beta', false)).toBe(false)
   })
 
   it('asks for Stable on purpose at /stable/, which no choice redirects', () => {
     expect(stablePath('sim-scan', '/find', '?q=1')).toBe('/apps/sim-scan/stable/find?q=1')
     expect(stablePath('sim-scan', '/')).toBe('/apps/sim-scan/stable/')
-    const chose = list({ choices: { 'sim-scan': 'photos-first' } })
+    const chose = list({ choices: { 'sim-scan': 'preview' } })
     expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan/stable', '/apps/sim-scan/stable/find')).toBeNull()
-    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/find')).toBe('/apps/sim-scan/photos-first/find')
+    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/find')).toBe('/apps/sim-scan/preview/find')
   })
 
   it('opens the screen asked for on another channel, Stable at the app’s own address', () => {
@@ -73,12 +72,12 @@ describe('channels', () => {
   })
 
   it('takes a user who chose another channel there from the Stable address, and no one else', () => {
-    const chose = list({ choices: { 'sim-scan': 'photos-first' } })
-    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/find', '?x=1')).toBe('/apps/sim-scan/photos-first/find?x=1')
-    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/')).toBe('/apps/sim-scan/photos-first/')
+    const chose = list({ choices: { 'sim-scan': 'preview' } })
+    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/find', '?x=1')).toBe('/apps/sim-scan/preview/find?x=1')
+    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/')).toBe('/apps/sim-scan/preview/')
     // /stable/ asks for Stable on purpose; a channel page stays; no choice, or one no longer seen, stays.
     expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan/stable', '/apps/sim-scan/stable/')).toBeNull()
-    expect(chosenHref(chose, 'sim-scan', 'photos-first', '/apps/sim-scan/photos-first', '/apps/sim-scan/photos-first/')).toBeNull()
+    expect(chosenHref(chose, 'sim-scan', 'preview', '/apps/sim-scan/preview', '/apps/sim-scan/preview/')).toBeNull()
     expect(chosenHref(list(), 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/')).toBeNull()
     expect(chosenHref(list({ choices: { 'sim-scan': 'beta' } }), 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/')).toBeNull()
     expect(chosenHref(null, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/')).toBeNull()

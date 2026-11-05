@@ -39,8 +39,8 @@ func TestProfileOf(t *testing.T) {
 }
 
 // A manifest names its profile; an older build's capabilities still say it,
-// and both together must agree. Its screens are path segments, never a fixed
-// channel's name, each once.
+// and both together must agree. Anything else in it (such as the screens
+// builds listed while there were variants) is ignored.
 func TestManifest(t *testing.T) {
 	for _, c := range []struct {
 		m    Manifest
@@ -60,43 +60,6 @@ func TestManifest(t *testing.T) {
 		if _, err := m.ProfileOf(); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%+v = %v", m, err)
 		}
-	}
-	for _, screens := range [][]string{{"Find"}, {"beta"}, {"find", "find"}, {"@x"}} {
-		p := scanSIMs("2026.11.05-aaa", "")
-		p.Manifest.Screens = screens
-		if err := p.Validate(); !errors.Is(err, ErrInvalid) {
-			t.Errorf("screens %v = %v", screens, err)
-		}
-	}
-}
-
-// A variant is never named like a screen: /apps/<slug>/<name>/ opens a
-// channel before a screen, so it would take the screen's address.
-func TestVariantsAndScreens(t *testing.T) {
-	repo := newMem()
-	svc := NewService(repo)
-	ctx, admin := context.Background(), uuid.New()
-	p := scanSIMs("2026.11.04-aaa", ChannelPreview)
-	p.Manifest = Manifest{Slug: "sim-scan", Profile: ProfileDevice, Screens: []string{"find"}}
-	v, err := svc.Publish(ctx, p, nil)
-	if err != nil || !slices.Equal(v.Screens, []string{"find"}) || v.Profile != ProfileDevice {
-		t.Fatalf("Publish = %+v, %v", v, err)
-	}
-	label := Names{"Find", "Rasti", "Найти"}
-	if _, err := svc.PointChannel(ctx, "sim-scan", "find", ChannelParams{Version: v.Version, Label: label}, admin); !errors.Is(err, ErrInvalid) {
-		t.Errorf("a variant named like a screen: %v", err)
-	}
-	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", ChannelParams{Version: v.Version, Label: label}, admin); err != nil {
-		t.Fatal(err)
-	}
-	// A build whose screens a variant's address would take is refused, and not recorded.
-	next := scanSIMs("2026.11.05-bbb", "")
-	next.Manifest = Manifest{Slug: "sim-scan", Profile: ProfileDevice, Screens: []string{"find", "photos-first"}}
-	if _, err := svc.Publish(ctx, next, nil); !errors.Is(err, ErrInvalid) {
-		t.Errorf("a screen named like a variant: %v", err)
-	}
-	if _, found, _ := svc.Version(ctx, "sim-scan", "2026.11.05-bbb"); found {
-		t.Error("a build refused for its screens was recorded")
 	}
 }
 
@@ -126,7 +89,7 @@ func TestPublishAndChannels(t *testing.T) {
 		t.Errorf("after the second deploy: %v, %v", len(vs), names(chans))
 	}
 
-	// Refusals: another app's manifest, a bad version, a shortcut, a linked site, an unknown variant.
+	// Refusals: another app's manifest, a bad version, a shortcut, a linked site, a channel that is not Stable, Beta or Preview.
 	bad := scanSIMs("2026.11.05-ccc", "")
 	bad.Manifest.Slug = "admin"
 	if _, err := svc.Publish(ctx, bad, nil); !errors.Is(err, ErrInvalid) {
@@ -140,13 +103,13 @@ func TestPublishAndChannels(t *testing.T) {
 		t.Errorf("a linked site: %v", err)
 	}
 	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-ccc", "photos-first"), nil); !errors.Is(err, ErrInvalid) {
-		t.Errorf("an unknown variant: %v", err)
+		t.Errorf("a named channel (variants were removed): %v", err)
 	}
 	if _, found, err := svc.Version(ctx, "sim-scan", "2026.11.05-ccc"); found || err != nil {
-		t.Errorf("a publish refused for its variant recorded the version: %v, %v", found, err)
+		t.Errorf("a publish refused for its channel recorded the version: %v, %v", found, err)
 	}
 
-	// Manage apps: promote to Stable and Beta, add a variant, roll Stable back; one event per move.
+	// Manage apps: promote to Stable and Beta, roll Stable back; one event per move, none for no move.
 	n := len(repo.events)
 	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.05-bbb"}, admin); err != nil {
 		t.Fatal(err)
@@ -154,32 +117,20 @@ func TestPublishAndChannels(t *testing.T) {
 	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.05-bbb"}, admin); err != nil || len(repo.events) != n+1 {
 		t.Errorf("moving to where it is: %v, %d events", err, len(repo.events)-n)
 	}
-	variant := ChannelParams{Version: "2026.11.04-aaa", Label: Names{"Photos first", "Pirmiausia nuotraukos", "Сначала фото"}}
+	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelBeta, ChannelParams{Version: "2026.11.04-aaa"}, admin); err != nil {
+		t.Fatal(err)
+	}
+	if last := repo.events[len(repo.events)-1]; last.Event != EventChannelMoved || last.Before != nil || !strings.Contains(string(last.After), `"beta"`) {
+		t.Errorf("Beta's first move = %s %s → %s", last.Event, last.Before, last.After)
+	}
+	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.04-aaa"}, admin); err != nil || len(repo.events) != n+3 {
+		t.Errorf("rolling Stable back: %v, %d events", err, len(repo.events)-n)
+	}
 	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", ChannelParams{Version: "2026.11.04-aaa"}, admin); !errors.Is(err, ErrInvalid) {
-		t.Errorf("a variant without a label: %v", err)
-	}
-	before := len(repo.events)
-	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, admin); err != nil {
-		t.Fatal(err)
-	}
-	// A new variant's label (and audience) is recorded from the start, with nothing before, beside its move.
-	added := repo.events[before:]
-	if len(added) != 2 || added[0].Event != EventChannelChanged || added[0].Before != nil || !strings.Contains(string(added[0].After), `"Photos first"`) ||
-		added[1].Event != EventChannelMoved {
-		t.Errorf("a new variant's events = %+v", added)
-	}
-	variant.AnyOf = []string{"assets.manage"}
-	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, admin); err != nil {
-		t.Fatal(err)
-	}
-	if last := repo.events[len(repo.events)-1]; last.Event != EventChannelChanged {
-		t.Errorf("audience change event = %s", last.Event)
+		t.Errorf("a named channel (variants were removed): %v", err)
 	}
 	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.01.01-zzz"}, admin); !errors.Is(err, ErrInvalid) {
 		t.Errorf("an unpublished version: %v", err)
-	}
-	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.04-aaa", AnyOf: []string{"assets.manage"}}, admin); !errors.Is(err, ErrInvalid) {
-		t.Errorf("Stable with an audience: %v", err)
 	}
 }
 

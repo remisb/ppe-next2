@@ -57,7 +57,7 @@ export function ChannelStripe({ slug }: { slug: string }) {
   return (
     <div role="status" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-200 px-4 py-1 text-center text-xs text-amber-950 dark:bg-amber-900 dark:text-amber-50">
       <span>
-        {t.onChannel(channelName(appChannel, channels))} · {t.version} {appVersion}
+        {t.onChannel(channelName(appChannel))} · {t.version} {appVersion}
       </span>
       {channels.length > 2 && channels.some((c) => c.name === appChannel) ? (
         <select
@@ -68,7 +68,7 @@ export function ChannelStripe({ slug }: { slug: string }) {
         >
           {channels.map((c) => (
             <option key={c.name} value={c.name}>
-              {channelName(c.name, channels)}
+              {channelName(c.name)}
             </option>
           ))}
         </select>

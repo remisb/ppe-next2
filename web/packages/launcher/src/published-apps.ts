@@ -6,9 +6,8 @@
  * improvement 2). Node only: for vite.config.ts files, the e2e config and
  * tests, imported by path.
  *
- * The manifest's slug, profile (standard, or device for WebAssembly, workers
- * and the camera) and screens (the first-level path segments its router uses,
- * which no variant may be named like) go to the API with each build;
+ * The manifest's slug and profile (standard, or device for WebAssembly,
+ * workers and the camera) go to the API with each build;
  * devPort is its Vite server's in development (the API ignores it), and its
  * e2e server takes the next port, as Administration (5182, 5183) and App
  * Launcher (5186, 5187) do.
@@ -21,7 +20,6 @@ export interface PublishedApp {
   /** Its folder: web/apps/<slug>. */
   dir: string
   profile: string
-  screens: string[]
   devPort: number
   e2ePort: number
 }
@@ -41,7 +39,6 @@ export const fixedPorts = (): number[] => Object.values(fixedApps).flatMap((p) =
 interface Manifest {
   slug?: unknown
   profile?: unknown
-  screens?: unknown
   devPort?: unknown
 }
 
@@ -55,12 +52,10 @@ export function publishedApps(webDir: string): PublishedApp[] {
     const m = JSON.parse(readFileSync(file, 'utf8')) as Manifest
     if (m.slug !== slug) throw new Error(`${file}: its slug must be its folder's name, ${slug}`)
     if (typeof m.profile !== 'string' || m.profile === '') throw new Error(`${file}: profile must name its policy, standard or device`)
-    const screens = m.screens ?? []
-    if (!Array.isArray(screens) || !screens.every((s) => typeof s === 'string')) throw new Error(`${file}: screens must be a list, [] for none`)
     if (typeof m.devPort !== 'number' || !Number.isInteger(m.devPort) || m.devPort < 1024) {
       throw new Error(`${file}: devPort must be its dev server's port, such as 5184`)
     }
-    out.push({ slug, dir: join(apps, slug), profile: m.profile, screens: screens as string[], devPort: m.devPort, e2ePort: m.devPort + 1 })
+    out.push({ slug, dir: join(apps, slug), profile: m.profile, devPort: m.devPort, e2ePort: m.devPort + 1 })
   }
   const ports = [...fixedPorts(), ...out.flatMap((a) => [a.devPort, a.e2ePort])]
   if (new Set(ports).size !== ports.length) {

@@ -98,10 +98,10 @@ app, without DNS or address work for each.
 - **Published on the droplet, from git, by people.** No CI token: `make prod-publish APP= REF=
   [CHANNEL=]` builds the app at a git ref with that commit's web Dockerfile and pipes it to
   `api -publish-app`; `make prod-up` publishes the deployed commit of each published app to
-  Preview (and to Stable, for an app with none yet). Stable, Beta and variants move on Manage
+  Preview (and to Stable, for an app with none yet). Stable and Beta move on Manage
   apps. A version is `YYYY.MM.DD-<commit>`, never replaced.
-- **Who sees a channel:** Stable whoever sees the tile; Beta, Preview and variants testers,
-  or the permissions a channel names. A tester's choice is kept per user by the API and
+- **Who sees a channel:** Stable whoever sees the tile; Beta and Preview testers (until
+  2026-11-05 also named variants, with permissions of their own). A tester's choice is kept per user by the API and
   opens the tile on it; a published app moves anyone on a channel they do not see to Stable.
 - Not built: a manifest's oldest API (decision 6).
 - Since 2026-11-05 (the handbook's improvements 1, 3, 5 and 6): a per-app **Stable follows
@@ -115,9 +115,11 @@ app, without DNS or address work for each.
   list per user, a pinned production Caddy, audiences that hide rather than guard (the stripe
   fails closed), save errors shown, one slug rule, tests for untar and every profile, a page
   cached per version with an `ETag`, ports declared once, `E2E_APPS`; the manifest now names
-  its **profile** (capabilities stay readable for older builds) and its **screens**, which no
-  variant may be named like (migration 0046). No new channel feature is built until a second
-  published app needs one.
+  its **profile** (capabilities stay readable for older builds). No new channel feature is
+  built until a second published app needs one. Then the critique's P1: **named variants were
+  removed** (migration 0047), never used in production; with them went channels' own
+  audiences and the screens rule (0046). Per-user choices, Stable follows deploys and Trials
+  are reviewed by 2027-02-05.
 
 ## Consequences
 

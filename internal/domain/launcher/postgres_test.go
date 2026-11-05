@@ -114,7 +114,7 @@ func TestPostgresRegistry(t *testing.T) {
 	}
 
 	// Pins: replaced, in order; a user's go with them.
-	tester := func(p role.Permission) bool { return p == role.AppsPreview }
+	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.AssetsManage }
 	if _, err := svc.SetPins(ctx, actor, []string{"size-helper", "workwear"}, tester); err != nil {
 		t.Fatal(err)
 	}
@@ -180,35 +180,37 @@ func TestPostgresVersions(t *testing.T) {
 		t.Fatalf("Releases = %v, %v, %v", len(versions), names(channels), err)
 	}
 
-	variant := ChannelParams{Version: "2026.11.04-aaa", Label: Names{"Photos first", "Pirmiausia nuotraukos", "Сначала фото"}, AnyOf: []string{"assets.manage"}}
-	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, actor); err != nil {
+	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelBeta, ChannelParams{Version: "2026.11.04-aaa"}, actor); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := svc.PointChannel(ctx, "sim-scan", ChannelStable, ChannelParams{Version: "2026.11.05-bbb"}, actor); err != nil {
 		t.Fatal(err)
 	}
 	_, channels, _ = svc.Releases(ctx, "sim-scan")
-	if !slices.Equal(names(channels), []string{"stable=2026.11.05-bbb", "preview=2026.11.05-bbb", "photos-first=2026.11.04-aaa"}) {
+	if !slices.Equal(names(channels), []string{"stable=2026.11.05-bbb", "beta=2026.11.04-aaa", "preview=2026.11.05-bbb"}) {
 		t.Errorf("channels %v", names(channels))
 	}
 	var events int
-	// Two versions published (not the repeat); Stable and Preview first set, Preview moved, the variant
-	// added (its label and audience, and where it points), Stable promoted.
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event LIKE 'app.%' AND event <> 'app.registered'`).Scan(&events); err != nil || events != 8 {
+	// Two versions published (not the repeat); Stable and Preview first set, Preview moved, Beta set, Stable promoted.
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event LIKE 'app.%' AND event <> 'app.registered'`).Scan(&events); err != nil || events != 7 {
 		t.Errorf("app events = %d, %v", events, err)
+	}
+	// Migration 0047: only the three channels may be stored.
+	if _, err := pool.Exec(ctx, `UPDATE launcher_channels SET name = 'photos-first' WHERE name = 'beta'`); err == nil {
+		t.Error("a channel other than stable, beta or preview was stored")
 	}
 
 	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.AssetsManage }
-	if err := svc.ChooseChannel(ctx, actor, "sim-scan", "photos-first", tester); err != nil {
+	if err := svc.ChooseChannel(ctx, actor, "sim-scan", ChannelBeta, tester); err != nil {
 		t.Fatal(err)
 	}
 	apps, _, _ := svc.ForUser(ctx, actor, tester)
 	seen, chosen, err := svc.ChannelsFor(ctx, actor, apps, tester)
-	if err != nil || len(seen["sim-scan"]) != 3 || chosen["sim-scan"] != "photos-first" {
+	if err != nil || len(seen["sim-scan"]) != 3 || chosen["sim-scan"] != ChannelBeta {
 		t.Errorf("ChannelsFor = %v, %v, %v", names(seen["sim-scan"]), chosen, err)
 	}
-	r, err := svc.Resolve(ctx, "sim-scan", "photos-first")
-	if err != nil || r.Version.Version != "2026.11.04-aaa" || r.Mount != "/apps/sim-scan/photos-first/" {
+	r, err := svc.Resolve(ctx, "sim-scan", ChannelBeta)
+	if err != nil || r.Version.Version != "2026.11.04-aaa" || r.Mount != "/apps/sim-scan/beta/" {
 		t.Errorf("Resolve = %+v, %v", r, err)
 	}
 	// Scan SIMs' tile lives under /apps/ (migration 0043, defaults).

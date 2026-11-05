@@ -194,7 +194,7 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards")
 	fs.StringVar(&c.PublishApp, "publish-app", "", "publish this app's build (a tar of its dist/ on standard input) into API_APPS_DIR and exit")
 	fs.StringVar(&c.PublishVersion, "version", "", "with -publish-app: the version, YYYY.MM.DD-<commit>")
-	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta, preview or a variant)")
+	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta or preview)")
 	fs.StringVar(&c.PublishCommit, "from-commit", "", "with -publish-app: the commit it was built from")
 	fs.BoolVar(&c.PruneApps, "prune-apps", false, "remove published versions no channel points at, beyond each app's newest, and exit")
 	if err := fs.Parse(args); err != nil {
