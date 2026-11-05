@@ -1,5 +1,5 @@
 {
-  "$comment": "Test vectors for the MRZ parsers: @ppe/mrz (web/packages/mrz) reads them, and so will the Go API's (internal/personnel/document, docs-import plan phase 2), so the two cannot drift apart (NFR-7). Every document here is ICAO's specimen or made up; never put a real document's MRZ here. \"expect\" lists only the fields a case is about; null means the field is absent. problems, notes and corrections are compared as sets.",
+  "$comment": "Test vectors for the MRZ parsers: @ppe/mrz (web/packages/mrz) reads them, and so does the Go API's (internal/personnel/mrz, vectors_test.go), so the two cannot drift apart (NFR-7). Every document here is ICAO's specimen or made up; never put a real document's MRZ here. \"expect\" lists only the fields a case is about; null means the field is absent. problems, notes and corrections are compared as sets.",
   "today": "2026-11-05",
   "cases": [
     {

@@ -503,7 +503,7 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   their own), `@ppe/backups`, `@ppe/audit` (how recorded changes read: actions, changed
   fields, the Changes section), `@ppe/scan-kit` (reading with the camera or from photos: the
   camera, barcode and text readers in workers, pictures, the readers' files' Vite plugin) and
-  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import). A screen shows controls by `session.can(...)`, never by role.
+  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`). A screen shows controls by `session.can(...)`, never by role.
   A package with components of its own is named with `@source` in each app's `index.css`:
   Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
