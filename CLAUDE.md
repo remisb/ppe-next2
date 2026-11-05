@@ -442,7 +442,9 @@ the API connects as it); global setup then seeds a test admin via `api -seed-adm
 `pnpm exec playwright install chromium` once. Do not run it while `make test-db` runs.
 The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
 the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
-needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`). CI pins the Caddy version and its SHA-512 checksum in
+needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`).
+In it, global setup publishes each published app's fresh build as `2026.01.01-e2e` into a temp folder
+(`ppe-next2-e2e-published`), which `prepare-db.ts` empties first, as it empties the database. CI pins the Caddy version and its SHA-512 checksum in
 `ci.yml`, so a Caddy upgrade must update both, and `web/Dockerfile`'s `CADDY_VERSION`, the
 production image's (`TestWebImageRunsCIsCaddy` keeps them equal).
 The Vite web servers are started from `apps/<app>/node_modules/.bin/vite`, not `pnpm exec`:
