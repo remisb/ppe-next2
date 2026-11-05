@@ -27,3 +27,4 @@ How the system is divided and why.
 | [0004](adr/0004-company-assets.md) | Company Assets: individual items, one open assignment each; register-first UI | accepted |
 | [0005](adr/0005-sim-codes-and-scan-sims-trial.md) | SIM cards' PIN and PUK sealed by the app; Scan SIMs as a trial app with its own CSP | accepted |
 | [0006](adr/0006-app-launcher.md) | App Launcher: hosting tiers by trust, a registry of apps, versions and channels | accepted (phases 1–2 built) |
+| [0007](adr/0007-personnel-files-identity-documents.md) | Personnel files: identity documents read in the browser, sealed per person, kept employment + 3 years; AI usage and the OpenAI key | accepted (being built) |

@@ -15,8 +15,10 @@
   numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
   Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
   [section 0](#0-review-after-the-scan-sims-fixes-revision-2).
-  It becomes ADR 0007 (Personnel files: identity documents) and a spec
-  `docs/specs/personnel-service.md`, now that the [decisions](#11-decisions) are made.
+  Its decisions are now [ADR 0007](../architecture/adr/0007-personnel-files-identity-documents.md),
+  with the specs [personnel-service.md](../specs/personnel-service.md) and
+  [ai-usage-service.md](../specs/ai-usage-service.md), which are binding where they differ from
+  this plan; the [decisions](#11-decisions) are all made.
 - **Builds on:** [Scan SIMs review](sim-scan-review.md), [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.md)
   and the [context map](../architecture/context-map.md) (People, Personnel files),
   [ADR 0005](../architecture/adr/0005-sim-codes-and-scan-sims-trial.md) (sealed values, the device
@@ -792,7 +794,8 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 
 ## 10. Words to add to the glossary
 
-`docs/ubiquitous-language.md` needs these before the UI uses them (EN / LT / RU):
+*Added 2026-11-05 to `docs/ubiquitous-language.md` §14 "Personnel files", with their Lithuanian
+and Russian labels.* `docs/ubiquitous-language.md` needs these before the UI uses them (EN / LT / RU):
 **Identity Document** (Asmens dokumentas / Документ личности), **Document Copy** (Dokumento kopija /
 Копия документа: the photo of a document's page or side as kept, not an employee photo), **MRZ** (machine-readable zone),
 **Portrait**, **AI-coloured photo**, **Import Document**, **Show Document**,

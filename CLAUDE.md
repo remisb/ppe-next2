@@ -333,7 +333,9 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary;
   ADR 0003 keeps security events apart from the audit trail and sets their retention;
   ADR 0004 adds Company Assets (SIM cards, equipment and furniture as individual assets);
-  ADR 0005 seals SIM cards' PIN and PUK in the app and makes Scan SIMs a trial app with its own CSP.
+  ADR 0005 seals SIM cards' PIN and PUK in the app and makes Scan SIMs a trial app with its own CSP;
+  ADR 0007 makes Personnel files (identity documents read by docs-import, sealed per person, kept
+  employment + 3 years) and AI usage (the OpenAI key in Settings, every AI call's tokens and cost).
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

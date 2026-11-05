@@ -6,7 +6,8 @@ as separate services, is [ADR 0001](adr/0001-modular-monolith-with-bounded-conte
 
 Status: **proposed**. Workwear and the platform modules exist today (as flat
 `internal/domain/<name>` packages); Company Assets is specified
-([ADR 0004](adr/0004-company-assets.md)); People, Competence, Personnel files, Projects & crew,
+([ADR 0004](adr/0004-company-assets.md)); Personnel files is decided and being built
+([ADR 0007](adr/0007-personnel-files-identity-documents.md)); People, Competence, Projects & crew,
 Timesheets and Reporting are planned. Each new context gets its product contract and
 `docs/specs/<name>-service.md` before code, and its terms in
 [ubiquitous-language.md](../ubiquitous-language.md) before they are used.
@@ -21,6 +22,7 @@ flowchart BT
         files[Files]
         mail[Mail templates]
         events[Events & jobs]
+        ai[AI usage]
     end
 
     people["People<br/>(shared kernel)"]
@@ -38,6 +40,7 @@ flowchart BT
     assets --> mail
     competence --> people
     personnel --> people
+    personnel --> ai
     projects --> people
     projects --> workwear
     projects --> competence
@@ -56,7 +59,9 @@ flowchart BT
 An arrow points from a context to one it depends on (reads from). Every context also
 depends on the platform. Dotted arrows are Reporting's read-only access. **Nothing depends
 on Personnel files**: no other context reads it, so it can be locked down, and later
-extracted, on its own.
+extracted, on its own. (One screen reads it: the staff app's employee page shows the documents
+a scan added to the employee record, through Personnel files' own API and permissions;
+ADR 0007.)
 
 ## Contexts
 
@@ -67,12 +72,13 @@ extracted, on its own.
 | Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` (the first part, a store and upload checks, is `internal/files`) | `files` | inherits the owner's | started: signed copies (ADR 0004) |
 | Mail templates | the templates of the emails the app prepares, one per use case, rendered to a recipient, subject and body; nothing is sent | `internal/domain/mailtemplate` (target `internal/platform/mail`) | `public` | none | exists ([spec](../specs/mail-template-service.md)) |
 | Events & jobs | transactional outbox, worker, reminders, purges | `internal/platform/outbox` | `outbox` | none | planned |
+| AI usage | every call to an AI model: operation, model, tokens, cost, who and when; the price table and monthly budget; the OpenAI key (sealed) | `internal/aiusage` | `public` | metadata only | decided ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/ai-usage-service.md)) |
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
 | Workwear | catalogue, item sets, orders and snapshot lines, confirmations, receipts, a person's size defaults (wearer profile) | `internal/workwear` | `workwear` | low | exists |
 | Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | built ([spec](../specs/asset-service.md)); go-live tools to come |
 | Competence | certificate and qualification types, certificates held, validity and expiry, the evidence file | `internal/competence` | `competence` | personal | planned |
-| Personnel files | identity documents and ID numbers, contracts, other personal documents, retention | `internal/personnel` | `personnel` | **special care** | planned |
+| Personnel files | identity documents and ID numbers, their copies and portraits, contracts and other personal documents later, the end of employment, retention and legal holds | `internal/personnel` | `personnel` | **special care** | decided, being built ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/personnel-service.md); `internal/personnel/mrz` built) |
 | Projects & crew | clients, sites, projects and their requirements (qualifications, item sets), teams, crew assignments, eligibility | `internal/projects` | `projects` | low | planned |
 | Timesheets | entries, periods, approval, locking, corrections, export | `internal/time` | `time` | personal | planned |
 | Reporting | dashboards and read models across contexts; writes nothing | `internal/reporting` | none (views) | as read | exists as `dashboard` |
@@ -88,7 +94,10 @@ extracted, on its own.
 | Company Assets | Files | customer–supplier | the signed copy of an assignment form |
 | Company Assets | Mail templates, Settings | customer–supplier | a SIM card's activation and blocking emails (`asset.Mailer`, adapted in `cmd/api/checkers.go`): the card's values in, the email out, with the provider's e-mail and the company's name from Settings |
 | Competence | Files | customer–supplier | the evidence file of a certificate |
-| Personnel files | Files | customer–supplier | document scans, encrypted with keys Personnel files can destroy |
+| Personnel files | Files | customer–supplier | Document Copies and portraits, sealed with per-person keys Personnel files can destroy |
+| Personnel files | AI usage | customer–supplier | the colour photo's call to OpenAI goes through its client, which records it |
+| Personnel files | People | customer–supplier | creates and updates employees from a document; writes birth date, nationality and sex when a scan adds the document to the employee record |
+| staff app's employee page | Personnel files | read through its API | the validity line ("valid until") for everyone; the documents added to the employee record for holders of `personnel.documents.read` |
 | Projects & crew | Competence | customer–supplier | "valid certificates of type T for person P over period D", for eligibility |
 | Projects & crew | Workwear | customer–supplier | "item set S given to person P and within its service period on date D", for readiness |
 | Timesheets | Projects & crew | customer–supplier | assignments a person may book hours on; project and client names snapshotted on approval |
@@ -112,7 +121,7 @@ Rules that follow from the map:
   does; the same rule holds for frontend modules.
 - **Personnel files is read only by itself.** Other contexts may learn *that* a document
   exists and is valid ("ID document valid until 2029-04") through an event, never its
-  number or file.
+  number or file. The employee page reads it through its API, never its tables (ADR 0007).
 
 ## One person, several models
 
@@ -125,7 +134,7 @@ needs:
 | Workwear | Wearer profile | height, clothing and shoe size defaults |
 | Company Assets | Holder | the assets assigned to them, open and past |
 | Competence | Certificate holder | certificates held and their validity |
-| Personnel files | Personnel file | documents, ID numbers, retention dates |
+| Personnel files | Personnel file (Subject) | identity documents, their copies, ID numbers, the end of employment, retention and holds |
 | Projects & crew | Crew member | assignments to projects and teams |
 | Timesheets | Timesheet owner | entries and periods |
 

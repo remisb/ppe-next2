@@ -1084,6 +1084,93 @@ The front door of the company's apps (ADR 0006; rules in
 
 ---
 
+## 14. Personnel files
+
+A person's identity documents, kept sealed (ADR 0007; rules in
+[personnel-service.md](specs/personnel-service.md) and [ai-usage-service.md](specs/ai-usage-service.md)).
+Decided, being built; the app that reads them is **Import Documents** (docs-import).
+
+### Personnel files
+- **Brief:** the context that owns a person's identity documents and how long they are kept.
+- **Detail:** special care: numbers, codes and images are sealed with the person's own key,
+  shown only with a permission and a recent sign-in, every showing recorded. Contracts and other
+  personal documents may join later. One person's part is their **personnel file** (code:
+  subject).
+- **Code:** `internal/personnel`, schema `personnel`. **UI:** Personnel files (permission group).
+
+### Identity Document
+- **Brief:** a passport, ID card or residence permit of a person, as read and saved.
+- **Detail:** its kind, issuing state, date of issue and expiry date are plain; its number,
+  personal code, MRZ, place of birth, issuing authority, and the names, birth date, nationality
+  and sex it gives are sealed. A later document of the same kind **supersedes** the earlier one,
+  which stays in the file until the file goes.
+- **Code:** `personnel.identity_documents`. **UI:** "ID document", the kind's own name (Passport,
+  ID card, Residence permit) where it is known.
+
+### MRZ (machine-readable zone)
+- **Brief:** the two or three lines of letters, digits and `<` at the bottom of a passport's
+  data page or on the back of an ID card.
+- **Detail:** printed in OCR-B, with check digits over the number and the dates (ICAO Doc 9303:
+  TD1 3 × 30, TD2 2 × 36, TD3 2 × 44). The app reads it in the browser, no AI; the API checks it
+  again. Names in it have no diacritics (`ZUKAUSKAITE`), so the printed names are typed.
+- **Code:** `@ppe/mrz`, `internal/personnel/mrz`. **UI:** MRZ, with "the document's code" in
+  explanations.
+
+### Document Copy
+- **Brief:** the photo of a document's page or side as kept: a passport's data page, an ID card's
+  front and back.
+- **Detail:** re-encoded on the phone before it is sent (metadata gone), sealed with the person's
+  key. Not an employee **photo**, and never sent to the AI.
+- **Code:** `personnel.document_copies`. **UI:** Document Copy, Document Copies.
+
+### Portrait
+- **Brief:** the person's picture on the document, cut out of the page.
+- **Detail:** kept sealed with the document's copies. A **photo** may be made from it, grey or
+  **AI-coloured**.
+- **UI:** Portrait.
+
+### AI-coloured photo
+- **Brief:** an employee photo made by colouring a document's grey portrait with AI.
+- **Detail:** only colour is taken from the model (the luminance lock), the person's consent is
+  recorded, it is labelled AI-coloured wherever it appears, and it is never used as the ID badge
+  photo. **Make Colour Photo (AI)** makes one; **AI colour photos** on Settings allows it.
+- **Code:** `employee_photos.ai_generated`. **UI:** AI-coloured.
+
+### Add to Employee Record
+- **Brief:** the switch on a scan's review step: whether this document's data also goes onto the
+  employee record.
+- **Detail:** off by default, chosen per document and saved with it. On: birth date, nationality
+  and sex are offered for the employee, and the employee page's **Identity** section shows the
+  document. Off: the document is filed only; the employee page says "valid until".
+- **Code:** `on_employee_record`. **UI:** Add to Employee Record; the section **Identity**.
+
+### Show Document
+- **Brief:** opening a document's sealed fields, or one of its copies.
+- **Detail:** needs the permission to read personnel documents and a recent sign-in; recorded
+  each time, hidden again after 60 s.
+- **UI:** Show Document.
+
+### Mark Employment Ended, Legal Hold, retention
+- **Brief:** when the person's employment ended, which starts the clock; and a stop on it.
+- **Detail:** documents are kept while the person is employed and 3 years after (the personal
+  file's period in Lithuanian law), then **shredded**: the person's key is deleted and nothing
+  of theirs opens again. A **Legal Hold** (a date and a reason) keeps them longer.
+- **UI:** Mark Employment Ended, Employment ended, Legal Hold.
+
+### Personnel Documents (role)
+- **Brief:** the built-in role that may scan, save and show identity documents.
+- **Detail:** holds `personnel.documents.manage` and `personnel.documents.read`; no other built-in
+  role has them, Administrator included. AI colouring is a third permission, given separately.
+
+### AI Usage, Monthly AI Budget, OpenAI API Key
+- **Brief:** the record of every AI call (operation, tokens, cost, who, when), the monthly limit
+  on its cost, and the company's key to OpenAI.
+- **Detail:** the cost is the app's estimate from the price table on Settings; OpenAI's invoice
+  is the bill. The key is entered once and never shown again, only its last four characters.
+- **Code:** `internal/aiusage`, `ai_usage`. **UI:** AI Usage (Administration), Settings → **AI**.
+
+---
+
 ## Translations
 
 The staff app speaks English, Lithuanian and Russian (each user's choice). The
@@ -1231,6 +1318,16 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Feedback / Works well / Confusing / Something broke / Send feedback | Atsiliepimas / Veikia gerai / Neaišku / Kažkas sugedo / Siųsti atsiliepimą | Отзыв / Работает хорошо / Непонятно / Что-то сломалось / Отправить отзыв |
 | Manage apps (Administration) / Register app / Move earlier / Move later / Who sees it | Programų tvarkymas / Registruoti programą / Perkelti aukščiau / Perkelti žemiau / Kas mato | Управление приложениями / Зарегистрировать приложение / Переместить выше / Переместить ниже / Кто видит |
 | Testers (role) / See apps in testing / Manage apps (permissions) | Bandytojai / Matyti bandomas programas / Tvarkyti programas | Тестировщики / Видеть приложения на испытании / Управлять приложениями |
+| Personnel files / Personnel Documents (role) | Asmens bylos / Asmens dokumentai | Личные дела / Личные документы |
+| Import Documents (app) | Dokumentų importas | Импорт документов |
+| ID document / Passport / ID card / Residence permit | Asmens dokumentas / Pasas / Asmens tapatybės kortelė / Leidimas gyventi | Документ личности / Паспорт / ID-карта / Вид на жительство |
+| Document Copy / Document Copies / Portrait | Dokumento kopija / Dokumento kopijos / Portretas | Копия документа / Копии документа / Портрет |
+| Issued on / Expires on / Place of Birth / Issuing Authority | Išduotas / Galioja iki / Gimimo vieta / Išdavusi institucija | Дата выдачи / Действует до / Место рождения / Орган, выдавший документ |
+| Add to Employee Record / Identity (section) | Įrašyti į darbuotojo duomenis / Asmens duomenys | Добавить в данные сотрудника / Личные данные |
+| Show Document | Rodyti dokumentą | Показать документ |
+| Mark Employment Ended / Employment ended / Legal Hold | Pažymėti darbo pabaigą / Darbas baigtas / Draudimas naikinti | Отметить окончание работы / Работа окончена / Запрет удаления |
+| Make Colour Photo (AI) / AI-coloured / AI colour photos | Sukurti spalvotą nuotrauką (DI) / Spalvinta DI / DI spalvotos nuotraukos | Сделать цветное фото (ИИ) / Раскрашено ИИ / Цветные фото с ИИ |
+| AI Usage / Monthly AI Budget / OpenAI API Key | DI naudojimas / Mėnesio DI biudžetas / OpenAI API raktas | Использование ИИ / Месячный бюджет ИИ / API-ключ OpenAI |
 
 ---
 
@@ -1274,3 +1371,6 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | logs, incidents (for the error list) | **Errors** on **System** | |
 | portal, home screen, dashboard (for the launcher) | **Apps** (App Launcher) | The Dashboard is the staff app's screen of figures. |
 | module, tool (for a tile) | **app** or **shortcut** | A shortcut opens a screen in an app; only apps count as "several apps". |
+| scan, ID copy, passport copy (for what is kept) | **Document Copy** | "Scan" is what the person does; a photo is an employee's picture. |
+| HR file, dossier, personal file (in the UI) | **Personnel files**; a person's **personnel file** | One name for the context and its part. |
+| delete, erase (a person's documents, by retention) | **shred** (code), the documents **go** (UI) | Removing one document is Remove; the whole file is shredded by the retention rule. |
