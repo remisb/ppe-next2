@@ -5,7 +5,8 @@
   and a switch on the scan's review step, **Add to Employee Record**, set per document (section 3,
   FR-19, new D11); **D2 decided**: keep every field the document
   gives, and keep the document's images as **Document Copies**, sealed per person; sections 3, 4,
-  5.5, 5.6, 9 and 11 follow it, and D3 keeps only the retention period open).
+  5.5, 5.6, 9 and 11 follow it; **D3 decided**: as long as Lithuanian law and the GDPR permit,
+  which is 3 years after employment ends, and the app records when it ends (section 3, FR-20)).
   Revision 3 (the same day): phase 1, the reading spike, is done and its
   numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
   Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
@@ -319,6 +320,33 @@ an action taken once: after a restore the job shreds again what the rule says is
 stronger form, keys kept outside the database and its backups, is possible later and not
 planned (D10).
 
+**Retention (D3): as long as Lithuanian law and the GDPR permit.**
+
+- The GDPR keeps personal data no longer than its purpose needs (Article 5(1)(e)), and where a
+  law sets a period, that period is the measure.
+- Lithuania's index of retention periods for internal administration documents (the Chief
+  Archivist's, in force since 2024-10-01, binding on private companies too) keeps an employee's
+  **personal file 3 years after employment ends** (10 years before it). Identity documents,
+  their Document Copies and the portrait are part of that file, so they are kept **while the
+  person is employed and 3 years after**, then shredded.
+- The longer terms do not extend it: the Accounting Act's 10 years cover accounting documents,
+  and the index's 50 years cover employment contracts in force, personnel orders and one payroll
+  calculation document. Payroll and accounting keep those, with the personal code in them; an
+  ID copy is none of them.
+- **A setting, not code**: `API_PERSONNEL_RETENTION_MONTHS` (36), since the law has changed
+  before (50, 10, now 3 years). The DPIA (PR-10) quotes the act's current text from e-tar.lt.
+- **When employment ended** is not recorded anywhere today (`employees` has no such date). Personnel
+  files records it: `subjects.employment_ended_on`, set by **Mark Employment Ended** on the
+  employee page (FR-20); deleting an employee sets it to that day if it is empty; clearing it
+  (the person is back) is allowed and audited. When an HR context exists (ADR 0001), it owns the
+  date and Personnel files reads it.
+- A **superseded** document is part of the same file and goes with it. A person without an end
+  date keeps their documents, as everyone employed does; so the end date matters, and FR-20 makes
+  it one step.
+- **Before it goes**: 30 days ahead, the Overview lists the people whose documents will be
+  shredded, for `personnel.documents.manage`. A **legal hold** (an inspection, a dispute) is a
+  date and a reason on the subject that the job respects, set and cleared with an audit event.
+
 ## 4. Requirements
 
 Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
@@ -344,6 +372,7 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-15 | S | The employee page in the staff app shows "ID card · LTU · valid until 2029-04-12" (never the number) and the AI label on AI photos |
 | FR-16 | C | VIZ OCR of the name lines (Lithuanian and Russian data), accepted only when it folds to the MRZ name (section 5.3). Also the date of issue, place of birth and issuing authority (D2 keeps them), pre-filling FR-7's fields for the user to confirm |
 | FR-19 | M | The review step has a switch, **Add to Employee Record** (D1), off by default, set per document and saved with it. On: FR-8 offers birth date, nationality and sex, and the employee page's **Identity** section shows the document's D11 fields, read through Personnel files' API, the number and personal code behind Show Document. Off: the document is filed only, and the page shows FR-15's line. `personnel.documents.manage` may change it later on the employee page, audited |
+| FR-20 | M | **Mark Employment Ended** on the employee page (`personnel.documents.manage`): the date retention runs from (D3), audited (`personnel.employment_ended`, and `personnel.employment_end_cleared` when undone). Deleting an employee sets it if empty. The Overview lists, 30 days ahead, whose documents will be shredded, and a legal hold (date and reason, audited) stops it |
 | FR-17 | C | Expiry reminders (Overview item 60 days before), once the outbox and jobs exist |
 | FR-18 | C | A native companion to read the chip (DG1, and DG2 for a real colour portrait) |
 
@@ -371,7 +400,7 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | PR-5 | M | Audit events: `personnel.document_recorded` (with how many copies), `personnel.document_superseded`, `personnel.document_updated` (Add to Employee Record changed), `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
 | PR-6 | M | **AI colouring needs a recorded legal basis.** The default is the person's consent, recorded with the photo (who, when, how), and the person may refuse. If they refuse, only the grey portrait or a fresh camera photo is used |
 | PR-7 | M | **Label AI images.** "AI-coloured" is shown on the photo in every app. The JPEG carries a metadata note, and the record has `ai_generated`. An AI photo is never used where a true likeness is required (ID badges: the `id_badge` use is refused for an AI photo). The EU AI Act's transparency duties for generated or manipulated images apply from 2 August 2026, so confirm the exact form with the DPO |
-| PR-8 | M | Retention: identity documents, their Document Copies and portraits are kept while the person is employed plus a period set by D3. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
+| PR-8 | M | Retention: identity documents, their Document Copies and portraits are kept while the person is employed and **3 years after** (D3: Lithuania's personal-file period, `API_PERSONNEL_RETENTION_MONTHS`), unless a legal hold says longer. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
 | PR-9 | S | If an external AI provider is chosen (D4): a processor agreement, EU processing, no training on our data, no retention by the provider. Only the cropped portrait is sent, never the document or a Document Copy |
 | PR-10 | S | A DPIA for the whole feature before go-live (identity data and photos of employees) |
 
@@ -551,7 +580,10 @@ CREATE TABLE personnel.document_copies (      -- the document's images (D2), and
 
 CREATE TABLE personnel.subjects (               -- one person, one personal code
   employee_id     uuid PRIMARY KEY REFERENCES employees(id),
-  personal_index  bytea UNIQUE                   -- HMAC of the personal code, when there is one
+  personal_index  bytea UNIQUE,                  -- HMAC of the personal code, when there is one
+  employment_ended_on date,                      -- D3: retention runs from it (FR-20)
+  hold_until      date,                          -- a legal hold the shredding job respects
+  hold_reason     text
 );
 
 ALTER TABLE employees ADD COLUMN birth_date date, ADD COLUMN nationality char(3), ADD COLUMN sex char(1);  -- D2: kept
@@ -576,6 +608,7 @@ with two concurrent saves, as `TestPostgresAddSIMsAtTheSameMoment` does for batc
 | `API_PERSONNEL_KEY` | master key that seals the per-person keys (64 hex). Required once the feature is on. Kept offline like `API_SIM_CODES_KEY` |
 | `API_PERSONNEL_KEY_ID`, `API_PERSONNEL_PREVIOUS_KEYS` | the master key's id and the keys it replaced, only to open, exactly as `API_SIM_CODES_KEY_ID` and `API_SIM_CODES_PREVIOUS_KEYS`; `api -reseal-personnel-keys` re-seals the per-person keys after a change |
 | `API_PERSONNEL_INDEX_KEY` | HMAC key for blind indexes (64 hex) |
+| `API_PERSONNEL_RETENTION_MONTHS` | how long after employment ends documents are kept (D3): 36, Lithuania's personal-file period; a setting because the law has changed before |
 | `API_COLORIZER_URL` | the sidecar's or provider adapter's address. Empty means colouring is off |
 | Settings → **AI colour photos** | an administrator's switch (D4), shown on Settings and recorded |
 
@@ -687,7 +720,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 **Identity Document** (Asmens dokumentas / Документ личности), **Document Copy** (Dokumento kopija /
 Копия документа: the photo of a document's page or side as kept, not an employee photo), **MRZ** (machine-readable zone),
 **Portrait**, **AI-coloured photo**, **Import Document**, **Show Document**,
-**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**.
+**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**, **Mark Employment Ended**, **Legal Hold**.
 
 ## 11. Open decisions
 
@@ -695,7 +728,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 | --- | --- | --- |
 | D1 | Identity data in a new **Personnel files** context (schema `personnel`, sealed), or new columns on `employees` | **Decided 2026-11-05: Personnel files**, as the context map plans; names go to `employees`. The review step's **Add to Employee Record**, set per scanned document, decides whether its birth date, nationality and sex go to `employees` too and its fields show on the employee page, read through Personnel files, never copied (section 3, FR-19) |
 | D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | **Decided 2026-11-05: keep as much as the document gives**: names, date of birth, nationality, sex, document number, personal code, the MRZ, date of issue, place of birth, issuing authority, the portrait, and the document's own images (**Document Copies**). Sealed as section 3 sets out; the DPIA records why (PR-10) |
-| D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | Retention of the document, its copies and portrait: employment + N months, set with the DPO. Until then the job reads N from a setting and shreds nothing |
+| D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | **Decided 2026-11-05: as long as Lithuanian law and the GDPR permit**: employment and 3 years after (the personal file's period since 2024-10-01), a setting; the end of employment recorded by FR-20; legal holds respected (section 3) |
 | D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | Self-hosted with the luminance lock, off by default. Consider a live camera photo as the main path |
 | D5 | Documents in v1 | TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
 | D6 | Can the app create **new** employees, or only update existing ones? | Both, under `personnel.documents.manage` (no employee permission exists to add to it) |
