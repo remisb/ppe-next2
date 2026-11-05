@@ -6,7 +6,10 @@
   FR-19, new D11); **D2 decided**: keep every field the document
   gives, and keep the document's images as **Document Copies**, sealed per person; sections 3, 4,
   5.5, 5.6, 9 and 11 follow it; **D3 decided**: as long as Lithuanian law and the GDPR permit,
-  which is 3 years after employment ends, and the app records when it ends (section 3, FR-20)).
+  which is 3 years after employment ends, and the app records when it ends (section 3, FR-20);
+  **D4 decided**: colouring by OpenAI's image model with the company's API key, entered in
+  Settings, and an **AI usage** ledger of every call's tokens, cost, time and user (sections 5.4
+  and 5.8, FR-21)).
   Revision 3 (the same day): phase 1, the reading spike, is done and its
   numbers are in; the verdict is **go**, see [Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate).
   Revision 2 (the same day, after the Scan SIMs fixes were built and deployed) is
@@ -366,13 +369,14 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-9 | M | The **check** call (server) reports: problems, a document already on file (same number), **another employee** with the same personal code or document number (blind index), and, for a new employee, possible duplicates by name and birth date |
 | FR-10 | M | **Save** is all or none, in one transaction: employee created or updated, identity document recorded (an earlier document of the same kind is marked superseded, its copies kept with it until its retention ends), its **Document Copies** and portrait stored, events. Nothing is written before Save |
 | FR-11 | M | **Portrait crop:** the portrait is found from its position relative to the MRZ (TD3: left of the data page above the MRZ; TD1: left of the front). The user can move and resize the crop box (touch and keyboard). Output is about 600 × 800 px JPEG |
-| FR-12 | S | **AI colour photo:** Make Colour Photo (AI) sends the cropped portrait to the API, which returns a colour version. Before and after are shown side by side. The user may Use it, Try Again or Discard. It is saved as an employee photo with `ai_generated`, the use `profile`, and the default if the person has none. It is never offered without the Settings switch (D4) and the person's consent being recorded (PR-6) |
+| FR-12 | S | **AI colour photo:** Make Colour Photo (AI) sends the cropped portrait to the API, which returns a colour version. Before and after are shown side by side. The user may Use it, Try Again or Discard. It is saved as an employee photo with `ai_generated`, the use `profile`, and the default if the person has none. It is never offered without the Settings switch and an OpenAI key (D4) and the person's consent being recorded (PR-6). Every call is recorded in AI usage (FR-21), a failed one too |
 | FR-13 | S | Save the plain (grey) portrait as a photo instead, without AI |
 | FR-14 | S | **Show Document** for someone with `personnel.documents.read`: the number, the personal code, the sealed fields and the Document Copies. Needs a recent sign-in, is audited, `no-store`, and hides again after 60 s or when the tab is hidden (the pattern from Show PIN and PUK) |
 | FR-15 | S | The employee page in the staff app shows "ID card · LTU · valid until 2029-04-12" (never the number) and the AI label on AI photos |
 | FR-16 | C | VIZ OCR of the name lines (Lithuanian and Russian data), accepted only when it folds to the MRZ name (section 5.3). Also the date of issue, place of birth and issuing authority (D2 keeps them), pre-filling FR-7's fields for the user to confirm |
 | FR-19 | M | The review step has a switch, **Add to Employee Record** (D1), off by default, set per document and saved with it. On: FR-8 offers birth date, nationality and sex, and the employee page's **Identity** section shows the document's D11 fields, read through Personnel files' API, the number and personal code behind Show Document. Off: the document is filed only, and the page shows FR-15's line. `personnel.documents.manage` may change it later on the employee page, audited |
 | FR-20 | M | **Mark Employment Ended** on the employee page (`personnel.documents.manage`): the date retention runs from (D3), audited (`personnel.employment_ended`, and `personnel.employment_end_cleared` when undone). Deleting an employee sets it if empty. The Overview lists, 30 days ahead, whose documents will be shredded, and a legal hold (date and reason, audited) stops it |
+| FR-21 | M | **AI usage:** every call to an AI model is recorded as one row: the business operation (a fixed list in code, first `portrait.colorize`), the model, input and output tokens (text and image apart, as OpenAI reports them), the cost computed from the price table in force (kept on the row), when, who, from which app and request, for which employee, how long it took, and whether it succeeded. No prompt, image or answer is kept. Administration's **AI Usage** screen (`ai_usage.read`) shows totals by month, operation, user and model, the calls themselves, and exports CSV. A **monthly budget** (Settings) refuses further AI calls once spent, and the Overview warns at 80 % |
 | FR-17 | C | Expiry reminders (Overview item 60 days before), once the outbox and jobs exist |
 | FR-18 | C | A native companion to read the chip (DG1, and DG2 for a real colour portrait) |
 
@@ -396,12 +400,12 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | PR-1 | M | Images, MRZ text and fields live **only in the screen's memory** until Save sends them, never in any browser storage, in a `PictureStore` that revokes blob URLs when a picture is let go, after Save and when the screen goes. The steps (Person → Capture → Review → Portrait → Save) are one screen's state, not routes, so moving between them never unmounts the work (as Scan SIMs keeps Scan mounted); leaving the page asks first (`beforeunload`) |
 | PR-2 | M | No read value ever goes into an `Error`, a log line, an audit event or System's error list. A Go test runs a scan through the service and asserts that the number and personal code appear in no event or log (as the SIM codes tests do) |
 | PR-3 | M | The document number, personal code, MRZ text, place of birth, issuing authority, the portrait and the Document Copies are sealed per person (section 3). Plain columns hold only kind, issuing state, dates of issue and expiry. A Document Copy is re-encoded in the browser before Save (at most 2400 px, JPEG): the camera's metadata, location included, never leaves the phone |
-| PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save, which may create or change the employee: there is no employee permission to require, as any signed-in user may add and edit employees today), `personnel.documents.read` (show the number; recent sign-in), and `personnel.portraits.colorize` (use AI colouring). Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
+| PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save, which may create or change the employee: there is no employee permission to require, as any signed-in user may add and edit employees today), `personnel.documents.read` (show the number; recent sign-in), `personnel.portraits.colorize` (use AI colouring) and `ai_usage.read` (the AI Usage screen; Administrator). The OpenAI key is set with `settings.manage` and a recent sign-in. Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
 | PR-5 | M | Audit events: `personnel.document_recorded` (with how many copies), `personnel.document_superseded`, `personnel.document_updated` (Add to Employee Record changed), `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
 | PR-6 | M | **AI colouring needs a recorded legal basis.** The default is the person's consent, recorded with the photo (who, when, how), and the person may refuse. If they refuse, only the grey portrait or a fresh camera photo is used |
 | PR-7 | M | **Label AI images.** "AI-coloured" is shown on the photo in every app. The JPEG carries a metadata note, and the record has `ai_generated`. An AI photo is never used where a true likeness is required (ID badges: the `id_badge` use is refused for an AI photo). The EU AI Act's transparency duties for generated or manipulated images apply from 2 August 2026, so confirm the exact form with the DPO |
 | PR-8 | M | Retention: identity documents, their Document Copies and portraits are kept while the person is employed and **3 years after** (D3: Lithuania's personal-file period, `API_PERSONNEL_RETENTION_MONTHS`), unless a legal hold says longer. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
-| PR-9 | S | If an external AI provider is chosen (D4): a processor agreement, EU processing, no training on our data, no retention by the provider. Only the cropped portrait is sent, never the document or a Document Copy |
+| PR-9 | M | **OpenAI as processor (D4):** OpenAI's Data Processing Addendum signed and the transfer outside the EU covered in the DPIA; API data is not used for training by default; OpenAI keeps API data up to 30 days for abuse monitoring unless the organisation has Zero Data Retention, and European data residency is for eligible projects only, its coverage of the image endpoints to be confirmed with OpenAI. Only the cropped grey portrait is sent, with a fixed prompt and no name or other data, never the document or a Document Copy |
 | PR-10 | S | A DPIA for the whole feature before go-live (identity data and photos of employees) |
 
 ## 5. Architecture
@@ -428,8 +432,8 @@ flowchart LR
     PM["internal/personnel/document<br/>mrz (Go) · keyring · blind index"]
     EP["employee · employeephoto (existing)"]
   end
-  Colorizer["colorizer sidecar<br/>(or a provider adapter)"]
-  DB[("Postgres<br/>employees · personnel.* · audit")]
+  Colorizer["OpenAI Images API<br/>(gpt-image-2, the company's key)"]
+  DB[("Postgres<br/>employees · personnel.* · audit · ai_usage")]
   FS[("files store<br/>photos · Document Copies and portraits (sealed)")]
   App --> Check & Save & Show & Col
   Check & Save & Show --> PM --> DB
@@ -437,6 +441,7 @@ flowchart LR
   Save --> EP --> DB
   EP --> FS
   Col --> Colorizer
+  Col --> DB
 ```
 
 ### 5.2 Reading pipeline (browser, no AI)
@@ -498,15 +503,18 @@ type Colorizer interface {
 }
 ```
 
-**Recommended:** a **self-hosted sidecar** (`colorizer` compose service on the internal network
-only) that runs an open colourisation model such as DDColor or DeOldify (check the licence of
-the exact weights) with ONNX Runtime on CPU. The portrait never leaves our server. Running time
-and memory on the droplet are measured in phase 4. If they are too high, the sidecar runs on a
-small separate host, or the provider adapter is used.
+**Decided (D4): OpenAI.** `cmd/api` implements `Colorizer` with OpenAI's image edit endpoint
+(`POST /v1/images/edits`), the company's API key from Settings (section 5.8) and the model from
+Settings, `gpt-image-2` by default (`gpt-image-1` was shut down on 2026-10-23, so the model is a
+setting, never a constant). The request is the grey portrait, a fixed prompt ("Colourise this
+black-and-white portrait naturally. Change nothing else: not the face, features, expression,
+hair, background or framing.") and the quality setting (low, medium, high: the main driver of
+cost). The answer's `usage` (input tokens split into text and image, output tokens) is recorded
+in AI usage (FR-21, section 5.8) whether or not the rest succeeds.
 
-**Alternative:** a hosted image API through the same interface (PR-9). General image-editing
-models can **change facial features**, which is unacceptable for a photo of a real person. So
-whatever produces the colour, the API applies a **luminance lock**:
+General image-editing models, OpenAI's included, can **change facial features**, which is
+unacceptable for a photo of a real person, however the prompt is worded. So the API applies a
+**luminance lock** to whatever comes back:
 
 > Convert the original grey portrait to the L channel of CIELAB, take only the a\*b\* (colour)
 > channels from the model's output (resized to match), and recombine them. The result's
@@ -517,7 +525,8 @@ whatever produces the colour, the API applies a **luminance lock**:
 Further rules: the colour is a guess (eye, hair and skin colour may be wrong), so the before
 and after view and "AI-coloured" labels are required (PR-7); there is a rate limit per user; the
 endpoint returns the image with `no-store` and does not store it (Save stores it through the
-existing photo route); and colouring is off until a Settings switch is turned on (D4).
+existing photo route); and colouring is off until a Settings switch is turned on and a key is
+saved (D4), and refused once the month's budget is spent (FR-21).
 
 A cheaper alternative to AI that also gives a true colour photo is to **take a photo of the
 person** with the same app's camera (FR-13's sibling). It may be the better default; AI
@@ -533,7 +542,10 @@ colouring is then for people who are not present.
 | `POST /api/v1/personnel/documents/{id}/show` | `personnel.documents.read` + `sensitive` | number, personal code, place of birth, authority and the copies' ids; audited first; `no-store` |
 | `POST /api/v1/personnel/documents/{id}/copies/{copy}/show` | `personnel.documents.read` + `sensitive` | the Document Copy's JPEG, opened with the person's key; audited first (`personnel.document_shown`, which side); `no-store` |
 | `DELETE /api/v1/personnel/documents/{id}` | `personnel.documents.manage` | removes it, recorded, sealed content destroyed |
-| `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | a JPEG (≤ 2 MB) → a colour JPEG; `no-store`; rate-limited; usage counted, not stored |
+| `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | a JPEG (≤ 2 MB) → a colour JPEG; `no-store`; rate-limited; an AI usage row for every call (FR-21); refused when colouring is off, no key is saved or the budget is spent |
+| `GET /api/v1/settings/ai` | `settings.manage` | model, quality, prices, budget, the switch, and the key's state ("set, ends in …, by whom, when"), never the key |
+| `PUT /api/v1/settings/ai` · `PUT`/`DELETE /api/v1/settings/ai/key` · `POST …/ai/key/test` | `settings.manage`; the key's routes also `sensitive` | change the AI settings; set, replace or remove the key (sealed, audited without it); test it with OpenAI's model list, which costs nothing |
+| `GET /api/v1/ai-usage` · `GET /api/v1/ai-usage/calls` · `GET …/calls.csv` | `ai_usage.read` | totals by month, operation, user and model; the calls, filtered by period, operation, user; CSV |
 | existing `POST /api/v1/employee-photos/{employee}` | any signed-in user (as today) | gains an `ai_generated` flag; `id_badge` refused for AI photos |
 
 Every new route goes into `routes_test.go`'s policy table and every new error into
@@ -609,10 +621,71 @@ with two concurrent saves, as `TestPostgresAddSIMsAtTheSameMoment` does for batc
 | `API_PERSONNEL_KEY_ID`, `API_PERSONNEL_PREVIOUS_KEYS` | the master key's id and the keys it replaced, only to open, exactly as `API_SIM_CODES_KEY_ID` and `API_SIM_CODES_PREVIOUS_KEYS`; `api -reseal-personnel-keys` re-seals the per-person keys after a change |
 | `API_PERSONNEL_INDEX_KEY` | HMAC key for blind indexes (64 hex) |
 | `API_PERSONNEL_RETENTION_MONTHS` | how long after employment ends documents are kept (D3): 36, Lithuania's personal-file period; a setting because the law has changed before |
-| `API_COLORIZER_URL` | the sidecar's or provider adapter's address. Empty means colouring is off |
-| Settings → **AI colour photos** | an administrator's switch (D4), shown on Settings and recorded |
+| `API_SECRETS_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | a `sealbox.Keyring` for secrets entered in Settings, first the OpenAI key (64 hex). Without it Settings cannot save a key and says so. Kept offline like `API_SIM_CODES_KEY`: a restore needs it |
+| Settings → **AI** | the OpenAI key (write-only), the model (`gpt-image-2`), the quality, the price table, the monthly budget (USD) and the **AI colour photos** switch (D4); every change audited, the key's without its value (section 5.8) |
 
 Each is read in `loadConfig` and checked in `validate` (`TestLoadConfigDefaults`).
+
+### 5.8 OpenAI key and AI usage (D4)
+
+**The key in Settings.** An administrator pastes the OpenAI API key on Administration's
+Settings, in an **AI** section (`settings.manage`, Confirm your password first). The API seals
+it with `API_SECRETS_KEY` (sealbox, bound to `"ppe.settings.openai_key.v1"`) into the settings
+row and never returns it: the screen shows "Set, ends in …4f2a, by Ona, 5 Nov" with Replace,
+Remove and Test. The value is never in an audit event (`settings.ai_key_set`, `…_removed` name
+the last four characters), a log line, an error or the error list. A **project key** limited to
+the image endpoints, with a spending limit set at OpenAI too, is the recommended kind, and the
+Settings section says so beside the field.
+
+**The ledger.** AI usage is its own small area, `internal/aiusage`, used by any context that
+calls an AI model, so the next AI feature records its use the same way. Every call goes through
+one client in `cmd/api` that writes the row, so no caller can forget it:
+
+```sql
+CREATE TABLE ai_usage (                          -- append-only: in grants.sql's REVOKE line
+  id                  uuid PRIMARY KEY,
+  at                  timestamptz NOT NULL,
+  operation           text NOT NULL,             -- the fixed list: 'portrait.colorize', …
+  provider            text NOT NULL,             -- 'openai'
+  model               text NOT NULL,             -- 'gpt-image-2'
+  outcome             text NOT NULL CHECK (outcome IN ('ok','failed','refused')),
+  input_text_tokens   integer NOT NULL DEFAULT 0,
+  input_image_tokens  integer NOT NULL DEFAULT 0,
+  output_text_tokens  integer NOT NULL DEFAULT 0,
+  output_image_tokens integer NOT NULL DEFAULT 0,
+  cost_micro_usd      bigint NOT NULL,           -- computed from the prices below
+  prices              jsonb NOT NULL,            -- USD per 1M tokens of each kind, as in force then
+  duration_ms         integer NOT NULL,
+  user_id             uuid NOT NULL REFERENCES users(id),
+  source              text NOT NULL,             -- the app (X-PPE-App), as the audit trail records it
+  request_id          text NOT NULL,             -- the request's ID, as on its log lines
+  provider_request_id text,                      -- OpenAI's x-request-id, to match their bill
+  employee_id         uuid REFERENCES employees(id)   -- whose portrait, when there is one
+);
+```
+
+**Cost.** OpenAI's answer reports tokens, not money, so the cost is tokens times the price
+table in Settings (per model: text input, image input, image output, text output, USD per
+million tokens). The defaults are OpenAI's list prices when the code is written (for
+`gpt-image-2`, as published at the time of writing: text input $5, image input $8, image output
+$30), and an administrator updates them when OpenAI changes them. Each row keeps the prices it
+was costed with, so a later change never rewrites history. A failed call records whatever
+tokens OpenAI reported (it may still bill them) and a refused one (budget spent, switch off)
+records zero. Matching OpenAI's own invoice through its Costs API is possible later (C).
+
+**Budget.** A monthly budget in USD (Settings, empty for none). Before a call, the month's cost
+so far is summed; at or over the budget the call is refused (`ErrAIBudgetSpent`, 429 with a
+clear message) and recorded as refused. The Overview tells `settings.manage` at 80 % and at
+100 %.
+
+**AI Usage screen** (Administration, `ai_usage.read`, built-in Administrator): this month's and
+past months' cost and calls, by operation, user and model, as the Usage screen draws its charts
+(`@ppe/ui/components/charts`); the calls themselves with when, who, operation, model, tokens,
+cost and outcome, filtered by period, operation and user; CSV export. The rows hold no prompt,
+image or answer, so the screen shows no personal data beyond who used it and for which
+employee. When the person's documents are shredded (D3), the job also clears their rows'
+`employee_id` through an owner's `SECURITY DEFINER` function (the table is otherwise append-only,
+as `purge_audit_events` works), so the row and its cost stay and the link goes.
 
 ## 6. Reuse: what comes from Scan SIMs
 
@@ -661,7 +734,7 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 | **2. Personnel backend** | ADR 0007; `internal/personnel/document` (five-file layout), Go MRZ parser on the shared vectors, keyring and subject keys, blind index, migrations, permissions, routes, audit events, `api-client` | Go service and Postgres tests pass, including PR-2's no-leak test; `routes_test.go` policy |
 | **3. docs-import app** | `make new-app`, then the device profile by hand (R7); Person → Capture → Review → Save as one screen's steps, without the portrait | e2e (Vite and Caddy): synthetic passport and ID card read from photos, checked, saved; the workers run; the employee shows "valid until" |
 | **4. Portrait** | crop from MRZ geometry, adjust, save the grey portrait as a photo | e2e with a specimen portrait; crop usable with keyboard and touch |
-| **5. AI colour** | colorizer sidecar or adapter, luminance lock, consent, labels, Settings switch, `ai_generated` | Go test of the luminance lock; labels shown in both apps; DPIA done (PR-10) |
+| **5. AI colour** | the OpenAI adapter, the key in Settings (`API_SECRETS_KEY`), `internal/aiusage` with its ledger, prices and budget, the AI Usage screen, luminance lock, consent, labels, the switch, `ai_generated` | Go tests of the luminance lock, the cost computation, the budget refusal and the key never leaving the API (a fake OpenAI server); labels shown in both apps; OpenAI's DPA signed and the DPIA done (PR-9, PR-10) |
 | **6. Trial** | a deploy publishes to Preview only (Stable follows deploys is off, R11); Beta for testers, then **Make Stable** in Manage apps. Watch the Trials page (reads, check failures, errors) | Decide to merge into the staff app or keep it as its own app |
 | later | VIZ names (FR-16), expiry reminders (FR-17), native chip reader (FR-18) | |
 
@@ -705,9 +778,11 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 | OCR-B accuracy on phone photos (glare from laminate, holograms, guilloche) | slow or failed reads | adaptive threshold, the two-frame rule, correction by check digits, guidance text ("tilt to remove glare"), and typing the MRZ by hand as the last resort |
 | Keeping ID copies breaks data-protection rules (D2 keeps every field and the Document Copies) | legal: a finding by the inspectorate, an employee's complaint | the DPIA states the purpose and legal basis before go-live and the employee is told (PR-10); copies sealed per person, without metadata, never sent to the AI, shown only with a recent sign-in and audited; retention and crypto-shredding (D3, PR-8). If the DPO finds no basis, the copies are switched off (a setting) and the fields stay |
 | AI changes the person's likeness | misleading photo | luminance lock, before and after view, labels, refusing the photo for ID badges, a live photo as the alternative |
-| An external AI provider sees employees' faces | GDPR transfer | a self-hosted sidecar by default; otherwise a processor agreement, EU only, no retention |
+| OpenAI sees employees' faces (D4) | GDPR: a processor outside the EU | only the grey portrait with a fixed prompt, no name; OpenAI's DPA; Zero Data Retention or EU residency if the account qualifies; consent (PR-6); the DPIA (PR-9, PR-10) |
+| The OpenAI key leaks | someone else's bills on the company's account | sealed in the database (`API_SECRETS_KEY`), write-only on screen, never in events, logs or errors; a project key limited to images with a spending limit at OpenAI |
+| AI spending runs away | an unexpected bill | the monthly budget refuses calls, the Overview warns at 80 %, a per-user rate limit, every call on the AI Usage screen |
+| OpenAI retires the model or changes prices | colouring stops, or costs are wrong | the model and prices are settings; a failed call is recorded with OpenAI's error code and shown on AI Usage |
 | Two parsers drift apart | the client accepts what the server refuses | the shared test vectors |
-| The colouring model is too heavy for the droplet | slow or out of memory | measure in phase 5; a separate host or the adapter |
 | Diacritics typed wrongly | wrong names | `fold` check against the MRZ; VIZ OCR later |
 | Tesseract too slow for live MRZ on phones (R3) | live scanning feels stuck | OCR the MRZ band only; a photo as the main path; phase 1 measures it on two phones |
 | Reader files downloaded again after every deploy and per app (R8) | several MB on mobile data per version | measure after phase 3; if it matters, a shared content-addressed `readers/` path for every published app |
@@ -720,7 +795,8 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 **Identity Document** (Asmens dokumentas / Документ личности), **Document Copy** (Dokumento kopija /
 Копия документа: the photo of a document's page or side as kept, not an employee photo), **MRZ** (machine-readable zone),
 **Portrait**, **AI-coloured photo**, **Import Document**, **Show Document**,
-**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**, **Mark Employment Ended**, **Legal Hold**.
+**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**, **Mark Employment Ended**, **Legal Hold**, **AI Usage**, **OpenAI API
+Key**, **Monthly AI Budget**.
 
 ## 11. Open decisions
 
@@ -729,7 +805,7 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 | D1 | Identity data in a new **Personnel files** context (schema `personnel`, sealed), or new columns on `employees` | **Decided 2026-11-05: Personnel files**, as the context map plans; names go to `employees`. The review step's **Add to Employee Record**, set per scanned document, decides whether its birth date, nationality and sex go to `employees` too and its fields show on the employee page, read through Personnel files, never copied (section 3, FR-19) |
 | D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | **Decided 2026-11-05: keep as much as the document gives**: names, date of birth, nationality, sex, document number, personal code, the MRZ, date of issue, place of birth, issuing authority, the portrait, and the document's own images (**Document Copies**). Sealed as section 3 sets out; the DPIA records why (PR-10) |
 | D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | **Decided 2026-11-05: as long as Lithuanian law and the GDPR permit**: employment and 3 years after (the personal file's period since 2024-10-01), a setting; the end of employment recorded by FR-20; legal holds respected (section 3) |
-| D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | Self-hosted with the luminance lock, off by default. Consider a live camera photo as the main path |
+| D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | **Decided 2026-11-05: OpenAI**, its image model (`gpt-image-2`, a setting) with the company's API key entered in Settings, under the luminance lock, off until switched on. Every AI call recorded with its tokens, cost, time and user in AI usage (sections 5.4 and 5.8, FR-21) |
 | D5 | Documents in v1 | TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
 | D6 | Can the app create **new** employees, or only update existing ones? | Both, under `personnel.documents.manage` (no employee permission exists to add to it) |
 | D7 | Who uses it | A new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
