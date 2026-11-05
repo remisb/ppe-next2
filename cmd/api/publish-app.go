@@ -25,6 +25,10 @@ type buildLimits struct {
 // publishLimits are a deploy's: Scan SIMs' readers are about 15 MB.
 var publishLimits = buildLimits{bytes: 300 << 20, files: 5000}
 
+// trailingPadding is how much of what follows a build's end marker untar
+// reads and drops: tar's padding to a whole record, with room to spare.
+const trailingPadding = 1 << 20
+
 // publishApp publishes an app's build, a tar of its dist/ read from in (the
 // API's image has no shell, so the build arrives on standard input): the
 // files go to API_APPS_DIR/<profile>/<slug>/<version>/ unless they are there
@@ -220,6 +224,12 @@ func untar(in io.Reader, dir string, limits buildLimits) error {
 	for {
 		h, err := tr.Next()
 		if errors.Is(err, io.EOF) {
+			// tar pads its archive to a whole record (10 KB) after the end marker,
+			// which archive/tar does not read. Read it too: the build arrives
+			// through a pipe, and a writer whose last bytes are never read fails
+			// (SIGPIPE under make's pipefail, EPIPE in the e2e setup) though the
+			// build was published. At most a few records; more is not waited for.
+			_, _ = io.Copy(io.Discard, io.LimitReader(in, trailingPadding))
 			return nil
 		}
 		if err != nil {

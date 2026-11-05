@@ -56,6 +56,17 @@ func TestUntar(t *testing.T) {
 		}
 	}
 
+	// tar pads its archive to a whole 10 KB record after the end marker: all of it is read, or the
+	// writer at the pipe's other end (make prod-up's tar, the e2e setup) fails though the build was published.
+	padded := tarOf(t, file("index.html", "<head></head>"))
+	padded.Write(make([]byte, 10240-padded.Len()%10240))
+	if err := untar(padded, t.TempDir(), limits); err != nil {
+		t.Fatalf("a padded build: %v", err)
+	}
+	if padded.Len() != 0 {
+		t.Errorf("%d bytes of the padding were left unread", padded.Len())
+	}
+
 	refused := map[string]struct {
 		build *bytes.Buffer
 		says  string
