@@ -1,7 +1,9 @@
 # docs-import: requirements and plan
 
 - **Date:** 2026-11-05
-- **Status:** proposal, **revision 4** (2026-11-05: **D2 decided**: keep every field the document
+- **Status:** proposal, **revision 4** (2026-11-05: **D1 decided**: a Personnel files context,
+  and a switch on the scan's review step, **Add to Employee Record**, set per document (section 3,
+  FR-19, new D11); **D2 decided**: keep every field the document
   gives, and keep the document's images as **Document Copies**, sealed per person; sections 3, 4,
   5.5, 5.6, 9 and 11 follow it, and D3 keeps only the retention period open).
   Revision 3 (the same day): phase 1, the reading spike, is done and its
@@ -253,7 +255,7 @@ The plan follows that split:
 | Data | Goes to | Stored as | Why |
 | --- | --- | --- | --- |
 | First and last name (printed form, with diacritics) | `employees` (People) | plain, audited as today (`employee.updated`) | Everyone needs names |
-| Date of birth, nationality, sex | `employees` (People): new nullable columns | plain | Ordinary personal data, used for checks and reports. Kept (D2) |
+| Date of birth, nationality, sex | the sealed document always; `employees` (People), new nullable columns, when the scan's **Add to Employee Record** is on (D1) | plain on `employees` | Ordinary personal data, used for checks and reports. Kept (D2) |
 | Document kind, issuing state, **expiry date**, **date of issue** | `personnel.identity_documents` | plain | Needed for "valid until" and expiry reminders without opening anything. The date of issue is not in the MRZ: typed in the review, or read from the printed page later (FR-16) |
 | **Document number, personal code**, the MRZ text, **place of birth**, **issuing authority** | `personnel.identity_documents` | **sealed** (sealbox), plus a **blind index** of the number and the code for lookups | Special care. Never in plain text in the database, backups, events or logs. Place of birth and authority are not in the MRZ either: typed, optional (D2) |
 | Portrait **as cropped from the document** | files store, `personnel/…` | encrypted with the person's data key | Kept (D2), as the source of the photos made from it; retention as the document's (D3) |
@@ -267,6 +269,28 @@ again at an inspection) and the legal basis before go-live, and the employee is 
 technical side keeps the risk small: sealed per person, never sent to the AI (PR-9), shown only
 with `personnel.documents.read` and a recent sign-in, audited, and destroyed with the person's
 key (below).
+
+**Add to Employee Record (D1), chosen per document.** Personnel files owns every identity
+field. Whether a scanned document's data also goes onto the employee record is chosen **each
+time a document is scanned**: the review step has a switch, **Add to Employee Record**, off by
+default, and Save records the choice with the document (`on_employee_record`, in
+`personnel.document_recorded`).
+
+- **Off:** the document is filed in Personnel files only. The employee record is not changed
+  beyond what a new employee needs (names); the employee page shows FR-15's "valid until" line.
+  Date of birth, nationality and sex stay in the sealed document.
+- **On:** FR-8's comparison offers date of birth, nationality and sex for the `employees`
+  columns, and the employee page's **Identity** section shows that document's fields (FR-19),
+  read from Personnel files' API, never copied.
+
+The sealed fields (the number, personal code, place of birth, authority) and the Document Copies
+are not written into `employees` in plain text even when the switch is on: there they would be
+in every list query, export and backup, and out of reach of crypto-shredding. The section shows
+them through Show Document's rules (`personnel.documents.read`, a recent sign-in, audited).
+Which fields the section shows, and to whom, is D11. Someone with `personnel.documents.manage`
+may change a document's choice later on the employee page (audited, `personnel.document_updated`).
+The employee page reading Personnel files is an exception the context map must record ("other
+contexts learn only *that* a document exists" holds for other contexts' code), in ADR 0007.
 
 **Blind index.** `HMAC-SHA256(API_PERSONNEL_INDEX_KEY, normalised value)` of the document
 number and the personal code. It answers "is this person or document already on file?"
@@ -310,7 +334,7 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-5 | M | **Deterministic correction:** inside fields that must be digits or letters, look-alikes are swapped and every combination is tried, up to a small limit (≤ 64 per field). A correction is taken only if it makes that field's check digit **and** the composite check digit pass, and no other combination does. In a document or personal number the composite adds nothing (phase 1), so such a correction also needs the second read (`needsSecondRead`). The fields that were corrected are shown |
 | FR-6 | M | Cross-checks: dates are valid (birth in the past, expiry after birth); the personal code's checksum, birth date and sex agree with the MRZ when there is a code; an **expired** document is a warning, not a stop |
 | FR-7 | M | The **review screen** shows the MRZ lines in a monospaced, editable field, with each field underlined in place. The parsed fields are below, with marks: problem (stops Save) or note. Editing the MRZ re-parses it. Names are a separate field, pre-filled from the MRZ, where the user types the diacritics (`Ž`, `Ė`, …). Their diacritic-free form must equal the MRZ name, or a note says that it does not. Below them, optional fields the MRZ does not hold: **date of issue**, **place of birth** and **issuing authority** (D2), typed, or later filled from the printed page (FR-16) |
-| FR-8 | M | The review compares the result with the chosen person's current data and shows only the differences (name, birth date…). The user chooses, field by field, to take the document's value or keep the current one |
+| FR-8 | M | The review compares the result with the chosen person's current data and shows only the differences (name, birth date…). The user chooses, field by field, to take the document's value or keep the current one. Birth date, nationality and sex are offered only with **Add to Employee Record** on (FR-19) |
 | FR-9 | M | The **check** call (server) reports: problems, a document already on file (same number), **another employee** with the same personal code or document number (blind index), and, for a new employee, possible duplicates by name and birth date |
 | FR-10 | M | **Save** is all or none, in one transaction: employee created or updated, identity document recorded (an earlier document of the same kind is marked superseded, its copies kept with it until its retention ends), its **Document Copies** and portrait stored, events. Nothing is written before Save |
 | FR-11 | M | **Portrait crop:** the portrait is found from its position relative to the MRZ (TD3: left of the data page above the MRZ; TD1: left of the front). The user can move and resize the crop box (touch and keyboard). Output is about 600 × 800 px JPEG |
@@ -319,6 +343,7 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | FR-14 | S | **Show Document** for someone with `personnel.documents.read`: the number, the personal code, the sealed fields and the Document Copies. Needs a recent sign-in, is audited, `no-store`, and hides again after 60 s or when the tab is hidden (the pattern from Show PIN and PUK) |
 | FR-15 | S | The employee page in the staff app shows "ID card · LTU · valid until 2029-04-12" (never the number) and the AI label on AI photos |
 | FR-16 | C | VIZ OCR of the name lines (Lithuanian and Russian data), accepted only when it folds to the MRZ name (section 5.3). Also the date of issue, place of birth and issuing authority (D2 keeps them), pre-filling FR-7's fields for the user to confirm |
+| FR-19 | M | The review step has a switch, **Add to Employee Record** (D1), off by default, set per document and saved with it. On: FR-8 offers birth date, nationality and sex, and the employee page's **Identity** section shows the document's D11 fields, read through Personnel files' API, the number and personal code behind Show Document. Off: the document is filed only, and the page shows FR-15's line. `personnel.documents.manage` may change it later on the employee page, audited |
 | FR-17 | C | Expiry reminders (Overview item 60 days before), once the outbox and jobs exist |
 | FR-18 | C | A native companion to read the chip (DG1, and DG2 for a real colour portrait) |
 
@@ -342,8 +367,8 @@ Priorities: **M** must (v1), **S** should (v1 if possible), **C** could (later).
 | PR-1 | M | Images, MRZ text and fields live **only in the screen's memory** until Save sends them, never in any browser storage, in a `PictureStore` that revokes blob URLs when a picture is let go, after Save and when the screen goes. The steps (Person → Capture → Review → Portrait → Save) are one screen's state, not routes, so moving between them never unmounts the work (as Scan SIMs keeps Scan mounted); leaving the page asks first (`beforeunload`) |
 | PR-2 | M | No read value ever goes into an `Error`, a log line, an audit event or System's error list. A Go test runs a scan through the service and asserts that the number and personal code appear in no event or log (as the SIM codes tests do) |
 | PR-3 | M | The document number, personal code, MRZ text, place of birth, issuing authority, the portrait and the Document Copies are sealed per person (section 3). Plain columns hold only kind, issuing state, dates of issue and expiry. A Document Copy is re-encoded in the browser before Save (at most 2400 px, JPEG): the camera's metadata, location included, never leaves the phone |
-| PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save; needs `employees.manage`), `personnel.documents.read` (show the number; recent sign-in), and `personnel.portraits.colorize` (use AI colouring). Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
-| PR-5 | M | Audit events: `personnel.document_recorded` (with how many copies), `personnel.document_superseded`, `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
+| PR-4 | M | New permissions (D7): `personnel.documents.manage` (scan and save, which may create or change the employee: there is no employee permission to require, as any signed-in user may add and edit employees today), `personnel.documents.read` (show the number; recent sign-in), and `personnel.portraits.colorize` (use AI colouring). Listed in `permissions.ts`, `routes_test.go` and the built-in roles |
+| PR-5 | M | Audit events: `personnel.document_recorded` (with how many copies), `personnel.document_superseded`, `personnel.document_updated` (Add to Employee Record changed), `personnel.document_shown`, `personnel.document_removed` (kind, issuing state, expiry, never the number), and `employee.photo_added` with `ai_generated: true`. Reads of the number are audited (the context map's "read events" for Personnel files) |
 | PR-6 | M | **AI colouring needs a recorded legal basis.** The default is the person's consent, recorded with the photo (who, when, how), and the person may refuse. If they refuse, only the grey portrait or a fresh camera photo is used |
 | PR-7 | M | **Label AI images.** "AI-coloured" is shown on the photo in every app. The JPEG carries a metadata note, and the record has `ai_generated`. An AI photo is never used where a true likeness is required (ID badges: the `id_badge` use is refused for an AI photo). The EU AI Act's transparency duties for generated or manipulated images apply from 2 August 2026, so confirm the exact form with the DPO |
 | PR-8 | M | Retention: identity documents, their Document Copies and portraits are kept while the person is employed plus a period set by D3. When it ends, a daily job deletes the person's data key (section 3): unreadable at once in the database, and everywhere once the last older backup has expired (14 days today). The job applies the rule, so it shreds again after a restore. The soft-delete-forever default does not apply to Personnel files |
@@ -480,7 +505,7 @@ colouring is then for people who are not present.
 | `POST /api/v1/personnel/documents/{id}/copies/{copy}/show` | `personnel.documents.read` + `sensitive` | the Document Copy's JPEG, opened with the person's key; audited first (`personnel.document_shown`, which side); `no-store` |
 | `DELETE /api/v1/personnel/documents/{id}` | `personnel.documents.manage` | removes it, recorded, sealed content destroyed |
 | `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | a JPEG (≤ 2 MB) → a colour JPEG; `no-store`; rate-limited; usage counted, not stored |
-| existing `POST /api/v1/employee-photos/{employee}` | `employees.manage` | gains an `ai_generated` flag; `id_badge` refused for AI photos |
+| existing `POST /api/v1/employee-photos/{employee}` | any signed-in user (as today) | gains an `ai_generated` flag; `id_badge` refused for AI photos |
 
 Every new route goes into `routes_test.go`'s policy table and every new error into
 `errorStatuses`. `@ppe/api-client` gains `personnel.*`. The app sends `X-PPE-App: docs-import`.
@@ -504,9 +529,10 @@ CREATE TABLE personnel.identity_documents (
   issuing_state    char(3) NOT NULL,           -- ICAO code, e.g. LTU
   expires_on       date NOT NULL,
   issued_on        date,                       -- typed in the review (D2); not in the MRZ
-  sealed           bytea NOT NULL,             -- {number, personal_code, mrz, place_of_birth, authority} sealed with the subject key
+  sealed           bytea NOT NULL,             -- {number, personal_code, mrz, birth_date, nationality, sex, place_of_birth, authority} sealed with the subject key
   number_index     bytea NOT NULL,             -- HMAC blind index
   personal_index   bytea,                      -- HMAC blind index, when there is a code
+  on_employee_record boolean NOT NULL DEFAULT false,  -- the scan's Add to Employee Record (D1)
   superseded_at    timestamptz,
   created_at …, created_by_user_id …, deleted_at …, deleted_by_user_id …
 );
@@ -661,19 +687,20 @@ Phases 0 and 1 can run in parallel. Phase 2 can start once D1 is decided (D2 is;
 **Identity Document** (Asmens dokumentas / Документ личности), **Document Copy** (Dokumento kopija /
 Копия документа: the photo of a document's page or side as kept, not an employee photo), **MRZ** (machine-readable zone),
 **Portrait**, **AI-coloured photo**, **Import Document**, **Show Document**,
-**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**.
+**Expires on**, **Issued on**, **Place of Birth**, **Issuing Authority**, **Add to Employee Record**.
 
 ## 11. Open decisions
 
 | # | Decision | Recommendation |
 | --- | --- | --- |
-| D1 | Identity data in a new **Personnel files** context (schema `personnel`, sealed), or new columns on `employees` | **Personnel files**, as the context map already plans. Names go to `employees` |
+| D1 | Identity data in a new **Personnel files** context (schema `personnel`, sealed), or new columns on `employees` | **Decided 2026-11-05: Personnel files**, as the context map plans; names go to `employees`. The review step's **Add to Employee Record**, set per scanned document, decides whether its birth date, nationality and sex go to `employees` too and its fields show on the employee page, read through Personnel files, never copied (section 3, FR-19) |
 | D2 | Which fields to keep: names (yes); date of birth, nationality and sex; document number; personal code; issue date and place of birth | **Decided 2026-11-05: keep as much as the document gives**: names, date of birth, nationality, sex, document number, personal code, the MRZ, date of issue, place of birth, issuing authority, the portrait, and the document's own images (**Document Copies**). Sealed as section 3 sets out; the DPIA records why (PR-10) |
 | D3 | ~~Keep the document's portrait crop and/or the full image~~ (D2 keeps both), and for how long | Retention of the document, its copies and portrait: employment + N months, set with the DPO. Until then the job reads N from a setting and shreds nothing |
 | D4 | AI colouring: self-hosted sidecar, hosted provider, or not at all for now | Self-hosted with the luminance lock, off by default. Consider a live camera photo as the main path |
 | D5 | Documents in v1 | TD3 passports (any state) and TD1 ID cards and residence permits (EU). Russian internal passports and driving licences are out of scope |
-| D6 | Can the app create **new** employees, or only update existing ones? | Both. New employees need `employees.manage` too |
+| D6 | Can the app create **new** employees, or only update existing ones? | Both, under `personnel.documents.manage` (no employee permission exists to add to it) |
 | D7 | Who uses it | A new built-in role **Personnel Documents** with `personnel.documents.manage` and `.read`. Administrators do not get it by default (like Equipment Assignments) |
 | D8 | Its own app forever, or merge into the staff app after the trial | Trial first, as Scan SIMs did; decide in phase 6 |
 | D9 | A server-side reader as a fallback for still photos the browser fails on (a sidecar with native Tesseract and OpenCV, in memory only, returning fields, never storing the image) | Not in v1. **Phase 1's input:** the browser failed 4 of 144 specimen photos, all both small and blurred, which a server would read no better from the same pixels; everything else read. Revisit only if the field test (§8, phones and real documents) fails often |
+| D11 | For a document added to the employee record (D1), which identity fields the employee page shows, and to whom | Document kind, issuing state, issue and expiry dates, place of birth and authority to holders of `personnel.documents.manage` or `.read`, not everyone (any signed-in user opens the employee page today); others see FR-15's line alone; the number, personal code and Document Copies only through Show Document (`personnel.documents.read`, recent sign-in, audited) |
 | D10 | What erasure means: "unreadable at once, gone from backups within 14 days" (data keys in the database), or keys kept outside the database and its backups (gone at once everywhere) | The first, stated plainly in the DPIA; the second only if the DPO requires it |
