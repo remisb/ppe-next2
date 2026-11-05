@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(/.env)",
+      "Read(/.env.*)",
+      "Read(/.github-token)",
+      "Read(/.files/**)"
+    ],
+    "allow": [
+      "Bash(go list *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(sh .claude/skills/architecture-review/scripts/fitness.sh)"
+    ]
+  }
+}

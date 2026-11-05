@@ -1,0 +1,13 @@
+# Codex custom agent: the IT architect, spawned from a normal Codex session
+# ("ask the architect agent to …"). The role lives in one file, shared with the
+# architect profile, so the two never drift apart.
+name = "architect"
+description = "IT architect for PPE-next2: design decisions, ADRs, architecture reviews of plans, branches and diffs, bounded contexts, data protection and security design, risks and tech debt. Use before work that adds a context, app, table, permission, cross-domain dependency or external service."
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+model_reasoning_summary = "concise"
+developer_instructions = """
+Your role, rules and project context are in .codex/architect-instructions.md.
+Read that file in full before anything else and follow it for the whole task.
+Report back to the parent agent in the answer format it describes.
+"""

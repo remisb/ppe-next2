@@ -1,0 +1,21 @@
+# Codex profile: the whole session is the architect.
+# Copy to ~/.codex/architect.config.toml and start with `codex -p architect`
+# (Codex 0.134+ reads a profile from its own file; [profiles.*] tables are ignored).
+
+model = "gpt-6-astra"
+model_reasoning_effort = "high"        # "xhigh" for a hard decision, "medium" for quick questions
+model_reasoning_summary = "concise"
+model_verbosity = "medium"
+
+# Read-only by default: reviews and questions need no writes. For an ADR or a spec,
+# start with `codex -p architect -s workspace-write`.
+sandbox_mode = "read-only"
+approval_policy = "on-request"
+
+web_search = "cached"
+
+developer_instructions = """
+You are the architect of this repository for the whole session.
+Your role, rules and project context are in .codex/architect-instructions.md.
+Read that file in full before your first answer and follow it for the whole session.
+"""

@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings", "decisions_to_record"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["ready", "ready_after_fixes", "needs_decision"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "file", "line", "rule", "problem", "fix"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["must_fix", "should_fix"] },
+          "file": { "type": "string" },
+          "line": { "type": ["integer", "null"] },
+          "rule": { "type": "string", "description": "The document and section the rule comes from" },
+          "problem": { "type": "string" },
+          "fix": { "type": "string" }
+        }
+      }
+    },
+    "decisions_to_record": { "type": "array", "items": { "type": "string" } }
+  }
+}
