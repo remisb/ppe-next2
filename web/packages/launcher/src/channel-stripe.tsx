@@ -2,7 +2,7 @@ import { useApi } from '@ppe/app-shell'
 import { appChannel, appVersion, basePath, stripBase } from '@ppe/routing'
 import { useEffect } from 'react'
 
-import { channelName, channelPath, channelsOf, chosenHref, mayOpenChannel } from './channels.ts'
+import { channelName, channelPath, channelsOf, chosenHref, mayStay, stablePath } from './channels.ts'
 import { rememberChoice, useLauncher } from './load.ts'
 import { launcherText } from './text.ts'
 
@@ -18,13 +18,15 @@ const here = () => stripBase(window.location.pathname)
  *
  * It also sends the user where they belong once their launcher list is in:
  * from the app's Stable address to the channel they chose, and from a
- * channel they may not open (a link passed on, an audience changed) to Stable.
+ * channel they may not open (a link passed on, an audience changed) to Stable,
+ * as when the list cannot be loaded (mayStay: it fails closed). An audience
+ * decides what people see and are sent to; the page itself is public.
  */
 export function ChannelStripe({ slug }: { slug: string }) {
   const { client, session } = useApi()
-  const { list } = useLauncher()
+  const { list, failed } = useLauncher()
   const off = appChannel !== null && appChannel !== 'stable'
-  const allowed = !list || !session || mayOpenChannel(list, slug, appChannel, session.can('apps.manage'))
+  const allowed = !session || mayStay(list, failed, slug, appChannel, session.can('apps.manage'))
   useEffect(() => {
     if (off && !allowed) {
       window.location.replace(channelPath(slug, 'stable', here(), window.location.search))
@@ -36,15 +38,21 @@ export function ChannelStripe({ slug }: { slug: string }) {
   if (!off || !allowed || appChannel === null) return null
   const t = launcherText()
   const channels = channelsOf(list, slug)
-  // Keeps the choice, then opens the same screen on that channel.
+  // Stable on purpose: the address that never sends the user back to their choice.
+  const toStable = stablePath(slug, here(), window.location.search)
+  // Keeps the choice, then opens the same screen on that channel; if the
+  // choice could not be saved, Stable at the address that stays on Stable.
   const go = (channel: string) => {
     const href = channelPath(slug, channel, here(), window.location.search)
-    if (!session) return window.location.assign(href)
-    void client.launcher
-      .chooseChannel(slug, channel)
-      .then(() => rememberChoice(session.userId, slug, channel))
-      .catch(() => undefined)
-      .finally(() => window.location.assign(href))
+    const unsaved = channel === 'stable' ? toStable : href
+    if (!session) return window.location.assign(unsaved)
+    client.launcher.chooseChannel(slug, channel).then(
+      () => {
+        rememberChoice(session.userId, slug, channel)
+        window.location.assign(href)
+      },
+      () => window.location.assign(unsaved),
+    )
   }
   return (
     <div role="status" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-200 px-4 py-1 text-center text-xs text-amber-950 dark:bg-amber-900 dark:text-amber-50">
@@ -66,7 +74,7 @@ export function ChannelStripe({ slug }: { slug: string }) {
         </select>
       ) : null}
       <a
-        href={channelPath(slug, 'stable', here(), window.location.search)}
+        href={toStable}
         onClick={(e) => {
           // Stable from now on, here and in App Launcher, not just this once.
           if (e.metaKey || e.ctrlKey || e.shiftKey) return

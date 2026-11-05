@@ -110,11 +110,16 @@ app_version = $(shell git log -1 --format=%cd-%h --date=format:%Y.%m.%d --abbrev
 # published-apps.ts finds the same ones for the dev proxy and e2e).
 PUBLISHED_APPS := $(patsubst web/apps/%/public/ppe-app.json,%,$(wildcard web/apps/*/public/ppe-app.json))
 
+# A build reaches -publish-app through a pipe; without pipefail a failed or
+# cut-off tar would look like success, and a version's files never change once
+# published. bash, as sh (dash on the droplet) may lack pipefail.
+publish-app prod-up prod-publish: SHELL := /bin/bash
+
 publish-app: ## Build an app and publish it to API_APPS_DIR (for Caddy locally): APP=<slug> [CHANNEL=<name>]
 	@test -n "$(APP)" || { echo "APP=<slug> is required, one of: $(PUBLISHED_APPS)" >&2; exit 2; }
 	@test -n "$$API_APPS_DIR" || { echo "set API_APPS_DIR in .env (an existing folder) first" >&2; exit 2; }
 	cd web && pnpm --filter "./apps/$(APP)" build
-	tar -C "web/apps/$(APP)/dist" -cf - . | go run ./cmd/api -publish-app "$(APP)" -version "$(call app_version,HEAD)" \
+	set -o pipefail; tar -C "web/apps/$(APP)/dist" -cf - . | go run ./cmd/api -publish-app "$(APP)" -version "$(call app_version,HEAD)" \
 		-channel "$(CHANNEL)" -from-commit "$$(git rev-parse --short=12 HEAD)"
 
 # A new published app from web/templates/published-app (@ppe/launcher's
@@ -168,7 +173,7 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 	@# channel opens are pruned.
 	@case "$(PROD_COMMIT)" in *-dirty) \
 		echo "the checkout has local changes: the apps are deployed but not published (commit or discard them, then make prod-up)" >&2; exit 1;; esac
-	@for app in $(PUBLISHED_APPS); do \
+	@set -o pipefail; for app in $(PUBLISHED_APPS); do \
 		$(PROD) exec -T caddy tar -C "/srv/build/$$app" -cf - . | \
 		$(PROD) run --rm --no-deps -T api -publish-app "$$app" -version "$(call app_version,HEAD)" \
 			-channel preview -from-commit "$(PROD_COMMIT)" || exit 1; \
@@ -181,7 +186,7 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 prod-publish: ## Publish an app built at a git ref: APP=<slug> REF=<commit, tag or branch> [CHANNEL=<stable|beta|preview|variant>]
 	@test -n "$(APP)" -a -n "$(REF)" || { echo "usage: make prod-publish APP=<slug> REF=<git ref> [CHANNEL=<name>]" >&2; exit 2; }
 	@git rev-parse --verify --quiet "$(REF)^{commit}" >/dev/null || { echo "$(REF) is not a commit here: git fetch first" >&2; exit 2; }
-	deploy/build-app.sh "$(APP)" "$(REF)" | $(PROD) run --rm --no-deps -T api -publish-app "$(APP)" \
+	set -o pipefail; deploy/build-app.sh "$(APP)" "$(REF)" | $(PROD) run --rm --no-deps -T api -publish-app "$(APP)" \
 		-version "$(call app_version,$(REF))" -channel "$(CHANNEL)" -from-commit "$$(git rev-parse --short=12 '$(REF)^{commit}')"
 
 prod-ready: ## Ask the running API whether it is ready (GET /ready) and which commit it runs

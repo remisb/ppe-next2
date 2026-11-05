@@ -43,12 +43,13 @@ export function noteOpened(userId: string, slug: string): string[] {
   return recent
 }
 
-/** Phase 1's pins on this device, removed as they are read: the launcher hands them to the API once. */
-export function takeDevicePins(userId: string): string[] {
+/** Phase 1's pins on this device, which the launcher hands to the API once. */
+export const devicePins = (userId: string): string[] => strings(read(userId).pinned)
+
+/** Forgets phase 1's pins on this device, keeping the recent apps: once the API has them (or pins of its own). */
+export function forgetDevicePins(userId: string): void {
   const s = read(userId)
-  const pinned = strings(s.pinned)
-  if (pinned.length) write(userId, { recent: s.recent })
-  return pinned
+  if (strings(s.pinned).length) write(userId, { recent: s.recent })
 }
 
 /** The pins with a tile pinned, or unpinned when it was; pins keep the order they were made in. */

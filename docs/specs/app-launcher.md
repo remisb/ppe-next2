@@ -84,8 +84,12 @@ tile's English name.
 ## Pins and feedback
 
 - **Pins** are the user's (`launcher_pins`), on every device: `PUT /api/v1/launcher/pins`
-  replaces them, in order, each a tile the user sees, at most 50. Phase 1's pins kept on a
-  device are handed to the API once, while it has none. **Recent** apps stay per device.
+  replaces them, in order, each a tile the user sees, at most 50; two replaces at once (two tabs,
+  an effect run twice) take turns under a per-user lock instead of one failing. Phase 1's pins kept on a
+  device are handed to the API once, while it has none, and forgotten on the device only once
+  it has them (or pins of its own). Saving pins or a channel choice that fails puts them back
+  as they were and says so (**Your pins could not be saved.**, **Your choice of version could
+  not be saved.**), on the launcher and in the ⋯ dialog. **Recent** apps stay per device.
 - **Feedback** (`launcher_feedback`): from an app's ⋯ in the launcher, **Works well**,
   **Confusing** or **Something broke**, with what they were trying to do (at most 2000
   characters), sent with the device (by the window's width) and the language. Only on an
@@ -168,16 +172,22 @@ tests and build, and is then removed.
   `launcher_channels` (app, name, label for a variant, version, audience) and
   `launcher_channel_choices` (user, app, channel). Events `app.version_published`,
   `app.channel_moved` (a channel set or pointed at another version) and `app.channel_changed`
-  (a variant's label or audience).
+  (a variant's label or audience, also when the variant is added: before is then empty).
 - **Channels.** `stable`, `beta`, `preview`, and **variants**: any other slug, with a label in
   EN/LT/RU. Stable is seen by whoever sees the tile; the others by holders of the permissions
   they name, or by testers (`apps.preview`) when they name none. Stable has no audience of its
-  own and no label; a fixed channel has no label; a variant needs one.
+  own and no label; a fixed channel has no label; a variant needs one. **An audience decides
+  who sees a channel and is sent to it, not who may open it**: the page route and the files are
+  public (the data behind them is the API's, by permission), so anyone with a channel's or a
+  kept version's address can load that build. Do not put anything in a build that its audience
+  alone may see.
 - **Profiles.** The build's capabilities (`wasm`, `workers`, `camera`; any other refused) give
   its profile: none `standard` (the staff app's policy), any `device` (Scan SIMs' policy:
   WebAssembly, workers from its own files, the camera). A new capability or profile is a
-  reviewed change to `launcher.Capabilities`, `cmd/api/published-app-routes.go` and
-  `deploy/Caddyfile` (`TestPublishedPoliciesMatchCaddy`).
+  reviewed change to `launcher.Capabilities` and `launcher.Profiles`, `profilePolicies` in
+  `cmd/api/published-app-routes.go` and `deploy/Caddyfile` (`TestPublishedPoliciesMatchCaddy`,
+  `TestEveryProfileHasAPolicy`); a version whose profile has no policy answers 500, never the
+  staff policy.
 - **Addresses.** `/apps/<slug>/` opens Stable, `/apps/<slug>/<channel>/` a channel,
   `/apps/<slug>/@<version>/` one version; anything after is the app's own screen. The API
   (`GET /apps/{slug}/{rest...}`, public: the app signs in itself) answers the version's
@@ -188,14 +198,19 @@ tests and build, and is then removed.
   its `href` (Administration at `/apps/admin/` goes to `/admin/`). Caddy serves the files from
   the `published` volume, cached for a year, `/apps/files/standard/*` and `/apps/files/device/*`
   only. The old `/sim-scan/…` redirects (308) to `/apps/sim-scan/…`. `assets` and `files` are
-  reserved slugs.
+  reserved slugs (`launcher.ReservedSlugs`): exactly the `/apps/<name>/` paths Caddy answers
+  before the API (`TestReservedSlugsAreCaddys`). The slug rule and the reserved slugs are also
+  in `@ppe/api-client`'s `app-slugs.ts`, for Manage apps and `make new-app`
+  (`TestWebClientKeepsTheSlugRule`).
 - **In the app.** `@ppe/routing`'s `basePath`, `filesBase`, `appVersion` and `appChannel` read
   the meta tags (else Vite's `BASE_URL`); `@ppe/app-shell` sends `X-PPE-App-Version`, which
   System's error list records (`error_events.app_version`). `@ppe/launcher`'s `ChannelStripe`
   shows, off Stable, the channel and version, a switch between the channels the user sees (three
   or more) and **Back to Stable**; choosing one also makes it the user's choice. It moves a user
   who does not see the channel (or, at a version's address, is neither a tester nor holds
-  `apps.manage`) to Stable, and one who opens the app's Stable address (`/apps/<slug>/…`, a
+  `apps.manage`) to Stable, as it does when the user's list cannot be loaded (`mayStay`: it waits
+  while the list loads, then fails closed); **Back to Stable** links to `/apps/<slug>/stable/…`
+  and goes there when saving the choice fails, so it never bounces back. It moves one who opens the app's Stable address (`/apps/<slug>/…`, a
   bookmark or a link from another app; not `/apps/<slug>/stable/…`) while having chosen another
   channel they see, to that channel on the same screen (`chosenHref`).
 - **The frame.** A small app on this site uses `@ppe/launcher`'s `SignedIn` (the sign-in gates,
@@ -213,7 +228,10 @@ tests and build, and is then removed.
   it was recorded with (another is refused); a folder without `index.html` is replaced; the first version of an app also becomes
   Stable, and so does every version published to Preview while the app's **Stable follows
   deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default). A
-  variant must be added on Manage apps before a publish names it.
+  variant must be added on Manage apps before a publish names it; that is checked before any
+  file is written or version recorded (`CheckPublish`). The Makefile runs each publish pipe
+  (`tar | api -publish-app`) under bash with `pipefail`, so a failed or cut-off build stream
+  fails the target instead of publishing a partial build.
   `make prod-up` publishes each app in `PUBLISHED_APPS` from the image's
   `/srv/build/<app>` to Preview (and publishes nothing from a checkout with local changes:
   `git describe --dirty`), then runs `api -prune-apps`; `make prod-publish APP= REF= [CHANNEL=]` builds the app at a

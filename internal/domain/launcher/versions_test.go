@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -79,6 +80,9 @@ func TestPublishAndChannels(t *testing.T) {
 	if _, err := svc.Publish(ctx, scanSIMs("2026.11.05-ccc", "photos-first"), nil); !errors.Is(err, ErrInvalid) {
 		t.Errorf("an unknown variant: %v", err)
 	}
+	if _, found, err := svc.Version(ctx, "sim-scan", "2026.11.05-ccc"); found || err != nil {
+		t.Errorf("a publish refused for its variant recorded the version: %v, %v", found, err)
+	}
 
 	// Manage apps: promote to Stable and Beta, add a variant, roll Stable back; one event per move.
 	n := len(repo.events)
@@ -92,8 +96,15 @@ func TestPublishAndChannels(t *testing.T) {
 	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", ChannelParams{Version: "2026.11.04-aaa"}, admin); !errors.Is(err, ErrInvalid) {
 		t.Errorf("a variant without a label: %v", err)
 	}
+	before := len(repo.events)
 	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, admin); err != nil {
 		t.Fatal(err)
+	}
+	// A new variant's label (and audience) is recorded from the start, with nothing before, beside its move.
+	added := repo.events[before:]
+	if len(added) != 2 || added[0].Event != EventChannelChanged || added[0].Before != nil || !strings.Contains(string(added[0].After), `"Photos first"`) ||
+		added[1].Event != EventChannelMoved {
+		t.Errorf("a new variant's events = %+v", added)
 	}
 	variant.AnyOf = []string{"assets.manage"}
 	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", variant, admin); err != nil {

@@ -177,8 +177,16 @@ func (r *PostgresRepository) Pins(ctx context.Context, user uuid.UUID) ([]string
 	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
+// pinsLock is the advisory lock's first key for replacing a user's pins (the
+// second is the user's): two replaces at once, as from two tabs or a page's
+// effect run twice, take turns instead of one failing on the other's rows.
+const pinsLock = 0x70696e73 // "pins"
+
 func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps []uuid.UUID) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1, hashtext($2::text))`, pinsLock, user); err != nil {
+			return err
+		}
 		if _, err := tx.Exec(ctx, `DELETE FROM launcher_pins WHERE user_id = $1`, user); err != nil {
 			return err
 		}

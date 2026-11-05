@@ -127,6 +127,26 @@ func TestPostgresRegistry(t *testing.T) {
 	if _, pins, _ := svc.ForUser(ctx, actor, tester); !slices.Equal(pins, []string{"workwear"}) {
 		t.Errorf("pins after replacing %v", pins)
 	}
+	// Replaces at once (two tabs, an effect run twice) take turns; none fails.
+	const together = 8
+	errs := make(chan error, together)
+	start := make(chan struct{})
+	for range together {
+		go func() {
+			<-start
+			_, err := svc.SetPins(ctx, actor, []string{"size-helper", "workwear"}, tester)
+			errs <- err
+		}()
+	}
+	close(start)
+	for range together {
+		if err := <-errs; err != nil {
+			t.Errorf("a replace beside another: %v", err)
+		}
+	}
+	if _, pins, _ := svc.ForUser(ctx, actor, tester); !slices.Equal(pins, []string{"size-helper", "workwear"}) {
+		t.Errorf("pins after two replaces at once %v", pins)
+	}
 
 	if _, err := svc.GiveFeedback(ctx, actor, FeedbackParams{App: "size-helper", Rating: "broken", Text: "Blank page", Device: "tablet", Language: "en"}, tester); err != nil {
 		t.Fatal(err)
@@ -172,8 +192,9 @@ func TestPostgresVersions(t *testing.T) {
 		t.Errorf("channels %v", names(channels))
 	}
 	var events int
-	// Two versions published (not the repeat); Stable and Preview first set, Preview moved, the variant added, Stable promoted.
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event LIKE 'app.%' AND event <> 'app.registered'`).Scan(&events); err != nil || events != 7 {
+	// Two versions published (not the repeat); Stable and Preview first set, Preview moved, the variant
+	// added (its label and audience, and where it points), Stable promoted.
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE event LIKE 'app.%' AND event <> 'app.registered'`).Scan(&events); err != nil || events != 8 {
 		t.Errorf("app events = %d, %v", events, err)
 	}
 

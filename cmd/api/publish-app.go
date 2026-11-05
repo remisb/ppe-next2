@@ -163,7 +163,7 @@ func pruneApps(ctx context.Context, svc services, cfg config, out io.Writer) err
 	if dirs, err := filepath.Glob(filepath.Join(cfg.AppsDir, ".incoming", "*")); err == nil {
 		stray = append(stray, dirs...)
 	}
-	for _, profile := range []launcher.Profile{launcher.ProfileStandard, launcher.ProfileDevice} {
+	for _, profile := range launcher.Profiles {
 		dirs, _ := filepath.Glob(filepath.Join(cfg.AppsDir, string(profile), "*", "*"))
 		for _, dir := range dirs {
 			if rel, _ := filepath.Rel(cfg.AppsDir, dir); !known[rel] {

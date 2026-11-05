@@ -2,7 +2,7 @@ import type { LauncherList } from '@ppe/api-client'
 import { applyLanguage } from '@ppe/i18n'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { channelHref, channelName, channelPath, chosenHref, mayOpenChannel, openHref } from './channels.ts'
+import { channelHref, channelName, channelPath, chosenHref, mayOpenChannel, mayStay, openHref, stablePath } from './channels.ts'
 import { channel, tile } from './testing.ts'
 
 const scan = tile('sim-scan', { href: '/apps/sim-scan/' })
@@ -47,6 +47,24 @@ describe('channels', () => {
     expect(mayOpenChannel(list(), 'sim-scan', '@2026.11.03-aaa', false)).toBe(false)
     expect(mayOpenChannel(list({ preview: true }), 'sim-scan', '@2026.11.03-aaa', false)).toBe(true)
     expect(mayOpenChannel(list(), 'sim-scan', '@2026.11.03-aaa', true)).toBe(true)
+  })
+
+  it('keeps a page on its channel while the list loads, and fails closed when it cannot load', () => {
+    expect(mayStay(null, false, 'sim-scan', 'beta', false)).toBe(true)
+    expect(mayStay(null, true, 'sim-scan', 'beta', false)).toBe(false)
+    expect(mayStay(null, true, 'sim-scan', '@2026.11.03-aaa', true)).toBe(false)
+    expect(mayStay(null, true, 'sim-scan', 'stable', false)).toBe(true)
+    expect(mayStay(null, true, 'sim-scan', null, false)).toBe(true)
+    expect(mayStay(list(), false, 'sim-scan', 'photos-first', false)).toBe(true)
+    expect(mayStay(list(), false, 'sim-scan', 'beta', false)).toBe(false)
+  })
+
+  it('asks for Stable on purpose at /stable/, which no choice redirects', () => {
+    expect(stablePath('sim-scan', '/find', '?q=1')).toBe('/apps/sim-scan/stable/find?q=1')
+    expect(stablePath('sim-scan', '/')).toBe('/apps/sim-scan/stable/')
+    const chose = list({ choices: { 'sim-scan': 'photos-first' } })
+    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan/stable', '/apps/sim-scan/stable/find')).toBeNull()
+    expect(chosenHref(chose, 'sim-scan', 'stable', '/apps/sim-scan', '/apps/sim-scan/find')).toBe('/apps/sim-scan/photos-first/find')
   })
 
   it('opens the screen asked for on another channel, Stable at the app’s own address', () => {

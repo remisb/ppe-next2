@@ -2108,6 +2108,13 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	if _, err := publish("crew", "2026.11.05-ccc", "", scanSIMs); err == nil {
 		t.Error("a linked site was published")
 	}
+	// A channel that does not exist is refused before any file is written or version recorded.
+	if _, err := publish("sim-scan", "2026.11.05-nov", "no-such-variant", scanSIMs); err == nil {
+		t.Error("a publish to an unknown variant succeeded")
+	}
+	if _, err := os.Stat(cfg.AppsDir + "/device/sim-scan/2026.11.05-nov"); !os.IsNotExist(err) {
+		t.Errorf("a publish refused for its variant left files: %v", err)
+	}
 
 	// Stable (set by the first publish), a deep link, a channel and a version, each with where it is mounted.
 	for path, mount := range map[string]string{

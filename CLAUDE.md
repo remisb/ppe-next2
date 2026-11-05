@@ -158,7 +158,10 @@ with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the templa
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
 Preview, Add variant, **Stable follows deploys**: migration 0044, a deploy then moves Stable too);
 the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
-and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. Small apps use
+and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. A channel's audience decides who
+sees it, not who may open it: the page and files are public, the data the API's (the stripe fails
+closed to Stable). The slug rule is in `@ppe/api-client`'s `app-slugs.ts` too, and profiles map to
+policies in `cmd/api` (tests hold both, and the reserved slugs, to Go and the Caddyfile). Small apps use
 `@ppe/launcher`'s `SignedIn` and `AppFrame` (its bar scrolls away; the screen's header alone sticks).
 Defaults are the code's until an administrator changes one (`EnsureDefaults` syncs untouched
 tiles, audited). Manage apps' **Trials** (migration 0045: `user_version_activity`,

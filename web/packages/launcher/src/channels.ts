@@ -55,11 +55,32 @@ export function mayOpenChannel(list: LauncherList, slug: string, channel: string
   return channelsOf(list, slug).some((c) => c.name === channel)
 }
 
+/**
+ * Whether a page opened on a channel may stay there now: while the user's
+ * list is loading, yes (it decides); once it has failed, only Stable, since
+ * the list is the only check (fail closed); else mayOpenChannel. A channel's
+ * audience chooses who sees it and is sent there, not who may open it: the
+ * page and its files are public, and the data behind them is the API's.
+ */
+export function mayStay(list: LauncherList | null, failed: boolean, slug: string, channel: string | null, managesApps: boolean): boolean {
+  if (!channel || channel === 'stable') return true
+  if (list) return mayOpenChannel(list, slug, channel, managesApps)
+  return !failed
+}
+
 /** A channel's address for the screen open now: /apps/<slug>/<channel>/<path>, Stable at /apps/<slug>/<path>. */
 export function channelPath(slug: string, channel: string, rest: string, search = ''): string {
   const tail = rest === '/' ? '/' : rest
   return channel === 'stable' ? `/apps/${slug}${tail}${search}` : `/apps/${slug}/${channel}${tail}${search}`
 }
+
+/**
+ * Stable asked for on purpose, /apps/<slug>/stable/<path>: unlike the app's
+ * own address it never sends the user on to the channel they chose (see
+ * chosenHref), so Back to Stable reaches Stable even when saving the choice
+ * failed.
+ */
+export const stablePath = (slug: string, rest: string, search = ''): string => `/apps/${slug}/stable${rest === '/' ? '/' : rest}${search}`
 
 /**
  * Where a page opened at an app's Stable address (/apps/<slug>/…, a bookmark

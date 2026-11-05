@@ -55,12 +55,28 @@ func (s *Service) CheckPublish(ctx context.Context, p PublishParams) (App, error
 	if err := p.Validate(); err != nil {
 		return App{}, err
 	}
-	a, err := s.repo.Get(ctx, p.Slug)
+	a, err := s.repo.Get(ctx, strings.TrimSpace(p.Slug))
 	if err != nil {
 		return App{}, err
 	}
-	return a, publishable(a)
+	if err := publishable(a); err != nil {
+		return App{}, err
+	}
+	// Before anything is written or recorded: a publish that would fail on its
+	// channel leaves no files and no version behind.
+	if name := strings.TrimSpace(p.Channel); name != "" && !slices.Contains(fixedChannels, name) {
+		channels, err := s.appChannels(ctx, a.ID)
+		if err != nil {
+			return App{}, err
+		}
+		if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name }) {
+			return App{}, errUnknownVariant
+		}
+	}
+	return a, nil
 }
+
+var errUnknownVariant = fieldError("channel", "is not one of the app's channels: add the variant on Manage apps first")
 
 // Publish records a published build (app.version_published), unless that
 // version is recorded already, and points p.Channel at it; an app with no
@@ -105,7 +121,7 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 	}
 	if p.Channel != "" && !slices.Contains(targets, p.Channel) {
 		if !slices.Contains(fixedChannels, p.Channel) && !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == p.Channel }) {
-			return Version{}, fieldError("channel", "is not one of the app's channels: add the variant on Manage apps first")
+			return Version{}, errUnknownVariant
 		}
 		targets = append(targets, p.Channel)
 	}
@@ -222,9 +238,15 @@ func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID, p *Ch
 		var evs []audit.Event
 		if p != nil {
 			label, anyOf := p.Label, role.Known(p.AnyOf)
-			if cur != nil && (label != cur.Label || !slices.Equal(anyOf, cur.AnyOf)) {
-				ev, err := audit.New(s.newID(), actor, EventChannelChanged, auditEntity, a.ID, now,
-					shownAs(name, cur.Label, cur.AnyOf), shownAs(name, label, anyOf))
+			// A new channel's label and audience are recorded too (before: none),
+			// so the trail says who a variant was given to from the start.
+			created := cur == nil && (label != Names{} || len(anyOf) > 0)
+			if created || cur != nil && (label != cur.Label || !slices.Equal(anyOf, cur.AnyOf)) {
+				var before any
+				if cur != nil {
+					before = shownAs(name, cur.Label, cur.AnyOf)
+				}
+				ev, err := audit.New(s.newID(), actor, EventChannelChanged, auditEntity, a.ID, now, before, shownAs(name, label, anyOf))
 				if err != nil {
 					return Channel{}, nil, err
 				}

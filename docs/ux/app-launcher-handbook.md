@@ -4,7 +4,7 @@ How App Launcher works today, how people use it, how an app joins it, how new
 apps should be designed, and what should change next. For everyone who uses the
 apps, administers them or builds them.
 
-As of 2026-11-05: production `b276a0a`; improvements 1–9 built on main since; a second review proposed 10–23, of which 10–12 are built. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
+As of 2026-11-05: production `b276a0a`; improvements 1–9 built on main since; a second review proposed 10–23, of which 10–16 are built. Decisions: [ADR 0006](../architecture/adr/0006-app-launcher.md).
 Rules and routes: [the spec](../specs/app-launcher.md). The research and options
 that led here: [the decision guide](app-launcher.md). Terms: glossary §13.
 
@@ -131,6 +131,8 @@ Recipes:
 | `launcher_channel_choices` | Each user's chosen channel per app |
 | `user_version_activity` | Who opened which version on which day (Trials) |
 | `user_version_activity` | Who opened which version on which day (Trials) |
+| `user_version_activity` | Who opened which version on which day (Trials) |
+| `user_version_activity` | Who opened which version on which day (Trials) |
 
 Every change is audited (`app.registered`, `app.changed`, `app.audience_changed`,
 `app.moved`, `app.version_published`, `app.channel_moved`, `app.channel_changed`).
@@ -235,10 +237,10 @@ Reviewed again on 2026-11-05, after improvements 1–9, through four lenses: **s
 
 - **S1. A lost `published` volume is never rebuilt** (High). *Fixed (improvement 10): publishing decides by the folder, so the same commit published again puts missing files back, and `-prune-apps` removes what no version names.* The docs say builds are rebuilt from git rather than backed up, but `api -publish-app` writes files only for a version it has no row for. After a restore onto a new droplet, or a lost volume, the database names versions whose folders are gone: `/apps/sim-scan/` answers 500, and `prod-up` or `prod-publish` reports "already published" and writes nothing. *Where:* `cmd/api/publish-app.go:61-81`.
 - **S2. Signing in as someone else on the same page shows the previous user's launcher** (Medium). *Fixed (improvement 11): the list is given only to the user it was loaded for, and the launcher starts afresh for each user; a test switches users.* `useLauncher` keeps the last list until the new user's arrives, the launcher copies pins and choices into state once, and signing out does not reload the page. On a shared tablet, B briefly sees A's tiles and pins; pinning then saves A's pins to B's account. Every app's Apps entry and channel stripe read the same stale list. *Where:* `@ppe/launcher` `load.ts:57-68`; `apps/launcher/src/app.tsx:80,84`.
-- **S3. A channel's audience decides who sees it, not who can open it, and the check fails open** (Medium). The page route is public by design (the data stays behind the API's permissions), so the stripe's redirect is the only gate, and it lets anyone stay while the list loads or fails. A Preview or variant build, or any kept `@<version>`, opens for anyone with the link, signed out included. Nothing in the spec says so. *Where:* `channel-stripe.tsx:27`; `published-app-routes.go:41,54`.
-- **S4. Gaps in the audit trail and half-done publishes** (Low). A new variant's audience is not recorded (only `app.channel_moved`). Publishing to an unknown variant records the version before refusing. Two publishes of one version at once can delete the first one's files. The `prod-up` publish pipe has no `pipefail`, so a cut-off tar might be published as complete (suspected, not shown). *Where:* `service_versions.go:93,107,201`; `publish-app.go:71`; `Makefile` prod-up.
+- **S3. A channel's audience decides who sees it, not who can open it, and the check fails open** (Medium). *Fixed (improvement 13): the spec says an audience is what people see, not what they may open; the stripe waits while the list loads and sends the user to Stable once it fails.* The page route is public by design (the data stays behind the API's permissions), so the stripe's redirect is the only gate, and it lets anyone stay while the list loads or fails. A Preview or variant build, or any kept `@<version>`, opens for anyone with the link, signed out included. Nothing in the spec says so. *Where:* `channel-stripe.tsx:27`; `published-app-routes.go:41,54`.
+- **S4. Gaps in the audit trail and half-done publishes** (Low). *Fixed (improvement 14): a new variant's label and audience are recorded; the variant is checked before anything is written; the publish pipes run with `pipefail`. Two publishes at once keep the first's complete folder (improvement 10).* A new variant's audience is not recorded (only `app.channel_moved`). Publishing to an unknown variant records the version before refusing. Two publishes of one version at once can delete the first one's files. The `prod-up` publish pipe has no `pipefail`, so a cut-off tar might be published as complete (suspected, not shown). *Where:* `service_versions.go:93,107,201`; `publish-app.go:71`; `Makefile` prod-up.
 - **S5. Production runs a Caddy no test ran** (Low). *Fixed (improvement 12): the image builds on `caddy:${CADDY_VERSION}-alpine`, which a test keeps equal to CI's.* The web image is `FROM caddy:2-alpine`, while CI and `make e2e-caddy` pin `CADDY_VERSION` and its checksum. A rebuild can pick up a Caddy the policies and redirects were never tested on. *Where:* `web/Dockerfile:33`.
-- **S6. Failures the user never sees** (Low). Saving pins or a channel choice reverts silently when it fails. **Back to Stable** swallows a failed save, and the Stable address then sends the user straight back to the channel they chose. Device pins from phase 1 are deleted before the API has saved them. *Where:* `apps/launcher/src/app.tsx:98-118`; `channel-stripe.tsx:43-47`.
+- **S6. Failures the user never sees** (Low). *Fixed (improvements 13 and 15): failed saves are shown and undone; Back to Stable goes to `/stable/` when the save fails; device pins are forgotten only once saved. Showing the error found two pin saves at once failing on each other (“app slug already in use”); the API now takes them in turn.* Saving pins or a channel choice reverts silently when it fails. **Back to Stable** swallows a failed save, and the Stable address then sends the user straight back to the channel they chose. Device pins from phase 1 are deleted before the API has saved them. *Where:* `apps/launcher/src/app.tsx:98-118`; `channel-stripe.tsx:43-47`.
 
 ### Simplicity
 
@@ -253,7 +255,7 @@ Reviewed again on 2026-11-05, after improvements 1–9, through four lenses: **s
 
 ### Maintainability
 
-- **M1. Rules copied by hand with no test** (Medium). The slug rule and reserved slugs are in Go, in `new-app.ts` and in Administration (for slugs and variant names), and must also match Caddy's `/apps/` paths. The profile's policy is an if/else, so a third profile would silently get the staff policy. *Where:* `app.go:120,123`; `apps/admin/src/lib/apps.ts:90,137`; `published-app-routes.go:89-94`.
+- **M1. Rules copied by hand with no test** (Medium). *Fixed (improvement 16): the slug rule lives in `app-slugs.ts`, which a Go test reads; profiles map to policies, and tests check every profile and reserved slug against Caddy.* The slug rule and reserved slugs are in Go, in `new-app.ts` and in Administration (for slugs and variant names), and must also match Caddy's `/apps/` paths. The profile's policy is an if/else, so a third profile would silently get the staff policy. *Where:* `app.go:120,123`; `apps/admin/src/lib/apps.ts:90,137`; `published-app-routes.go:89-94`.
 - **M2. A variant can take a screen's address** (Low). The first path segment is a channel when one has that name, so a variant called `find` would take over Scan SIMs' `/find` for everyone. *Where:* `service_versions.go:478-481`.
 - **M3. Leftovers are never cleaned** (Low). A killed publish leaves `.incoming/` behind, and folders no version names stay, and Caddy serves them. *Where:* `publish-app.go`; `Caddyfile:60-65`.
 - **M4. Risky paths without tests** (Low). `untar` is tested only with `../`: not with links, absolute names, duplicates or its caps. Nothing tests publishing a recorded version whose files are gone, a page with no `</head>` (its meta tags are dropped silently), the stripe's redirects, or `useLauncher` when the user changes; S1, S2 and S6 would have shown there. *Where:* `api_postgres_test.go:2082`.
@@ -282,10 +284,10 @@ Sorted by value for effort; each keeps the number of moving parts the same or lo
 | 10 | **Rebuild what is missing**: `-publish-app` writes the files whenever `<version>/index.html` is missing, recorded or not, and skips a complete folder; `-prune-apps` removes `.incoming/` and folders no version names; tests for both | S1, S4, M3 | Safety | S | Built 2026-11-05 |
 | 11 | **One launcher list per user**: `useLauncher` returns a list only for the signed-in user; `<Launcher key={userId}>`; a test that changes the user | S2 | Safety | S | Built 2026-11-05 |
 | 12 | **Pin production's Caddy**: `FROM caddy:${CADDY_VERSION}-alpine`, from the value `ci.yml` pins and checks | S5 | Safety | S | Built 2026-11-05 |
-| 13 | **Say what an audience is, and fail closed**: The spec and this handbook: an audience chooses who sees a channel, not who may open it; off Stable with the list failed, go to Stable; the stripe links to `/stable/`, which keeps the choice from sending the user back | S3, S6 | Safety | S | Proposed |
-| 14 | **Finish publishes in the right order**: `app.channel_changed` for a new variant's audience; the variant checked in `CheckPublish`; `pipefail` on the publish pipe | S4 | Safety | S | Proposed |
-| 15 | **Show failures in the launcher**: A message when saving pins or a choice fails; device pins removed only after the save | S6 | Safety | S | Proposed |
-| 16 | **One slug rule, one profile map**: The slug rule and reserved slugs exported once from `@ppe/launcher` and read by a Go test (as the icons are); `map[Profile]policy` with a test that every profile has a policy and a Caddy matcher, and that reserved slugs match Caddy's `/apps/` paths | M1 | Maintainability | S | Proposed |
+| 13 | **Say what an audience is, and fail closed**: The spec and this handbook: an audience chooses who sees a channel, not who may open it; off Stable with the list failed, go to Stable; the stripe links to `/stable/`, which keeps the choice from sending the user back | S3, S6 | Safety | S | Built 2026-11-05 |
+| 14 | **Finish publishes in the right order**: `app.channel_changed` for a new variant's audience; the variant checked in `CheckPublish`; `pipefail` on the publish pipe | S4 | Safety | S | Built 2026-11-05 |
+| 15 | **Show failures in the launcher**: A message when saving pins or a choice fails; device pins removed only after the save | S6 | Safety | S | Built 2026-11-05 |
+| 16 | **One slug rule, one profile map**: The slug rule and reserved slugs exported once from `@ppe/launcher` and read by a Go test (as the icons are); `map[Profile]policy` with a test that every profile has a policy and a Caddy matcher, and that reserved slugs match Caddy's `/apps/` paths | M1 | Maintainability | S | Built 2026-11-05 |
 | 17 | **Fill the test gaps**: `untar` with links, absolute names, duplicates and its caps; a recorded version without files; a page without `</head>`; the stripe's redirects | M4 | Maintainability | S | Proposed |
 | 18 | **Cache a version's page**: The rewritten `index.html` kept in memory by version id with an `ETag`; channels read for one app | E1 | Efficiency | S | Proposed |
 | 19 | **Small tidy-ups**: The launcher on `SignedIn`; Administration reads the launcher's words; one Playwright server helper; the slips in M5 | P3, M5 | Simplicity | S | Proposed |
@@ -294,7 +296,7 @@ Sorted by value for effort; each keeps the number of moving parts the same or lo
 | 22 | **Channels apart from screens**: Refuse a variant named like one of the app's first-level screens, or move channels under a prefix (`/apps/<slug>/~beta/`, old addresses redirected) | M2 | Maintainability | S–M | Proposed |
 | 23 | **Start only the servers a run needs**: An `E2E_APPS=` filter, once a third app makes startup noticeable | E2 | Efficiency | S | Proposed |
 
-**Order.** 10, 11 and 12 first (built: S1 and S2 could hurt, each fix was small), then 13–16, then the rest as the code is touched. 20–23 can wait for a second published app.
+**Order.** 10–16 are built (every safety finding, and the rules kept by hand). 17–19 next, as the code is touched; 20–23 can wait for a second published app.
 
 ### Built (2026-11-05)
 
@@ -310,4 +312,4 @@ Sorted by value for effort; each keeps the number of moving parts the same or lo
 | 8 | Trials on Manage apps: opens, errors and feedback per version |
 | 9 | `make e2e-caddy`: the suite behind Caddy at CI's pinned version, in Docker |
 
-**Simplicity check before building more.** Most findings are small and safety comes first: the three that could bite (S1, S2, S5) are fixed by 10–12. The structural question is still P1. Before a second published app, decide which channel features earn their keep; if none of variants, per-user choices and Trials is used in three months, remove them rather than maintain them.
+**Simplicity check before building more.** Every safety finding (S1–S6) and the hand-kept rules (M1) are fixed by 10–16, each a small change with its test. The structural question is still P1. Before a second published app, decide which channel features earn their keep; if none of variants, per-user choices and Trials is used in three months, remove them rather than maintain them.

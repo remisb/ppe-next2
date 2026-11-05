@@ -1,4 +1,5 @@
 import type { AppChannel, AppGroup, AppIcon, AppInput, AppKind, AppStage, AppTier, AppVersion, LauncherApp, NewAppInput, Permission } from '@ppe/api-client'
+import { APP_SLUG_PATTERN, RESERVED_APP_SLUGS } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 
@@ -87,7 +88,7 @@ export function validateApp(d: AppDraft, isNew: boolean): AppErrors {
   if (isNew) {
     const slug = d.slug.trim().toLowerCase()
     if (!slug) errors.slug = t.apps.enterSlug
-    else if (!/^[a-z][a-z0-9-]{1,30}$/.test(slug)) errors.slug = t.apps.badSlug
+    else if (!APP_SLUG_PATTERN.test(slug) || RESERVED_APP_SLUGS.includes(slug)) errors.slug = t.apps.badSlug
   }
   if (d.kind === 'shortcut' && !d.parent) errors.parent = t.apps.chooseParent
   const names = Object.values(input.names)
@@ -134,7 +135,7 @@ export function validateVariant(d: VariantDraft, taken: readonly string[]): Part
   const errors: Partial<Record<'name' | 'label' | 'version', string>> = {}
   const name = d.name.trim()
   if (!name) errors.name = t.apps.enterVariantName
-  else if (!/^[a-z][a-z0-9-]{1,30}$/.test(name)) errors.name = t.apps.badSlug
+  else if (!APP_SLUG_PATTERN.test(name)) errors.name = t.apps.badSlug
   else if (['stable', 'beta', 'preview'].includes(name) || taken.includes(name)) errors.name = t.apps.variantTaken
   if (!d.label.en.trim() || !d.label.lt.trim() || !d.label.ru.trim()) errors.label = t.apps.enterName
   if (!d.version) errors.version = t.apps.chooseVersion

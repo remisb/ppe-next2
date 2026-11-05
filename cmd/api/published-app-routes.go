@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"html"
 	"net/http"
 	"os"
@@ -25,6 +26,17 @@ const (
 		"worker-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; " +
 		"object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
 )
+
+// pagePolicy is what a profile's page is sent: its Content-Security-Policy
+// and Permissions-Policy (none for the standard profile).
+type pagePolicy struct{ csp, permissions string }
+
+// profilePolicies has one entry per launcher.Profiles (TestEveryProfileHasAPolicy);
+// a version whose profile has none is refused, never given the staff policy.
+var profilePolicies = map[launcher.Profile]pagePolicy{
+	launcher.ProfileStandard: {csp: staffPolicy},
+	launcher.ProfileDevice:   {csp: devicePolicy, permissions: "camera=(self)"},
+}
 
 // publishedApps answers the pages of apps published under /apps/<slug>/
 // (ADR 0006, phase 3): Caddy serves their files from the published folder,
@@ -69,6 +81,11 @@ func (h *publishedApps) page(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v := res.Version
+	policy, ok := profilePolicies[v.Profile]
+	if !ok {
+		writeError(w, r, fmt.Errorf("published app %s %s: no policy for profile %q", slug, v.Version, v.Profile))
+		return
+	}
 	page, err := os.ReadFile(filepath.Join(h.dir, string(v.Profile), slug, v.Version, "index.html"))
 	if err != nil {
 		writeError(w, r, err)
@@ -86,11 +103,9 @@ func (h *publishedApps) page(w http.ResponseWriter, r *http.Request) {
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Cache-Control", "no-cache")
 	hd.Set("X-Content-Type-Options", "nosniff")
-	if v.Profile == launcher.ProfileDevice {
-		hd.Set("Content-Security-Policy", devicePolicy)
-		hd.Set("Permissions-Policy", "camera=(self)")
-	} else {
-		hd.Set("Content-Security-Policy", staffPolicy)
+	hd.Set("Content-Security-Policy", policy.csp)
+	if policy.permissions != "" {
+		hd.Set("Permissions-Policy", policy.permissions)
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(out))

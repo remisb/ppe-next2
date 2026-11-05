@@ -7,6 +7,8 @@ import {
   channelName,
   channelsOf,
   chosenChannel,
+  devicePins,
+  forgetDevicePins,
   launcherText,
   loadRecent,
   loadShowTesting,
@@ -16,7 +18,6 @@ import {
   rememberChoice,
   rememberPins,
   saveShowTesting,
-  takeDevicePins,
   togglePin,
   useLauncher,
 } from '@ppe/launcher'
@@ -26,7 +27,7 @@ import { Field, Textarea, controlProps } from '@ppe/ui/components/field'
 import { GavortEmblem } from '@ppe/ui/components/gavort-logo'
 import { Kbd } from '@ppe/ui/components/kbd'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { ErrorState, Loading } from '@ppe/ui/components/states'
+import { ActionError, ErrorState, Loading } from '@ppe/ui/components/states'
 import { formatDate } from '@ppe/ui/lib/dates'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -93,12 +94,22 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
   const pinned = pinnedOf(shown, pins)
   const recentApps = recentOf(shown, recent)
 
-  const savePins = (next: string[]) => {
+  // A save that fails puts things back as they were and says so, here and in the ⋯ dialog.
+  const [saveError, setSaveError] = useState<{ title: string; error: unknown } | null>(null)
+  const savePins = (next: string[]): Promise<boolean> => {
     const before = pins
     setPins(next)
-    client.launcher.setPins(next).then(
-      (r) => rememberPins(session.userId, r.slugs),
-      () => setPins(before),
+    return client.launcher.setPins(next).then(
+      (r) => {
+        rememberPins(session.userId, r.slugs)
+        setSaveError(null)
+        return true
+      },
+      (error: unknown) => {
+        setPins(before)
+        setSaveError({ title: text.pinsNotSaved, error })
+        return false
+      },
     )
   }
   const opened = (app: LauncherApp) => setRecent(noteOpened(session.userId, app.slug))
@@ -109,15 +120,23 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
     else next[app.slug] = channel
     setChoices(next)
     client.launcher.chooseChannel(app.slug, channel).then(
-      () => rememberChoice(session.userId, app.slug, channel),
-      () => setChoices(before),
+      () => {
+        rememberChoice(session.userId, app.slug, channel)
+        setSaveError(null)
+      },
+      (error: unknown) => {
+        setChoices(before)
+        setSaveError({ title: text.choiceNotSaved, error })
+      },
     )
   }
 
   // Pins phase 1 kept on this device go to the API once, while it has none.
   useEffect(() => {
-    const device = takeDevicePins(session.userId).filter((slug) => list.apps.some((a) => a.slug === slug))
-    if (device.length && !list.pins.length) savePins(device)
+    // Forgotten on this device only once the API has them, or has pins of its own.
+    const device = devicePins(session.userId).filter((slug) => list.apps.some((a) => a.slug === slug))
+    if (device.length && !list.pins.length) void savePins(device).then((saved) => saved && forgetDevicePins(session.userId))
+    else forgetDevicePins(session.userId)
     // Once per load of the list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list])
@@ -204,6 +223,7 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
         </header>
 
         <main id="main" tabIndex={-1} className="flex min-w-0 flex-col gap-6 px-4 pt-4 pb-12 outline-none md:px-6 md:pt-6">
+          <ActionError title={saveError?.title} error={saveError?.error} />
           <div className="flex flex-col gap-3">
             <form role="search" onSubmit={openFirst} className="max-w-xl">
               <label className="flex min-h-12 items-center gap-2 rounded-xl border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
@@ -285,7 +305,8 @@ function Launcher({ session, list, onSignOut }: { session: Session; list: Launch
         list={current}
         onChoose={chooseChannel}
         pinned={about ? pins.includes(about.slug) : false}
-        onPin={() => about && savePins(togglePin(pins, about.slug))}
+        onPin={() => about && void savePins(togglePin(pins, about.slug))}
+        saveError={saveError}
         onOpen={() => about && opened(about)}
         onClose={() => setAbout(null)}
       />
@@ -378,6 +399,7 @@ function About({
   onPin,
   onOpen,
   onClose,
+  saveError,
 }: {
   app: LauncherApp | null
   list: LauncherList
@@ -386,6 +408,7 @@ function About({
   onPin: () => void
   onOpen: () => void
   onClose: () => void
+  saveError: { title: string; error: unknown } | null
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const text = launcherText()
@@ -426,6 +449,7 @@ function About({
               <X aria-hidden className="size-5" />
             </Button>
           </div>
+          <ActionError title={saveError?.title} error={saveError?.error} />
           {app.kind === 'app' ? (
             <Segmented
               label={appName(app)}

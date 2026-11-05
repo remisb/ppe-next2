@@ -23,6 +23,10 @@ const (
 	ProfileDevice Profile = "device"
 )
 
+// Profiles is every profile: each has a policy in cmd/api and a handle in
+// deploy/Caddyfile (/apps/files/<profile>/*), which tests check.
+var Profiles = []Profile{ProfileStandard, ProfileDevice}
+
 // Capabilities are what a build may ask for beyond the staff app's policy.
 var Capabilities = []string{"wasm", "workers", "camera"}
 

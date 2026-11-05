@@ -21,6 +21,8 @@ import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, symlin
 import { extname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+// By path: this file runs in Node, beside the workspace's packages.
+import { APP_SLUG_PATTERN, RESERVED_APP_SLUGS } from '../../api-client/src/app-slugs.ts'
 import { publishedApps } from './published-apps.ts'
 
 export interface NewApp {
@@ -47,9 +49,6 @@ export interface Started {
   untranslated: boolean
 }
 
-// The launcher's own paths under /apps/ (launcher.reservedSlugs) and its slug rule (slugPattern).
-const reservedSlugs = ['assets', 'files']
-const slugPattern = /^[a-z][a-z0-9-]{1,30}$/
 
 /** The dev ports of the apps that are not published (the staff app, Administration, App Launcher) and their e2e ports. */
 const fixedPorts = [5180, 5181, 5182, 5183, 5186, 5187]
@@ -79,8 +78,8 @@ export function newApp(app: NewApp, paths: Paths): Started {
   const name = app.name.trim()
   const nameLt = app.nameLt?.trim() || name
   const nameRu = app.nameRu?.trim() || name
-  if (!slugPattern.test(slug)) throw new Error(`slug ${JSON.stringify(slug)}: a lower-case letter, then 2 to 31 lower-case letters, digits or hyphens`)
-  if (reservedSlugs.includes(slug)) throw new Error(`slug ${slug} is App Launcher's own path under /apps/`)
+  if (!APP_SLUG_PATTERN.test(slug)) throw new Error(`slug ${JSON.stringify(slug)}: a lower-case letter, then 2 to 31 lower-case letters, digits or hyphens`)
+  if (RESERVED_APP_SLUGS.includes(slug)) throw new Error(`slug ${slug} is App Launcher's own path under /apps/`)
   if (name === '') throw new Error('name: the app needs a name in English')
   const dir = join(webDir, 'apps', slug)
   if (existsSync(dir)) throw new Error(`${dir} exists already`)

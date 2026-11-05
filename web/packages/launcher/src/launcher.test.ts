@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hasSeveralApps, inTesting } from './catalogue.ts'
 import { loadLauncher, rememberPins } from './load.ts'
-import { RECENT_MAX, loadRecent, noteOpened, takeDevicePins, togglePin } from './places.ts'
+import { RECENT_MAX, devicePins, forgetDevicePins, loadRecent, noteOpened, togglePin } from './places.ts'
 import { tile } from './testing.ts'
 import { appName, dictionaries, launcherText, parentName } from './text.ts'
 
@@ -80,10 +80,12 @@ describe('recent apps and pins', () => {
     expect(loadRecent('u3')).toEqual([])
   })
 
-  it('hands phase 1’s device pins over once, keeping the recent apps', () => {
+  it('keeps phase 1’s device pins until they are forgotten (once the API has them), keeping the recent apps', () => {
     localStorage.setItem('workwear.launcher.u1', JSON.stringify({ pinned: ['crew', 'admin'], recent: ['orders'] }))
-    expect(takeDevicePins('u1')).toEqual(['crew', 'admin'])
-    expect(takeDevicePins('u1')).toEqual([])
+    expect(devicePins('u1')).toEqual(['crew', 'admin'])
+    expect(devicePins('u1')).toEqual(['crew', 'admin'])
+    forgetDevicePins('u1')
+    expect(devicePins('u1')).toEqual([])
     expect(loadRecent('u1')).toEqual(['orders'])
   })
 })

@@ -438,3 +438,26 @@ func TestWebClientListsTheIcons(t *testing.T) {
 		t.Errorf("app-icons.ts lists %v, the API %v", web, Icons)
 	}
 }
+
+// Manage apps and make new-app check a slug as the API does.
+func TestWebClientKeepsTheSlugRule(t *testing.T) {
+	src, err := os.ReadFile("../../../web/packages/api-client/src/app-slugs.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pattern := regexp.MustCompile(`APP_SLUG_PATTERN = /(.+)/\n`).FindSubmatch(src)
+	if pattern == nil || string(pattern[1]) != slugPattern.String() {
+		t.Errorf("app-slugs.ts's APP_SLUG_PATTERN is %q, the API's %q", pattern, slugPattern.String())
+	}
+	list := regexp.MustCompile(`RESERVED_APP_SLUGS: readonly string\[\] = \[(.*?)\]`).FindSubmatch(src)
+	if list == nil {
+		t.Fatal("no RESERVED_APP_SLUGS list in app-slugs.ts")
+	}
+	var web []string
+	for _, m := range regexp.MustCompile(`'([^']+)'`).FindAllSubmatch(list[1], -1) {
+		web = append(web, string(m[1]))
+	}
+	if !slices.Equal(web, ReservedSlugs) {
+		t.Errorf("app-slugs.ts reserves %v, the API %v", web, ReservedSlugs)
+	}
+}
