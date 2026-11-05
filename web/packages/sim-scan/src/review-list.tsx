@@ -10,6 +10,7 @@
  */
 import { Input } from '@ppe/ui/components/field'
 import { Button } from '@ppe/ui/components/button'
+import { Thumb } from '@ppe/scan-kit/thumb'
 import { cn } from '@ppe/ui/lib/utils'
 import { CircleAlert, Info, Trash2 } from 'lucide-react'
 import { type ReactNode, useId } from 'react'
@@ -232,14 +233,6 @@ function Problems({ id, messages }: { id: string; messages: string[] }) {
   )
 }
 
-/** A side's picture as a line's lead, or an empty frame where there is none. */
-export function Thumb({ src, alt, className }: { src: string | undefined; alt: string; className?: string | undefined }) {
-  return src ? (
-    <img src={src} alt={alt} className={cn('h-11 w-full rounded border border-border object-cover', className)} />
-  ) : (
-    <span aria-hidden className={cn('h-11 w-full rounded border border-dashed border-border', className)} />
-  )
-}
 
 /** What a mark says, in the language in use. */
 export function message(m: RowMark | undefined): string | undefined {

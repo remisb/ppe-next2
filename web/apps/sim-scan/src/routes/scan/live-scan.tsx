@@ -1,5 +1,6 @@
-import { type ScanCard, Steady, pickSimNo, simKey, simScanText } from '@ppe/sim-scan'
-import { beep, eachFrame, guideCrop, startCamera, stopCamera } from '@ppe/sim-scan/camera'
+import { Steady } from '@ppe/scan-kit'
+import { beep, eachFrame, guideCrop, startCamera, stopCamera } from '@ppe/scan-kit/camera'
+import { type ScanCard, pickSimNo, simKey, simScanText } from '@ppe/sim-scan'
 import { message } from '@ppe/sim-scan/review-list'
 import { Button } from '@ppe/ui/components/button'
 import { cn } from '@ppe/ui/lib/utils'

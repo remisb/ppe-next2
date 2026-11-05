@@ -1,5 +1,7 @@
 import { MAX_CARDS, type ScanCard, cardComplete, rowMarks, simScanText, withPhoto } from '@ppe/sim-scan'
-import { CardFields, Thumb } from '@ppe/sim-scan/review-list'
+import { CardFields } from '@ppe/sim-scan/review-list'
+import type { PictureStore } from '@ppe/scan-kit/pictures'
+import { Thumb } from '@ppe/scan-kit/thumb'
 import { Button } from '@ppe/ui/components/button'
 import { ActionError } from '@ppe/ui/components/states'
 import { Camera, CircleCheck, Loader2, Pencil } from 'lucide-react'
@@ -7,7 +9,6 @@ import { useRef, useState } from 'react'
 
 import { loadReaders } from '@/lib/readers'
 
-import type { PictureStore } from './picture-store'
 import { newKey } from './scan-list'
 
 /**

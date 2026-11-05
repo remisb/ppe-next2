@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ppe/mrz": "workspace:*",
+    "@ppe/scan-kit": "workspace:*",
     "@tesseract.js-data/eng": "1.0.0",
     "tesseract.js": "7.0.0",
     "tesseract.js-core": "7.0.0"

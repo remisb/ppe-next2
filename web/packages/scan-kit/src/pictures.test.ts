@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PictureStore } from './picture-store'
+import { PictureStore } from './pictures.ts'
 
 /** Blob URLs as the browser would make them, with the ones revoked counted. */
 function fakeUrls() {

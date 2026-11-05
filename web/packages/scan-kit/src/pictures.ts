@@ -1,9 +1,11 @@
 /**
- * The screen's pictures: each photo or camera snapshot as a blob URL, by its
- * id, for the thumbnails. A picture is kept before the card that shows it is
- * (so the render that shows the card finds it), and forgotten, its URL
- * revoked, once no card shows it (ScanList's `released`) or the screen goes.
- * Pictures live in memory only (docs/specs/asset-service.md "Scan SIM cards").
+ * A screen's pictures: each photo or camera snapshot as a blob URL, by its
+ * id, for the thumbnails. A picture is kept before whatever shows it (so the
+ * render that shows it finds it), and forgotten, its URL revoked, once nothing
+ * shows it (Scan SIMs' list lets it go as `released`) or the screen goes.
+ * Pictures live in memory only, never in browser storage: they may show codes
+ * or a person's documents (docs/specs/asset-service.md "Scan SIM cards",
+ * docs/apps/docs-import-plan.md PR-1).
  */
 import { useEffect, useState } from 'react'
 

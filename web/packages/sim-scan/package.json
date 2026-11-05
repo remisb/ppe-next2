@@ -3,11 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Scan SIMs: reading SIM card carriers (the SIM No. barcode, the printed PIN and PUK) in the browser, pairing fronts and backs, and the review list's rules. Used by the trial app at /apps/sim-scan/, later by the staff app.",
+  "description": "Scan SIMs: reading SIM card carriers in the browser (the SIM No. barcode, the printed PIN and PUK, on @ppe/scan-kit's readers), pairing fronts and backs, and the review list's rules. Used by the trial app at /apps/sim-scan/, later by the staff app.",
   "exports": {
     ".": "./src/index.ts",
     "./readers": "./src/readers.ts",
-    "./camera": "./src/camera.ts",
     "./reader-files": "./src/reader-files.ts",
     "./review-list": "./src/review-list.tsx"
   },
@@ -19,13 +18,11 @@
   "dependencies": {
     "@ppe/api-client": "workspace:*",
     "@ppe/i18n": "workspace:*",
+    "@ppe/scan-kit": "workspace:*",
     "@ppe/ui": "workspace:*",
     "@tesseract.js-data/eng": "1.0.0",
-    "tesseract.js": "7.0.0",
-    "tesseract.js-core": "7.0.0",
     "lucide-react": "^1.48.0",
-    "react": "^19.3.0",
-    "zxing-wasm": "3.1.5"
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

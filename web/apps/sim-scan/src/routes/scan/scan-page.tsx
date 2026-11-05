@@ -3,7 +3,8 @@ import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { staffHref } from '@ppe/routing'
 import { type BatchSettings, MAX_CARDS, type PictureRead, batchRequest, blocks, pairPhotos, simKey, simScanText } from '@ppe/sim-scan'
-import { cameraAvailable } from '@ppe/sim-scan/camera'
+import { cameraAvailable } from '@ppe/scan-kit/camera'
+import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { ReviewList } from '@ppe/sim-scan/review-list'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { ActionError, PageHeader } from '@ppe/ui/components/states'
@@ -16,7 +17,6 @@ import { loadReaders } from '@/lib/readers'
 import { BatchCard } from './batch-card'
 import { CardInProgress } from './card-in-progress'
 import { LiveScan } from './live-scan'
-import { usePictureStore } from './picture-store'
 import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
 
 /**
@@ -28,7 +28,7 @@ import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
  * switch keeps the list; the camera stops while it is hidden.
  *
  * The list is a reducer (scan-list.ts) and its pictures a PictureStore
- * (picture-store.ts); this file wires them to the readers, the API and the
+ * (@ppe/scan-kit/pictures); this file wires them to the readers, the API and the
  * screen's parts (batch-card, card-in-progress, live-scan).
  */
 export function ScanPage({ active = true }: { active?: boolean }) {

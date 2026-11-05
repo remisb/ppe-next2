@@ -531,7 +531,12 @@ Each is read in `loadConfig` and checked in `validate` (`TestLoadConfigDefaults`
 ## 6. Reuse: what comes from Scan SIMs
 
 The reusable half of `@ppe/sim-scan` moves to a new package **`@ppe/scan-kit`**. Scan SIMs then
-depends on it, and its behaviour does not change.
+depends on it, and its behaviour does not change. *Done 2026-11-05 (phase 0): `@ppe/scan-kit`
+holds the camera, `Steady`, `canvasOf`/`imageDataOf`, `createBarcodeReader` (the worker and its
+protocol, formats a parameter), `createTextReader` (with `ready()`; the spike uses it too),
+`PictureStore`/`usePictureStore`, `Thumb` and the reader-files plugin (`serveReaderFiles(files)`,
+`barcodeReaderFiles()`, `textReaderFiles()`, `packageDir()`). Still to come with docs-import's
+screens: `PhotoSlot`, a generalised `pairPhotos`, and the image worker (in the spike today).*
 
 | Scan SIMs piece | Where it is now | In docs-import | Action |
 | --- | --- | --- | --- |
@@ -564,7 +569,8 @@ staff app, it takes `@ppe/scan-kit` and `@ppe/mrz` with it, as Scan SIMs will ta
 
 | Phase | Content | Done when |
 | --- | --- | --- |
-| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) (The e2e/test-db lock, R10, is done.) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check |
+
+| **0. Shared kit** | Extract `@ppe/scan-kit` from `@ppe/sim-scan` and the Scan SIMs app: camera, `Steady`, canvas helpers, the worker pattern, `PictureStore`, `Thumb`/`PhotoSlot`, a generalised reader-files plugin and `createTextReader`. (Scan SIMs' F1–F4 and the keyring, which revision 1 put here, are done.) (The e2e/test-db lock, R10, is done.) | Scan SIMs' unit and e2e tests (Vite and Caddy) pass unchanged, including its worker check Done 2026-11-05: `web/packages/scan-kit` (camera, `Steady`, canvas, `createBarcodeReader`, `createTextReader`, pictures, `Thumb`, reader-files plugin); Scan SIMs and the spike use it, Scan SIMs' build unchanged file for file. `PhotoSlot` waits for docs-import's screens |
 | **1. Reading spike** | `@ppe/mrz` (TS) with ICAO test vectors; band finding and threshold; choose the OCR-B model; a bare test page in the app reading specimens. Measure on synthetic specimens and on the team's **own** documents (read locally, never committed) | NFR-4 and NFR-5 numbers recorded; model and licence chosen. **Go / no-go gate.** Done 2026-11-05: **go** ([Phase 1 results](#phase-1-results-revision-3-the-go--no-go-gate)); phones and the team's own documents still to be measured |
 | **2. Personnel backend** | ADR 0007; `internal/personnel/document` (five-file layout), Go MRZ parser on the shared vectors, keyring and subject keys, blind index, migrations, permissions, routes, audit events, `api-client` | Go service and Postgres tests pass, including PR-2's no-leak test; `routes_test.go` policy |
 | **3. docs-import app** | `make new-app`, then the device profile by hand (R7); Person → Capture → Review → Save as one screen's steps, without the portrait | e2e (Vite and Caddy): synthetic passport and ID card read from photos, checked, saved; the workers run; the employee shows "valid until" |

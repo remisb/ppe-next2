@@ -2,7 +2,6 @@ import { dictionaryProblems, noProblems } from '@ppe/i18n/testing'
 import { describe, expect, it } from 'vitest'
 
 import {
-  Steady,
   batchRequest,
   cardComplete,
   codesFromWords,
@@ -200,18 +199,6 @@ describe('batchRequest', () => {
       non_return_value_cents: 5000,
       cards: [{ sim_no: A, pin: '0306', puk: '93691381' }],
     })
-  })
-})
-
-describe('Steady', () => {
-  it('takes a reading seen twice in a row', () => {
-    const s = new Steady<string>()
-    const id = (v: string) => v
-    expect(s.see(A, id)).toBeNull()
-    expect(s.see(B, id)).toBeNull()
-    expect(s.see(B, id)).toBe(B)
-    expect(s.see(null, id)).toBeNull()
-    expect(s.see(B, id)).toBeNull()
   })
 })
 

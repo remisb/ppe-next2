@@ -8,7 +8,8 @@ import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 // By path, not '@ppe/sim-scan/reader-files': Vite bundles a config's relative
-// imports, while a package's TypeScript would reach Node unbundled.
+// imports, while a package's TypeScript would reach Node unbundled. It lists
+// @ppe/scan-kit's readers' files and Scan SIMs' English model.
 import { serveReaderFiles } from '../../packages/sim-scan/src/reader-files.ts'
 
 // Scan SIMs, the trial, is a published app (ADR 0006, phase 3): its build is

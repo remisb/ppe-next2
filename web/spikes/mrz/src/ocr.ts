@@ -1,10 +1,14 @@
 /**
- * The text reader as a factory (plan §5.2: Scan SIMs' reader is fixed to
- * English and its own whitelist): one tesseract.js worker per model, started
- * on first use, its files from this origin. No cache, so every run measures
- * the first use's download (Scan SIMs keeps the data in IndexedDB).
+ * The text reader for the spike: @ppe/scan-kit's createTextReader (the
+ * factory the plan's section 6 asks for, which Scan SIMs uses too), with an
+ * MRZ's settings: no dictionaries (an MRZ has no words) and no cache, so every
+ * run measures the first use's download. Started at once, so a reading's time
+ * never includes the start.
  */
-import { createWorker, OEM, PSM, type Worker as TextWorker } from 'tesseract.js'
+import { createTextReader as textReader, PSM, type TextReader } from '@ppe/scan-kit/text-reader'
+
+export { PSM }
+export type { TextReader }
 
 export interface TextReaderOptions {
   lang: string
@@ -14,36 +18,17 @@ export interface TextReaderOptions {
   psm: PSM
 }
 
-export interface TextReader {
-  read(image: HTMLCanvasElement): Promise<{ text: string; confidence: number }>
-  stop(): Promise<void>
+const noDictionaries = {
+  load_system_dawg: '0',
+  load_freq_dawg: '0',
+  load_unambig_dawg: '0',
+  load_punc_dawg: '0',
+  load_number_dawg: '0',
+  load_bigram_dawg: '0',
 }
 
 export async function createTextReader(o: TextReaderOptions): Promise<TextReader> {
-  const w: TextWorker = await createWorker(o.lang, OEM.LSTM_ONLY, {
-    workerPath: `${o.base}worker.min.js`,
-    corePath: o.base,
-    langPath: o.base.replace(/\/$/, ''),
-    gzip: true,
-    workerBlobURL: false,
-    cacheMethod: 'none',
-  }, {
-    // No dictionaries (set when the model loads): an MRZ has no words.
-    load_system_dawg: '0',
-    load_freq_dawg: '0',
-    load_unambig_dawg: '0',
-    load_punc_dawg: '0',
-    load_number_dawg: '0',
-    load_bigram_dawg: '0',
-  })
-  await w.setParameters({ tessedit_pageseg_mode: o.psm, tessedit_char_whitelist: o.whitelist })
-  return {
-    async read(image) {
-      const { data } = await w.recognize(image)
-      return { text: data.text, confidence: data.confidence }
-    },
-    stop: () => w.terminate().then(() => undefined),
-  }
+  const reader = textReader({ ...o, initParameters: noDictionaries, cache: false })
+  await reader.ready()
+  return reader
 }
-
-export { PSM }

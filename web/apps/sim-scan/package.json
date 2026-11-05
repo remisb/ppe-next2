@@ -18,6 +18,7 @@
     "@ppe/i18n": "workspace:*",
     "@ppe/launcher": "workspace:*",
     "@ppe/routing": "workspace:*",
+    "@ppe/scan-kit": "workspace:*",
     "@ppe/sim-scan": "workspace:*",
     "@ppe/ui": "workspace:*",
     "lucide-react": "^1.48.0",

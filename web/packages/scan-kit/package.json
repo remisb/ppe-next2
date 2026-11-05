@@ -1,0 +1,35 @@
+{
+  "name": "@ppe/scan-kit",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Reading things with a phone's camera or from photos, in the browser: the camera and its guide frame, two-frame steadiness, canvas helpers, a barcode reader and a text reader each in a worker, the readers' own files (a Vite plugin), the screen's pictures and their thumbnails. Shared by Scan SIMs (@ppe/sim-scan) and docs-import (docs/apps/docs-import-plan.md, section 6).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./camera": "./src/camera.ts",
+    "./barcodes": "./src/barcodes.ts",
+    "./text-reader": "./src/text-reader.ts",
+    "./pictures": "./src/pictures.ts",
+    "./thumb": "./src/thumb.tsx",
+    "./reader-files": "./src/reader-files.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ppe/ui": "workspace:*",
+    "react": "^19.3.0",
+    "tesseract.js": "7.0.0",
+    "tesseract.js-core": "7.0.0",
+    "zxing-wasm": "3.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

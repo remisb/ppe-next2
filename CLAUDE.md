@@ -114,7 +114,8 @@ spec "Photos" in `employee-service.md`): any number each in the files store, one
 fixed list (`PHOTO_USES`). **Scan SIMs** (ADR 0005, spec "Scan SIM cards" and "PIN and PUK"
 in `asset-service.md`) is a **trial app**, published at `/apps/sim-scan/` (`web/apps/sim-scan`, the third on the
 origin, reporting as `workwear`; its rules, readers, words and review list in
-`web/packages/sim-scan`, to merge into the staff app beside SIM Cards once it passes): newly
+`web/packages/sim-scan`, on `@ppe/scan-kit`'s camera, workers, pictures and reader-files plugin
+(shared with docs-import), to merge into the staff app beside SIM Cards once it passes): newly
 received SIM cards read from their carriers in the browser (zxing-wasm for the SIM No.'s
 barcode, tesseract.js for the PIN and PUK; their files its build's own, under `readers/`), with
 the camera or from photos, checked in a review list (`POST /api/v1/assets/sim-cards/batch/check`)
@@ -500,7 +501,9 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   session with `can(permission)`, Sign in, Confirm your password, theme, density, password
   rules, the router), `@ppe/i18n` (language machinery; packages keep small dictionaries of
   their own), `@ppe/backups`, `@ppe/audit` (how recorded changes read: actions, changed
-  fields, the Changes section). A screen shows controls by `session.can(...)`, never by role.
+  fields, the Changes section), `@ppe/scan-kit` (reading with the camera or from photos: the
+  camera, barcode and text readers in workers, pictures, the readers' files' Vite plugin) and
+  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import). A screen shows controls by `session.can(...)`, never by role.
   A package with components of its own is named with `@source` in each app's `index.css`:
   Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested

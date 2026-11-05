@@ -6,6 +6,7 @@
  * once, while the user edits.
  */
 import type { ScannedSimInput, SimBatchInput, SimProblem, SimProblemCode } from '@ppe/api-client'
+import type { OcrWord } from '@ppe/scan-kit/text-reader'
 
 /** A scanned SIM No.: an ICCID, 89 and 17 more digits, with the 20-character form's filler F. */
 export const SIM_NO = /^89\d{17}F?$/
@@ -60,14 +61,8 @@ export function pickSimNo(barcodes: readonly string[]): string | null {
   return null
 }
 
-/** A word the text reader found, with its box in the image's pixels. */
-export interface OcrWord {
-  text: string
-  x0: number
-  y0: number
-  x1: number
-  y1: number
-}
+/** A word the text reader found, with its box in the image's pixels (@ppe/scan-kit's). */
+export type { OcrWord } from '@ppe/scan-kit/text-reader'
 
 /** A carrier's PIN and PUK, as far as they were read. */
 export interface Codes {
@@ -295,37 +290,6 @@ export function batchRequest(settings: BatchSettings, cards: readonly ScanCard[]
   if (settings.valueCents !== null) input.non_return_value_cents = settings.valueCents
   if (settings.receivedDate !== '') input.received_date = settings.receivedDate
   return input
-}
-
-/**
- * Live scanning accepts a reading once it is the same twice in a row, so one
- * misread frame is never taken.
- */
-export class Steady<T> {
-  #last: string | undefined
-  #count = 0
-  readonly #needed: number
-  constructor(needed = 2) {
-    this.#needed = needed
-  }
-
-  /** The value, once seen needed times in a row; else null. */
-  see(value: T | null, key: (v: T) => string): T | null {
-    if (value === null) {
-      this.#last = undefined
-      this.#count = 0
-      return null
-    }
-    const k = key(value)
-    this.#count = k === this.#last ? this.#count + 1 : 1
-    this.#last = k
-    return this.#count >= this.#needed ? value : null
-  }
-
-  reset(): void {
-    this.#last = undefined
-    this.#count = 0
-  }
 }
 
 /**

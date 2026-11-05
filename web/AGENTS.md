@@ -443,6 +443,6 @@ images and requests come from the app's own origin only. So:
   that the device policy is the staff one with exactly those two additions, and Go's
   `TestPublishedPoliciesMatchCaddy` that the API's copies equal Caddy's. Its readers' files
   (WebAssembly, the worker, the cores and the English data) are its own build's, under
-  `<filesBase>readers/` (`@ppe/sim-scan/reader-files`), never from a CDN.
+  `<filesBase>readers/` (`@ppe/sim-scan/reader-files`, on `@ppe/scan-kit`'s plugin), never from a CDN.
 - The e2e suite fails on any violation when run behind Caddy (`E2E_WEB_SERVER=caddy`, as CI does).
 
