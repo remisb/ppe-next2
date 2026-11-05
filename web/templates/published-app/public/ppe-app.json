@@ -1,1 +1,1 @@
-{ "slug": "__SLUG__", "capabilities": [], "devPort": __DEV_PORT__ }
+{ "slug": "__SLUG__", "profile": "standard", "screens": [], "devPort": __DEV_PORT__ }

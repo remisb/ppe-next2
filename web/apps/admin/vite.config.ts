@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
+// By path: Vite bundles a config's relative imports (see apps/sim-scan's).
+import { fixedApps } from '../../packages/launcher/src/published-apps.ts'
+
 // Administration is mounted at /admin/ (adminBase in @ppe/routing, and
 // deploy/Caddyfile). Open it through the staff app's dev server,
 // http://localhost:5180/admin/, which proxies /admin here: one origin, so the
@@ -18,7 +21,7 @@ export default defineConfig(({ mode }) => {
     base: '/admin/',
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { port: 5182, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target, '/ready': target } },
+    server: { port: fixedApps.admin, strictPort: true, proxy: { '/api': { target, changeOrigin: false }, '/health': target, '/ready': target } },
     test: { environment: 'jsdom', globals: true },
   }
 })

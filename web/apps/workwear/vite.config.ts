@@ -6,7 +6,7 @@ import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 // By path: Vite bundles a config's relative imports (see apps/sim-scan's).
-import { publishedApps, targetEnv } from '../../packages/launcher/src/published-apps.ts'
+import { fixedApps, publishedApps, targetEnv } from '../../packages/launcher/src/published-apps.ts'
 
 // The dev server proxies /api to the Go API so the browser sees one origin and
 // no CORS is needed. VITE_API_TARGET in .env.local overrides the target, e.g.
@@ -26,8 +26,8 @@ import { publishedApps, targetEnv } from '../../packages/launcher/src/published-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), 'VITE_')
   const target = env['VITE_API_TARGET'] ?? 'http://localhost:8090'
-  const admin = env['VITE_ADMIN_TARGET'] ?? 'http://localhost:5182'
-  const launcher = env['VITE_LAUNCHER_TARGET'] ?? 'http://localhost:5186'
+  const admin = env['VITE_ADMIN_TARGET'] ?? `http://localhost:${fixedApps.admin}`
+  const launcher = env['VITE_LAUNCHER_TARGET'] ?? `http://localhost:${fixedApps.launcher}`
   const published = publishedApps(fileURLToPath(new URL('../..', import.meta.url))).map((a) => [
     `/apps/${a.slug}`,
     { target: env[targetEnv(a.slug)] ?? `http://localhost:${a.devPort}`, changeOrigin: false, ws: true },
@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: {
-      port: 5180,
+      port: fixedApps.workwear,
       strictPort: true,
       proxy: {
         '/api': { target, changeOrigin: false },

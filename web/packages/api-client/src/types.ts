@@ -1534,7 +1534,7 @@ export interface LauncherList {
   choices: Record<string, string>
 }
 
-/** The policy a published version gets, from the capabilities it declared. */
+/** The policy a published version gets, named by its manifest (older builds: from the capabilities they declared). */
 export type AppProfile = 'standard' | 'device'
 
 /** One published build of an app (ADR 0006, phase 3), never changed once published. */
@@ -1544,7 +1544,10 @@ export interface AppVersion {
   /** YYYY.MM.DD-<commit> */
   version: string
   profile: AppProfile
+  /** What builds declared before they named a profile; none for newer ones. */
   capabilities: string[]
+  /** The first-level screens its router uses: no variant is named like one. */
+  screens: string[]
   commit: string
   published_at: string
   /** null for a deploy's. */

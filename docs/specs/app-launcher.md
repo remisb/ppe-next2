@@ -149,12 +149,15 @@ development the staff app's Vite server proxies `/apps` and `/apps/…` to the l
 ## Published apps: versions and channels
 
 Phase 3 (ADR 0006, "As built, phase 3"). An app on this site may be **published**: built with
-Vite's `base: './'` and a `ppe-app.json` (`{"slug", "capabilities", "devPort"}`, from its
+Vite's `base: './'` and a `ppe-app.json` (`{"slug", "profile", "screens", "devPort"}`, from its
 `public/`) in its `dist/`, each build a **version** that never changes, and **channels** that
 point at versions. Scan SIMs is the first; every other app keeps its fixed address (and its
 tile's `href`). **A published app is found from its manifest**: every `web/apps/<slug>` with a
 `public/ppe-app.json` (`@ppe/launcher`'s `published-apps.ts`, which also checks the slug is the
-folder's and that no two share a port). The Makefile's `PUBLISHED_APPS`, the web image (it builds
+folder's and that no two share a port, nor one of the fixed apps': the staff app's, Administration's
+and App Launcher's dev ports are declared there alone, `fixedApps`, which the Vite configs, e2e, `make
+new-app` and `.claude/launch.json` follow (`published-apps.test.ts` compares the last; `make new-app`
+adds the new app to it). The Makefile's `PUBLISHED_APPS`, the web image (it builds
 every `apps/*` and copies each published app's `dist/` to `/srv/build/<slug>`), the staff app's
 dev proxy (`/apps/<slug>` to the app's `devPort`, or `VITE_APP_<SLUG>_TARGET`) and the e2e servers
 (each on `devPort + 1`) all read it, so a new published app needs no edit outside its folder.
@@ -180,10 +183,19 @@ tests and build, and is then removed.
   who sees a channel and is sent to it, not who may open it**: the page route and the files are
   public (the data behind them is the API's, by permission), so anyone with a channel's or a
   kept version's address can load that build. Do not put anything in a build that its audience
-  alone may see.
-- **Profiles.** The build's capabilities (`wasm`, `workers`, `camera`; any other refused) give
-  its profile: none `standard` (the staff app's policy), any `device` (Scan SIMs' policy:
-  WebAssembly, workers from its own files, the camera). A new capability or profile is a
+  alone may see. **No new channel feature until a second published app needs one**: variants,
+  per-user choices, Stable follows deploys and Trials serve Scan SIMs alone.
+- **Screens.** The manifest lists the first-level path segments its router uses (`screens`,
+  Scan SIMs' `["find"]`; each like a slug, never `stable`, `beta` or `preview`, each once; kept in
+  `launcher_versions.screens`, migration 0046). `/apps/<slug>/<name>/` opens a channel before a
+  screen, so a variant is never named like a screen of any of the app's versions, and a build is
+  refused when a screen of it is a variant's name; the app's router test keeps `screens` equal to
+  its routes.
+- **Profiles.** The manifest names its profile: `standard` (the staff app's policy) or `device`
+  (Scan SIMs' policy: WebAssembly, workers from its own files, the camera). Builds from before
+  name capabilities instead (`wasm`, `workers`, `camera`; none means `standard`, any `device`),
+  which are still read for an older git ref; a manifest with both must have them agree. A new
+  capability or profile is a
   reviewed change to `launcher.Capabilities` and `launcher.Profiles`, `profilePolicies` in
   `cmd/api/published-app-routes.go` and `deploy/Caddyfile` (`TestPublishedPoliciesMatchCaddy`,
   `TestEveryProfileHasAPolicy`); a version whose profile has no policy answers 500, never the

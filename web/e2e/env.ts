@@ -5,17 +5,18 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { type PublishedApp, publishedApps as findPublishedApps } from '../packages/launcher/src/published-apps.ts'
+import { type PublishedApp, fixedApps, publishedApps as findPublishedApps } from '../packages/launcher/src/published-apps.ts'
 
 export const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 export const dbDSN = process.env['E2E_DB_DSN'] ?? process.env['API_TEST_DB_DSN'] ?? 'postgres://ppe2:ppe2@localhost:5442/ppe2_test?sslmode=disable'
 export const apiPort = 18090
-export const webPort = 5181
+// Each app's e2e server takes the port after its dev server's (published-apps.ts' fixedApps).
+export const webPort = fixedApps.workwear + 1
 /** Administration's Vite server; the staff app's proxies /admin to it, so tests open it at webURL/admin/. */
-export const adminPort = 5183
+export const adminPort = fixedApps.admin + 1
 /** App Launcher's Vite server; the staff app's proxies /apps to it, so tests open it at webURL/apps/. */
-export const launcherPort = 5187
+export const launcherPort = fixedApps.launcher + 1
 export const webURL = `http://localhost:${webPort}`
 
 /** E2E_WEB_SERVER=caddy: the production bundle behind deploy/Caddyfile, as CI runs it. */
@@ -29,12 +30,25 @@ export const caddyMode = process.env['E2E_WEB_SERVER'] === 'caddy'
 export const appsDir = join(tmpdir(), 'ppe-next2-e2e-published')
 
 /**
- * The published apps (every web/apps/<slug> with a public/ppe-app.json, such
- * as Scan SIMs). With Vite each runs its own server on its e2ePort, which the
- * staff app's proxies /apps/<slug> to; behind Caddy global setup publishes each
- * one's pnpm build, as a deploy does.
+ * The published apps a run uses (every web/apps/<slug> with a
+ * public/ppe-app.json, such as Scan SIMs). With Vite each runs its own server
+ * on its e2ePort, which the staff app's proxies /apps/<slug> to; behind Caddy
+ * global setup publishes each one's pnpm build, as a deploy does.
+ *
+ * E2E_APPS=<slug>,… starts (or publishes) only those, and E2E_APPS= none, so a
+ * run that needs no published app does not wait for their servers; the steps
+ * that need one are skipped (needsApp). Unset: all of them.
  */
-export const publishedApps: PublishedApp[] = findPublishedApps(fileURLToPath(new URL('..', import.meta.url)))
+const allPublishedApps: PublishedApp[] = findPublishedApps(fileURLToPath(new URL('..', import.meta.url)))
+const asked = process.env['E2E_APPS']
+export const publishedApps: PublishedApp[] =
+  asked === undefined ? allPublishedApps : allPublishedApps.filter((a) => asked.split(',').map((s) => s.trim()).includes(a.slug))
+for (const slug of asked?.split(',').map((s) => s.trim()).filter(Boolean) ?? []) {
+  if (!allPublishedApps.some((a) => a.slug === slug)) throw new Error(`E2E_APPS names ${slug}, which is no published app in web/apps`)
+}
+
+/** Whether this run starts (or publishes) the published app slug (E2E_APPS). */
+export const runsApp = (slug: string) => publishedApps.some((a) => a.slug === slug)
 
 // A test-only account created by global setup; not a real credential.
 export const admin = { email: 'e2e-admin@example.com', password: 'e2e-password-123', name: 'E2E Admin' }

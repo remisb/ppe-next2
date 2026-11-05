@@ -51,8 +51,10 @@ trial is a third app on the same terms, published at `/apps/sim-scan/` (`simScan
 5184, `pnpm --dir apps/sim-scan dev`, proxied from 5180 for `/apps/sim-scan` before the
 launcher's `/apps`). A **published app** (ADR 0006 phase 3, `docs/specs/app-launcher.md`)
 builds with Vite's `base: './'` (its dev server keeps `/apps/<slug>/`), ships
-`public/ppe-app.json` (`slug`, the folder's name; `capabilities`; `devPort`, its dev server's,
-the e2e server taking the next), which is all the build, the deploy, the staff app's dev proxy
+`public/ppe-app.json` (`slug`, the folder's name; `profile`, `standard` or `device`;
+`screens`, the first-level path segments its router uses, which its router test keeps true and
+no variant may be named like; `devPort`, its dev server's, the e2e server taking the next; the
+staff app's, Administration's and App Launcher's are `published-apps.ts`' `fixedApps`), which is all the build, the deploy, the staff app's dev proxy
 and e2e need to find it (start one with `make new-app SLUG= NAME=`, from
 `web/templates/published-app`, which also adds its tile in POC; change the template when the
 apps' shared setup changes, as `pnpm check:new-app` in CI builds it), and reads where it is mounted and where its
@@ -422,7 +424,7 @@ images and requests come from the app's own origin only. So:
   `'none'` left the preview blank in Safari (Chrome ignores it). Other sites still may not
   frame the app.
 - **Published apps get their policy by profile** (ADR 0006 phase 3): `standard` is the staff
-  policy; `device` (any capability declared, Scan SIMs, ADR 0005) adds `'wasm-unsafe-eval'`
+  policy; `device` (the manifest's profile, Scan SIMs, ADR 0005) adds `'wasm-unsafe-eval'`
   in `script-src` (its barcode and text readers are WebAssembly; still no `eval`) and
   `worker-src 'self'` (the text reader's worker, from its own file, `workerBlobURL: false`),
   and `Permissions-Policy: camera=(self)`. The API sends it with the page

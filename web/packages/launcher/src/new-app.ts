@@ -23,7 +23,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 // By path: this file runs in Node, beside the workspace's packages.
 import { APP_SLUG_PATTERN, RESERVED_APP_SLUGS } from '../../api-client/src/app-slugs.ts'
-import { publishedApps } from './published-apps.ts'
+import { fixedPorts, publishedApps } from './published-apps.ts'
 
 export interface NewApp {
   slug: string
@@ -40,6 +40,8 @@ export interface Paths {
   templateDir?: string
   /** internal/domain/launcher/defaults.go, or null for no tile. */
   defaultsFile?: string | null
+  /** .claude/launch.json, where the app's dev server is added, or null for none. */
+  launchFile?: string | null
 }
 
 export interface Started {
@@ -50,13 +52,11 @@ export interface Started {
 }
 
 
-/** The dev ports of the apps that are not published (the staff app, Administration, App Launcher) and their e2e ports. */
-const fixedPorts = [5180, 5181, 5182, 5183, 5186, 5187]
 const marker = '// make new-app adds'
 
 /** The first even port from 5188 that no app uses for development or e2e. */
 export function nextDevPort(webDir: string): number {
-  const used = new Set([...fixedPorts, ...publishedApps(webDir).flatMap((a) => [a.devPort, a.e2ePort])])
+  const used = new Set([...fixedPorts(), ...publishedApps(webDir).flatMap((a) => [a.devPort, a.e2ePort])])
   let port = 5188
   while (used.has(port) || used.has(port + 1)) port += 2
   return port
@@ -74,6 +74,8 @@ export function newApp(app: NewApp, paths: Paths): Started {
   const webDir = paths.webDir
   const templateDir = paths.templateDir ?? join(webDir, 'templates', 'published-app')
   const defaultsFile = paths.defaultsFile === undefined ? join(webDir, '..', 'internal', 'domain', 'launcher', 'defaults.go') : paths.defaultsFile
+  const defaultLaunch = join(webDir, '..', '.claude', 'launch.json')
+  const launchFile = paths.launchFile === undefined ? (existsSync(defaultLaunch) ? defaultLaunch : null) : paths.launchFile
   const slug = app.slug.trim()
   const name = app.name.trim()
   const nameLt = app.nameLt?.trim() || name
@@ -105,10 +107,12 @@ export function newApp(app: NewApp, paths: Paths): Started {
       })
       return { file: join(dir, f), text }
     })
+  const launch = launchFile ? withLaunchConfig(readFileSync(launchFile, 'utf8'), slug, devPort) : null
   for (const { file, text } of filled) {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, text)
   }
+  if (launchFile && launch) writeFileSync(launchFile, launch)
 
   if (defaultsFile) {
     const tile =
@@ -118,6 +122,29 @@ export function newApp(app: NewApp, paths: Paths): Started {
     writeFileSync(defaultsFile, defaults.slice(0, at) + tile + defaults.slice(at))
   }
   return { dir, devPort, untranslated: nameLt === name || nameRu === name }
+}
+
+/**
+ * launch.json with a dev server for the app added after the last one, in the
+ * file's own layout (one key per line, arrays on one line), or null when it
+ * has one by that name already.
+ */
+export function withLaunchConfig(text: string, slug: string, devPort: number): string | null {
+  const parsed = JSON.parse(text) as { configurations: { name: string }[] }
+  if (parsed.configurations.some((c) => c.name === slug)) return null
+  const at = text.lastIndexOf('\n  ]')
+  if (at < 0) throw new Error('.claude/launch.json: no configurations list to add the app to')
+  const entry = [
+    '    {',
+    `      "name": ${JSON.stringify(slug)},`,
+    '      "runtimeExecutable": "pnpm",',
+    `      "runtimeArgs": ["--dir", ${JSON.stringify(`web/apps/${slug}`)}, "dev"],`,
+    `      "port": ${devPort}`,
+    '    }',
+  ].join('\n')
+  const next = text.slice(0, at) + ',\n' + entry + text.slice(at)
+  JSON.parse(next)
+  return next
 }
 
 /** Starts an app from the template, typechecks, tests and builds it, and removes it. */
@@ -131,7 +158,7 @@ function check(webDir: string): void {
   // Any app whose installed packages are a superset of the template's.
   const donor = readdirSync(join(webDir, 'apps')).find((a) => needs.every((p) => existsSync(join(webDir, 'apps', a, 'node_modules', p))))
   if (!donor) throw new Error(`no app in apps/ has installed every package the template needs (${needs.join(', ')}): run pnpm install`)
-  const started = newApp({ slug, name: 'New App Check', nameLt: 'Naujos programos patikra', nameRu: 'Проверка нового приложения' }, { webDir, defaultsFile: null })
+  const started = newApp({ slug, name: 'New App Check', nameLt: 'Naujos programos patikra', nameRu: 'Проверка нового приложения' }, { webDir, defaultsFile: null, launchFile: null })
   try {
     symlinkSync(join(webDir, 'apps', donor, 'node_modules'), join(started.dir, 'node_modules'), 'dir')
     for (const [bin, ...args] of [['tsc', '--noEmit'], ['vitest', 'run'], ['vite', 'build', '--logLevel', 'warn']] as const) {

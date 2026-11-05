@@ -110,7 +110,14 @@ app, without DNS or address work for each.
   beyond the newest five and publishes nothing from a dirty checkout. Then 7, 8 and 9: code owns
   a default tile until an administrator changes it (synced at start-up, audited); phase 5's
   **Trials** view on Manage apps (each version's people, errors and feedback; migration 0045);
-  `make e2e-caddy` runs the suite behind the production Caddy config from Docker.
+  `make e2e-caddy` runs the suite behind the production Caddy config from Docker. Then the
+  second review's 10–23 (the handbook): missing files rebuilt by publishing again, one launcher
+  list per user, a pinned production Caddy, audiences that hide rather than guard (the stripe
+  fails closed), save errors shown, one slug rule, tests for untar and every profile, a page
+  cached per version with an `ETag`, ports declared once, `E2E_APPS`; the manifest now names
+  its **profile** (capabilities stay readable for older builds) and its **screens**, which no
+  variant may be named like (migration 0046). No new channel feature is built until a second
+  published app needs one.
 
 ## Consequences
 

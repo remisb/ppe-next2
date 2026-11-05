@@ -18,11 +18,13 @@ function workspace(others: Record<string, number> = {}) {
   const webDir = mkdtempSync(join(tmpdir(), 'new-app-'))
   for (const [slug, devPort] of Object.entries({ 'sim-scan': 5184, ...others })) {
     mkdirSync(join(webDir, 'apps', slug, 'public'), { recursive: true })
-    writeFileSync(join(webDir, 'apps', slug, 'public', 'ppe-app.json'), JSON.stringify({ slug, capabilities: [], devPort }))
+    writeFileSync(join(webDir, 'apps', slug, 'public', 'ppe-app.json'), JSON.stringify({ slug, profile: 'standard', devPort }))
   }
   const defaultsFile = join(webDir, 'defaults.go')
   copyFileSync(realDefaults, defaultsFile)
-  return { webDir, templateDir, defaultsFile }
+  const launchFile = join(webDir, 'launch.json')
+  copyFileSync(join(web, '..', '.claude', 'launch.json'), launchFile)
+  return { webDir, templateDir, defaultsFile, launchFile }
 }
 
 const read = (dir: string, file: string) => readFileSync(join(dir, file), 'utf8')
@@ -32,9 +34,9 @@ describe('make new-app', () => {
     const paths = workspace()
     const started = newApp({ slug: 'size-helper', name: 'Size Helper', nameLt: 'Dydžių pagalbininkas', nameRu: 'Помощник по размерам' }, paths)
     expect(started).toEqual({ dir: join(paths.webDir, 'apps', 'size-helper'), devPort: 5188, untranslated: false })
-    expect(publishedApps(paths.webDir).map((a) => [a.slug, a.devPort, a.capabilities])).toEqual([
-      ['sim-scan', 5184, []],
-      ['size-helper', 5188, []],
+    expect(publishedApps(paths.webDir).map((a) => [a.slug, a.devPort, a.profile])).toEqual([
+      ['sim-scan', 5184, 'standard'],
+      ['size-helper', 5188, 'standard'],
     ])
     expect(JSON.parse(read(started.dir, 'package.json')).name).toBe('@ppe/size-helper-app')
     expect(read(started.dir, 'src/main.tsx')).toContain('<ApiProvider app="size-helper"')
@@ -42,6 +44,9 @@ describe('make new-app', () => {
     for (const f of readdirSync(started.dir, { recursive: true, encoding: 'utf8' }).filter((f) => /\.\w+$/.test(f))) {
       expect(read(started.dir, f), f).not.toMatch(/__[A-Z_]+__/)
     }
+    // Its dev server in launch.json, in the file's own layout, after the others.
+    const launch = readFileSync(paths.launchFile, 'utf8')
+    expect(launch).toContain('    {\n      "name": "size-helper",\n      "runtimeExecutable": "pnpm",\n      "runtimeArgs": ["--dir", "web/apps/size-helper", "dev"],\n      "port": 5188\n    }\n  ]\n}')
     const defaults = readFileSync(paths.defaultsFile, 'utf8')
     expect(defaults).toContain(
       '\t{Slug: "size-helper", Kind: KindApp, Group: "workwear", Icon: "box", Color: "#3b4256", Href: "/apps/size-helper/", Tier: TierHere, Stage: StagePOC,\n' +

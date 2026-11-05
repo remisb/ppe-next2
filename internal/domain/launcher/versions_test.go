@@ -38,6 +38,68 @@ func TestProfileOf(t *testing.T) {
 	}
 }
 
+// A manifest names its profile; an older build's capabilities still say it,
+// and both together must agree. Its screens are path segments, never a fixed
+// channel's name, each once.
+func TestManifest(t *testing.T) {
+	for _, c := range []struct {
+		m    Manifest
+		want Profile
+	}{
+		{Manifest{Profile: ProfileDevice}, ProfileDevice},
+		{Manifest{Profile: ProfileStandard}, ProfileStandard},
+		{Manifest{Capabilities: []string{"wasm"}}, ProfileDevice},
+		{Manifest{}, ProfileStandard},
+		{Manifest{Profile: ProfileDevice, Capabilities: []string{"camera"}}, ProfileDevice},
+	} {
+		if p, err := c.m.ProfileOf(); err != nil || p != c.want {
+			t.Errorf("%+v = %v, %v", c.m, p, err)
+		}
+	}
+	for _, m := range []Manifest{{Profile: "gpu"}, {Profile: ProfileStandard, Capabilities: []string{"wasm"}}, {Profile: ProfileDevice, Capabilities: []string{"usb"}}} {
+		if _, err := m.ProfileOf(); !errors.Is(err, ErrInvalid) {
+			t.Errorf("%+v = %v", m, err)
+		}
+	}
+	for _, screens := range [][]string{{"Find"}, {"beta"}, {"find", "find"}, {"@x"}} {
+		p := scanSIMs("2026.11.05-aaa", "")
+		p.Manifest.Screens = screens
+		if err := p.Validate(); !errors.Is(err, ErrInvalid) {
+			t.Errorf("screens %v = %v", screens, err)
+		}
+	}
+}
+
+// A variant is never named like a screen: /apps/<slug>/<name>/ opens a
+// channel before a screen, so it would take the screen's address.
+func TestVariantsAndScreens(t *testing.T) {
+	repo := newMem()
+	svc := NewService(repo)
+	ctx, admin := context.Background(), uuid.New()
+	p := scanSIMs("2026.11.04-aaa", ChannelPreview)
+	p.Manifest = Manifest{Slug: "sim-scan", Profile: ProfileDevice, Screens: []string{"find"}}
+	v, err := svc.Publish(ctx, p, nil)
+	if err != nil || !slices.Equal(v.Screens, []string{"find"}) || v.Profile != ProfileDevice {
+		t.Fatalf("Publish = %+v, %v", v, err)
+	}
+	label := Names{"Find", "Rasti", "Найти"}
+	if _, err := svc.PointChannel(ctx, "sim-scan", "find", ChannelParams{Version: v.Version, Label: label}, admin); !errors.Is(err, ErrInvalid) {
+		t.Errorf("a variant named like a screen: %v", err)
+	}
+	if _, err := svc.PointChannel(ctx, "sim-scan", "photos-first", ChannelParams{Version: v.Version, Label: label}, admin); err != nil {
+		t.Fatal(err)
+	}
+	// A build whose screens a variant's address would take is refused, and not recorded.
+	next := scanSIMs("2026.11.05-bbb", "")
+	next.Manifest = Manifest{Slug: "sim-scan", Profile: ProfileDevice, Screens: []string{"find", "photos-first"}}
+	if _, err := svc.Publish(ctx, next, nil); !errors.Is(err, ErrInvalid) {
+		t.Errorf("a screen named like a variant: %v", err)
+	}
+	if _, found, _ := svc.Version(ctx, "sim-scan", "2026.11.05-bbb"); found {
+		t.Error("a build refused for its screens was recorded")
+	}
+}
+
 func TestPublishAndChannels(t *testing.T) {
 	repo := newMem()
 	svc := NewService(repo)

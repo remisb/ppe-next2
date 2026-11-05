@@ -69,7 +69,7 @@ func publishApp(ctx context.Context, svc services, cfg config, in io.Reader, out
 	if _, err := svc.launcher.CheckPublish(ctx, p); err != nil {
 		return err
 	}
-	profile, err := launcher.ProfileOf(m.Capabilities)
+	profile, err := m.ProfileOf()
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
-import { admin, apiEnv, caddyMode, publishBuild, repoRoot, webURL } from '../env.ts'
+import { admin, apiEnv, caddyMode, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -284,8 +284,10 @@ test('App Launcher: the apps of the roles as tiles, pinned on this device, and a
   await expect(page).toHaveURL(/\/admin\/$/)
   await page.getByRole('link', { name: 'Apps', exact: true }).filter({ visible: true }).click()
   await expect(page).toHaveURL(/\/apps\/$/)
-  await page.goto('/apps/sim-scan/')
-  await expect(page.getByRole('link', { name: 'Apps', exact: true })).toHaveAttribute('href', '/apps/')
+  if (runsApp('sim-scan')) {
+    await page.goto('/apps/sim-scan/')
+    await expect(page.getByRole('link', { name: 'Apps', exact: true })).toHaveAttribute('href', '/apps/')
+  }
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Apps', exact: true }).filter({ visible: true })).toHaveAttribute('href', '/apps/')
@@ -3422,6 +3424,7 @@ test('Sign in: too many failed attempts for one account are refused for a while'
 })
 
 test('Scan SIMs: photos of the cards read into a list, checked, added at once, then Show PIN and PUK', async () => {
+  test.skip(!runsApp('sim-scan'), 'Scan SIMs is not started (E2E_APPS)')
   // The trial app at /apps/sim-scan/, on the staff app's sign-in. The cards are made up (fixtures/sim-cards/make.ts).
   await page.goto('/apps/sim-scan/')
   await expect(page.getByRole('heading', { name: 'Scan SIMs' })).toBeVisible()
@@ -3529,6 +3532,7 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
 
 test('Scan SIMs, published: a variant on a new version, chosen in App Launcher; Make Stable promotes and rolls back', async () => {
   test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
+  test.skip(!runsApp('sim-scan'), 'Scan SIMs is not published (E2E_APPS)')
   // A second build, as make prod-publish publishes one: no channel points at it yet.
   expect(publishBuild('sim-scan', '2026.01.02-e2e')).toContain('sim-scan 2026.01.02-e2e published (device)')
   await page.goto('/admin/apps/sim-scan')
@@ -3616,7 +3620,8 @@ test('no screen broke the Content-Security-Policy', async () => {
   if (process.env['E2E_WEB_SERVER'] === 'caddy') {
     // Scan SIMs' page comes from the API, its files from Caddy, each with the device profile's policy, and one policy each.
     const worker = '/apps/files/device/sim-scan/2026.01.01-e2e/readers/worker.min.js'
-    for (const path of ['/', '/admin/', '/admin/users', '/apps/', '/apps/sim-scan/', '/apps/sim-scan/find', worker]) {
+    const scanSIMs = runsApp('sim-scan') ? ['/apps/sim-scan/', '/apps/sim-scan/find', worker] : []
+    for (const path of ['/', '/admin/', '/admin/users', '/apps/', ...scanSIMs]) {
       const res = await page.request.get(path)
       expect(res.status(), path).toBe(200)
       const policies = res.headersArray().filter((h) => h.name.toLowerCase() === 'content-security-policy')

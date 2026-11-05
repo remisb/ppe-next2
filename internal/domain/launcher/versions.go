@@ -60,8 +60,11 @@ type Version struct {
 	Version      string    `json:"version"`
 	Profile      Profile   `json:"profile"`
 	Capabilities []string  `json:"capabilities"`
-	Commit       string    `json:"commit"`
-	PublishedAt  time.Time `json:"published_at"`
+	// Screens are the first-level screens its router uses (/apps/<slug>/<screen>):
+	// no variant may be named like one.
+	Screens     []string  `json:"screens"`
+	Commit      string    `json:"commit"`
+	PublishedAt time.Time `json:"published_at"`
 	// PublishedByUserID is nil for a deploy's.
 	PublishedByUserID *uuid.UUID `json:"published_by_user_id"`
 }
@@ -93,8 +96,53 @@ func ValidVersion(v string) bool { return versionPattern.MatchString(v) }
 
 // Manifest is a build's ppe-app.json: which app it is and what it needs.
 type Manifest struct {
-	Slug         string   `json:"slug"`
+	Slug string `json:"slug"`
+	// Profile names the build's policy (standard or device).
+	Profile Profile `json:"profile"`
+	// Capabilities are what builds declared before profile: each known one
+	// means device. Still read, for older builds published from a git ref.
 	Capabilities []string `json:"capabilities"`
+	// Screens are the first-level path segments the app's router uses.
+	Screens []string `json:"screens"`
+}
+
+// ProfileOf is the manifest's profile: its profile when it names one (and
+// any capabilities it still lists must mean the same), else its capabilities'.
+func (m Manifest) ProfileOf() (Profile, error) {
+	if m.Profile == "" {
+		return ProfileOf(m.Capabilities)
+	}
+	if !slices.Contains(Profiles, m.Profile) {
+		return "", fieldError("profile", "is not a known profile: "+string(m.Profile))
+	}
+	if len(m.Capabilities) > 0 {
+		if p, err := ProfileOf(m.Capabilities); err != nil || p != m.Profile {
+			return "", fieldError("capabilities", "do not mean the profile it names, "+string(m.Profile))
+		}
+	}
+	return m.Profile, nil
+}
+
+// maxScreens bounds a manifest's screens.
+const maxScreens = 50
+
+func (m Manifest) validateScreens() error {
+	if len(m.Screens) > maxScreens {
+		return fieldError("screens", "are too many")
+	}
+	seen := map[string]bool{}
+	for _, s := range m.Screens {
+		switch {
+		case !slugPattern.MatchString(s):
+			return fieldError("screens", "names "+s+", which is not a path segment like find")
+		case slices.Contains(fixedChannels, s):
+			return fieldError("screens", "names "+s+", a channel's address")
+		case seen[s]:
+			return fieldError("screens", "names "+s+" twice")
+		}
+		seen[s] = true
+	}
+	return nil
 }
 
 // PublishParams publishes a build of app Slug as Version, and points Channel
@@ -117,10 +165,10 @@ func (p PublishParams) Validate() error {
 	if p.Channel != "" && !slugPattern.MatchString(p.Channel) {
 		return fieldError("channel", "is not a channel's name")
 	}
-	if _, err := ProfileOf(p.Manifest.Capabilities); err != nil {
+	if _, err := p.Manifest.ProfileOf(); err != nil {
 		return err
 	}
-	return nil
+	return p.Manifest.validateScreens()
 }
 
 // ChannelParams points a channel at a version and, for a variant, names it;

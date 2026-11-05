@@ -199,11 +199,11 @@ func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps [
 	}))
 }
 
-const versionColumns = `id, app_id, version, profile, capabilities, commit, published_at, published_by_user_id`
+const versionColumns = `id, app_id, version, profile, capabilities, screens, commit, published_at, published_by_user_id`
 
 func scanVersion(row pgx.CollectableRow) (Version, error) {
 	var v Version
-	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
+	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Screens, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
 	v.PublishedAt = v.PublishedAt.UTC()
 	return v, err
 }
@@ -222,8 +222,8 @@ func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Ver
 
 func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-			v.ID, v.AppID, v.Version, v.Profile, v.Capabilities, v.Commit, v.PublishedAt, v.PublishedByUserID); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			v.ID, v.AppID, v.Version, v.Profile, v.Capabilities, v.Screens, v.Commit, v.PublishedAt, v.PublishedByUserID); err != nil {
 			return err
 		}
 		return audit.Insert(ctx, tx, ev)

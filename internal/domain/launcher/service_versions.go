@@ -63,14 +63,19 @@ func (s *Service) CheckPublish(ctx context.Context, p PublishParams) (App, error
 		return App{}, err
 	}
 	// Before anything is written or recorded: a publish that would fail on its
-	// channel leaves no files and no version behind.
-	if name := strings.TrimSpace(p.Channel); name != "" && !slices.Contains(fixedChannels, name) {
-		channels, err := s.appChannels(ctx, a.ID)
-		if err != nil {
-			return App{}, err
-		}
-		if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name }) {
-			return App{}, errUnknownVariant
+	// channel, or whose screens a variant's address would take, leaves no
+	// files and no version behind.
+	channels, err := s.appChannels(ctx, a.ID)
+	if err != nil {
+		return App{}, err
+	}
+	if name := strings.TrimSpace(p.Channel); name != "" && !slices.Contains(fixedChannels, name) &&
+		!slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name }) {
+		return App{}, errUnknownVariant
+	}
+	for _, c := range channels {
+		if slices.Contains(p.Manifest.Screens, c.Name) {
+			return App{}, fieldError("screens", "names "+c.Name+", the address of the variant "+c.Name+": rename one of them")
 		}
 	}
 	return a, nil
@@ -93,13 +98,16 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		return Version{}, err
 	}
 	if !found {
-		profile, _ := ProfileOf(p.Manifest.Capabilities)
+		profile, _ := p.Manifest.ProfileOf()
 		v = Version{
 			ID: s.newID(), AppID: a.ID, Version: p.Version, Profile: profile, Capabilities: slices.Clone(p.Manifest.Capabilities),
-			Commit: p.Commit, PublishedAt: s.now(), PublishedByUserID: actor,
+			Screens: slices.Clone(p.Manifest.Screens), Commit: p.Commit, PublishedAt: s.now(), PublishedByUserID: actor,
 		}
 		if v.Capabilities == nil {
 			v.Capabilities = []string{}
+		}
+		if v.Screens == nil {
+			v.Screens = []string{}
 		}
 		ev, err := audit.New(s.newID(), actor, EventVersionPublished, auditEntity, a.ID, v.PublishedAt, nil,
 			published{v.Version, v.Profile, v.Capabilities, v.Commit})
@@ -297,6 +305,17 @@ func (s *Service) PointChannel(ctx context.Context, slug, name string, p Channel
 	}
 	if !found {
 		return Channel{}, fieldError("version", "is not a published version of "+slug)
+	}
+	// /apps/<slug>/<name>/ opens a channel before a screen: a variant named
+	// like a screen of any version would take that screen's address.
+	if !slices.Contains(fixedChannels, name) {
+		versions, err := s.repo.Versions(ctx, a.ID)
+		if err != nil {
+			return Channel{}, err
+		}
+		if slices.ContainsFunc(versions, func(v Version) bool { return slices.Contains(v.Screens, name) }) {
+			return Channel{}, fieldError("name", "is a screen of "+slug+" (/"+name+"): a variant there would take its address")
+		}
 	}
 	return s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, &actor, &p))
 }

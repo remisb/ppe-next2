@@ -1,5 +1,6 @@
 {
   "slug": "sim-scan",
-  "capabilities": ["wasm", "workers", "camera"],
+  "profile": "device",
+  "screens": ["find"],
   "devPort": 5184
 }
