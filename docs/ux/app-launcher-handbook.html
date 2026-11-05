@@ -1,0 +1,383 @@
+<title>App Launcher Handbook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a reading handbook in the decision guide's look (docs/ux/app-launcher.html): sticky header with section links, one column of prose with wide tables, the staff app's navy brand and tile colours as samples. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --brand-fg:#ffffff; --accent:#3341a8; --accent-soft:#e8eafb;
+  --ok:#23703f; --ok-bg:#e4f3ea; --warn:#9a5a08; --warn-bg:#fcf0de; --bad:#b42318; --bad-bg:#fdeceb; --mute-bg:#eceef3;
+  --amber:#fde68a; --amber-fg:#451a03;
+  --t-navy:#1c2060; --t-green:#23703f; --t-blue:#2a5fb4; --t-teal:#0e7068; --t-scan:#0f5f8a; --t-crew:#9a4f0a; --t-slate:#3b4256;
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --amber:#78350f; --amber-fg:#fef3c7; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --brand-fg:#13153d; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --amber:#78350f; --amber-fg:#fef3c7; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15.5px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 72px}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:21; background:var(--bg)}
+h1,h2,h3{text-wrap:balance; margin:0; line-height:1.2}
+h1{font-size:clamp(28px,4vw,40px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:24px; font-weight:650; letter-spacing:-.01em}
+h3{font-size:16.5px; font-weight:650}
+p{margin:0}
+ul,ol{margin:0; padding-left:22px; display:grid; gap:6px}
+a{color:var(--accent)}
+code{font-family:var(--mono); font-size:.86em; background:var(--surface-2); padding:1px 5px; border-radius:5px; overflow-wrap:anywhere}
+b,strong{font-weight:600}
+.eyebrow{font-size:11.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:13.5px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter:blur(10px);
+  margin-left:calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding:10px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-bottom:1px solid var(--line)}
+.top-row{display:flex; align-items:center; gap:12px; max-width:1040px; margin:0 auto}
+.logo{width:28px; height:28px; border-radius:7px; background:var(--brand); color:var(--brand-fg); display:grid; place-items:center; flex:none}
+.top-title{font-weight:650; font-size:14.5px}
+.top-sub{font-size:12.5px; color:var(--muted)}
+nav.toc{display:flex; gap:2px; overflow-x:auto; max-width:1040px; margin:6px auto 0; scrollbar-width:none}
+nav.toc::-webkit-scrollbar{display:none}
+nav.toc a{padding:9px 11px 10px; font-size:13.5px; font-weight:550; color:var(--muted); text-decoration:none; border-bottom:2px solid transparent; white-space:nowrap}
+nav.toc a:hover{color:var(--fg)}
+nav.toc a[aria-current="true"]{color:var(--fg); border-bottom-color:var(--accent)}
+
+main{max-width:1040px; margin:0 auto; display:grid; gap:56px; padding-top:36px}
+section{display:grid; gap:18px; scroll-margin-top:110px; min-width:0}
+.prose{max-width:70ch; display:grid; gap:12px}
+.hero{display:grid; gap:14px}
+.hero .lede{font-size:18px; color:var(--muted); max-width:62ch}
+.meta{display:flex; flex-wrap:wrap; gap:8px 16px; font-size:13px; color:var(--muted)}
+.meta a{color:var(--muted)}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; display:grid; gap:10px; align-content:start; min-width:0}
+.grid{display:grid; gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th,td{text-align:left; vertical-align:top; padding:10px 14px; border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap}
+td:first-child{font-weight:550}
+
+.chip{display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; white-space:nowrap; background:var(--mute-bg); color:var(--fg)}
+.chip.ok{background:var(--ok-bg); color:var(--ok)} .chip.warn{background:var(--warn-bg); color:var(--warn)} .chip.bad{background:var(--bad-bg); color:var(--bad)}
+.chip.amber{background:var(--amber); color:var(--amber-fg)}
+.chip.s{background:var(--ok-bg); color:var(--ok)} .chip.m{background:var(--warn-bg); color:var(--warn)}
+
+/* Tile samples, as the launcher draws them. */
+.tiles{display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px; max-width:640px}
+.tile{position:relative; aspect-ratio:1; border-radius:16px; padding:12px; color:#fff; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.tile svg{width:26px; height:26px}
+.tile .name{font-weight:600; font-size:13.5px; line-height:1.2}
+.tile .badge{align-self:flex-start; margin-top:4px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; background:rgb(255 255 255 / .2); padding:1px 6px; border-radius:6px}
+.tile .chan{align-self:flex-start; margin-top:4px; font-size:10.5px; font-weight:600; background:#fde68a; color:#451a03; padding:1px 6px; border-radius:6px}
+.tile .dots{position:absolute; top:8px; right:10px; font-weight:700; letter-spacing:1px; opacity:.85}
+.tile .ext{position:absolute; top:9px; right:32px; font-size:13px; opacity:.85}
+
+.stripe{background:var(--amber); color:var(--amber-fg); font-size:12.5px; text-align:center; padding:4px 10px; border-radius:6px}
+.stripe u{font-weight:600}
+
+/* Steps and checklists */
+ol.steps{counter-reset:s; list-style:none; padding:0; gap:10px}
+ol.steps > li{counter-increment:s; display:grid; grid-template-columns:28px 1fr; gap:10px; align-items:start}
+ol.steps > li::before{content:counter(s); width:24px; height:24px; border-radius:7px; background:var(--accent-soft); color:var(--accent); font:600 12.5px var(--mono); display:grid; place-items:center; margin-top:1px}
+
+.ladder{display:grid; gap:8px}
+.rung{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) auto; gap:12px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px}
+.rung .need{font-weight:600}
+.rung.default{border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent)}
+@media (max-width:640px){ .rung{grid-template-columns:1fr} }
+
+.diagram{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px; overflow-x:auto}
+.diagram svg{display:block; min-width:720px; width:100%; height:auto}
+.diagram text{font-family:var(--font); fill:var(--fg)}
+.diagram .m{fill:var(--muted)}
+.diagram .mono{font-family:var(--mono)}
+.box{fill:var(--surface-2); stroke:var(--line)}
+.box.hi{fill:var(--accent-soft); stroke:var(--accent)}
+.wire{stroke:var(--muted); stroke-width:1.4; fill:none}
+
+.crit{display:grid; gap:10px}
+.crit .card{grid-template-columns:auto 1fr; gap:4px 14px}
+.crit .n{font:600 13px var(--mono); color:var(--muted); padding-top:2px}
+.crit h3{font-size:15.5px}
+.verdict{border-left:3px solid var(--ok); padding:4px 0 4px 14px}
+.callout{background:var(--accent-soft); border-radius:var(--r); padding:16px 18px; display:grid; gap:8px}
+@media (prefers-reduced-motion:no-preference){ html{scroll-behavior:smooth} }
+</style>
+
+<header class="top">
+  <div class="top-row">
+    <div class="logo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></div>
+    <div><div class="top-title">App Launcher Handbook</div><div class="top-sub">Workwear &amp; Equipment · production b276a0a · 5 November 2026</div></div>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#overview">Overview</a>
+    <a href="#staff">For staff</a>
+    <a href="#admins">For administrators</a>
+    <a href="#how">How it works</a>
+    <a href="#design">Designing an app</a>
+    <a href="#critique">Critique</a>
+    <a href="#improve">Improvements</a>
+  </nav>
+</header>
+
+<main>
+  <section id="overview" class="hero">
+    <div class="eyebrow">ADR 0006 · phases 1–3 built</div>
+    <h1>App Launcher Handbook</h1>
+    <p class="lede">The front door of the company's apps, at <code>/apps/</code>. Each person sees only what their roles open, signs in once, and an administrator adds an app without touching DNS, servers or the web server.</p>
+    <div class="meta"><span>For staff, administrators and developers</span><span>Decisions: ADR 0006</span><span>Rules and routes: docs/specs/app-launcher.md</span><span>Terms: glossary §13</span></div>
+
+    <div class="grid g3" style="margin-top:8px">
+      <div class="card"><div class="eyebrow">Staff</div><h3>Less to remember</h3><p class="small muted">One address and one sign-in. Only their own apps, by permission, with pins and recent apps. Someone with one app never sees the launcher.</p></div>
+      <div class="card"><div class="eyebrow">Administrators</div><h3>A new tile in minutes</h3><p class="small muted">Register app on Manage apps. Trials stay with Testers; Make Stable on an older version rolls back at once; every change is audited.</p></div>
+      <div class="card"><div class="eyebrow">Developers</div><h3>No infrastructure per app</h3><p class="small muted">One registry, one route and one Caddy rule serve every published app. A build is a folder plus a small JSON file.</p></div>
+    </div>
+
+    <div class="tablewrap" style="margin-top:6px"><table>
+      <thead><tr><th>For</th><th>Benefit</th><th>How</th></tr></thead>
+      <tbody>
+        <tr><td>Staff</td><td>No dead ends</td><td>Every app has an <b>Apps</b> entry back; the landing appears only for people with several apps</td></tr>
+        <tr><td>Administrators</td><td>Safe trials</td><td>POC and In development show only to <b>Testers</b>; Beta, Preview and variants to whoever you choose</td></tr>
+        <tr><td>Product owners</td><td>Evidence</td><td><b>Feedback</b> on every tile; errors carry the app's slug and version</td></tr>
+        <tr><td>Security</td><td>A clear trust boundary</td><td>Only code reviewed in this repository runs on the site with the user's sign-in; outside code is a linked site</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="staff">
+    <div class="eyebrow">User guide</div>
+    <h2>For staff: using the launcher</h2>
+    <div class="prose">
+      <p><b>Getting there.</b> With more than one app you land on <b>Apps</b> when you sign in at the start page. To come back: <b>Apps</b> in <b>More</b> on a phone, at the foot of the rail on a tablet or the sidebar on a desktop, the grid icon in Scan SIMs, or <code>⌘K</code> → App Launcher in Workwear &amp; Equipment.</p>
+      <p><b>Finding an app.</b> Tiles are grouped into Workwear &amp; PPE, Company Assets, People &amp; Crew and Administration. <b>Search apps and screens</b> narrows them by name or group in your language, ignoring case and Lithuanian or Russian marks; <code>Enter</code> opens the first.</p>
+    </div>
+
+    <div class="grid g2" style="align-items:start">
+      <div class="tiles" aria-label="Tile samples">
+        <div class="tile" style="background:var(--t-navy)"><span class="dots">···</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.4 4.6 16 2a4 4 0 0 1-8 0L3.6 4.6a2 2 0 0 0-1.3 2.2l.6 3.5a1 1 0 0 0 1 .8H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11h2.1a1 1 0 0 0 1-.8l.6-3.5a2 2 0 0 0-1.3-2.2Z"/></svg><span class="name">Workwear &amp; Equipment</span></div>
+        <div class="tile" style="background:var(--t-teal)"><span class="dots">···</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><rect x="8" y="11" width="8" height="7" rx="1"/></svg><span class="name">SIM Cards</span></div>
+        <div class="tile" style="background:var(--t-scan)"><span class="dots">···</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 7v10M12 7v10M16 7v10"/></svg><span><span class="name">Scan SIMs</span><br><span class="chan">Beta</span></span></div>
+        <div class="tile" style="background:var(--t-crew)"><span class="ext">↗</span><span class="dots">···</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2ZM10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5M4 15v-3a6 6 0 0 1 6-6M14 6a6 6 0 0 1 6 6v3"/></svg><span><span class="name">PPE Crew</span><br><span class="badge">Pilot</span></span></div>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>You see</th><th>It means</th></tr></thead>
+        <tbody>
+          <tr><td>A plain tile</td><td>An app, or one of its screens (a shortcut); it opens here</td></tr>
+          <tr><td>↗ in the corner</td><td>Another site with its own sign-in; it opens in a new tab</td></tr>
+          <tr><td><span class="chip">Pilot</span> <span class="chip">POC</span></td><td>How far along the app is</td></tr>
+          <tr><td><span class="chip amber">Beta</span></td><td>You chose another version of this app</td></tr>
+          <tr><td>···</td><td>Where it runs, Open, Pin, Feedback, and Versions when there are any</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="grid g3">
+      <div class="card"><h3>Pins and recent apps</h3><p class="small">··· → <b>Pin</b> keeps a tile first, under <b>Pinned</b>, on every device you use. <b>Recent</b> lists the last six apps you opened on this device.</p></div>
+      <div class="card"><h3>Feedback</h3><p class="small">··· → <b>Feedback</b>: Works well, Confusing or Something broke, plus what you were trying to do. The app's owner reads it on Manage apps.</p></div>
+      <div class="card"><h3>Testers</h3><p class="small">Turn on <b>Show apps in testing</b> to see POC and In development apps. ··· → <b>Versions</b> picks Beta, Preview or a variant; the app then opens on it for you.</p></div>
+    </div>
+    <div class="stripe">You are using Beta · Version 2026.11.05-b276a0ac85f7 &nbsp; <u>Back to Stable</u></div>
+    <p class="small muted" style="margin-top:-8px">The stripe a published app shows when you are not on Stable.</p>
+  </section>
+
+  <section id="admins">
+    <div class="eyebrow">Administration → Manage apps · apps.manage</div>
+    <h2>For administrators</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Register a tile</h3><p class="small">Names in EN, LT and RU; a slug set once; <i>App</i> or <i>Shortcut</i>; group, stage, picture, colour (white text must pass 4.5:1); <i>On this site</i> with a path, or <i>Another site</i> with an https address.</p></div>
+      <div class="card"><h3>Who sees it</h3><p class="small"><i>Everyone signed in</i>, or holders of any ticked permission. Seeing a tile grants nothing: the API still checks every action. <b>Retired</b> hides a tile and keeps its history; tiles are never deleted.</p></div>
+      <div class="card"><h3>Order, feedback, history</h3><p class="small"><b>Move earlier</b> and <b>Move later</b>; <b>Feedback</b>, newest first; <b>Changes</b> lists every edit and who made it.</p></div>
+    </div>
+
+    <h3>Versions and channels</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Channel</th><th>Who sees it</th><th>Moves when</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip ok">Stable</span></td><td>Everyone who sees the tile</td><td>You choose <b>Make Stable</b> (the first publish sets it once)</td></tr>
+        <tr><td><span class="chip warn">Beta</span></td><td>Testers, or the permissions you name</td><td>You choose <b>Make Beta</b></td></tr>
+        <tr><td><span class="chip">Preview</span></td><td>Testers, or the permissions you name</td><td>Every deploy publishes the deployed build here</td></tr>
+        <tr><td><span class="chip amber">photos-first</span></td><td>The permissions you name, else Testers</td><td><b>Add variant</b>, then <b>Make …</b></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="grid g2">
+      <div class="card"><h3>Ship a build to everyone</h3><ol class="steps small"><li>Deploy: the build lands on Preview.</li><li>Try it at <code>/apps/sim-scan/preview/</code>.</li><li>··· beside the version → <b>Make Stable</b>.</li></ol></div>
+      <div class="card"><h3>Let a few people try it first</h3><ol class="steps small"><li><b>Make Beta</b> on the new version.</li><li>Give those people the Testers role, or name a permission on the channel.</li><li>They choose Beta under <b>Versions</b> in the launcher.</li></ol></div>
+      <div class="card"><h3>Roll back</h3><ol class="steps small"><li>··· beside the previous version → <b>Make Stable</b>.</li><li>Done at once; nothing is rebuilt. The move is in Changes and the Audit log.</li></ol></div>
+      <div class="card"><h3>Compare two designs</h3><ol class="steps small"><li>Publish both builds.</li><li><b>Add variant</b> for the second, with a label and an audience.</li><li>Compare the feedback each one gets.</li></ol></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="eyebrow">Technical</div>
+    <h2>How it works</h2>
+    <div class="diagram" role="img" aria-label="Requests from the browser go to Caddy. Caddy serves the baked apps and published files, and sends published app pages and the API to the Go API, which reads the registry in Postgres and the published volume.">
+      <svg viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+        <rect class="box" x="10" y="135" width="120" height="60" rx="10"/>
+        <text x="70" y="161" text-anchor="middle" font-weight="600" font-size="14">Browser</text>
+        <text x="70" y="180" text-anchor="middle" class="m" font-size="11.5">one sign-in</text>
+        <path class="wire" d="M130 165 H185"/>
+        <rect class="box hi" x="185" y="20" width="250" height="290" rx="12"/>
+        <text x="200" y="44" font-weight="600" font-size="14">Caddy</text>
+        <text x="200" y="74" class="mono" font-size="12">/  /admin/  /apps/</text>
+        <text x="200" y="91" class="m" font-size="11.5">staff app, Administration, launcher</text>
+        <text x="200" y="125" class="mono" font-size="12">/apps/files/&lt;profile&gt;/…</text>
+        <text x="200" y="142" class="m" font-size="11.5">published files, cached a year,</text>
+        <text x="200" y="157" class="m" font-size="11.5">policy by profile</text>
+        <text x="200" y="192" class="mono" font-size="12">/apps/&lt;slug&gt;/…</text>
+        <text x="200" y="209" class="m" font-size="11.5">a published app's page → API</text>
+        <text x="200" y="244" class="mono" font-size="12">/api/*</text>
+        <text x="200" y="261" class="m" font-size="11.5">everything else → API</text>
+        <text x="200" y="292" class="mono m" font-size="11">/sim-scan/… → 308</text>
+        <path class="wire" d="M435 200 H520"/>
+        <path class="wire" d="M435 250 H520"/>
+        <rect class="box" x="520" y="150" width="210" height="130" rx="12"/>
+        <text x="535" y="174" font-weight="600" font-size="14">Go API</text>
+        <text x="535" y="198" class="m" font-size="11.5">index.html of the right version,</text>
+        <text x="535" y="214" class="m" font-size="11.5">links rewritten, ppe-* meta tags</text>
+        <text x="535" y="238" class="m" font-size="11.5">registry, pins, choices, feedback</text>
+        <text x="535" y="262" class="mono m" font-size="11">api -publish-app</text>
+        <path class="wire" d="M730 190 H790"/>
+        <path class="wire" d="M730 250 H790"/>
+        <rect class="box" x="790" y="150" width="160" height="70" rx="10"/>
+        <text x="805" y="174" font-weight="600" font-size="13.5">Postgres</text>
+        <text x="805" y="194" class="m" font-size="11">launcher_apps, _pins,</text>
+        <text x="805" y="209" class="m" font-size="11">_versions, _channels …</text>
+        <rect class="box" x="790" y="232" width="160" height="70" rx="10"/>
+        <text x="805" y="256" font-weight="600" font-size="13.5">Volume published</text>
+        <text x="805" y="276" class="mono m" font-size="10.5">&lt;profile&gt;/&lt;slug&gt;/&lt;version&gt;/</text>
+        <path class="wire" d="M870 302 V320 H310 V310" stroke-dasharray="4 4"/>
+        <text x="600" y="316" class="m" font-size="11">Caddy reads the same volume, read only</text>
+      </svg>
+    </div>
+
+    <div class="grid g2">
+      <div class="card"><h3>Registry</h3><p class="small"><code>internal/domain/launcher</code>, migrations 0042–0043: tiles, pins, feedback, versions, channels and each user's channel choice. Every change is an audit event (<code>app.*</code>). Default tiles live in <code>defaults.go</code> and are inserted at start-up when missing, never over an administrator's change.</p></div>
+      <div class="card"><h3>API</h3><p class="small"><code>GET /api/v1/launcher</code> (tiles, pins, channels, choices), <code>PUT …/pins</code>, <code>POST …/feedback</code>, <code>PUT …/choices/{slug}</code>; Manage apps under <code>/api/v1/apps…</code>; the public page route <code>GET /apps/{slug}/{rest...}</code>.</p></div>
+      <div class="card"><h3>Addresses</h3><p class="small"><code>/apps/&lt;slug&gt;/</code> is Stable, <code>/&lt;channel&gt;/</code> a channel, <code>/@&lt;version&gt;/</code> one exact build; anything after is the app's own screen. Meta tags: <code>ppe-mount</code>, <code>ppe-files</code>, <code>ppe-version</code>, <code>ppe-channel</code>.</p></div>
+      <div class="card"><h3>Publishing</h3><p class="small"><code>api -publish-app</code> reads a tar of <code>dist/</code> on standard input (up to 5000 files and 300 MB, no links) and never replaces a version. <code>make prod-up</code> publishes to Preview; <code>make prod-publish APP= REF= CHANNEL=</code> builds any git ref on the droplet.</p></div>
+    </div>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Profile</th><th>Capabilities in ppe-app.json</th><th>Policy</th></tr></thead>
+      <tbody>
+        <tr><td><code>standard</code></td><td>none</td><td>The staff app's Content-Security-Policy</td></tr>
+        <tr><td><code>device</code></td><td><code>wasm</code>, <code>workers</code>, <code>camera</code> (any)</td><td>Plus <code>'wasm-unsafe-eval'</code>, <code>worker-src 'self'</code>, <code>camera=(self)</code></td></tr>
+      </tbody>
+    </table></div>
+    <p class="small muted">In every app: <code>@ppe/app-shell</code> sends <code>X-PPE-App</code> and <code>X-PPE-App-Version</code>; <code>@ppe/launcher</code> loads the user's list once per page for the Apps entry, ⌘K and the landing; <code>@ppe/routing</code> gives <code>basePath</code> and <code>filesBase</code>; <code>ChannelStripe</code> marks a page off Stable.</p>
+  </section>
+
+  <section id="design">
+    <div class="eyebrow">For developers</div>
+    <h2>Designing a new app</h2>
+    <div class="prose"><p>Choose the simplest home that works. The default is a screen in the staff app: ADR 0001 keeps one staff app of modules, and a separate app is justified by another audience, device or trust level, not by another team or feature.</p></div>
+    <div class="ladder">
+      <div class="rung default"><span class="need">A new screen for the same people</span><span class="small">A screen in the staff app or Administration, plus a shortcut tile if it deserves one</span><span class="chip ok">Default</span></div>
+      <div class="rung"><span class="need">Quick access to an existing screen</span><span class="small">Register a shortcut on Manage apps</span><span class="chip ok">No code</span></div>
+      <div class="rung"><span class="need">A system that already exists elsewhere</span><span class="small">Register a linked tile (↗); it keeps its own sign-in</span><span class="chip ok">No code</span></div>
+      <div class="rung"><span class="need">Another audience, device or trust level, or a trial to roll back on its own</span><span class="small">A published app in <code>web/apps/&lt;slug&gt;</code></span><span class="chip warn">A day to set up</span></div>
+      <div class="rung"><span class="need">Code not reviewed here</span><span class="small">Not on this site: a linked site now, the sandbox domain later (phase 4)</span><span class="chip bad">Off-site</span></div>
+    </div>
+
+    <h3>Checklist for a published app</h3>
+    <ol class="steps">
+      <li><span>Start <code>web/apps/&lt;slug&gt;/</code> from Scan SIMs' layout: <code>ApiProvider app="&lt;slug&gt;"</code>, <code>@ppe/ui</code>, words in EN, LT and RU.</span></li>
+      <li><span><code>vite.config.ts</code>: <code>base: command === 'build' ? './' : '/apps/&lt;slug&gt;/'</code>.</span></li>
+      <li><span><code>public/ppe-app.json</code>: <code>{"slug": "&lt;slug&gt;", "capabilities": []}</code>. Add a capability only when needed: each one widens the policy.</span></li>
+      <li><span>Use <code>basePath</code> for the router and <code>filesBase</code> for your own static files, never <code>import.meta.env.BASE_URL</code>.</span></li>
+      <li><span>Show <code>&lt;ChannelStripe slug="&lt;slug&gt;" /&gt;</code> at the top and an Apps entry for users with several apps.</span></li>
+      <li><span>Let the screen's <code>PageHeader</code> be the only sticky header; the app's own bar scrolls away.</span></li>
+      <li><span>Register the tile on Manage apps (<i>On this site</i>, <code>/apps/&lt;slug&gt;/</code>), or add it to <code>defaults.go</code> if every installation needs it.</span></li>
+      <li><span>Add the slug to <code>PUBLISHED_APPS</code>, the build filters and a <code>COPY</code> line in <code>web/Dockerfile</code>, a dev proxy rule and port, and its e2e Vite server.</span></li>
+      <li><span>Tests: unit tests, <code>csp.test.ts</code>, an e2e step (Vite mode uses the dev server; Caddy mode publishes it).</span></li>
+      <li><span>Ship: deploy → Preview → try it → <b>Make Stable</b>.</span></li>
+    </ol>
+
+    <div class="callout">
+      <h3>Rules that keep it simple</h3>
+      <ul class="small">
+        <li>One sign-in, one origin, one API. No second backend for an app; API changes stay additive.</li>
+        <li>Access is decided by permissions in the API; a tile's audience only hides tiles.</li>
+        <li>A version never changes; to change it, publish another.</li>
+        <li>No app-specific Caddy, DNS or policy edits. If you need one, it is a new profile and a review.</li>
+        <li>Words in all three languages from day one; Help covers the app like any other screen.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="critique">
+    <div class="eyebrow">Review</div>
+    <h2>Critique</h2>
+    <p class="verdict prose">What works: the trust boundary is explicit; the registry is plain SQL with an audit trail; rolling back moves a pointer; the security policy comes from a closed, tested list; people get exactly their apps with no new sign-in.</p>
+    <div class="crit">
+      <div class="card"><span class="n">1</span><div><h3>Deploys do not reach users by themselves <span class="chip bad">High</span></h3><p class="small muted">A deploy moves Preview only, so a fix reaches no one until someone remembers Make Stable. On 5 November the Scan SIMs header fix was deployed, but Stable stayed on the old build. Safe, but easy to forget.</p></div></div>
+      <div class="card"><span class="n">2</span><div><h3>"No config per app" is not true yet <span class="chip warn">Medium</span></h3><p class="small muted">A new published app still needs edits in five places outside its folder (Makefile list, Dockerfile build filter and copy, Vite proxy, e2e server and port), besides its tile. ADR 0006 promised a registration and a publish.</p></div></div>
+      <div class="card"><span class="n">3</span><div><h3>A lot of machinery for one app <span class="chip warn">Medium</span></h3><p class="small muted">A volume, the API page route and its link rewriting, two copies of each policy, a publish command, a build script and three tables. Justified only if a second and third published app follow; today only Scan SIMs uses them.</p></div></div>
+      <div class="card"><span class="n">4</span><div><h3>Each app copies its own frame <span class="chip warn">Medium</span></h3><p class="small muted">Workwear, Administration, Scan SIMs and the launcher each build their own header, Apps entry, sign-out and gates. The overlapping headers came from exactly this: a shared screen header met a copied frame that no test scrolled.</p></div></div>
+      <div class="card"><span class="n">5</span><div><h3>Versions are hard to find <span class="chip">Low</span></h3><p class="small muted">A tester has to open ··· on the tile to discover Beta, and bookmarks and the staff app's links always open Stable, whatever the tester chose.</p></div></div>
+      <div class="card"><span class="n">6</span><div><h3>Old versions pile up <span class="chip">Low</span></h3><p class="small muted">Nothing prunes the published volume (about 16 MB per Scan SIMs build), and a build from a dirty checkout gets a clean-looking version name.</p></div></div>
+      <div class="card"><span class="n">7</span><div><h3>Two sources for tiles <span class="chip">Low</span></h3><p class="small muted">Default tiles live both in code and in the database. Renaming a default in code does not rename it where it already exists.</p></div></div>
+      <div class="card"><span class="n">8</span><div><h3>Feedback and errors are not read together <span class="chip">Low</span></h3><p class="small muted">Until the Trials view (phase 5), whether Beta is better is answered by hand.</p></div></div>
+      <div class="card"><span class="n">9</span><div><h3>Published serving is rarely tested locally <span class="chip">Low</span></h3><p class="small muted">Caddy-mode tests need Caddy, so most local runs never exercise published serving; CI does.</p></div></div>
+    </div>
+  </section>
+
+  <section id="improve">
+    <div class="eyebrow">Proposal</div>
+    <h2>Proposed improvements</h2>
+    <p class="prose muted">Sorted by value for effort. Each keeps the number of moving parts the same or lowers it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Change</th><th>Fixes</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Promote after deploy, per app.</b> A Manage apps switch, "Stable follows deploys", on for apps without testers; otherwise the Overview lists "Preview is newer than Stable for N days".</td><td>1</td><td><span class="chip s">Small</span></td></tr>
+        <tr><td>2</td><td><b>Find published apps from the build.</b> Every <code>web/apps/*/public/ppe-app.json</code> is published; the Dockerfile copies them all; one generic dev proxy and e2e entry per manifest.</td><td>2</td><td><span class="chip m">Medium</span></td></tr>
+        <tr><td>3</td><td><b>One shared frame for small apps.</b> <code>AppFrame</code> in <code>@ppe/app-shell</code>: a bar that scrolls away, tabs, the Apps entry, ChannelStripe, sign-out and gates, used by Scan SIMs and the launcher, with a scroll test.</td><td>4</td><td><span class="chip m">Medium</span></td></tr>
+        <tr><td>4</td><td><b><code>make new-app SLUG=</code></b> scaffolds the folder, manifest, words, policy test and tile from Scan SIMs.</td><td>2</td><td><span class="chip s">Small</span></td></tr>
+        <tr><td>5</td><td><b>Honour the choice everywhere.</b> <code>/apps/&lt;slug&gt;/</code> sends a tester to the channel they chose; the stripe also offers Versions.</td><td>5</td><td><span class="chip s">Small</span></td></tr>
+        <tr><td>6</td><td><b>Prune.</b> <code>api -prune-apps</code> keeps every version a channel points at plus the last few, run by <code>prod-up</code>; <code>prod-up</code> refuses dirty builds.</td><td>6</td><td><span class="chip s">Small</span></td></tr>
+        <tr><td>7</td><td><b>Seed defaults once.</b> Insert them once, by key, like a migration; then the database is the only source.</td><td>7</td><td><span class="chip s">Small</span></td></tr>
+        <tr><td>8</td><td><b>Trials view</b> (phase 5): opens, errors and feedback per app and version, side by side.</td><td>8</td><td><span class="chip m">Medium</span></td></tr>
+        <tr><td>9</td><td><b><code>make e2e-caddy</code></b> runs the suite through the pinned <code>caddy:2</code> image locally.</td><td>9</td><td><span class="chip s">Small</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout">
+      <h3>Simplicity check before building more</h3>
+      <p class="small">If no second published app is planned for the next quarter, do 1, 3, 5 and 6 and stop: they make today's one published app safe and invisible to users. Do 2 and 4 the week a second app is approved. Until then, a handful of manual edits costs less than automating them.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+// Marks the section in view in the header's links.
+(() => {
+  const links = [...document.querySelectorAll('nav.toc a')]
+  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]))
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) {
+      links.forEach((a) => a.removeAttribute('aria-current'))
+      byId.get(e.target.id)?.setAttribute('aria-current', 'true')
+    }
+  }, { rootMargin: '-120px 0px -70% 0px' })
+  document.querySelectorAll('main section[id]').forEach((s) => io.observe(s))
+})()
+</script>

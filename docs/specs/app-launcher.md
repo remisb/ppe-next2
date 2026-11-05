@@ -12,7 +12,7 @@ Code: the domain `internal/domain/launcher` (migrations 0042 and 0043, routes
 `cmd/api/published-app-routes.go` and `publish-app.go`), the package `web/packages/launcher` (`@ppe/launcher`: the
 list loaded once per user and page, its rules, the words, the tile pictures, recent apps),
 the app `web/apps/launcher` (`@ppe/launcher-app`) and Administration's `routes/apps.tsx`.
-Terms: `docs/ubiquitous-language.md` §13.
+Terms: `docs/ubiquitous-language.md` §13. How people use it, how a new app is built for it, and a critique with proposed improvements: `docs/ux/app-launcher-handbook.md` (and `.html`).
 
 ## The registry
 

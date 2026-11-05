@@ -11,6 +11,7 @@
   of modules; separate apps only for another audience or trust level),
   [ADR 0002](0002-permissions-and-administration-app.md) (a second app on the same origin),
   [ADR 0005](0005-sim-codes-and-scan-sims-trial.md) (Scan SIMs as a trial app with its own CSP)
+- **Handbook:** [docs/ux/app-launcher-handbook.md](../../ux/app-launcher-handbook.md) (use, building an app, critique and improvements, as built)
 - **Guide:** [docs/ux/app-launcher.md](../../ux/app-launcher.md) (research, UI samples, flows,
   the decisions with recommendations) and its
   [clickable prototype](../../ux/mockups/app-launcher.html)

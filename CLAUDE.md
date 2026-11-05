@@ -319,6 +319,8 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
 - `docs/ux/company-assets-ux-review.md` (and `.html`) — the assets brief
   (`../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf`) against the app,
   the UI options and the chosen one; the rules are `docs/specs/asset-service.md` (planned).
+- `docs/ux/app-launcher-handbook.md` (and `.html`) — App Launcher as built: using it, Manage apps, how it
+  works, how to design a new app for it, a critique and the proposed improvements.
 - `docs/ubiquitous-language.md` — the project's terms and the labels of the domain's controls
   (EN/LT/RU), and the words to avoid; add a term there before using it.
 - `docs/ux/ui-ux-guidelines.md` — the UI and UX guidelines: principles, the detail pane's
