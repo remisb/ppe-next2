@@ -24,6 +24,8 @@ export const PERMISSIONS = [
   'item_sets.manage',
   'orders.delete',
   'assets.manage',
+  'sim_cards.read',
+  'sim_cards.manage',
   'sim_codes.read',
   'equipment.read',
   'personnel.documents.read',

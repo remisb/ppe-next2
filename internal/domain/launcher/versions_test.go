@@ -141,8 +141,8 @@ func TestChannelsForUsersAndResolve(t *testing.T) {
 	ctx, user := context.Background(), uuid.New()
 	_, _ = svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ""), nil)
 	_, _ = svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelBeta), nil)
-	manager := holding(role.AssetsManage, role.DashboardManager)
-	tester := holding(role.AssetsManage, role.DashboardManager, role.AppsPreview)
+	manager := holding(role.SIMCardsManage, role.DashboardManager)
+	tester := holding(role.SIMCardsManage, role.DashboardManager, role.AppsPreview)
 
 	apps, _, _ := svc.ForUser(ctx, user, manager)
 	seen, _, _ := svc.ChannelsFor(ctx, user, apps, manager)

@@ -1065,7 +1065,7 @@ func TestReport(t *testing.T) {
 	if _, err := f.give(t, v.ID, f.emp, "2026-10-01"); err != nil {
 		t.Fatal(err)
 	}
-	r, err := f.svc.Report(f.ctx, ListParams{Kind: "SIM", Sort: "holder", Dir: "desc", Page: "7", PageSize: "1"}, Sight{})
+	r, err := f.svc.Report(f.ctx, ListParams{Kind: "SIM", Sort: "holder", Dir: "desc", Page: "7", PageSize: "1"}, Sight{SIM: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1073,7 +1073,7 @@ func TestReport(t *testing.T) {
 		!r.PrintedAt.Equal(testNow) || r.PrintedAt.Location() != vilnius {
 		t.Errorf("report = %+v", r)
 	}
-	if _, err := f.svc.Report(f.ctx, ListParams{Kind: "EQUIPMENT"}, Sight{}); !errors.Is(err, ErrNotPermitted) {
+	if _, err := f.svc.Report(f.ctx, ListParams{Kind: "EQUIPMENT"}, Sight{SIM: true}); !errors.Is(err, ErrNotPermitted) {
 		t.Errorf("equipment without the role = %v", err)
 	}
 	if _, err := f.svc.Report(f.ctx, ListParams{Kind: "SIM", Sort: "price"}, all); !errors.Is(err, ErrInvalid) {

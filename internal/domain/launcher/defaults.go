@@ -27,11 +27,11 @@ var Defaults = []App{
 	{Slug: "help", Kind: KindShortcut, Parent: "workwear", Group: "workwear", Icon: "help", Color: "#5b6475", Href: "/help", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Help", "Pagalba", "Справка"}},
 	{Slug: "sim-cards", Kind: KindShortcut, Parent: "workwear", Group: "assets", Icon: "sim", Color: "#0e7068", Href: "/assets/sim-cards", Tier: TierHere, Stage: StageLive,
-		Names: Names{"SIM Cards", "SIM kortelės", "SIM-карты"}},
+		Names: Names{"SIM Cards", "SIM kortelės", "SIM-карты"}, AnyOf: []role.Permission{role.SIMCardsRead}},
 	{Slug: "equipment", Kind: KindShortcut, Parent: "workwear", Group: "assets", Icon: "equipment", Color: "#7a4e14", Href: "/assets/equipment", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Equipment", "Įranga", "Оборудование"}, AnyOf: []role.Permission{role.EquipmentRead}},
 	{Slug: "sim-scan", Kind: KindApp, Group: "assets", Icon: "scan", Color: "#0f5f8a", Href: "/apps/sim-scan/", Tier: TierHere, Stage: StagePilot,
-		Names: Names{"Scan SIMs", "Skenuoti SIM", "Сканировать SIM"}, AnyOf: []role.Permission{role.AssetsManage, role.SIMCodesRead}},
+		Names: Names{"Scan SIMs", "Skenuoti SIM", "Сканировать SIM"}, AnyOf: []role.Permission{role.SIMCardsManage, role.SIMCodesRead}},
 	// Who plans crews: administrators and managers, by their dashboards.
 	{Slug: "crew", Kind: KindApp, Group: "people", Icon: "crew", Color: "#9a4f0a", Href: "https://crew.167.71.68.195.sslip.io/", Tier: TierLinked, Stage: StagePilot,
 		Names: Names{"PPE Crew", "PPE Crew", "PPE Crew"}, AnyOf: []role.Permission{role.DashboardOverview, role.DashboardManager}},

@@ -39,7 +39,10 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
 - **Splitting a permission off** keeps every role's access: the migration that adds it grants
   it to each role, custom ones too, that had what it splits from. Migration 0038 added
   `item_sets.read` (every role but Equipment Assignments, since every signed-in user saw Item
-  Sets) and `item_prices.manage` (every role with `catalogue.manage`).
+  Sets) and `item_prices.manage` (every role with `catalogue.manage`). Migration 0049 added
+  `sim_cards.read` (every role but Equipment Assignments, Testers and Personnel Documents,
+  since every signed-in user saw SIM cards) and `sim_cards.manage` (every role with
+  `assets.manage`, which since changes Equipment & Furniture only).
 - **Equipment Assignments** (key `equipment`, migration 0032) grants `equipment.read` alone:
   seeing Equipment & Furniture and who holds each item (`docs/specs/asset-service.md`).
   No other built-in role has it, Administrator included; an administrator gives it on Users,

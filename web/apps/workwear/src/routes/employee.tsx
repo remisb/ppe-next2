@@ -375,13 +375,15 @@ export function EmployeePage({
               </DisclosureSection>
             ) : null}
 
-            <HeldAssets
-              kind="SIM"
-              employee={{ id: e.id, full_name: e.full_name, code: e.code }}
-              timeZone={tz}
-              providers={settings.data?.sim_providers}
-              navigate={navigate}
-            />
+            {session.can('sim_cards.read') ? (
+              <HeldAssets
+                kind="SIM"
+                employee={{ id: e.id, full_name: e.full_name, code: e.code }}
+                timeZone={tz}
+                providers={settings.data?.sim_providers}
+                navigate={navigate}
+              />
+            ) : null}
             {session.can('equipment.read') ? (
               <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
             ) : null}

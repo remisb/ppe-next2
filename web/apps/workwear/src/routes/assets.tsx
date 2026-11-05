@@ -41,6 +41,7 @@ import {
   filterCount,
   formatDay,
   holderText,
+  managePermission,
   noAssetFilters,
   type AssetTab,
   assetTabs,
@@ -111,7 +112,7 @@ export function Assets({
   const register = sim ? 'simCards' : 'equipment'
   const { client } = useApi()
   const session = useSession()
-  const canManage = session.can('assets.manage')
+  const canManage = session.can(managePermission(kind))
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
   // A dashboard's Company Assets card opens the register on the tab of one of its tiles (SIM Cards' places on Location).

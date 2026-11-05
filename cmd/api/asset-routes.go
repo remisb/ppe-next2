@@ -23,59 +23,85 @@ type assetHandler struct {
 	users *user.Service
 }
 
-// registerAssetRoutes mounts Company Assets (docs/specs/asset-service.md).
-// Every signed-in user reads the SIM register; Equipment & Furniture needs
-// equipment.read too (asset.Sight), and every write needs assets.manage. Each
-// route on one asset goes through seen, so without equipment.read an
-// equipment item is not found. The return and the Not Returned mark act on
-// the asset's open assignment, so they are the asset's routes. Showing a SIM
-// card's PIN and PUK is sensitive: a recent sign-in, and sim_codes.read
-// still granted now.
+// registerAssetRoutes mounts Company Assets (docs/specs/asset-service.md,
+// "Access"). SIM cards need sim_cards.read and Equipment & Furniture
+// equipment.read (asset.Sight); changing a SIM needs sim_cards.manage and an
+// equipment item assets.manage (asset.Rights). Each route on one asset goes
+// through seen, or changes for a write, so an asset the user may not see is
+// not found. A route that serves both kinds is open to any signed-in user to
+// read, or to either manage permission to write, and checks the asset's kind.
+// The return and the Not Returned mark act on the asset's open assignment, so
+// they are the asset's routes. Showing a SIM card's PIN and PUK is sensitive:
+// a recent sign-in, and sim_codes.read still granted now.
 func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &assetHandler{assets: assets, users: users}
+	managers := []role.Permission{role.SIMCardsManage, role.AssetsManage}
 	rt.authenticated("GET /api/v1/assets", h.list)
 	rt.authenticated("GET /api/v1/assets/summary/{kind}", h.summary)
 	// The SIM card register as a PDF list, with the register's filters and sort.
-	rt.authenticated("GET /api/v1/assets/sim-cards.pdf", h.simCardsPDF)
+	rt.restricted("GET /api/v1/assets/sim-cards.pdf", h.simCardsPDF, role.SIMCardsRead)
 	rt.authenticated("GET /api/v1/assets/by-number/{q}", h.byNumber)
 	rt.authenticated("GET /api/v1/assets/by-employee/{id}", h.byEmployee)
-	rt.restricted("GET /api/v1/assets/next-number/{prefix}", h.nextNumber, role.AssetsManage)
+	rt.restrictedAny("GET /api/v1/assets/next-number/{prefix}", h.nextNumber, managers...)
 	rt.authenticated("GET /api/v1/assets/{id}", h.seen(h.get))
-	rt.restricted("POST /api/v1/assets", h.create, role.AssetsManage)
+	rt.restrictedAny("POST /api/v1/assets", h.create, managers...)
 	// Scan SIMs: a batch of received SIM cards checked (every problem at
 	// once, nothing written), then added all or none.
-	rt.restricted("POST /api/v1/assets/sim-cards/batch/check", h.checkSIMs, role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/sim-cards/batch", h.addSIMs, role.AssetsManage)
+	rt.restricted("POST /api/v1/assets/sim-cards/batch/check", h.checkSIMs, role.SIMCardsManage)
+	rt.restricted("POST /api/v1/assets/sim-cards/batch", h.addSIMs, role.SIMCardsManage)
 	rt.restricted("POST /api/v1/assets/{id}/sim-codes/show", sensitive(role.SIMCodesRead, h.seen(h.showSIMCodes)), role.SIMCodesRead)
-	rt.restricted("PUT /api/v1/assets/{id}/sim-codes", h.seen(h.setSIMCodes), role.AssetsManage)
-	rt.restricted("DELETE /api/v1/assets/{id}/sim-codes", h.seen(h.clearSIMCodes), role.AssetsManage)
-	rt.restricted("PUT /api/v1/assets/{id}", h.seen(h.update), role.AssetsManage)
-	rt.restricted("PUT /api/v1/assets/{id}/status", h.seen(h.changeStatus), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments/preview", h.seen(h.preview), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments", h.seen(h.give), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/return", h.seen(h.giveBack), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/not-returned", h.seen(h.markNotReturned), role.AssetsManage)
+	rt.restricted("PUT /api/v1/assets/{id}/sim-codes", h.changes(h.setSIMCodes), role.SIMCardsManage)
+	rt.restricted("DELETE /api/v1/assets/{id}/sim-codes", h.changes(h.clearSIMCodes), role.SIMCardsManage)
+	rt.restrictedAny("PUT /api/v1/assets/{id}", h.changes(h.update), managers...)
+	rt.restrictedAny("PUT /api/v1/assets/{id}/status", h.changes(h.changeStatus), managers...)
+	rt.restrictedAny("POST /api/v1/assets/{id}/assignments/preview", h.changes(h.preview), managers...)
+	rt.restrictedAny("POST /api/v1/assets/{id}/assignments", h.changes(h.give), managers...)
+	rt.restrictedAny("POST /api/v1/assets/{id}/return", h.changes(h.giveBack), managers...)
+	rt.restrictedAny("POST /api/v1/assets/{id}/not-returned", h.changes(h.markNotReturned), managers...)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form", h.seen(h.form))
 	// Printing and the blocking email change nothing; these record who did them.
-	rt.restricted("POST /api/v1/assets/{id}/form-printed", h.seen(h.formPrinted), role.AssetsManage)
+	rt.restrictedAny("POST /api/v1/assets/{id}/form-printed", h.changes(h.formPrinted), managers...)
 	rt.authenticated("POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed", h.seen(h.formReprinted))
 	// The form as a PDF, recorded as printed (format pdf): the one Give would
 	// store, its details in the query as Preview takes them; or an assignment's.
-	rt.restricted("GET /api/v1/assets/{id}/assignments/preview.pdf", h.seen(h.formPDF), role.AssetsManage)
+	rt.restrictedAny("GET /api/v1/assets/{id}/assignments/preview.pdf", h.changes(h.formPDF), managers...)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf", h.seen(h.storedFormPDF))
 	// A SIM card's emails to its provider ({kind} activation or blocking),
 	// from their mail templates: GET prepares one, POST …/copied records that
 	// it was copied. Nothing is sent.
-	rt.restricted("GET /api/v1/assets/{id}/emails/{kind}", h.seen(h.prepareEmail), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/emails/{kind}/copied", h.seen(h.recordEmail), role.AssetsManage)
-	rt.restricted("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.seen(h.uploadSignedCopy), role.AssetsManage)
+	rt.restricted("GET /api/v1/assets/{id}/emails/{kind}", h.changes(h.prepareEmail), role.SIMCardsManage)
+	rt.restricted("POST /api/v1/assets/{id}/emails/{kind}/copied", h.changes(h.recordEmail), role.SIMCardsManage)
+	rt.restrictedAny("POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies", h.changes(h.uploadSignedCopy), managers...)
 	rt.authenticated("GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}", h.seen(h.signedCopy))
 }
 
-// sight is which assets the request's user may see: Equipment & Furniture
-// only with equipment.read.
+// sight is which assets the request's user may see: SIM cards with
+// sim_cards.read, Equipment & Furniture with equipment.read.
 func sight(r *http.Request) asset.Sight {
-	return asset.Sight{Equipment: holds(r, role.EquipmentRead)}
+	return asset.Sight{SIM: holds(r, role.SIMCardsRead), Equipment: holds(r, role.EquipmentRead)}
+}
+
+// assetRights is which assets the request's user may change: SIM cards with
+// sim_cards.manage, Equipment & Furniture with assets.manage.
+func assetRights(r *http.Request) asset.Rights {
+	return asset.Rights{SIM: holds(r, role.SIMCardsManage), Equipment: holds(r, role.AssetsManage)}
+}
+
+// changes answers 404 for an asset the user may not see and 403 for one they
+// may not change, before next runs.
+func (h *assetHandler) changes(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUUIDPath(r, "id")
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		if err := h.assets.Changeable(r.Context(), id, sight(r), assetRights(r)); err != nil {
+			writeError(w, r, err)
+			return
+		}
+		next(w, r)
+	}
 }
 
 // seen answers 404 for an asset the user may not see, before next runs.
@@ -272,8 +298,19 @@ func (h *assetHandler) byEmployee(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, hs)
 }
 
+// nextNumber suggests an inventory number to whoever may add its kind: SIM
+// to sim_cards.manage, the other prefixes to assets.manage.
 func (h *assetHandler) nextNumber(w http.ResponseWriter, r *http.Request) {
-	n, err := h.assets.NextNumber(r.Context(), r.PathValue("prefix"))
+	prefix := r.PathValue("prefix")
+	kind := asset.KindEquipment
+	if prefix == asset.PrefixSIM {
+		kind = asset.KindSIM
+	}
+	if err := assetRights(r).Check(kind); asset.IsPrefix(prefix) && err != nil {
+		writeError(w, r, err)
+		return
+	}
+	n, err := h.assets.NextNumber(r.Context(), prefix)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -306,8 +343,12 @@ func (h *assetHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	// Add Asset makes an item its maker could not then open.
+	// Add Asset makes an item its maker could not then open, or change.
 	if err := sight(r).Check(req.Kind); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := assetRights(r).Check(req.Kind); err != nil {
 		writeError(w, r, err)
 		return
 	}

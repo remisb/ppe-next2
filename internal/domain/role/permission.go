@@ -21,9 +21,13 @@ const (
 	ItemSetsRead     Permission = "item_sets.read"
 	ItemSetsManage   Permission = "item_sets.manage"
 	OrdersDelete     Permission = "orders.delete"
-	AssetsManage     Permission = "assets.manage"
-	SIMCodesRead     Permission = "sim_codes.read"
-	EquipmentRead    Permission = "equipment.read"
+	// AssetsManage changes Equipment & Furniture; SIM cards have their own
+	// pair since migration 0049 (sim_cards.read, sim_cards.manage).
+	AssetsManage   Permission = "assets.manage"
+	SIMCardsRead   Permission = "sim_cards.read"
+	SIMCardsManage Permission = "sim_cards.manage"
+	SIMCodesRead   Permission = "sim_codes.read"
+	EquipmentRead  Permission = "equipment.read"
 	// Personnel files (ADR 0007): see a person's identity documents and Show
 	// Document; scan and save them; colour a document's portrait with AI.
 	PersonnelDocumentsRead     Permission = "personnel.documents.read"
@@ -87,7 +91,9 @@ var catalogue = []Info{
 	{ItemSetsManage, GroupWorkwear, []Permission{ItemSetsRead}},
 	{OrdersDelete, GroupWorkwear, nil},
 	{AssetsManage, GroupWorkwear, nil},
-	{SIMCodesRead, GroupWorkwear, []Permission{AssetsManage}},
+	{SIMCardsRead, GroupWorkwear, nil},
+	{SIMCardsManage, GroupWorkwear, []Permission{SIMCardsRead}},
+	{SIMCodesRead, GroupWorkwear, []Permission{SIMCardsRead}},
 	{EquipmentRead, GroupWorkwear, nil},
 	{PersonnelDocumentsRead, GroupPersonnel, nil},
 	{PersonnelDocumentsManage, GroupPersonnel, []Permission{PersonnelDocumentsRead}},

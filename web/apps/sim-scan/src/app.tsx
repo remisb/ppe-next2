@@ -12,7 +12,7 @@ import { ScanPage } from './routes/scan/scan-page'
 
 /*
  * The trial, in a small app's frame (@ppe/launcher's SignedIn and AppFrame):
- * its name, its two screens as tabs (Scan, which needs assets.manage, and PIN
+ * its name, its two screens as tabs (Scan, which needs sim_cards.manage, and PIN
  * and PUK, which needs sim_codes.read), the way back to SIM Cards, App
  * Launcher and Sign out. It shares the staff app's sign-in, so signing in or
  * out here does so there too. Published under App Launcher (ADR 0006): off
@@ -30,7 +30,7 @@ function Screens({ session }: { session: Session }) {
   const { signOut } = useApi()
   const { route: asked, navigate } = useRouter()
   const tabs: { route: Route; label: string; shown: boolean }[] = [
-    { route: { name: 'scan' }, label: t.shell.scan, shown: session.can('assets.manage') },
+    { route: { name: 'scan' }, label: t.shell.scan, shown: session.can('sim_cards.manage') },
     { route: { name: 'find' }, label: t.shell.find, shown: session.can('sim_codes.read') },
   ]
   const shown = tabs.filter((x) => x.shown)
@@ -51,7 +51,7 @@ function Screens({ session }: { session: Session }) {
         (docs/apps/sim-scan-review.md F1). PIN and PUK is mounted only while open, so
         shown codes go when it is left.
       */}
-      {session.can('assets.manage') ? (
+      {session.can('sim_cards.manage') ? (
         <div hidden={route.name !== 'scan'}>
           <ScanPage active={route.name === 'scan'} />
         </div>

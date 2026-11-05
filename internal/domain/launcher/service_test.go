@@ -298,9 +298,13 @@ func TestVisible(t *testing.T) {
 	all := newMem().sorted()
 	admin := holding(administration...)
 	// The employee role: Workwear and its shortcuts, no others.
-	employee := Visible(all, holding(role.ItemSetsRead, role.DashboardEmployee))
+	employee := Visible(all, holding(role.ItemSetsRead, role.SIMCardsRead, role.DashboardEmployee))
 	if got := slugs(employee); !slices.Equal(got, []string{"workwear", "dashboard", "create-order", "orders", "employees", "help", "sim-cards"}) {
 		t.Errorf("employee sees %v", got)
+	}
+	// SIM Cards only with sim_cards.read.
+	if slices.Contains(slugs(Visible(all, holding(role.ItemSetsRead, role.DashboardEmployee))), "sim-cards") {
+		t.Error("SIM Cards seen without sim_cards.read")
 	}
 	if slices.Contains(slugs(Visible(all, admin)), "equipment") || !slices.Contains(slugs(Visible(all, admin)), "admin") {
 		t.Errorf("administrator sees %v", slugs(Visible(all, admin)))
@@ -316,11 +320,11 @@ func TestVisible(t *testing.T) {
 			all[i].Stage = StageDev
 		}
 	}
-	manager := holding(role.AssetsManage, role.DashboardManager)
+	manager := holding(role.SIMCardsManage, role.DashboardManager)
 	if got := slugs(Visible(all, manager)); len(got) != 0 {
 		t.Errorf("manager sees %v, want nothing: Workwear is in development and the rest follow it or are retired", got)
 	}
-	tester := holding(role.AssetsManage, role.DashboardManager, role.AppsPreview)
+	tester := holding(role.SIMCardsManage, role.DashboardManager, role.AppsPreview)
 	if got := slugs(Visible(all, tester)); !slices.Contains(got, "sim-scan") || !slices.Contains(got, "orders") || slices.Contains(got, "crew") {
 		t.Errorf("tester sees %v", got)
 	}
@@ -391,7 +395,7 @@ func TestPinsAndFeedback(t *testing.T) {
 	repo := newMem()
 	svc := NewService(repo)
 	ctx, user := context.Background(), uuid.New()
-	manager := holding(role.AssetsManage, role.DashboardManager)
+	manager := holding(role.SIMCardsManage, role.DashboardManager)
 
 	if _, err := svc.SetPins(ctx, user, []string{"sim-scan", "orders"}, manager); err != nil {
 		t.Fatal(err)
@@ -408,7 +412,7 @@ func TestPinsAndFeedback(t *testing.T) {
 	}
 	// Pins of tiles no longer seen are left out.
 	if _, pins, _ = svc.ForUser(ctx, user, holding(role.DashboardManager)); !slices.Equal(pins, []string{"orders"}) {
-		t.Errorf("pins without assets.manage: %v", pins)
+		t.Errorf("pins without sim_cards.manage: %v", pins)
 	}
 
 	fp := FeedbackParams{App: "sim-scan", Rating: "confusing", Text: " The PUK was read wrong. ", Device: "phone", Language: "lt"}

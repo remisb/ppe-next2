@@ -54,21 +54,26 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
   { route: { name: 'createOrder' }, label: t.shell.createOrder, short: t.shell.shortOrder, icon: ClipboardList },
   { route: { name: 'history' }, label: t.shell.history, short: t.shell.shortHistory, icon: HistoryIcon },
   { route: { name: 'employees' }, label: t.shell.employees, short: t.shell.shortEmployees, icon: Users },
-  {
-    route: { name: 'simCards' },
-    label: t.shell.companyAssets,
-    short: t.shell.shortAssets,
-    icon: Boxes,
-    // Equipment is the Equipment Assignments role's alone (equipment.read); without it the section is the SIM cards, with nothing to list.
-    ...(can('equipment.read')
-      ? {
-          screens: [
-            { route: { name: 'simCards' }, label: t.assets.simCards },
-            { route: { name: 'equipment' }, label: t.assets.equipment },
-          ],
-        }
-      : {}),
-  },
+  // Company Assets lists the registers its user may see: SIM Cards with See SIM Cards (sim_cards.read),
+  // Equipment with the Equipment Assignments role (equipment.read); with one, the section is that one, with no list.
+  ...(can('sim_cards.read') || can('equipment.read')
+    ? [
+        {
+          route: { name: can('sim_cards.read') ? 'simCards' : 'equipment' },
+          label: t.shell.companyAssets,
+          short: t.shell.shortAssets,
+          icon: Boxes,
+          ...(can('sim_cards.read') && can('equipment.read')
+            ? {
+                screens: [
+                  { route: { name: 'simCards' }, label: t.assets.simCards },
+                  { route: { name: 'equipment' }, label: t.assets.equipment },
+                ],
+              }
+            : {}),
+        } satisfies Tab,
+      ]
+    : []),
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   // Item Sets take See Item Sets (item_sets.read); Create Order offers the active ones to everyone.
   ...(can('item_sets.read') ? [{ route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package } satisfies Tab] : []),
@@ -508,7 +513,7 @@ export function App() {
           <Employees missing={route.name === 'employees' && (route.missing ?? false)} selected={route.name === 'employee' ? route.id : undefined} navigate={navigate} />
         ) : null}
         {route.name === 'simCards' || route.name === 'equipment' ? (
-          // startRoute has already sent anyone without equipment.read from Equipment to the SIM cards.
+          // startRoute has already sent anyone from a register they may not see (equipment.read, sim_cards.read).
           <Assets
             key={`${route.name}-${route.tile ?? 'all'}`}
             kind={route.name === 'equipment' ? 'EQUIPMENT' : 'SIM'}

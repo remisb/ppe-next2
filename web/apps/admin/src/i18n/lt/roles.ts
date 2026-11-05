@@ -89,12 +89,20 @@ export const roles: RolesText = {
     'item_sets.manage': { label: 'Tvarkyti prekių rinkinius', grants: 'Pridėti, keisti ir trinti prekių rinkinius.' },
     'orders.delete': { label: 'Trinti užsakymus', grants: 'Pašalinti demonstracinius ir bandomuosius užsakymus; įrašas ir jo istorija lieka.' },
     'assets.manage': {
-      label: 'Tvarkyti įmonės turtą',
-      grants: 'Pridėti SIM ir įrangą, keisti SIM būseną, išduoti turtą darbuotojams ir registruoti grąžinimą. Įrangai dar reikia leidimo „Matyti įrangą ir baldus“.',
+      label: 'Tvarkyti įrangą ir baldus',
+      grants: 'Pridėti įrangą ir baldus, išduoti juos darbuotojams ir registruoti grąžinimą. Dar reikia leidimo „Matyti įrangą ir baldus“.',
+    },
+    'sim_cards.read': {
+      label: 'Matyti SIM korteles',
+      grants: 'SIM kortelių ekraną, kiekvieną SIM ir pas ką ji yra: darbuotojų puslapiuose, paieškoje ir suvestinėse. Be šio leidimo SIM nematomos.',
+    },
+    'sim_cards.manage': {
+      label: 'Tvarkyti SIM',
+      grants: 'Pridėti ir skenuoti SIM, jas keisti, keisti jų būseną, išduoti darbuotojams, registruoti grąžinimą ir paruošti jų laiškus. Reikia leidimo „Matyti SIM korteles“.',
     },
     'sim_codes.read': {
       label: 'Rodyti PIN ir PUK',
-      grants: 'Matyti SIM PIN ir PUK, patvirtinus slaptažodį; kiekvienas kartas užfiksuojamas. Reikia leidimo „Tvarkyti įmonės turtą“.',
+      grants: 'Matyti SIM PIN ir PUK, patvirtinus slaptažodį; kiekvienas kartas užfiksuojamas. Reikia leidimo „Matyti SIM korteles“.',
     },
     'equipment.read': {
       label: 'Matyti įrangą ir baldus',

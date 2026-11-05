@@ -144,4 +144,11 @@ describe('router', () => {
     expect(startRoute({ name: 'equipment' }, admin)).toEqual({ name: 'simCards' })
     expect(startRoute({ name: 'equipment' }, assignments)).toEqual({ name: 'equipment' })
   })
+  it('keeps SIM Cards to See SIM Cards: anyone else gets Equipment, on the same tile, or their start screen', () => {
+    const holding = (...perms: string[]) => (p: string) => perms.includes(p)
+    expect(startRoute({ name: 'simCards' }, holding('sim_cards.read'))).toEqual({ name: 'simCards' })
+    expect(startRoute({ name: 'simCards', tile: 'inOffice' }, holding('equipment.read'))).toEqual({ name: 'equipment', tile: 'inOffice' })
+    expect(startRoute({ name: 'simCards' }, holding('dashboard.employee'))).toEqual({ name: 'employeeDashboard' })
+    expect(startRoute({ name: 'equipment' }, holding('dashboard.employee'))).toEqual({ name: 'employeeDashboard' })
+  })
 })

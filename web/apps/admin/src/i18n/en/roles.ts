@@ -88,12 +88,20 @@ export const roles = {
     'item_sets.manage': { label: 'Manage Item Sets', grants: 'Add, edit and delete item sets.' },
     'orders.delete': { label: 'Delete orders', grants: 'Remove demo and test orders; the record and its history stay.' },
     'assets.manage': {
-      label: 'Manage Company Assets',
-      grants: 'Add SIMs and equipment, change a SIM’s status, give assets to employees and register their return. Equipment also needs See Equipment & Furniture.',
+      label: 'Manage Equipment & Furniture',
+      grants: 'Add equipment and furniture, give items to employees and register their return. Also needs See Equipment & Furniture.',
+    },
+    'sim_cards.read': {
+      label: 'See SIM Cards',
+      grants: 'The SIM Cards screen, each SIM and who holds it: on employee pages, in search and on the dashboards. Without it, SIMs are hidden.',
+    },
+    'sim_cards.manage': {
+      label: 'Manage SIMs',
+      grants: 'Add and scan SIMs, edit them, change their status, give them to employees, register their return and prepare their emails. Needs See SIM Cards.',
     },
     'sim_codes.read': {
       label: 'Show PIN and PUK',
-      grants: 'See a SIM’s PIN and PUK, after confirming the password; each time is recorded. Needs Manage Company Assets.',
+      grants: 'See a SIM’s PIN and PUK, after confirming the password; each time is recorded. Needs See SIM Cards.',
     },
     'equipment.read': {
       label: 'See Equipment & Furniture',

@@ -491,9 +491,10 @@ export function createClient(options: ClientOptions) {
     },
 
     /**
-     * Company Assets. Everyone signed in reads; every write needs
-     * assets.manage. Return and Mark as Not Returned act on the asset's open
-     * assignment.
+     * Company Assets. SIM cards are read with sim_cards.read and changed with
+     * sim_cards.manage; Equipment & Furniture read with equipment.read and
+     * changed with assets.manage. Return and Mark as Not Returned act on the
+     * asset's open assignment.
      */
     assets: {
       /** The register: one kind's assets, a page at a time. */

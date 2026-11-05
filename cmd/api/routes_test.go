@@ -939,31 +939,31 @@ var policy = map[string]rule{
 	"DELETE /api/v1/orders/{id}":                                                {role.OrdersDelete, "manager"},
 	"GET /api/v1/assets":                                                        {"", "any"},
 	"GET /api/v1/assets/summary/{kind}":                                         {"", "any"},
-	"GET /api/v1/assets/sim-cards.pdf":                                          {"", "any"},
+	"GET /api/v1/assets/sim-cards.pdf":                                          {role.SIMCardsRead, "staff"},
 	"GET /api/v1/assets/by-number/{q}":                                          {"", "any"},
 	"GET /api/v1/assets/by-employee/{id}":                                       {"", "any"},
-	"GET /api/v1/assets/next-number/{prefix}":                                   {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/next-number/{prefix}":                                   {"", "managers"},
 	"GET /api/v1/assets/{id}":                                                   {"", "any"},
-	"POST /api/v1/assets":                                                       {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/sim-cards/batch/check":                                 {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/sim-cards/batch":                                       {role.AssetsManage, "managers"},
+	"POST /api/v1/assets":                                                       {"", "managers"},
+	"POST /api/v1/assets/sim-cards/batch/check":                                 {role.SIMCardsManage, "managers"},
+	"POST /api/v1/assets/sim-cards/batch":                                       {role.SIMCardsManage, "managers"},
 	"POST /api/v1/assets/{id}/sim-codes/show":                                   {role.SIMCodesRead, "admins"},
-	"PUT /api/v1/assets/{id}/sim-codes":                                         {role.AssetsManage, "managers"},
-	"DELETE /api/v1/assets/{id}/sim-codes":                                      {role.AssetsManage, "managers"},
-	"PUT /api/v1/assets/{id}":                                                   {role.AssetsManage, "managers"},
-	"PUT /api/v1/assets/{id}/status":                                            {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/{id}/form-printed":                                     {role.AssetsManage, "managers"},
+	"PUT /api/v1/assets/{id}/sim-codes":                                         {role.SIMCardsManage, "managers"},
+	"DELETE /api/v1/assets/{id}/sim-codes":                                      {role.SIMCardsManage, "managers"},
+	"PUT /api/v1/assets/{id}":                                                   {"", "managers"},
+	"PUT /api/v1/assets/{id}/status":                                            {"", "managers"},
+	"POST /api/v1/assets/{id}/form-printed":                                     {"", "managers"},
 	"POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed":          {"", "any"},
-	"GET /api/v1/assets/{id}/emails/{kind}":                                     {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/{id}/emails/{kind}/copied":                             {role.AssetsManage, "managers"},
-	"GET /api/v1/assets/{id}/assignments/preview.pdf":                           {role.AssetsManage, "managers"},
+	"GET /api/v1/assets/{id}/emails/{kind}":                                     {role.SIMCardsManage, "managers"},
+	"POST /api/v1/assets/{id}/emails/{kind}/copied":                             {role.SIMCardsManage, "managers"},
+	"GET /api/v1/assets/{id}/assignments/preview.pdf":                           {"", "managers"},
 	"GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf":               {"", "any"},
-	"POST /api/v1/assets/{id}/assignments/preview":                              {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/{id}/assignments":                                      {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/{id}/return":                                           {role.AssetsManage, "managers"},
-	"POST /api/v1/assets/{id}/not-returned":                                     {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/assignments/preview":                              {"", "managers"},
+	"POST /api/v1/assets/{id}/assignments":                                      {"", "managers"},
+	"POST /api/v1/assets/{id}/return":                                           {"", "managers"},
+	"POST /api/v1/assets/{id}/not-returned":                                     {"", "managers"},
 	"GET /api/v1/assets/{id}/assignments/{assignmentID}/form":                   {"", "any"},
-	"POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies":         {role.AssetsManage, "managers"},
+	"POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies":         {"", "managers"},
 	"GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}": {"", "any"},
 	"GET /api/v1/audit-events/assets/{id}":                                      {"", "any"},
 	"GET /api/v1/dashboard":                                                     {role.DashboardOverview, "admins"},
@@ -1029,6 +1029,42 @@ var allowedRoles = map[string][]string{
 	"employee":  {role.KeyEmployee},
 }
 
+// anyOf is the routes open to any of several permissions (router.restrictedAny):
+// their policy entry has no perm, and the handler checks the permission of
+// the asset's kind (SIM cards sim_cards.manage, Equipment & Furniture
+// assets.manage).
+var anyOf = map[string][]role.Permission{}
+
+func init() {
+	managers := []role.Permission{role.SIMCardsManage, role.AssetsManage}
+	for _, pattern := range []string{
+		"GET /api/v1/assets/next-number/{prefix}",
+		"POST /api/v1/assets",
+		"PUT /api/v1/assets/{id}",
+		"PUT /api/v1/assets/{id}/status",
+		"POST /api/v1/assets/{id}/form-printed",
+		"GET /api/v1/assets/{id}/assignments/preview.pdf",
+		"POST /api/v1/assets/{id}/assignments/preview",
+		"POST /api/v1/assets/{id}/assignments",
+		"POST /api/v1/assets/{id}/return",
+		"POST /api/v1/assets/{id}/not-returned",
+		"POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies",
+	} {
+		anyOf[pattern] = managers
+	}
+}
+
+// required is the permissions a route needs one of, none for any signed-in user.
+func required(pattern string, rule rule) []role.Permission {
+	if perms, ok := anyOf[pattern]; ok {
+		return perms
+	}
+	if rule.perm != "" {
+		return []role.Permission{rule.perm}
+	}
+	return nil
+}
+
 var wildcard = regexp.MustCompile(`\{[^}]+\}`)
 
 // TestSeededRolesKeepPolicy pins that the built-in roles' permissions grant
@@ -1038,8 +1074,10 @@ func TestSeededRolesKeepPolicy(t *testing.T) {
 		if rule.audience == "public" {
 			continue
 		}
+		need := required(pattern, rule)
 		for _, key := range role.BuiltinKeys() {
-			granted := rule.perm == "" || slices.Contains(role.BuiltinPermissions([]string{key}), rule.perm)
+			held := role.BuiltinPermissions([]string{key})
+			granted := len(need) == 0 || slices.ContainsFunc(need, func(p role.Permission) bool { return slices.Contains(held, p) })
 			if want := slices.Contains(allowedRoles[rule.audience], key); granted != want {
 				t.Errorf("%s: role %s granted %v, want %v", pattern, key, granted, want)
 			}
@@ -1067,8 +1105,8 @@ func TestRoutePolicy(t *testing.T) {
 			t.Errorf("route %q has no entry in the policy table", r.pattern)
 			continue
 		}
-		if r.access.public != (want.audience == "public") || r.access.perm != want.perm {
-			t.Errorf("%s: registered %+v, policy says %+v", r.pattern, r.access, want)
+		if r.access.public != (want.audience == "public") || r.access.perm != want.perm || !slices.Equal(r.access.anyOf, anyOf[r.pattern]) {
+			t.Errorf("%s: registered %+v, policy says %+v, any of %v", r.pattern, r.access, want, anyOf[r.pattern])
 		}
 	}
 	for pattern := range policy {
@@ -1103,10 +1141,12 @@ func TestRoutePolicy(t *testing.T) {
 					t.Errorf("%s: %d, want 403", who, code)
 				}
 			}
-			if rule.perm != "" {
-				others := slices.DeleteFunc(slices.Clone(all), func(p role.Permission) bool { return p == rule.perm })
+			if need := required(pattern, rule); len(need) > 0 {
+				others := slices.DeleteFunc(slices.Clone(all), func(p role.Permission) bool { return slices.Contains(need, p) })
 				check("every other permission", api.tokenWith(t, others...), false)
-				check("only "+string(rule.perm), api.tokenWith(t, rule.perm), true)
+				for _, p := range need {
+					check("only "+string(p), api.tokenWith(t, p), true)
+				}
 			} else {
 				check("no permissions", api.tokenWith(t), true)
 			}

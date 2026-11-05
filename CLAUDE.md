@@ -92,7 +92,10 @@ data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashb
 **Company Assets** (SIM cards, equipment and furniture, ADR 0004; terms in glossary §12):
 the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
 `docs/specs/asset-service.md`): assets, assignments with one open per asset, the
-assignment form as a hashed snapshot, `assets.manage` for writes; Delete employee refuses an
+assignment form as a hashed snapshot; SIM cards seen with `sim_cards.read` and changed with
+`sim_cards.manage`, Equipment & Furniture changed with `assets.manage` (migration 0049 split SIM cards'
+off, `asset.Rights`; a route serving both kinds is `rt.restrictedAny`, its kind checked by the handler);
+Delete employee refuses an
 employee who holds assets. Company Assets is two screens, listed under it in the rail, the sidebar and a phone's More panel: SIM Cards
 (`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
 opens them). The SIM card register is on screen (`routes/assets.tsx`,

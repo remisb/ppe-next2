@@ -109,7 +109,25 @@ inventory number.
 
 ## Actions
 
-Every write needs `assets.manage`. Reads need sign-in, like employees and orders.
+Each kind has its own permissions (migration 0049 split SIM cards' off): **SIM cards** are
+seen with `sim_cards.read` (**See SIM Cards**) and changed with `sim_cards.manage` (**Manage
+SIMs**, which needs it); **Equipment & Furniture** is seen with `equipment.read` and changed
+with `assets.manage` (**Manage Equipment & Furniture**; the key is older than the split).
+`cmd/api` decides `asset.Sight` (what the user sees) and `asset.Rights` (what they change)
+from the token. A route that serves both kinds is open to any signed-in user to read, or to
+either manage permission to write (`router.restrictedAny`), and checks the asset's kind:
+a write on one asset the user sees but may not change is 403 (`asset.ErrMayNotChange`,
+`Service.Changeable`, checked first), as Add SIM, Add Asset and Next number are for a kind
+they may not add. Migration 0049 kept every role's access: `sim_cards.read` for every role
+but the add-on roles Equipment Assignments, Testers and Personnel Documents (every signed-in
+user saw SIMs), and `sim_cards.manage` for every role with `assets.manage`.
+
+**SIM cards need `sim_cards.read`**, which Administrator, Manager and Employee hold. Without
+it, as without `equipment.read` for equipment below: the SIM register, its tiles, its PDF and
+Add SIM are 403 (`asset.ErrSIMsNotPermitted`), every route on one SIM card is 404, search and
+the employee's assets leave SIMs out, and the apps show no SIM Cards screen (its address
+shows Equipment, or the start screen), no Given SIM section, no SIM figures and no SIM Cards
+tile in App Launcher. Scan SIMs' Scan needs `sim_cards.manage`.
 
 **Equipment & Furniture needs `equipment.read`** (migration 0032), which only the built-in
 role **Equipment Assignments** grants: not Administrator or Manager. Who holds which
@@ -126,7 +144,7 @@ computer or phone is for the people given that role. Without it (`asset.Sight`, 
   `/assets/equipment` (and the old `/assets?kind=equipment`) shows the SIM cards.
 
 Giving, returning and editing equipment needs both `assets.manage` and `equipment.read`.
-SIMs stay as they were. Delete employee still refuses an employee who holds any asset, and
+Giving, returning and editing SIMs needs `sim_cards.manage` (with `sim_cards.read`). Delete employee still refuses an employee who holds any asset, and
 names it. The Audit log (`audit.read`) keeps every event, equipment's included: it is the
 complete record, and its export must match the seals.
 
@@ -249,7 +267,7 @@ under `API_SIM_CODES_KEY` (`internal/sealbox`), which the database and its backu
 hold, together in one value bound to the card's id, in `asset_sim_codes` (one row per card that
 has them). They are never in an asset's JSON, an event, an error or a log line.
 
-- **Show PIN and PUK** needs `sim_codes.read` (which needs `assets.manage`; the Administrator's
+- **Show PIN and PUK** needs `sim_codes.read` (which needs `sim_cards.read`; the Administrator's
   alone when installed), checked against the user's roles as they are now, and a **recent
   sign-in** (`API_RECENT_SIGN_IN`): otherwise the app asks Confirm your password. Each Show
   records `asset.sim_codes_shown` (the SIM No., never the codes) before it answers, and the
@@ -257,7 +275,7 @@ has them). They are never in an asset's JSON, an event, an error or a log line.
   hide again after a minute, or as soon as the tab goes to the background.
 - **Set** (`PUT …/sim-codes`, `{pin, puk}`) keeps them in place of any, and **clear**
   (`DELETE`) forgets them, each recording `asset.sim_codes_changed` with `{"sim_codes":
-  "set"|"cleared"}`; both need `assets.manage`, on SIM cards only. In the trial, Show PIN and
+  "set"|"cleared"}`; both need `sim_cards.manage`, on SIM cards only. In the trial, Show PIN and
   PUK finds a SIM by part of its number and offers **Add PIN and PUK** to one without them.
 - Without the key the API does not start; losing it loses the codes (`docs/backups.md`), which
   are still on the cards' carriers.
@@ -396,37 +414,39 @@ stays with its assignment when the asset later goes to someone else.
 | Route | Access | Kind |
 | --- | --- | --- |
 | `GET /api/v1/assets` | authenticated | paged search, query parameters (see below) |
-| `GET /api/v1/assets/sim-cards.pdf` | authenticated | Preview PDF on SIM Cards (shown in the app, then printed, downloaded or opened in a tab): every SIM card the register's filters match (`q`, `location`, `held`, `provider`, `status`, `not_returned`, `signed_copy`), in its `sort` and `dir`, never paged (more than 5000 is 400: narrow them), drawn by `internal/registerpdf` on A4 landscape in 7 pt; each page's header names the list, the print date and time in the organisation timezone, the filters and the sort; in the reader's own language (their account's `users.language`: English, Lithuanian or Russian; a `lang` parameter is refused); records nothing; an attachment `sim-cards-<YYYY-MM-DD-HHMM>.pdf` |
+| `GET /api/v1/assets/sim-cards.pdf` | `sim_cards.read` | Preview PDF on SIM Cards (shown in the app, then printed, downloaded or opened in a tab): every SIM card the register's filters match (`q`, `location`, `held`, `provider`, `status`, `not_returned`, `signed_copy`), in its `sort` and `dir`, never paged (more than 5000 is 400: narrow them), drawn by `internal/registerpdf` on A4 landscape in 7 pt; each page's header names the list, the print date and time in the organisation timezone, the filters and the sort; in the reader's own language (their account's `users.language`: English, Lithuanian or Russian; a `lang` parameter is refused); records nothing; an attachment `sim-cards-<YYYY-MM-DD-HHMM>.pdf` |
 | `GET /api/v1/assets/summary/{kind}` | authenticated | the four tile counts, and `providers`: the kind's providers in use, for the filter |
 | `GET /api/v1/assets/by-number/{q}` | authenticated | **filter** for ⌘K Search: SIM No., Phone No. or Inventory No. containing `q`, spaces ignored, max 20; no match is `200 []` |
 | `GET /api/v1/assets/by-employee/{id}` | authenticated | **filter**: the employee's assignments with their assets, open first; none is `200 []` |
-| `GET /api/v1/assets/next-number/{prefix}` | `assets.manage` | `{"inventory_no": "SIM-000002"}` |
+| `GET /api/v1/assets/next-number/{prefix}` | `sim_cards.manage` or `assets.manage`, the prefix's kind's | `{"inventory_no": "SIM-000002"}` |
 | `GET /api/v1/assets/{id}` | authenticated | the asset with `location`, `open_assignment`, `needs_form` and every assignment, newest first; 404 |
-| `POST /api/v1/assets` | `assets.manage` | Add SIM, Add Asset (201) |
-| `POST /api/v1/assets/sim-cards/batch/check` | `assets.manage` | Scan SIMs' check: `{provider, plan?, non_return_value_cents?, received_date?, comment, cards: [{sim_no, pin, puk}]}`; `200 {problems: [{index, field, code, existing_id?, other?}]}`, every problem of every card, `[]` for none (codes `not_sim_no`, `check_digit`, `duplicate`, `registered`, `codes_incomplete`, `pin`, `puk`); a problem with what the cards share is a 400; writes nothing |
-| `POST /api/v1/assets/sim-cards/batch` | `assets.manage` | Scan SIMs' Add, the same body: `201 {sims: [{id, inventory_no, sim_no}]}`, all or none; a refused card is a 400 or 409 with its `index` |
+| `POST /api/v1/assets` | `sim_cards.manage` or `assets.manage`, the body's kind's | Add SIM, Add Asset (201) |
+| `POST /api/v1/assets/sim-cards/batch/check` | `sim_cards.manage` | Scan SIMs' check: `{provider, plan?, non_return_value_cents?, received_date?, comment, cards: [{sim_no, pin, puk}]}`; `200 {problems: [{index, field, code, existing_id?, other?}]}`, every problem of every card, `[]` for none (codes `not_sim_no`, `check_digit`, `duplicate`, `registered`, `codes_incomplete`, `pin`, `puk`); a problem with what the cards share is a 400; writes nothing |
+| `POST /api/v1/assets/sim-cards/batch` | `sim_cards.manage` | Scan SIMs' Add, the same body: `201 {sims: [{id, inventory_no, sim_no}]}`, all or none; a refused card is a 400 or 409 with its `index` |
 | `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read`, a recent sign-in | Show PIN and PUK: `{pin, puk}`, `no-store`, records `asset.sim_codes_shown`; 404 without codes |
-| `PUT /api/v1/assets/{id}/sim-codes` | `assets.manage` | keeps `{pin, puk}` (204), records `asset.sim_codes_changed` |
-| `DELETE /api/v1/assets/{id}/sim-codes` | `assets.manage` | forgets them (204); 404 without codes |
-| `PUT /api/v1/assets/{id}` | `assets.manage` | Edit, full replace of the details |
-| `PUT /api/v1/assets/{id}/status` | `assets.manage` | Change Status, `{"connection_status"}` |
-| `POST /api/v1/assets/{id}/assignments/preview` | `assets.manage` | the form and its hash, no write |
-| `POST /api/v1/assets/{id}/assignments` | `assets.manage` | Give (201) |
-| `POST /api/v1/assets/{id}/return` | `assets.manage` | Register Return, on the open assignment |
-| `POST /api/v1/assets/{id}/not-returned` | `assets.manage` | Mark as Not Returned, on the open assignment |
+| `PUT /api/v1/assets/{id}/sim-codes` | `sim_cards.manage` | keeps `{pin, puk}` (204), records `asset.sim_codes_changed` |
+| `DELETE /api/v1/assets/{id}/sim-codes` | `sim_cards.manage` | forgets them (204); 404 without codes |
+| `PUT /api/v1/assets/{id}` | the kind's manage permission | Edit, full replace of the details |
+| `PUT /api/v1/assets/{id}/status` | the kind's manage permission | Change Status, `{"connection_status"}` |
+| `POST /api/v1/assets/{id}/assignments/preview` | the kind's manage permission | the form and its hash, no write |
+| `POST /api/v1/assets/{id}/assignments` | the kind's manage permission | Give (201) |
+| `POST /api/v1/assets/{id}/return` | the kind's manage permission | Register Return, on the open assignment |
+| `POST /api/v1/assets/{id}/not-returned` | the kind's manage permission | Mark as Not Returned, on the open assignment |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form` | authenticated | the stored form and hash, for reprinting; for a SIM card still held since the import, which stored none, a form built now (`asset.ImportedFormDate`), never stored; 404 when the asset needed none |
-| `POST /api/v1/assets/{id}/form-printed` | `assets.manage` | records `asset.form_printed` for the form Give would store (Preview's body, checked as Preview checks it); 204, writes nothing else |
+| `POST /api/v1/assets/{id}/form-printed` | the kind's manage permission | records `asset.form_printed` for the form Give would store (Preview's body, checked as Preview checks it); 204, writes nothing else |
 | `POST /api/v1/assets/{id}/assignments/{assignmentID}/form-printed` | authenticated | records `asset.form_printed` for an assignment's stored form, printed again; 204 |
-| `GET /api/v1/assets/{id}/assignments/preview.pdf` | `assets.manage` | Download PDF on Give: the form Give would store as a PDF, from `?employee=&date=&plan=&value=` (cents), checked as Preview checks it; records `asset.form_printed` (format pdf) first; an attachment `assignment-form-<number>-<date>.pdf` |
+| `GET /api/v1/assets/{id}/assignments/preview.pdf` | the kind's manage permission | Download PDF on Give: the form Give would store as a PDF, from `?employee=&date=&plan=&value=` (cents), checked as Preview checks it; records `asset.form_printed` (format pdf) first; an attachment `assignment-form-<number>-<date>.pdf` |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/form.pdf` | authenticated | Download PDF on an assignment: its stored form; recorded the same way |
-| `GET /api/v1/assets/{id}/emails/{kind}` | `assets.manage` | Prepare Activation Email (`activation`) or Prepare Blocking Email (`blocking`): the email from its mail template, `{to, cc, subject, body, missing}`; SIM cards only, records nothing |
-| `POST /api/v1/assets/{id}/emails/{kind}/copied` | `assets.manage` | records `asset.activation_email_prepared` or `asset.blocking_email_prepared` (the email copied); 204, SIM cards only |
-| `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | `assets.manage` | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
+| `GET /api/v1/assets/{id}/emails/{kind}` | `sim_cards.manage` | Prepare Activation Email (`activation`) or Prepare Blocking Email (`blocking`): the email from its mail template, `{to, cc, subject, body, missing}`; SIM cards only, records nothing |
+| `POST /api/v1/assets/{id}/emails/{kind}/copied` | `sim_cards.manage` | records `asset.activation_email_prepared` or `asset.blocking_email_prepared` (the email copied); 204, SIM cards only |
+| `POST /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies` | the kind's manage permission | Upload Signed Form: `multipart/form-data`, the file in `file` (201); 413, 415, 404 without a form, 503 without storage |
 | `GET /api/v1/assets/{id}/assignments/{assignmentID}/signed-copies/{copyID}` | authenticated | the copy as an attachment; 404 |
 | `GET /api/v1/audit-events/assets/{id}` | authenticated | the asset's Changes, as for the other records |
 
-Every route on `{id}`, and `kind=EQUIPMENT` on the list, tiles and Add Asset, also needs
-`equipment.read` for an equipment item (404 on one item, 403 by kind; see Actions).
+Every route on `{id}`, and `kind` on the list, tiles and Add, also needs the kind's read
+permission, `sim_cards.read` or `equipment.read` (404 on one asset, 403 by kind); "the kind's
+manage permission" is `sim_cards.manage` for a SIM card and `assets.manage` for an equipment
+item (403 for the other kind's; see Actions).
 
 The return and the mark act on the asset's only open assignment, so they are the asset's
 routes (the contract's aggregate rule). `GET /api/v1/assets/{id}` carries the assignments
@@ -512,7 +532,7 @@ their own address:
   ignored, a card without one last, then the SIM No.), Inventory No. (the default, and on a
   phone's Sort by), status, employee or given date. On a phone a row is the phone number (the SIM No. until there is
   one) and the status, then the SIM No., provider and where the card is.
-- **Change Status** is the row's everyday action for `assets.manage`: a menu of the three
+- **Change Status** is the row's everyday action for `sim_cards.manage`: a menu of the three
   statuses with the brief's note, and for a Not Activated card the activation text. The
   choice is saved at once and announced. Edit is under ⋯.
 - **Add SIM** (and Edit) is one sheet: SIM No., provider (chosen from those an

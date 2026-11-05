@@ -42,7 +42,7 @@ The defaults, phase 1's list:
 | Create Order, Orders, Employees, Help | shortcuts | Workwear & PPE | their screens | every signed-in user |
 | SIM Cards | shortcut | Company Assets | `/assets/sim-cards` | every signed-in user |
 | Equipment | shortcut | Company Assets | `/assets/equipment` | `equipment.read` |
-| Scan SIMs | app, Pilot | Company Assets | `/apps/sim-scan/` | `assets.manage`, `sim_codes.read` |
+| Scan SIMs | app, Pilot | Company Assets | `/apps/sim-scan/` | `sim_cards.manage`, `sim_codes.read` |
 | PPE Crew | app, Pilot, linked | People & Crew | `https://crew.167.71.68.195.sslip.io/`, a new tab | `dashboard.overview`, `dashboard.manager` (administrators and managers) |
 | Administration | app | Administration | `/admin/` | `ADMINISTRATION_PERMISSIONS` |
 

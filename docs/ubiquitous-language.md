@@ -778,6 +778,9 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Detail:** its **SIM No.** (the number printed on the card) and **Phone No.** are
   different facts: a card has one SIM No. for life, and its phone number may be unknown when
   it arrives (§2, §4). The SIM No. is kept exactly as typed, leading zeros included.
+  Seen with **See SIM Cards** (`sim_cards.read`) and changed with **Manage SIMs**
+  (`sim_cards.manage`), as Equipment & Furniture is with **See Equipment & Furniture** and
+  **Manage Equipment & Furniture** (`assets.manage`; migration 0049).
 - **UI:** "SIM" (plural "SIMs"), never "SIM card": **Add SIM**, **Edit SIM**, SIM No., Phone No.
   Lithuanian and Russian also say "SIM" (not "SIM kortelė", "SIM-карта"). The one exception
   is the screen's name, **SIM Cards** (SIM kortelės, SIM-карты), since 2026-10-17.

@@ -607,6 +607,84 @@ func TestPostgresEquipmentNeedsTheRole(t *testing.T) {
 	}
 }
 
+// SIM cards have their own pair (migration 0049): sim_cards.read to see
+// them, sim_cards.manage to change them; assets.manage changes Equipment &
+// Furniture only. A reader without sim_cards.read finds no SIM anywhere, as
+// one without equipment.read finds no item.
+func TestPostgresSIMCardsNeedTheirPermissions(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager, role.KeyEquipment)
+	_, equipmentOnly := api.userWith(t, role.KeyEquipment)
+	simManager := api.tokenWith(t, role.SIMCardsRead, role.SIMCardsManage, role.EquipmentRead)
+	itemManager := api.tokenWith(t, role.AssetsManage, role.SIMCardsRead, role.EquipmentRead)
+	simReader := api.tokenWith(t, role.SIMCardsRead)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Rūta", "last_name": "Kazlauskienė"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	sim := map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011", "phone_no": "+370 612 40118",
+		"provider": "Telia", "non_return_value_cents": 2500, "connection_status": "ACTIVE"}
+	laptop := map[string]any{"kind": "EQUIPMENT", "category": "COMPUTER", "inventory_no": "PC-000001", "name": "Laptop", "non_return_value_cents": 90000}
+	if rec := api.do(t, "POST", "/api/v1/assets", itemManager, sim); rec.Code != http.StatusForbidden {
+		t.Errorf("add SIM with assets.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets", simManager, laptop); rec.Code != http.StatusForbidden {
+		t.Errorf("add laptop with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/next-number/SIM", itemManager, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("next SIM number with assets.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/next-number/PC", simManager, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("next PC number with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/next-number/SIM", simManager, nil); rec.Code != http.StatusOK {
+		t.Errorf("next SIM number with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/assets", simManager, sim)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add SIM with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	simID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/assets", itemManager, laptop)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add laptop with assets.manage = %d %s", rec.Code, rec.Body)
+	}
+	pcID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	status := map[string]any{"connection_status": "BLOCKED"}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+simID+"/status", itemManager, status); rec.Code != http.StatusForbidden {
+		t.Errorf("change SIM status with assets.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+pcID+"/assignments/preview", simManager, map[string]any{"employee_id": empID, "given_date": time.Now().Format(time.DateOnly)}); rec.Code != http.StatusForbidden {
+		t.Errorf("preview laptop form with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+simID+"/status", simManager, status); rec.Code != http.StatusOK {
+		t.Errorf("change SIM status with sim_cards.manage = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+simID+"/status", simReader, status); rec.Code != http.StatusForbidden {
+		t.Errorf("change SIM status with sim_cards.read = %d %s", rec.Code, rec.Body)
+	}
+
+	// Without sim_cards.read: no register, no tiles, no PDF, no card, no search hit.
+	for _, path := range []string{"/api/v1/assets?kind=SIM", "/api/v1/assets/summary/SIM", "/api/v1/assets/sim-cards.pdf"} {
+		if rec := api.do(t, "GET", path, equipmentOnly, nil); rec.Code != http.StatusForbidden {
+			t.Errorf("GET %s without sim_cards.read = %d %s", path, rec.Code, rec.Body)
+		}
+	}
+	for _, path := range []string{"/api/v1/assets/" + simID, "/api/v1/audit-events/assets/" + simID} {
+		if rec := api.do(t, "GET", path, equipmentOnly, nil); rec.Code != http.StatusNotFound {
+			t.Errorf("GET %s without sim_cards.read = %d %s", path, rec.Code, rec.Body)
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/by-number/000001", equipmentOnly, nil); strings.Contains(rec.Body.String(), "SIM-000001") || !strings.Contains(rec.Body.String(), "PC-000001") {
+		t.Errorf("search without sim_cards.read = %s", rec.Body)
+	}
+	for _, tok := range []string{simReader, mgr} {
+		if rec := api.do(t, "GET", "/api/v1/assets/"+simID, tok, nil); rec.Code != http.StatusOK {
+			t.Errorf("SIM with sim_cards.read = %d %s", rec.Code, rec.Body)
+		}
+	}
+}
+
 // upload sends one file as multipart/form-data, as the app's Upload Signed Form does.
 func (a *testAPI) upload(t *testing.T, path, token, name string, data []byte) *httptest.ResponseRecorder {
 	t.Helper()
@@ -1464,7 +1542,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "item_sets.read", "dashboard.employee"}) || claims.Roles != nil {
+	if err != nil || !slices.Equal(claims.Perms, []string{"catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) || claims.Roles != nil {
 		t.Errorf("k's token perms %v roles %v, %v", claims.Perms, claims.Roles, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {

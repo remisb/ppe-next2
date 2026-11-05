@@ -46,7 +46,9 @@ roles did:
 | `item_sets.read` | see Item Sets (migration 0038; before it, every signed-in user) | ✓ | ✓ | ✓ |
 | `item_sets.manage` | add, edit, delete item sets (needs `item_sets.read`) | ✓ | ✓ | |
 | `orders.delete` | delete orders | | ✓ | |
-| `assets.manage` | add and edit Company Assets, Change Status, give, return, Mark as Not Returned (migration 0029; spec, open decision 5) | ✓ | ✓ | |
+| `assets.manage` | add and edit Equipment & Furniture, give, return, Mark as Not Returned (migration 0029, SIM cards' split off in 0049; spec, open decision 5) | ✓ | ✓ | |
+| `sim_cards.read` | see SIM cards and who holds each (migration 0049; before it, every signed-in user) | ✓ | ✓ | ✓ |
+| `sim_cards.manage` | add, scan and edit SIMs, Change Status, give, return, Mark as Not Returned, their emails and PIN and PUK (needs `sim_cards.read`; migration 0049) | ✓ | ✓ | |
 | `dashboard.overview` | the Dashboard | ✓ | | |
 | `dashboard.manager` | the Manager Dashboard | | ✓ | |
 | `dashboard.employee` | the Employee Dashboard (the user's own orders) | | | ✓ |

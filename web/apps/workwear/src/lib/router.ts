@@ -282,8 +282,12 @@ export function startRoute(route: Route, can: (p: Permission) => boolean): Route
   if (route.name === 'dashboard' && !can('dashboard.overview')) return home
   if (route.name === 'managerDashboard' && !can('dashboard.manager')) return home
   if (route.name === 'employeeDashboard' && !can('dashboard.employee')) return home
-  // Equipment is for the Equipment Assignments role (equipment.read); others get the SIM cards.
-  if (route.name === 'equipment' && !can('equipment.read')) return { name: 'simCards', ...(route.tile ? { tile: route.tile } : {}) }
+  // Each register is for whoever may see it (SIM Cards sim_cards.read, Equipment equipment.read);
+  // someone who may not gets the other one, on the same tile, or their start screen.
+  if (route.name === 'equipment' && !can('equipment.read'))
+    return can('sim_cards.read') ? { name: 'simCards', ...(route.tile ? { tile: route.tile } : {}) } : home
+  if (route.name === 'simCards' && !can('sim_cards.read'))
+    return can('equipment.read') ? { name: 'equipment', ...(route.tile ? { tile: route.tile } : {}) } : home
   if (route.name === 'itemSets' && !can('item_sets.read')) return home
   return route
 }

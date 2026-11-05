@@ -18,14 +18,17 @@ import { type AssetTile, type Route, linkTo } from '@/lib/router'
  */
 export function AssetsCard({ navigate, className }: { navigate: (to: Route) => void; className?: string }) {
   const { client } = useApi()
-  // Equipment & Furniture's figures only for the Equipment Assignments role (equipment.read).
-  const seesEquipment = useSession().can('equipment.read')
-  const sims = useLoad(() => client.assets.summary('SIM'))
+  // Each register's figures only for whoever may see it: SIM cards See SIM Cards (sim_cards.read),
+  // Equipment & Furniture the Equipment Assignments role (equipment.read).
+  const { can } = useSession()
+  const seesSims = can('sim_cards.read')
+  const seesEquipment = can('equipment.read')
+  const sims = useLoad(() => (seesSims ? client.assets.summary('SIM') : Promise.resolve(null)), [seesSims])
   const equipment = useLoad(() => (seesEquipment ? client.assets.summary('EQUIPMENT') : Promise.resolve(null)), [seesEquipment])
-  if (!sims.data || (seesEquipment && !equipment.data)) return null
+  if ((!seesSims && !seesEquipment) || (seesSims && !sims.data) || (seesEquipment && !equipment.data)) return null
   return (
     <Panel title={t.assets.title} description={t.assets.tilesOverlap} className={className}>
-      <Figures heading={t.assets.simCards} s={sims.data} total={t.assets.totalSimCards} equipment={false} navigate={navigate} />
+      {sims.data ? <Figures heading={t.assets.simCards} s={sims.data} total={t.assets.totalSimCards} equipment={false} navigate={navigate} /> : null}
       {equipment.data ? <Figures heading={t.assets.equipment} s={equipment.data} total={t.assets.totalItems} equipment navigate={navigate} /> : null}
     </Panel>
   )

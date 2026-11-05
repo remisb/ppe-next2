@@ -15,7 +15,7 @@ import { NotReturnedBadge, ReturnButton, StatusBadge } from '@/components/asset-
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import type { PickedEmployee } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { categoryLabel, documentsText, formatDay, todayIn } from '@/lib/assets'
+import { categoryLabel, documentsText, formatDay, managePermission, todayIn } from '@/lib/assets'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
 
@@ -46,7 +46,7 @@ export function HeldAssets({
   onChanged?: () => void
 }) {
   const { client } = useApi()
-  const canManage = useSession().can('assets.manage')
+  const canManage = useSession().can(managePermission(kind))
   const held = useLoad(() => client.assets.byEmployee(employee.id), [employee.id])
   const [sheet, setSheet] = useState<AssetSheet>(null)
   const sim = kind === 'SIM'

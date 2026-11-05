@@ -154,7 +154,7 @@ function SimRow({ sim }: { sim: Asset }) {
       {none && !draft ? (
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-muted-foreground">{t.noCodes}</p>
-          {session.can('assets.manage') ? (
+          {session.can('sim_cards.manage') ? (
             <Button variant="outline" size="sm" onClick={() => setDraft({ pin: '', puk: '' })}>
               {t.addCodes}
             </Button>

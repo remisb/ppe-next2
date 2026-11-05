@@ -9,10 +9,12 @@ import (
 )
 
 // access is a route's authorization rule. perm empty with public false means
-// any authenticated user.
+// any authenticated user, unless anyOf names the permissions one of which it
+// needs.
 type access struct {
 	public bool
 	perm   role.Permission
+	anyOf  []role.Permission
 }
 
 type routeInfo struct {
@@ -60,4 +62,12 @@ func (rt *router) authenticated(pattern string, h http.HandlerFunc) {
 func (rt *router) restricted(pattern string, h http.HandlerFunc, perm role.Permission) {
 	rt.mux.Handle(pattern, named(pattern, rt.authed.Append(middleware.Authorizer(string(perm))).ThenFunc(h)))
 	rt.routes = append(rt.routes, routeInfo{pattern, access{perm: perm}})
+}
+
+// restrictedAny registers a route open to users whose token grants any of
+// perms: a route that acts on more than one kind of thing, whose handler then
+// checks the permission of the thing it acts on.
+func (rt *router) restrictedAny(pattern string, h http.HandlerFunc, perms ...role.Permission) {
+	rt.mux.Handle(pattern, named(pattern, rt.authed.Append(middleware.Authorizer(role.Strings(perms)...)).ThenFunc(h)))
+	rt.routes = append(rt.routes, routeInfo{pattern, access{anyOf: perms}})
 }

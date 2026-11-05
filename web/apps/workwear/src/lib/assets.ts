@@ -16,6 +16,7 @@ import type {
   CreateAssetInput,
   InventoryPrefix,
   MailMessage,
+  Permission,
   SimCardsReportQuery,
   SimProvider,
 } from '@ppe/api-client'
@@ -27,6 +28,11 @@ import { t } from '@/i18n'
 import { parseEuro } from '@/lib/utils'
 
 export const ASSET_PAGE_SIZE = 50
+
+/** The permission that changes assets of kind: SIM cards Manage SIMs, Equipment & Furniture Manage Equipment & Furniture. */
+export function managePermission(kind: AssetKind): Permission {
+  return kind === 'SIM' ? 'sim_cards.manage' : 'assets.manage'
+}
 
 /**
  * Where the register looks: every card, those in the office, those someone

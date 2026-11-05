@@ -76,6 +76,8 @@ var errorStatuses = []struct {
 	{user.ErrNotPermitted, http.StatusForbidden},
 	{role.ErrNotPermitted, http.StatusForbidden},
 	{asset.ErrNotPermitted, http.StatusForbidden},
+	{asset.ErrSIMsNotPermitted, http.StatusForbidden},
+	{asset.ErrMayNotChange, http.StatusForbidden},
 	{catalogue.ErrNotPermitted, http.StatusForbidden},
 
 	// The actor comes from a verified token, so an unknown actor is an

@@ -23,6 +23,10 @@ var (
 	ErrAlreadyMarked    = errors.New("asset is already marked as not returned")
 	ErrFormChanged      = errors.New("the form changed after it was printed")
 	ErrNotPermitted     = errors.New("Equipment & Furniture needs the Equipment Assignments role")
+	ErrSIMsNotPermitted = errors.New("SIM cards need the permission See SIM Cards")
+	// ErrMayNotChange: SIMs need Manage SIMs, Equipment & Furniture Manage
+	// Equipment & Furniture.
+	ErrMayNotChange = errors.New("your roles do not allow changing this kind of asset")
 	// Signed copies (slice 5).
 	ErrAssignmentNotFound = errors.New("assignment not found")
 	ErrNoStorage          = errors.New("file storage is not set up, so signed copies cannot be kept")

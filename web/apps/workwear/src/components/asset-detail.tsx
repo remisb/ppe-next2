@@ -28,7 +28,7 @@ import { EquipmentForm } from '@/components/equipment-form'
 import { SignedCopies } from '@/components/signed-copies'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, locationText, primaryAction, simCopyText, todayIn } from '@/lib/assets'
+import { categoryLabel, formatDay, locationText, managePermission, primaryAction, simCopyText, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
@@ -68,7 +68,7 @@ export function AssetDetail({
   refresh?: number
 }) {
   const { client } = useApi()
-  const canManage = useSession().can('assets.manage')
+  const { can } = useSession()
   const changesKey = useOpenKey('asset.changes')
   // Assignments are closed at first, as Changes are, then as the user left them. An action
   // here (Give, Register Return, …) opens them, so its result shows, without changing what is remembered.
@@ -86,6 +86,8 @@ export function AssetDetail({
 
   const a = asset.data
   const sim = a?.kind !== 'EQUIPMENT'
+  // A SIM changes with Manage SIMs, an item with Manage Equipment & Furniture.
+  const canManage = a ? can(managePermission(a.kind)) : false
   // Beside the register, the register loads both again (refresh); on its own, the page loads the asset.
   const changed = () => (onChanged ? onChanged() : asset.reload())
   const changeStatus = (next: ConnectionStatus) =>

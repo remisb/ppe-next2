@@ -114,7 +114,7 @@ func TestPostgresRegistry(t *testing.T) {
 	}
 
 	// Pins: replaced, in order; a user's go with them.
-	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.AssetsManage }
+	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.SIMCardsManage }
 	if _, err := svc.SetPins(ctx, actor, []string{"size-helper", "workwear"}, tester); err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestPostgresVersions(t *testing.T) {
 		t.Error("a channel other than stable, beta or preview was stored")
 	}
 
-	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.AssetsManage }
+	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.SIMCardsManage }
 	if err := svc.ChooseChannel(ctx, actor, "sim-scan", ChannelBeta, tester); err != nil {
 		t.Fatal(err)
 	}
