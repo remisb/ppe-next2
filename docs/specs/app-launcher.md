@@ -128,14 +128,14 @@ from the user's launcher list (`setAppNames`), else its slug.
 - **Pinned** tiles first (the API's), then **Recent** apps (the last six opened, per user on
   the device: `localStorage` `workwear.launcher.<userId>`), then the groups. A tile the user
   no longer sees drops out of both.
-- From `lg`, a rail of the groups (All apps, Pinned, each group with tiles) narrows the tiles,
-  as a till's categories do.
+- One page at every width, with no sidebar: the header (the mark, **Apps**, the account and
+  Sign out), the search, then the tiles; groups are headings on the page, not a filter.
 - **⋯**, or a right-click on a tile, opens a dialog (a sheet from the bottom on a phone):
   where it runs (*On this site, with your sign-in* or *Another site, with its own sign-in*),
   its stage, its address, **Open** and **Pin** / **Unpin**, for an app **Feedback**, and for
   a published app with more than Stable for the user, **Versions** (below).
-- Account (the staff app's) and Sign out: the rail's foot from `lg`, icons in the header
-  below it.
+- Account (the staff app's) and Sign out: in the header, icons on a phone, the name and
+  **Sign out** from `sm`.
 
 ## Serving
 
