@@ -1,4 +1,4 @@
-import { ApiProvider, applyTheme, loadTheme } from '@ppe/app-shell'
+import { ApiProvider, AppUpdateNotice, applyTheme, loadTheme } from '@ppe/app-shell'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -17,6 +17,7 @@ createRoot(container).render(
   <StrictMode>
     <ApiProvider app="admin" setLanguage={setLanguage}>
       <App />
+      <AppUpdateNotice />
     </ApiProvider>
   </StrictMode>,
 )

@@ -339,6 +339,8 @@ export function App() {
           aria-label={t.shell.mainNav}
           className={cn(
             'fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80',
+            // A long press on a tab neither selects its label nor opens a link preview, as in a phone's own apps.
+            'max-md:select-none max-md:[-webkit-touch-callout:none]',
             // Above the dimmed page while More is open (cn keeps the later z).
             moreOpen && 'z-[42]',
             // On a short window the sections scroll, so the foot (Help, Account, Sign out) stays in reach.

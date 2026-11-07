@@ -26,6 +26,9 @@ const en = {
   enterCurrent: 'Enter your current password.',
   chooseDifferent: 'Choose a password different from the current one.',
   noMatch: 'The passwords do not match.',
+  newVersionReady: 'A new version of the app is ready.',
+  reload: 'Reload',
+  notNow: 'Not now',
 }
 
 export type ShellText = typeof en
@@ -55,6 +58,9 @@ const lt: ShellText = {
   enterCurrent: 'Įveskite dabartinį slaptažodį.',
   chooseDifferent: 'Pasirinkite kitokį slaptažodį nei dabartinis.',
   noMatch: 'Slaptažodžiai nesutampa.',
+  newVersionReady: 'Paruošta nauja programos versija.',
+  reload: 'Įkelti iš naujo',
+  notNow: 'Ne dabar',
 }
 
 const ru: ShellText = {
@@ -82,6 +88,9 @@ const ru: ShellText = {
   enterCurrent: 'Введите текущий пароль.',
   chooseDifferent: 'Выберите пароль, отличный от текущего.',
   noMatch: 'Пароли не совпадают.',
+  newVersionReady: 'Готова новая версия приложения.',
+  reload: 'Обновить',
+  notNow: 'Не сейчас',
 }
 
 export const dictionaries = { en, lt, ru }

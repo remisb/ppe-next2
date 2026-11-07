@@ -143,8 +143,11 @@ test('sign in', async () => {
   expect(await logo.evaluate((e) => getComputedStyle(e).fill)).not.toMatch(/^url/)
   // Its emblem is the tab's icon and the home-screen icon: every one the page and its manifest name is served.
   const icons = await page.locator('link[rel=icon], link[rel=apple-touch-icon]').evaluateAll((links) => links.map((l) => (l as HTMLLinkElement).href))
-  const manifest = (await (await page.request.get('/manifest.json')).json()) as { icons: { src: string }[] }
+  const manifest = (await (await page.request.get('/manifest.json')).json()) as { icons: { src: string }[]; display: string; scope: string }
   expect(icons).toHaveLength(3)
+  // Added to a home screen it opens as an app of its own, every app on the origin inside it.
+  expect(manifest).toMatchObject({ display: 'standalone', scope: '/' })
+  expect(await page.locator('link[rel=manifest]').getAttribute('href')).toBe('/manifest.json')
   expect(manifest.icons.length).toBeGreaterThan(0)
   for (const src of [...icons, ...manifest.icons.map((i) => i.src)]) {
     const icon = await page.request.get(src)
@@ -3007,9 +3010,10 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   // Manager's permissions change, its name and description (in the reader's language) do not; saving keeps them.
   await page.getByRole('button', { name: 'Edit Manager' }).click()
   dialog = page.getByRole('dialog')
-  await expect(dialog.getByLabel('Name')).toBeDisabled()
-  await expect(dialog.getByLabel('Description')).toHaveValue('Manages Item Catalogue prices and Item Sets, plus everything the employee role can do.')
-  await expect(dialog.getByLabel('Description')).toBeDisabled()
+  // The role's own fields: permissions' descriptions also say "name" (employee profiles).
+  await expect(dialog.getByRole('textbox', { name: /^Name/ })).toBeDisabled()
+  await expect(dialog.getByRole('textbox', { name: /^Description/ })).toHaveValue('Manages Item Catalogue prices and Item Sets, plus everything the employee role can do.')
+  await expect(dialog.getByRole('textbox', { name: /^Description/ })).toBeDisabled()
   await expect(dialog.getByText('A built-in role keeps its name and description.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(dialog).toBeHidden()
@@ -3017,7 +3021,7 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   // A permission comes with what it needs: Manage users brings See users, which it then keeps ticked.
   await page.getByRole('button', { name: 'Add Role' }).click()
   dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Name').fill('Storekeeper')
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('Storekeeper')
   await dialog.getByRole('checkbox', { name: /^Manage users/ }).check()
   await expect(dialog.getByRole('checkbox', { name: /^See users/ })).toBeChecked()
   await expect(dialog.getByRole('checkbox', { name: /^See users/ })).toBeDisabled()
@@ -3032,7 +3036,7 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   // A second role of the same name is refused on its field.
   await page.getByRole('button', { name: 'Add Role' }).click()
   dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Name').fill('storekeeper')
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('storekeeper')
   await dialog.getByRole('button', { name: 'Add Role' }).click()
   await expect(dialog.getByText('Another role already has this name.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Cancel' }).click()

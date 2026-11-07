@@ -1,4 +1,4 @@
-import { ApiProvider, applyTheme, loadTheme } from '@ppe/app-shell'
+import { ApiProvider, AppUpdateNotice, applyTheme, loadTheme } from '@ppe/app-shell'
 import { applyLanguage } from '@ppe/i18n'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -18,6 +18,8 @@ createRoot(container).render(
   <StrictMode>
     <ApiProvider app="launcher" setLanguage={applyLanguage}>
       <App />
+      {/* The launcher has no tab bar. */}
+      <AppUpdateNotice aboveNav={false} />
     </ApiProvider>
   </StrictMode>,
 )

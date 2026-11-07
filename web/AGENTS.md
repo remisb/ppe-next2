@@ -405,6 +405,28 @@ both apps share it (Layout above):
 - The Vite proxy keeps the browser's `Host` header (`changeOrigin: false`): the sign-in
   routes check `Origin` against it.
 
+## Home-screen app
+
+Added to a phone's home screen, the apps open as one app of their own, without the browser's
+bars: the staff app's `public/manifest.json` (`display: standalone`, `id` and `scope` `/`, so
+Administration, App Launcher and the published apps open inside it too), linked from the
+staff app's, Administration's and App Launcher's `index.html`, which also carry iOS's
+`apple-mobile-web-app-*` tags (title Workwear, the default status bar). There is no service
+worker: the apps need the API, and nothing is cached for offline use.
+
+- There is no browser Back, address bar or reload. Every screen that is not one of the tab
+  bar's has its own way back (`back(fallback)` in the staff app); never rely on the
+  browser's Back alone.
+- `@ppe/app-shell`'s `AppUpdateNotice`, mounted once in each app's `main.tsx`, offers Reload
+  when a newer build is deployed (`app-update.ts`: the deployed `index.html` names another
+  hashed entry script; checked every 30 minutes while shown and each time the app is shown
+  again) and reloads once when a lazily loaded file of the old build is gone
+  (`vite:preloadError`). It never reloads unasked otherwise: a form being filled in would be
+  lost. A new app on the origin mounts it too (`aboveNav={false}` without a tab bar).
+- The tab bars take no text selection or link preview on a long press
+  (`select-none [-webkit-touch-callout:none]`, below md).
+- On iOS a home-screen app has its own cookies: it asks to sign in once, apart from Safari.
+
 ## Content-Security-Policy
 
 Caddy sends a Content-Security-Policy (`deploy/Caddyfile`): scripts, styles, fonts,

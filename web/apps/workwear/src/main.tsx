@@ -1,5 +1,5 @@
 import type { Client } from '@ppe/api-client'
-import { ApiProvider, type Session, applyTheme, loadTheme } from '@ppe/app-shell'
+import { ApiProvider, AppUpdateNotice, type Session, applyTheme, loadTheme } from '@ppe/app-shell'
 import { hasSeveralApps, loadLauncher } from '@ppe/launcher'
 import { launcherHref } from '@ppe/routing'
 import { StrictMode } from 'react'
@@ -41,6 +41,7 @@ createRoot(container).render(
     {/* Sign out drops the user's Create Order draft and printed Give forms from this device. */}
     <ApiProvider app="workwear" setLanguage={setLanguage} onSignOut={signOutHere} onSignedIn={signedInHere}>
       <App />
+      <AppUpdateNotice />
     </ApiProvider>
   </StrictMode>,
 )
