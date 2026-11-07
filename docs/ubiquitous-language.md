@@ -122,6 +122,19 @@ Rules for using it:
   other devices** ends the rest. On Administration's **Security** the same name lists
   every user's, and whoever manages users signs one out.
 
+### Install app (home-screen app)
+- **Brief:** the card on Account that adds the app to the device's home screen, and the
+  button in it.
+- **Detail:** the browser's own prompt where it has one (Android's Chrome, a desktop's Chrome
+  or Edge); on an iPhone or iPad it says to tap **Share**, then **Add to Home Screen** (iOS's
+  own labels, as iOS words them in each language). Opened from the home screen, the app runs
+  in a window of its own and the card says so; a browser that can do neither shows no card.
+  The app on the home screen is called **Workwear** under its icon, and a long press on the
+  icon (Android) offers **New order**, **Orders**, **Employees** and **Apps**. "Home screen"
+  is the phone's own; it never names App Launcher (§13). EN Install app · LT Įdiegti
+  programą · RU Установить приложение.
+- **Code:** `@ppe/app-shell` `home-screen.ts`, `InstallApp`; `public/manifest*.json`.
+
 ### Confirm your password (recent sign-in)
 - **Brief:** the dialog asking for the password again before managing users, when it was last
   entered more than 12 hours ago (`API_RECENT_SIGN_IN`).

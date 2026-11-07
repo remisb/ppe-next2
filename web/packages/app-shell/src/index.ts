@@ -2,13 +2,16 @@
  * What every staff app on this origin shares: the sign-in (one HttpOnly
  * refresh cookie, the access token in memory), the session and its
  * permissions, Sign in and Confirm your password, theme and density, password
- * rules, the address router, and the notice that a newer build is deployed.
+ * rules, the address router, and the home-screen app (its manifest's language,
+ * Install app, the offline screen and the notice that a newer build is deployed).
  */
 export { ApiProvider, type ApiProviderProps, type PasswordPrompt, useApi, useSession } from './api.tsx'
 export { AppUpdateNotice } from './app-update-notice.tsx'
 export { ConfirmPassword } from './confirm-password.tsx'
 export { type Density, applyDensity, loadDensity, saveDensity, useDensity } from './density.ts'
 export { CheckingSignIn, Offline } from './gate.tsx'
+export { type InstallState, isIOS, manifestHref, runsFromHomeScreen, useInstallState } from './home-screen.ts'
+export { InstallApp } from './install-app.tsx'
 export {
   MAX_PASSWORD_BYTES,
   MIN_PASSWORD_LENGTH,

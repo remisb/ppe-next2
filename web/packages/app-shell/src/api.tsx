@@ -4,6 +4,7 @@ import { appVersion } from '@ppe/routing'
 import { Fragment, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { reportErrors } from './error-reporter.ts'
+import { localizeManifest, registerOfflineScreen, watchInstallPrompt } from './home-screen.ts'
 import { type Session, clearLegacyToken, refreshDue, rememberKeepSignedIn, sessionFromToken, withRefreshLock } from './session.ts'
 
 /** Asked of the user when an action needs their password again (a recent sign-in). */
@@ -253,6 +254,13 @@ export function ApiProvider({ children, app, setLanguage, onSignOut, onSignedIn 
   // dates or amounts in the old one. Before sign-in, the device's language.
   const lang = session?.language ?? deviceLanguage()
   setLanguage(lang)
+  // Installed from here, the app is named in this language, its icon's shortcuts too.
+  useEffect(() => localizeManifest(lang), [lang])
+  // The browser offers its Install prompt once, soon after the page loads; Account's Install app keeps it.
+  useEffect(() => {
+    watchInstallPrompt()
+    registerOfflineScreen()
+  }, [])
 
   const value = useMemo(
     () => ({ client, session, status, retry: start, signIn, signOut, setUserLanguage, passwordPrompt }),

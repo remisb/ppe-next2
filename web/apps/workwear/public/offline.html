@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      The offline screen: sw.js shows it in place of any page of this origin that cannot be loaded at all
+      (no network, the server down). No inline script or style: the CSP allows neither. offline.js words it
+      in the device's language (the shell's Offline gate's words) and applies the device's theme.
+    -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/offline.css" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Workwear &amp; Equipment</title>
+  </head>
+  <body>
+    <main>
+      <img src="/favicon.svg" alt="" width="56" height="56" />
+      <h1 data-word="title">The server cannot be reached</h1>
+      <p data-word="hint">Check your connection. The app tries again when you are back online.</p>
+      <button type="button" data-word="retry">Retry</button>
+    </main>
+    <script src="/offline.js"></script>
+  </body>
+</html>

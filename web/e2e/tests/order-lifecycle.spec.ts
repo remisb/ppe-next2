@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { type Browser, type BrowserContext, type Page, chromium, expect, test } from '@playwright/test'
+import { type Browser, type BrowserContext, type Page, chromium, devices as deviceProfiles, expect, test } from '@playwright/test'
 import pg from 'pg'
 
 import { admin, apiEnv, caddyMode, dbDSN, openAIPort, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
@@ -27,7 +27,8 @@ const cspViolations: string[] = []
 
 test.beforeAll(async ({ browser }) => {
   // Its own context, so a step can open a second tab in it (a tab closed and reopened shares localStorage).
-  const context = await browser.newContext({ baseURL: webURL })
+  // No service worker (behind Caddy the build registers the offline screen's): page.route must see every request.
+  const context = await browser.newContext({ baseURL: webURL, serviceWorkers: 'block' })
   context.on('console', (msg) => {
     if (/Content Security Policy/i.test(msg.text())) cspViolations.push(`${msg.location().url}: ${msg.text()}`)
   })
@@ -3402,6 +3403,48 @@ test('Account: signed-in devices, each but this one with Sign out', async ({ bro
   await laptop.context().close()
 })
 
+test('Account: Install app takes the browser’s prompt, says how on an iPhone, and knows the app runs from the home screen', async ({ browser }) => {
+  // Desktop Chrome offers its prompt only to an installable page it trusts; this one is offered by hand, as Chrome would.
+  await page.getByRole('link', { name: admin.name }).click()
+  const card = page.locator('[data-slot=install-app]')
+  await expect(card).toHaveCount(0)
+  const prompted = await page.evaluate(() => {
+    const e = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt: async () => {
+        ;(window as unknown as { __prompted: boolean }).__prompted = true
+      },
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    })
+    window.dispatchEvent(e)
+    return e.defaultPrevented
+  })
+  // Chrome's own banner is held back for the button.
+  expect(prompted).toBe(true)
+  await expect(card.locator('[data-slot=card-title]', { hasText: 'Install app' })).toBeVisible()
+  await card.getByRole('button', { name: 'Install app' }).click()
+  expect(await page.evaluate(() => (window as unknown as { __prompted?: boolean }).__prompted)).toBe(true)
+  await expect(card).toContainText('Installed. Open the app from the home screen.')
+
+  // An iPhone has no prompt: Share, then Add to Home Screen; opened from the home screen, the card says so.
+  const iphone = await browser.newContext({ ...deviceProfiles['iPhone 15'], baseURL: webURL })
+  const phone = await iphone.newPage()
+  await phone.goto('/')
+  await phone.getByLabel('Email').fill(admin.email)
+  await phone.getByLabel(/^Password/).fill(admin.password)
+  await phone.getByRole('button', { name: 'Sign in' }).click()
+  await expect(phone).toHaveURL(/\/apps\/$/)
+  await phone.goto('/account')
+  const phoneCard = phone.locator('[data-slot=install-app]')
+  await expect(phoneCard).toContainText('tap Share, then Add to Home Screen')
+  await phone.addInitScript(() => Object.defineProperty(navigator, 'standalone', { value: true }))
+  await phone.reload()
+  await expect(phoneCard).toContainText('You are using the app from the home screen.')
+  // Leave no extra signed-in device for the steps after.
+  await phone.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await expect(phone.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await iphone.close()
+})
+
 test('Account: change password, then only the new one signs in, and the other devices are signed out', async ({ browser }) => {
   const newPassword = 'e2e-new-password-456'
   const laptop = await signInElsewhere(browser, admin.email, admin.password)
@@ -4014,6 +4057,37 @@ test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a t
   }
   await openSection(/^Changes/)
   await expect(pane.getByText('Channel moved').first()).toBeVisible()
+})
+
+test('offline: a page that cannot be loaded shows the offline screen, which opens it again once back online', async ({ browser }) => {
+  test.skip(!caddyMode, "the offline screen's service worker is a production build's (E2E_WEB_SERVER=caddy)")
+  const context = await browser.newContext({ baseURL: webURL, serviceWorkers: 'allow' })
+  context.on('console', (msg) => {
+    if (/Content Security Policy/i.test(msg.text())) cspViolations.push(`${msg.location().url}: ${msg.text()}`)
+  })
+  const tab = await context.newPage()
+  await tab.goto('/')
+  await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  // Registered once the page has loaded, it keeps the offline screen alone.
+  const cached = await tab.evaluate(async () => {
+    await navigator.serviceWorker.ready
+    const names = (await caches.keys()).filter((k) => k.startsWith('ppe-offline-'))
+    return Promise.all(names.map(async (n) => (await (await caches.open(n)).keys()).map((r) => new URL(r.url).pathname).sort()))
+  })
+  expect(cached).toEqual([['/favicon.svg', '/offline.css', '/offline.html', '/offline.js']])
+
+  await context.setOffline(true)
+  await tab.goto('/orders')
+  await expect(tab.getByRole('heading', { name: 'The server cannot be reached' })).toBeVisible()
+  await expect(tab).toHaveURL(/\/orders$/)
+  // Its own files come from the worker too (Caddy sends them no-cache): styled, a 44px button, and its emblem.
+  await expect(tab.getByRole('button', { name: 'Retry' })).toHaveCSS('min-height', '44px')
+  await expect(tab.locator('main img')).toHaveJSProperty('complete', true)
+  expect(await tab.locator('main img').evaluate((i) => (i as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  // Back online, it loads the page it stood in for by itself (Retry does the same).
+  await context.setOffline(false)
+  await expect(tab.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await context.close()
 })
 
 test('no screen broke the Content-Security-Policy', async () => {

@@ -1,5 +1,5 @@
 import { ApiError } from '@ppe/api-client'
-import { type Density, MIN_PASSWORD_LENGTH, type PasswordChange, type PasswordErrors, themes, useApi, useDensity, useSession, useTheme, validatePasswordChange } from '@ppe/app-shell'
+import { type Density, InstallApp, MIN_PASSWORD_LENGTH, type PasswordChange, type PasswordErrors, themes, useApi, useDensity, useSession, useTheme, validatePasswordChange } from '@ppe/app-shell'
 import { deviceText } from '@ppe/audit'
 import { Alert, AlertDescription, AlertTitle } from '@ppe/ui/components/alert'
 import { Badge } from '@ppe/ui/components/badge'
@@ -110,6 +110,8 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           <p className="text-sm text-muted-foreground">{t.account.themeHint}</p>
         </CardContent>
       </Card>
+      {/* Only where this browser can add the app to the home screen, or it runs from there. */}
+      <InstallApp className="mb-6" />
       <Card className="md:max-w-md">
         <CardHeader>
           <CardTitle>{t.account.changePassword}</CardTitle>

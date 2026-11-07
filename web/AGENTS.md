@@ -411,8 +411,28 @@ Added to a phone's home screen, the apps open as one app of their own, without t
 bars: the staff app's `public/manifest.json` (`display: standalone`, `id` and `scope` `/`, so
 Administration, App Launcher and the published apps open inside it too), linked from the
 staff app's, Administration's and App Launcher's `index.html`, which also carry iOS's
-`apple-mobile-web-app-*` tags (title Workwear, the default status bar). There is no service
-worker: the apps need the API, and nothing is cached for offline use.
+`apple-mobile-web-app-*` tags (title Workwear, the default status bar). `@ppe/app-shell`'s
+`home-screen.ts` holds the rest, started by `ApiProvider`:
+
+- The manifest is one per language (`manifest.json` English, `manifest.lt.json`,
+  `manifest.ru.json`), and the page links the user's (`localizeManifest`), so the app is
+  installed named in it. Each has the icon's shortcuts (a long press on Android): New order,
+  Orders, Employees, Apps, which every user may open (`startRoute` sends anyone else to their
+  start screen). `src/manifest.test.ts` keeps the three alike and their words the app's.
+- **Install app** on Account (`InstallApp`) keeps the browser's own Install prompt
+  (`beforeinstallprompt`, Chrome and Edge) for its button, says on an iPhone or iPad to tap
+  Share, then Add to Home Screen, and says when the app runs from the home screen; a browser
+  that can do neither shows no card.
+- The **offline screen**: a production build registers `public/sw.js` (scope `/`), which
+  caches only `offline.html` and its files and stands it in for a page load that fails (no
+  network, the server down), its files too (network first: Caddy sends them no-cache, so the
+  browser's own cache cannot); `offline.js` words it with the shell's Offline gate's words in
+  the device's language and theme. Every other request goes straight to the network (Chrome's
+  static routing, else a fetch handler that lets it through): nothing of the apps is cached,
+  so a deploy is never hidden. The cache is named after the offline files' hash, which
+  `src/offline.test.tsx` checks, so changing them changes `sw.js`. e2e's main context blocks
+  service workers (`page.route` must see every request); the step *offline: …* runs one,
+  behind Caddy only.
 
 - There is no browser Back, address bar or reload. Every screen that is not one of the tab
   bar's has its own way back (`back(fallback)` in the staff app); never rely on the
@@ -426,6 +446,7 @@ worker: the apps need the API, and nothing is cached for offline use.
 - The tab bars take no text selection or link preview on a long press
   (`select-none [-webkit-touch-callout:none]`, below md).
 - On iOS a home-screen app has its own cookies: it asks to sign in once, apart from Safari.
+- No inline script or style on the offline screen either: the Content-Security-Policy allows neither.
 
 ## Content-Security-Policy
 

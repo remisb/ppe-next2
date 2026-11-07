@@ -29,6 +29,11 @@ const en = {
   newVersionReady: 'A new version of the app is ready.',
   reload: 'Reload',
   notNow: 'Not now',
+  installApp: 'Install app',
+  installAppHint: "Add the app to this device's home screen. It opens in a window of its own, without the browser's bars.",
+  installAppShare: 'To add the app to the home screen, tap Share, then Add to Home Screen.',
+  installAppRunning: 'You are using the app from the home screen.',
+  installAppInstalled: 'Installed. Open the app from the home screen.',
 }
 
 export type ShellText = typeof en
@@ -61,6 +66,11 @@ const lt: ShellText = {
   newVersionReady: 'Paruošta nauja programos versija.',
   reload: 'Įkelti iš naujo',
   notNow: 'Ne dabar',
+  installApp: 'Įdiegti programą',
+  installAppHint: 'Įtraukite programą į šio įrenginio pradžios ekraną. Ji atsidarys savo lange, be naršyklės juostų.',
+  installAppShare: 'Kad įtrauktumėte programą į pradžios ekraną, bakstelėkite Bendrinti, tada Pridėti prie pradžios ekrano.',
+  installAppRunning: 'Naudojate programą iš pradžios ekrano.',
+  installAppInstalled: 'Įdiegta. Atidarykite programą iš pradžios ekrano.',
 }
 
 const ru: ShellText = {
@@ -91,6 +101,11 @@ const ru: ShellText = {
   newVersionReady: 'Готова новая версия приложения.',
   reload: 'Обновить',
   notNow: 'Не сейчас',
+  installApp: 'Установить приложение',
+  installAppHint: 'Добавьте приложение на главный экран этого устройства. Оно откроется в отдельном окне, без панелей браузера.',
+  installAppShare: 'Чтобы добавить приложение на экран «Домой», нажмите «Поделиться», затем «На экран „Домой“».',
+  installAppRunning: 'Вы пользуетесь приложением с главного экрана.',
+  installAppInstalled: 'Установлено. Откройте приложение с главного экрана.',
 }
 
 export const dictionaries = { en, lt, ru }

@@ -557,6 +557,7 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if
   any screen or table scrolls sideways at 375, 768, 920, 1100, 1280, 1440 or 1920px.
   The screen has no width cap (lists grow with the window); see "Screen width" there.
-  Added to a phone's home screen the apps open standalone, as one app (`manifest.json`, scope `/`, no
-  service worker), and `@ppe/app-shell`'s `AppUpdateNotice` offers Reload when a newer build is deployed
+  Added to a phone's home screen the apps open standalone, as one app (`manifest.json` per language, scope
+  `/`, the icon's shortcuts), Account has **Install app**, `public/sw.js` shows an offline screen and caches
+  nothing else, and `@ppe/app-shell`'s `AppUpdateNotice` offers Reload when a newer build is deployed
   ("Home-screen app" in `web/AGENTS.md`).
