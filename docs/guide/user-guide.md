@@ -439,12 +439,35 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
 - **Change password**: your other devices are signed out, and this one stays signed in.
 - **Signed-in devices**: every browser you are signed in on, with when it was last used. **This device** comes first. Sign out a device you no longer use or do not recognise, or choose **Sign out all other devices**.
+- **Install app**: adds the app to this device's home screen, or says how. See **Install the app**.
 - **Table rows**: **Compact** fits more rows on the screen.
 
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 25. Search and shortcuts
+## 25. Install the app
+
+Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name **Workwear**.
+
+**Android**, in Chrome:
+
+1. Open **workwear.gavort.nl** in **Chrome** and sign in.
+2. Open your account and choose **Install app**, then **Install**. If **Install app** is not there, open Chrome's **⋮** menu and choose **Add to Home screen**.
+3. Touch and hold the **Workwear** icon for **New order**, **Orders**, **Employees** and **Apps**.
+
+**iPhone or iPad**, in Safari:
+
+1. Open **workwear.gavort.nl** in **Safari**.
+2. Tap **Share** (the square with an arrow pointing up), then **Add to Home Screen**, then **Add**.
+3. Open **Workwear** from the home screen and sign in again: there the app has its own sign-in, apart from Safari. Tick **Keep me signed in**, or the app may ask you to sign in each time it is closed.
+
+On a computer, Chrome and Edge can install it too: choose **Install app** on your account. Opened from the home screen, your account says **You are using the app from the home screen.**
+
+- When a new version of the app is ready, a note at the bottom says **A new version of the app is ready.** Finish what you are typing, then choose **Reload**.
+- Without a connection, the app shows **The server cannot be reached**. It opens the page again by itself once you are back online, or choose **Retry**.
+- The icon's shortcuts are in the language you used when you added the app. After changing your language, remove the app from the home screen and add it again.
+
+## 26. Search and shortcuts
 
 | Key | Does |
 | --- | --- |

@@ -80,6 +80,7 @@ export type SectionId =
   | 'settings'
   | 'manage-apps'
   | 'account'
+  | 'install'
   | 'shortcuts'
 
 /** A part of a section; roles limits it to users with any of them, devices to those devices. */

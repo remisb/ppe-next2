@@ -439,12 +439,35 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
 - **Keisti slaptažodį**: kiti jūsų įrenginiai atjungiami, o šis lieka prisijungęs.
 - **Prisijungę įrenginiai**: visos naršyklės, kuriose esate prisijungę, ir kada jos naudotos paskutinį kartą. **Šis įrenginys** – pirmas. Atjunkite įrenginį, kurio nebenaudojate ar neatpažįstate, arba pasirinkite **Atjungti visus kitus įrenginius**.
+- **Įdiegti programą**: įtraukia programą į šio įrenginio pradžios ekraną arba paaiškina, kaip tai padaryti. Žr. **Programos įdiegimas**.
 - **Lentelės eilutės**: **Kompaktiškos** ekrane sutalpina daugiau eilučių.
 
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 25. Paieška ir spartieji klavišai
+## 25. Programos įdiegimas
+
+Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu **Workwear**.
+
+**Android**, naršyklėje Chrome:
+
+1. Atidarykite **workwear.gavort.nl** naršyklėje **Chrome** ir prisijunkite.
+2. Atidarykite savo paskyrą ir pasirinkite **Įdiegti programą**, tada **Įdiegti**. Jei **Įdiegti programą** nėra, atidarykite Chrome meniu **⋮** ir pasirinkite pridėjimą prie pradžios ekrano.
+3. Palaikykite paspaudę piktogramą **Workwear**: atsiras **Užsakyti**, **Užsakymai**, **Darbuotojai** ir **Programos**.
+
+**iPhone arba iPad**, naršyklėje Safari:
+
+1. Atidarykite **workwear.gavort.nl** naršyklėje **Safari**.
+2. Bakstelėkite **Bendrinti** (kvadratas su rodykle į viršų), tada **Pridėti prie pradžios ekrano**, tada **Pridėti**.
+3. Atidarykite **Workwear** iš pradžios ekrano ir prisijunkite dar kartą: ten programa turi savo prisijungimą, atskirą nuo Safari. Pažymėkite **Likti prisijungus**, kitaip programa gali prašyti prisijungti kiekvieną kartą, kai ją uždarote.
+
+Kompiuteryje ją taip pat galima įdiegti naršyklėmis Chrome ir Edge: paskyroje pasirinkite **Įdiegti programą**. Atidarius iš pradžios ekrano, paskyroje parašyta **Naudojate programą iš pradžios ekrano.**
+
+- Kai paruošta nauja programos versija, apačioje pasirodo pranešimas **Paruošta nauja programos versija.** Užbaikite tai, ką rašote, tada pasirinkite **Įkelti iš naujo**.
+- Be ryšio programa rodo **Nepavyksta pasiekti serverio**. Ryšiui atsiradus, ji pati vėl atidaro puslapį, arba pasirinkite **Bandyti dar kartą**.
+- Piktogramos nuorodos yra ta kalba, kurią naudojote pridėdami programą. Pakeitę kalbą, pašalinkite programą iš pradžios ekrano ir pridėkite iš naujo.
+
+## 26. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |
