@@ -45,6 +45,7 @@ roles did:
 | `employee_sizes.read` | see employees' size defaults (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ |
 | `employee_sizes.manage` | Edit Sizes, Save as Employee Default, sizes on Add and Edit (needs `employee_sizes.read`) | ✓ | ✓ | ✓ |
 | `employees.delete` | delete employees | ✓ | ✓ | |
+| `employees.merge` | Merge Employees: one person's two records made one (needs `employee_profiles.manage` and `employee_sizes.manage`; migration 0052) | ✓ | ✓ | |
 | `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
 | `item_prices.manage` | set and change an item's prices (needs `catalogue.manage`; migration 0038) | ✓ | ✓ | |
 | `item_sets.read` | see Item Sets (migration 0038; before it, every signed-in user) | ✓ | ✓ | ✓ |

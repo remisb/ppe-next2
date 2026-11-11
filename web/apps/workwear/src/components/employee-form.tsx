@@ -1,4 +1,4 @@
-import type { Employee, EmployeeInput, Sizes } from '@ppe/api-client'
+import type { Employee, EmployeeInput, EmployeeMatch, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
@@ -6,6 +6,7 @@ import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
 import { type FormEvent, useEffect, useState } from 'react'
 
+import { DuplicateWarning } from '@/components/duplicate-employees'
 import { isLang, languages, t } from '@/i18n'
 import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
 
@@ -18,6 +19,11 @@ interface Props {
   onSaved: (e: Employee) => void
   /** "Save" on the Employees screen, "Save and Select Employee" from Create Order. */
   submitLabel?: string
+  /**
+   * Use This Employee on Add New Employee's duplicate warning: Employees opens
+   * them, Create Order selects them. Without it the warning only names them.
+   */
+  onUseExisting?: (e: Employee) => void
 }
 
 interface Draft {
@@ -51,7 +57,7 @@ function draftOf(e: Employee | undefined): Draft {
  * height, clothing and shoe size are optional defaults. There is no glove size.
  * The sizes are on it only with Manage employee sizes; without, the API keeps them as they are.
  */
-export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel }: Props) {
+export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel, onUseExisting }: Props) {
   const { client } = useApi()
   const managesSizes = useSession().can('employee_sizes.manage')
   const [d, setD] = useState<Draft>(() => draftOf(employee))
@@ -63,8 +69,37 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
     if (open) {
       setD(draftOf(employee))
       setError(undefined)
+      setMatches([])
+      setCodeOwner(undefined)
     }
   }, [open, employee])
+
+  // Adding: once both names are typed, the employees already here with names
+  // like them (the same words in any order, accents or script, or a slip of a
+  // letter). Only a warning: the check failing never stops adding.
+  const [matches, setMatches] = useState<EmployeeMatch[]>([])
+  const [codeOwner, setCodeOwner] = useState<Employee | undefined>()
+  const first = d.first_name.trim()
+  const last = d.last_name.trim()
+  useEffect(() => {
+    if (!open || employee || !first || !last) {
+      setMatches([])
+      return
+    }
+    let current = true
+    const timer = setTimeout(() => {
+      client.employees.similar(first, last).then(
+        (ms) => current && setMatches(ms),
+        () => current && setMatches([]),
+      )
+    }, 400)
+    return () => {
+      current = false
+      clearTimeout(timer)
+    }
+  }, [open, employee, first, last, client])
+  // Another code: the employee who had the last one is no longer the conflict.
+  useEffect(() => setCodeOwner(undefined), [d.code])
 
   const set = (k: keyof Draft) => (e: { target: { value: string } }) => setD((cur) => ({ ...cur, [k]: e.target.value }))
 
@@ -91,6 +126,10 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       onSaved(employee ? await client.employees.update(employee.id, input) : await client.employees.create(input))
     } catch (err) {
       setError(err instanceof ApiError && err.isConflict ? t.employees.codeTaken : errorText(err))
+      // Adding with a code another employee has: name them, to use them instead.
+      if (!employee && err instanceof ApiError && err.isConflict && err.existingId) {
+        client.employees.get(err.existingId).then(setCodeOwner, () => setCodeOwner(undefined))
+      }
     } finally {
       setBusy(false)
     }
@@ -102,7 +141,16 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       onClose={onClose}
       title={employee ? t.employees.editEmployee : t.employees.addNew}
       description={t.employees.formDescription}
-footer={<FormSheetActions form="employee-form" onCancel={onClose} busy={busy} disabled={!d.first_name.trim() || !d.last_name.trim()} submitLabel={submitLabel} />}
+      footer={
+        <FormSheetActions
+          form="employee-form"
+          onCancel={onClose}
+          busy={busy}
+          disabled={!first || !last}
+          // With a possible duplicate showing, saying what Save does.
+          submitLabel={!employee && (matches.length > 0 || codeOwner) ? t.employees.duplicates.addAsNew : submitLabel}
+        />
+      }
     >
       <form id="employee-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label={t.employees.firstName} required>
@@ -111,6 +159,7 @@ footer={<FormSheetActions form="employee-form" onCancel={onClose} busy={busy} di
         <Field label={t.employees.lastName} required>
           {(p) => <Input {...controlProps(p)} value={d.last_name} onChange={set('last_name')} />}
         </Field>
+        {employee ? null : <DuplicateWarning matches={matches} codeOwner={codeOwner} sizes={sizes} onUse={onUseExisting} />}
         <Field label={t.employees.employeeCode}>{(p) => <Input {...controlProps(p)} value={d.code} onChange={set('code')} />}</Field>
         {managesSizes ? (
           <>

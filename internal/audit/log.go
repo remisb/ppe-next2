@@ -113,10 +113,13 @@ type Query struct {
 	Event       string
 	ActorID     *uuid.UUID
 	EntityID    *uuid.UUID
-	From        *time.Time // inclusive
-	To          *time.Time // exclusive
-	After       *Cursor
-	Limit       int
+	// MergedIDs are records merged into EntityID, whose events are its history too
+	// (an employee's other record, Merge Employees).
+	MergedIDs []uuid.UUID
+	From      *time.Time // inclusive
+	To        *time.Time // exclusive
+	After     *Cursor
+	Limit     int
 }
 
 // Page is one page of the Audit log, newest first. Next continues it; nil on

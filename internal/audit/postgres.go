@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -65,7 +66,7 @@ func (s *PostgresStore) List(ctx context.Context, q Query) ([]Entry, error) {
 		where = append(where, "a.entity_type = ANY("+arg(q.EntityTypes)+")")
 	}
 	if q.EntityID != nil {
-		where = append(where, "a.entity_id = "+arg(*q.EntityID))
+		where = append(where, "a.entity_id = ANY("+arg(append([]uuid.UUID{*q.EntityID}, q.MergedIDs...))+")")
 	}
 	if q.Event != "" {
 		where = append(where, "a.event = "+arg(q.Event))

@@ -23,11 +23,13 @@ const (
 	EmployeeSizesRead      Permission = "employee_sizes.read"
 	EmployeeSizesManage    Permission = "employee_sizes.manage"
 	EmployeesDelete        Permission = "employees.delete"
-	CatalogueManage        Permission = "catalogue.manage"
-	ItemPricesManage       Permission = "item_prices.manage"
-	ItemSetsRead           Permission = "item_sets.read"
-	ItemSetsManage         Permission = "item_sets.manage"
-	OrdersDelete           Permission = "orders.delete"
+	// EmployeesMerge is Merge Employees: one person's two records made one (migration 0052).
+	EmployeesMerge   Permission = "employees.merge"
+	CatalogueManage  Permission = "catalogue.manage"
+	ItemPricesManage Permission = "item_prices.manage"
+	ItemSetsRead     Permission = "item_sets.read"
+	ItemSetsManage   Permission = "item_sets.manage"
+	OrdersDelete     Permission = "orders.delete"
 	// AssetsManage changes Equipment & Furniture; SIM cards have their own
 	// pair since migration 0049 (sim_cards.read, sim_cards.manage).
 	AssetsManage   Permission = "assets.manage"
@@ -99,6 +101,7 @@ var catalogue = []Info{
 	{EmployeeSizesRead, GroupWorkwear, nil},
 	{EmployeeSizesManage, GroupWorkwear, []Permission{EmployeeSizesRead}},
 	{EmployeesDelete, GroupWorkwear, nil},
+	{EmployeesMerge, GroupWorkwear, []Permission{EmployeeProfilesManage, EmployeeSizesManage}},
 	{CatalogueManage, GroupWorkwear, nil},
 	{ItemPricesManage, GroupWorkwear, []Permission{CatalogueManage}},
 	{ItemSetsRead, GroupWorkwear, nil},

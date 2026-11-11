@@ -15,7 +15,7 @@ import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
-import { type FormEvent, useMemo, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
@@ -23,6 +23,7 @@ import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
 import { IdentitySection } from '@/components/identity-section'
 import { useFileDrop } from '@/lib/photo-drop'
 import { EmployeeForm } from '@/components/employee-form'
+import { MergeEmployeesSheet } from '@/components/merge-employees-sheet'
 import { HeldAssets } from '@/components/held-assets'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
@@ -75,7 +76,14 @@ export function EmployeePage({
   const settings = useLoad(() => client.settings())
   const sizes = useLoad(() => client.sizes())
   const [editing, setEditing] = useState(false)
+  const [merging, setMerging] = useState(false)
+  const merges = session.can('employees.merge')
   const action = useAction()
+  // A record merged into another (Merge Employees): an old link opens the record kept.
+  const mergedInto = employee.error instanceof ApiError && employee.error.isNotFound ? employee.error.existingId : undefined
+  useEffect(() => {
+    if (mergedInto && mergedInto !== id) navigate({ name: 'employee', id: mergedInto })
+  }, [mergedInto, id, navigate])
   const givenKey = useOpenKey('employee.items-given')
   const orderedKey = useOpenKey('employee.items-ordered')
   const changesKey = useOpenKey('employee.changes')
@@ -184,12 +192,13 @@ export function EmployeePage({
                   <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
                     <Plus aria-hidden /> {t.employees.newOrder}
                   </Button>
-                  {managesProfile || session.can('employees.delete') ? (
+                  {managesProfile || merges || session.can('employees.delete') ? (
                     <MoreActions label={t.common.moreActions(e.full_name)}>
                       {managesProfile ? <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem> : null}
+                      {merges ? <DropdownMenuItem onClick={() => setMerging(true)}>{t.employees.merge.action}</DropdownMenuItem> : null}
                       {session.can('employees.delete') ? (
                         <>
-                          {managesProfile ? <DropdownMenuSeparator /> : null}
+                          {managesProfile || merges ? <DropdownMenuSeparator /> : null}
                           <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
                             {t.employees.deleteEmployee}
                           </DropdownMenuItem>
@@ -421,6 +430,19 @@ export function EmployeePage({
                 setEditing(false)
                 employee.reload()
                 onChanged()
+              }}
+            />
+            <MergeEmployeesSheet
+              start={merging ? e : null}
+              sizes={sizes.data}
+              onClose={() => setMerging(false)}
+              onMerged={(kept) => {
+                setMerging(false)
+                onChanged()
+                if (kept.id === id) {
+                  employee.reload()
+                  orders.reload()
+                } else navigate({ name: 'employee', id: kept.id })
               }}
             />
           </>

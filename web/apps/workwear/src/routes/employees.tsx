@@ -1,4 +1,4 @@
-import type { Employee, Sizes } from '@ppe/api-client'
+import type { Employee, EmployeePair, Sizes } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
@@ -16,11 +16,12 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Plus, Users } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeePage } from '@/routes/employee'
 import { EmployeeForm } from '@/components/employee-form'
+import { MergeEmployeesSheet } from '@/components/merge-employees-sheet'
 import { t } from '@/i18n'
 import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { cn } from '@ppe/ui/lib/utils'
@@ -58,7 +59,11 @@ export function Employees({
   const seesProfile = session.can('employee_profiles.read')
   const managesSizes = session.can('employee_sizes.manage')
   const managesProfile = session.can('employee_profiles.manage')
+  const merges = session.can('employees.merge')
   const employees = useLoad(() => client.employees.list())
+  // Pairs that may be one person, for whoever may merge them.
+  const pairs = useLoad(() => (merges ? client.employees.possibleDuplicates() : Promise.resolve([])))
+  const [merging, setMerging] = useState<{ start: Employee; other?: Employee } | null>(null)
   const sizes = useLoad(() => client.sizes())
   // Clothing sizes are named as the pickers name them: 46 is "S (44–46)".
   const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
@@ -122,6 +127,13 @@ export function Employees({
     )
   })
 
+  const notSame = (a: Employee, b: Employee) =>
+    action.run(async () => {
+      await client.employees.markDistinct(a.id, b.id)
+      setNotice(t.employees.duplicates.notSameDone(a.full_name, b.full_name))
+      pairs.reload()
+    })
+
   const open = (id: string) => navigate({ name: 'employee', id }, { scroll: !besideList() })
   const close = () => navigate({ name: 'employees' }, { scroll: false })
   // J and K: the next or previous employee in the list as shown, while one is open; Escape closes her beside the list.
@@ -171,6 +183,13 @@ export function Employees({
           className="md:max-w-sm"
         />
       </div>
+      {pairs.data && pairs.data.length > 0 ? (
+        <DuplicatesNotice
+          pairs={pairs.data}
+          onReview={(a, b) => setMerging({ start: a, other: b })}
+          onNotSame={(a, b) => void notSame(a, b)}
+        />
+      ) : null}
       <ActionError error={action.error} />
       {notice ? (
         <p role="status" className="mb-3 text-sm text-muted-foreground">
@@ -273,12 +292,13 @@ export function Employees({
                           </Button>{' '}
                         </>
                       ) : null}
-                      {managesProfile || session.can('employees.delete') ? (
+                      {managesProfile || merges || session.can('employees.delete') ? (
                         <MoreActions label={t.common.moreActions(e.full_name)}>
                           {managesProfile ? <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem> : null}
+                          {merges ? <DropdownMenuItem onClick={() => setMerging({ start: e })}>{t.employees.merge.action}</DropdownMenuItem> : null}
                           {session.can('employees.delete') ? (
                             <>
-                              {managesProfile ? <DropdownMenuSeparator /> : null}
+                              {managesProfile || merges ? <DropdownMenuSeparator /> : null}
                               <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
                                 {t.employees.deleteEmployee}
                               </DropdownMenuItem>
@@ -302,6 +322,26 @@ export function Employees({
         onSaved={() => {
           setEditing(null)
           employees.reload()
+          pairs.reload()
+        }}
+        // Add New Employee's Use This Employee: the employee already here opens instead.
+        onUseExisting={(e) => {
+          setEditing(null)
+          open(e.id)
+        }}
+      />
+      <MergeEmployeesSheet
+        start={merging?.start ?? null}
+        other={merging?.other}
+        sizes={sizes.data}
+        onClose={() => setMerging(null)}
+        onMerged={(kept, removed) => {
+          setMerging(null)
+          setNotice(t.employees.merge.merged(removed.full_name, kept.full_name))
+          employees.reload()
+          pairs.reload()
+          navigate({ name: 'employee', id: kept.id }, { scroll: false })
+          setPaneVersion((v) => v + 1)
         }}
       />
       <EditSizes
@@ -446,5 +486,39 @@ footer={<FormSheetActions form="sizes-form" onCancel={onClose} busy={draft.busy}
         {draft.error ? <p role="alert" className="text-sm text-destructive sm:col-span-3">{draft.error}</p> : null}
       </form>
     </FormSheet>
+  )
+}
+
+/**
+ * The pairs of employees who may be one person: the first named, with how
+ * many more, Review (Merge Employees on the pair) and Not the Same Person.
+ */
+function DuplicatesNotice({
+  pairs,
+  onReview,
+  onNotSame,
+}: {
+  pairs: EmployeePair[]
+  onReview: (a: Employee, b: Employee) => void
+  onNotSame: (a: Employee, b: Employee) => void
+}) {
+  const [first] = pairs
+  if (!first) return null
+  return (
+    <section role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+      <Users aria-hidden className="size-4 shrink-0 text-primary" />
+      <p className="min-w-0 flex-1 basis-60">
+        {t.employees.duplicates.noticePair(first.a.full_name, first.b.full_name)}
+        {pairs.length > 1 ? <span className="text-muted-foreground"> {t.employees.duplicates.noticeMore(pairs.length - 1)}</span> : null}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => onReview(first.a, first.b)}>
+          {t.employees.duplicates.review}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onNotSame(first.a, first.b)}>
+          {t.employees.duplicates.notSame}
+        </Button>
+      </div>
+    </section>
   )
 }

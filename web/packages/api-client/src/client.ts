@@ -58,6 +58,9 @@ import type {
   EmployeeDashboard,
   EmployeeInput,
   EmployeeSizesInput,
+  EmployeeMatch,
+  EmployeePair,
+  EmployeeMergePreview,
   ErrorEvent,
   ErrorPage,
   ErrorQuery,
@@ -410,6 +413,24 @@ export function createClient(options: ClientOptions) {
       updateSizes: (id: string, input: EmployeeSizesInput) =>
         request<Employee>('PUT', `/api/v1/employees/${seg(id)}/sizes`, input),
       remove: (id: string) => request<void>('DELETE', `/api/v1/employees/${seg(id)}`),
+      /** Add New Employee's check: live employees whose names are alike (employee_profiles.manage). */
+      similar: (firstName: string, lastName: string, exceptId?: string) =>
+        request<EmployeeMatch[]>('POST', '/api/v1/employees/similar', {
+          first_name: firstName,
+          last_name: lastName,
+          ...(exceptId ? { except_id: exceptId } : {}),
+        }),
+      /** Pairs of live employees who may be one person (employees.merge). */
+      possibleDuplicates: () => request<EmployeePair[]>('GET', '/api/v1/employees/possible-duplicates'),
+      /** Not the Same Person: the pair stops being offered (employees.merge). */
+      markDistinct: (a: string, b: string) =>
+        request<void>('POST', '/api/v1/employees/distinct-pairs', { employee_a: a, employee_b: b }),
+      /** Merge Employees' review: both records and what would move from the one removed. */
+      mergePreview: (keepId: string, removeId: string) =>
+        request<EmployeeMergePreview>('GET', `/api/v1/employees/${seg(keepId)}/merge/${seg(removeId)}`),
+      /** Merge Employees: the record kept, as chosen; answers with it. */
+      merge: (keepId: string, removeId: string, kept: EmployeeInput) =>
+        request<Employee>('POST', `/api/v1/employees/${seg(keepId)}/merge/${seg(removeId)}`, kept),
     },
 
     /** Photos of an employee (JPEG or PNG, at most 10 MB); the first becomes the default. */

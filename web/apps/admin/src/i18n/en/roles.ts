@@ -93,6 +93,10 @@ export const roles = {
       grants: 'Edit Sizes, the sizes on Add New Employee and Edit, and Save as Employee Default in Create Order. Needs See employee sizes.',
     },
     'employees.delete': { label: 'Delete employees', grants: 'Their orders and records stay.' },
+    'employees.merge': {
+      label: 'Merge employees',
+      grants: 'Make one person’s two records one: their orders, company assets and photos move to the record kept. Needs Manage employee profiles and Manage employee sizes.',
+    },
     'catalogue.manage': {
       label: 'Manage Item Catalogue',
       grants: 'Add and edit items and their service periods; deactivate and delete them. Prices take Change Item prices.',

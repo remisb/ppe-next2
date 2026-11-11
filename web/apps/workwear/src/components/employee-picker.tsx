@@ -25,6 +25,7 @@ export function EmployeePicker({
   onSelect,
   onAddNew,
   onClear,
+  exceptId,
 }: {
   label: string
   selected: PickedEmployee | null
@@ -32,6 +33,8 @@ export function EmployeePicker({
   onSelect: (e: Employee) => void
   onAddNew?: () => void
   onClear?: () => void
+  /** An employee left out of the choices: Merge with… leaves out the one being merged. */
+  exceptId?: string
 }) {
   const { client } = useApi()
   const [open, setOpen] = useState(false)
@@ -46,7 +49,7 @@ export function EmployeePicker({
     let current = true
     const timer = setTimeout(() => {
       ;(term ? client.employees.search(term) : client.employees.list()).then(
-        (r) => current && (setResults(r.slice(0, 50)), setError(undefined)),
+        (r) => current && (setResults(r.filter((e) => e.id !== exceptId).slice(0, 50)), setError(undefined)),
         (err: unknown) => current && setError(err),
       )
     }, 200)
@@ -54,7 +57,7 @@ export function EmployeePicker({
       current = false
       clearTimeout(timer)
     }
-  }, [q, open, client])
+  }, [q, open, client, exceptId])
 
   // pointerdown, not mousedown: one event for mouse, touch and pen.
   useEffect(() => {

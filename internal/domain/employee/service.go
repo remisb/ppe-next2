@@ -2,6 +2,7 @@ package employee
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -125,13 +126,30 @@ func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.U
 		return Employee{}, err
 	}
 	if err := s.repo.Create(ctx, e, ev); err != nil {
-		return Employee{}, err
+		return Employee{}, s.codeErr(ctx, err, e.Code, e.ID)
 	}
 	return e, nil
 }
 
+// Get is a live employee. One merged into another is a MergedError naming it.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Employee, error) {
-	return s.repo.Get(ctx, id)
+	e, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return Employee{}, s.mergedErr(ctx, id, err)
+	}
+	return e, nil
+}
+
+// codeErr is a CodeTakenError naming the live employee who has code, so Add
+// New Employee can offer them; other errors are as they are.
+func (s *Service) codeErr(ctx context.Context, err error, code *string, self uuid.UUID) error {
+	if !errors.Is(err, ErrCodeTaken) || code == nil {
+		return err
+	}
+	if id, ok, lookErr := s.repo.IDByCode(ctx, *code); lookErr == nil && ok && id != self {
+		return &CodeTakenError{Existing: id}
+	}
+	return err
 }
 
 func (s *Service) List(ctx context.Context) ([]Employee, error) {
@@ -164,7 +182,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights
 	if err := p.Validate(); err != nil {
 		return Employee{}, err
 	}
-	return s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
+	e, err := s.repo.Update(ctx, id, func(cur Employee) (Employee, []audit.Event, error) {
 		next := cur
 		next.FirstName, next.LastName, next.Code, next.Notes = p.FirstName, p.LastName, p.Code, p.Notes
 		next.PreferredLanguage = p.PreferredLanguage
@@ -173,6 +191,10 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights
 		}
 		return s.touch(cur, next, actor)
 	})
+	if err != nil {
+		return Employee{}, s.codeErr(ctx, err, p.Code, id)
+	}
+	return e, nil
 }
 
 // UpdateSizes is Edit Sizes and Save as Employee Default: it replaces only the

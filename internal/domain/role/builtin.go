@@ -67,7 +67,8 @@ func BuiltinID(key string) uuid.UUID {
 // hold what was split off later (item_sets.read, item_prices.manage: 0038)
 // or added since (sim_codes.read, Administrator's: 0041; apps.manage, Administrator's: 0042;
 // sim_cards.read and sim_cards.manage, split off in 0049 like 0038's; the employee
-// profile and size pairs, split off in 0050);
+// profile and size pairs, split off in 0050; employees.merge, Administrator's and
+// Manager's: 0052);
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
@@ -75,13 +76,13 @@ var builtins = map[string][]Permission{
 		UsersRead, UsersManage, RolesManage, SettingsManage, MailTemplatesManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead, AIUsageRead,
 		AppsManage,
 		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
-		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage, SIMCardsRead, SIMCardsManage, SIMCodesRead,
+		EmployeesDelete, EmployeesMerge, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage, SIMCardsRead, SIMCardsManage, SIMCodesRead,
 		DashboardOverview,
 	},
 	KeyManager: {
 		UsersRead,
 		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
-		EmployeesDelete, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, OrdersDelete, AssetsManage, SIMCardsRead, SIMCardsManage,
+		EmployeesDelete, EmployeesMerge, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, OrdersDelete, AssetsManage, SIMCardsRead, SIMCardsManage,
 		DashboardManager,
 	},
 	KeyEmployee: {

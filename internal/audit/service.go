@@ -110,13 +110,13 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (Entry, error) {
 	return rows[0], nil
 }
 
-// History is one record's events, newest first, at most HistoryLimit. The
-// caller checks that the record exists and that the user may read it.
-func (s *Service) History(ctx context.Context, entityType string, id uuid.UUID) ([]Entry, error) {
+// History is one record's events, newest first, at most HistoryLimit, with
+// those of the records merged into it. The caller checks that the record exists and that the user may read it.
+func (s *Service) History(ctx context.Context, entityType string, id uuid.UUID, merged ...uuid.UUID) ([]Entry, error) {
 	if AreaOf(entityType) == "" {
 		return nil, fieldError("entity_type", "is not known")
 	}
-	rows, err := s.store.List(ctx, Query{EntityTypes: []string{entityType}, EntityID: &id, Limit: HistoryLimit})
+	rows, err := s.store.List(ctx, Query{EntityTypes: []string{entityType}, EntityID: &id, MergedIDs: merged, Limit: HistoryLimit})
 	if err != nil {
 		return nil, err
 	}

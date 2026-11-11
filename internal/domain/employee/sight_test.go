@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -116,5 +117,23 @@ func TestRights(t *testing.T) {
 	got, err = svc.Update(ctx, e.ID, Params{FirstName: "A", LastName: "C"}, everything, testActor)
 	if err != nil || got.HeightCm != nil {
 		t.Errorf("update with Sizes = %+v, %v; want the sizes cleared", got, err)
+	}
+}
+
+func TestChangesHideMergedDetails(t *testing.T) {
+	merged := audit.Entry{Event: EventMerged,
+		Before: json.RawMessage(`{"code":null,"height_cm":160,"first_name":"PALANJIL"}`),
+		After:  json.RawMessage(`{"code":"192","height_cm":173,"first_name":"Abhijith","photos":[],"orders":[]}`)}
+	got := Sight{}.Changes([]audit.Entry{merged})
+	if len(got) != 1 {
+		t.Fatalf("got %d entries", len(got))
+	}
+	for _, k := range []string{"code", "height_cm", "photos"} {
+		if strings.Contains(string(got[0].After), `"`+k+`"`) || strings.Contains(string(got[0].Before), `"`+k+`"`) {
+			t.Errorf("%s shown without sight: %s / %s", k, got[0].Before, got[0].After)
+		}
+	}
+	if !strings.Contains(string(got[0].After), `"first_name"`) || !strings.Contains(string(got[0].After), `"orders"`) {
+		t.Errorf("name or orders hidden: %s", got[0].After)
 	}
 }

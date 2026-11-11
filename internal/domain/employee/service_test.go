@@ -20,9 +20,17 @@ type fakeRepo struct {
 	mu     sync.Mutex
 	rows   map[uuid.UUID]Employee
 	events []audit.Event
+	// Duplicates and merging (merge_test.go): pairs marked Not the Same
+	// Person, merged records, and what a removed record has, by its id.
+	distinct   map[[2]uuid.UUID]bool
+	mergedInto map[uuid.UUID]uuid.UUID
+	contents   map[uuid.UUID]MergeContents
 }
 
-func newFakeRepo() *fakeRepo { return &fakeRepo{rows: map[uuid.UUID]Employee{}} }
+func newFakeRepo() *fakeRepo {
+	return &fakeRepo{rows: map[uuid.UUID]Employee{}, distinct: map[[2]uuid.UUID]bool{},
+		mergedInto: map[uuid.UUID]uuid.UUID{}, contents: map[uuid.UUID]MergeContents{}}
+}
 
 func (f *fakeRepo) codeTaken(code *string, except uuid.UUID) bool {
 	if code == nil {

@@ -521,6 +521,11 @@ export function CreateOrder({
           setAddingEmployee(false)
           void selectEmployee(e.id)
         }}
+        // The person is already an employee: the order is for them.
+        onUseExisting={(e) => {
+          setAddingEmployee(false)
+          void selectEmployee(e.id)
+        }}
       />
     </>
   )

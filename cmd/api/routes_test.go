@@ -472,6 +472,27 @@ func (stubEmployees) SearchByName(context.Context, string, int) ([]employee.Empl
 func (stubEmployees) Update(context.Context, uuid.UUID, employee.Mutation) (employee.Employee, error) {
 	return employee.Employee{}, employee.ErrNotFound
 }
+func (stubEmployees) IDByCode(context.Context, string) (uuid.UUID, bool, error) {
+	return uuid.Nil, false, nil
+}
+func (stubEmployees) DistinctPairs(context.Context) (map[[2]uuid.UUID]bool, error) {
+	return map[[2]uuid.UUID]bool{}, nil
+}
+func (stubEmployees) MarkDistinct(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time, []audit.Event) error {
+	return employee.ErrNotFound
+}
+func (stubEmployees) MergeContents(context.Context, uuid.UUID, uuid.UUID) (employee.Employee, employee.Employee, employee.MergeContents, error) {
+	return employee.Employee{}, employee.Employee{}, employee.MergeContents{}, employee.ErrNotFound
+}
+func (stubEmployees) Merge(context.Context, uuid.UUID, uuid.UUID, employee.MergeMutation) (employee.Employee, error) {
+	return employee.Employee{}, employee.ErrNotFound
+}
+func (stubEmployees) MergedInto(context.Context, uuid.UUID) (uuid.UUID, bool, error) {
+	return uuid.Nil, false, nil
+}
+func (stubEmployees) MergedFrom(context.Context, uuid.UUID) ([]uuid.UUID, error) {
+	return []uuid.UUID{}, nil
+}
 
 type stubCatalogue struct{}
 
@@ -882,13 +903,18 @@ var policy = map[string]rule{
 	"PUT /api/v1/roles/{id}":    {role.RolesManage, "admins"},
 	"DELETE /api/v1/roles/{id}": {role.RolesManage, "admins"},
 
-	"GET /api/v1/employees":             {"", "any"},
-	"GET /api/v1/employees/{id}":        {"", "any"},
-	"GET /api/v1/employees/by-name/{q}": {"", "any"},
-	"POST /api/v1/employees":            {role.EmployeeProfilesManage, "staff"},
-	"PUT /api/v1/employees/{id}":        {role.EmployeeProfilesManage, "staff"},
-	"PUT /api/v1/employees/{id}/sizes":  {role.EmployeeSizesManage, "staff"},
-	"DELETE /api/v1/employees/{id}":     {role.EmployeesDelete, "managers"},
+	"GET /api/v1/employees":                      {"", "any"},
+	"GET /api/v1/employees/{id}":                 {"", "any"},
+	"GET /api/v1/employees/by-name/{q}":          {"", "any"},
+	"POST /api/v1/employees":                     {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}":                 {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}/sizes":           {role.EmployeeSizesManage, "staff"},
+	"DELETE /api/v1/employees/{id}":              {role.EmployeesDelete, "managers"},
+	"POST /api/v1/employees/similar":             {role.EmployeeProfilesManage, "staff"},
+	"GET /api/v1/employees/possible-duplicates":  {role.EmployeesMerge, "managers"},
+	"POST /api/v1/employees/distinct-pairs":      {role.EmployeesMerge, "managers"},
+	"GET /api/v1/employees/{id}/merge/{remove}":  {role.EmployeesMerge, "managers"},
+	"POST /api/v1/employees/{id}/merge/{remove}": {role.EmployeesMerge, "managers"},
 
 	"GET /api/v1/employee-photos/{id}":                   {role.EmployeeProfilesRead, "staff"},
 	"POST /api/v1/employee-photos/{id}":                  {"", "staff+personnel"},

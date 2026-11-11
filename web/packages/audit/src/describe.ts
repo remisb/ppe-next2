@@ -47,6 +47,7 @@ type Format =
   | 'providers'
   | 'photoUses'
   | 'simCodes'
+  | 'count'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -55,6 +56,9 @@ type Format =
  */
 const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['first_name', 'text'],
+  ['merged_employee_name', 'text'],
+  ['merged_into_name', 'text'],
+  ['other_employee_name', 'text'],
   ['last_name', 'text'],
   ['name', 'text'],
   ['email', 'text'],
@@ -78,6 +82,9 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['role_ids', 'roles'],
   ['permissions', 'permissions'],
   ['lines', 'lines'],
+  ['orders', 'count'],
+  ['assignments', 'count'],
+  ['photos', 'count'],
   ['record_number', 'text'],
   ['status', 'status'],
   ['total_cents', 'money'],
@@ -179,7 +186,18 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
 ]
 
 /** Stored with an event but naming nothing a reader needs: ids, and the currency (always EUR). */
-const hidden = new Set(['employee_id', 'confirmation_id', 'assignment_id', 'photo_id', 'document_id', 'currency', 'prices'])
+const hidden = new Set([
+  'employee_id',
+  'confirmation_id',
+  'assignment_id',
+  'photo_id',
+  'document_id',
+  'currency',
+  'prices',
+  'merged_employee_id',
+  'merged_into_id',
+  'other_employee_id',
+])
 
 /** Events from before migration 0021 hold the accounting price under this key. */
 const legacyKeys: Record<string, string> = { unit_price_cents: 'accounting_price_cents' }
@@ -267,6 +285,8 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
       if (!Array.isArray(value)) return String(value)
       if (value.length === 0) return t.none
       return options.permissionLabel ? value.map((k) => options.permissionLabel!(String(k)) ?? String(k)).join(', ') : t.permissionCount(value.length)
+    case 'count':
+      return Array.isArray(value) ? new Intl.NumberFormat(intlLocale()).format(value.length) : String(value)
     case 'list':
       if (!Array.isArray(value)) return String(value)
       return value.length === 0 ? t.none : value.map(String).join(', ')

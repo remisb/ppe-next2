@@ -43,10 +43,14 @@ func (s Sight) ShowAll(es []Employee) []Employee {
 // name's are everyone's.
 var profileDetails = []string{"code", "preferred_language", "notes_changed"}
 
+// sizeDetails are employee.merged's keys that are the size defaults'.
+var sizeDetails = []string{"height_cm", "clothing_size", "shoe_size"}
+
 // Changes is an employee's Changes as the reader may see them: without
 // Sizes, no size changes and no sizes on employee.created; without Profile,
 // no code, language or notes in employee.updated (an event left with nothing
-// is left out), and none of the photos' events. Personnel files' events
+// is left out), and none of the photos' events. employee.merged keeps only
+// what the reader may see of the fields it changed. Personnel files' events
 // (personnel.*) are theirs to decide (ADR 0007) and pass as they are.
 func (s Sight) Changes(es []audit.Entry) []audit.Entry {
 	out := make([]audit.Entry, 0, len(es))
@@ -64,6 +68,16 @@ func (s Sight) Changes(es []audit.Entry) []audit.Entry {
 			e.Before, e.After = before, after
 		case !s.Profile && strings.HasPrefix(e.Event, "employee.photo_"):
 			continue
+		case e.Event == EventMerged:
+			var hidden []string
+			if !s.Profile {
+				hidden = append(hidden, profileDetails...)
+				hidden = append(hidden, "photos")
+			}
+			if !s.Sizes {
+				hidden = append(hidden, sizeDetails...)
+			}
+			e.Before, e.After = withoutKeys(e.Before, hidden), withoutKeys(e.After, hidden)
 		}
 		out = append(out, e)
 	}

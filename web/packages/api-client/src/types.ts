@@ -166,6 +166,42 @@ export interface EmployeeInput {
   preferred_language: Language | null
 }
 
+/**
+ * How alike two employees' names are: the same words in any order, accents or
+ * script (same_name), or at least two words alike allowing a slip of a letter (similar_name).
+ */
+export type EmployeeMatchKind = 'same_name' | 'similar_name'
+
+/** POST /employees/similar: an employee whose name is like the one typed. */
+export interface EmployeeMatch {
+  employee: Employee
+  kind: EmployeeMatchKind
+}
+
+/** GET /employees/possible-duplicates: two live employees who may be one person, the older first. */
+export interface EmployeePair {
+  a: Employee
+  b: Employee
+  kind: EmployeeMatchKind
+}
+
+/** GET /employees/{keep}/merge/{remove}: what the record removed has, that moves to the one kept. */
+export interface EmployeeMergePreview {
+  keep: Employee
+  remove: Employee
+  contents: {
+    orders: string[]
+    /** Its company assets' assignments, open or returned. */
+    assignments: string[]
+    /** Of those, the ones still held. */
+    open_assignments: number
+    photos: string[]
+    keep_has_documents: boolean
+    /** A record with identity documents cannot be the one removed: keep it instead. */
+    remove_has_documents: boolean
+  }
+}
+
 /** Body of PUT /employees/{id}/sizes: all three are replaced. */
 export interface EmployeeSizesInput {
   height_cm: number | null

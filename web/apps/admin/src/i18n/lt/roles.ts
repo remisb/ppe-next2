@@ -94,6 +94,10 @@ export const roles: RolesText = {
       grants: '„Keisti dydžius“, dydžiai pridedant ir keičiant darbuotoją, „Išsaugoti kaip numatytąjį“ kuriant užsakymą. Reikia leidimo „Matyti darbuotojų dydžius“.',
     },
     'employees.delete': { label: 'Trinti darbuotojus', grants: 'Jų užsakymai ir įrašai lieka.' },
+    'employees.merge': {
+      label: 'Sujungti darbuotojus',
+      grants: 'Du to paties žmogaus įrašus padaryti vienu: jo užsakymai, įmonės turtas ir nuotraukos pereina į paliktą įrašą. Reikia teisių Tvarkyti darbuotojų profilius ir Tvarkyti darbuotojų dydžius.',
+    },
     'catalogue.manage': {
       label: 'Tvarkyti prekių katalogą',
       grants: 'Pridėti ir keisti prekes ir jų naudojimo laikotarpius; išjungti ir trinti jas. Kainoms reikia leidimo „Keisti prekių kainas“.',

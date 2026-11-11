@@ -126,10 +126,29 @@ func registerAuditRoutes(rt *router, svc services) {
 		}
 	}
 	// An employee's Changes show only what the reader may see of them (employee.Sight).
-	rt.authenticated("GET /api/v1/audit-events/employees/{id}", history("employee", func(ctx context.Context, id uuid.UUID) error {
-		_, err := svc.employees.Get(ctx, id)
-		return err
-	}, func(r *http.Request, es []audit.Entry) []audit.Entry { return employeeSight(r).Changes(es) }))
+	// They include the Changes of the records merged into it (Merge Employees).
+	rt.authenticated("GET /api/v1/audit-events/employees/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseUUIDPath(r, "id")
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		if _, err := svc.employees.Get(r.Context(), id); err != nil {
+			writeError(w, r, err)
+			return
+		}
+		merged, err := svc.employees.MergedIDs(r.Context(), id)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		events, err := svc.audit.History(r.Context(), "employee", id, merged...)
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, employeeSight(r).Changes(events))
+	})
 	rt.authenticated("GET /api/v1/audit-events/catalogue/{id}", history("catalogue_item", func(ctx context.Context, id uuid.UUID) error {
 		_, err := svc.catalogue.Get(ctx, id)
 		return err

@@ -157,6 +157,7 @@ var errorStatuses = []struct {
 	{order.ErrItemUnavailable, http.StatusConflict},
 	{order.ErrNotOrdered, http.StatusConflict},
 	{employee.ErrHoldsAssets, http.StatusConflict},
+	{employee.ErrMergePersonnel, http.StatusConflict},
 	{asset.ErrInventoryNoTaken, http.StatusConflict},
 	{asset.ErrSIMNoTaken, http.StatusConflict},
 	{asset.ErrAlreadyGiven, http.StatusConflict},

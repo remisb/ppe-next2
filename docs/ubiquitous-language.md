@@ -202,7 +202,24 @@ Rules for using it:
   photos, an identity document's details), with **See employee profiles** and **Manage
   employee profiles** (`employee_profiles.read`/`.manage`, migration 0050).
 - **Code:** `internal/domain/employee`, table `employees`. **UI:** Employees, an employee's
-  page, **Add New Employee**, **Edit details**, **Delete employee…**.
+  page, **Add New Employee**, **Edit details**, **Merge with…**, **Delete employee…**.
+
+### Possible duplicate
+- **Brief:** two employee records whose names are alike, so they may be one person.
+- **Detail:** **Same name** (the same words in any order, accents or script) or **Similar
+  name** (at least two words alike, allowing a slip of a letter). Add New Employee warns of
+  them (**This person may already be an employee**, **Use This Employee**, **Add as New
+  Employee**); the Employees screen lists the pairs with **Review** and **Not the Same
+  Person**. Not "duplicate employee" in the UI: the app cannot know they are one person.
+- **Code:** `employee.CompareNames`, `MatchKind`, table `employee_distinct_pairs`.
+
+### Merge Employees
+- **Brief:** making one person's two records one.
+- **Detail:** the record kept takes the values chosen row by row; the other's orders, company
+  assets and photos move to it, and it is removed, pointing at the one kept. Snapshots keep the
+  name they were signed with. Needs **Merge employees** (`employees.merge`).
+- **Code:** `employee.Service.Merge`, `employees.merged_into_id`. **UI:** **Merge with…** (⋯),
+  the **Merge Employees** sheet, **Keep record**, its **Merge Employees** button.
 
 ### Size defaults (saved sizes)
 - **Brief:** the employee's reusable sizes that Create Order resolves lines from.
@@ -1226,6 +1243,10 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Assigned to | Kam skirta | Для кого |
 | Add Item | Pridėti prekę | Добавить предмет |
 | + Add New Employee | + Naujas darbuotojas | + Новый сотрудник |
+| Use This Employee / Add as New Employee | Naudoti šį darbuotoją / Pridėti kaip naują darbuotoją | Выбрать этого сотрудника / Добавить как нового сотрудника |
+| Same name / Similar name | Tas pats vardas / Panašus vardas | То же имя / Похожее имя |
+| Review / Not the Same Person (possible duplicates) | Peržiūrėti / Ne tas pats žmogus | Просмотреть / Это разные люди |
+| Merge with… / Merge Employees / Keep record | Sujungti su… / Sujungti darbuotojus / Palikti įrašą | Объединить с… / Объединить сотрудников / Оставить запись |
 | Review / Review order | Peržiūrėti / Užsakymo peržiūra | Проверить / Проверка заказа |
 | Mark as Ordered | Pažymėti kaip užsakytą | Отметить как заказанный |
 | Ordered / Given | Užsakyta / Išduota | Заказано / Выдано |

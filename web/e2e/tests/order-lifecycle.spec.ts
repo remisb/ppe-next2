@@ -1828,6 +1828,55 @@ test('Employees: a row opens the employee at its own address, with the items giv
   await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toHaveCount(0)
 })
 
+test('Employees: a possible duplicate is caught on Add and merged', async () => {
+  await openTab('Employees')
+  // The same words in another order and without accents: Add New Employee warns first.
+  await page.getByRole('button', { name: 'Add New Employee' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add New Employee' })
+  await dialog.getByLabel('First name').fill('Kazlauskiene')
+  await dialog.getByLabel('Last name').fill('ONA')
+  const warning = dialog.getByRole('status').filter({ hasText: 'This person may already be an employee' })
+  await expect(warning).toContainText('Ona Kazlauskienė')
+  await expect(warning).toContainText('Same name')
+  await expect(dialog.getByRole('button', { name: 'Add as New Employee' })).toBeVisible()
+  // Use This Employee opens the one already here.
+  await warning.getByRole('button', { name: 'Use This Employee' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page).toHaveURL(/\/employees\/[0-9a-f-]{36}$/)
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+
+  // Added anyway, the Employees screen offers the pair to whoever may merge them.
+  await openTab('Employees')
+  await page.getByRole('button', { name: 'Add New Employee' }).click()
+  await dialog.getByLabel('First name').fill('ONA')
+  await dialog.getByLabel('Last name').fill('KAZLAUSKIENE')
+  await dialog.getByRole('button', { name: 'Add as New Employee' }).click()
+  await expect(dialog).toBeHidden()
+  const notice = page.getByRole('status').filter({ hasText: 'may be the same person' })
+  await expect(notice).toContainText('Ona Kazlauskienė and ONA KAZLAUSKIENE may be the same person.')
+
+  // Review: the older record kept, each row's value chosen, what moves listed, then ask first.
+  await notice.getByRole('button', { name: 'Review' }).click()
+  const merge = page.getByRole('dialog', { name: 'Merge Employees' })
+  await expect(merge.getByRole('radiogroup', { name: 'Keep record' }).getByRole('radio', { name: 'Ona Kazlauskienė' })).toBeChecked()
+  await expect(merge.getByRole('radiogroup', { name: 'Height' }).getByRole('radio', { name: '170 cm' })).toBeChecked()
+  await expect(merge).toContainText('Moves to Ona Kazlauskienė')
+  await expect(merge).toContainText('Receipts and signed forms keep the name they were signed with.')
+  let question = ''
+  page.once('dialog', (d) => {
+    question = d.message()
+    void d.accept()
+  })
+  await merge.getByRole('button', { name: 'Merge Employees' }).click()
+  await expect(merge).toBeHidden()
+  expect(question).toBe('Merge ONA KAZLAUSKIENE into Ona Kazlauskienė? This cannot be undone.')
+  await expect(page.getByText('ONA KAZLAUSKIENE merged into Ona Kazlauskienė.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  // One record left, and no pair to offer.
+  await expect(page.getByRole('row', { name: /Kazlausk/i })).toHaveCount(1)
+  await expect(notice).toHaveCount(0)
+})
+
 test('a reorder link starts the order with the item at the quantity given; the stepper changes it', async () => {
   // A dashboard's Reorder carries the employee, the item and the quantity given last time in the address.
   await openTab('Employees')
