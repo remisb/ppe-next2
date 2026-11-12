@@ -214,6 +214,28 @@ export const lt: Guide = {
         { p: '**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat. **Naujas užsakymas** pradeda užsakymą šiam darbuotojui.' },
         { p: 'Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.', roles: ['admin', 'manager'] },
         {
+          p: 'Prieš pridėdama žmogų, programa patikrina, ar jo jau nėra: tas pats vardas su žodžiais kita tvarka, be diakritinių ženklų ar kita abėcėle, arba vardas, kuris skiriasi viena ar dviem raidėmis. Tada lange **Pridėti darbuotoją** rodoma **Šis žmogus galbūt jau yra darbuotojas**. **Naudoti šį darbuotoją** atveria tą darbuotoją arba ekrane **Kurti užsakymą** pasirenka jį užsakymui. Jei tai kitas žmogus, **Pridėti kaip naują darbuotoją** vis tiek jį prideda.',
+        },
+        { shots: [{ name: 'duplicate-warning', alt: 'Lange „Pridėti darbuotoją“ įspėjama, kad žmogus galbūt jau yra darbuotojas' }] },
+        {
+          p: 'Kai vienas žmogus turi du įrašus, ekrane **Darbuotojai** virš sąrašo rodoma, kurie du darbuotojai gali būti tas pats žmogus. **Peržiūrėti** atveria jiems langą **Sujungti darbuotojus**; **Ne tas pats žmogus** nustoja apie šiuos du klausti. Taip pat galite pasirinkti **Sujungti su…** po **⋯** darbuotojo puslapyje.',
+          roles: ['admin', 'manager'],
+        },
+        {
+          ol: [
+            'Eilutėje **Palikti įrašą** pasirinkite, kurį įrašą palikti. Kitas pašalinamas.',
+            'Kiekvienoje eilutėje pasirinkite, kurią reikšmę palikti: vardą, kodą, ūgį, dydžius ir pageidaujamą kalbą. Paliekamos abiejų įrašų pastabos.',
+            'Patikrinkite, kas pereina į paliktą įrašą: jo užsakymai, įmonės turtas ir nuotraukos. Kvituose ir pasirašytose formose lieka vardas, su kuriuo jie pasirašyti.',
+            'Pasirinkite **Sujungti darbuotojus**. Programa pirma paklausia: sujungimo atšaukti negalima.',
+          ],
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: 'Įrašas su asmens dokumentais visada paliekamas. Nuorodos į pašalintą įrašą atveria paliktą įrašą, o jo **Pakeitimai** rodo abiejų įrašų istoriją.',
+          roles: ['admin', 'manager'],
+        },
+        { shots: [{ name: 'merge-employees', alt: 'Langas „Sujungti darbuotojus“: paliekamas įrašas ir kiekvienos eilutės reikšmė' }], roles: ['admin', 'manager'] },
+        {
           shots: [
             { name: 'employees', alt: 'Darbuotojų sąrašas' },
             { name: 'employee', alt: 'Darbuotojo puslapis su išduotomis prekėmis' },

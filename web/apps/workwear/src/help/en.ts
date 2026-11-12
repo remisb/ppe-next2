@@ -211,6 +211,28 @@ export const en: Guide = {
         { p: "**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way. **New order** starts an order for them." },
         { p: 'An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.', roles: ['admin', 'manager'] },
         {
+          p: "Before adding someone, the app checks whether they may already be here: the same name with the words in another order, without accents or in another alphabet, or a name a letter or two apart. **Add New Employee** then shows **This person may already be an employee**. **Use This Employee** opens that employee, or chooses them for the order in **Create Order**. If it is someone else, **Add as New Employee** adds them anyway.",
+        },
+        { shots: [{ name: 'duplicate-warning', alt: 'Add New Employee warning that the person may already be an employee' }] },
+        {
+          p: "When one person has two records, **Employees** shows above the list which two employees may be the same person. **Review** opens **Merge Employees** for them; **Not the Same Person** stops the app asking about those two. You can also choose **Merge with…** under **⋯** on an employee's page.",
+          roles: ['admin', 'manager'],
+        },
+        {
+          ol: [
+            'In **Keep record**, choose the record to keep. The other one is removed.',
+            'In each row, choose the value to keep: the name, code, height, sizes and preferred language. Both notes are kept.',
+            'Check what moves to the record kept: its orders, company assets and photos. Receipts and signed forms keep the name they were signed with.',
+            'Choose **Merge Employees**. The app asks first: a merge cannot be undone.',
+          ],
+          roles: ['admin', 'manager'],
+        },
+        {
+          p: "A record with identity documents is always the one kept. Links to the removed record open the record kept, and its **Changes** show both records' history.",
+          roles: ['admin', 'manager'],
+        },
+        { shots: [{ name: 'merge-employees', alt: 'Merge Employees: the record kept and the value kept in each row' }], roles: ['admin', 'manager'] },
+        {
           shots: [
             { name: 'employees', alt: 'The Employees list' },
             { name: 'employee', alt: "An employee's page with the items given" },

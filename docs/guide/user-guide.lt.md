@@ -171,6 +171,23 @@ Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, ki
 
 Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.
 
+Prieš pridėdama žmogų, programa patikrina, ar jo jau nėra: tas pats vardas su žodžiais kita tvarka, be diakritinių ženklų ar kita abėcėle, arba vardas, kuris skiriasi viena ar dviem raidėmis. Tada lange **Pridėti darbuotoją** rodoma **Šis žmogus galbūt jau yra darbuotojas**. **Naudoti šį darbuotoją** atveria tą darbuotoją arba ekrane **Kurti užsakymą** pasirenka jį užsakymui. Jei tai kitas žmogus, **Pridėti kaip naują darbuotoją** vis tiek jį prideda.
+
+![Lange „Pridėti darbuotoją“ įspėjama, kad žmogus galbūt jau yra darbuotojas](../../web/apps/workwear/public/help-img/lt/desktop/duplicate-warning.png)
+
+*Tik administratoriams ir vadovams:*
+
+Kai vienas žmogus turi du įrašus, ekrane **Darbuotojai** virš sąrašo rodoma, kurie du darbuotojai gali būti tas pats žmogus. **Peržiūrėti** atveria jiems langą **Sujungti darbuotojus**; **Ne tas pats žmogus** nustoja apie šiuos du klausti. Taip pat galite pasirinkti **Sujungti su…** po **⋯** darbuotojo puslapyje.
+
+1. Eilutėje **Palikti įrašą** pasirinkite, kurį įrašą palikti. Kitas pašalinamas.
+2. Kiekvienoje eilutėje pasirinkite, kurią reikšmę palikti: vardą, kodą, ūgį, dydžius ir pageidaujamą kalbą. Paliekamos abiejų įrašų pastabos.
+3. Patikrinkite, kas pereina į paliktą įrašą: jo užsakymai, įmonės turtas ir nuotraukos. Kvituose ir pasirašytose formose lieka vardas, su kuriuo jie pasirašyti.
+4. Pasirinkite **Sujungti darbuotojus**. Programa pirma paklausia: sujungimo atšaukti negalima.
+
+Įrašas su asmens dokumentais visada paliekamas. Nuorodos į pašalintą įrašą atveria paliktą įrašą, o jo **Pakeitimai** rodo abiejų įrašų istoriją.
+
+![Langas „Sujungti darbuotojus“: paliekamas įrašas ir kiekvienos eilutės reikšmė](../../web/apps/workwear/public/help-img/lt/desktop/merge-employees.png)
+
 ![Darbuotojų sąrašas](../../web/apps/workwear/public/help-img/lt/desktop/employees.png)
 ![Darbuotojo puslapis su išduotomis prekėmis](../../web/apps/workwear/public/help-img/lt/desktop/employee.png)
 

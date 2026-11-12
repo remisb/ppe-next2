@@ -4,7 +4,7 @@ import { useApi, useSession } from '@ppe/app-shell'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { errorText } from '@ppe/ui/lib/use-load'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useId, useState } from 'react'
 
 import { DuplicateWarning } from '@/components/duplicate-employees'
 import { isLang, languages, t } from '@/i18n'
@@ -60,6 +60,8 @@ function draftOf(e: Employee | undefined): Draft {
 export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLabel, onUseExisting }: Props) {
   const { client } = useApi()
   const managesSizes = useSession().can('employee_sizes.manage')
+  // Its own id: the Employees list and an employee open beside it each hold a form, and a closed sheet keeps its form in the page.
+  const formId = useId()
   const [d, setD] = useState<Draft>(() => draftOf(employee))
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
@@ -143,7 +145,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       description={t.employees.formDescription}
       footer={
         <FormSheetActions
-          form="employee-form"
+          form={formId}
           onCancel={onClose}
           busy={busy}
           disabled={!first || !last}
@@ -152,7 +154,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
         />
       }
     >
-      <form id="employee-form" onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+      <form id={formId} onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label={t.employees.firstName} required>
           {(p) => <Input {...controlProps(p)} value={d.first_name} onChange={set('first_name')} autoFocus />}
         </Field>

@@ -365,6 +365,34 @@ test('overview, the audit log, security, system and usage', async () => {
   await shot('usage')
 })
 
+// Last, so every other screenshot shows the demo data as it was: the record added here is merged away again.
+test('possible duplicates: Add New Employee warns, Merge Employees makes one record', async () => {
+  await page.goto('/employees')
+  await page.getByRole('button', { name: T.employees.addNew }).click()
+  const add = page.getByRole('dialog', { name: T.employees.addNew })
+  await add.getByLabel(T.employees.firstName).fill('PETRAITIS')
+  await add.getByLabel(T.employees.lastName).fill('JONAS')
+  await expect(add.getByRole('status').filter({ hasText: T.employees.duplicates.mayExist })).toContainText('Jonas Petraitis')
+  await shot('duplicate-warning')
+  await add.getByRole('button', { name: T.employees.duplicates.addAsNew }).click()
+  await expect(add).toBeHidden()
+
+  // From Jonas Petraitis's page: ⋯, Merge with…, the record with a name like his.
+  await page.goto('/employees')
+  await page.getByRole('link', { name: 'Jonas Petraitis' }).click()
+  await expect(page.getByRole('heading', { name: 'Jonas Petraitis' })).toBeVisible()
+  // Beside the list (desktop) the row has one too; either opens the same Merge with….
+  await page.getByRole('button', { name: T.common.moreActions('Jonas Petraitis') }).filter({ visible: true }).first().click()
+  await page.getByRole('menuitem', { name: T.employees.merge.action }).click()
+  const merge = page.getByRole('dialog', { name: T.employees.merge.title })
+  await merge.getByRole('listitem').filter({ hasText: 'PETRAITIS JONAS' }).getByRole('button', { name: T.employees.merge.pickOther }).click()
+  await expect(merge.getByText(T.employees.merge.movesTo('Jonas Petraitis'))).toBeVisible()
+  await shot('merge-employees')
+  page.once('dialog', (d) => void d.accept())
+  await merge.getByRole('button', { name: T.employees.merge.submit }).click()
+  await expect(merge).toBeHidden()
+})
+
 test('docs/guide: the page and Markdown copy in this language, from the Help screen text', () => {
   test.skip(device !== 'desktop', 'docs/guide is the desktop guide')
   writeDocs(lang)

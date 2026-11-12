@@ -1875,6 +1875,21 @@ test('Employees: a possible duplicate is caught on Add and merged', async () => 
   // One record left, and no pair to offer.
   await expect(page.getByRole('row', { name: /Kazlausk/i })).toHaveCount(1)
   await expect(notice).toHaveCount(0)
+
+  // Edit details on the employee open beside the list saves her, not the list's own (closed) form.
+  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
+  await page.getByRole('menuitem', { name: 'Edit details' }).click()
+  const edit = page.getByRole('dialog', { name: 'Edit Employee' })
+  await edit.getByLabel('Notes').fill('Prefers Russian. Collects on Fridays. One record since November.')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(edit).toBeHidden()
+  await expect(page.getByRole('complementary', { name: 'Employee' }).getByRole('definition').filter({ hasText: 'One record since November.' })).toBeVisible()
+  // Her note as it was, for the later steps.
+  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
+  await page.getByRole('menuitem', { name: 'Edit details' }).click()
+  await edit.getByLabel('Notes').fill('Prefers Russian. Collects on Fridays.')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(edit).toBeHidden()
 })
 
 test('a reorder link starts the order with the item at the quantity given; the stepper changes it', async () => {

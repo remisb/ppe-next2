@@ -3,7 +3,7 @@ import { useApi } from '@ppe/app-shell'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
 import { ActionError } from '@ppe/ui/components/states'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useId, useMemo, useState } from 'react'
 
 import { EmployeeCard } from '@/components/duplicate-employees'
 import { EmployeePicker } from '@/components/employee-picker'
@@ -34,6 +34,8 @@ export function MergeEmployeesSheet({
 }) {
   const { client } = useApi()
   const action = useAction()
+  // Its own id: the Employees list and an employee open beside it each hold this sheet.
+  const formId = useId()
   const [other, setOther] = useState<Employee | null>(null)
   const [keepId, setKeepId] = useState<string>()
   const [preview, setPreview] = useState<EmployeeMergePreview>()
@@ -156,7 +158,7 @@ export function MergeEmployeesSheet({
       description={t.employees.merge.description}
       footer={
         <FormSheetActions
-          form="merge-employees-form"
+          form={formId}
           onCancel={onClose}
           busy={action.pending}
           disabled={!preview || !choices || bothHaveDocuments}
@@ -164,7 +166,7 @@ export function MergeEmployeesSheet({
         />
       }
     >
-      <form id="merge-employees-form" onSubmit={submit} className="grid gap-4">
+      <form id={formId} onSubmit={submit} className="grid gap-4">
         {start && !other ? (
           <>
             {/* As Create Order's Assigned to: the label above the picker; room below it for its list, which the sheet would clip. */}

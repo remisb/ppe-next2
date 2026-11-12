@@ -171,6 +171,23 @@ The sections below the sizes are closed at first, each title counting what it ho
 
 An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.
 
+Before adding someone, the app checks whether they may already be here: the same name with the words in another order, without accents or in another alphabet, or a name a letter or two apart. **Add New Employee** then shows **This person may already be an employee**. **Use This Employee** opens that employee, or chooses them for the order in **Create Order**. If it is someone else, **Add as New Employee** adds them anyway.
+
+![Add New Employee warning that the person may already be an employee](../../web/apps/workwear/public/help-img/en/desktop/duplicate-warning.png)
+
+*Administrators and managers only:*
+
+When one person has two records, **Employees** shows above the list which two employees may be the same person. **Review** opens **Merge Employees** for them; **Not the Same Person** stops the app asking about those two. You can also choose **Merge with…** under **⋯** on an employee's page.
+
+1. In **Keep record**, choose the record to keep. The other one is removed.
+2. In each row, choose the value to keep: the name, code, height, sizes and preferred language. Both notes are kept.
+3. Check what moves to the record kept: its orders, company assets and photos. Receipts and signed forms keep the name they were signed with.
+4. Choose **Merge Employees**. The app asks first: a merge cannot be undone.
+
+A record with identity documents is always the one kept. Links to the removed record open the record kept, and its **Changes** show both records' history.
+
+![Merge Employees: the record kept and the value kept in each row](../../web/apps/workwear/public/help-img/en/desktop/merge-employees.png)
+
 ![The Employees list](../../web/apps/workwear/public/help-img/en/desktop/employees.png)
 ![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
 
