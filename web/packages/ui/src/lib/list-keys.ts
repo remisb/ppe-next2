@@ -65,6 +65,11 @@ export function useListKeys({
   }, [selected, ids])
 
   useEffect(() => {
-    if (selected && besideList()) document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' })
+    if (!selected || !besideList()) return
+    // One frame later: a closing dialog (⌘K) gives focus back to what had it, which scrolls that away again.
+    const frame = requestAnimationFrame(() =>
+      document.querySelector('[data-slot=table-row][aria-current=true]')?.scrollIntoView({ block: 'nearest' }),
+    )
+    return () => cancelAnimationFrame(frame)
   }, [selected, ids])
 }
