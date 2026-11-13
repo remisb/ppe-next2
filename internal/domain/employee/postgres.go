@@ -14,22 +14,30 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// PostgresRepository stores employees in the employees table (migration 0003).
+// PostgresRepository stores employees in the employees table (migration
+// 0003, with merged_into_id since 0052) and the pairs marked Not the Same
+// Person in employee_distinct_pairs (0052), with their audit events. Its
+// reads also take each employee's default photo from employee_photos (0037);
+// Merge moves rows of orders, asset_assignments and employee_photos.
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is a PostgresRepository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are what scan reads, in its order: the employee's own columns, the
+// default photo's id and the identity document's fields.
 const columns = `id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes, preferred_language,
 	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id,
 	(SELECT p.id FROM employee_photos p WHERE p.employee_id = employees.id AND p.is_default AND p.deleted_at IS NULL) AS default_photo_id,
 	birth_date::text, nationality, sex`
 
+// scan reads one row of columns; ErrNotFound when there is none. Times are UTC.
 func scan(row pgx.Row) (Employee, error) {
 	var e Employee
 	err := row.Scan(&e.ID, &e.FirstName, &e.LastName, &e.Code, &e.HeightCm, &e.ClothingSize, &e.ShoeSize, &e.Notes, &e.PreferredLanguage,
@@ -45,6 +53,7 @@ func scan(row pgx.Row) (Employee, error) {
 	return e, nil
 }
 
+// scanAll reads every row of columns and closes rows; [] when there are none.
 func scanAll(rows pgx.Rows) ([]Employee, error) {
 	defer rows.Close()
 	out := make([]Employee, 0)
@@ -58,6 +67,7 @@ func scanAll(rows pgx.Rows) ([]Employee, error) {
 	return out, rows.Err()
 }
 
+// Create inserts e and ev in one transaction.
 func (r *PostgresRepository) Create(ctx context.Context, e Employee, ev *audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
@@ -72,10 +82,12 @@ func (r *PostgresRepository) Create(ctx context.Context, e Employee, ev *audit.E
 	}))
 }
 
+// Get reads live employee id.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Employee, error) {
 	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM employees WHERE id = $1 AND deleted_at IS NULL`, id))
 }
 
+// List reads every live employee in name order.
 func (r *PostgresRepository) List(ctx context.Context) ([]Employee, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+columns+` FROM employees WHERE deleted_at IS NULL
 		ORDER BY lower(last_name), lower(first_name), id`)
@@ -85,6 +97,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]Employee, error) {
 	return scanAll(rows)
 }
 
+// SearchByName filters live employees by q with LIKE, its wildcards escaped.
 func (r *PostgresRepository) SearchByName(ctx context.Context, q string, limit int) ([]Employee, error) {
 	pattern := "%" + escapeLike(strings.ToLower(q)) + "%"
 	rows, err := r.pool.Query(ctx, `SELECT `+columns+` FROM employees
@@ -99,6 +112,8 @@ func (r *PostgresRepository) SearchByName(ctx context.Context, q string, limit i
 	return scanAll(rows)
 }
 
+// Update locks live row id FOR UPDATE, applies m, and writes every mutable
+// column and m's events in the same transaction.
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Employee, error) {
 	var out Employee
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -129,6 +144,7 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+// insertEvent writes ev in tx; nil writes nothing.
 func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 	if ev == nil {
 		return nil
@@ -141,6 +157,10 @@ func escapeLike(q string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q)
 }
 
+// translate maps Postgres errors to this package's sentinels: a unique
+// violation (the live code index) to ErrCodeTaken, a foreign key (the actor
+// columns) to ErrActorNotFound and a CHECK to ErrInvalid naming it. Others
+// pass as they are.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

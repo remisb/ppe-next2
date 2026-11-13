@@ -36,16 +36,26 @@ var (
 // the app can open that one instead. It is still ErrNotFound.
 type MergedError struct{ Into uuid.UUID }
 
-func (e *MergedError) Error() string         { return ErrNotFound.Error() + ": merged into another record" }
-func (e *MergedError) Unwrap() error         { return ErrNotFound }
+// Error is ErrNotFound's message, saying the record was merged.
+func (e *MergedError) Error() string { return ErrNotFound.Error() + ": merged into another record" }
+
+// Unwrap makes errors.Is(err, ErrNotFound) hold.
+func (e *MergedError) Unwrap() error { return ErrNotFound }
+
+// ExistingID is the record kept, which the API answers as existing_id.
 func (e *MergedError) ExistingID() uuid.UUID { return e.Into }
 
 // CodeTakenError is a code another live employee has, which it names, so
 // the app can offer that employee instead. It is still ErrCodeTaken.
 type CodeTakenError struct{ Existing uuid.UUID }
 
-func (e *CodeTakenError) Error() string         { return ErrCodeTaken.Error() }
-func (e *CodeTakenError) Unwrap() error         { return ErrCodeTaken }
+// Error is ErrCodeTaken's message.
+func (e *CodeTakenError) Error() string { return ErrCodeTaken.Error() }
+
+// Unwrap makes errors.Is(err, ErrCodeTaken) hold.
+func (e *CodeTakenError) Unwrap() error { return ErrCodeTaken }
+
+// ExistingID is the employee who has the code, which the API answers as existing_id.
 func (e *CodeTakenError) ExistingID() uuid.UUID { return e.Existing }
 
 // MergeContents is what the record removed has that moves to the one kept,
@@ -71,8 +81,9 @@ type MergePreview struct {
 }
 
 // Similar lists live employees whose names are like first and last
-// (CompareNames), the same names first, leaving out except. Add New Employee
-// asks it before adding.
+// (CompareNames), the same names first, at most similarLimit, leaving out
+// except. Add New Employee asks it before adding; Merge with… asks it for the
+// employee being merged, as except, to offer alike names first.
 func (s *Service) Similar(ctx context.Context, first, last string, except uuid.UUID) ([]Match, error) {
 	first, last = strings.TrimSpace(first), strings.TrimSpace(last)
 	out := make([]Match, 0)
@@ -100,6 +111,7 @@ func (s *Service) Similar(ctx context.Context, first, last string, except uuid.U
 	return out, nil
 }
 
+// kindRank orders matches: SameName before SimilarName.
 func kindRank(k MatchKind) int {
 	if k == SameName {
 		return 0
@@ -108,7 +120,8 @@ func kindRank(k MatchKind) int {
 }
 
 // PossibleDuplicates is every pair of live employees whose names are alike,
-// except those marked Not the Same Person, the older record first.
+// except those marked Not the Same Person, the older record first. It
+// compares every pair in Go: no index serves alike names.
 func (s *Service) PossibleDuplicates(ctx context.Context) ([]Pair, error) {
 	es, err := s.repo.List(ctx)
 	if err != nil {
@@ -178,7 +191,8 @@ func (s *Service) MarkDistinct(ctx context.Context, a, b uuid.UUID, actor uuid.U
 	return s.repo.MarkDistinct(ctx, key[0], key[1], actor, now, evs)
 }
 
-// MergePreview is what merging remove into keep would move.
+// MergePreview is what merging remove into keep would move, read without
+// locks for the review; Merge reads it again under them.
 func (s *Service) MergePreview(ctx context.Context, keepID, removeID uuid.UUID) (MergePreview, error) {
 	if keepID == removeID {
 		return MergePreview{}, fieldError("remove", "is the employee kept")
@@ -196,8 +210,9 @@ func (s *Service) MergePreview(ctx context.Context, keepID, removeID uuid.UUID) 
 // and photos move to it, and it is removed, pointing at the one kept. Orders'
 // and signed forms' snapshots keep the name they were made with. A removed
 // record with identity documents is refused (ErrMergePersonnel). The route's
-// employees.merge needs employee_profiles.manage (role catalogue); without
-// may.Sizes the record kept keeps its own sizes.
+// employees.merge needs employee_profiles.manage and employee_sizes.manage
+// (role catalogue), so may is normally both; should may.Sizes be false, the
+// record kept keeps its own sizes.
 func (s *Service) Merge(ctx context.Context, keepID, removeID uuid.UUID, p Params, may Rights, actor uuid.UUID) (Employee, error) {
 	if actor == uuid.Nil {
 		return Employee{}, fieldError("actor", "is required")

@@ -3,7 +3,8 @@
 People workwear is ordered for, and their reusable size defaults. Package
 `internal/domain/employee`, routes in `cmd/api/employee-routes.go`, table from migration
 `0003_employees` (clothing size made numeric by `0012_numeric_clothing_size`, preferred
-language added by `0017_employee_language`). Manual §3.2
+language added by `0017_employee_language`, access split into profile and sizes by 0050,
+`merged_into_id` and `employee_distinct_pairs` added by 0052). Manual §3.2
 and §4.1.
 
 ## Entity
@@ -61,12 +62,12 @@ every role but the add-on roles Equipment Assignments, Testers and Personnel Doc
 | --- | --- | --- |
 | `GET /api/v1/employees` | any authenticated | list, each as the reader may see it |
 | `GET /api/v1/employees/{id}` | any authenticated | 404 on miss; as the reader may see it |
-| `GET /api/v1/employees/by-name/{q}` | any authenticated | **filter** (Assigned to search): matches first, last, full name or code, case-insensitive substring, max 50; no match is `200 []` |
+| `GET /api/v1/employees/by-name/{q}` | any authenticated | **filter** (the employee picker's search, ⌘K, Import Documents' person step): matches first, last, full name or code, case-insensitive substring, max 50; no match is `200 []` |
 | `POST /api/v1/employees` | `employee_profiles.manage` | body: all entity fields except derived; the sizes only with `employee_sizes.manage` |
 | `PUT /api/v1/employees/{id}` | `employee_profiles.manage` | full replace of the same body; the sizes kept without `employee_sizes.manage` |
 | `PUT /api/v1/employees/{id}/sizes` | `employee_sizes.manage` | Edit Sizes / the **Save** button of Create Order's size pop-up (`item-set-service.md`): `{height_cm, clothing_size, shoe_size}`, all three replaced |
-| `DELETE /api/v1/employees/{id}` | admin, manager | soft delete |
-| `POST /api/v1/employees/similar` | `employee_profiles.manage` | Add New Employee's check, body `{first_name, last_name, except_id?}` (names in the body, out of the address and logs): `[{employee, kind}]`, at most 5, `same_name` first |
+| `DELETE /api/v1/employees/{id}` | `employees.delete` | soft delete; 409 (`employee.ErrHoldsAssets`, naming them) while they hold company assets, checked under the employee's row lock, which giving an asset share-locks |
+| `POST /api/v1/employees/similar` | `employee_profiles.manage` | Add New Employee's check (and Merge with…'s, which passes the employee being merged as `except_id`), body `{first_name, last_name, except_id?}` (names in the body, out of the address and logs): `[{employee, kind}]`, at most 5, `same_name` first |
 | `GET /api/v1/employees/possible-duplicates` | `employees.merge` | `[{a, b, kind}]`, the older record as `a`; pairs marked Not the Same Person left out |
 | `POST /api/v1/employees/distinct-pairs` | `employees.merge` | Not the Same Person, `{employee_a, employee_b}`; 204, again changes nothing |
 | `GET /api/v1/employees/{id}/merge/{remove}` | `employees.merge` | Merge Employees' review: `{keep, remove, contents}` |

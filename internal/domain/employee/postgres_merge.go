@@ -11,10 +11,12 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// Duplicates and merging (migration 0052): employee_distinct_pairs, and
-// Merge Employees across employees, orders, asset_assignments and
-// employee_photos.
+// Duplicates and merging (migration 0052): the code lookup a 409 names,
+// employee_distinct_pairs, and Merge Employees across employees, orders,
+// asset_assignments and employee_photos.
 
+// IDByCode reads the live employee with code, compared as the unique index
+// does (lower); false when there is none.
 func (r *PostgresRepository) IDByCode(ctx context.Context, code string) (uuid.UUID, bool, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT id FROM employees
@@ -25,6 +27,8 @@ func (r *PostgresRepository) IDByCode(ctx context.Context, code string) (uuid.UU
 	return id, err == nil, err
 }
 
+// DistinctPairs reads every row of employee_distinct_pairs, which keeps each
+// pair smaller id first, as pairKey does.
 func (r *PostgresRepository) DistinctPairs(ctx context.Context) (map[[2]uuid.UUID]bool, error) {
 	rows, err := r.pool.Query(ctx, `SELECT employee_a, employee_b FROM employee_distinct_pairs`)
 	if err != nil {
@@ -42,6 +46,8 @@ func (r *PostgresRepository) DistinctPairs(ctx context.Context) (map[[2]uuid.UUI
 	return out, rows.Err()
 }
 
+// MarkDistinct checks both employees are live, inserts the pair and, only when
+// the row is new, writes evs, all in one transaction.
 func (r *PostgresRepository) MarkDistinct(ctx context.Context, a, b, actor uuid.UUID, at time.Time, evs []audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		var live int
@@ -97,6 +103,10 @@ func readPair(ctx context.Context, q querier, keepID, removeID uuid.UUID, lock b
 	return keep, remove, nil
 }
 
+// contentsOf reads what moves from removeID to keepID (its orders, deleted
+// ones too, its assignments, open and returned, and its live photos, each
+// oldest first), how many of the assignments are open, and whether either
+// record has identity documents (personnel.subjects).
 func contentsOf(ctx context.Context, q querier, keepID, removeID uuid.UUID) (MergeContents, error) {
 	c := MergeContents{}
 	ids := func(sql string) ([]uuid.UUID, error) {
@@ -134,6 +144,8 @@ func contentsOf(ctx context.Context, q querier, keepID, removeID uuid.UUID) (Mer
 	return c, err
 }
 
+// MergeContents reads both records and what would move, unlocked, for the
+// review.
 func (r *PostgresRepository) MergeContents(ctx context.Context, keepID, removeID uuid.UUID) (Employee, Employee, MergeContents, error) {
 	keep, remove, err := readPair(ctx, r.pool, keepID, removeID, false)
 	if err != nil {
@@ -143,6 +155,12 @@ func (r *PostgresRepository) MergeContents(ctx context.Context, keepID, removeID
 	return keep, remove, c, err
 }
 
+// Merge is Merge Employees' one transaction: both rows locked in id order,
+// m applied to them and what moves, then the record removed soft-deleted with
+// merged_into_id, its orders, assignments (under ppe.employee_merge, which
+// asset_assignments_guard requires) and photos moved, its Not the Same Person
+// marks deleted, the record kept written and the events inserted. It answers
+// with the record kept as stored.
 func (r *PostgresRepository) Merge(ctx context.Context, keepID, removeID uuid.UUID, m MergeMutation) (Employee, error) {
 	var out Employee
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -205,6 +223,8 @@ func (r *PostgresRepository) Merge(ctx context.Context, keepID, removeID uuid.UU
 	return out, translate(err)
 }
 
+// MergedInto reads merged_into_id of id, deleted or not; false when id is
+// missing or was not merged.
 func (r *PostgresRepository) MergedInto(ctx context.Context, id uuid.UUID) (uuid.UUID, bool, error) {
 	var into *uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT merged_into_id FROM employees WHERE id = $1`, id).Scan(&into)
@@ -217,6 +237,8 @@ func (r *PostgresRepository) MergedInto(ctx context.Context, id uuid.UUID) (uuid
 	return *into, true, nil
 }
 
+// MergedFrom reads the ids of the records whose merged_into_id is id, in id
+// order; [] when there are none.
 func (r *PostgresRepository) MergedFrom(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := r.pool.Query(ctx, `SELECT id FROM employees WHERE merged_into_id = $1 ORDER BY id`, id)
 	if err != nil {

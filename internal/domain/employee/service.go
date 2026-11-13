@@ -19,9 +19,14 @@ const (
 	EventSizesChanged = "employee.sizes_changed"
 	EventDeleted      = "employee.deleted"
 	auditEntity       = "employee"
-	searchLimit       = 50
+	// searchLimit caps Search's answer.
+	searchLimit = 50
 )
 
+// Service owns the employee rules: validation, IDs, timestamps, the audit
+// events of each change, the profile and size rights (Rights), the asset
+// check before Delete and, in merge.go, duplicates and merging. It is built
+// with NewService and stores through a Repository.
 type Service struct {
 	repo     Repository
 	now      func() time.Time
@@ -35,14 +40,21 @@ type Holdings interface {
 	HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error)
 }
 
+// Option configures a Service built by NewService.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock that stamps changes and events (tests).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces the generator of employee and event IDs (tests).
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithHoldings lets Delete refuse an employee who still holds company assets.
 func WithHoldings(h Holdings) Option { return func(s *Service) { s.holdings = h } }
 
+// NewService is a Service over repo: the clock is UTC to the microsecond (as
+// Postgres keeps it), IDs are random UUIDs, and without WithHoldings Delete
+// checks no company assets.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -58,18 +70,22 @@ type sizeSnapshot struct {
 	ShoeSize     *string `json:"shoe_size"`
 }
 
+// snapshotOf is e's size defaults as the audit events record them.
 func snapshotOf(e Employee) sizeSnapshot {
 	return sizeSnapshot{HeightCm: e.HeightCm, ClothingSize: e.ClothingSize, ShoeSize: e.ShoeSize}
 }
 
+// equal says whether a and b hold the same sizes.
 func (a sizeSnapshot) equal(b sizeSnapshot) bool {
 	return eqPtr(a.HeightCm, b.HeightCm) && eqPtr(a.ClothingSize, b.ClothingSize) && eqPtr(a.ShoeSize, b.ShoeSize)
 }
 
+// eqPtr says whether a and b are both nil or point to equal values.
 func eqPtr[T comparable](a, b *T) bool {
 	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
 }
 
+// event is an audit event name on employee id by actor at at, with a new ID.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
 	ev, err := audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
 	if err != nil {
@@ -152,11 +168,16 @@ func (s *Service) codeErr(ctx context.Context, err error, code *string, self uui
 	return err
 }
 
+// List is every live employee in name order (last, then first name). The
+// caller shows each as the reader may see it (Sight).
 func (s *Service) List(ctx context.Context) ([]Employee, error) {
 	return s.repo.List(ctx)
 }
 
-// Search is the Assigned to selector's filter. A blank query matches nothing.
+// Search is the employee search of the employee picker (Create Order's
+// Assigned to, Orders' filter, Merge with…), ⌘K and Import Documents' person
+// step: live employees whose first, last or full name or code contains q,
+// case-insensitive, at most searchLimit. A blank query matches nothing.
 func (s *Service) Search(ctx context.Context, q string) ([]Employee, error) {
 	q = strings.TrimSpace(q)
 	if q == "" {
@@ -198,7 +219,8 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights
 }
 
 // UpdateSizes is Edit Sizes and Save as Employee Default: it replaces only the
-// three size defaults.
+// three size defaults, recording employee.sizes_changed when one changes. The
+// route requires employee_sizes.manage, so it takes no Rights.
 func (s *Service) UpdateSizes(ctx context.Context, id uuid.UUID, p SizesParams, actor uuid.UUID) (Employee, error) {
 	if actor == uuid.Nil {
 		return Employee{}, fieldError("actor", "is required")

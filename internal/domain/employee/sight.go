@@ -50,7 +50,8 @@ var sizeDetails = []string{"height_cm", "clothing_size", "shoe_size"}
 // Sizes, no size changes and no sizes on employee.created; without Profile,
 // no code, language or notes in employee.updated (an event left with nothing
 // is left out), and none of the photos' events. employee.merged keeps only
-// what the reader may see of the fields it changed. Personnel files' events
+// what the reader may see of the fields it changed, and the moved photos' ids
+// only with Profile. Personnel files' events
 // (personnel.*) are theirs to decide (ADR 0007) and pass as they are.
 func (s Sight) Changes(es []audit.Entry) []audit.Entry {
 	out := make([]audit.Entry, 0, len(es))
@@ -100,6 +101,7 @@ func withoutKeys(raw json.RawMessage, keys []string) json.RawMessage {
 	return b
 }
 
+// isEmptyObject says whether raw is empty or the JSON object {}.
 func isEmptyObject(raw json.RawMessage) bool {
 	var m map[string]json.RawMessage
 	return len(raw) == 0 || (json.Unmarshal(raw, &m) == nil && len(m) == 0)

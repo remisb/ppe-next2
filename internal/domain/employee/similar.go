@@ -48,6 +48,7 @@ func CompareNames(aFirst, aLast, bFirst, bLast string) (MatchKind, bool) {
 	return compareWords(nameWords(aFirst, aLast), nameWords(bFirst, bLast))
 }
 
+// compareWords is CompareNames over names already split by nameWords.
 func compareWords(a, b []string) (MatchKind, bool) {
 	if len(a) == 0 || len(b) == 0 {
 		return "", false

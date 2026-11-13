@@ -16,15 +16,27 @@ import (
 type Mutation func(cur Employee) (Employee, []audit.Event, error)
 
 // Repository is the persistence the employee service needs. Implementations
-// translate storage errors to this package's sentinels and never validate.
+// translate storage errors to this package's sentinels (ErrNotFound,
+// ErrCodeTaken, ErrActorNotFound, ErrInvalid) and never validate. Employees
+// read are live ones, with the derived DefaultPhotoID and the identity fields
+// filled; MergedInto and MergedFrom alone look at removed records.
 type Repository interface {
+	// Create inserts e and its event (none when ev is nil) in one transaction;
+	// ErrCodeTaken when a live employee has e's code.
 	Create(ctx context.Context, e Employee, ev *audit.Event) error
+	// Get is live employee id; ErrNotFound when it is missing, deleted or
+	// merged away.
 	Get(ctx context.Context, id uuid.UUID) (Employee, error)
+	// List is every live employee, by last then first name (case-insensitive),
+	// then id; [] when there are none.
 	List(ctx context.Context) ([]Employee, error)
-	// SearchByName matches q case-insensitively against first name, last name,
-	// full name and code, among live employees.
+	// SearchByName matches q case-insensitively, as a literal substring,
+	// against first name, last name, full name and code, among live employees,
+	// in List's order, at most limit.
 	SearchByName(ctx context.Context, q string, limit int) ([]Employee, error)
-	// Update locks live row id, applies m and writes the result and its event.
+	// Update locks live row id FOR UPDATE, applies m and writes the result
+	// (a soft delete included) and its events in one transaction; ErrNotFound
+	// when id is not live, and m's error as it is.
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Employee, error)
 	// IDByCode is the live employee with code (case-insensitive), if any.
 	IDByCode(ctx context.Context, code string) (uuid.UUID, bool, error)

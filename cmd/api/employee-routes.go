@@ -18,8 +18,8 @@ type employeeHandler struct {
 // need employee_sizes.read and the rest of the profile employee_profiles.read
 // (employee.Sight, blank otherwise). Adding and editing employees needs
 // employee_profiles.manage, and the size defaults employee_sizes.manage
-// (employee.Rights: Edit keeps them without it); deleting needs a manager,
-// and merging two records of one person employees.merge.
+// (employee.Rights: Edit keeps them without it); deleting needs
+// employees.delete, and merging two records of one person employees.merge.
 func registerEmployeeRoutes(rt *router, employees *employee.Service) {
 	h := &employeeHandler{employees: employees}
 	rt.authenticated("GET /api/v1/employees", h.list)
@@ -117,7 +117,8 @@ func (h *employeeHandler) get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
 }
 
-// search is a filter for the Assigned to selector: no match is 200 [].
+// search is the employee search (the employee picker, ⌘K, Import Documents'
+// person step): no match is 200 [].
 func (h *employeeHandler) search(w http.ResponseWriter, r *http.Request) {
 	es, err := h.employees.Search(r.Context(), r.PathValue("q"))
 	if err != nil {

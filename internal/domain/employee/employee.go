@@ -1,6 +1,9 @@
 // Package employee holds the people workwear is ordered for and their reusable
 // size defaults. Changing a size affects future order resolution only: orders
-// snapshot the sizes they used.
+// snapshot the sizes they used. Who may see and change an employee's profile
+// and sizes is Sight and Rights (migration 0050); alike names, Not the Same
+// Person and Merge Employees are Duplicates and merging (migration 0052). The
+// rules are docs/specs/employee-service.md.
 package employee
 
 import (
@@ -54,6 +57,7 @@ type Employee struct {
 	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
+// Deleted says whether e is soft-deleted (deleted or merged away).
 func (e Employee) Deleted() bool { return e.DeletedAt != nil }
 
 // FullName is derived, never stored or accepted.
@@ -78,6 +82,7 @@ type Params struct {
 	PreferredLanguage *string
 }
 
+// Normalize trims every text, and a blank code, shoe size or language becomes nil.
 func (p *Params) Normalize() {
 	p.FirstName = strings.TrimSpace(p.FirstName)
 	p.LastName = strings.TrimSpace(p.LastName)
@@ -87,6 +92,8 @@ func (p *Params) Normalize() {
 	p.PreferredLanguage = blankToNil(p.PreferredLanguage)
 }
 
+// Validate normalizes p, then checks the names are given, the lengths, the
+// language and the sizes (SizesParams.Validate); the error wraps ErrInvalid.
 func (p *Params) Validate() error {
 	p.Normalize()
 	switch {
@@ -116,10 +123,13 @@ type SizesParams struct {
 	ShoeSize     *string
 }
 
+// Normalize makes a blank shoe size nil.
 func (p *SizesParams) Normalize() {
 	p.ShoeSize = blankToNil(p.ShoeSize)
 }
 
+// Validate normalizes p, then checks each size given is one the size
+// vocabulary knows and the height is 100–250 cm; the error wraps ErrInvalid.
 func (p *SizesParams) Validate() error {
 	p.Normalize()
 	if p.HeightCm != nil && (*p.HeightCm < minHeightCm || *p.HeightCm > maxHeightCm) {
@@ -134,6 +144,7 @@ func (p *SizesParams) Validate() error {
 	return nil
 }
 
+// blankToNil is s trimmed, or nil when s is nil or blank.
 func blankToNil(s *string) *string {
 	if s == nil {
 		return nil
