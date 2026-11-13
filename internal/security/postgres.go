@@ -25,10 +25,13 @@ var _ Store = (*PostgresStore)(nil)
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
 
+// Insert writes ev on its own, with the request ctx carries.
 func (s *PostgresStore) Insert(ctx context.Context, ev Event) error {
 	return Insert(ctx, s.pool, ev)
 }
 
+// List reads a page of q's events, newest first, with the account's and the
+// actor's current names.
 func (s *PostgresStore) List(ctx context.Context, q Query) ([]Entry, error) {
 	var where []string
 	var args []any
@@ -88,6 +91,7 @@ func (s *PostgresStore) List(ctx context.Context, q Query) ([]Entry, error) {
 	})
 }
 
+// Failures reads when emailHash's counted failures happened, newest first.
 func (s *PostgresStore) Failures(ctx context.Context, emailHash []byte, since time.Time, limit int) ([]time.Time, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT occurred_at FROM auth_events
@@ -109,6 +113,7 @@ func (s *PostgresStore) Failures(ctx context.Context, emailHash []byte, since ti
 	})
 }
 
+// LiveSessions reads every live user's live sessions, last used first.
 func (s *PostgresStore) LiveSessions(ctx context.Context, now time.Time) ([]LiveSession, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT s.id, s.user_id, u.name, u.email, s.keep_signed_in, s.created_at, s.last_used_at,
@@ -129,6 +134,8 @@ func (s *PostgresStore) LiveSessions(ctx context.Context, now time.Time) ([]Live
 	})
 }
 
+// Review reads every live user with their roles and permissions, the roles
+// no live user holds, and the latest review.
 func (s *PostgresStore) Review(ctx context.Context, now time.Time) (ReviewData, error) {
 	var out ReviewData
 	rows, err := s.pool.Query(ctx, `
@@ -221,6 +228,7 @@ func (s *PostgresStore) Review(ctx context.Context, now time.Time) (ReviewData, 
 	return out, nil
 }
 
+// Summary counts the Overview's figures in one query.
 func (s *PostgresStore) Summary(ctx context.Context, now, dayStart time.Time) (Summary, error) {
 	var out Summary
 	err := s.pool.QueryRow(ctx, `
@@ -247,6 +255,7 @@ func (s *PostgresStore) Summary(ctx context.Context, now, dayStart time.Time) (S
 	return out, err
 }
 
+// Reviewed inserts the audit event on its own.
 func (s *PostgresStore) Reviewed(ctx context.Context, ev audit.Event) error {
 	return audit.Insert(ctx, s.pool, ev)
 }
@@ -255,6 +264,8 @@ func (s *PostgresStore) Reviewed(ctx context.Context, ev audit.Event) error {
 // purges at a time.
 const purgeLock = "ppe.purge_auth_events"
 
+// Purge deletes the events before before through purge_auth_events, unless
+// another instance holds purgeLock (then 0).
 func (s *PostgresStore) Purge(ctx context.Context, before time.Time) (int64, error) {
 	var n int64
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {

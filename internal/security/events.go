@@ -21,10 +21,14 @@ import (
 type Kind string
 
 const (
-	KindSignIn       Kind = "sign_in"
+	// KindSignIn: a sign-in succeeded and its session began.
+	KindSignIn Kind = "sign_in"
+	// KindSignInFailed: a sign-in refused; Reason says why.
 	KindSignInFailed Kind = "sign_in_failed"
-	// KindReauth: the password entered again in a sign-in, to manage users.
-	KindReauth       Kind = "reauth"
+	// KindReauth: the password entered again in a sign-in, for a sensitive
+	// action (a recent sign-in).
+	KindReauth Kind = "reauth"
+	// KindReauthFailed: a wrong password, or the per-email limit, at reauth.
 	KindReauthFailed Kind = "reauth_failed"
 	// KindSignedOut: Sign out on that browser.
 	KindSignedOut Kind = "signed_out"
@@ -53,9 +57,12 @@ func IsKind(k Kind) bool { return slices.Contains(kinds, k) }
 // Why a sign-in or reauth failed. A session_ended event's reason is the
 // session's end reason (session.ReasonEndedElsewhere …).
 const (
+	// ReasonUnknownEmail: no live user has the email.
 	ReasonUnknownEmail = "unknown_email"
-	ReasonBadPassword  = "bad_password"
-	ReasonInactive     = "inactive"
+	// ReasonBadPassword: the password was wrong.
+	ReasonBadPassword = "bad_password"
+	// ReasonInactive: the right password for a deactivated account.
+	ReasonInactive = "inactive"
 	// ReasonTooManyAttempts: refused by the per-email limit before the
 	// password was checked. Such attempts do not count towards the limit.
 	ReasonTooManyAttempts = "too_many_attempts"
@@ -100,6 +107,7 @@ func Insert(ctx context.Context, db audit.Execer, ev Event) error {
 	return err
 }
 
+// nilUUID is id, or NULL for uuid.Nil.
 func nilUUID(id uuid.UUID) *uuid.UUID {
 	if id == uuid.Nil {
 		return nil
@@ -107,6 +115,7 @@ func nilUUID(id uuid.UUID) *uuid.UUID {
 	return &id
 }
 
+// nilString is s, or NULL when it is empty.
 func nilString(s string) *string {
 	if s == "" {
 		return nil

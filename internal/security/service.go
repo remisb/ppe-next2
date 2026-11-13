@@ -61,15 +61,21 @@ type Service struct {
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithLocation sets the organisation's timezone, in which from and to are
 // calendar days. The default is UTC.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
+// NewService is the security service over store, with cfg's key, limit and
+// retention.
 func NewService(store Store, cfg Config, opts ...Option) *Service {
 	s := &Service{
 		store: store,

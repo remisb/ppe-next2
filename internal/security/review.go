@@ -81,13 +81,14 @@ type Summary struct {
 	// last hour, and MostAtOneAccount the most at one email among them.
 	FailedLastHour   int `json:"failed_last_hour"`
 	MostAtOneAccount int `json:"most_at_one_account"`
-	// SignInsToday and FailedToday count since midnight in the
-	// organisation's timezone.
+	// SignInsToday and FailedToday (failed sign-ins only, not reauths) count
+	// since midnight in the organisation's timezone.
 	SignInsToday int `json:"sign_ins_today"`
 	FailedToday  int `json:"failed_today"`
 	// SignedIn counts the people with a live session, and Devices the sessions.
-	SignedIn   int        `json:"signed_in"`
-	Devices    int        `json:"devices"`
+	SignedIn int `json:"signed_in"`
+	Devices  int `json:"devices"`
+	// LastReview is the latest access_review.completed; nil for never.
 	LastReview *time.Time `json:"last_review"`
 }
 
@@ -104,6 +105,7 @@ type summary struct {
 	NoSignIn       int `json:"no_sign_in"`
 }
 
+// summarise counts users, the active ones and each flag.
 func summarise(users []ReviewUser) summary {
 	var s summary
 	for _, u := range users {

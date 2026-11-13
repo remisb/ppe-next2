@@ -17,6 +17,7 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+// fieldError is ErrInvalid naming field and its problem.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }
@@ -74,8 +75,11 @@ type Page struct {
 	Next   *string `json:"next"`
 }
 
+// dateLayout is how from and to are written.
 const dateLayout = "2006-01-02"
 
+// resolve checks f and turns its days into instants in loc: From at the start
+// of its day, To at the start of the day after.
 func (f Filter) resolve(loc *time.Location) (Query, error) {
 	q := Query{Kind: f.Kind, UserID: f.UserID, After: f.After, Limit: f.PageSize}
 	switch {

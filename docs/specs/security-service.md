@@ -134,10 +134,19 @@ Each tab is its own address.
 
 On a phone, Security is in the bar, and Roles & permissions and Settings move under More.
 
+## Administration's Overview
+
+`Service.Summary` gives the Overview (`GET /api/v1/overview`, for `security.read`) the log's
+recent figures: copied sign-ins (`refresh_reused`) in the last 7 days, failed sign-ins and
+password confirmations in the last hour and the most at one email among them, sign-ins and
+failed sign-ins since midnight (`API_ORG_TIMEZONE`), the people signed in and their devices,
+and the last review. From them `internal/overview` raises `copied_sign_in` (critical, any in
+the week), `failed_sign_ins` (more than 20 in the hour, or more than 5 at one email) and
+`review_overdue` (never reviewed, or over 90 days ago).
+
+Seals, the least-privilege role `ppe_app`, the TRUNCATE guard and export are the Audit log's
+([audit-service.md](audit-service.md)).
+
 ## Not here yet
 
-- Seals, the least-privilege database role, the TRUNCATE guard, business-event retention
-  and export (phase 4).
-- Alerts on a failed-sign-in spike or a copied sign-in, and the Overview's reminder when the
-  last review is over 90 days old (phase 3).
 - The per-address limit in Postgres. It only slows one client, so it can stay per instance.
