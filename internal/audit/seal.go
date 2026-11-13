@@ -73,8 +73,10 @@ type digest struct {
 	rows int
 }
 
+// newDigest is an empty day's digest.
 func newDigest() *digest { return &digest{h: sha256.New()} }
 
+// add hashes r's canonical line and counts it.
 func (d *digest) add(r Row) error {
 	d.rows++
 	_, err := d.h.Write(r.line())

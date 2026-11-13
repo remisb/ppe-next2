@@ -24,7 +24,9 @@ request_id, session_id, source)`:
   - `session_id` is the sign-in (`user_sessions.id`) of the access token. There is no
     foreign key, since ended sessions are deleted after 30 days and the event outlives them.
   - `source` is one of:
-    - `workwear` or `admin`: the `X-PPE-App` header that `@ppe/api-client` sends.
+    - `workwear`, `admin` or another registered app's slug (`launcher`, `sim-scan`,
+      `docs-import` …): the `X-PPE-App` header that `@ppe/api-client` sends, when it names
+      an app App Launcher knows (migration 0042 widened the CHECK to any slug).
     - `public_link`: a `/api/v1/confirmations/` route.
     - `api`: any other client.
     - `system`: work done without a request, such as seeding.
@@ -43,13 +45,16 @@ constants. `TestWebClientListsTheEvents` keeps it equal to `AUDIT_EVENTS` in
 | --- | --- | --- | --- |
 | `users` | `user` | `user.created`, `user.updated`, `user.roles_changed`, `user.activated`, `user.deactivated`, `user.password_changed` (by its user), `user.password_reset` (by an administrator), `user.deleted` | created: name, email, role_ids, is_active; updated: the changed name, email or language; passwords: none |
 | `users` | `role` | `role.created`, `role.updated`, `role.deleted` | name, description, permissions |
-| `employees` | `employee` | `employee.created`, `employee.updated`, `employee.sizes_changed`, `employee.deleted`, `employee.photo_added`, `employee.photo_uses_changed`, `employee.photo_default_changed`, `employee.photo_removed` | updated: the changed first and last name, code and preferred language, and `notes_changed: true` (never the notes text); sizes as before; photo events: `photo_id` with the file's name, type, size, hash and uses (uses_changed: before and after) |
+| `employees` | `employee` | `employee.created`, `employee.updated`, `employee.sizes_changed`, `employee.deleted`, `employee.merged`, `employee.merged_away`, `employee.marked_distinct` (migration 0052), `employee.photo_added`, `employee.photo_uses_changed`, `employee.photo_default_changed`, `employee.photo_removed` | updated: the changed first and last name, code and preferred language, and `notes_changed: true` (never the notes text); sizes as before; merges and Not the Same Person: [employee-service.md](employee-service.md) "Duplicates and merging"; photo events: `photo_id` with the file's name, type, size, hash and uses (uses_changed: before and after) |
+| `employees` | `employee` | `personnel.document_recorded`, `personnel.document_superseded`, `personnel.document_updated`, `personnel.document_shown`, `personnel.document_removed`, `personnel.employment_ended`, `personnel.employment_end_cleared`, `personnel.hold_set`, `personnel.hold_cleared`, `personnel.file_shredded` (migration 0048, ADR 0007) | on the person's employee record: the document's kind, issuing state and dates, never a number, code, name or image from it ([personnel-service.md](personnel-service.md)) |
 | `catalogue` | `catalogue_item` | `catalogue.created`, `catalogue.updated`, `catalogue.price_changed`, `catalogue.activated`, `catalogue.deactivated`, `catalogue.deleted` | updated: the changed name, details, picture (with the size group it brings; before migration 0036 the item's own size group), display rank; price events: purchase and accounting price, currency, service period (events before migration 0021: `unit_price_cents`) |
 | `catalogue` | `catalogue_picture` | `catalogue.picture_changed` (migration 0036) | `icon` and `size_group`, before and after |
 | `item_sets` | `item_set` | `item_set.created`, `item_set.updated`, `item_set.deleted` | name, description, active, lines (`catalogue_item_id`, `default_quantity`), the changed ones on update |
 | `orders` | `order` | `order.ordered`, `order.confirmation_link_created`, `order.confirmation_link_opened` (the employee's first opening, no actor, migration 0027), `order.given`, `order.deleted`, `order.employee_merged` (Merge Employees moving it, written by the employee domain, migration 0052) | as before; opened has none; merged: before/after `employee_id` |
-| `assets` | `asset` | `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`, `asset.marked_not_returned`, `asset.signed_copy_uploaded`, `asset.form_printed`, `asset.activation_email_prepared`, `asset.blocking_email_prepared` ([asset-service.md](asset-service.md)) | registered: the asset's details (never its comment); updated: the changed ones and `comment_changed: true`; status: `connection_status`; given, returned, marked: `assignment_id`, `employee_id`, `employee_name`, and `given_date` with `document_hash`, `returned_date` or `whereabouts`. The Audit log names an asset by its inventory number |
+| `assets` | `asset` | `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`, `asset.marked_not_returned`, `asset.signed_copy_uploaded`, `asset.form_printed`, `asset.activation_email_prepared`, `asset.blocking_email_prepared`, `asset.sim_codes_changed`, `asset.sim_codes_shown` (migration 0041, never the codes) ([asset-service.md](asset-service.md)) | registered: the asset's details (never its comment); updated: the changed ones and `comment_changed: true`; status: `connection_status`; given, returned, marked: `assignment_id`, `employee_id`, `employee_name`, and `given_date` with `document_hash`, `returned_date` or `whereabouts`. The Audit log names an asset by its inventory number |
 | `settings` | `settings` | `settings.company_changed` (migration 0039), `settings.supplier_chat_changed`, `settings.sim_providers_changed`; `settings.default_sim_provider_changed` (recorded from migration 0031 until 0033, still read) | supplier chat as before; SIM providers: `providers` (the list), `default_provider` (`''` for none) and `default_non_return_value_cents` (cents or `null`, from migration 0034) and `default_plan` (`''` for none, from migration 0035); the old default provider: `provider`; company: `name` |
+| `settings` | `settings` | `settings.ai_changed`, `settings.ai_key_set`, `settings.ai_key_removed` (migration 0051) | Settings → AI ([ai-usage-service.md](ai-usage-service.md)); never the key |
+| `settings` | `app` | `app.registered`, `app.changed`, `app.audience_changed`, `app.moved`, `app.version_published`, `app.channel_moved`, `app.versions_pruned`; `app.channel_changed` (named variants, until migration 0047, still read) | App Launcher's tiles and published versions ([app-launcher.md](app-launcher.md)); the Audit log names a tile by its English name |
 | `settings` | `mail_template` | `mail_template.changed` (migration 0040; [mail-template-service.md](mail-template-service.md)) | `recipient`, `cc`, `subject`, `body`, before and after; the entity id is `mailtemplate.EntityID(key)` |
 | `audit` | `audit_log` | `audit.exported` (by its actor), `audit.purged` (by the system) | exported: the format, from, to and the filters given; purged: `older_than` (the first day kept) and `rows` |
 | `security` | `access_review` | `access_review.completed` | after: how many `users`, `active_users`, `administrators`, `dormant` and `no_sign_in` accounts there were; a fresh entity id per review (`docs/specs/security-service.md`) |
@@ -81,6 +86,10 @@ ADR 0003), shown on Security.
 | `GET /api/v1/audit-events/orders/{id}` | any signed-in user | an order's Changes |
 | `GET /api/v1/audit-events/assets/{id}` | any signed-in user | an asset's Changes, its assignments' events included |
 | `GET /api/v1/audit-events/users/{id}` | `users.read` | a user's Changes |
+| `GET /api/v1/audit-events/apps/{id}` | `apps.manage` | an App Launcher tile's Changes (Manage apps) |
+| `GET /api/v1/audit-events/integrity` | `audit.read` | the seals, stamps, retention and purges, and the latest Verify, for the Audit log's Seals panel |
+| `POST /api/v1/audit-events/verify` | `audit.read` | Verify now (below) |
+| `GET /api/v1/audit-events/export` | `audit.export` | Export (below) |
 
 **Changes routes:**
 - They ask the record's own service first, so a record that does not exist or is deleted is
@@ -90,6 +99,9 @@ ADR 0003), shown on Security.
   `/employees/by-name/{q}` in ServeMux.
 - Each takes the permission that opens the record, not `audit.read`: whoever can open an
   employee can see who changed them.
+- An employee's Changes show only what the reader may see (`employee.Sight`), and include
+  those of the records merged into it. An asset's include its assignments' events; an
+  equipment item's need `equipment.read`.
 
 **List:** `GET /api/v1/audit-events?area=&event=&actor=&entity_type=&entity_id=&from=&to=&after=&page_size=`.
 - It is a filter. No match is `200 {"events": [], "next": null}`.
@@ -105,8 +117,9 @@ ADR 0003), shown on Security.
 **Entry** (`audit.Entry`):
 - The stored row, plus `area`.
 - `entity_label`: the record's name now. That is an employee's full name, an item, set, user
-  or role name, or an order's record number. Deleted records keep it, with
-  `entity_deleted: true`.
+  or role name, an order's record number, an asset's inventory number, a catalogue picture's
+  icon, a mail template's use case key or an App Launcher tile's English name. Deleted
+  records keep it, with `entity_deleted: true`.
 - `actor_name`: the user's current name.
 - `session_user_agent`: from `user_sessions` while that row is kept.
 
@@ -223,7 +236,9 @@ an earlier time.
   gives the role that password.
 - What `ppe_app` may do:
   - it may: SELECT, INSERT, UPDATE and DELETE the business tables; INSERT and SELECT only
-    on `audit_events`, `auth_events`, `audit_seals`, `audit_purges` and `order_lines`;
+    on the append-only tables (`grants.sql`'s REVOKE line: `audit_events`, `auth_events`,
+    `audit_seals`, `audit_seal_stamps`, `audit_purges`, `order_lines`, `asset_numbers`,
+    `asset_signed_copies`, `ai_usage`);
   - it may not: truncate, alter, or create anything.
 - The owner runs the migrations, the backups and the purge functions.
 - `grants.sql` is applied after the migrations on **every** run. That keeps it right for
@@ -232,8 +247,9 @@ an earlier time.
 - System shows the role the API connects as. The Overview raises
   `database_owner_rights` (warning) when it is the owner or a superuser.
 
-**TRUNCATE guard.** A statement trigger refuses TRUNCATE on the five trails, which a
-cascade from `users` would reach, unless the transaction says
+**TRUNCATE guard.** A statement trigger refuses TRUNCATE on the six trails (`audit_events`,
+`auth_events`, `audit_seals`, `audit_purges`, `order_lines`; `audit_seal_stamps` from
+migration 0028), which a cascade from `users` would reach, unless the transaction says
 `SET LOCAL ppe.allow_truncate = on`. Test setup does.
 
 ## Permission
@@ -266,7 +282,8 @@ Administration for whoever holds it.
   - when (absolute, in the organisation's timezone), who, made in, device, reference, event;
   - every field it changed.
 
-**Changes** on the staff app's employee page, catalogue item page and order (beside Orders):
+**Changes** on the staff app's employee page, catalogue item page, item set, order (beside
+Orders) and asset, and on Administration's users and Manage apps:
 - the record's changes, newest first;
 - loaded again when the record changes on the page.
 

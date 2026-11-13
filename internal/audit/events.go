@@ -5,14 +5,15 @@ import "slices"
 // Area groups the record types on the Audit log's filter.
 type Area string
 
+// The areas; areas below lists the entity types each covers.
 const (
-	AreaUsers     Area = "users" // users and roles
-	AreaEmployees Area = "employees"
-	AreaCatalogue Area = "catalogue"
+	AreaUsers     Area = "users"     // users and roles
+	AreaEmployees Area = "employees" // employees, their merges, photos and identity documents
+	AreaCatalogue Area = "catalogue" // items and their pictures
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
-	AreaAssets    Area = "assets" // Company Assets
-	AreaSettings  Area = "settings"
+	AreaAssets    Area = "assets"   // Company Assets
+	AreaSettings  Area = "settings" // Settings, AI settings, mail templates and App Launcher's tiles
 	AreaSecurity  Area = "security" // the access review
 	AreaAudit     Area = "audit"    // the Audit log's own exports and purges
 )
@@ -20,8 +21,11 @@ const (
 // The Audit log's own events: an export (audit.export) and a purge of events
 // older than API_AUDIT_RETENTION.
 const (
+	// EventExported: an export, recorded before it is written, with its
+	// format, days and filters.
 	EventExported = "audit.exported"
-	EventPurged   = "audit.purged"
+	// EventPurged: a purge, by the system, with the first day kept and the rows.
+	EventPurged = "audit.purged"
 	// EntityLog is their entity type; each has an id of its own.
 	EntityLog = "audit_log"
 )

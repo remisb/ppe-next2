@@ -12,7 +12,9 @@ import (
 
 // Formats an export can be written in.
 const (
-	FormatCSV   = "csv"
+	// FormatCSV is a spreadsheet's CSV, times in the organisation's timezone.
+	FormatCSV = "csv"
+	// FormatJSONL is one Entry as JSON a line.
 	FormatJSONL = "jsonl"
 )
 
@@ -111,6 +113,7 @@ func (s *Service) Export(ctx context.Context, f Filter, format string, actor uui
 	}
 }
 
+// csvRow is e's CSV columns, in csvColumns' order.
 func csvRow(e Entry) []string {
 	str := func(p *string) string {
 		if p == nil {

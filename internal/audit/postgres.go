@@ -13,13 +13,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// PostgresStore reads audit_events (migrations 0002, 0023).
+// PostgresStore reads audit_events (migrations 0002, 0023) and keeps the
+// seals, stamps and purges (0026, 0028).
 type PostgresStore struct {
 	pool *pgxpool.Pool
 }
 
 var _ Store = (*PostgresStore)(nil)
 
+// NewPostgresStore is the audit store over pool.
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
 
 // entityLabel and entityDeleted name each record type's row now. Deleted
@@ -42,6 +44,8 @@ const entityLabel = `CASE a.entity_type
 		WHEN 'app' THEN (SELECT x.name_en FROM launcher_apps x WHERE x.id = a.entity_id)
 	END`
 
+// entityDeleted is whether the record is soft-deleted now; false for the
+// types that are never deleted.
 const entityDeleted = `coalesce(CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.deleted_at IS NOT NULL FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.deleted_at IS NOT NULL FROM catalogue_items x WHERE x.id = a.entity_id)
@@ -52,6 +56,8 @@ const entityDeleted = `coalesce(CASE a.entity_type
 		WHEN 'asset' THEN (SELECT x.deleted_at IS NOT NULL FROM assets x WHERE x.id = a.entity_id)
 	END, false)`
 
+// List reads q's events, newest first, with each record's name and the
+// actor's, and the session's browser while its row is kept.
 func (s *PostgresStore) List(ctx context.Context, q Query) ([]Entry, error) {
 	var where []string
 	var args []any
@@ -127,8 +133,11 @@ func rawOrNil(b []byte) []byte {
 	return b
 }
 
+// Insert writes ev on its own.
 func (s *PostgresStore) Insert(ctx context.Context, ev Event) error { return Insert(ctx, s.pool, ev) }
 
+// EachRow calls f with each event in [from, to) as a seal hashes it, in
+// (occurred_at, id) order.
 func (s *PostgresStore) EachRow(ctx context.Context, from, to time.Time, f func(Row) error) error {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, actor_user_id, event, entity_type, entity_id, occurred_at, before::text, after::text,
@@ -152,6 +161,7 @@ func (s *PostgresStore) EachRow(ctx context.Context, from, to time.Time, f func(
 	return rows.Err()
 }
 
+// FirstEventAt is the oldest event's time; nil for an empty trail.
 func (s *PostgresStore) FirstEventAt(ctx context.Context) (*time.Time, error) {
 	var at *time.Time
 	err := s.pool.QueryRow(ctx, `SELECT min(occurred_at) FROM audit_events`).Scan(&at)
@@ -167,6 +177,7 @@ func utcDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
+// Seals reads every seal, oldest day first.
 func (s *PostgresStore) Seals(ctx context.Context) ([]Seal, error) {
 	rows, err := s.pool.Query(ctx, `SELECT day, rows, hash, prev_hash, sealed_at FROM audit_seals ORDER BY day`)
 	if err != nil {
@@ -180,6 +191,7 @@ func (s *PostgresStore) Seals(ctx context.Context) ([]Seal, error) {
 	})
 }
 
+// AddSeal inserts x; a day sealed already is ErrSealed.
 func (s *PostgresStore) AddSeal(ctx context.Context, x Seal) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO audit_seals (day, rows, hash, prev_hash, sealed_at) VALUES ($1::date, $2, $3, $4, $5)`,
@@ -191,6 +203,7 @@ func (s *PostgresStore) AddSeal(ctx context.Context, x Seal) error {
 	return err
 }
 
+// Stamps reads every seal's timestamp, oldest day first.
 func (s *PostgresStore) Stamps(ctx context.Context) ([]Stamp, error) {
 	rows, err := s.pool.Query(ctx, `SELECT day, tsa, token, stamped_at, recorded_at FROM audit_seal_stamps ORDER BY day`)
 	if err != nil {
@@ -204,6 +217,7 @@ func (s *PostgresStore) Stamps(ctx context.Context) ([]Stamp, error) {
 	})
 }
 
+// AddStamp inserts x; a day stamped already is ErrStamped.
 func (s *PostgresStore) AddStamp(ctx context.Context, x Stamp) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO audit_seal_stamps (day, tsa, token, stamped_at, recorded_at) VALUES ($1::date, $2, $3, $4, $5)`,
@@ -215,6 +229,7 @@ func (s *PostgresStore) AddStamp(ctx context.Context, x Stamp) error {
 	return err
 }
 
+// Purges reads every purge, oldest first.
 func (s *PostgresStore) Purges(ctx context.Context) ([]Purge, error) {
 	rows, err := s.pool.Query(ctx, `SELECT id, before_day, rows, purged_at FROM audit_purges ORDER BY purged_at, id`)
 	if err != nil {
@@ -231,6 +246,9 @@ func (s *PostgresStore) Purges(ctx context.Context) ([]Purge, error) {
 // purgeLock is the advisory lock the audit purge holds, so one instance purges.
 const purgeLock = "ppe.purge_audit_events"
 
+// Purge deletes the events before p.BeforeDay through purge_audit_events,
+// and records the purge and ev's event, in one transaction under purgeLock;
+// another instance purging returns p with no rows.
 func (s *PostgresStore) Purge(ctx context.Context, p Purge, ev func(rows int64) (Event, error)) (Purge, error) {
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var got bool

@@ -7,15 +7,22 @@ import (
 )
 
 // Source is where a change was made: which app, a public confirmation link,
-// or the system itself (seeding, jobs). Migration 0023 lists the same values.
+// or the system itself (seeding, jobs). Besides these, a registered App
+// Launcher app's slug (its X-PPE-App) is a Source too: migration 0042 widened
+// 0023's list to any slug-shaped value.
 type Source string
 
 const (
-	SourceWorkwear   Source = "workwear"
-	SourceAdmin      Source = "admin"
-	SourceAPI        Source = "api"
+	// SourceWorkwear is the staff app.
+	SourceWorkwear Source = "workwear"
+	// SourceAdmin is Administration.
+	SourceAdmin Source = "admin"
+	// SourceAPI is any other client: no X-PPE-App, or one naming no app.
+	SourceAPI Source = "api"
+	// SourcePublicLink is a public confirmation link (/api/v1/confirmations/).
 	SourcePublicLink Source = "public_link"
-	SourceSystem     Source = "system"
+	// SourceSystem is work done without a request (seeding, jobs).
+	SourceSystem Source = "system"
 )
 
 // Request is the context a change was made in. The HTTP layer puts it on the
@@ -38,6 +45,7 @@ type Request struct {
 	UserAgent string
 }
 
+// requestKey is the context key of the Request.
 type requestKey struct{}
 
 // WithRequest returns ctx carrying r for the events written under it.

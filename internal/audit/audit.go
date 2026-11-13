@@ -43,6 +43,7 @@ func New(id uuid.UUID, actor *uuid.UUID, event, entityType string, entityID uuid
 	}, nil
 }
 
+// marshal is v as JSON, or nil (SQL NULL) for nil.
 func marshal(v any) (json.RawMessage, error) {
 	if v == nil {
 		return nil, nil
@@ -52,6 +53,7 @@ func marshal(v any) (json.RawMessage, error) {
 
 // Execer is satisfied by pgx.Tx, *pgxpool.Pool and *pgx.Conn.
 type Execer interface {
+	// Exec runs sql with args.
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 

@@ -18,6 +18,7 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+// fieldError is ErrInvalid naming field and its problem.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }
@@ -82,6 +83,7 @@ func ParseCursor(s string) (Cursor, error) {
 	return Cursor{At: t.UTC(), ID: u}, nil
 }
 
+// The list's page sizes and the days' format.
 const (
 	DefaultPageSize = 50
 	MaxPageSize     = 200
