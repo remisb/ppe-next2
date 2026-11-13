@@ -65,16 +65,23 @@ type ImportRowError struct {
 	Err   error
 }
 
+// Error is the card's own error's message.
 func (e *ImportRowError) Error() string { return e.Err.Error() }
+
+// Unwrap is the card's own error, so errors.Is sees the sentinel.
 func (e *ImportRowError) Unwrap() error { return e.Err }
+
+// RowIndex is the card's index, which the API answers so the app marks the row.
 func (e *ImportRowError) RowIndex() int { return e.Index }
 
 // ImportSIMs registers SIM cards that were in use before the app, all or
 // none, in one transaction: each numbered on from the SIM counter, received
 // today, in its status (Blocked included, holder or not). A card someone
-// holds gets an open assignment given today with no form, since none was
-// signed in the app; Return and Give SIM later print one. Each card records
-// asset.registered, and a held one asset.given, as Add SIM and Give SIM do.
+// holds gets an open assignment given on its received date with no form,
+// since none was signed in the app: Print Form builds one for it when asked
+// (Form, dated ImportedFormDate, never stored), and a Give SIM after its
+// return stores one. Each card records asset.registered, and a held one
+// asset.given, as Add SIM and Give SIM do.
 func (s *Service) ImportSIMs(ctx context.Context, p ImportParams, actor uuid.UUID) (ImportResult, error) {
 	if actor == uuid.Nil {
 		return ImportResult{}, fieldError("actor", "is required")

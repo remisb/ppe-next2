@@ -50,21 +50,29 @@ func BumpOf(a Asset) *Bump {
 	return nil
 }
 
-// Repository is the persistence the asset service needs. Reads return live
-// assets that are not written off; implementations translate storage errors
-// to this package's sentinels and never validate.
+// Repository is the persistence the asset service needs. Reads of assets
+// return live ones, neither deleted nor written off, except ByEmployee, which
+// keeps every assignment the employee had, and SIMOwner and SIMOwners, which
+// compare as the unique SIM No. index does (not deleted). Implementations
+// translate storage errors to this package's sentinels and never validate.
 type Repository interface {
 	// Create inserts a, records its number as used, raises the counter when
 	// bump is set, and writes ev, in one transaction. A number in use is
 	// ErrInventoryNoTaken; a live SIM number, ErrSIMNoTaken.
 	Create(ctx context.Context, a Asset, bump *Bump, ev audit.Event) error
+	// Get is the live asset with its open assignment, or ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (Record, error)
-	// Assignments are the asset's assignments, newest first.
+	// Assignments are the asset's assignments, newest given date first, each
+	// with its signed copies, newest first.
 	Assignments(ctx context.Context, assetID uuid.UUID) ([]Assignment, error)
+	// List is f's page of the register and how many assets f matches in all.
 	List(ctx context.Context, f ListFilter) ([]Record, int, error)
+	// Summary counts kind's live assets for the register's tiles and lists
+	// their providers.
 	Summary(ctx context.Context, kind Kind) (Summary, error)
 	// ByNumber matches q, spaces ignored, against SIM, phone and inventory
-	// numbers, case-insensitively, among assets of kinds.
+	// numbers, case-insensitively, among assets of kinds, by inventory
+	// number, at most limit.
 	ByNumber(ctx context.Context, q string, kinds []Kind, limit int) ([]Record, error)
 	// ByEmployee is the employee's assignments, open first, then newest.
 	ByEmployee(ctx context.Context, employeeID uuid.UUID) ([]Held, error)
@@ -78,7 +86,8 @@ type Repository interface {
 	// SIMOwner is the live asset with SIM number simNo, as simKey compares
 	// it, or ErrNotFound.
 	SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error)
-	// SIMOwners are the live assets whose SIM numbers have the simKeys keys, by key.
+	// SIMOwners are the live assets whose SIM numbers' simKey is among keys,
+	// by key.
 	SIMOwners(ctx context.Context, keys []string) (map[string]uuid.UUID, error)
 	// SIMCodes are the live SIM card's sealed PIN and PUK with its SIM No.;
 	// ErrNotFound when there is no such card, ErrNoSIMCodes when it has none.
@@ -96,16 +105,19 @@ type Repository interface {
 	// DeleteSIMCodes forgets the asset's codes and writes ev, or is
 	// ErrNoSIMCodes when it has none.
 	DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error
-	// Update locks the asset and its open assignment, applies m and writes the
-	// asset (recording a new inventory number as used) and its events.
+	// Update locks the asset and its open assignment, applies m and, when m
+	// returns events, writes the asset (recording a new inventory number as
+	// used) and them; no events writes nothing.
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Record, error)
 	// Give locks the asset and its open assignment, share-locks the live
-	// employee (ErrEmployeeNotFound), calls fn, and writes the asset, the new
-	// assignment and the events. A second open assignment is ErrAlreadyGiven.
+	// employee (ErrEmployeeNotFound), calls fn, and writes the asset (when fn
+	// changed it), the new assignment and the events. A second open
+	// assignment is ErrAlreadyGiven.
 	Give(ctx context.Context, assetID, employeeID uuid.UUID, fn GiveFunc) (Assignment, error)
 	// ImportSIMs writes each item as Create does, its codes and its
-	// assignment, the holder share-locked as Give does, in one transaction, kept only when
-	// commit is set. An item's failure is an *ImportRowError with its index.
+	// assignment, the holder share-locked as Give does, in one transaction,
+	// kept only when commit is set. An item's failure is an *ImportRowError
+	// with its index.
 	ImportSIMs(ctx context.Context, items []Imported, commit bool) error
 	// UpdateOpen locks the asset and its open assignment, calls fn and writes
 	// the assignment's return and Not Returned fields and the events.

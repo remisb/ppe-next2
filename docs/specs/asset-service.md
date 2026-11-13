@@ -45,7 +45,7 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `inventory_no` | Required. Unique over every asset ever created; see [Numbers](#numbers) |
 | `name` | EQUIPMENT: required. SIM: null (a card is named by its numbers) |
 | `serial_no` | EQUIPMENT, optional. Not unique (§15 does not ask for it) |
-| `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4). Unique among assets not soft-deleted, compared with spaces removed and letters in either case |
+| `sim_no` | SIM: required, text, stored as typed after trimming outer spaces, so leading zeros stay (§4); Scan SIMs stores it without spaces, in capitals. Unique among assets not soft-deleted, compared with spaces removed, letters in either case and without a 20-character ICCID's filler F (`simKey`, migration 0041) |
 | `phone_no` | SIM, optional at registration (§4) and to give: a card may be given before the provider assigns its number, the form's number blank |
 | `provider` | SIM: required |
 | `plan` | SIM, optional; a card without one is given with the form's plan left blank |
@@ -54,7 +54,7 @@ others if ADR 0001 is accepted), routes in `cmd/api/asset-routes.go`.
 | `received_date` | SIM: the date it arrived from the provider, default today in the organisation timezone |
 | `comment` | Optional free text, up to 2000. Also where another location is noted (§3) |
 | `written_off_at`, `written_off_by_user_id` | Reserved for write-off, not used until it is decided |
-| `created_*`, `updated_*`, `deleted_*` | As every table; soft delete is for an asset registered by mistake and refused while it has any assignment |
+| `created_*`, `updated_*`, `deleted_*` | As every table; reads leave out deleted assets. Deleting an asset (for one registered by mistake, refused while it has any assignment) is not built: no route or service method sets `deleted_*` |
 
 ### Assignment — table `asset_assignments`
 
@@ -74,8 +74,9 @@ Partial unique index: `(asset_id) WHERE returned_date IS NULL`. CHECKs keep the 
 three columns, the Not Returned fields and the return fields each all set or all null, a
 form only with `paper_form_signed`, and `returned_date >= given_date`. Assignments are
 never deleted or overwritten: the trigger `asset_assignments_guard` refuses a DELETE, a
-change to the giving's columns, a second Not Returned mark and any change to a returned
-assignment, and `ppe_app` has no DELETE on the table. Only the return and Not Returned
+change to the giving's columns (except whose it is, which only Merge Employees changes, under
+`SET LOCAL ppe.employee_merge = on`, migration 0052), a second Not Returned mark and any
+change to a returned assignment, and `ppe_app` has no DELETE on the table. Only the return and Not Returned
 columns are set later, each once. The Not Returned and return comments may be empty.
 
 An assignment read carries `employee_name`, the employee's name now, read from
@@ -123,8 +124,8 @@ but the add-on roles Equipment Assignments, Testers and Personnel Documents (eve
 user saw SIMs), and `sim_cards.manage` for every role with `assets.manage`.
 
 **SIM cards need `sim_cards.read`**, which Administrator, Manager and Employee hold. Without
-it, as without `equipment.read` for equipment below: the SIM register, its tiles, its PDF and
-Add SIM are 403 (`asset.ErrSIMsNotPermitted`), every route on one SIM card is 404, search and
+it, as without `equipment.read` for equipment below: the SIM register, its tiles and Add SIM
+are 403 (`asset.ErrSIMsNotPermitted`; the register's PDF is refused by its route's permission), every route on one SIM card is 404, search and
 the employee's assets leave SIMs out, and the apps show no SIM Cards screen (its address
 shows Equipment, or the start screen), no Given SIM section, no SIM figures and no SIM Cards
 tile in App Launcher. Scan SIMs' Scan needs `sim_cards.manage`.
@@ -311,12 +312,12 @@ SHARE`, and the service checks, in this order, answering the first that fails:
 
 | Check | Answer |
 | --- | --- |
-| Asset live and not written off | 404 |
+| Asset live and not written off (the route, before anything else) | 404 |
+| The request's own fields, before anything is locked: `employee_id` given, the given date not in the future, the plan's length and the value's range | 400 |
 | Employee live (read with the lock) | 404 `ErrEmployeeNotFound` |
 | No open assignment | 409 `ErrAlreadyGiven`: *This SIM card has already been given to another employee. Select another SIM card.* (§7) |
 | SIM: status Active | 409 `ErrNotActive`, saying Not Activated or Blocked; a returned blocked card must be unblocked with the provider and set Active first (§12) |
 | Form data complete (a value, for a SIM and for EQUIPMENT needing a form; a SIM's phone number and plan are optional) | 400, naming the field |
-| Given date not in the future | 400 |
 | Form needed: `paper_form_signed` true | 400 |
 | Form needed: `form_hash` equals the hash of the form built now | 409 `ErrFormChanged`: print the updated form |
 | No form needed (furniture, other): `paper_form_signed` false and no `form_hash` | 400 |
@@ -356,7 +357,7 @@ by the API from its mail template, `sim.activation` or `sim.blocking`
 ([mail-template-service.md](mail-template-service.md)), which administrators edit on Mail
 Templates.
 
-- `GET /api/v1/assets/{id}/emails/{activation|blocking}` (`assets.manage`) returns
+- `GET /api/v1/assets/{id}/emails/{activation|blocking}` (`sim_cards.manage`) returns
   `{to, cc, subject, body, missing}`. `asset.Service.PrepareEmail` gives the `asset.Mailer` the
   card's numbers, plan and provider, its holder, the user and today.
 - The composition root adds the provider's e-mail, the provider's default plan for a card
@@ -369,7 +370,7 @@ Templates.
 
 The first copy or **Send Email** of each opening records `asset.activation_email_prepared` or
 `asset.blocking_email_prepared` (`POST /api/v1/assets/{id}/emails/{kind}/copied`,
-`assets.manage`, 204). The event holds the SIM and phone numbers, the provider and, when the
+`sim_cards.manage`, 204). The event holds the SIM and phone numbers, the provider and, when the
 card is held, the assignment and its holder.
 
 The default blocking subject is `SIM blocking request - {{sim.phone_number}}`, and its body
@@ -401,7 +402,8 @@ stays with its assignment when the asset later goes to someone else.
 - **Reading** a copy streams it through the API as an attachment
   (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control:
   private, no-store`), with the type checked on upload: never shown inside the page, so the
-  CSP is unchanged. Anyone signed in may read it, as they read the form.
+  CSP is unchanged. Anyone who may see the asset (its kind's read permission) may read it,
+  as they read the form.
 - **Assignments** say `signed_copy_uploaded`; the asset's page also lists `signed_copies`,
   newest first, with the uploader's name. The register's Documents column and the employee
   page show **Signed Copy Uploaded** or **Signed Copy Missing** for a holding on a form, and
@@ -450,7 +452,7 @@ item (403 for the other kind's; see Actions).
 
 The return and the mark act on the asset's only open assignment, so they are the asset's
 routes (the contract's aggregate rule). `GET /api/v1/assets/{id}` carries the assignments
-because a `GET /assets/{id}/…` route would clash with `GET /assets/by-number/{q}` in
+because `GET /assets/{id}/assignments` would clash with `GET /assets/by-number/{q}` in
 ServeMux.
 
 `GET /api/v1/assets` takes query parameters, the
@@ -469,9 +471,10 @@ total}`.
 
 Entity type `asset`, entity id the asset's, so an asset's Changes show its whole story:
 `asset.registered`, `asset.updated`, `asset.status_changed`, `asset.given`, `asset.returned`,
-`asset.marked_not_returned`, `asset.signed_copy_uploaded`, and two that change nothing but are
+`asset.marked_not_returned`, `asset.signed_copy_uploaded`, and three that change nothing but are
 the user's activity: `asset.form_printed` (employee, given date and document hash; on a
-reprint also the assignment) and `asset.blocking_email_prepared`; and, for PIN and PUK,
+reprint also the assignment), `asset.activation_email_prepared` and
+`asset.blocking_email_prepared`; and, for PIN and PUK,
 `asset.sim_codes_changed` (`{"sim_codes": "set"|"cleared"}`) and `asset.sim_codes_shown`
 (the SIM No.), never the codes. Assignment
 events name the assignment and employee ids, the employee's name and the dates. They are in
@@ -483,8 +486,8 @@ Giving that fills a missing plan or value records `asset.updated` before `asset.
 
 A form kind per asset kind or category (SIM, computer equipment). Each has versioned
 templates, like the record's wording versions, so a template can be added or reworded
-without changing the process. The SIM form carries the employee's and the company's details
-(per template), SIM No., Phone No., Inventory No., provider, plan, non-return value and
+without changing the process. The SIM form carries the employee's details (the company's once
+a template supplies them, open decision 3; the plain layout has none), SIM No., Phone No., Inventory No., provider, plan, non-return value and
 currency, the given date and signature lines. The stored form is built only from the
 snapshot. Until the company supplies the templates, a plain layout with these fields is used
 and marked as such.

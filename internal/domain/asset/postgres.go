@@ -15,24 +15,30 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// PostgresRepository stores assets, their numbers and assignments (migration
-// 0029). The employee's name on an assignment is read from employees, the
-// shared kernel, as orders read it.
+// PostgresRepository stores assets, the inventory numbers ever used and the
+// counters, and assignments (migration 0029), signed copies (0030) and the
+// sealed PIN and PUK (asset_sim_codes, 0041), with their audit events. The
+// employee's name on an assignment is read from employees, the shared kernel,
+// as orders read it, and an uploader's from users.
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is a PostgresRepository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// assetColumns are an asset's columns (alias a), in assetDest's order.
 const assetColumns = `a.id, a.kind, a.category, a.inventory_no, a.name, a.serial_no, a.sim_no, a.phone_no, a.provider, a.plan,
 	a.non_return_value_cents, a.currency, a.connection_status, a.received_date::text, a.comment, a.written_off_at,
 	a.written_off_by_user_id, a.created_at, a.updated_at, a.deleted_at, a.created_by_user_id, a.updated_by_user_id,
 	a.deleted_by_user_id`
 
+// assignmentColumns are an assignment's columns (alias o, its employee e),
+// the holder's name and whether a signed copy exists, in nullAssignment's order.
 const assignmentColumns = `o.id, o.asset_id, o.employee_id, o.given_date::text, o.given_by_user_id, o.created_at, o.comment,
 	o.form, o.form_template_version, o.document_hash, o.paper_form_signed, o.not_returned_at, o.not_returned_by_user_id,
 	o.not_returned_comment, o.whereabouts, o.returned_date::text, o.returned_at, o.returned_by_user_id, o.return_comment,
@@ -47,6 +53,7 @@ const recordFrom = ` FROM assets a
 // live keeps the assets in current accounting.
 const live = `a.deleted_at IS NULL AND a.written_off_at IS NULL`
 
+// assetDest are a's fields to scan assetColumns into.
 func assetDest(a *Asset) []any {
 	return []any{&a.ID, &a.Kind, &a.Category, &a.InventoryNo, &a.Name, &a.SerialNo, &a.SimNo, &a.PhoneNo, &a.Provider, &a.Plan,
 		&a.NonReturnValueCents, &a.Currency, &a.ConnectionStatus, &a.ReceivedDate, &a.Comment, &a.WrittenOffAt,
@@ -64,6 +71,7 @@ type nullAssignment struct {
 	a                                Assignment
 }
 
+// dest are n's fields to scan assignmentColumns into.
 func (n *nullAssignment) dest() []any {
 	return []any{&n.id, &n.assetID, &n.employeeID, &n.givenDate, &n.givenBy, &n.createdAt, &n.comment,
 		&n.a.Form, &n.a.FormTemplateVersion, &n.a.DocumentHash, &n.signed, &n.a.NotReturnedAt, &n.a.NotReturnedByUserID,
@@ -71,6 +79,7 @@ func (n *nullAssignment) dest() []any {
 		&n.name, &n.copied}
 }
 
+// get is the scanned assignment, or nil when the LEFT JOIN found none.
 func (n *nullAssignment) get() *Assignment {
 	if n.id == nil {
 		return nil
@@ -82,10 +91,13 @@ func (n *nullAssignment) get() *Assignment {
 	return &a
 }
 
+// utc puts a's timestamps in UTC.
 func utc(a *Asset) {
 	a.CreatedAt, a.UpdatedAt = a.CreatedAt.UTC(), a.UpdatedAt.UTC()
 }
 
+// scanRecord reads assetColumns and assignmentColumns; ErrNotFound when
+// there is no row.
 func scanRecord(row pgx.Row) (Record, error) {
 	var r Record
 	var n nullAssignment
@@ -100,6 +112,7 @@ func scanRecord(row pgx.Row) (Record, error) {
 	return r, nil
 }
 
+// scanRecords reads every row as scanRecord does and closes rows; [] when none.
 func scanRecords(rows pgx.Rows) ([]Record, error) {
 	defer rows.Close()
 	out := make([]Record, 0)
@@ -113,6 +126,7 @@ func scanRecords(rows pgx.Rows) ([]Record, error) {
 	return out, rows.Err()
 }
 
+// scanAssignment reads assignmentColumns; ErrNotFound when there is no row.
 func scanAssignment(row pgx.Row) (Assignment, error) {
 	var n nullAssignment
 	if err := row.Scan(n.dest()...); err != nil {
@@ -124,6 +138,7 @@ func scanAssignment(row pgx.Row) (Assignment, error) {
 	return *n.get(), nil
 }
 
+// Create inserts the asset as insertAsset does, in a transaction of its own.
 func (r *PostgresRepository) Create(ctx context.Context, a Asset, bump *Bump, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		return insertAsset(ctx, tx, a, bump, ev)
@@ -156,6 +171,8 @@ func insertAsset(ctx context.Context, tx pgx.Tx, a Asset, bump *Bump, ev audit.E
 // errDryRun rolls back an import that was only checked.
 var errDryRun = errors.New("asset: import checked, not kept")
 
+// ImportSIMs writes the items in one transaction, rolled back by errDryRun
+// unless commit is set; the first item refused ends it as an *ImportRowError.
 func (r *PostgresRepository) ImportSIMs(ctx context.Context, items []Imported, commit bool) error {
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		for i, it := range items {
@@ -178,6 +195,8 @@ func (r *PostgresRepository) ImportSIMs(ctx context.Context, items []Imported, c
 	return translate(err)
 }
 
+// importOne writes one item: the asset, its codes and, when held, its
+// assignment and asset.given, the holder share-locked.
 func importOne(ctx context.Context, tx pgx.Tx, it Imported) error {
 	if err := insertAsset(ctx, tx, it.Asset, it.Bump, it.Registered); err != nil {
 		return err
@@ -226,11 +245,14 @@ func useNumber(ctx context.Context, tx pgx.Tx, id uuid.UUID, number string, at t
 	return nil
 }
 
+// Get reads the live asset and its open assignment.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Record, error) {
 	return scanRecord(r.pool.QueryRow(ctx, `SELECT `+assetColumns+`, `+assignmentColumns+recordFrom+`
 		WHERE a.id = $1 AND `+live, id))
 }
 
+// Assignments reads the asset's assignments, then their signed copies in a
+// second query.
 func (r *PostgresRepository) Assignments(ctx context.Context, assetID uuid.UUID) ([]Assignment, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+assignmentColumns+` FROM asset_assignments o
 		JOIN employees e ON e.id = o.employee_id
@@ -274,9 +296,12 @@ func (r *PostgresRepository) Assignments(ctx context.Context, assetID uuid.UUID)
 	return out, copies.Err()
 }
 
+// signedCopyColumns are a signed copy's columns (alias c) and its uploader's
+// name (u), in scanSignedCopy's order.
 const signedCopyColumns = `c.id, c.assignment_id, c.object_key, c.file_name, c.content_type, c.size_bytes, c.sha256,
 	c.uploaded_at, c.uploaded_by_user_id, u.name`
 
+// scanSignedCopy reads signedCopyColumns; ErrNotFound when there is no row.
 func scanSignedCopy(row pgx.Row) (SignedCopy, error) {
 	var c SignedCopy
 	err := row.Scan(&c.ID, &c.AssignmentID, &c.ObjectKey, &c.FileName, &c.ContentType, &c.SizeBytes, &c.SHA256,
@@ -288,6 +313,7 @@ func scanSignedCopy(row pgx.Row) (SignedCopy, error) {
 	return c, err
 }
 
+// SignedCopy reads copyID when it is a copy of the asset's assignment.
 func (r *PostgresRepository) SignedCopy(ctx context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error) {
 	return scanSignedCopy(r.pool.QueryRow(ctx, `SELECT `+signedCopyColumns+` FROM asset_signed_copies c
 		JOIN asset_assignments o ON o.id = c.assignment_id
@@ -295,6 +321,8 @@ func (r *PostgresRepository) SignedCopy(ctx context.Context, assetID, assignment
 		WHERE c.id = $1 AND c.assignment_id = $2 AND o.asset_id = $3`, copyID, assignmentID, assetID))
 }
 
+// AddSignedCopy locks the asset, reads its assignment, calls fn and inserts
+// the copy and its event, in one transaction.
 func (r *PostgresRepository) AddSignedCopy(ctx context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		cur, err := lock(ctx, tx, assetID)
@@ -325,6 +353,8 @@ func (r *PostgresRepository) AddSignedCopy(ctx context.Context, assetID, assignm
 	}))
 }
 
+// List counts what f matches, then reads f's page in orderBy's order. The
+// query matches numbers without spaces and names as typed.
 func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Record, int, error) {
 	where := live + ` AND a.kind = $1`
 	args := []any{f.Kind}
@@ -413,6 +443,8 @@ func contains(q string) string {
 	return "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q) + "%"
 }
 
+// Summary counts kind's live assets (all, in the office, held, marked Not
+// Returned) and reads their providers in order.
 func (r *PostgresRepository) Summary(ctx context.Context, kind Kind) (Summary, error) {
 	var s Summary
 	err := r.pool.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE o.id IS NULL), count(o.id),
@@ -433,6 +465,7 @@ func (r *PostgresRepository) Summary(ctx context.Context, kind Kind) (Summary, e
 	return s, err
 }
 
+// ByNumber filters live assets of kinds by number with ILIKE.
 func (r *PostgresRepository) ByNumber(ctx context.Context, q string, kinds []Kind, limit int) ([]Record, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+assetColumns+`, `+assignmentColumns+recordFrom+`
 		WHERE `+live+` AND a.kind = ANY($3) AND (replace(coalesce(a.sim_no, ''), ' ', '') ILIKE $1
@@ -453,6 +486,7 @@ func kindStrings(kinds []Kind) []string {
 	return out
 }
 
+// ByEmployee reads every assignment the employee had, with its asset.
 func (r *PostgresRepository) ByEmployee(ctx context.Context, employeeID uuid.UUID) ([]Held, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+assignmentColumns+`, `+assetColumns+` FROM asset_assignments o
 		JOIN employees e ON e.id = o.employee_id
@@ -477,14 +511,18 @@ func (r *PostgresRepository) ByEmployee(ctx context.Context, employeeID uuid.UUI
 	return out, rows.Err()
 }
 
+// Employee reads a live employee, unlocked.
 func (r *PostgresRepository) Employee(ctx context.Context, id uuid.UUID) (EmployeeView, error) {
 	return readEmployee(ctx, r.pool, id, "")
 }
 
+// querier is a pool or a transaction.
 type querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
+// readEmployee reads live employee id with lock appended ("" or "FOR
+// SHARE"); ErrEmployeeNotFound when there is none.
 func readEmployee(ctx context.Context, q querier, id uuid.UUID, lock string) (EmployeeView, error) {
 	var e EmployeeView
 	err := q.QueryRow(ctx, `SELECT id, first_name, last_name, code FROM employees
@@ -495,6 +533,7 @@ func readEmployee(ctx context.Context, q querier, id uuid.UUID, lock string) (Em
 	return e, err
 }
 
+// LastNumber reads prefix's row of asset_number_counters.
 func (r *PostgresRepository) LastNumber(ctx context.Context, prefix string) (int64, error) {
 	var last int64
 	err := r.pool.QueryRow(ctx, `SELECT last FROM asset_number_counters WHERE prefix = $1`, prefix).Scan(&last)
@@ -504,6 +543,7 @@ func (r *PostgresRepository) LastNumber(ctx context.Context, prefix string) (int
 	return last, err
 }
 
+// NumberOwner reads asset_numbers, which keeps every number ever used.
 func (r *PostgresRepository) NumberOwner(ctx context.Context, number string) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT asset_id FROM asset_numbers WHERE upper(number) = upper($1)`, number).Scan(&id)
@@ -516,6 +556,7 @@ func (r *PostgresRepository) NumberOwner(ctx context.Context, number string) (uu
 // simKeySQL is simKey in SQL, the expression of assets_sim_no_live_idx.
 const simKeySQL = `regexp_replace(upper(replace(sim_no, ' ', '')), 'F$', '')`
 
+// SIMOwners reads the assets whose simKeySQL is among keys.
 func (r *PostgresRepository) SIMOwners(ctx context.Context, keys []string) (map[string]uuid.UUID, error) {
 	out := map[string]uuid.UUID{}
 	if len(keys) == 0 {
@@ -538,6 +579,7 @@ func (r *PostgresRepository) SIMOwners(ctx context.Context, keys []string) (map[
 	return out, rows.Err()
 }
 
+// SIMCodes reads the live SIM card with its row of asset_sim_codes, if any.
 func (r *PostgresRepository) SIMCodes(ctx context.Context, assetID uuid.UUID) (SealedCodes, error) {
 	c := SealedCodes{AssetID: assetID}
 	var keyID *int16
@@ -558,6 +600,7 @@ func (r *PostgresRepository) SIMCodes(ctx context.Context, assetID uuid.UUID) (S
 	return c, nil
 }
 
+// PutSIMCodes upserts the codes and inserts ev in one transaction.
 func (r *PostgresRepository) PutSIMCodes(ctx context.Context, c SealedCodes, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := putCodes(ctx, tx, c); err != nil {
@@ -567,6 +610,7 @@ func (r *PostgresRepository) PutSIMCodes(ctx context.Context, c SealedCodes, ev 
 	}))
 }
 
+// putCodes inserts c's row of asset_sim_codes, or replaces the one there.
 func putCodes(ctx context.Context, tx pgx.Tx, c SealedCodes) error {
 	_, err := tx.Exec(ctx, `INSERT INTO asset_sim_codes (asset_id, sealed, key_id, updated_at, updated_by_user_id)
 		VALUES ($1, $2, $3, $4, $5)
@@ -576,6 +620,7 @@ func putCodes(ctx context.Context, tx pgx.Tx, c SealedCodes) error {
 	return err
 }
 
+// SIMCodesNotUnder reads one page of asset_sim_codes rows under another key.
 func (r *PostgresRepository) SIMCodesNotUnder(ctx context.Context, keyID int16, after uuid.UUID, limit int) ([]SealedCodes, error) {
 	rows, err := r.pool.Query(ctx, `SELECT asset_id, sealed, key_id, updated_at, updated_by_user_id FROM asset_sim_codes
 		WHERE key_id <> $1 AND asset_id > $2 ORDER BY asset_id LIMIT $3`, keyID, after, limit)
@@ -593,6 +638,8 @@ func (r *PostgresRepository) SIMCodesNotUnder(ctx context.Context, keyID int16, 
 	return out, err
 }
 
+// ResealSIMCodes updates the sealed codes and key only where they are still
+// old, so a change made meanwhile wins.
 func (r *PostgresRepository) ResealSIMCodes(ctx context.Context, c SealedCodes, old []byte) (bool, error) {
 	tag, err := r.pool.Exec(ctx, `UPDATE asset_sim_codes SET sealed = $2, key_id = $3 WHERE asset_id = $1 AND sealed = $4`,
 		c.AssetID, c.Sealed, c.KeyID, old)
@@ -602,6 +649,8 @@ func (r *PostgresRepository) ResealSIMCodes(ctx context.Context, c SealedCodes, 
 	return tag.RowsAffected() == 1, nil
 }
 
+// DeleteSIMCodes deletes the asset's row of asset_sim_codes and inserts ev
+// in one transaction.
 func (r *PostgresRepository) DeleteSIMCodes(ctx context.Context, assetID uuid.UUID, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `DELETE FROM asset_sim_codes WHERE asset_id = $1`, assetID)
@@ -615,6 +664,7 @@ func (r *PostgresRepository) DeleteSIMCodes(ctx context.Context, assetID uuid.UU
 	}))
 }
 
+// SIMOwner reads the asset whose simKeySQL equals simNo's simKey.
 func (r *PostgresRepository) SIMOwner(ctx context.Context, simNo string) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT id FROM assets
@@ -652,6 +702,8 @@ func lock(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Record, error) {
 	return r, nil
 }
 
+// Update locks the asset (lock), applies m and writes the asset and m's
+// events in the same transaction.
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Record, error) {
 	var out Record
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -702,6 +754,9 @@ func writeAsset(ctx context.Context, tx pgx.Tx, cur, next Asset) error {
 	return err
 }
 
+// Give locks the asset, share-locks the employee, calls fn and writes the
+// asset when fn stamped it, the assignment and the events, in one
+// transaction.
 func (r *PostgresRepository) Give(ctx context.Context, assetID, employeeID uuid.UUID, fn GiveFunc) (Assignment, error) {
 	var out Assignment
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -736,6 +791,7 @@ func (r *PostgresRepository) Give(ctx context.Context, assetID, employeeID uuid.
 	return out, translate(err)
 }
 
+// insertAssignment inserts a new, open assignment.
 func insertAssignment(ctx context.Context, tx pgx.Tx, a Assignment) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO asset_assignments (id, asset_id, employee_id, given_date, given_by_user_id, created_at, comment,
@@ -746,6 +802,9 @@ func insertAssignment(ctx context.Context, tx pgx.Tx, a Assignment) error {
 	return err
 }
 
+// UpdateOpen locks the asset and its open assignment, calls fn and writes
+// the assignment's Not Returned and return columns and the events, in one
+// transaction. The trigger of migration 0029 lets each be set only once.
 func (r *PostgresRepository) UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error) {
 	var out Assignment
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -774,6 +833,7 @@ func (r *PostgresRepository) UpdateOpen(ctx context.Context, assetID uuid.UUID, 
 	return out, translate(err)
 }
 
+// nullJSON is b, or SQL NULL when b is nil (an assignment without a form).
 func nullJSON(b []byte) any {
 	if b == nil {
 		return nil
@@ -781,10 +841,16 @@ func nullJSON(b []byte) any {
 	return b
 }
 
+// Record inserts ev alone.
 func (r *PostgresRepository) Record(ctx context.Context, ev audit.Event) error {
 	return translate(audit.Insert(ctx, r.pool, ev))
 }
 
+// translate maps Postgres errors to this package's sentinels: a unique
+// violation to ErrSIMNoTaken (the live SIM No. index), ErrAlreadyGiven (one
+// open assignment per asset) or else ErrInventoryNoTaken, a foreign key (the
+// actor columns) to ErrActorNotFound and a CHECK to ErrInvalid naming it.
+// Others pass as they are.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

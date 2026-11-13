@@ -8,24 +8,40 @@ import (
 )
 
 var (
-	ErrNotFound         = errors.New("asset not found")
-	ErrInvalid          = errors.New("invalid asset")
-	ErrActorNotFound    = errors.New("acting user not found")
+	// ErrNotFound is an asset that is not live or that the reader may not
+	// see (Seen), and an assignment (Form) or signed copy not the asset's.
+	ErrNotFound = errors.New("asset not found")
+	// ErrInvalid wraps every validation failure, naming the field.
+	ErrInvalid = errors.New("invalid asset")
+	// ErrActorNotFound is an acting user the actor foreign keys do not find.
+	ErrActorNotFound = errors.New("acting user not found")
+	// ErrEmployeeNotFound is a holder who is not a live employee.
 	ErrEmployeeNotFound = errors.New("employee not found")
-	ErrNoForm           = errors.New("this assignment has no form")
+	// ErrNoForm is an asset or assignment without a form: one that needs none,
+	// or (for a signed copy) an assignment given without one.
+	ErrNoForm = errors.New("this assignment has no form")
 	// ErrInventoryNoTaken and ErrSIMNoTaken come wrapped in a DuplicateError
 	// naming the asset that has the number.
 	ErrInventoryNoTaken = errors.New("inventory number already used")
 	ErrSIMNoTaken       = errors.New("SIM number already registered")
-	ErrAlreadyGiven     = errors.New("asset already given to another employee")
-	ErrNotActive        = errors.New("SIM is not active")
-	ErrNotGiven         = errors.New("asset is not given to anyone")
-	ErrAlreadyMarked    = errors.New("asset is already marked as not returned")
-	ErrFormChanged      = errors.New("the form changed after it was printed")
-	ErrNotPermitted     = errors.New("Equipment & Furniture needs the Equipment Assignments role")
+	// ErrAlreadyGiven refuses giving an asset that has an open assignment.
+	ErrAlreadyGiven = errors.New("asset already given to another employee")
+	// ErrNotActive refuses giving a SIM card that is not Active.
+	ErrNotActive = errors.New("SIM is not active")
+	// ErrNotGiven refuses Return and Mark as Not Returned without an open assignment.
+	ErrNotGiven = errors.New("asset is not given to anyone")
+	// ErrAlreadyMarked refuses marking an assignment Not Returned twice.
+	ErrAlreadyMarked = errors.New("asset is already marked as not returned")
+	// ErrFormChanged refuses Give when the form built now differs from the
+	// one printed (its hash), so the employee signed another.
+	ErrFormChanged = errors.New("the form changed after it was printed")
+	// ErrNotPermitted refuses Equipment & Furniture to a reader without
+	// equipment.read (Sight.Check).
+	ErrNotPermitted = errors.New("Equipment & Furniture needs the Equipment Assignments role")
+	// ErrSIMsNotPermitted refuses SIM cards to a reader without sim_cards.read.
 	ErrSIMsNotPermitted = errors.New("SIM cards need the permission See SIM Cards")
-	// ErrMayNotChange: SIMs need Manage SIMs, Equipment & Furniture Manage
-	// Equipment & Furniture.
+	// ErrMayNotChange: SIM cards need Manage SIMs (sim_cards.manage),
+	// Equipment & Furniture Manage Equipment & Furniture (assets.manage).
 	ErrMayNotChange = errors.New("your roles do not allow changing this kind of asset")
 	// Signed copies (slice 5).
 	ErrAssignmentNotFound = errors.New("assignment not found")
@@ -37,6 +53,7 @@ var (
 	ErrSIMCodesUnavailable = errors.New("PIN and PUK cannot be kept or shown: the API has no API_SIM_CODES_KEY")
 )
 
+// fieldError is ErrInvalid for field, saying its problem.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }
@@ -48,6 +65,11 @@ type DuplicateError struct {
 	Existing uuid.UUID
 }
 
-func (e *DuplicateError) Error() string         { return e.Err.Error() }
-func (e *DuplicateError) Unwrap() error         { return e.Err }
+// Error is the sentinel's message.
+func (e *DuplicateError) Error() string { return e.Err.Error() }
+
+// Unwrap is the sentinel, so errors.Is sees ErrInventoryNoTaken or ErrSIMNoTaken.
+func (e *DuplicateError) Unwrap() error { return e.Err }
+
+// ExistingID is the asset that has the number, which the API answers as existing_id.
 func (e *DuplicateError) ExistingID() uuid.UUID { return e.Existing }

@@ -33,7 +33,7 @@ const (
 // filter.
 type ListParams struct {
 	Kind        string // SIM or EQUIPMENT, required
-	Q           string // SIM, phone or inventory number, or the holder's name
+	Q           string // SIM, phone or inventory number (spaces ignored), name, serial number or the holder's name
 	Location    string // OFFICE, WITH_EMPLOYEE or UNKNOWN
 	Held        string // "true" keeps the assets someone holds, whereabouts known or not
 	EmployeeID  *uuid.UUID
@@ -93,6 +93,8 @@ type Summary struct {
 	Providers []string `json:"providers"`
 }
 
+// filter checks p and makes it the repository's filter, with the page and
+// page size it asks for (1 and defaultPageSize when blank).
 func (p ListParams) filter() (ListFilter, int, int, error) {
 	f := ListFilter{Kind: Kind(p.Kind), Q: strings.TrimSpace(p.Q), EmployeeID: p.EmployeeID, Provider: strings.TrimSpace(p.Provider)}
 	if !f.Kind.valid() {
@@ -173,6 +175,7 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 	return f, page, size, nil
 }
 
+// positive is s as a whole number of at least 1, def when s is blank.
 func positive(s string, def int, field string) (int, error) {
 	if s == "" {
 		return def, nil

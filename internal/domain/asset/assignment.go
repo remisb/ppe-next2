@@ -53,6 +53,7 @@ type EmployeeView struct {
 	Code      *string
 }
 
+// FullName is the first and last name, as the form and events show it.
 func (e EmployeeView) FullName() string { return e.FirstName + " " + e.LastName }
 
 // FormTemplateVersion is the template new forms are built with. A template
@@ -80,6 +81,8 @@ type Form struct {
 	GivenDate           string       `json:"given_date"`
 }
 
+// FormEmployee is the holder as the form shows them: copied when the asset
+// is given, never updated.
 type FormEmployee struct {
 	FirstName string  `json:"first_name"`
 	LastName  string  `json:"last_name"`

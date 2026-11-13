@@ -16,6 +16,7 @@ const (
 	EmailBlocking   EmailKind = "blocking"
 )
 
+// valid says whether k is activation or blocking.
 func (k EmailKind) valid() bool { return k == EmailActivation || k == EmailBlocking }
 
 // EmailCard is what a SIM card's email is made from: the card's numbers, plan
@@ -52,6 +53,8 @@ type Mailer interface {
 // WithMailer sets what Prepare Activation Email and Prepare Blocking Email use.
 func WithMailer(m Mailer) Option { return func(s *Service) { s.mailer = m } }
 
+// errNoMailer is PrepareEmail on a Service built without WithMailer: a
+// wiring fault, so an opaque 500.
 var errNoMailer = errors.New("asset: no mailer")
 
 // PrepareEmail prepares a SIM card's activation or blocking email from its
@@ -119,6 +122,7 @@ func (s *Service) RecordEmail(ctx context.Context, id uuid.UUID, kind EmailKind,
 	return s.repo.Record(ctx, ev)
 }
 
+// deref is *p, or "" when p is nil.
 func deref(p *string) string {
 	if p == nil {
 		return ""

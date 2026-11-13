@@ -55,6 +55,8 @@ func (s *Service) Seen(ctx context.Context, id uuid.UUID, see Sight) error {
 	return err
 }
 
+// seenKind is the kind of live asset id when the reader may see it, else
+// ErrNotFound.
 func (s *Service) seenKind(ctx context.Context, id uuid.UUID, see Sight) (Kind, error) {
 	r, err := s.repo.Get(ctx, id)
 	if err != nil {

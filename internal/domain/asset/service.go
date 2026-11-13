@@ -30,9 +30,17 @@ const (
 	EventActivationEmailPrepared = "asset.activation_email_prepared"
 	EventBlockingEmailPrepared   = "asset.blocking_email_prepared"
 	auditEntity                  = "asset"
-	maxSuggestTries              = 1000
+	// maxSuggestTries bounds NextNumber's search past the counter.
+	maxSuggestTries = 1000
 )
 
+// Service owns the Company Assets rules: validation, inventory numbers, the
+// connection status, giving with its form, returns, the Not Returned mark,
+// signed copies, the provider emails, the SIM import and Scan SIMs' batches
+// with their sealed PIN and PUK, and the audit events of each. It is built
+// with NewService and stores through a Repository; who may see and change
+// which kind is the caller's Sight and Rights, checked through Seen and
+// Changeable.
 type Service struct {
 	repo   Repository
 	files  files.Store
@@ -43,15 +51,23 @@ type Service struct {
 	loc    *time.Location
 }
 
+// Option configures a Service built by NewService.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock that stamps changes and events (tests).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces the generator of asset, assignment, copy and event IDs (tests).
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithLocation sets the organisation timezone: "today", and so the latest
 // given or return date and Days Held, are its calendar days.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
+// NewService is a Service over repo: the clock is UTC to the microsecond (as
+// Postgres keeps it), IDs are random UUIDs and the organisation timezone UTC.
+// Without WithFiles, WithMailer or WithSealer, signed copies, the provider
+// emails or PIN and PUK are unavailable.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New, loc: time.UTC}
 	for _, o := range opts {
@@ -88,8 +104,11 @@ type HeldView struct {
 	Asset Asset `json:"asset"`
 }
 
+// today is the date in the organisation timezone, YYYY-MM-DD.
 func (s *Service) today() string { return s.now().In(s.loc).Format(time.DateOnly) }
 
+// daysBetween is the whole days from from to to (YYYY-MM-DD); 0 when either
+// is not a date or to is before from.
 func daysBetween(from, to string) int {
 	a, errA := time.Parse(time.DateOnly, from)
 	b, errB := time.Parse(time.DateOnly, to)
@@ -99,6 +118,7 @@ func daysBetween(from, to string) int {
 	return int(b.Sub(a).Hours() / 24)
 }
 
+// assignmentView is a with its Days Held, to today while it is open.
 func (s *Service) assignmentView(a Assignment) AssignmentView {
 	end := s.today()
 	if a.ReturnedDate != nil {
@@ -121,6 +141,7 @@ func (s *Service) view(r Record) View {
 	return v
 }
 
+// event is an audit event name on asset id by actor at at, with a new ID.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (audit.Event, error) {
 	return audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
 }
@@ -159,6 +180,7 @@ func detailsChange(cur, next Asset) (before, after map[string]any) {
 	return before, after
 }
 
+// eqPtr says whether a and b are both nil or point to equal values.
 func eqPtr[T comparable](a, b *T) bool {
 	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
 }
@@ -245,6 +267,8 @@ func (s *Service) newAsset(p CreateParams, actor uuid.UUID) (Asset, error) {
 	return a, nil
 }
 
+// Get is an asset's page: the live asset, where it is, and every assignment
+// with its signed copies, newest first. The caller checks Seen first.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Detail, error) {
 	r, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -353,7 +377,9 @@ func (s *Service) ByEmployee(ctx context.Context, employeeID uuid.UUID, see Sigh
 	return out, nil
 }
 
-// HeldBy is the inventory numbers of the assets an employee holds now.
+// HeldBy is the inventory numbers of the assets an employee holds now, of
+// every kind whatever the reader may see: employee.Holdings, so Delete
+// employee refuses someone who still holds one.
 func (s *Service) HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error) {
 	hs, err := s.repo.ByEmployee(ctx, employeeID)
 	if err != nil {
@@ -476,6 +502,8 @@ type FormParams struct {
 	NonReturnValueCents *int64
 }
 
+// checkForm trims p's plan and checks the employee, the plan's length, the
+// value's range and that the given date is no later than today.
 func (s *Service) checkForm(p *FormParams) error {
 	p.Plan = blankToNil(p.Plan)
 	switch {
@@ -780,6 +808,7 @@ const (
 	OutputPDF   Output = "pdf"
 )
 
+// valid says whether o is print or pdf.
 func (o Output) valid() bool { return o == OutputPrint || o == OutputPDF }
 
 // RecordFormPrinted records asset.form_printed for the form Give would store,

@@ -22,6 +22,7 @@ const (
 	KindEquipment Kind = "EQUIPMENT"
 )
 
+// valid says whether k is SIM or EQUIPMENT.
 func (k Kind) valid() bool { return k == KindSIM || k == KindEquipment }
 
 // Category is an equipment asset's kind of item (assets brief §15).
@@ -65,6 +66,7 @@ const (
 	StatusBlocked      Status = "BLOCKED"
 )
 
+// valid says whether s is one of the three connection statuses.
 func (s Status) valid() bool {
 	return s == StatusNotActivated || s == StatusActive || s == StatusBlocked
 }
@@ -134,6 +136,7 @@ type Asset struct {
 	DeletedByUserID     *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
+// Deleted says whether a is soft-deleted.
 func (a Asset) Deleted() bool { return a.DeletedAt != nil }
 
 // Prefix is the inventory number prefix of the asset's kind and category.
@@ -199,6 +202,7 @@ type CreateParams struct {
 	ConnectionStatus *Status
 }
 
+// Normalize trims every text; a blank optional one becomes nil.
 func (p *Params) Normalize() {
 	p.InventoryNo = strings.TrimSpace(p.InventoryNo)
 	p.Name = blankToNil(p.Name)
@@ -231,6 +235,8 @@ func (p *Params) Validate(kind Kind) error {
 	return p.validateEquipment()
 }
 
+// validateSIM checks a SIM card's fields: no equipment fields, a SIM No. and
+// provider, and a phone number, plan and received date that are well formed.
 func (p *Params) validateSIM() error {
 	switch {
 	case p.Category != nil:
@@ -257,6 +263,8 @@ func (p *Params) validateSIM() error {
 	return nil
 }
 
+// validateEquipment checks equipment's fields: no SIM card fields, a name
+// and a known category.
 func (p *Params) validateEquipment() error {
 	switch {
 	case p.SimNo != nil, p.PhoneNo != nil, p.Provider != nil, p.Plan != nil, p.ReceivedDate != nil:
@@ -321,11 +329,13 @@ func compactSIM(s string) string { return strings.ToUpper(strings.ReplaceAll(s, 
 // typed number may leave out (migration 0041).
 func simKey(s string) string { return strings.TrimSuffix(compactSIM(s), "F") }
 
+// isDate says whether s is a date, YYYY-MM-DD.
 func isDate(s string) bool {
 	_, err := time.Parse(time.DateOnly, s)
 	return err == nil
 }
 
+// blankToNil is s trimmed, or nil when s is nil or blank.
 func blankToNil(s *string) *string {
 	if s == nil {
 		return nil
