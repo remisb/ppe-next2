@@ -16,6 +16,8 @@ type Repository interface {
 	// Get returns the settings, or the zero Settings when none are stored.
 	Get(ctx context.Context) (Settings, error)
 	// Update locks the settings (the zero Settings when none are stored),
-	// applies m and writes the result and its event.
+	// applies m and, when m returns an event, writes the result (inserting the
+	// row the first time, the providers again when they changed) and the
+	// event; no event writes nothing.
 	Update(ctx context.Context, m Mutation) (Settings, error)
 }

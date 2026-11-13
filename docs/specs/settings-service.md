@@ -105,10 +105,10 @@ No row reads as the defaults (no group), so a database emptied by
 The first save inserts the row (`ON CONFLICT (singleton) DO UPDATE` for two at once);
 later ones lock it `FOR UPDATE`. A save that changes the group records
 `settings.supplier_chat_changed` with the old and new `{name, link}`, entity type
-`settings` and a fixed entity id (`settings.AuditEntityID`); one that changes the default
-SIM providers records `settings.sim_providers_changed` with the old and new
+`settings` and a fixed entity id (`settings.AuditEntityID`); one that changes the
+SIM providers, their default or the default Non-return Value records `settings.sim_providers_changed` with the old and new
 `{providers, default_provider, default_non_return_value_cents}`, each provider
 `{name, email, default_plan}` (events before migration 0039 list the providers by name with
 one `default_plan` for all, before 0034 lack the value, before 0035 the plan; older ones,
 `settings.default_sim_provider_changed`, hold `{provider}`); one that changes the company
-records `settings.company_changed` with `{name}`. An unchanged save writes nothing, and each save keeps the other setting.
+records `settings.company_changed` with `{name}`. An unchanged save writes nothing, and each save keeps the other settings.

@@ -10,9 +10,15 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
+// The settings' audit events, all on AuditEntityID.
 const (
-	EventCompanyChanged      = "settings.company_changed"
+	// EventCompanyChanged: the company's name, before and after as {name}.
+	EventCompanyChanged = "settings.company_changed"
+	// EventSupplierChatChanged: the supplier's group, before and after as
+	// {name, link}.
 	EventSupplierChatChanged = "settings.supplier_chat_changed"
+	// EventSIMProvidersChanged: the providers, the default one and the default
+	// Non-return Value, before and after.
 	EventSIMProvidersChanged = "settings.sim_providers_changed"
 	// EventDefaultSIMProviderChanged was recorded when Add SIM set the default
 	// provider (migration 0031) and is no longer written; the audit log still
@@ -25,17 +31,23 @@ const (
 // one set, so it is a fixed id rather than a row's.
 var AuditEntityID = uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://workwear.gavort.nl/settings"))
 
+// Service holds the settings' use cases.
 type Service struct {
 	repo  Repository
 	now   func() time.Time
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the settings service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -44,6 +56,7 @@ func NewService(repo Repository, opts ...Option) *Service {
 	return s
 }
 
+// Get is the settings, the defaults when none are stored.
 func (s *Service) Get(ctx context.Context) (Settings, error) { return s.repo.Get(ctx) }
 
 // UpdateCompany sets, changes or (empty) clears the company's name,

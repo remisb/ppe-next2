@@ -21,10 +21,12 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the settings repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the app_settings columns read writes and scans, in its order.
 const columns = `company_name, supplier_chat_name, supplier_chat_link, default_sim_provider, default_sim_non_return_value_cents,
 	updated_at, updated_by_user_id`
 
@@ -62,10 +64,13 @@ func read(ctx context.Context, q querier, lock bool) (Settings, error) {
 	return s, err
 }
 
+// Get reads the settings, the defaults when there is no row.
 func (r *PostgresRepository) Get(ctx context.Context) (Settings, error) {
 	return read(ctx, r.pool, false)
 }
 
+// Update locks the row, applies m and, when m returns an event, upserts the
+// row, writes the providers again when they changed, and inserts the event.
 func (r *PostgresRepository) Update(ctx context.Context, m Mutation) (Settings, error) {
 	var out Settings
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -114,6 +119,7 @@ func (r *PostgresRepository) Update(ctx context.Context, m Mutation) (Settings, 
 	return out, translate(err)
 }
 
+// translate maps a foreign key violation, the actor's, to ErrActorNotFound.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23503" {

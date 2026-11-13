@@ -105,9 +105,16 @@ func TestUpdateSupplierChat(t *testing.T) {
 		t.Fatalf("an unchanged save recorded %d events", len(repo.events)-1)
 	}
 
+	// The name's limit counts characters, not bytes: 100 Lithuanian letters
+	// are 200 bytes and still fit.
+	lt := strings.Repeat("ž", maxChatNameLen)
+	if s, err = svc.UpdateSupplierChat(ctx, SupplierChatParams{Name: lt, Link: link}, actor); err != nil || s.SupplierChat.Name != lt {
+		t.Fatalf("100 letters: %+v, %v", s.SupplierChat, err)
+	}
+
 	// Both empty clears it.
 	s, err = svc.UpdateSupplierChat(ctx, SupplierChatParams{}, actor)
-	if err != nil || s.SupplierChat.Set() || len(repo.events) != 2 {
+	if err != nil || s.SupplierChat.Set() || len(repo.events) != 3 {
 		t.Fatalf("clear: %+v, %v, %d events", s, err, len(repo.events))
 	}
 }
@@ -115,10 +122,7 @@ func TestUpdateSupplierChat(t *testing.T) {
 func TestUpdateSupplierChatRejects(t *testing.T) {
 	svc, repo := newTestService()
 	ctx := context.Background()
-	long := make([]byte, maxChatNameLen+1)
-	for i := range long {
-		long[i] = 'a'
-	}
+	long := strings.Repeat("ž", maxChatNameLen+1)
 	for name, c := range map[string]struct {
 		p     SupplierChatParams
 		actor uuid.UUID
@@ -126,7 +130,7 @@ func TestUpdateSupplierChatRejects(t *testing.T) {
 		"no actor":         {SupplierChatParams{Link: "https://chat.whatsapp.com/AbCdEfGhIjKl"}, uuid.Nil},
 		"a name, no link":  {SupplierChatParams{Name: "Supplier"}, uuid.New()},
 		"a link, no name":  {SupplierChatParams{Name: "  ", Link: "https://chat.whatsapp.com/AbCdEfGhIjKl"}, uuid.New()},
-		"a name too long":  {SupplierChatParams{Name: string(long), Link: "https://chat.whatsapp.com/AbCdEfGhIjKl"}, uuid.New()},
+		"a name too long":  {SupplierChatParams{Name: long, Link: "https://chat.whatsapp.com/AbCdEfGhIjKl"}, uuid.New()},
 		"not a group link": {SupplierChatParams{Name: "Supplier", Link: "https://example.com/AbCdEfGhIjKl"}, uuid.New()},
 	} {
 		t.Run(name, func(t *testing.T) {

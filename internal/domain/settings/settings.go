@@ -20,6 +20,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Limits of the settings' fields, in characters unless they say otherwise.
 const (
 	maxChatNameLen    = 100
 	maxCompanyNameLen = 200
@@ -95,8 +96,10 @@ type CompanyParams struct {
 	Name string
 }
 
+// Normalize trims the name and collapses its inner spaces.
 func (p *CompanyParams) Normalize() { p.Name = strings.Join(strings.Fields(p.Name), " ") }
 
+// Validate normalizes p and checks the name's length.
 func (p *CompanyParams) Validate() error {
 	p.Normalize()
 	if utf8.RuneCountInString(p.Name) > maxCompanyNameLen {
@@ -114,6 +117,7 @@ type SupplierChat struct {
 	Link string `json:"link"`
 }
 
+// Set reports whether the group is set (it has a link).
 func (c SupplierChat) Set() bool { return c.Link != "" }
 
 // SupplierChatParams are the client-settable fields: both set, or both empty
@@ -134,10 +138,12 @@ func (p *SupplierChatParams) Normalize() {
 	}
 }
 
+// Validate normalizes p and checks that both fields or neither are set, the
+// name's length and the link's shape.
 func (p *SupplierChatParams) Validate() error {
 	p.Normalize()
 	switch {
-	case len(p.Name) > maxChatNameLen:
+	case utf8.RuneCountInString(p.Name) > maxChatNameLen:
 		return fieldError("name", "is too long")
 	case p.Link == "" && p.Name != "":
 		return fieldError("link", "is required with a name")
@@ -151,7 +157,9 @@ func (p *SupplierChatParams) Validate() error {
 	return nil
 }
 
-// parseInvite returns the code of a WhatsApp group invite link.
+// parseInvite returns the code of a WhatsApp group invite link: http or
+// https, host chat.whatsapp.com, no user info, and a path of one 10–40
+// character alphanumeric code; false for anything else.
 func parseInvite(link string) (string, bool) {
 	u, err := url.Parse(link)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || !strings.EqualFold(u.Host, chatHost) || u.User != nil {
@@ -195,6 +203,9 @@ func (p *SIMProvidersParams) Normalize() {
 	}
 }
 
+// Validate normalizes p and checks the list (at most maxProviders, each name
+// once in any case, each e-mail and plan), that the default is listed, and
+// the value's range.
 func (p *SIMProvidersParams) Validate() error {
 	p.Normalize()
 	if len(p.Providers) > maxProviders {
