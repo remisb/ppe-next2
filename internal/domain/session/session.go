@@ -49,16 +49,21 @@ const (
 	ReasonEndedElsewhere = "ended_elsewhere"
 	// ReasonEndedByAdministrator: ended on Administration's Security screen.
 	ReasonEndedByAdministrator = "ended_by_administrator"
-	ReasonPasswordChanged      = "password_changed"
+	// ReasonPasswordChanged: the user changed their own password; the sign-in
+	// they changed it in stays.
+	ReasonPasswordChanged = "password_changed"
 	// ReasonPasswordReset: an administrator set a new password.
 	ReasonPasswordReset = "password_reset"
-	ReasonDeactivated   = "deactivated"
-	ReasonDeleted       = "deleted"
+	// ReasonDeactivated: the account was deactivated.
+	ReasonDeactivated = "deactivated"
+	// ReasonDeleted: the account was deleted.
+	ReasonDeleted = "deleted"
 	// ReasonReused: a refresh token older than the current one came back,
 	// so a copy of the cookie is in someone else's hands.
 	ReasonReused = "reused"
 )
 
+// reasons are every Reason, which EndAll accepts.
 var reasons = []string{
 	ReasonSignedOut, ReasonEndedElsewhere, ReasonEndedByAdministrator, ReasonPasswordChanged, ReasonPasswordReset,
 	ReasonDeactivated, ReasonDeleted, ReasonReused,
@@ -95,6 +100,7 @@ type Seen struct {
 // maxUserAgent bounds the stored User-Agent, which the client controls.
 const maxUserAgent = 400
 
+// normalize cuts the User-Agent to maxUserAgent bytes.
 func (p Seen) normalize() Seen {
 	if len(p.UserAgent) > maxUserAgent {
 		p.UserAgent = p.UserAgent[:maxUserAgent]

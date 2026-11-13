@@ -24,7 +24,7 @@ var errInvalidToken = errors.New("invalid token")
 // the user's roles granted when the token was issued (a refresh reads them
 // again, so a role change takes effect within minutes), sid the sign-in
 // (session) it was issued for, and auth_time when the password was last
-// entered in that sign-in, which managing users checks (requireRecentSignIn).
+// entered in that sign-in, which sensitive actions check (requireRecentSignIn).
 // roles is only read: tokens issued before permissions carried role names.
 type accessClaims struct {
 	Perms     []string         `json:"perms"`

@@ -31,9 +31,13 @@ type Service struct {
 	newID  func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for sessions and security events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // NewService keeps sessions in repo, signing their tokens with key (at least
@@ -52,7 +56,8 @@ func NewService(repo Repository, key []byte, limits Limits, opts ...Option) *Ser
 	return s
 }
 
-// Start records a sign-in and returns it with its first refresh token.
+// Start records a sign-in and returns it with its first refresh token. It
+// first deletes the user's sessions that ended or expired over keepEnded ago.
 func (s *Service) Start(ctx context.Context, p StartParams) (Session, string, error) {
 	if p.UserID == uuid.Nil {
 		return Session{}, "", fieldError("user_id", "is required")
@@ -222,7 +227,8 @@ func (s *Service) Reauthenticated(ctx context.Context, userID, id uuid.UUID, ema
 	})
 }
 
-// End ends one of userID's live sessions from another device's list.
+// End ends one of userID's live sessions from another device's list; another
+// user's, or one no longer live, is ErrNotFound.
 func (s *Service) End(ctx context.Context, userID, id uuid.UUID) error {
 	return s.end(ctx, userID, id, ReasonEndedElsewhere)
 }
@@ -233,6 +239,7 @@ func (s *Service) EndByAdministrator(ctx context.Context, userID, id uuid.UUID) 
 	return s.end(ctx, userID, id, ReasonEndedByAdministrator)
 }
 
+// end ends userID's live session id for reason, with its session_ended event.
 func (s *Service) end(ctx context.Context, userID, id uuid.UUID, reason string) error {
 	now := s.now()
 	_, err := s.repo.Update(ctx, id, func(cur Session) (Session, *security.Event, error) {
@@ -247,7 +254,8 @@ func (s *Service) end(ctx context.Context, userID, id uuid.UUID, reason string) 
 }
 
 // EndAll ends every session of userID except keep (uuid.Nil keeps none),
-// recording reason.
+// recording reason, which must be one of the Reasons, and a session_ended
+// event for each.
 func (s *Service) EndAll(ctx context.Context, userID, keep uuid.UUID, reason string) error {
 	if userID == uuid.Nil {
 		return fieldError("user_id", "is required")

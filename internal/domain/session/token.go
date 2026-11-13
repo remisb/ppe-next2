@@ -17,6 +17,7 @@ import (
 // check a token, and can send the current token again (Refresh), while the
 // table alone, without the key, cannot make one.
 
+// mac is the HMAC of id, seed and generation under the service's key.
 func (s *Service) mac(id uuid.UUID, seed []byte, generation int) []byte {
 	h := hmac.New(sha256.New, s.key)
 	h.Write(id[:])
@@ -25,6 +26,7 @@ func (s *Service) mac(id uuid.UUID, seed []byte, generation int) []byte {
 	return h.Sum(nil)
 }
 
+// token is cur's refresh token for its current generation.
 func (s *Service) token(cur Session) string {
 	return cur.ID.String() + "." + strconv.Itoa(cur.Generation) + "." +
 		base64.RawURLEncoding.EncodeToString(s.mac(cur.ID, cur.Seed, cur.Generation))

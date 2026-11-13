@@ -54,7 +54,7 @@ too (RFC 9700 §4.14: refresh token rotation with reuse detection).
 | `API_SESSION_MAX_AGE` | 12h | without Keep me signed in: after sign-in; the cookie also ends with the browser |
 | `API_SESSION_KEEP_MAX_AGE` | 720h (30 days) | with it: after sign-in (at least `API_SESSION_MAX_AGE`, at most 2160h) |
 | `API_SESSION_KEEP_IDLE` | 336h (14 days) | with it: unused (at least `API_JWT_TTL`, at most the above) |
-| `API_RECENT_SIGN_IN` | 12h | managing users needs the password entered within this (at least 5m) |
+| `API_RECENT_SIGN_IN` | 12h | a sensitive action (below) needs the password entered within this (at least 5m, at most `API_SESSION_KEEP_MAX_AGE`) |
 
 30 days for a password sign-in matches NIST SP 800-63B-4's AAL1 reauthentication limit.
 
@@ -88,6 +88,7 @@ proxy keeps the browser's `Host` (`changeOrigin: false`) so this holds on any po
 | Sign out | this browser's session |
 | Sign out on Account's device list | that session; Sign out all other devices: all but this one |
 | Sign out on Administration's Security (`DELETE /api/v1/security/sessions/{id}`, `users.manage`) | that session (`ended_by_administrator`) |
+| Sign out all devices on Administration's Security (`DELETE /api/v1/security/users/{id}/sessions`, `users.manage`) | all that user's sessions (`ended_by_administrator`) |
 | Own password changed (`PUT /users/me/password`) | all but the one it was changed in |
 | Password reset by an administrator | all |
 | Account deactivated or deleted | all |
@@ -106,18 +107,28 @@ needs no ending: it reaches the user at their next refresh.
 
 ## Recent sign-in
 
-`POST`/`PUT`/`DELETE` on `/api/v1/users` and `/api/v1/roles` (adding, editing, resetting
-the password of and deleting users; adding, changing and deleting roles) answer 403 `recent
-sign-in required` when the token's `auth_time` is older than `API_RECENT_SIGN_IN`
-(`requireRecentSignIn`, inside `requireSensitive`, which also checks the user's current
-roles). The web app's client recognises the
+The sensitive routes answer 403 `recent sign-in required` when the token's `auth_time` is
+older than `API_RECENT_SIGN_IN` (`requireRecentSignIn`, inside `requireSensitive`, which also
+reads the user's permissions again and refuses with 403 when their roles no longer grant the
+route's):
+
+- `POST`/`PUT`/`DELETE` on `/api/v1/users` and `/api/v1/roles`: adding, editing, resetting
+  the password of and deleting users; adding, changing and deleting roles;
+- `DELETE /api/v1/security/sessions/{id}` and `DELETE /api/v1/security/users/{id}/sessions`:
+  signing a user's devices out on Administration's Security;
+- `POST /api/v1/assets/{id}/sim-codes/show`: Show PIN and PUK;
+- Show Document and its copy (`cmd/api/personnel-routes.go`);
+- `PUT` and `DELETE /api/v1/settings/ai/key`: the company's OpenAI key.
+
+The web app's client recognises the
 message, asks for the password (Confirm your password), calls `POST /auth/reauth` and sends
 the request again; cancelling leaves the 403, which the screen reports as "nothing was
 changed". Changing one's own password needs the current one anyway.
 
 ## Web app
 
-`web/apps/workwear/src/lib/api.tsx`: the access token lives in memory only. At start-up
+`@ppe/app-shell` (`web/packages/app-shell/src/api.tsx`, its rules in `session.ts`), which
+every app signs in through: the access token lives in memory only. At start-up
 the app asks `POST /auth/refresh` whether the browser is signed in (Checking your sign-in…;
 the server unreachable shows a Retry that also fires when the device is back online). It
 refreshes when the token has under 10 minutes left (checked each minute, when the tab is

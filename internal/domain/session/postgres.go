@@ -21,13 +21,16 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the session repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the user_sessions columns scan reads, in its order.
 const columns = `id, user_id, seed, generation, rotated_at, keep_signed_in, created_at,
 	authenticated_at, last_used_at, idle_expires_at, expires_at, ended_at, end_reason, user_agent, ip`
 
+// scan reads a session row, times in UTC; no row is ErrNotFound.
 func scan(row pgx.Row) (Session, error) {
 	var s Session
 	var reason *string
@@ -53,6 +56,7 @@ func scan(row pgx.Row) (Session, error) {
 	return s, nil
 }
 
+// nullable is s, or NULL when it is empty (end_reason).
 func nullable(s string) *string {
 	if s == "" {
 		return nil
@@ -60,6 +64,8 @@ func nullable(s string) *string {
 	return &s
 }
 
+// Create inserts the session and its sign_in event, and stamps the user's
+// last_sign_in_at, in one transaction.
 func (r *PostgresRepository) Create(ctx context.Context, s Session, ev security.Event) error {
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
@@ -78,10 +84,12 @@ func (r *PostgresRepository) Create(ctx context.Context, s Session, ev security.
 	return translate(err)
 }
 
+// Get reads session id, ended or not, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Session, error) {
 	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM user_sessions WHERE id = $1`, id))
 }
 
+// Update locks the session, calls m and writes its result and event.
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Session, error) {
 	var out Session
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -112,6 +120,7 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+// ListLive reads userID's sessions neither ended nor past either limit at now.
 func (r *PostgresRepository) ListLive(ctx context.Context, userID uuid.UUID, now time.Time) ([]Session, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT `+columns+` FROM user_sessions
@@ -132,6 +141,8 @@ func (r *PostgresRepository) ListLive(ctx context.Context, userID uuid.UUID, now
 	return out, rows.Err()
 }
 
+// EndAll ends the sessions in one UPDATE and inserts an event for each it
+// ended, in one transaction.
 func (r *PostgresRepository) EndAll(ctx context.Context, userID, keep uuid.UUID, at time.Time, reason string, record func(Session) security.Event) error {
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
@@ -155,6 +166,7 @@ func (r *PostgresRepository) EndAll(ctx context.Context, userID, keep uuid.UUID,
 	return translate(err)
 }
 
+// Prune deletes userID's sessions ended, or past either limit, before before.
 func (r *PostgresRepository) Prune(ctx context.Context, userID uuid.UUID, before time.Time) error {
 	_, err := r.pool.Exec(ctx, `
 		DELETE FROM user_sessions

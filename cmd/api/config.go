@@ -67,8 +67,9 @@ type config struct {
 	// SessionKeepIdle once it has gone unused this long.
 	SessionKeepMaxAge time.Duration
 	SessionKeepIdle   time.Duration
-	// RecentSignIn is how recently the password must have been entered to
-	// manage users; older, the app asks for it again (POST /api/v1/auth/reauth).
+	// RecentSignIn is how recently the password must have been entered for a
+	// sensitive action (requireSensitive); older, the app asks for it again
+	// (POST /api/v1/auth/reauth).
 	RecentSignIn time.Duration
 
 	LoginRateLimit    int
