@@ -169,7 +169,8 @@ describe('the action a card calls for', () => {
   it('Return while held; Give SIM when Active in the office; else Change Status', () => {
     expect(primaryAction(card({ open_assignment: held, connection_status: 'BLOCKED' }))).toBe('return')
     expect(primaryAction(card({ connection_status: 'ACTIVE' }))).toBe('give')
-    expect(primaryAction(card({ connection_status: 'NOT_ACTIVATED' }))).toBe('status')
+    // A Not Activated card can be given before its provider activates it.
+    expect(primaryAction(card({ connection_status: 'NOT_ACTIVATED' }))).toBe('give')
     expect(primaryAction(card({ connection_status: 'BLOCKED' }))).toBe('status')
   })
   it('Mark as Not Returned once, only while held', () => {
@@ -184,7 +185,7 @@ describe('Give SIM', () => {
   const ready = card({ connection_status: 'ACTIVE', phone_no: '+370 612 40118', plan: 'Biz 10 GB', non_return_value_cents: 2500 })
   const chosen = { ...emptyGiveDraft(today), employeeId: 'e1', employeeName: 'Jonas Petraitis' }
   it('says the first reason it cannot be given yet, ending at the signed paper (§6)', () => {
-    expect(giveBlock(card({ connection_status: 'NOT_ACTIVATED' }), chosen, today, null, false)).toMatch(/not activated/)
+    expect(giveBlock({ ...ready, connection_status: 'NOT_ACTIVATED' }, chosen, today, null, false)).toMatch(/Print the form/)
     expect(giveBlock(card({ connection_status: 'BLOCKED' }), chosen, today, null, false)).toMatch(/blocked/)
     expect(giveBlock({ ...ready, open_assignment: { not_returned_at: null } as Asset['open_assignment'] }, chosen, today, null, false)).toMatch(/already holds it/)
     // A card without a phone number yet is given all the same: the form leaves it blank.

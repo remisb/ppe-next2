@@ -161,7 +161,7 @@ var errorStatuses = []struct {
 	{asset.ErrInventoryNoTaken, http.StatusConflict},
 	{asset.ErrSIMNoTaken, http.StatusConflict},
 	{asset.ErrAlreadyGiven, http.StatusConflict},
-	{asset.ErrNotActive, http.StatusConflict},
+	{asset.ErrBlocked, http.StatusConflict},
 	{asset.ErrNotGiven, http.StatusConflict},
 	{asset.ErrAlreadyMarked, http.StatusConflict},
 	{asset.ErrFormChanged, http.StatusConflict},

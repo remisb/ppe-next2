@@ -316,7 +316,7 @@ SHARE`, and the service checks, in this order, answering the first that fails:
 | The request's own fields, before anything is locked: `employee_id` given, the given date not in the future, the plan's length and the value's range | 400 |
 | Employee live (read with the lock) | 404 `ErrEmployeeNotFound` |
 | No open assignment | 409 `ErrAlreadyGiven`: *This SIM card has already been given to another employee. Select another SIM card.* (§7) |
-| SIM: status Active | 409 `ErrNotActive`, saying Not Activated or Blocked; a returned blocked card must be unblocked with the provider and set Active first (§12) |
+| SIM: not Blocked | 409 `ErrBlocked`; a returned blocked card must be unblocked with the provider and set Active first (§12). A Not Activated card may be given (decided 2026-11-13): a new card can go to its holder before the provider activates it, and stays Not Activated until Change Status |
 | Form data complete (a value, for a SIM and for EQUIPMENT needing a form; a SIM's phone number and plan are optional) | 400, naming the field |
 | Form needed: `paper_form_signed` true | 400 |
 | Form needed: `form_hash` equals the hash of the form built now | 409 `ErrFormChanged`: print the updated form |
@@ -535,9 +535,9 @@ their own address:
   ignored, a card without one last, then the SIM No.), Inventory No. (the default, and on a
   phone's Sort by), status, employee or given date. On a phone a row is the phone number (the SIM No. until there is
   one) and the status, then the SIM No., provider and where the card is.
-- **Change Status** is the row's everyday action for `sim_cards.manage`: a menu of the three
-  statuses with the brief's note, and for a Not Activated card the activation text. The
-  choice is saved at once and announced. Edit is under ⋯.
+- **Change Status** is the row's everyday action for `sim_cards.manage` on a Blocked card in the
+  Office: a menu of the three statuses with the brief's note. Elsewhere it is under ⋯, with the
+  activation text on a Not Activated card. The choice is saved at once and announced. Edit is under ⋯.
 - **Add SIM** (and Edit) is one sheet: SIM No., provider (chosen from those an
   administrator lists on Settings, the default one chosen; typed when none are listed;
   [settings-service.md](settings-service.md)) and inventory number (the next one
@@ -553,7 +553,7 @@ their own address:
   card beside the register is the asset page's own detail (`components/asset-detail.tsx`),
   with the same actions; a change in either loads the other again. The asset page
   (`/assets/<id>`) stays for the employee page and ⌘K. With no card open
-  a row also offers on a wide screen the one action its state calls for (Give SIM when Active in the Office,
+  a row also offers on a wide screen the one action its state calls for (Give SIM in the Office unless Blocked,
   Return while held, else Change Status) and ⋯ with the statuses, Edit, Print Form (while
   held on a signed form, or since the import), Mark as Not Returned, Prepare Activation Email (unless Active) and Prepare Blocking Email (unless Blocked). On a phone a row is two lines and carries no
   buttons.
@@ -630,7 +630,7 @@ their own address:
   `GET /api/v1/assets/by-employee/{id}`): the cards they hold, then those held before, each
   linking to the card, with its dates, Days Held, Not Returned and Paper form signed.
 - **Give SIM** there starts with the employee chosen; the sheet lists the cards in the
-  Office (search by number), each with its status; one Not Activated or Blocked is shown but
+  Office (search by number), each with its status; a Blocked one is shown but
   cannot be chosen (§6). One without a phone number yet can be chosen, marked so; its form
   leaves the number blank. Changing the card after Print Form clears
   Paper Form Signed, as any other change does.

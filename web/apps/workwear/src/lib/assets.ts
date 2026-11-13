@@ -292,8 +292,9 @@ export type PrimaryAction = 'return' | 'give' | 'status'
 
 export function primaryAction(a: Pick<Asset, 'kind' | 'open_assignment' | 'connection_status'>): PrimaryAction {
   if (a.open_assignment) return 'return'
-  // Equipment has no connection status: in the office it can always be given.
-  return a.kind === 'EQUIPMENT' || a.connection_status === 'ACTIVE' ? 'give' : 'status'
+  // Equipment has no connection status: in the office it can always be given. A SIM can be given
+  // unless Blocked: a Not Activated one works once its provider activates it.
+  return a.kind === 'EQUIPMENT' || a.connection_status !== 'BLOCKED' ? 'give' : 'status'
 }
 
 /** Mark as Not Returned is for a held card not yet marked; the mark is set once. */
@@ -394,8 +395,9 @@ export function formInput(a: Pick<Asset, 'kind' | 'plan' | 'non_return_value_cen
 /**
  * Why Give SIM cannot be done yet, the first reason only, shown by the
  * button (§6: the reason at the field or button), or null when it can. A
- * card someone holds or one not Active cannot be given from this form at
- * all; the rest the form itself fixes. A card without a phone number yet can
+ * card someone holds or a Blocked one cannot be given from this form at
+ * all; the rest the form itself fixes. A Not Activated card can be given:
+ * it works once its provider activates it. A card without a phone number yet can
  * be given: the form leaves the number blank.
  */
 export function giveBlock(
@@ -409,7 +411,7 @@ export function giveBlock(
   if (!a) return kind === 'SIM' ? t.assets.chooseCardReason : t.assets.chooseItemReason
   if (a.open_assignment) return t.assets.alreadyGivenReason
   if (a.kind === 'SIM') {
-    if (a.connection_status !== 'ACTIVE') return helpText({ body: [t.assets.statusIssue[a.connection_status ?? 'NOT_ACTIVATED']] })
+    if (a.connection_status === 'BLOCKED') return helpText({ body: [t.assets.statusIssue.BLOCKED] })
   }
   if (!d.employeeId) return t.assets.chooseEmployeeReason
   if (!d.givenDate) return t.assets.givenDateReason
@@ -430,7 +432,6 @@ export function giveBlock(
  */
 export function cardBlock(a: Pick<Asset, 'kind' | 'connection_status'>): string | null {
   if (a.kind === 'EQUIPMENT') return null
-  if (a.connection_status === 'NOT_ACTIVATED') return t.assets.statuses.NOT_ACTIVATED
   if (a.connection_status === 'BLOCKED') return t.assets.statuses.BLOCKED
   return null
 }

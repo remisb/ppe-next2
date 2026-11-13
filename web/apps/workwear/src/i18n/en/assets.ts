@@ -90,7 +90,7 @@ export const assets = {
   statusHelp: {
     NOT_ACTIVATED: {
       body: 'SIMs the provider has not switched on yet: they cannot be used.',
-      note: 'Email the provider to activate one, then change its status to Active: only an Active SIM can be given.',
+      note: 'Email the provider to activate one, then change its status to Active. A Not Activated SIM can be given already: it works once activated.',
     },
     ACTIVE: {
       body: 'SIMs the provider has switched on, which work.',
@@ -224,7 +224,7 @@ export const assets = {
   paperFormSigned: 'The employee has signed the printed form',
   changedAfterPrint: 'The form changed after printing, so the signature tick was cleared. Print the updated form and have it signed again.',
   alreadyGivenReason: 'Someone already holds it. Register its return first.',
-  // A SIM that cannot be given, and what to do: its status badge's list, and why Give is refused.
+  // A SIM's status issue and what to do: its status badge's list; a Blocked one's is also why Give is refused.
   statusIssue: {
     NOT_ACTIVATED: { title: 'This card is not activated.', detail: 'Email your provider, then change its status to Active.' },
     BLOCKED: { title: 'This card is blocked.', detail: 'Have the provider unblock it, then change its status to Active.' },

@@ -90,8 +90,11 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 	if v.Location != LocationOffice || *v.SimNo != "0089370011" {
 		t.Errorf("new SIM: %s, %q", v.Location, *v.SimNo)
 	}
-	if _, err := giveNow(svc, v.ID, emps[0], actor); !errors.Is(err, ErrNotActive) {
-		t.Errorf("give not activated: %v", err)
+	if _, err := svc.ChangeStatus(ctx, v.ID, "BLOCKED", actor); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := giveNow(svc, v.ID, emps[0], actor); !errors.Is(err, ErrBlocked) {
+		t.Errorf("give blocked: %v", err)
 	}
 	if _, err := svc.ChangeStatus(ctx, v.ID, "ACTIVE", actor); err != nil {
 		t.Fatal(err)
@@ -154,8 +157,8 @@ func TestPostgresAssetLifecycle(t *testing.T) {
 		t.Errorf("by employee = %+v, %v", held, err)
 	}
 	var events int
-	if err := owner.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE entity_type = 'asset' AND entity_id = $1`, v.ID).Scan(&events); err != nil || events != 6 {
-		t.Errorf("%d events, %v; want registered, 2 status changes, given, marked, returned", events, err)
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE entity_type = 'asset' AND entity_id = $1`, v.ID).Scan(&events); err != nil || events != 7 {
+		t.Errorf("%d events, %v; want registered, 3 status changes, given, marked, returned", events, err)
 	}
 }
 

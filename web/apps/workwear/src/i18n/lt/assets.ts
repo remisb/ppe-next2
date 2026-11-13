@@ -84,7 +84,7 @@ export const assets: AssetsText = {
   statusHelp: {
     NOT_ACTIVATED: {
       body: 'SIM, kurių tiekėjas dar neįjungė: jomis naudotis negalima.',
-      note: 'Paprašykite tiekėjo el. paštu ją aktyvuoti, tada pakeiskite būseną į „Aktyvi“: išduoti galima tik aktyvią SIM.',
+      note: 'Paprašykite tiekėjo el. paštu ją aktyvuoti, tada pakeiskite būseną į „Aktyvi“. Neaktyvuotą SIM jau galima išduoti: ji veiks, kai bus aktyvuota.',
     },
     ACTIVE: {
       body: 'SIM, kurias tiekėjas įjungė ir kurios veikia.',

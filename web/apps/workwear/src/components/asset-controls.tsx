@@ -175,6 +175,8 @@ export function AssetMoreActions({
       {status && current ? (
         <>
           <DropdownMenuNote>{t.assets.changeStatus}</DropdownMenuNote>
+          {/* A Not Activated card's row offers Give SIM, so its activation note is here. */}
+          {current === 'NOT_ACTIVATED' ? <DropdownMenuNote className="text-foreground">{t.assets.activateNote}</DropdownMenuNote> : null}
           <DropdownMenuRadioGroup value={current} onValueChange={(next: ConnectionStatus) => next !== current && onStatus(next)}>
             {statuses.map((s) => (
               <DropdownMenuRadioItem key={s} value={s}>

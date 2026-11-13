@@ -29,7 +29,7 @@ stateDiagram-v2
   BLOCKED --> ACTIVE : Change Status (unblocked with the provider)
   NOT_ACTIVATED --> BLOCKED : Change Status
   BLOCKED --> NOT_ACTIVATED : Change Status
-  note right of ACTIVE : Give SIM only in this status
+  note right of BLOCKED : Give SIM refused in this status
   note left of NOT_ACTIVATED : Prepare Activation Email
 ```
 
@@ -45,7 +45,8 @@ stateDiagram-v2
 `connection_status` is stored on `assets` and limited to the three values by a CHECK. There
 is no final state: write-off is reserved (`written_off_at`) and not built, and no route
 deletes a card. The status never stops a card being returned or marked Not Returned; it
-matters only to Give SIM, which refuses anything but Active (409 `ErrNotActive`), and to
+matters only to Give SIM, which refuses a Blocked card (409 `ErrBlocked`; a Not Activated one may
+be given and is activated later), and to
 which provider emails the app offers. A Not Activated card is activated by its provider:
 **Prepare Activation Email** (offered unless the card is Active, and beside a Not Activated
 card's Change Status) prepares the request from the mail template `sim.activation`, and the
@@ -66,7 +67,7 @@ stateDiagram-v2
   state "Not Returned, whereabouts unknown" as NRUnknown
   [*] --> Office : Add SIM, Scan SIMs, import without a holder
   [*] --> Held : import with a holder (no form)
-  Office --> Held : Give SIM (Active, value, signed form)
+  Office --> Held : Give SIM (not Blocked, value, signed form)
   Held --> NRWith : Mark as Not Returned (WITH_EMPLOYEE)
   Held --> NRUnknown : Mark as Not Returned (UNKNOWN)
   Held --> Office : Register Return
@@ -95,7 +96,7 @@ Give SIM runs in one transaction with the card locked `FOR UPDATE` and the emplo
 | The card is live | 404 |
 | The employee is live | 404 `ErrEmployeeNotFound` |
 | No open assignment | 409 `ErrAlreadyGiven` |
-| Status Active | 409 `ErrNotActive` |
+| Status not Blocked | 409 `ErrBlocked` |
 | A Non-return Value (the phone number and plan may be blank) | 400 |
 | Given date not in the future | 400 |
 | Paper Form Signed ticked | 400 |

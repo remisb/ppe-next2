@@ -2023,7 +2023,7 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
   await expect(card.getByText('Not Activated', { exact: true })).toBeVisible()
-  // Its Not Activated badge says why it cannot be given and what to do (a tooltip in the register's row).
+  // Its Not Activated badge says what to do (a tooltip in the register's row); it can be given all the same.
   await expect(card.getByText('Not Activated', { exact: true })).toHaveAccessibleDescription(
     'This card is not activated. Email your provider, then change its status to Active.',
   )
@@ -2031,8 +2031,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // No tiles here: the tabs count instead.
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0)
   await expect(page.getByRole('group', { name: 'Status', exact: true }).getByRole('button', { name: /^In Office\s*1/ })).toBeVisible()
-  // Change Status: the three statuses on this screen, saved at once with no confirmation (§5).
-  await card.getByRole('button', { name: /^Change Status of SIM-000001/ }).click()
+  // A Not Activated card can be given before its provider activates it: the row offers Give SIM.
+  await expect(card.getByRole('button', { name: 'Give SIM' })).toBeVisible()
+  // Change Status under ⋯: the three statuses on this screen, saved at once with no confirmation (§5).
+  await card.getByRole('button', { name: 'More actions for SIM-000001' }).click()
   await expect(page.getByText(/Email your provider to activate this SIM/)).toBeVisible()
   await page.getByRole('menuitemradio', { name: 'Active' }).click()
   await expect(page.getByText('SIM-000001: status changed to Active.')).toBeVisible()

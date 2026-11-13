@@ -26,8 +26,8 @@ var (
 	ErrSIMNoTaken       = errors.New("SIM number already registered")
 	// ErrAlreadyGiven refuses giving an asset that has an open assignment.
 	ErrAlreadyGiven = errors.New("asset already given to another employee")
-	// ErrNotActive refuses giving a SIM card that is not Active.
-	ErrNotActive = errors.New("SIM is not active")
+	// ErrBlocked refuses giving a SIM card that is Blocked.
+	ErrBlocked = errors.New("SIM is blocked: have the provider unblock it and set it Active first")
 	// ErrNotGiven refuses Return and Mark as Not Returned without an open assignment.
 	ErrNotGiven = errors.New("asset is not given to anyone")
 	// ErrAlreadyMarked refuses marking an assignment Not Returned twice.

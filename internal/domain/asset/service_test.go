@@ -646,16 +646,13 @@ func TestChangeStatus(t *testing.T) {
 
 func TestGiveRefusesWhatCannotBeGiven(t *testing.T) {
 	f := newFixture(t)
-	na := f.sim(t, "SIM-000001", StatusNotActivated, true)
 	blocked := f.sim(t, "SIM-000002", StatusBlocked, true)
 	incomplete := f.sim(t, "SIM-000003", StatusActive, false)
 	ok := f.sim(t, "SIM-000004", StatusActive, true)
 
-	for name, id := range map[string]uuid.UUID{"not activated": na.ID, "blocked": blocked.ID} {
-		_, err := f.svc.Give(f.ctx, id, GiveParams{FormParams: FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09"}, PaperFormSigned: true}, testActor)
-		if !errors.Is(err, ErrNotActive) {
-			t.Errorf("%s: %v, want ErrNotActive", name, err)
-		}
+	_, err := f.svc.Give(f.ctx, blocked.ID, GiveParams{FormParams: FormParams{EmployeeID: f.emp.ID, GivenDate: "2026-10-09"}, PaperFormSigned: true}, testActor)
+	if !errors.Is(err, ErrBlocked) {
+		t.Errorf("blocked: %v, want ErrBlocked", err)
 	}
 	if _, err := f.give(t, incomplete.ID, f.emp, "2026-10-09"); !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "non_return_value_cents") {
 		t.Errorf("no value: %v", err)
@@ -682,6 +679,20 @@ func TestGiveRefusesWhatCannotBeGiven(t *testing.T) {
 	}
 	if len(f.repo.assignments) != 0 {
 		t.Errorf("%d assignments stored after refusals", len(f.repo.assignments))
+	}
+}
+
+// A Not Activated card may be given before the provider activates it; it
+// stays Not Activated until its status is changed.
+func TestGiveNotActivated(t *testing.T) {
+	f := newFixture(t)
+	v := f.sim(t, "SIM-000001", StatusNotActivated, true)
+	if _, err := f.give(t, v.ID, f.emp, "2026-10-09"); err != nil {
+		t.Fatalf("give not activated: %v", err)
+	}
+	got, _ := f.svc.Get(f.ctx, v.ID)
+	if got.Location != LocationWithEmployee || got.Open == nil || *got.ConnectionStatus != StatusNotActivated {
+		t.Errorf("after giving: %s, open %+v, status %s", got.Location, got.Open, *got.ConnectionStatus)
 	}
 }
 

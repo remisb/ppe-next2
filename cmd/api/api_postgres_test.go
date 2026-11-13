@@ -255,8 +255,13 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 		t.Fatalf("preview = %d %s", rec.Code, rec.Body)
 	}
 	give := map[string]any{"employee_id": empID, "given_date": today, "paper_form_signed": true, "form_hash": "x"}
-	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give); rec.Code != http.StatusConflict {
-		t.Errorf("give not activated = %d %s", rec.Code, rec.Body)
+	// A Blocked card is refused; a Not Activated one may be given (the form's hash decides below).
+	if rec := api.do(t, "PUT", "/api/v1/assets/"+id+"/status", mgr, map[string]any{"connection_status": "BLOCKED"}); rec.Code != http.StatusOK {
+		t.Fatalf("block = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/assignments", mgr, give); rec.Code != http.StatusConflict ||
+		!strings.Contains(rec.Body.String(), "blocked") {
+		t.Errorf("give blocked = %d %s", rec.Code, rec.Body)
 	}
 	if rec := api.do(t, "PUT", "/api/v1/assets/"+id+"/status", mgr, map[string]any{"connection_status": "ACTIVE"}); rec.Code != http.StatusOK {
 		t.Fatalf("activate = %d %s", rec.Code, rec.Body)

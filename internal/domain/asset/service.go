@@ -595,12 +595,10 @@ func (s *Service) Give(ctx context.Context, id uuid.UUID, p GiveParams, actor uu
 		if open != nil {
 			return cur, Assignment{}, nil, ErrAlreadyGiven
 		}
-		if cur.Kind == KindSIM && (cur.ConnectionStatus == nil || *cur.ConnectionStatus != StatusActive) {
-			status := Status("unknown")
-			if cur.ConnectionStatus != nil {
-				status = *cur.ConnectionStatus
-			}
-			return cur, Assignment{}, nil, fmt.Errorf("%w: it is %s", ErrNotActive, status)
+		// A Not Activated card may be given (it works once the provider
+		// activates it); a Blocked one may not.
+		if cur.Kind == KindSIM && cur.ConnectionStatus != nil && *cur.ConnectionStatus == StatusBlocked {
+			return cur, Assignment{}, nil, ErrBlocked
 		}
 		next, err := fill(cur, p.FormParams)
 		if err != nil {
