@@ -9,11 +9,15 @@ restoring and upgrading Postgres: [docs/backups.md](../backups.md).
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/backups` | `backups.read` (administrators): the status below |
+| `GET /api/v1/backups` | `backups.read` (of the built-in roles, Administrator): the status below |
 
 In the web app it is the Backups tab of System in Administration (`/admin/system/backups`; the old `/admin/backups` leads there), and a Backups
 card under Setup on the administrator's Dashboard in the staff app that opens it (the
 verdict's words are `@ppe/backups`'). The staff app's old `/backups` leads there.
+Administration's Overview (`GET /api/v1/overview`, [system-service.md](system-service.md))
+reads the same status for a reader with `backups.read`: the newest backup and the verdicts,
+and `backups_not_running` (stale or agent offline) or `last_backup_failed` among what needs
+attention.
 
 ## Status
 

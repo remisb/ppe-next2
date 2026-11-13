@@ -18,6 +18,7 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the backup repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -37,6 +38,7 @@ func (r *PostgresRepository) Read(ctx context.Context, limit int) (Status, error
 	return st, err
 }
 
+// fromLibrary is dbbackup's status as this package's, the latest agent alone.
 func fromLibrary(s dbpg.Status) Status {
 	st := Status{Kept: Kept{Count: s.Kept.Count, Bytes: s.Kept.Bytes}}
 	// One agent backs up this database; should a second appear, show the one
@@ -75,6 +77,7 @@ func fromLibrary(s dbpg.Status) Status {
 	return st
 }
 
+// fromRun is a dbbackup run as this package's.
 func fromRun(r dbbackup.Run) Run {
 	return Run{
 		ID:            r.ID,

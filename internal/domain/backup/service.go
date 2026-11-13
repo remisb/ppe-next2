@@ -12,11 +12,17 @@ type Service struct {
 	loc  *time.Location
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option  { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock.
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithLocation sets the organisation's timezone (API_ORG_TIMEZONE), which the
+// status names for the screen; UTC by default.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
+// NewService is the backup service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, loc: time.UTC}
 	for _, o := range opts {
@@ -25,7 +31,9 @@ func NewService(repo Repository, opts ...Option) *Service {
 	return s
 }
 
-// Status reads the backups and derives the warnings.
+// Status reads the backups and derives the durations and the warnings (Stale,
+// AgentOffline, LastRunFailed). The Backups screen, the Dashboard's card and
+// Administration's Overview read it.
 func (s *Service) Status(ctx context.Context) (Status, error) {
 	st, err := s.repo.Read(ctx, RunLimit)
 	if err != nil {

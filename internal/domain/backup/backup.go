@@ -52,19 +52,24 @@ type Run struct {
 	SizeBytes     int64     `json:"size_bytes"`
 	ServerVersion string    `json:"server_version"`
 	ToolVersion   string    `json:"tool_version"`
-	Target        string    `json:"target"`
-	Key           string    `json:"key"`
-	Encrypted     bool      `json:"encrypted"`
+	// Target is where the file went (never with credentials), Key its name
+	// there.
+	Target    string `json:"target"`
+	Key       string `json:"key"`
+	Encrypted bool   `json:"encrypted"`
 	// Pruned: retention has deleted the file.
 	Pruned bool `json:"pruned"`
 }
 
+// A run's outcomes, as dbbackup records them.
 const (
 	StatusSucceeded = "succeeded"
 	StatusFailed    = "failed"
 )
 
-// Agent is the backup service as it last reported itself.
+// Agent is the backup service as it last reported itself: its schedule and
+// the gap between two scheduled runs (IntervalSeconds), where it backs up to,
+// what it keeps, whether it encrypts, and its next run (nil when unknown).
 type Agent struct {
 	Name            string     `json:"name"`
 	Schedule        string     `json:"schedule"`
