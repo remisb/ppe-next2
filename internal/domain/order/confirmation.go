@@ -11,10 +11,14 @@ import (
 )
 
 const (
+	// EventLinkCreated: Open Employee Confirmation made a link; its after
+	// holds the link's id and expiry, never the token.
 	EventLinkCreated = "order.confirmation_link_created"
 	// EventLinkOpened: the employee first opened the confirmation link.
 	EventLinkOpened = "order.confirmation_link_opened"
-	EventGiven      = "order.given"
+	// EventGiven: ORDERED → GIVEN, with the method, document hash and the
+	// confirming name; no actor for an electronic confirmation.
+	EventGiven = "order.given"
 	// DefaultConfirmTTL is how long a confirmation link stays usable.
 	DefaultConfirmTTL = 7 * 24 * time.Hour
 )
@@ -54,6 +58,8 @@ type ConfirmResult struct {
 	Event        audit.Event
 }
 
+// ConfirmFunc decides a confirmation from the locked snapshot; the service
+// supplies it, and a returned error aborts the transaction.
 type ConfirmFunc func(s ConfirmSnapshot) (ConfirmResult, error)
 
 // LinkFunc builds a new link for a locked order; it may refuse (ErrNotOrdered).

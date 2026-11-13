@@ -2,7 +2,9 @@
 
 The Order aggregate: `internal/domain/order` (orders, snapshot lines, confirmations),
 routes in `cmd/api/order-routes.go`, tables from migrations `0006_orders` and
-`0007_order_confirmations` (`0015_order_soft_delete` for Delete). Manual §1, §3.1, algorithm B and algorithm E. Resolution
+`0007_order_confirmations` (`0009` in-person confirmation, `0013` wording versions,
+`0015_order_soft_delete` for Delete, `0021` purchase price, `0027` a link's first opening).
+Who may delete is `orders.delete` (migration `0022`). Manual §1, §3.1, algorithm B and algorithm E. Resolution
 (algorithm A) is described in [item-set-service.md](item-set-service.md).
 The tables and their constraints are drawn in
 [order-er-diagram.md](../architecture/order-er-diagram.md), the statuses and the confirmation
@@ -13,12 +15,16 @@ link's lifecycle in [order-state-machine.md](../architecture/order-state-machine
 Only `ORDERED` and `GIVEN` are ever stored. An unsubmitted order is client working state;
 there is no draft row. The only transition is ORDERED → GIVEN through a confirmation
 (Slice 6). Orders and lines are never updated otherwise; `order_lines` rejects
-UPDATE/DELETE with a trigger. The one exception, beyond the manual, is Delete below.
+UPDATE/DELETE with a trigger. The exceptions, beyond the manual, are Delete below and
+Merge Employees (migration `0052`, [employee-service.md](employee-service.md) "Duplicates and
+merging"), which moves the removed record's orders, deleted ones too, to the record kept by
+changing `employee_id` alone: the snapshot names and code stay as ordered. Each moved order
+records `order.employee_merged` (before/after `employee_id`, written by the employee domain).
 
-## Delete — `DELETE /api/v1/orders/{id}` (manager role only)
+## Delete — `DELETE /api/v1/orders/{id}` (`orders.delete`)
 
-For clearing demo and test orders. The manager role alone may; an administrator without it
-gets 403, as does the employee role. Either status can be deleted. It is a soft delete: in
+For clearing demo and test orders. It needs `orders.delete`, which of the built-in roles
+only Manager holds: Administrator and Employee get 403. Either status can be deleted. It is a soft delete: in
 one transaction the live order is locked (404 if missing or already deleted),
 `deleted_at` / `deleted_by_user_id` and `updated_*` are set, the order's unused electronic
 links are revoked, and `order.deleted` is recorded with the record number, employee,

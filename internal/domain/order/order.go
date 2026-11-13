@@ -1,7 +1,9 @@
 // Package order is the Order aggregate: the order, its immutable snapshot lines
 // and its confirmations. An order exists only from Mark as Ordered onwards;
 // the only later change is ORDERED → GIVEN through a confirmation, apart from
-// a manager deleting a demo or test order (a soft delete).
+// deleting a demo or test order (a soft delete, orders.delete) and Merge
+// Employees moving the orders of the record removed to the one kept
+// (employee_id only; the snapshot names stay, migration 0052).
 package order
 
 import (
@@ -21,16 +23,22 @@ import (
 type Status string
 
 const (
+	// StatusOrdered: Mark as Ordered stored it; it waits for a confirmation.
 	StatusOrdered Status = "ORDERED"
-	StatusGiven   Status = "GIVEN"
+	// StatusGiven: the employee confirmed receipt; the evidence is stored.
+	StatusGiven Status = "GIVEN"
 )
 
 // Method is how receipt was confirmed.
 type Method string
 
 const (
+	// MethodElectronic is the employee confirming through a confirmation link;
+	// the user who made the link is the giver.
 	MethodElectronic Method = "ELECTRONIC"
-	MethodPaper      Method = "PAPER"
+	// MethodPaper is a signed paper Items Given Record, recorded by the staff
+	// member, who is the giver.
+	MethodPaper Method = "PAPER"
 	// MethodInPerson is the employee confirming on a staff member's device at
 	// the counter (hand-over mode): no link, the staff member as giver.
 	MethodInPerson Method = "IN_PERSON"
@@ -38,7 +46,8 @@ const (
 
 // Order is an immutable business record. Employee and user names are
 // snapshotted so a record never depends on the live employees or users rows.
-// A manager may delete one (soft delete); a deleted order is never read back.
+// It may be deleted (soft delete, orders.delete); a deleted order is never
+// read back.
 type Order struct {
 	ID                 uuid.UUID  `json:"id"`
 	RecordSeq          int64      `json:"-"`
@@ -132,6 +141,7 @@ type Line struct {
 	ServicePeriodMonths  int        `json:"service_period_months"`
 }
 
+// TotalCents is the line's accounting price times its quantity.
 func (l Line) TotalCents() int64 { return l.AccountingPriceCents * int64(l.Quantity) }
 
 // Confirmation is a confirmation link or a paper confirmation, with its
@@ -174,6 +184,7 @@ type MarkAsOrderedParams struct {
 	Lines      []LineParams
 }
 
+// maxLines caps the lines of one order, and of one resolution.
 const maxLines = 200
 
 // Validate checks what can be checked without the catalogue. Size against the

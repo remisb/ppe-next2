@@ -17,8 +17,9 @@ type orderHandler struct {
 
 // registerOrderRoutes mounts the order endpoints. Resolution only reads;
 // POST /orders is Mark as Ordered, the only way an order comes to exist.
-// Staff who prepare orders (every role) may use all of them, except Delete,
-// which only the manager role may: it clears demo and test orders.
+// Any signed-in user may use all of them, except Delete, which needs
+// orders.delete (of the built-in roles, Manager's): it clears demo and test
+// orders.
 func registerOrderRoutes(rt *router, orders *order.Service) {
 	h := &orderHandler{orders: orders}
 	rt.authenticated("GET /api/v1/sizes", h.sizes)

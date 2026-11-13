@@ -236,7 +236,7 @@ deleted, and at least one active user always holds it (checked after each user w
 an advisory lock). `TRUNCATE users CASCADE` also empties `roles` (actor keys), so Postgres
 tests and e2e setup call `role.EnsureBuiltins` after it (`-seed-admin` does).
 A manager may
-soft-delete an order (`DELETE /api/v1/orders/{id}`, manager role only, migration 0015), so
+soft-delete an order (`DELETE /api/v1/orders/{id}`, `orders.delete`, the built-in Manager's, migration 0015), so
 every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
 dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests
 must `TRUNCATE ... CASCADE` because of the actor foreign keys, after

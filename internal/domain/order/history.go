@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// History's paging limits and its date format.
 const (
 	DefaultPageSize = 20
 	MaxPageSize     = 100
@@ -19,16 +20,21 @@ type SortKey string
 
 const (
 	// SortDate is the activity time, coalesce(given_at, ordered_at): the default, newest first.
-	SortDate     SortKey = "date"
-	SortRecord   SortKey = "record"
+	SortDate SortKey = "date"
+	// SortRecord is the record number.
+	SortRecord SortKey = "record"
+	// SortEmployee is the snapshot name, first then last, ignoring case.
 	SortEmployee SortKey = "employee"
-	SortStatus   SortKey = "status"
+	// SortStatus puts GIVEN before ORDERED ascending.
+	SortStatus SortKey = "status"
 	// SortUsage is usage time, so ascending means most recently given first;
 	// ORDERED orders have none and always come last.
 	SortUsage SortKey = "usage"
+	// SortTotal is the order's total at accounting prices.
 	SortTotal SortKey = "total"
 )
 
+// sortKeys are the SortKeys ListParams accepts.
 var sortKeys = map[SortKey]bool{SortDate: true, SortRecord: true, SortEmployee: true, SortStatus: true, SortUsage: true, SortTotal: true}
 
 // ListFilter is a History query in storage terms: UTC instants, To exclusive.
@@ -71,6 +77,7 @@ type Listed struct {
 	UsageMonths *float64
 }
 
+// ListResult is one page of History and how many orders match in all.
 type ListResult struct {
 	Orders   []Listed
 	Page     int
@@ -151,9 +158,9 @@ func (p ListParams) filter(loc *time.Location) (ListFilter, int, int, error) {
 	return f, page, size, nil
 }
 
-// List is History: stored orders and their snapshots, newest activity first
-// unless another sort is asked for.
-// It never reads live catalogue or employee data.
+// List is History, the code's name for the Orders screen: stored orders and
+// their snapshots, newest activity first unless another sort is asked for. It
+// never reads live catalogue or employee data.
 func (s *Service) List(ctx context.Context, p ListParams) (ListResult, error) {
 	f, page, size, err := p.filter(s.loc)
 	if err != nil {

@@ -24,10 +24,13 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the order repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// Create runs Mark as Ordered in one transaction: the snapshot read under
+// share locks, build, then the order, its lines and the event inserted.
 func (r *PostgresRepository) Create(ctx context.Context, employeeID uuid.UUID, itemIDs []uuid.UUID, preparer uuid.UUID, build Build) (Order, error) {
 	var out Order
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -51,6 +54,9 @@ func (r *PostgresRepository) Create(ctx context.Context, employeeID uuid.UUID, i
 	return out, translate(err)
 }
 
+// readSnapshot share-locks the live employee and the requested items with
+// their pictures, reads the live preparer's name and takes the next record
+// number.
 func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs []uuid.UUID, preparer uuid.UUID) (Snapshot, error) {
 	var s Snapshot
 	// FOR SHARE: the employee and items cannot be changed or deleted until the
@@ -104,6 +110,7 @@ func readSnapshot(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID, itemIDs 
 	return s, nil
 }
 
+// insertOrder inserts o and its snapshot lines.
 func insertOrder(ctx context.Context, tx pgx.Tx, o Order) error {
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO orders (id, record_seq, employee_id, employee_first_name, employee_last_name, employee_code,
@@ -126,10 +133,13 @@ func insertOrder(ctx context.Context, tx pgx.Tx, o Order) error {
 	return nil
 }
 
+// orderColumns are the orders columns scanOrder reads, in its order.
 const orderColumns = `id, record_seq, employee_id, employee_first_name, employee_last_name, employee_code,
 	status, ordered_at, prepared_by_user_id, prepared_by_name, given_at, given_by_user_id, given_by_name,
 	confirmation_method, updated_at, updated_by_user_id, receipt_text_version`
 
+// scanOrder reads an order row without its lines (an empty slice), times
+// in UTC; no row is ErrNotFound.
 func scanOrder(row pgx.Row) (Order, error) {
 	var o Order
 	err := row.Scan(&o.ID, &o.RecordSeq, &o.EmployeeID, &o.EmployeeFirstName, &o.EmployeeLastName, &o.EmployeeCode,
@@ -150,6 +160,7 @@ func scanOrder(row pgx.Row) (Order, error) {
 	return o, nil
 }
 
+// Get reads a live order and its lines, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Order, error) {
 	o, err := scanOrder(r.pool.QueryRow(ctx, `SELECT `+orderColumns+` FROM orders WHERE id = $1 AND deleted_at IS NULL`, id))
 	if err != nil {
@@ -193,6 +204,7 @@ func orderBy(f ListFilter) string {
 	return col.expr + " " + dir + " NULLS LAST, " + activity + " DESC, id DESC"
 }
 
+// List counts the live orders f matches and reads its page with their lines.
 func (r *PostgresRepository) List(ctx context.Context, f ListFilter) ([]Order, int, error) {
 	where := `deleted_at IS NULL`
 	var args []any
@@ -276,9 +288,13 @@ func (r *PostgresRepository) withLines(ctx context.Context, orders []Order) ([]O
 	return orders, rows.Err()
 }
 
+// confirmationColumns are the order_confirmations columns scanConfirmation
+// reads, in its order.
 const confirmationColumns = `id, order_id, method, token_hash, expires_at, revoked_at, confirmed_at,
 	confirmed_name, document_hash, created_at, created_by_user_id, first_opened_at`
 
+// scanConfirmation reads a confirmation row, times in UTC; no row is
+// pgx.ErrNoRows, for the caller to translate.
 func scanConfirmation(row pgx.Row) (Confirmation, error) {
 	var c Confirmation
 	err := row.Scan(&c.ID, &c.OrderID, &c.Method, &c.TokenHash, &c.ExpiresAt, &c.RevokedAt, &c.ConfirmedAt,
@@ -329,6 +345,7 @@ func revokeUnused(ctx context.Context, tx pgx.Tx, orderID uuid.UUID, at time.Tim
 	return err
 }
 
+// insertConfirmation inserts c: a new link, or paper or in-person evidence.
 func insertConfirmation(ctx context.Context, tx pgx.Tx, c Confirmation) error {
 	_, err := tx.Exec(ctx, `INSERT INTO order_confirmations (id, order_id, method, token_hash, expires_at,
 			confirmed_at, confirmed_name, document_hash, created_at, created_by_user_id)
@@ -338,6 +355,8 @@ func insertConfirmation(ctx context.Context, tx pgx.Tx, c Confirmation) error {
 	return err
 }
 
+// CreateLink locks the live order, calls fn, revokes the unused links and
+// inserts the new one and its event, in one transaction.
 func (r *PostgresRepository) CreateLink(ctx context.Context, orderID uuid.UUID, fn LinkFunc) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		o, err := lockOrder(ctx, tx, orderID)
@@ -358,6 +377,8 @@ func (r *PostgresRepository) CreateLink(ctx context.Context, orderID uuid.UUID, 
 	}))
 }
 
+// Delete locks the live order, calls fn, marks it deleted, revokes its
+// unused links and inserts the event, in one transaction.
 func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, fn DeleteFunc) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		o, err := lockOrder(ctx, tx, id)
@@ -380,6 +401,8 @@ func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, fn Delete
 	}))
 }
 
+// LatestLink reads the order's newest electronic link neither revoked nor
+// confirmed; nil when there is none.
 func (r *PostgresRepository) LatestLink(ctx context.Context, orderID uuid.UUID) (*Confirmation, error) {
 	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations
 		WHERE order_id = $1 AND method = 'ELECTRONIC' AND revoked_at IS NULL AND confirmed_at IS NULL
@@ -393,6 +416,7 @@ func (r *PostgresRepository) LatestLink(ctx context.Context, orderID uuid.UUID) 
 	return &c, nil
 }
 
+// LinkByHash reads the link with tokenHash on a live order, or ErrLinkExpired.
 func (r *PostgresRepository) LinkByHash(ctx context.Context, tokenHash string) (Confirmation, error) {
 	// A deleted order's links read as expired, even one already used.
 	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations
@@ -403,6 +427,8 @@ func (r *PostgresRepository) LinkByHash(ctx context.Context, tokenHash string) (
 	return c, err
 }
 
+// LinkOpened sets the link's first_opened_at and inserts ev, unless it is
+// set already.
 func (r *PostgresRepository) LinkOpened(ctx context.Context, linkID uuid.UUID, at time.Time, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `UPDATE order_confirmations SET first_opened_at = $2
@@ -415,6 +441,10 @@ func (r *PostgresRepository) LinkOpened(ctx context.Context, linkID uuid.UUID, a
 	}))
 }
 
+// Confirm locks the live order and, for a link, the link (ErrLinkExpired
+// when gone), reads the giver's name (ErrActorNotFound), calls fn and, unless
+// it is a no-op, writes GIVEN (ErrNotOrdered when the order is no longer
+// ORDERED), the evidence, the other links' revocation and the event.
 func (r *PostgresRepository) Confirm(ctx context.Context, orderID uuid.UUID, linkID *uuid.UUID, giver uuid.UUID, fn ConfirmFunc) (Order, error) {
 	var out Order
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -483,6 +513,7 @@ func (r *PostgresRepository) Confirm(ctx context.Context, orderID uuid.UUID, lin
 	return out, translate(err)
 }
 
+// ConfirmedFor reads the order's confirmation with evidence, or ErrNotFound.
 func (r *PostgresRepository) ConfirmedFor(ctx context.Context, orderID uuid.UUID) (Confirmation, error) {
 	c, err := scanConfirmation(r.pool.QueryRow(ctx, `SELECT `+confirmationColumns+` FROM order_confirmations
 		WHERE order_id = $1 AND confirmed_at IS NOT NULL`, orderID))
@@ -492,6 +523,9 @@ func (r *PostgresRepository) ConfirmedFor(ctx context.Context, orderID uuid.UUID
 	return c, err
 }
 
+// translate maps Postgres errors to sentinels: a unique violation is a
+// confirmation that lost a race (ErrNotOrdered), a foreign key the actor
+// (ErrActorNotFound), a CHECK ErrInvalid naming the constraint.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

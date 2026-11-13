@@ -447,11 +447,11 @@ Rules for using it:
 - **UI:** **Reorder**, **Reorder it**, **Reorder all N**, "Due for Ona" on Create Order.
 
 ### Delete order
-- **Brief:** a manager's soft delete of a demo or test order.
+- **Brief:** a soft delete of a demo or test order (`orders.delete`, the built-in Manager's).
 - **Detail:** the order leaves Orders, the dashboards and Replacements due, and its link
   stops working. It cannot be undone in the app. Every query over orders filters
   `deleted_at IS NULL`.
-- **UI:** **⋯ → Delete order…** (manager role only).
+- **UI:** **⋯ → Delete order…** (with `orders.delete`).
 
 ### Orders (History)
 - **Brief:** the screen listing every order, newest activity first.

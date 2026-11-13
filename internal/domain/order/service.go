@@ -10,8 +10,12 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
+// The order's audit events written here; the confirmation's are in
+// confirmation.go.
 const (
+	// EventOrdered: Mark as Ordered; its after is the order's summary.
 	EventOrdered = "order.ordered"
+	// EventDeleted: a soft delete; its before is the order's summary.
 	EventDeleted = "order.deleted"
 	auditEntity  = "order"
 )
@@ -29,13 +33,24 @@ type Service struct {
 	confirmTTL time.Duration
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-func WithLocation(loc *time.Location) Option      { return func(s *Service) { s.loc = loc } }
-func WithConfirmTTL(d time.Duration) Option       { return func(s *Service) { s.confirmTTL = d } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
+// WithIDGenerator replaces uuid.New for orders, lines, links and events.
+func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
+
+// WithLocation sets the organisation's timezone (API_ORG_TIMEZONE); UTC by default.
+func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
+
+// WithConfirmTTL sets how long a confirmation link stays usable
+// (API_CONFIRM_TTL); DefaultConfirmTTL by default.
+func WithConfirmTTL(d time.Duration) Option { return func(s *Service) { s.confirmTTL = d } }
+
+// NewService is the order service over repo, reading live employees, the
+// catalogue and item sets through r.
 func NewService(repo Repository, r Readers, opts ...Option) *Service {
 	s := &Service{repo: repo, read: r, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New, loc: time.UTC, confirmTTL: DefaultConfirmTTL}
 	for _, o := range opts {
@@ -125,8 +140,9 @@ func (s *Service) MarkAsOrdered(ctx context.Context, p MarkAsOrderedParams, acto
 }
 
 // Delete soft-deletes an order, ORDERED or GIVEN, for clearing demo and test
-// orders. The route allows only the manager role. The order leaves History,
-// the dashboards and Replacements due; its unused confirmation links stop
+// orders. The route needs orders.delete, which of the built-in roles only
+// Manager holds. The order leaves Orders, the dashboards and Replacements
+// due; its unused confirmation links stop
 // working; its row, lines, evidence and audit trail stay. The event records
 // what was deleted.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
@@ -146,7 +162,8 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) err
 	})
 }
 
-// Get returns a stored order with its snapshot lines.
+// Get returns a live order with its snapshot lines and, while it is ORDERED,
+// the confirmation link it waits on (Order.Link), or ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Order, error) {
 	o, err := s.repo.Get(ctx, id)
 	if err != nil || o.Status != StatusOrdered {

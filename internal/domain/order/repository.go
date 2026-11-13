@@ -29,6 +29,10 @@ type Build func(s Snapshot) (Order, audit.Event, error)
 // records it; the service supplies it.
 type DeleteFunc func(cur Order) (Order, audit.Event, error)
 
+// Repository is the persistence the order service needs. Its reads return
+// live orders only: a deleted order is ErrNotFound, and its links read as
+// expired. Implementations translate storage errors to this package's
+// sentinels and never validate.
 type Repository interface {
 	// Create runs Mark as Ordered: in one transaction it share-locks the live
 	// employee (ErrEmployeeNotFound) and the requested catalogue items, reads
@@ -64,6 +68,7 @@ type Repository interface {
 	// the confirmation evidence, the revocation of other unused links, and the
 	// event, all in one transaction. It returns the resulting order.
 	Confirm(ctx context.Context, orderID uuid.UUID, linkID *uuid.UUID, giver uuid.UUID, fn ConfirmFunc) (Order, error)
-	// ConfirmedFor returns the confirmation holding the evidence of a GIVEN order.
+	// ConfirmedFor returns the confirmation holding the evidence of a GIVEN
+	// order, or ErrNotFound when there is none.
 	ConfirmedFor(ctx context.Context, orderID uuid.UUID) (Confirmation, error)
 }

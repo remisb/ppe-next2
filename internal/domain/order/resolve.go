@@ -43,16 +43,20 @@ type SetLineView struct {
 	DefaultQuantity int
 }
 
+// EmployeeReader reads live employees for resolution and the record's
+// language.
 type EmployeeReader interface {
 	// Employee returns a live employee or ErrEmployeeNotFound.
 	Employee(ctx context.Context, id uuid.UUID) (EmployeeView, error)
 }
 
+// CatalogueReader reads catalogue items for resolution.
 type CatalogueReader interface {
 	// Items returns the live items among ids; deleted or unknown ids are absent.
 	Items(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]ItemView, error)
 }
 
+// ItemSetReader reads item sets for Apply Item Set.
 type ItemSetReader interface {
 	// ActiveSetLines returns an active, live set's lines in display order, or
 	// ErrItemSetNotFound.
@@ -164,6 +168,8 @@ func (s *Service) Resolve(ctx context.Context, employeeID uuid.UUID, lines []Res
 	return out, nil
 }
 
+// resolveLine is algorithm A for one merged line: item is the zero ItemView
+// when the item is deleted or unknown.
 func resolveLine(emp EmployeeView, item ItemView, l ResolveLine) WorkingLine {
 	w := WorkingLine{CatalogueItemID: l.CatalogueItemID, Quantity: l.Quantity}
 	if item.ID == uuid.Nil { // deleted or unknown
