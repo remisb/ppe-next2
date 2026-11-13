@@ -1,4 +1,6 @@
-// Package dashboard holds the role dashboards (administrator, manager, employee):
+// Package dashboard holds the dashboards (the administrator's, the manager's
+// and the employee role's, each behind its own permission: dashboard.overview,
+// dashboard.manager, dashboard.employee) and the Replacements due screen:
 // read-only figures over orders, employees, the catalogue, item sets and users.
 // It owns no table and writes nothing. Money, items and names of past orders come from the order
 // snapshots, as in History; only the setup counts read live master data.
@@ -38,7 +40,8 @@ type Window struct {
 	// month (MonthStarts[Months-2]): the same day and time of month as Now,
 	// or the end of the previous month when it is shorter.
 	PreviousTo time.Time
-	Limit      int
+	// Limit caps the lists.
+	Limit int
 }
 
 // Overview is the whole dashboard. The repository fills the stored figures;
@@ -71,6 +74,8 @@ type Awaiting struct {
 	Longest []Waiting `json:"longest"`
 }
 
+// Waiting is one ORDERED order on a dashboard's longest-waiting list; its
+// names and value come from the snapshot.
 type Waiting struct {
 	OrderID      uuid.UUID `json:"order_id"`
 	RecordSeq    int64     `json:"-"`
@@ -128,6 +133,8 @@ type Replacements struct {
 	Next        []Replacement `json:"next"` // soonest due first
 }
 
+// Replacement is one item due for replacement: the GIVEN line it replaces
+// and when its service period ends.
 type Replacement struct {
 	EmployeeID      uuid.UUID `json:"employee_id"`
 	EmployeeName    string    `json:"employee_name"`
@@ -156,6 +163,8 @@ type Setup struct {
 	// which Mark as Ordered refuses.
 	CatalogueUnpriced int `json:"catalogue_unpriced"`
 	ItemSetsActive    int `json:"item_sets_active"`
-	Users             int `json:"users"`
-	Admins            int `json:"admins"`
+	// Users are the active users; Admins those of them holding the built-in
+	// Administrator role.
+	Users  int `json:"users"`
+	Admins int `json:"admins"`
 }

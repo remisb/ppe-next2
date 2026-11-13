@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// Repository reads the dashboards' stored figures; the service derives the
+// rest. Every read skips deleted orders, employees, items and sets.
 type Repository interface {
 	// ReadSetup returns the setup figures alone (the Usage screen samples them daily).
 	ReadSetup(ctx context.Context) (Setup, error)

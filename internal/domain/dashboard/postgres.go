@@ -18,6 +18,7 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the dashboard repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -57,6 +58,8 @@ func (r *PostgresRepository) Read(ctx context.Context, w Window) (Overview, erro
 	return o, err
 }
 
+// readAwaiting counts the ORDERED orders and their value, and reads the
+// longest waiting.
 func readAwaiting(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	if err := tx.QueryRow(ctx, `SELECT count(*), coalesce(sum(`+lineTotal+`), 0)::bigint
 		FROM orders o WHERE o.deleted_at IS NULL AND o.status = 'ORDERED'`).Scan(&o.Awaiting.Orders, &o.Awaiting.ValueCents); err != nil {
@@ -112,6 +115,8 @@ func readMonths(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	return nil
 }
 
+// readConfirmation counts the orders given since w.ConfirmSince by method,
+// with the median seconds from ordered to given.
 func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	c := &o.Confirmation
 	return tx.QueryRow(ctx, `SELECT count(*),
@@ -123,6 +128,8 @@ func readConfirmation(ctx context.Context, tx pgx.Tx, w Window, o *Overview) err
 		Scan(&c.Given, &c.Electronic, &c.Paper, &c.InPerson, &c.MedianSeconds)
 }
 
+// readTopItems ranks items by the quantity given since the window's first
+// month, each named as on its latest given line.
 func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	rows, err := tx.Query(ctx, `SELECT l.catalogue_item_id, (array_agg(l.item_name ORDER BY o.given_at DESC))[1],
 			sum(l.quantity), sum(l.accounting_price_cents * l.quantity)::bigint
@@ -141,6 +148,7 @@ func readTopItems(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	return err
 }
 
+// readReplacements is queryReplacements for the administrator's dashboard.
 func readReplacements(ctx context.Context, tx pgx.Tx, w Window, o *Overview) error {
 	var err error
 	o.Replacements, err = queryReplacements(ctx, tx, w.Now, w.DueBy, w.Limit)
@@ -193,6 +201,7 @@ func (r *PostgresRepository) ReadReplacements(ctx context.Context, now, dueBy ti
 	return out, err
 }
 
+// ReadSetup reads the setup figures alone, in a read-only transaction.
 func (r *PostgresRepository) ReadSetup(ctx context.Context) (Setup, error) {
 	var o Overview
 	err := pgx.BeginTxFunc(ctx, r.pool, pgx.TxOptions{AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
@@ -201,6 +210,7 @@ func (r *PostgresRepository) ReadSetup(ctx context.Context) (Setup, error) {
 	return o.Setup, err
 }
 
+// readSetup counts the live master data and its gaps (see Setup).
 func readSetup(ctx context.Context, tx pgx.Tx, _ Window, o *Overview) error {
 	s := &o.Setup
 	return tx.QueryRow(ctx, `SELECT
@@ -234,6 +244,7 @@ func (r *PostgresRepository) ReadManager(ctx context.Context, w ManagerWindow) (
 	return f, err
 }
 
+// readOnOrder counts the ORDERED orders, their items and value.
 func readOnOrder(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigures) error {
 	o := &f.OnOrder
 	return tx.QueryRow(ctx, `SELECT count(DISTINCT o.id), coalesce(sum(l.quantity), 0), coalesce(sum(l.accounting_price_cents * l.quantity), 0)::bigint
@@ -354,6 +365,9 @@ func readPriceChanges(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *Manage
 	return err
 }
 
+// readCatalogueCheck counts the live items by activity and lists the active
+// ones without a price or service period, and the active, priced ones on no
+// order since the window's first month.
 func readCatalogueCheck(ctx context.Context, tx pgx.Tx, w ManagerWindow, f *ManagerFigures) error {
 	c := &f.Catalogue
 	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE active), count(*) FILTER (WHERE NOT active)
@@ -410,6 +424,8 @@ func readItemSetIssues(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *Manag
 	return err
 }
 
+// readSizeGroups counts the live employees by saved sizes and height, for the
+// service to spread.
 func readSizeGroups(ctx context.Context, tx pgx.Tx, _ ManagerWindow, f *ManagerFigures) error {
 	rows, err := tx.Query(ctx, `SELECT clothing_size, height_cm, shoe_size, count(*)
 		FROM employees WHERE deleted_at IS NULL GROUP BY 1, 2, 3`)
@@ -511,6 +527,7 @@ func readMyMonths(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeO
 	return nil
 }
 
+// readRecentlyGiven reads the user's most recently given orders.
 func readRecentlyGiven(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
 	rows, err := tx.Query(ctx, `SELECT o.id, o.record_seq, o.employee_id, o.employee_first_name || ' ' || o.employee_last_name,
 			o.given_at, o.confirmation_method,
@@ -529,6 +546,8 @@ func readRecentlyGiven(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *Empl
 	return err
 }
 
+// readMissingSizes counts the live employees missing a size and lists the
+// first by name.
 func readMissingSizes(ctx context.Context, tx pgx.Tx, w EmployeeWindow, o *EmployeeOverview) error {
 	rows, err := tx.Query(ctx, `SELECT id, first_name || ' ' || last_name, code,
 			clothing_size IS NULL AND height_cm IS NULL, shoe_size IS NULL, count(*) OVER ()

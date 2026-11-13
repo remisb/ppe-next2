@@ -26,7 +26,8 @@ type EmployeeWindow struct {
 	DueBy time.Time
 	// PreviousTo is as in Window.
 	PreviousTo time.Time
-	Limit      int
+	// Limit caps the lists.
+	Limit int
 }
 
 // EmployeeOverview is the order preparer's dashboard: their own orders still
@@ -48,6 +49,8 @@ type EmployeeOverview struct {
 	MissingSizes  MissingSizes `json:"missing_sizes"`
 }
 
+// MyAwaiting is the user's ORDERED orders and how their confirmation links
+// stand.
 type MyAwaiting struct {
 	Orders     int   `json:"orders"`
 	Items      int   `json:"items"`
@@ -61,6 +64,8 @@ type MyAwaiting struct {
 	Longest []MyWaiting `json:"longest"`
 }
 
+// MyWaiting is one of the user's longest waiting orders, with its items and
+// its link's state.
 type MyWaiting struct {
 	Waiting
 	Items int `json:"items"`
@@ -79,6 +84,7 @@ type MyMonth struct {
 	GivenItems int `json:"given_items"`
 }
 
+// GivenOrder is one of the user's recently given orders.
 type GivenOrder struct {
 	OrderID      uuid.UUID `json:"order_id"`
 	RecordSeq    int64     `json:"-"`
@@ -95,9 +101,11 @@ type GivenOrder struct {
 // clothing size and a height to suggest one: Create Order flags their lines.
 type MissingSizes struct {
 	Employees int                   `json:"employees"`
-	List      []EmployeeMissingSize `json:"list"` // by name
+	List      []EmployeeMissingSize `json:"list"` // by last name, then first
 }
 
+// EmployeeMissingSize is one employee on MissingSizes' list and which sizes
+// they lack.
 type EmployeeMissingSize struct {
 	EmployeeID   uuid.UUID `json:"employee_id"`
 	EmployeeName string    `json:"employee_name"`

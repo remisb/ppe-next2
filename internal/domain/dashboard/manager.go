@@ -20,7 +20,8 @@ type ManagerWindow struct {
 	PriceChangesSince time.Time
 	// PreviousTo is as in Window.
 	PreviousTo time.Time
-	Limit      int
+	// Limit caps the lists.
+	Limit int
 }
 
 // ManagerOverview is the manager's dashboard: items, prices and what will
@@ -72,6 +73,8 @@ type Forecast struct {
 	Lines          []ForecastLine `json:"lines"` // by quantity, largest first
 }
 
+// ForecastLine is the replacement demand for one item: its quantity, how many
+// employees need it, and its cost at today's price.
 type ForecastLine struct {
 	CatalogueItemID uuid.UUID `json:"catalogue_item_id"`
 	ItemName        string    `json:"item_name"`
@@ -111,6 +114,7 @@ type CatalogueCheck struct {
 	NotOrdered []ItemRef `json:"not_ordered"`
 }
 
+// ItemRef names a live catalogue item.
 type ItemRef struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
@@ -136,6 +140,7 @@ type SizeSpread struct {
 	Suggested int `json:"suggested"`
 }
 
+// SizeCount is how many employees one size is for.
 type SizeCount struct {
 	Size      string `json:"size"`
 	Employees int    `json:"employees"`

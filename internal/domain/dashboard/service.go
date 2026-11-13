@@ -23,11 +23,16 @@ type Service struct {
 	limit int
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option  { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithLocation sets the organisation's timezone (API_ORG_TIMEZONE); UTC by default.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 
+// NewService is the dashboard service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, loc: time.UTC, limit: ListLimit}
 	for _, o := range opts {
@@ -71,13 +76,14 @@ func (s *Service) previous(w Window) (month string, throughDay int) {
 	return month, w.PreviousTo.Add(-time.Nanosecond).In(s.loc).Day()
 }
 
-// Overview reads the figures and derives the labels, ages and rounding.
 // Setup is the data's setup figures now (employees without sizes, unpriced
-// items …), the same as the Dashboard's.
+// items …), the same as the Dashboard's; the Usage screen samples them daily.
 func (s *Service) Setup(ctx context.Context) (Setup, error) {
 	return s.repo.ReadSetup(ctx)
 }
 
+// Overview is the administrator's Dashboard: it reads the figures and derives
+// the labels, ages and rounding.
 func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	now := s.now()
 	w := s.window(now)
@@ -120,7 +126,8 @@ func (s *Service) days(t, now time.Time) int {
 	return max(0, int(db.Sub(da).Hours()/24))
 }
 
-// Manager is the manager's dashboard.
+// Manager is the Manager Dashboard: it reads the figures, labels the months,
+// totals the forecast and spreads the sizes.
 func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
 	now := s.now()
 	w := s.window(now)
@@ -149,6 +156,8 @@ func (s *Service) Manager(ctx context.Context) (ManagerOverview, error) {
 
 // Employee is the dashboard of the employee role for userID, the signed-in
 // user: their own orders, and what the organisation needs ordered next.
+//
+// A missing user is ErrInvalid.
 func (s *Service) Employee(ctx context.Context, userID uuid.UUID) (EmployeeOverview, error) {
 	if userID == uuid.Nil {
 		return EmployeeOverview{}, fmt.Errorf("%w: user is required", ErrInvalid)

@@ -1,22 +1,24 @@
 # Dashboard service
 
-Three read-only dashboards, each for its role alone. The administrator's overview: `internal/domain/dashboard`, route in
+Three read-only dashboards, each behind its own permission, which of the built-in roles only
+its own holds, and the Replacements due screen: `internal/domain/dashboard`, routes in
 `cmd/api/dashboard-routes.go`. It owns no table and writes nothing; it reads orders,
 order lines, employees, catalogue items, item sets and users in one read-only
 `REPEATABLE READ` transaction, so its figures agree with each other.
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/dashboard` | admin |
-| `GET /api/v1/dashboard/manager` | manager (not admin: the administrator has their own) |
-| `GET /api/v1/dashboard/employee` | employee (not admin or manager); covers the signed-in user |
+| `GET /api/v1/dashboard` | `dashboard.overview` (Administrator) |
+| `GET /api/v1/dashboard/manager` | `dashboard.manager` (Manager; not Administrator, which has its own) |
+| `GET /api/v1/dashboard/employee` | `dashboard.employee` (Employee); covers the signed-in user |
 | `GET /api/v1/replacements` | any authenticated: the Replacements due screen, `{due_soon_days, overdue, due_soon, next}` as in `replacements` below but with up to 500 rows, not 8 |
 
 In the web app each is its role's start screen: the Dashboard (`/dashboard`) for
 administrators, the Manager Dashboard (`/manager`) for managers, the Employee Dashboard
 (`/my-orders`) for the employee role, Create Order for a user with none of these; `/` and
-any dashboard's address show the signed-in user's own. A user with several roles starts on
-the first of admin, manager, employee, and opens the others' dashboards from its header.
+the address of a dashboard the user may not open show the user's own. A user with several
+of the permissions starts on the first of `dashboard.overview`, `dashboard.manager`,
+`dashboard.employee`, and opens the others' dashboards from its header.
 
 ## Figures
 
@@ -32,7 +34,7 @@ calendar (`API_ORG_TIMEZONE`); timestamps stay UTC.
 | `confirmation` | Orders given in the last 90 days: count, electronic, paper and in person (`in_person`, hand-over mode), median days from ordered to given (one decimal) |
 | `top_items` | The 8 items with the largest quantity given over the 12 months, by catalogue item, named as on their latest receipt |
 | `replacements` | For each live employee and item, the most recent GIVEN line, due at `given_at` + its service period. Listed when due within 30 days (`overdue` when due now or earlier), unless the item is already on an ORDERED order for that employee. Counts, and the 8 soonest due, each with the `quantity` given on that line (the web app's Reorder starts from it) |
-| `setup` | Live employees and those missing a size (no shoe size, or neither a clothing size nor a height), active catalogue items and those without an accounting price or service period (Mark as Ordered refuses them), active item sets, active users and administrators |
+| `setup` | Live employees and those missing a size (no shoe size, or neither a clothing size nor a height), active catalogue items and those without an accounting price or service period (Mark as Ordered refuses them), active item sets, active users and those holding the built-in Administrator role. The Usage screen samples these daily (`Service.Setup`) |
 
 Lists are `[]`, never null; an empty database gives a complete dashboard.
 
@@ -67,4 +69,4 @@ whole organisation, since any preparer may order for anyone.
 | `previous_to_date`, `through_day` | As on the administrator's dashboard |
 | `recently_given` | The user's 8 most recently given orders: employee, date, method, items, value, record number |
 | `replacements` | As on the administrator's dashboard |
-| `missing_sizes` | Live employees without a shoe size, or without both a clothing size and a height: the count and the first 8 by name, with what is missing |
+| `missing_sizes` | Live employees without a shoe size, or without both a clothing size and a height: the count and the first 8 by last name, then first, with what is missing |
