@@ -41,7 +41,12 @@ the Audit log.
 | `created_at`, `updated_at`, `created_by_user_id`, `updated_by_user_id`, `deleted_at`, `deleted_by_user_id` | Set by the service; response only |
 
 An item missing an accounting price or service period is valid in the catalogue but not *orderable*
-(`Item.Orderable`): Mark as Ordered refuses it and directs an authorised user here.
+(`Item.Orderable` states the rule): Mark as Ordered refuses it and directs an authorised user here.
+The order domain applies the same rule to the rows it locks (`order.ErrPriceMissing`, and
+`order.ErrItemUnavailable` for an inactive or deleted item, both 409).
+
+`name` is unique among live items only (`catalogue_items_name_live_idx`), so a deleted item's
+name may be used again.
 
 ## Routes
 

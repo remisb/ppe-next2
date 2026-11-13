@@ -21,6 +21,7 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the catalogue repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -30,10 +31,13 @@ const columns = `i.id, i.name, i.details, p.size_group, i.purchase_price_cents, 
 	i.service_period_months, i.active, i.display_rank, i.icon, i.created_at, i.updated_at, i.deleted_at,
 	i.created_by_user_id, i.updated_by_user_id, i.deleted_by_user_id`
 
+// from joins each item to its picture, which gives its size group.
 const from = ` FROM catalogue_items i JOIN catalogue_pictures p ON p.icon = i.icon`
 
+// selectorOrder is the display order: rank, then name, then id for ties.
 const selectorOrder = `ORDER BY i.display_rank, lower(i.name), i.id`
 
+// scan reads an item row of columns, times in UTC; no row is ErrNotFound.
 func scan(row pgx.Row) (Item, error) {
 	var i Item
 	err := row.Scan(&i.ID, &i.Name, &i.Details, &i.SizeGroup, &i.PurchasePriceCents, &i.AccountingPriceCents, &i.Currency, &i.ServicePeriodMonths,
@@ -48,6 +52,7 @@ func scan(row pgx.Row) (Item, error) {
 	return i, nil
 }
 
+// query reads the items sql selects.
 func (r *PostgresRepository) query(ctx context.Context, sql string, args ...any) ([]Item, error) {
 	rows, err := r.pool.Query(ctx, sql, args...)
 	if err != nil {
@@ -65,6 +70,7 @@ func (r *PostgresRepository) query(ctx context.Context, sql string, args ...any)
 	return out, rows.Err()
 }
 
+// Create inserts i and ev and reads i back with its picture.
 func (r *PostgresRepository) Create(ctx context.Context, i Item, ev *audit.Event) (Item, error) {
 	var out Item
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -88,18 +94,23 @@ func (r *PostgresRepository) Create(ctx context.Context, i Item, ev *audit.Event
 	return out, translate(err)
 }
 
+// Get reads the live item, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Item, error) {
 	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+from+` WHERE i.id = $1 AND i.deleted_at IS NULL`, id))
 }
 
+// List reads every live item in display order.
 func (r *PostgresRepository) List(ctx context.Context) ([]Item, error) {
 	return r.query(ctx, `SELECT `+columns+from+` WHERE i.deleted_at IS NULL `+selectorOrder)
 }
 
+// ListActive reads the live, active items in display order.
 func (r *PostgresRepository) ListActive(ctx context.Context) ([]Item, error) {
 	return r.query(ctx, `SELECT `+columns+from+` WHERE i.deleted_at IS NULL AND i.active `+selectorOrder)
 }
 
+// Update locks the live item (its row, not its picture's), applies m, writes
+// every field m may change and the events, and reads the item back.
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Item, error) {
 	var out Item
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -133,6 +144,9 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+// Reorder locks every live item in display order, applies m, writes the
+// changed ranks and the events, and reads every live item back in the new
+// order.
 func (r *PostgresRepository) Reorder(ctx context.Context, m OrderMutation) ([]Item, error) {
 	var out []Item
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -159,6 +173,7 @@ func (r *PostgresRepository) Reorder(ctx context.Context, m OrderMutation) ([]It
 	return out, translate(err)
 }
 
+// queryTx is query inside tx.
 func queryTx(ctx context.Context, tx pgx.Tx, sql string) ([]Item, error) {
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
@@ -180,6 +195,8 @@ func queryTx(ctx context.Context, tx pgx.Tx, sql string) ([]Item, error) {
 const pictureColumns = `p.id, p.icon, p.size_group,
 	(SELECT count(*) FROM catalogue_items i WHERE i.icon = p.icon AND i.deleted_at IS NULL)`
 
+// scanPicture reads a picture row of pictureColumns; no row is
+// ErrPictureNotFound.
 func scanPicture(row pgx.Row) (Picture, error) {
 	var p Picture
 	err := row.Scan(&p.ID, &p.Icon, &p.SizeGroup, &p.ItemCount)
@@ -189,6 +206,7 @@ func scanPicture(row pgx.Row) (Picture, error) {
 	return p, err
 }
 
+// iconOrder is Icons as strings, for ordering pictures as the picker does.
 func iconOrder() []string {
 	out := make([]string, len(Icons))
 	for n, i := range Icons {
@@ -197,6 +215,7 @@ func iconOrder() []string {
 	return out
 }
 
+// Pictures reads every picture in Icons order, with its live items counted.
 func (r *PostgresRepository) Pictures(ctx context.Context) ([]Picture, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+pictureColumns+` FROM catalogue_pictures p
 		ORDER BY array_position($1::text[], p.icon), p.icon`, iconOrder())
@@ -215,6 +234,8 @@ func (r *PostgresRepository) Pictures(ctx context.Context) ([]Picture, error) {
 	return out, rows.Err()
 }
 
+// UpdatePicture locks the picture, applies m and, when it returns events,
+// writes the size group and them.
 func (r *PostgresRepository) UpdatePicture(ctx context.Context, icon Icon, m PictureMutation) (Picture, error) {
 	var out Picture
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -240,8 +261,10 @@ func (r *PostgresRepository) UpdatePicture(ctx context.Context, icon Icon, m Pic
 	return out, translate(err)
 }
 
-// PriceHistory reads the accounting price under its pre-0021 key
-// unit_price_cents too (see priceSnapshot).
+// PriceHistory reads the item's catalogue.created and catalogue.price_changed
+// events, newest first, with the actor's current name; it reads the
+// accounting price under its pre-0021 key unit_price_cents too (see
+// priceSnapshot).
 func (r *PostgresRepository) PriceHistory(ctx context.Context, id uuid.UUID) ([]PriceEntry, error) {
 	rows, err := r.pool.Query(ctx, `SELECT a.occurred_at, a.event, u.name,
 			(a.after ->> 'purchase_price_cents')::bigint,
@@ -265,6 +288,7 @@ func (r *PostgresRepository) PriceHistory(ctx context.Context, id uuid.UUID) ([]
 	})
 }
 
+// insertEvent inserts ev, when there is one.
 func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 	if ev == nil {
 		return nil
@@ -272,6 +296,10 @@ func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 	return audit.Insert(ctx, tx, *ev)
 }
 
+// translate maps Postgres errors to sentinels: a unique violation is the
+// name (ErrNameTaken), the icon's foreign key an unknown pictogram
+// (ErrInvalid), any other foreign key the actor (ErrActorNotFound), a CHECK
+// ErrInvalid naming the constraint.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

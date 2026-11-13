@@ -12,14 +12,24 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/size"
 )
 
+// The catalogue's audit events (docs/specs/catalogue-service.md, "Audit").
 const (
-	EventCreated      = "catalogue.created"
-	EventUpdated      = "catalogue.updated"
+	// EventCreated: a new item; its after is the item's prices and service
+	// period.
+	EventCreated = "catalogue.created"
+	// EventUpdated: the changed name, details, picture (with the size group it
+	// brings) or display rank, before and after.
+	EventUpdated = "catalogue.updated"
+	// EventPriceChanged: either price, the currency or the service period
+	// changed; before and after hold all four.
 	EventPriceChanged = "catalogue.price_changed"
-	EventActivated    = "catalogue.activated"
-	EventDeactivated  = "catalogue.deactivated"
-	EventDeleted      = "catalogue.deleted"
-	auditEntity       = "catalogue_item"
+	// EventActivated: Activate, or an edit making the item active.
+	EventActivated = "catalogue.activated"
+	// EventDeactivated: Deactivate, or an edit making the item inactive.
+	EventDeactivated = "catalogue.deactivated"
+	// EventDeleted: a soft delete.
+	EventDeleted = "catalogue.deleted"
+	auditEntity  = "catalogue_item"
 
 	// EventPictureChanged is a picture's new size group.
 	EventPictureChanged = "catalogue.picture_changed"
@@ -27,17 +37,23 @@ const (
 	PictureEntity = "catalogue_picture"
 )
 
+// Service holds the Item Catalogue's use cases.
 type Service struct {
 	repo  Repository
 	now   func() time.Time
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for items and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the catalogue service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -56,24 +72,29 @@ type priceSnapshot struct {
 	ServicePeriodMonths  *int   `json:"service_period_months"`
 }
 
+// priceOf is i's prices and service period as price events record them.
 func priceOf(i Item) priceSnapshot {
 	return priceSnapshot{PurchasePriceCents: i.PurchasePriceCents, AccountingPriceCents: i.AccountingPriceCents,
 		Currency: i.Currency, ServicePeriodMonths: i.ServicePeriodMonths}
 }
 
+// equal reports whether a and b hold the same values.
 func (a priceSnapshot) equal(b priceSnapshot) bool {
 	return eqPtr(a.PurchasePriceCents, b.PurchasePriceCents) && eqPtr(a.AccountingPriceCents, b.AccountingPriceCents) &&
 		a.Currency == b.Currency && eqPtr(a.ServicePeriodMonths, b.ServicePeriodMonths)
 }
 
+// eqPtr reports whether a and b are both nil or point to equal values.
 func eqPtr[T comparable](a, b *T) bool {
 	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
 }
 
+// event is an audit event on the item id by actor.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
 	return s.eventOn(auditEntity, actor, name, id, at, before, after)
 }
 
+// eventOn is an audit event on entity id by actor.
 func (s *Service) eventOn(entity string, actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
 	ev, err := audit.New(s.newID(), &actor, name, entity, id, at, before, after)
 	if err != nil {
@@ -100,6 +121,8 @@ func (r Rights) checkPrices(cur, next Item) error {
 	return ErrNotPermitted
 }
 
+// Create is Add Item: a new item, always in EUR, with catalogue.created. A
+// price or purchase price needs may.Prices (ErrNotPermitted).
 func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
@@ -125,8 +148,12 @@ func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.U
 	return s.repo.Create(ctx, i, ev)
 }
 
+// Get is the live item, or ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Item, error) { return s.repo.Get(ctx, id) }
-func (s *Service) List(ctx context.Context) ([]Item, error)            { return s.repo.List(ctx) }
+
+// List is every live item, active or not, in display order: the Item
+// Catalogue.
+func (s *Service) List(ctx context.Context) ([]Item, error) { return s.repo.List(ctx) }
 
 // ListActive feeds the Add Item selector: inactive items never appear there,
 // though they stay visible in order snapshots.
@@ -164,7 +191,8 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights
 	})
 }
 
-// SetActive is Activate / Deactivate.
+// SetActive is Activate / Deactivate; the state it already has records
+// nothing.
 func (s *Service) SetActive(ctx context.Context, id uuid.UUID, active bool, actor uuid.UUID) (Item, error) {
 	if actor == uuid.Nil {
 		return Item{}, fieldError("actor", "is required")
@@ -242,7 +270,8 @@ func (s *Service) touch(cur, next Item, actor uuid.UUID) (Item, []audit.Event, e
 	return next, evs, nil
 }
 
-// Delete soft-deletes an item. Order snapshots keep its values.
+// Delete soft-deletes an item with catalogue.deleted. Order snapshots keep
+// its values; it leaves Add Item and the catalogue, and its name is free again.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")

@@ -16,6 +16,7 @@ import (
 // CurrencyEUR is the only supported currency.
 const CurrencyEUR = "EUR"
 
+// Length limits of an item's text, in bytes, and its default rank.
 const (
 	maxNameLen    = 200
 	maxDetailsLen = 1000
@@ -27,6 +28,7 @@ const (
 // Picture, which gives its items their size group.
 type Icon string
 
+// The pictures, by their keys in catalogue_pictures.icon.
 const (
 	IconShoes           Icon = "shoes"
 	IconJacket          Icon = "jacket"
@@ -49,6 +51,7 @@ var Icons = []Icon{
 	IconHelmet, IconWeldingHelmet, IconGlasses, IconEar, IconMask, IconOther,
 }
 
+// Valid reports whether i is one of Icons.
 func (i Icon) Valid() bool {
 	for _, x := range Icons {
 		if i == x {
@@ -73,10 +76,12 @@ type PictureParams struct {
 	SizeGroup size.Group
 }
 
+// Normalize trims the size group and puts it in upper case.
 func (p *PictureParams) Normalize() {
 	p.SizeGroup = size.Group(strings.ToUpper(strings.TrimSpace(string(p.SizeGroup))))
 }
 
+// Validate normalizes p and checks the size group.
 func (p *PictureParams) Validate() error {
 	p.Normalize()
 	if !p.SizeGroup.Valid() {
@@ -89,7 +94,8 @@ func (p *PictureParams) Validate() error {
 // price, what the supplier charges, and the accounting price, what the
 // organisation books and orders show. AccountingPriceCents and
 // ServicePeriodMonths may be nil while an item is being set up; Mark as Ordered
-// refuses such an item (see Orderable). PurchasePriceCents is optional.
+// refuses such an item (Orderable states the rule). PurchasePriceCents is
+// optional.
 type Item struct {
 	ID      uuid.UUID `json:"id"`
 	Name    string    `json:"name"`
@@ -129,11 +135,13 @@ type PriceEntry struct {
 	BeforeServiceMonths   *int   `json:"before_service_months"`
 }
 
+// Deleted reports whether the item is soft-deleted.
 func (i Item) Deleted() bool { return i.DeletedAt != nil }
 
 // Orderable reports whether the item can go on a new order: live, active, and
 // with both an accounting price and a service period. The purchase price is
-// optional.
+// optional. Mark as Ordered applies the same rule to the rows it locks, in the
+// order domain (order.ErrItemUnavailable, order.ErrPriceMissing).
 func (i Item) Orderable() bool {
 	return !i.Deleted() && i.Active && i.AccountingPriceCents != nil && i.ServicePeriodMonths != nil
 }
@@ -153,6 +161,8 @@ type Params struct {
 	Icon Icon
 }
 
+// Normalize trims the text, fills in the default display rank and puts the
+// icon in lower case, IconOther when empty.
 func (p *Params) Normalize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.Details = strings.TrimSpace(p.Details)
@@ -166,6 +176,7 @@ func (p *Params) Normalize() {
 	}
 }
 
+// Validate normalizes p and checks every field.
 func (p *Params) Validate() error {
 	p.Normalize()
 	switch {
