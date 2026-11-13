@@ -51,14 +51,19 @@ type Service struct {
 	recorded func(Kind)
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for the error list's rows.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithRecorded calls f with the kind of every error recorded (the metrics).
 func WithRecorded(f func(Kind)) Option { return func(s *Service) { s.recorded = f } }
 
+// NewService is the system service over store.
 func NewService(store Store, opts ...Option) *Service {
 	s := &Service{
 		store:    store,
@@ -119,6 +124,8 @@ func (s *Service) VersionErrors(ctx context.Context, app string) (map[string]Ver
 	return s.store.VersionErrors(ctx, app)
 }
 
+// Errors is one page of the error list, last seen first; the first page also
+// counts the rows by kind.
 func (s *Service) Errors(ctx context.Context, f ErrorFilter) (ErrorPage, error) {
 	switch {
 	case f.Kind != "" && !IsKind(f.Kind):

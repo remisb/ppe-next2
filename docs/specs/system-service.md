@@ -102,13 +102,17 @@ At start and hourly, until ADR 0001's worker exists, the upkeep:
 - seals the audit days that have ended, and gets a trusted timestamp for each new seal
   (`API_AUDIT_TSA_URL`);
 - purges audit events older than `API_AUDIT_RETENTION`, sealed days only;
-- verifies every seal ([audit-service.md](audit-service.md)).
+- verifies every seal ([audit-service.md](audit-service.md));
+- shreds the personnel files whose retention has ended, when the personnel keys and
+  `API_PERSONNEL_RETENTION_MONTHS` are set ([personnel-service.md](personnel-service.md)).
 
 A failed seal or purge logs `audit sealing failed` or `audit purge failed`; a seal that does
 not match logs `audit seals do not match` with the day.
 
 What it deleted and when are shown on System, and a part that failed is logged: `security
-events purge failed`, `error list purge failed`, `database size sample failed`.
+events purge failed`, `error list purge failed`, `database size sample failed`, `usage
+activity purge failed`, `data quality sample failed`, `audit timestamping failed`, `audit
+verification failed to run`, `personnel files shredding failed`.
 
 `api -upkeep` runs it once and exits, non-zero when a part failed. It runs as a separate
 process, so a running API's System and Seals panel show it only after their own next run,
@@ -153,6 +157,7 @@ areas the token's permissions open, so the employee role gets an empty Overview.
 | `database_growth` | info | over 20 % growth since the comparison sample, at least 7 days old | `system.read` |
 | `audit_seal_mismatch` | critical | the latest Verify found a sealed day that does not match (audit-service.md) | `audit.read` |
 | `database_owner_rights` | warning | the API connects as the owner or a superuser, not `ppe_app` | `system.read` |
+| `audit_not_timestamped` | warning | a seal has waited for its trusted timestamp over a day (`audit.StampOverdue`; audit-service.md) | `audit.read` |
 | `stable_behind` | info | a published app's Preview has been newer than its Stable for 3 days, with Stable follows deploys off (app-launcher.md) | `apps.manage` |
 
 The figures cover the same areas:

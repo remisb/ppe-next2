@@ -83,6 +83,7 @@ var (
 	poolWait  = prometheus.NewDesc("ppe_db_pool_wait_seconds_total", "Time spent waiting for a free connection.", nil, nil)
 )
 
+// Describe sends the pool's metric descriptions.
 func (c poolCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- poolConns
 	ch <- poolMax
@@ -90,6 +91,7 @@ func (c poolCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- poolWait
 }
 
+// Collect reads the pool's statistics now.
 func (c poolCollector) Collect(ch chan<- prometheus.Metric) {
 	s := c.pool.Stat()
 	ch <- prometheus.MustNewConstMetric(poolConns, prometheus.GaugeValue, float64(s.AcquiredConns()), "acquired")

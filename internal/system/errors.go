@@ -26,6 +26,7 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+// fieldError is ErrInvalid naming field and its problem.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }
@@ -127,6 +128,8 @@ func fingerprint(r Report) string {
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
+// pathID matches one path segment that is an id: a UUID, a number or a
+// record number (WE-123).
 var pathID = regexp.MustCompile(`/(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\d+|WE-\d+)(?:/|$)`)
 
 // ClientRoute is a page's path with its ids replaced, so one page's errors
@@ -148,6 +151,7 @@ func ClientRoute(path string) string {
 	}
 }
 
+// cut is s in at most n bytes, never splitting a UTF-8 sequence.
 func cut(s string, n int) string {
 	if len(s) <= n {
 		return s
@@ -159,6 +163,8 @@ func cut(s string, n int) string {
 	return s[:n]
 }
 
+// check refuses an unknown kind or an empty message and cuts the message,
+// stack and route to their limits.
 func (r Report) check() (Report, error) {
 	if !IsKind(r.Kind) {
 		return r, fieldError("kind", "is not known")

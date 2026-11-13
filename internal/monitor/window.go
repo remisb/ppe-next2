@@ -25,12 +25,15 @@ const (
 // for a status view.
 var bounds = []float64{1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000}
 
+// histogram counts latencies in milliseconds by bounds.
 type histogram [14]int // len(bounds)+1: the last bin is over the highest bound
 
+// add counts one latency of ms milliseconds.
 func (h *histogram) add(ms float64) {
 	h[sort.SearchFloat64s(bounds, ms)]++
 }
 
+// merge adds o's counts.
 func (h *histogram) merge(o *histogram) {
 	for i := range h {
 		h[i] += o[i]
@@ -60,18 +63,21 @@ func (h *histogram) quantile(q float64) float64 {
 	return 0
 }
 
+// tally is one bucket's requests, 5xx answers and latencies.
 type tally struct {
 	requests int
 	errors   int
 	latency  histogram
 }
 
+// add adds o's counts.
 func (t *tally) add(o *tally) {
 	t.requests += o.requests
 	t.errors += o.errors
 	t.latency.merge(&o.latency)
 }
 
+// bucket is one five minutes of requests, in total and per route.
 type bucket struct {
 	start  time.Time // zero when unused
 	all    tally

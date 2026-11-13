@@ -21,8 +21,11 @@ type PostgresStore struct {
 
 var _ Store = (*PostgresStore)(nil)
 
+// NewPostgresStore is the system store over pool.
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
 
+// RecordError folds ev into the newest row with its fingerprint seen since
+// foldSince, or inserts it, in one transaction.
 func (s *PostgresStore) RecordError(ctx context.Context, ev ErrorEvent, foldSince time.Time) error {
 	var source *string
 	if ev.Source != nil {
@@ -51,6 +54,7 @@ func (s *PostgresStore) RecordError(ctx context.Context, ev ErrorEvent, foldSinc
 	})
 }
 
+// ListErrors reads a page of q's rows, last seen first.
 func (s *PostgresStore) ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEvent, error) {
 	var where []string
 	var args []any
@@ -94,6 +98,7 @@ func (s *PostgresStore) ListErrors(ctx context.Context, q ErrorQuery) ([]ErrorEv
 	})
 }
 
+// CountErrors counts the rows by kind, every kind present.
 func (s *PostgresStore) CountErrors(ctx context.Context) (map[Kind]int, error) {
 	counts := map[Kind]int{KindServer: 0, KindPanic: 0, KindClient: 0}
 	rows, err := s.pool.Query(ctx, `SELECT kind, count(*) FROM error_events GROUP BY kind`)
@@ -109,6 +114,7 @@ func (s *PostgresStore) CountErrors(ctx context.Context) (map[Kind]int, error) {
 	return counts, err
 }
 
+// NewErrorKinds counts the fingerprints first seen since since.
 func (s *PostgresStore) NewErrorKinds(ctx context.Context, since time.Time) (int, error) {
 	var n int
 	err := s.pool.QueryRow(ctx, `
@@ -119,11 +125,14 @@ func (s *PostgresStore) NewErrorKinds(ctx context.Context, since time.Time) (int
 	return n, err
 }
 
+// PurgeErrors deletes the rows last seen before before.
 func (s *PostgresStore) PurgeErrors(ctx context.Context, before time.Time) (int64, error) {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM error_events WHERE last_seen < $1`, before)
 	return tag.RowsAffected(), err
 }
 
+// Database reads Postgres's status and the API's role, and the size sample
+// growth compares with.
 func (s *PostgresStore) Database(ctx context.Context, now time.Time) (Database, error) {
 	d := Database{Connections: map[string]int{}, Tables: []Table{}}
 	if err := s.pool.QueryRow(ctx, `
@@ -209,6 +218,7 @@ func (s *PostgresStore) Database(ctx context.Context, now time.Time) (Database, 
 	return d, nil
 }
 
+// SampleSize stores the database's size now as day's sample.
 func (s *PostgresStore) SampleSize(ctx context.Context, day time.Time) error {
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO db_size_samples (day, bytes) VALUES ($1::date, pg_database_size(current_database()))
@@ -216,6 +226,7 @@ func (s *PostgresStore) SampleSize(ctx context.Context, day time.Time) error {
 	return err
 }
 
+// VersionErrors counts source's rows and occurrences by app_version.
 func (s *PostgresStore) VersionErrors(ctx context.Context, source string) (map[string]VersionErrors, error) {
 	rows, err := s.pool.Query(ctx, `SELECT app_version, count(*), sum(count) FROM error_events
 		WHERE source = $1 AND app_version IS NOT NULL GROUP BY app_version`, source)
