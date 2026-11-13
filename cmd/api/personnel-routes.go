@@ -40,6 +40,8 @@ func registerPersonnelRoutes(rt *router, documents *document.Service, sensitive 
 	rt.restricted("PUT /api/v1/personnel/subjects/{id}/hold", h.setHold, role.PersonnelDocumentsManage)
 }
 
+// checkRequest is Check's body: the chosen employee (none for a new one),
+// the lines and the names as typed.
 type checkRequest struct {
 	EmployeeID *uuid.UUID `json:"employee_id"`
 	MRZ        []string   `json:"mrz"`
@@ -47,6 +49,8 @@ type checkRequest struct {
 	GivenNames string     `json:"given_names"`
 }
 
+// check answers what the API reads in the lines and finds on file; it writes
+// nothing and is never cached.
 func (h *personnelHandler) check(w http.ResponseWriter, r *http.Request) {
 	var req checkRequest
 	if err := decodeJSON(w, r, &req); err != nil {
@@ -96,6 +100,7 @@ var copyParts = map[string]document.Side{
 // saveLimit is the most a Save may send: four copies of 5 MB and the JSON.
 const saveLimit = 4*(5<<20) + 256<<10
 
+// saveShape is the 400 a Save of another shape gets.
 const saveShape = `send multipart/form-data with a "document" part (JSON) and the copies as copy_page, copy_front, copy_back and portrait`
 
 // save takes the reviewed document as multipart/form-data: the "document"
@@ -167,6 +172,7 @@ func (h *personnelHandler) save(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, doc)
 }
 
+// documentsOf answers the employee's live documents, superseded ones included.
 func (h *personnelHandler) documentsOf(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDPath(r, "id")
 	if err != nil {
@@ -182,6 +188,8 @@ func (h *personnelHandler) documentsOf(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, docs)
 }
 
+// validity answers each current document's kind, issuing state and expiry
+// date, for any signed-in user.
 func (h *personnelHandler) validity(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDPath(r, "id")
 	if err != nil {
@@ -196,6 +204,7 @@ func (h *personnelHandler) validity(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+// show answers a document's sealed fields (Show Document), recorded first.
 func (h *personnelHandler) show(w http.ResponseWriter, r *http.Request) {
 	id, actor, ok := idAndActor(w, r)
 	if !ok {
@@ -210,6 +219,7 @@ func (h *personnelHandler) show(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, shown)
 }
 
+// showCopy answers one of a document's copies as a JPEG, recorded first.
 func (h *personnelHandler) showCopy(w http.ResponseWriter, r *http.Request) {
 	id, actor, ok := idAndActor(w, r)
 	if !ok {
@@ -227,6 +237,7 @@ func (h *personnelHandler) showCopy(w http.ResponseWriter, r *http.Request) {
 	w.Write(jpg)
 }
 
+// setEmployeeRecord takes {"on": true|false}: the document's Add to Employee Record.
 func (h *personnelHandler) setEmployeeRecord(w http.ResponseWriter, r *http.Request) {
 	id, actor, ok := idAndActor(w, r)
 	if !ok {
@@ -246,6 +257,7 @@ func (h *personnelHandler) setEmployeeRecord(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// remove removes a document and deletes its copies' objects.
 func (h *personnelHandler) remove(w http.ResponseWriter, r *http.Request) {
 	id, actor, ok := idAndActor(w, r)
 	if !ok {
@@ -258,6 +270,7 @@ func (h *personnelHandler) remove(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// retention answers the personnel file's retention, 404 without a file.
 func (h *personnelHandler) retention(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDPath(r, "id")
 	if err != nil {

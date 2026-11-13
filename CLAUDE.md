@@ -147,7 +147,7 @@ below; its rules are `src/lib/flow.ts`. The staff app's employee page has an **I
 Ended and Legal Hold for the personnel permissions. `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
 under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
 sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upkeep's shredding after
-`API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys they answer 503).
+`API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys Check, Save and Show Document answer 503).
 **AI usage** (ADR 0007 D4, D8; spec `ai-usage-service.md`; migration 0051): `internal/aiusage` records every AI call
 (`ai_usage`, append-only, its tokens and cost in micro-dollars by Settings' prices, a monthly budget) and keeps Settings → AI
 (`ai_settings`: the switch, model, quality, prices, budget, and the company's OpenAI key sealed with the optional

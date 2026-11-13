@@ -30,6 +30,7 @@ type Keys struct {
 	Index []byte
 }
 
+// configured reports whether both keys are there (the index key 32 bytes).
 func (k Keys) configured() bool { return k.Master != nil && len(k.Index) == sealbox.KeySize }
 
 // The contexts each sealed value is bound to, so none opens in another row.
@@ -51,6 +52,7 @@ func (k Keys) numberIndex(issuingState, number string) []byte {
 // personalIndex is the blind index of a personal code.
 func (k Keys) personalIndex(code string) []byte { return k.hmac("personal_code|" + code) }
 
+// hmac is HMAC-SHA256 of msg under the index key.
 func (k Keys) hmac(msg string) []byte {
 	m := hmac.New(sha256.New, k.Index)
 	m.Write([]byte(msg))
@@ -96,6 +98,7 @@ func checkJPEG(b []byte) error {
 	return nil
 }
 
+// sha256Of is b's SHA-256, as a copy's row keeps it.
 func sha256Of(b []byte) []byte {
 	s := sha256.Sum256(b)
 	return s[:]

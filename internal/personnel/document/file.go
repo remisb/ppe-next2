@@ -100,6 +100,8 @@ func (s *Service) ShowCopy(ctx context.Context, id uuid.UUID, side Side, actor u
 	return jpg, nil
 }
 
+// recordShown records personnel.document_shown, naming what was shown
+// (fields, or a copy's side), before the answer goes.
 func (s *Service) recordShown(ctx context.Context, d Document, what string, actor uuid.UUID) error {
 	after := summaryOf(d)
 	after["shown"] = what

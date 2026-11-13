@@ -12,18 +12,18 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**
   the keys and blind indexes, Check, Save with its copies, the summary and validity, Show Document
   and its copies, Add to Employee Record later, Remove, the retention, Mark Employment Ended, Legal
-  Hold and the shredding; `file.go`, `postgres_file.go`), routes in `cmd/api/personnel-routes.go`
-  (**built**, every route below but colouring), `@ppe/api-client`'s `personnel`. **To come:** the
-  Overview item, `api -reseal-personnel-keys`, deleting every version of a shredded object, and the
-  colour photo with AI usage.
+  Hold and the shredding; `file.go`, `postgres_file.go`), `internal/personnel/colour` (the AI colour
+  photo, **built**), routes in `cmd/api/personnel-routes.go` and, for colouring,
+  `cmd/api/ai-routes.go` (**built**), `@ppe/api-client`'s `personnel`. **To come:** the Overview
+  item, `api -reseal-personnel-keys` and deleting every version of a shredded object.
 - **Keys:** optional. Without `API_PERSONNEL_KEY` and `API_PERSONNEL_INDEX_KEY` (both or neither,
-  `config.personnelKeyErrors`) Check and Save answer 503 and nothing is kept; the summary and
-  validity read what is there. A 409 says `conflict` (`document_on_file`, `other_employee`) and
+  `config.personnelKeyErrors`) Check, Save and Show Document and its copies answer 503 and nothing
+  is kept; the summary, validity and the file's other actions work on what is there. A 409 says `conflict` (`document_on_file`, `other_employee`) and
   `existing_id`; a 400 for the MRZ lists `problems` as codes and fields.
 - **Migrations:** `0048_personnel` (schema `personnel`, its tables, the employee's `birth_date`,
   `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
-  `ppe_app` the schema, but not UPDATE on `subject_keys`. `employee_photos`' `ai_generated` and
-  `consent` come with the colour photo.
+  `ppe_app` the schema, but not UPDATE on `subject_keys`. `0051_ai_usage` adds `employee_photos`'
+  `ai_generated` and `consent` (with the colour photo; **built**).
 - **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`; **built**); the staff
   app's employee page shows the **Identity** section (`components/identity-section.tsx`, its rules
   `lib/identity.ts`; **built**): the validity line for everyone, the documents and Show Document for
@@ -72,7 +72,7 @@ refused there.
 
 One image per side: `page` (a passport's data page), `front` and `back` (a card's), and
 `portrait` (the crop the photo is made from). Columns: `document_id`, `side` (unique per
-document), `object_key` (files store, `personnel/<employee>/<document>/<side>`), `sha256` of the
+document), `object_key` (files store, `personnel/<employee>/<document>/<side>-<copy id>`), `sha256` of the
 plain JPEG (checked when opened), `bytes`, created. The object is the JPEG sealed with the
 subject's data key, bound to `"ppe.personnel.copy.v1\|" + copy id`: the store holds nothing
 readable, and bucket versioning's old versions are unreadable once the key goes.
@@ -90,15 +90,17 @@ chose to take (FR-8). `employee_photos` gains `ai_generated` and `consent` (who,
 `POST /api/v1/personnel/documents/check` re-parses the lines with `internal/personnel/mrz`
 (today in the organisation's timezone) and answers, writing nothing:
 
-- `problems` and `notes`: the parser's, and the API's own: `document_on_file` (the same number
-  and state, naming the employee if the caller may know it), `other_employee` (the personal code
-  or number belongs to another employee), `expired` (a note).
-- `possible_duplicates` for a new employee: live employees with the same names (folded) and
-  birth date.
+- `valid`, `problems`, `notes` and `needs_second_read`: the parser's (`expired` is one of its
+  notes).
+- `document_on_file`: the live document with the same number and issuing state, as
+  `{employee_id, document_id}`; `other_employee`: the employee the personal code belongs to, when
+  not the chosen one. Neither names the number or code.
+- `possible_duplicates` for a new employee: up to five live employees with the same first and
+  last name, or the same last name and birth date (ignoring case).
 - `name_match`: `same`, `truncated` or `differs` for the names as typed against the MRZ
   (`mrz.NameMatch`); `differs` is a note.
 
-The app shows the answer beside its own marks and keeps it by document number, so a late answer
+The answer is `no-store`. The app shows it beside its own marks and keeps it by document number, so a late answer
 for an earlier reading is dropped (Scan SIMs' `registeredOf` pattern).
 
 ### Save (FR-10, FR-19)
@@ -140,9 +142,9 @@ is 415 or 413.
 - **Validity** (`GET …/by-employee/{id}/validity`, any signed-in user): per live, unsuperseded
   document, `kind`, `issuing_state`, `expires_on`; the "ID card · LTU · valid until 2029-04-12"
   line every employee page may show. Other contexts may learn this much (the context map).
-- **Summary** (`GET …/by-employee/{id}`, `personnel.documents.read`): every document of the
-  person, superseded ones included, with the plain fields, `on_employee_record`, which copies
-  exist, and the subject's `employment_ended_on` and hold. The Identity section shows it for
+- **Summary** (`GET …/by-employee/{id}`, `personnel.documents.read`, `no-store`): every live
+  document of the person, superseded ones included, current ones first, with the plain fields,
+  `on_employee_record` and which copies exist; the retention is `GET …/subjects/{employee}`. The Identity section shows it for
   documents added to the employee record; holders of `personnel.documents.manage` see all.
 - **Show Document** (`POST …/documents/{id}/show`, `personnel.documents.read`, a recent
   sign-in): the sealed fields. `personnel.document_shown` is recorded first, the answer is
@@ -181,10 +183,11 @@ opened with the person's key until it goes (retention); the screen says so.
   exception to soft delete, PR-8), then the objects' current versions, and record
   `personnel.file_shredded` with no actor (the job's, as the audit purge's), the number of documents
   and the period. It is idempotent and runs again after a restore. Still to come: deleting the
-  objects' older versions (they cannot be opened without the key), and clearing
-  `ai_usage.employee_id` once AI usage exists.
-- **The Overview** lists for `personnel.documents.manage` the people whose file goes within
-  30 days.
+  objects' older versions (they cannot be opened without the key). A shredded person's AI usage
+  calls keep their cost and lose their employee (`aiusage.PostgresStore.ClearEmployee`, after the
+  shredding commits; a failure is logged).
+- **The Overview** (to come) is to list for `personnel.documents.manage` the people whose file goes
+  within 30 days.
 
 ### AI colour photo (FR-12, FR-13, PR-6, PR-7)
 
@@ -214,10 +217,13 @@ opened with the person's key until it goes (retention); the screen says so.
 | `PUT /api/v1/personnel/subjects/{employee}/employment-ended` | `personnel.documents.manage` | |
 | `PUT /api/v1/personnel/subjects/{employee}/hold` | `personnel.documents.manage` | |
 | `GET /api/v1/personnel/subjects/{employee}` | `personnel.documents.read` | the retention; 404 without a file |
+| `GET /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | `{available}`: whether to offer Make Colour Photo (AI) |
 | `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | through AI usage |
 
-Every route goes into `routes_test.go`'s policy table; the errors (`ErrDocumentOnFile`,
-`ErrOtherEmployee`, `ErrColouringOff`) into `errorStatuses`. `@ppe/api-client` gains
+Every route goes into `routes_test.go`'s policy table; the errors into `errorStatuses`
+(`document.ErrDuplicate` 409 for either `DuplicateError`, `ErrEmployeeCodeTaken` 409,
+`ErrCopyTooLarge` 413, `ErrCopyNotJPEG` 415, `ErrNotConfigured` 503; `colour.ErrOff` 409,
+`ErrTooOften` 429, `ErrNotPortrait` 415). `@ppe/api-client` gains
 `personnel.*`. The app sends `X-PPE-App: docs-import`.
 
 ## Permissions and role
@@ -249,9 +255,9 @@ never a number, code, name from the document or image:
 
 | Setting | Notes |
 | --- | --- |
-| `API_PERSONNEL_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | the master keyring over the data keys (64 hex each); required once the feature is on (the routes answer 503 without it and the Overview says so); `api -reseal-personnel-keys` after a change; kept offline (`docs/backups.md`) |
+| `API_PERSONNEL_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | the master keyring over the data keys (64 hex each); optional: without it (and the index key) Check, Save and Show Document and its copies answer 503; `api -reseal-personnel-keys` after a change is to come; kept offline (`docs/backups.md`) |
 | `API_PERSONNEL_INDEX_KEY` | the blind indexes' HMAC key (64 hex); never rotated in place |
-| `API_PERSONNEL_RETENTION_MONTHS` | 36 (D3); 12 to 1200, checked when the keys are set |
+| `API_PERSONNEL_RETENTION_MONTHS` | 36 (D3); 12 to 1200, always checked |
 
 Each is read in `loadConfig` and checked in `validate`. AI settings are in
 [ai-usage-service.md](ai-usage-service.md).
@@ -266,8 +272,9 @@ Each is read in `loadConfig` and checked in `validate`. AI settings are in
 - Postgres tests: the schema and grants (`ppe_app` may insert and delete `subject_keys` rows but
   not update them, and only re-sealing changes `key_id`, through an owner's function;
   `TestPostgresAPIRoleIsLeastPrivileged`); two concurrent saves of one
-  document and of one personal code on two employees; shredding: after the job, nothing opens,
-  the AI usage rows lose their employee, and running it again changes nothing; a hold stops it.
+  document and of one personal code on two employees; shredding: after the job, nothing opens
+  and running it again changes nothing; a hold stops it (`TestPostgresShowRemoveAndShred`).
+  `ClearEmployee` is `aiusage`'s Postgres test.
 - Route policy (`routes_test.go`) for every route and the built-in roles.
 - e2e (phase 3): the specimen passport and ID card read from photos, checked, saved with
   copies, Show Document with Confirm your password, the employee's validity line.

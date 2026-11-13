@@ -13,6 +13,8 @@ import (
 // The personnel file's other writes: Show Document's reads, a document's
 // changes and removal, the retention dates and Legal Hold, and shredding.
 
+// Document reads a live document with its sealed fields, its copies' rows
+// and its subject's sealed data key; ErrNotFound when there is none.
 func (r *PostgresRepository) Document(ctx context.Context, id uuid.UUID) (Opened, error) {
 	var o Opened
 	row := r.pool.QueryRow(ctx, `SELECT `+documentColumns+`, d.sealed, k.sealed_key, k.key_id
@@ -49,12 +51,16 @@ func (r *PostgresRepository) Document(ctx context.Context, id uuid.UUID) (Opened
 	return o, rows.Err()
 }
 
+// Record inserts events in a transaction of their own.
 func (r *PostgresRepository) Record(ctx context.Context, events []audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		return audit.InsertAll(ctx, tx, events)
 	}))
 }
 
+// UpdateDocument locks the live document, applies mutate, and writes its
+// Add to Employee Record or soft-deletes it, with the events, at the first
+// event's time and by its actor; no events, no write.
 func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		cur, err := scanDocument(tx.QueryRow(ctx, `SELECT `+documentColumns+` FROM personnel.identity_documents d
@@ -88,6 +94,8 @@ func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, m
 	}))
 }
 
+// UpdateSubject locks the subject (ErrNotFound without one), applies mutate
+// and writes the retention dates and hold with the events; no events, no write.
 func (r *PostgresRepository) UpdateSubject(ctx context.Context, employeeID uuid.UUID, mutate func(cur Retention) (Retention, []audit.Event, error)) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		var cur Retention
@@ -113,6 +121,7 @@ func (r *PostgresRepository) UpdateSubject(ctx context.Context, employeeID uuid.
 	}))
 }
 
+// Retention reads the subject's retention; false when they have no file.
 func (r *PostgresRepository) Retention(ctx context.Context, employeeID uuid.UUID) (Retention, bool, error) {
 	var ret Retention
 	err := r.pool.QueryRow(ctx, `SELECT employment_ended_on::text, hold_until::text, hold_reason
@@ -123,8 +132,9 @@ func (r *PostgresRepository) Retention(ctx context.Context, employeeID uuid.UUID
 	return ret, err == nil, err
 }
 
-// Due: a deleted employee without an end date counts as ended on the day of
-// their deletion (spec: deleting an employee sets it when empty).
+// Due reads the subjects due for shredding by today. A deleted employee
+// without an end date counts as ended on the day of their deletion (the UTC
+// date), so the employee service needs no call into Personnel files.
 func (r *PostgresRepository) Due(ctx context.Context, today string, months int) ([]uuid.UUID, error) {
 	rows, err := r.pool.Query(ctx, `SELECT s.employee_id FROM personnel.subjects s JOIN employees e ON e.id = s.employee_id
 		WHERE coalesce(s.employment_ended_on, (e.deleted_at AT TIME ZONE 'UTC')::date) + make_interval(months => $2) <= $1::text::date
@@ -136,6 +146,9 @@ func (r *PostgresRepository) Due(ctx context.Context, today string, months int) 
 	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
 }
 
+// Shred locks the subject, deletes the copies', documents', data key's and
+// subject's rows, writes events(documents) and returns the copies' object
+// keys; nothing to do when there is no subject.
 func (r *PostgresRepository) Shred(ctx context.Context, employeeID uuid.UUID, events func(documents int) []audit.Event) ([]string, error) {
 	var keys []string
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {

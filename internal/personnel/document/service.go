@@ -24,6 +24,10 @@ type Store interface {
 	Delete(ctx context.Context, key string) error
 }
 
+// Service is Personnel files' identity documents: Check and Save from
+// docs-import, the summary and validity, Show Document and the personnel
+// file's actions (file.go). Without its keys or a store it answers
+// ErrNotConfigured.
 type Service struct {
 	repo  Repository
 	keys  Keys
@@ -44,9 +48,13 @@ type EmployeeForgetter interface {
 // WithAIUsage lets the shredding clear a person from the AI usage ledger too.
 func WithAIUsage(f EmployeeForgetter) Option { return func(s *Service) { s.aiUsage = f } }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for new employees, documents, copies and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithLocation is the organisation's timezone (API_ORG_TIMEZONE): "today",
@@ -64,8 +72,10 @@ func NewService(repo Repository, keys Keys, store Store, opts ...Option) *Servic
 	return s
 }
 
+// configured reports whether the service has its keys and a store.
 func (s *Service) configured() bool { return s.keys.configured() && s.store != nil }
 
+// today is the date in the organisation's timezone, YYYY-MM-DD.
 func (s *Service) today() string { return s.now().In(s.loc).Format(time.DateOnly) }
 
 // CheckParams is what docs-import asks about before Save.
@@ -432,4 +442,5 @@ func givenAndSurname(surname, given string, m *mrz.Mrz) (string, string) {
 	return given, surname
 }
 
+// eq reports whether two optional strings are both nil or equal.
 func eq(a, b *string) bool { return (a == nil && b == nil) || (a != nil && b != nil && *a == *b) }

@@ -11,8 +11,12 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("identity document not found")
-	ErrInvalid       = errors.New("invalid identity document")
+	// ErrNotFound is no live document (or copy, or personnel file) by that id (404).
+	ErrNotFound = errors.New("identity document not found")
+	// ErrInvalid is a field that breaks a rule (400); fieldError names it, and
+	// ProblemsError wraps it for an MRZ the parser refuses.
+	ErrInvalid = errors.New("invalid identity document")
+	// ErrActorNotFound is an acting user who no longer exists (401).
 	ErrActorNotFound = errors.New("acting user not found")
 	// ErrEmployeeNotFound is a document for an employee who is not there (or deleted).
 	ErrEmployeeNotFound = errors.New("employee not found")
@@ -30,6 +34,7 @@ var (
 	ErrUnopenable = errors.New("a sealed document does not open")
 )
 
+// fieldError is ErrInvalid, naming the field and what is wrong with it.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }
@@ -40,6 +45,7 @@ type ProblemsError struct {
 	Problems []mrz.Issue
 }
 
+// Error lists the problems' codes, each with its field.
 func (e *ProblemsError) Error() string {
 	codes := make([]string, len(e.Problems))
 	for i, p := range e.Problems {
@@ -51,6 +57,7 @@ func (e *ProblemsError) Error() string {
 	return "the document's MRZ has problems: " + strings.Join(codes, ", ")
 }
 
+// Unwrap makes every ProblemsError an ErrInvalid (400).
 func (e *ProblemsError) Unwrap() error { return ErrInvalid }
 
 // DuplicateError is a document already on file (the same number and issuing
@@ -63,11 +70,13 @@ type DuplicateError struct {
 	DocumentID uuid.UUID // uuid.Nil for other_employee by personal code
 }
 
+// The two kinds of DuplicateError, as the API's error body's conflict.
 const (
 	duplicateDocument      = "document_on_file"
 	duplicateOtherEmployee = "other_employee"
 )
 
+// Error says which duplicate it is, naming nothing read from the document.
 func (e *DuplicateError) Error() string {
 	if e.What == duplicateDocument {
 		return "this document is already on file"
@@ -78,6 +87,7 @@ func (e *DuplicateError) Error() string {
 // ErrDuplicate is what every DuplicateError is (409).
 var ErrDuplicate = errors.New("identity document conflict")
 
+// Unwrap makes every DuplicateError an ErrDuplicate.
 func (e *DuplicateError) Unwrap() error { return ErrDuplicate }
 
 // ExistingID is the document already on file, else the other employee: what

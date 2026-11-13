@@ -40,6 +40,7 @@ const (
 	ResidencePermit Kind = "residence_permit"
 )
 
+// valid reports whether k is one of the three kinds.
 func (k Kind) valid() bool { return k == Passport || k == IDCard || k == ResidencePermit }
 
 // Side is which image of a document a copy is.
@@ -52,6 +53,7 @@ const (
 	SidePortrait Side = "portrait" // the portrait cut from the document
 )
 
+// valid reports whether s is one of the four sides.
 func (s Side) valid() bool {
 	return s == SidePage || s == SideFront || s == SideBack || s == SidePortrait
 }
@@ -99,6 +101,8 @@ type NewEmployee struct {
 // Take names an employee field a document may fill (FR-8).
 type Take string
 
+// The fields a document may fill: the names (as printed), the birth date,
+// the nationality and the sex.
 const (
 	TakeNames       Take = "names"
 	TakeBirthDate   Take = "birth_date"
@@ -149,6 +153,9 @@ func (p *SaveParams) Normalize() {
 	}
 }
 
+// maxNameLen and maxTextLen limit the names and the typed place of birth and
+// authority, in bytes, as the employee service does names; maxCopySize and
+// maxCopySide limit a copy (5 MB, 2400 px on its longer side).
 const (
 	maxNameLen  = 100
 	maxTextLen  = 200
@@ -215,6 +222,7 @@ func validateCopies(kind Kind, copies map[Side][]byte) error {
 	return nil
 }
 
+// isISODate reports whether s is a date, YYYY-MM-DD.
 func isISODate(s string) bool {
 	_, err := time.Parse(time.DateOnly, s)
 	return err == nil

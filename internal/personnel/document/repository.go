@@ -76,6 +76,8 @@ type Repository interface {
 	// PossibleDuplicates are live employees with these names, or this last
 	// name and birth date, for a new employee (at most a few).
 	PossibleDuplicates(ctx context.Context, firstName, lastName string, birthDate *string) ([]uuid.UUID, error)
+	// Save writes rec in one transaction (see SaveRecord); ErrEmployeeNotFound
+	// when the employee is gone.
 	Save(ctx context.Context, rec SaveRecord) error
 	// Documents are the employee's live documents, current ones first, then newest first,
 	// superseded ones included.

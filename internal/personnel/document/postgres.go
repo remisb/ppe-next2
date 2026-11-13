@@ -12,12 +12,16 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
+// PostgresRepository keeps identity documents in the personnel schema
+// (migration 0048: subjects, subject_keys, identity_documents,
+// document_copies) and writes the employee's row in employees.
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the identity documents' repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -28,6 +32,7 @@ const (
 	personalIndexUnique = "subjects_personal_index_key"
 )
 
+// DocumentByNumber reads the live document with the number's index and state.
 func (r *PostgresRepository) DocumentByNumber(ctx context.Context, numberIndex []byte, issuingState string) (Ref, bool, error) {
 	var ref Ref
 	err := r.pool.QueryRow(ctx, `SELECT employee_id, id FROM personnel.identity_documents
@@ -39,6 +44,7 @@ func (r *PostgresRepository) DocumentByNumber(ctx context.Context, numberIndex [
 	return ref, err == nil, err
 }
 
+// SubjectByPersonalCode reads the employee whose personal code has the index.
 func (r *PostgresRepository) SubjectByPersonalCode(ctx context.Context, personalIndex []byte) (uuid.UUID, bool, error) {
 	var id uuid.UUID
 	err := r.pool.QueryRow(ctx, `SELECT employee_id FROM personnel.subjects WHERE personal_index = $1`, personalIndex).Scan(&id)
@@ -48,6 +54,7 @@ func (r *PostgresRepository) SubjectByPersonalCode(ctx context.Context, personal
 	return id, err == nil, err
 }
 
+// Subject reads the employee's subject with their sealed data key.
 func (r *PostgresRepository) Subject(ctx context.Context, employeeID uuid.UUID) (Subject, bool, error) {
 	s := Subject{EmployeeID: employeeID}
 	err := r.pool.QueryRow(ctx, `SELECT s.personal_index, k.sealed_key, k.key_id
@@ -59,6 +66,8 @@ func (r *PostgresRepository) Subject(ctx context.Context, employeeID uuid.UUID) 
 	return s, err == nil, err
 }
 
+// PossibleDuplicates reads up to five live employees with the same first and
+// last name, or the same last name and birth date, ignoring case.
 func (r *PostgresRepository) PossibleDuplicates(ctx context.Context, firstName, lastName string, birthDate *string) ([]uuid.UUID, error) {
 	rows, err := r.pool.Query(ctx, `SELECT id FROM employees
 		WHERE deleted_at IS NULL AND (
@@ -75,10 +84,13 @@ func (r *PostgresRepository) PossibleDuplicates(ctx context.Context, firstName, 
 	return ids, err
 }
 
+// documentColumns are a document's (d) as scanDocument reads them, with its
+// copies' sides.
 const documentColumns = `d.id, d.employee_id, d.kind, d.issuing_state, d.issued_on::text, d.expires_on::text,
 	d.on_employee_record, d.superseded_at, d.created_at, d.created_by_user_id,
 	coalesce((SELECT array_agg(c.side ORDER BY c.side) FROM personnel.document_copies c WHERE c.document_id = d.id), '{}')`
 
+// scanDocument reads a row of documentColumns, times in UTC.
 func scanDocument(row pgx.Row) (Document, error) {
 	var d Document
 	var sides []string
@@ -99,6 +111,7 @@ func scanDocument(row pgx.Row) (Document, error) {
 	return d, nil
 }
 
+// Documents reads the employee's live documents, current ones first, then newest first.
 func (r *PostgresRepository) Documents(ctx context.Context, employeeID uuid.UUID) ([]Document, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+documentColumns+` FROM personnel.identity_documents d
 		WHERE d.employee_id = $1 AND d.deleted_at IS NULL
@@ -241,7 +254,7 @@ func translate(err error) error {
 		return err
 	}
 	switch pgErr.Code {
-	case "23505":
+	case "23505": // unique_violation
 		switch pgErr.ConstraintName {
 		case numberLiveIndex:
 			return &DuplicateError{What: duplicateDocument}
@@ -249,14 +262,15 @@ func translate(err error) error {
 			return &DuplicateError{What: duplicateOtherEmployee}
 		}
 		return ErrEmployeeCodeTaken
-	case "23503":
+	case "23503": // foreign_key_violation: an actor column names no user
 		return ErrActorNotFound
-	case "23514":
+	case "23514": // check_violation: the service validates first, so this is a bug
 		return fieldErrorConstraint(pgErr.ConstraintName)
 	}
 	return err
 }
 
+// fieldErrorConstraint is ErrInvalid naming the constraint broken, never the value.
 func fieldErrorConstraint(name string) error { return fieldError("value", "breaks "+name) }
 
 // employeeChanged is whether a Save changes the employee's row.
