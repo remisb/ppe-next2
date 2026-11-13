@@ -1,7 +1,8 @@
-// Package launcher is App Launcher's registry (ADR 0006, phase 2;
+// Package launcher is App Launcher's registry (ADR 0006, phases 2 and 3;
 // docs/specs/app-launcher.md): every app and shortcut it shows, who sees each,
-// each user's pinned tiles and the feedback people give on apps. An app is
-// opened by its address; a shortcut opens one screen inside an app.
+// each user's pinned tiles and the feedback people give on apps, and the
+// published apps' versions and channels (versions.go, service_versions.go).
+// An app is opened by its address; a shortcut opens one screen inside an app.
 package launcher
 
 import (
@@ -19,6 +20,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
+// Kind is what a tile opens: an app, or one screen inside an app.
 type Kind string
 
 const (
@@ -29,6 +31,8 @@ const (
 // Group is where a tile sits in the launcher.
 type Group string
 
+// Groups are the headings a tile may sit under (Workwear & PPE, Company
+// Assets, People & Crew, Administration).
 var Groups = []Group{"workwear", "assets", "people", "admin"}
 
 // Tier is where an app runs: here, on this origin with the user's sign-in, or
@@ -52,6 +56,7 @@ const (
 	StageRetired Stage = "retired"
 )
 
+// Stages is every stage.
 var Stages = []Stage{StageLive, StagePilot, StagePOC, StageDev, StageRetired}
 
 // Icons are the pictures a tile may show; the launcher draws each.
@@ -67,6 +72,8 @@ type Names struct {
 	RU string `json:"ru"`
 }
 
+// App is one tile of the registry (launcher_apps, migration 0042): an app or
+// a shortcut. Tiles are never deleted; Retired takes one away from everyone.
 type App struct {
 	ID   uuid.UUID `json:"id"`
 	Slug string    `json:"slug"`
@@ -83,14 +90,17 @@ type App struct {
 	Stage Stage  `json:"stage"`
 	Names Names  `json:"names"`
 	// AnyOf: seen by a user holding any of these; none, by every signed-in user.
-	AnyOf    []role.Permission `json:"any_of"`
-	Position int               `json:"position"`
+	AnyOf []role.Permission `json:"any_of"`
+	// Position orders the tiles; Move numbers them again in steps of positionStep.
+	Position int `json:"position"`
 	// StableFollowsDeploys: a deploy's publish to Preview moves Stable too
 	// (migration 0044); for a published app no one tries first.
-	StableFollowsDeploys bool       `json:"stable_follows_deploys"`
-	CreatedAt            time.Time  `json:"created_at"`
-	UpdatedAt            time.Time  `json:"updated_at"`
-	UpdatedByUserID      *uuid.UUID `json:"updated_by_user_id"`
+	StableFollowsDeploys bool      `json:"stable_follows_deploys"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	// UpdatedByUserID is nil while no administrator has changed the tile: a
+	// default the code still owns (EnsureDefaults).
+	UpdatedByUserID *uuid.UUID `json:"updated_by_user_id"`
 }
 
 // Fields are what Manage apps edits; the slug and kind are set once.
@@ -106,12 +116,14 @@ type Fields struct {
 	AnyOf  []string
 }
 
+// CreateParams registers a tile: its slug and kind, set once, and its fields.
 type CreateParams struct {
 	Slug string
 	Kind Kind
 	Fields
 }
 
+// UpdateParams replaces every field of a tile but its slug and kind.
 type UpdateParams struct {
 	Fields
 }
@@ -121,16 +133,20 @@ type UpdateParams struct {
 // (cmd/api's TestReservedSlugsAreCaddys keeps them equal).
 var ReservedSlugs = []string{"assets", "files"}
 
+// slugPattern is a tile's slug; @ppe/api-client's app-slugs.ts has the same
+// rule (TestWebClientKeepsTheSlugRule). colorPattern is a tile's colour.
 var (
 	slugPattern  = regexp.MustCompile(`^[a-z][a-z0-9-]{1,30}$`)
 	colorPattern = regexp.MustCompile(`^#[0-9a-f]{6}$`)
 )
 
+// maxName limits each name, in characters; maxHref an address, in bytes.
 const (
 	maxName = 60
 	maxHref = 300
 )
 
+// Normalize trims every field and lowercases the parent and the colour.
 func (f *Fields) Normalize() {
 	f.Parent = strings.TrimSpace(strings.ToLower(f.Parent))
 	f.Icon = strings.TrimSpace(f.Icon)
@@ -139,6 +155,7 @@ func (f *Fields) Normalize() {
 	f.Names = Names{strings.TrimSpace(f.Names.EN), strings.TrimSpace(f.Names.LT), strings.TrimSpace(f.Names.RU)}
 }
 
+// Normalize trims and lowercases the slug and normalizes the fields.
 func (p *CreateParams) Normalize() {
 	p.Slug = strings.TrimSpace(strings.ToLower(p.Slug))
 	p.Fields.Normalize()
@@ -196,6 +213,8 @@ func (f Fields) Validate(k Kind) error {
 	return nil
 }
 
+// Validate checks the slug (the pattern, and none of ReservedSlugs) and the
+// fields for the tile's kind.
 func (p CreateParams) Validate() error {
 	if !slugPattern.MatchString(p.Slug) {
 		return fieldError("slug", "must be 2 to 31 lowercase letters, digits or hyphens, starting with a letter")

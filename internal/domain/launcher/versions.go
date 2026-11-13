@@ -52,6 +52,7 @@ const (
 	ChannelPreview = "preview"
 )
 
+// fixedChannels are the channels an app may have, in the order they are listed.
 var fixedChannels = []string{ChannelStable, ChannelBeta, ChannelPreview}
 
 // Version is one published build of an app, never changed once published.
@@ -80,6 +81,7 @@ type Channel struct {
 	UpdatedByUserID *uuid.UUID `json:"updated_by_user_id"`
 }
 
+// versionPattern is a version's name: the build's date and its commit.
 var versionPattern = regexp.MustCompile(`^[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9a-z][0-9a-z.-]{0,39}$`)
 
 // ValidVersion reports whether v is a version's name, YYYY.MM.DD-<commit>.
@@ -122,6 +124,9 @@ type PublishParams struct {
 	Manifest Manifest
 }
 
+// Validate checks the version's name, that the manifest is the app's, the
+// channel and the manifest's profile; that the app is publishable is the
+// service's to check.
 func (p PublishParams) Validate() error {
 	if !ValidVersion(p.Version) {
 		return fieldError("version", "must be YYYY.MM.DD-<commit>")
@@ -141,10 +146,13 @@ type ChannelParams struct {
 	Version string
 }
 
+// Normalize trims the version.
 func (p *ChannelParams) Normalize() {
 	p.Version = strings.TrimSpace(p.Version)
 }
 
+// Validate checks the channel's name; that the version is the app's is the
+// service's to check.
 func (p ChannelParams) Validate(name string) error {
 	if !slices.Contains(fixedChannels, name) {
 		return fieldError("name", "is not stable, beta or preview")

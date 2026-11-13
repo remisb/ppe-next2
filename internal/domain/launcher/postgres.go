@@ -17,22 +17,28 @@ import (
 )
 
 // PostgresRepository stores the registry in launcher_apps, launcher_pins and
-// launcher_feedback (migration 0042).
+// launcher_feedback (migration 0042), and published apps in
+// launcher_versions, launcher_channels and launcher_channel_choices (0043).
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the registry over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the launcher_apps columns scan reads, in its order.
 const columns = `id, slug, kind, parent, app_group, icon, color, href, tier, stage, name_en, name_lt, name_ru, any_of,
 	position, stable_follows_deploys, created_at, updated_at, updated_by_user_id`
 
+// byPosition orders tiles as the launcher shows them.
 const byPosition = ` ORDER BY position, slug`
 
+// scan reads a row of columns, times in UTC, keeping only known permissions;
+// no row is ErrNotFound.
 func scan(row pgx.Row) (App, error) {
 	var a App
 	var anyOf []string
@@ -49,6 +55,7 @@ func scan(row pgx.Row) (App, error) {
 	return a, nil
 }
 
+// query reads every tile sql returns, from the pool or a transaction.
 func query(ctx context.Context, q interface {
 	Query(context.Context, string, ...any) (pgx.Rows, error)
 }, sql string, args ...any) ([]App, error) {
@@ -68,14 +75,17 @@ func query(ctx context.Context, q interface {
 	return out, rows.Err()
 }
 
+// List reads every tile, retired ones included, by position.
 func (r *PostgresRepository) List(ctx context.Context) ([]App, error) {
 	return query(ctx, r.pool, `SELECT `+columns+` FROM launcher_apps`+byPosition)
 }
 
+// Get reads the tile with the slug, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, slug string) (App, error) {
 	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM launcher_apps WHERE slug = $1`, slug))
 }
 
+// insert adds a's row, onConflict appended to the statement.
 func insert(ctx context.Context, tx pgx.Tx, a App, onConflict string) (pgconn.CommandTag, error) {
 	return tx.Exec(ctx, `
 		INSERT INTO launcher_apps (id, slug, kind, parent, app_group, icon, color, href, tier, stage, name_en, name_lt, name_ru,
@@ -85,6 +95,8 @@ func insert(ctx context.Context, tx pgx.Tx, a App, onConflict string) (pgconn.Co
 		role.Strings(a.AnyOf), a.Position, a.CreatedAt, a.UpdatedAt, a.UpdatedByUserID)
 }
 
+// Create inserts the tile and ev in one transaction, under a table lock, at
+// least one step after the last tile.
 func (r *PostgresRepository) Create(ctx context.Context, a App, ev audit.Event) (App, error) {
 	var out App
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -110,6 +122,8 @@ func (r *PostgresRepository) Create(ctx context.Context, a App, ev audit.Event) 
 	return out, translate(err)
 }
 
+// Update locks the tile, applies m and writes it with its events; no events,
+// no write.
 func (r *PostgresRepository) Update(ctx context.Context, slug string, m Mutation) (App, error) {
 	var out App
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -141,6 +155,8 @@ func (r *PostgresRepository) Update(ctx context.Context, slug string, m Mutation
 	return out, translate(err)
 }
 
+// Reorder locks every tile, applies m, writes the changed positions and the
+// events, and reads every tile again.
 func (r *PostgresRepository) Reorder(ctx context.Context, m OrderMutation) ([]App, error) {
 	var out []App
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -167,6 +183,7 @@ func (r *PostgresRepository) Reorder(ctx context.Context, m OrderMutation) ([]Ap
 	return out, translate(err)
 }
 
+// Pins reads the slugs user pinned, in the order pinned.
 func (r *PostgresRepository) Pins(ctx context.Context, user uuid.UUID) ([]string, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT a.slug FROM launcher_pins p JOIN launcher_apps a ON a.id = p.app_id
@@ -182,6 +199,7 @@ func (r *PostgresRepository) Pins(ctx context.Context, user uuid.UUID) ([]string
 // effect run twice, take turns instead of one failing on the other's rows.
 const pinsLock = 0x70696e73 // "pins"
 
+// SetPins replaces user's pins under pinsLock, numbering them from 1.
 func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps []uuid.UUID) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1, hashtext($2::text))`, pinsLock, user); err != nil {
@@ -199,8 +217,10 @@ func (r *PostgresRepository) SetPins(ctx context.Context, user uuid.UUID, apps [
 	}))
 }
 
+// versionColumns are the launcher_versions columns, as scanVersion reads them.
 const versionColumns = `id, app_id, version, profile, capabilities, commit, published_at, published_by_user_id`
 
+// scanVersion reads a row of versionColumns, its time in UTC.
 func scanVersion(row pgx.CollectableRow) (Version, error) {
 	var v Version
 	err := row.Scan(&v.ID, &v.AppID, &v.Version, &v.Profile, &v.Capabilities, &v.Commit, &v.PublishedAt, &v.PublishedByUserID)
@@ -208,6 +228,7 @@ func scanVersion(row pgx.CollectableRow) (Version, error) {
 	return v, err
 }
 
+// Versions reads an app's versions, newest first.
 func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Version, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+versionColumns+` FROM launcher_versions WHERE app_id = $1 ORDER BY published_at DESC, version DESC`, app)
 	if err != nil {
@@ -220,6 +241,8 @@ func (r *PostgresRepository) Versions(ctx context.Context, app uuid.UUID) ([]Ver
 	return out, err
 }
 
+// AddVersion inserts the version and ev in one transaction; a version
+// recorded already is ErrInvalid.
 func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO launcher_versions (`+versionColumns+`) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -230,6 +253,8 @@ func (r *PostgresRepository) AddVersion(ctx context.Context, v Version, ev audit
 	}))
 }
 
+// PruneVersions locks the app, reads its versions and channels, applies m and
+// deletes the versions it picks with its event.
 func (r *PostgresRepository) PruneVersions(ctx context.Context, app uuid.UUID, m PruneMutation) ([]Version, error) {
 	var removed []Version
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -279,6 +304,7 @@ const channelColumns = `c.id, c.app_id, c.name, c.version_id, v.version, v.publi
 // channelOrder: Stable, Beta, Preview.
 const channelOrder = ` ORDER BY c.app_id, array_position(ARRAY['stable','beta','preview'], c.name) NULLS LAST, c.name`
 
+// scanChannel reads a row of channelColumns, times in UTC.
 func scanChannel(row pgx.Row) (Channel, error) {
 	var c Channel
 	err := row.Scan(&c.ID, &c.AppID, &c.Name, &c.VersionID, &c.Version, &c.PublishedAt, &c.UpdatedAt, &c.UpdatedByUserID)
@@ -286,14 +312,17 @@ func scanChannel(row pgx.Row) (Channel, error) {
 	return c, err
 }
 
+// Channels reads every app's channels.
 func (r *PostgresRepository) Channels(ctx context.Context) ([]Channel, error) {
 	return r.channels(ctx, ``)
 }
 
+// AppChannels reads one app's channels.
 func (r *PostgresRepository) AppChannels(ctx context.Context, app uuid.UUID) ([]Channel, error) {
 	return r.channels(ctx, ` WHERE c.app_id = $1`, app)
 }
 
+// channels reads the channels where selects, each with its version, in channelOrder.
 func (r *PostgresRepository) channels(ctx context.Context, where string, args ...any) ([]Channel, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+channelColumns+` FROM launcher_channels c JOIN launcher_versions v ON v.id = c.version_id`+where+channelOrder, args...)
 	if err != nil {
@@ -306,6 +335,8 @@ func (r *PostgresRepository) channels(ctx context.Context, where string, args ..
 	return out, err
 }
 
+// PutChannel locks the app and its channel by that name, applies m, and
+// inserts or updates the channel with its events; no events, no write.
 func (r *PostgresRepository) PutChannel(ctx context.Context, app uuid.UUID, name string, m ChannelMutation) (Channel, error) {
 	var out Channel
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -342,6 +373,7 @@ func (r *PostgresRepository) PutChannel(ctx context.Context, app uuid.UUID, name
 	return out, translate(err)
 }
 
+// Choices reads the channel user chose for each app, by app id.
 func (r *PostgresRepository) Choices(ctx context.Context, user uuid.UUID) (map[uuid.UUID]string, error) {
 	rows, err := r.pool.Query(ctx, `SELECT app_id, channel FROM launcher_channel_choices WHERE user_id = $1`, user)
 	if err != nil {
@@ -360,6 +392,7 @@ func (r *PostgresRepository) Choices(ctx context.Context, user uuid.UUID) (map[u
 	return out, rows.Err()
 }
 
+// SetChoice keeps user's channel for the app; "" deletes the choice.
 func (r *PostgresRepository) SetChoice(ctx context.Context, user, app uuid.UUID, channel string) error {
 	if channel == "" {
 		_, err := r.pool.Exec(ctx, `DELETE FROM launcher_channel_choices WHERE user_id = $1 AND app_id = $2`, user, app)
@@ -371,6 +404,7 @@ func (r *PostgresRepository) SetChoice(ctx context.Context, user, app uuid.UUID,
 	return translate(err)
 }
 
+// AddFeedback inserts f.
 func (r *PostgresRepository) AddFeedback(ctx context.Context, f Feedback) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO launcher_feedback (id, app_id, user_id, rating, text, device, language, version, created_at)
@@ -379,6 +413,7 @@ func (r *PostgresRepository) AddFeedback(ctx context.Context, f Feedback) error 
 	return translate(err)
 }
 
+// Feedback reads an app's feedback, newest first, with each sender's name.
 func (r *PostgresRepository) Feedback(ctx context.Context, app uuid.UUID) ([]Feedback, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT f.id, f.app_id, f.user_id, u.name, f.rating, f.text, f.device, f.language, f.version, f.created_at
@@ -475,25 +510,26 @@ func EnsureDefaults(ctx context.Context, pool *pgxpool.Pool) error {
 	})
 }
 
+// translate maps Postgres errors onto the domain's sentinels.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
 		return err
 	}
 	switch pgErr.Code {
-	case "23505":
+	case "23505": // unique_violation: a version recorded twice, else launcher_apps' slug
 		if pgErr.ConstraintName == "launcher_versions_app_version_key" {
 			return fieldError("version", "is published already")
 		}
 		return ErrSlugTaken
-	case "23503":
+	case "23503": // foreign_key_violation: a user column names no user, else a tile or version is gone
 		if pgErr.ConstraintName == "launcher_apps_updated_by_user_id_fkey" || pgErr.ConstraintName == "launcher_feedback_user_id_fkey" ||
 			pgErr.ConstraintName == "launcher_pins_user_id_fkey" || pgErr.ConstraintName == "launcher_versions_published_by_user_id_fkey" ||
 			pgErr.ConstraintName == "launcher_channels_updated_by_user_id_fkey" || pgErr.ConstraintName == "launcher_channel_choices_user_id_fkey" {
 			return ErrActorNotFound
 		}
 		return ErrNotFound
-	case "23514":
+	case "23514": // check_violation: the service validates first, so this is a bug
 		return fmt.Errorf("%w: %s", ErrInvalid, pgErr.ConstraintName)
 	}
 	return err

@@ -27,12 +27,16 @@ type PruneMutation func(versions []Version, channels []Channel) (remove []Versio
 
 // Repository stores tiles in launcher_apps, pins in launcher_pins and
 // feedback in launcher_feedback (migration 0042), versions, channels and
-// channel choices (0043). Implementations translate storage errors to this
-// package's sentinels and never validate.
+// channel choices (0043; Stable follows deploys 0044, feedback's version
+// 0045). Implementations translate storage errors to this package's
+// sentinels and never validate.
 type Repository interface {
 	// List returns every tile, retired ones included, by position.
 	List(ctx context.Context) ([]App, error)
+	// Get returns the tile with the slug, retired or not, or ErrNotFound.
 	Get(ctx context.Context, slug string) (App, error)
+	// Create inserts the tile with its event, last in the order (after any
+	// registered meanwhile), and returns it as stored.
 	Create(ctx context.Context, a App, ev audit.Event) (App, error)
 	// Update locks the tile, applies m and writes it with its events.
 	Update(ctx context.Context, slug string, m Mutation) (App, error)
@@ -64,6 +68,7 @@ type Repository interface {
 	// SetChoice keeps the channel a user opens an app on; "" removes it.
 	SetChoice(ctx context.Context, user, app uuid.UUID, channel string) error
 
+	// AddFeedback stores feedback.
 	AddFeedback(ctx context.Context, f Feedback) error
 	// Feedback returns an app's feedback, newest first, with each sender's name.
 	Feedback(ctx context.Context, app uuid.UUID) ([]Feedback, error)

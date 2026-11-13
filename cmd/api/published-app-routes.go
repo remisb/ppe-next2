@@ -64,6 +64,8 @@ type publishedApps struct {
 // maxCachedPages bounds pages: a few apps, each with a handful of versions a channel opens.
 const maxCachedPages = 64
 
+// registerPublishedAppRoutes mounts the public page route of published apps
+// (/apps/<slug>/…); dir is API_APPS_DIR.
 func registerPublishedAppRoutes(rt *router, svc *launcher.Service, dir string) {
 	h := &publishedApps{apps: svc, dir: dir, epoch: strconv.FormatInt(time.Now().UnixNano(), 36), pages: map[uuid.UUID]string{}}
 	rt.public("GET /apps/{slug}/{rest...}", http.HandlerFunc(h.page))
@@ -72,6 +74,11 @@ func registerPublishedAppRoutes(rt *router, svc *launcher.Service, dir string) {
 // relativeLink is a src or href Vite wrote relative to the page (base './').
 var relativeLink = regexp.MustCompile(`((?:src|href)=")\./`)
 
+// page answers what /apps/<slug>/<segment>… opens: the version's index.html
+// with its links made absolute, its meta tags and its profile's policy, or
+// 304 for the same ETag. An app with no Stable redirects to its tile's
+// address when that is elsewhere; anything else that opens nothing, and
+// every address without API_APPS_DIR, is 404.
 func (h *publishedApps) page(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	segment, _, _ := strings.Cut(r.PathValue("rest"), "/")

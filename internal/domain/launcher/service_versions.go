@@ -13,12 +13,16 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
+// The audit events of published apps, on the app's tile (entity type app).
 const (
+	// EventVersionPublished records a version's first publish.
 	EventVersionPublished = "app.version_published"
-	EventChannelMoved     = "app.channel_moved"
+	// EventChannelMoved records a channel set, or pointed at another version.
+	EventChannelMoved = "app.channel_moved"
 	// EventChannelChanged was a variant's label or audience changed: no longer
 	// recorded (variants were removed), kept so older events still read.
 	EventChannelChanged = "app.channel_changed"
+	// EventVersionsPruned records the versions Prune removed from an app.
 	EventVersionsPruned = "app.versions_pruned"
 )
 
@@ -321,8 +325,9 @@ func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID) Chann
 	}
 }
 
-// PointChannel points one of an app's channels at a version, as Manage apps
-// promotes, rolls back or adds a variant, with its label and audience.
+// PointChannel points one of an app's channels (stable, beta or preview) at
+// one of its versions, as Manage apps' Make Stable, Make Beta and Make Preview
+// promote or roll back (app.channel_moved when it moves).
 func (s *Service) PointChannel(ctx context.Context, slug, name string, p ChannelParams, actor uuid.UUID) (Channel, error) {
 	p.Normalize()
 	if actor == uuid.Nil {
@@ -348,6 +353,7 @@ func (s *Service) PointChannel(ctx context.Context, slug, name string, p Channel
 	return s.repo.PutChannel(ctx, a.ID, name, s.pointAt(a, name, v, &actor))
 }
 
+// appChannels returns an app's channels: Stable, Beta, Preview.
 func (s *Service) appChannels(ctx context.Context, app uuid.UUID) ([]Channel, error) {
 	return s.repo.AppChannels(ctx, app)
 }
@@ -367,8 +373,8 @@ func (s *Service) Releases(ctx context.Context, slug string) ([]Version, []Chann
 }
 
 // ChannelsFor returns, for the apps a user sees, the channels they see (each
-// app's in the channels' order: Stable, Beta, Preview, then variants) and the
-// one they chose, by slug; an app with no channels is left out.
+// app's in the channels' order: Stable, Beta, Preview) and the one they
+// chose, by slug; an app with no channels is left out.
 func (s *Service) ChannelsFor(ctx context.Context, user uuid.UUID, apps []App, can func(role.Permission) bool) (map[string][]Channel, map[string]string, error) {
 	all, err := s.repo.Channels(ctx)
 	if err != nil {
@@ -428,7 +434,7 @@ func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name 
 type Trial struct {
 	Version     string    `json:"version"`
 	PublishedAt time.Time `json:"published_at"`
-	// Channels are those opening it, with a variant's label.
+	// Channels are those opening it.
 	Channels []Channel      `json:"channels"`
 	Feedback FeedbackCounts `json:"feedback"`
 }
@@ -573,6 +579,7 @@ func (s *Service) Resolve(ctx context.Context, slug, segment string) (Resolved, 
 	return Resolved{App: a}, ErrNotPublished
 }
 
+// published is a new version as app.version_published records it.
 type published struct {
 	Version      string   `json:"version"`
 	Profile      Profile  `json:"profile"`
@@ -580,14 +587,17 @@ type published struct {
 	Commit       string   `json:"commit"`
 }
 
+// follows is the switch as app.changed records it.
 type follows struct {
 	StableFollowsDeploys bool `json:"stable_follows_deploys"`
 }
 
+// pruned names the versions app.versions_pruned records.
 type pruned struct {
 	Versions []string `json:"versions"`
 }
 
+// channelAt is a channel and its version, as app.channel_moved records it.
 type channelAt struct {
 	Channel string `json:"channel"`
 	Version string `json:"version"`

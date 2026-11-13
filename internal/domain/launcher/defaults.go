@@ -9,9 +9,10 @@ var administration = []role.Permission{
 	role.AuditRead, role.SecurityRead, role.SystemRead, role.UsageRead, role.AppsManage,
 }
 
-// Defaults are the tiles every installation starts with: phase 1's list.
-// EnsureDefaults inserts the ones missing by slug and never changes one that
-// exists, so what Manage apps changed stays.
+// Defaults are the tiles every installation starts with: phase 1's list and
+// each published app make new-app added. EnsureDefaults inserts the ones
+// missing by slug and brings one no administrator has changed in line with
+// its entry here; one Manage apps changed stays as it is.
 var Defaults = []App{
 	{Slug: "workwear", Kind: KindApp, Group: "workwear", Icon: "shirt", Color: "#1c2060", Href: "/", Tier: TierHere, Stage: StageLive,
 		Names: Names{"Workwear & Equipment", "Darbo drabužiai ir įranga", "Спецодежда и снаряжение"}},

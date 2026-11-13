@@ -133,6 +133,7 @@ func placeBuild(tmp, dest string) (bool, error) {
 	return true, os.Chmod(dest, 0o755)
 }
 
+// complete reports whether a version's folder is whole: it has its index.html.
 func complete(dir string) bool {
 	info, err := os.Stat(filepath.Join(dir, "index.html"))
 	return err == nil && info.Mode().IsRegular()

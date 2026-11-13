@@ -4,10 +4,10 @@ The front door of the company's apps (ADR 0006): every app and shortcut a user's
 open, as big tiles in groups, at `/apps/` on the staff app's origin. Phases 1 to 3 are
 built: the launcher, its list kept by the API (the registry) and managed on
 Administration's **Manage apps**, and published apps' versions and channels served under
-`/apps/<slug>/` (Scan SIMs first). Phases 4 and 5 (the sandbox domain, the Trials view)
-follow ADR 0006 and `docs/ux/app-launcher.md`.
+`/apps/<slug>/` (Scan SIMs first), with phase 5's **Trials** view. Phase 4 (the sandbox
+domain) follows ADR 0006 and `docs/ux/app-launcher.md`.
 
-Code: the domain `internal/domain/launcher` (migrations 0042 and 0043, routes
+Code: the domain `internal/domain/launcher` (migrations 0042 to 0045 and 0047, routes
 `cmd/api/launcher-routes.go`; published apps `versions.go`, `service_versions.go`,
 `cmd/api/published-app-routes.go` and `publish-app.go`), the package `web/packages/launcher` (`@ppe/launcher`: the
 list loaded once per user and page, its rules, the words, the tile pictures, recent apps),
@@ -33,18 +33,19 @@ an https address for a linked site; a shortcut is never linked), a **stage** (Li
 Pilot, POC, In development, Retired) and **who sees it** (any of some permissions, or
 everyone signed in).
 
-The defaults, phase 1's list:
+The defaults, phase 1's list and each published app `make new-app` added (`launcher.Defaults`):
 
 | Tile | Kind | Group | Opens | Seen by (any of) |
 | --- | --- | --- | --- | --- |
 | Workwear & Equipment | app | Workwear & PPE | `/` | every signed-in user |
 | Dashboard | shortcut | Workwear & PPE | `/` | `dashboard.overview`, `dashboard.manager`, `dashboard.employee` |
 | Create Order, Orders, Employees, Help | shortcuts | Workwear & PPE | their screens | every signed-in user |
-| SIM Cards | shortcut | Company Assets | `/assets/sim-cards` | every signed-in user |
+| SIM Cards | shortcut | Company Assets | `/assets/sim-cards` | `sim_cards.read` |
 | Equipment | shortcut | Company Assets | `/assets/equipment` | `equipment.read` |
 | Scan SIMs | app, Pilot | Company Assets | `/apps/sim-scan/` | `sim_cards.manage`, `sim_codes.read` |
 | PPE Crew | app, Pilot, linked | People & Crew | `https://crew.167.71.68.195.sslip.io/`, a new tab | `dashboard.overview`, `dashboard.manager` (administrators and managers) |
 | Administration | app | Administration | `/admin/` | `ADMINISTRATION_PERMISSIONS` |
+| Import Documents | app, POC | People & Crew | `/apps/docs-import/` | `personnel.documents.manage` (and, in POC, `apps.preview`) |
 
 - A tile is seen by a user who holds any of its permissions. Seeing is not doing: inside an
   app, the API's permissions decide, as before.
@@ -78,6 +79,8 @@ group, stage, picture, colour (swatches or #rrggbb, refused when too light) and 
 | `GET /api/v1/audit-events/apps/{id}` | `apps.manage` | (a tile's Changes) |
 | `GET /api/v1/launcher`, `PUT /api/v1/launcher/pins` `{slugs}`, `POST /api/v1/launcher/feedback` | signed in | |
 
+The routes of versions, channels, channel choices and Trials are under "Published apps" below.
+
 Audit events are of entity type `app`, in the Audit log's Settings area, named by the
 tile's English name.
 
@@ -97,7 +100,8 @@ tile's English name.
 
 ## Apps by name in records
 
-Each app sends its slug as `X-PPE-App` (`workwear`, `admin`, `launcher`, `sim-scan`). The API
+Each app sends its slug as `X-PPE-App` (`workwear`, `admin`, `launcher`, `sim-scan`,
+`docs-import`). The API
 records it as the request's source when it is one of the first three or a registered app's
 slug (`launcher.Service.IsApp`, refreshed at start and on register), else `api`. The
 audit trail, the security log, System's error list and Usage keep any slug-shaped source
@@ -208,9 +212,10 @@ tests and build, and is then removed.
   version (read and rewritten once; a version never changes) and sent with an `ETag` of the
   version and the API process, so a reload while no channel moved is a `304` with the same
   headers and no body; a channel moved or a deploy gives another `ETag`. A page without `</head>`
-  is an error (500), never a page without its meta tags. A retired or unknown app, an unknown
-  version, and a published app with no Stable are 404; an app with no versions redirects to
-  its `href` (Administration at `/apps/admin/` goes to `/admin/`). Caddy serves the files from
+  is an error (500), never a page without its meta tags. A retired or unknown app, a shortcut
+  and an unknown version are 404. An app with no Stable redirects (302) to its tile's address
+  when that is elsewhere (Administration at `/apps/admin/` goes to `/admin/`), and is 404 when
+  the tile opens `/apps/<slug>/` itself; without `API_APPS_DIR` every such address is 404. Caddy serves the files from
   the `published` volume, cached for a year, `/apps/files/standard/*` and `/apps/files/device/*`
   only. The old `/sim-scan/…` redirects (308) to `/apps/sim-scan/…`. `assets` and `files` are
   reserved slugs (`launcher.ReservedSlugs`): exactly the `/apps/<name>/` paths Caddy answers

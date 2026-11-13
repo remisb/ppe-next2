@@ -13,6 +13,8 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
+// The audit events of a tile (entity type app; the Audit log's Settings
+// area). The versions' are in service_versions.go.
 const (
 	EventRegistered      = "app.registered"
 	EventChanged         = "app.changed"
@@ -27,6 +29,8 @@ const maxPins = 50
 // positionStep is the gap between tiles' positions, so a new one goes last.
 const positionStep = 10
 
+// Service is App Launcher's registry: the tiles and who sees them, pins,
+// feedback, and published apps' versions and channels (service_versions.go).
 type Service struct {
 	repo  Repository
 	now   func() time.Time
@@ -36,11 +40,17 @@ type Service struct {
 	slugs atomic.Pointer[map[string]bool]
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for new tiles, versions, channels,
+// feedback and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the registry over repo; IsApp knows no slug until Refresh.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -69,6 +79,8 @@ func (s *Service) Refresh(ctx context.Context) error {
 // IsApp reports whether slug is a registered app's, as last read.
 func (s *Service) IsApp(slug string) bool { return (*s.slugs.Load())[slug] }
 
+// addSlug adds a newly registered app's slug to slugs, as a new map: readers
+// of the old one never see it change.
 func (s *Service) addSlug(slug string) {
 	for {
 		cur := s.slugs.Load()
@@ -86,6 +98,7 @@ func (s *Service) addSlug(slug string) {
 // List returns every tile by position, retired ones included (Manage apps).
 func (s *Service) List(ctx context.Context) ([]App, error) { return s.repo.List(ctx) }
 
+// Get returns the tile with the slug, retired or not (Manage apps).
 func (s *Service) Get(ctx context.Context, slug string) (App, error) { return s.repo.Get(ctx, slug) }
 
 // ForUser returns the tiles a user with these permissions sees and their pins
@@ -330,14 +343,17 @@ type shownFields struct {
 	NameRU string `json:"name_ru"`
 }
 
+// shown is a's fields as app.changed records them.
 func shown(a App) shownFields {
 	return shownFields{a.Parent, a.Group, a.Icon, a.Color, a.Href, a.Tier, a.Stage, a.Names.EN, a.Names.LT, a.Names.RU}
 }
 
+// audience is who sees a tile, as app.audience_changed records it.
 type audience struct {
 	AnyOf []string `json:"any_of"`
 }
 
+// place is a tile's place in the order, from 1, as app.moved records it.
 type place struct {
 	Place int `json:"place"`
 }

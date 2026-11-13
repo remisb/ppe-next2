@@ -124,7 +124,7 @@ spec "Photos" in `employee-service.md`): any number each in the files store, one
 (`Employee.default_photo_id`, the avatar in the Employees list), each with optional uses from a
 fixed list (`PHOTO_USES`). **Scan SIMs** (ADR 0005, spec "Scan SIM cards" and "PIN and PUK"
 in `asset-service.md`) is a **trial app**, published at `/apps/sim-scan/` (`web/apps/sim-scan`, the third on the
-origin, reporting as `workwear`; its rules, readers, words and review list in
+origin, reporting as `sim-scan`; its rules, readers, words and review list in
 `web/packages/sim-scan`, on `@ppe/scan-kit`'s camera, workers, pictures and reader-files plugin
 (shared with docs-import), to merge into the staff app beside SIM Cards once it passes): newly
 received SIM cards read from their carriers in the browser (zxing-wasm for the SIM No.'s
@@ -169,7 +169,7 @@ events `app.*`). Apps in testing (POC, In development) are for the built-in **Te
 (`useLauncher`) for every app's **Apps** entry (no extra row), the staff app's ⌘K and the landing:
 someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/` lands on `/apps/`
 (`ApiProvider`'s async `onSignedIn`). Each app sends its slug as `X-PPE-App` (`workwear`, `admin`,
-`launcher`, `sim-scan`); the audit trail, security log, error list and Usage record any registered slug
+`launcher`, `sim-scan`, `docs-import`); the audit trail, security log, error list and Usage record any registered slug
 (the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
 Phase 3, **published apps** (migration 0043: `launcher_versions`, `launcher_channels`,
 `launcher_channel_choices`; `error_events.app_version`): an app on this site may be published as

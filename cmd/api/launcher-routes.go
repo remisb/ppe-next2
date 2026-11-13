@@ -10,8 +10,9 @@ import (
 	"github.com/remisb/ppe-next2/internal/usage"
 )
 
-// App Launcher's registry (ADR 0006, phase 2; docs/specs/app-launcher.md):
-// what each user sees, their pins and feedback, and Manage apps.
+// App Launcher's registry (ADR 0006; docs/specs/app-launcher.md): what each
+// user sees, their pins, feedback and channel choices, and Manage apps with
+// its versions, channels and Trials.
 type launcherHandler struct {
 	apps *launcher.Service
 	// For the Trials view: who used each version (Usage) and its errors (System).
@@ -23,6 +24,8 @@ type launcherHandler struct {
 	}
 }
 
+// registerLauncherRoutes mounts the launcher's routes, for any signed-in user,
+// and Manage apps', for apps.manage.
 func registerLauncherRoutes(rt *router, svc *launcher.Service, use *usage.Service, errs *system.Service) {
 	h := &launcherHandler{apps: svc, use: use, errors: errs}
 	rt.authenticated("GET /api/v1/launcher", h.forUser)
@@ -56,6 +59,7 @@ type launcherList struct {
 	Choices  map[string]string             `json:"choices"`
 }
 
+// forUser answers the signed-in user's launcherList.
 func (h *launcherHandler) forUser(w http.ResponseWriter, r *http.Request) {
 	user, err := actorID(r)
 	if err != nil {
@@ -75,6 +79,7 @@ func (h *launcherHandler) forUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, launcherList{Apps: apps, Pins: pins, Preview: holds(r, role.AppsPreview), Channels: channels, Choices: choices})
 }
 
+// choiceRequest names the channel the user opens an app on.
 type choiceRequest struct {
 	Channel string `json:"channel"`
 }
@@ -98,10 +103,12 @@ func (h *launcherHandler) chooseChannel(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// pinsRequest is the user's pins, in order; also the answer.
 type pinsRequest struct {
 	Slugs []string `json:"slugs"`
 }
 
+// setPins replaces the user's pins and answers them.
 func (h *launcherHandler) setPins(w http.ResponseWriter, r *http.Request) {
 	user, err := actorID(r)
 	if err != nil {
@@ -124,6 +131,7 @@ func (h *launcherHandler) setPins(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, pinsRequest{Slugs: pins})
 }
 
+// feedbackRequest is feedback on an app, as launcher.FeedbackParams.
 type feedbackRequest struct {
 	App      string `json:"app"`
 	Rating   string `json:"rating"`
@@ -132,6 +140,7 @@ type feedbackRequest struct {
 	Language string `json:"language"`
 }
 
+// giveFeedback stores feedback on an app the user sees and answers it (201).
 func (h *launcherHandler) giveFeedback(w http.ResponseWriter, r *http.Request) {
 	user, err := actorID(r)
 	if err != nil {
@@ -151,6 +160,7 @@ func (h *launcherHandler) giveFeedback(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, f)
 }
 
+// list answers every tile, retired ones included (Manage apps).
 func (h *launcherHandler) list(w http.ResponseWriter, r *http.Request) {
 	apps, err := h.apps.List(r.Context())
 	if err != nil {
@@ -174,6 +184,7 @@ type appRequest struct {
 	AnyOf  []string       `json:"any_of"`
 }
 
+// fields is q as the registry takes it.
 func (q appRequest) fields() launcher.Fields {
 	return launcher.Fields{
 		Parent: q.Parent, Group: launcher.Group(q.Group), Icon: q.Icon, Color: q.Color, Href: q.Href,
@@ -181,12 +192,14 @@ func (q appRequest) fields() launcher.Fields {
 	}
 }
 
+// createAppRequest registers a tile: its slug and kind, then its fields.
 type createAppRequest struct {
 	Slug string `json:"slug"`
 	Kind string `json:"kind"`
 	appRequest
 }
 
+// create registers a tile and answers it (201).
 func (h *launcherHandler) create(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
@@ -206,6 +219,7 @@ func (h *launcherHandler) create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, a)
 }
 
+// update replaces a tile's fields and answers it.
 func (h *launcherHandler) update(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
@@ -250,6 +264,7 @@ func (h *launcherHandler) move(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, apps)
 }
 
+// feedback answers the feedback on a tile, newest first.
 func (h *launcherHandler) feedback(w http.ResponseWriter, r *http.Request) {
 	list, err := h.apps.Feedback(r.Context(), r.PathValue("slug"))
 	if err != nil {
@@ -265,6 +280,7 @@ type releases struct {
 	Channels []launcher.Channel `json:"channels"`
 }
 
+// releases answers an app's versions and channels.
 func (h *launcherHandler) releases(w http.ResponseWriter, r *http.Request) {
 	versions, channels, err := h.apps.Releases(r.Context(), r.PathValue("slug"))
 	if err != nil {
@@ -279,6 +295,7 @@ type channelRequest struct {
 	Version string `json:"version"`
 }
 
+// pointChannel points a channel at a version and answers the channel.
 func (h *launcherHandler) pointChannel(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
@@ -298,6 +315,7 @@ func (h *launcherHandler) pointChannel(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, c)
 }
 
+// followsRequest turns Stable follows deploys on or off.
 type followsRequest struct {
 	On bool `json:"on"`
 }
@@ -334,12 +352,14 @@ type trial struct {
 	Errors     int `json:"errors"`
 }
 
+// trials is an app's Trials view, newest version first.
 type trials struct {
 	// Days is the window people and days are counted over.
 	Days     int     `json:"days"`
 	Versions []trial `json:"versions"`
 }
 
+// trials answers an app's Trials view.
 func (h *launcherHandler) trials(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	list, err := h.apps.Trials(r.Context(), slug)
