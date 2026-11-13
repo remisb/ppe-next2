@@ -19,12 +19,17 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the mail template repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the mail_templates columns scan reads, in its order (the row's
+// id is EntityID(key), written but never read).
 const columns = `key, recipient, cc, subject, body, updated_at, updated_by_user_id`
 
+// scan reads a template row, its time in UTC; no row is pgx.ErrNoRows, for
+// the caller to read as never saved.
 func scan(row pgx.Row) (Template, error) {
 	var t Template
 	err := row.Scan(&t.Key, &t.To, &t.CC, &t.Subject, &t.Body, &t.UpdatedAt, &t.UpdatedByUserID)
@@ -38,6 +43,7 @@ func scan(row pgx.Row) (Template, error) {
 	return t, nil
 }
 
+// List reads every saved template, by key.
 func (r *PostgresRepository) List(ctx context.Context) ([]Template, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+columns+` FROM mail_templates ORDER BY key`)
 	if err != nil {
@@ -55,6 +61,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]Template, error) {
 	return out, rows.Err()
 }
 
+// Get reads the saved template, or Template{Key: key} when there is none.
 func (r *PostgresRepository) Get(ctx context.Context, key string) (Template, error) {
 	t, err := scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM mail_templates WHERE key = $1`, key))
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -63,6 +70,8 @@ func (r *PostgresRepository) Get(ctx context.Context, key string) (Template, err
 	return t, err
 }
 
+// Update locks the row, applies m and, when it returns an event, upserts the
+// row and inserts the event.
 func (r *PostgresRepository) Update(ctx context.Context, key string, m Mutation) (Template, error) {
 	var out Template
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -94,6 +103,7 @@ func (r *PostgresRepository) Update(ctx context.Context, key string, m Mutation)
 	return out, translate(err)
 }
 
+// translate maps a foreign key violation, the actor's, to ErrActorNotFound.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23503" {

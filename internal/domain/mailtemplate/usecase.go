@@ -5,8 +5,10 @@ import "slices"
 // The use cases' keys. A use case is a place in the app that prepares an
 // email; each has one template, which administrators edit.
 const (
+	// KeySIMActivation: Prepare Activation Email on a SIM card.
 	KeySIMActivation = "sim.activation"
-	KeySIMBlocking   = "sim.blocking"
+	// KeySIMBlocking: Prepare Blocking Email on a SIM card.
+	KeySIMBlocking = "sim.blocking"
 )
 
 // The fields' keys, as templates write them ({{sim.phone_number}}).

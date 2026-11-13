@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Limits of a template's parts, in characters.
 const (
 	maxToLen      = 500
 	maxCCLen      = 500
@@ -95,6 +96,7 @@ func (p *TextParams) Validate(u UseCase) error {
 	return nil
 }
 
+// text is p as a Text.
 func (p TextParams) text() Text { return Text{To: p.To, CC: p.CC, Subject: p.Subject, Body: p.Body} }
 
 // segment is a piece of a template: literal text, or the key of a field.
@@ -103,7 +105,9 @@ type segment struct {
 	field string
 }
 
-// parse splits text into literal text and u's fields, naming part in its errors.
+// parse splits text into literal text and u's fields, naming part in its
+// errors: a {{ without its }} and an unknown field are ErrInvalid; a lone }}
+// is text.
 func parse(part, text string, u UseCase) ([]segment, error) {
 	var out []segment
 	for text != "" {

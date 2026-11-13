@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	// EventChanged: a template's text, before and after as {recipient, cc,
+	// subject, body}, on EntityID(key).
 	EventChanged = "mail_template.changed"
 	auditEntity  = "mail_template"
 )
@@ -20,17 +22,23 @@ func EntityID(key string) uuid.UUID {
 	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://workwear.gavort.nl/mail-templates/"+key))
 }
 
+// Service holds the mail templates' use cases.
 type Service struct {
 	repo  Repository
 	now   func() time.Time
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the mail template service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -65,7 +73,8 @@ func (s *Service) List(ctx context.Context) ([]Template, error) {
 	return out, nil
 }
 
-// Get returns the template of the use case with that key.
+// Get returns the template of the use case with that key, its default when
+// never saved; an unknown key is ErrNotFound.
 func (s *Service) Get(ctx context.Context, key string) (Template, error) {
 	u, ok := Find(key)
 	if !ok {
@@ -79,7 +88,8 @@ func (s *Service) Get(ctx context.Context, key string) (Template, error) {
 }
 
 // Update replaces a template's text, recording mail_template.changed when it
-// differs. Resetting a template is saving its use case's default.
+// differs; an unchanged save writes nothing. Resetting a template is saving
+// its use case's default. An unknown key is ErrNotFound.
 func (s *Service) Update(ctx context.Context, key string, p TextParams, actor uuid.UUID) (Template, error) {
 	u, ok := Find(key)
 	if !ok {

@@ -41,7 +41,7 @@ editor's preview fills in. Both SIM use cases have these fields:
 | `company.name` | the company's name on Settings | Company Name |
 | `user.name` | the signed-in user preparing the email | Your Name |
 | `user.email` | that user's e-mail, for a copy to themself | Your E-mail |
-| `today` | the day, in `API_ORG_TIMEZONE` (YYYY-MM-DD) | Date |
+| `today` | the day, in `API_ORG_TIMEZONE` (YYYY-MM-DD), from the asset service's clock | Date |
 
 ## Templates
 
@@ -105,8 +105,10 @@ the mail app. The first Send Email or copy of each opening records the email as 
 | `POST /api/v1/mail-templates/{key}/preview` | `mail_templates.manage`: body `{to, cc, subject, body}`; returns `{to, cc, subject, body, missing}` with the samples; saves nothing |
 
 The emails themselves are prepared where they are used. A SIM card's are
-`GET /api/v1/assets/{id}/emails/{activation|blocking}` (`assets.manage`), which records
-nothing. `POST …/copied` records that one was copied ([asset-service.md](asset-service.md)).
+`GET /api/v1/assets/{id}/emails/{activation|blocking}` (`sim_cards.manage`, migration 0049),
+which records nothing. `POST …/copied` records that one was prepared
+(`asset.activation_email_prepared` or `asset.blocking_email_prepared`,
+[asset-service.md](asset-service.md)).
 
 **Change Mail Templates** (`mail_templates.manage`, group Administration) is granted to
 Administrator by migration 0040. It opens the Mail Templates screen, which lists each use

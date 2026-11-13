@@ -20,7 +20,9 @@ type Repository interface {
 	// Get returns the saved template with that key, or Template{Key: key}
 	// when it was never saved.
 	Get(ctx context.Context, key string) (Template, error)
-	// Update locks the template with that key, applies m and writes the
-	// result with its event.
+	// Update locks the template with that key (Template{Key: key} when it was
+	// never saved), applies m and, when m returns an event, writes the result
+	// (inserting the row the first time) and the event; no event writes
+	// nothing.
 	Update(ctx context.Context, key string, m Mutation) (Template, error)
 }
