@@ -22,6 +22,7 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the user repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -37,6 +38,7 @@ const userColumns = `id, email, name, password_hash,
 // so two at once cannot each see the other's administrator still there.
 const guardLock = 0x0022_0001
 
+// scanUser reads a row of userColumns, times in UTC; no row is ErrNotFound.
 func scanUser(row pgx.Row) (User, error) {
 	var u User
 	err := row.Scan(&u.ID, &u.Email, &u.Name, &u.PasswordHash, &u.RoleIDs, &u.IsActive, &u.Language,
@@ -56,6 +58,7 @@ func scanUser(row pgx.Row) (User, error) {
 	return u, nil
 }
 
+// Create inserts the user, their roles and ev in one transaction.
 func (r *PostgresRepository) Create(ctx context.Context, u User, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
@@ -108,6 +111,7 @@ func keepGuard(ctx context.Context, tx pgx.Tx, guard uuid.UUID) error {
 	return nil
 }
 
+// lockGuard takes guardLock for the transaction, when there is a guard.
 func lockGuard(ctx context.Context, tx pgx.Tx, guard uuid.UUID) error {
 	if guard == uuid.Nil {
 		return nil
@@ -116,6 +120,7 @@ func lockGuard(ctx context.Context, tx pgx.Tx, guard uuid.UUID) error {
 	return err
 }
 
+// Get reads the live user, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (User, error) {
 	return scanUser(r.pool.QueryRow(ctx,
 		`SELECT `+userColumns+` FROM users WHERE id = $1 AND deleted_at IS NULL`, id))
@@ -127,6 +132,7 @@ func (r *PostgresRepository) ByEmail(ctx context.Context, email string) (User, e
 		`SELECT `+userColumns+` FROM users WHERE lower(email) = lower($1) AND deleted_at IS NULL`, email))
 }
 
+// List reads every live user by name.
 func (r *PostgresRepository) List(ctx context.Context) ([]User, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT `+userColumns+` FROM users WHERE deleted_at IS NULL ORDER BY lower(name), id`)
@@ -145,6 +151,8 @@ func (r *PostgresRepository) List(ctx context.Context) ([]User, error) {
 	return out, rows.Err()
 }
 
+// Update writes the user, their roles and evs under guardLock, then checks
+// the guard.
 func (r *PostgresRepository) Update(ctx context.Context, u User, guard uuid.UUID, evs []audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := lockGuard(ctx, tx, guard); err != nil {
@@ -167,12 +175,14 @@ func (r *PostgresRepository) Update(ctx context.Context, u User, guard uuid.UUID
 	}))
 }
 
+// SetPasswordHash writes the hash and ev.
 func (r *PostgresRepository) SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, ev audit.Event) error {
 	return r.writeOne(ctx, ev, `
 		UPDATE users SET password_hash = $2, updated_at = $3, updated_by_user_id = $4
 		WHERE id = $1 AND deleted_at IS NULL`, id, hash, at, by)
 }
 
+// SetLanguage writes the language and ev.
 func (r *PostgresRepository) SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, ev audit.Event) error {
 	return r.writeOne(ctx, ev, `
 		UPDATE users SET language = $2, updated_at = $3, updated_by_user_id = $4
@@ -190,6 +200,8 @@ func (r *PostgresRepository) writeOne(ctx context.Context, ev audit.Event, sql s
 	}))
 }
 
+// Delete soft-deletes the user and writes ev under guardLock, then checks the
+// guard.
 func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := lockGuard(ctx, tx, guard); err != nil {
@@ -208,6 +220,7 @@ func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, at time.T
 	}))
 }
 
+// affectedOne is err translated, or ErrNotFound when the write changed no row.
 func affectedOne(tag pgconn.CommandTag, err error) error {
 	if err != nil {
 		return translate(err)

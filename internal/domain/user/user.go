@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Limits of a user's fields, in bytes.
 const (
 	maxNameLen  = 200
 	maxEmailLen = 254
@@ -68,12 +69,15 @@ type CreateParams struct {
 	RoleIDs  []uuid.UUID
 }
 
+// Normalize trims the email (lower case) and name, and de-duplicates and
+// sorts the role ids.
 func (p *CreateParams) Normalize() {
 	p.Email = normalizeEmail(p.Email)
 	p.Name = strings.TrimSpace(p.Name)
 	p.RoleIDs = normalizeRoleIDs(p.RoleIDs)
 }
 
+// Validate normalizes p and checks the email, name, roles and password.
 func (p *CreateParams) Validate() error {
 	p.Normalize()
 	if err := validateProfile(p.Email, p.Name, p.RoleIDs); err != nil {
@@ -91,12 +95,14 @@ type UpdateParams struct {
 	IsActive bool
 }
 
+// Normalize is CreateParams.Normalize for an update.
 func (p *UpdateParams) Normalize() {
 	p.Email = normalizeEmail(p.Email)
 	p.Name = strings.TrimSpace(p.Name)
 	p.RoleIDs = normalizeRoleIDs(p.RoleIDs)
 }
 
+// Validate normalizes p and checks the email, name and roles.
 func (p *UpdateParams) Validate() error {
 	p.Normalize()
 	return validateProfile(p.Email, p.Name, p.RoleIDs)
@@ -115,8 +121,11 @@ func normalizeRoleIDs(ids []uuid.UUID) []uuid.UUID {
 	return out
 }
 
+// normalizeEmail trims s and puts it in lower case.
 func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
+// validateProfile checks a bare email address, a name and at least one role,
+// each within its limit.
 func validateProfile(email, name string, roles []uuid.UUID) error {
 	switch {
 	case email == "":
@@ -143,6 +152,7 @@ func validateProfile(email, name string, roles []uuid.UUID) error {
 	return nil
 }
 
+// validatePassword checks a password's length: 8 to 72 bytes.
 func validatePassword(pw string) error {
 	switch {
 	case len(pw) < minPasswordLen:

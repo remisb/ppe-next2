@@ -27,36 +27,50 @@ Passwords are 8–72 bytes (bcrypt ignores anything past 72).
 
 A route requires one permission (`internal/domain/role/permission.go`, listed in the same
 order in `web/packages/api-client/src/permissions.ts`); a user may do what any of their
-roles allows. Roles are administrators' to define (`docs/specs/role-service.md`); the
-built-in roles (`role/builtin.go`) are installed allowing exactly what the three fixed
-roles did:
+roles allows. Roles are administrators' to define (`docs/specs/role-service.md`). The
+built-in roles (`role/builtin.go`) are installed with these permissions: Administrator,
+Manager and Employee reproduce what the three fixed roles allowed, and three more each grant
+what no one else gets: Equipment Assignments, Testers and Personnel Documents. In catalogue
+order:
 
-| Permission | Allows | admin | manager | employee |
-| --- | --- | --- | --- | --- |
-| `users.read` | list and look up users | ✓ | ✓ | |
-| `users.manage` | add, edit, deactivate, reset, delete users (needs `users.read`) | ✓ | | |
-| `roles.manage` | manage roles, and give any permission (needs `users.read`) | ✓ | | |
-| `settings.manage` | change Settings | ✓ | | |
-| `backups.read` | read Backups | ✓ | | |
-| `audit.read` | read the Audit log | ✓ | | |
-| `security.read` | read Security: sign-ins, everyone's signed-in devices, the access review | ✓ | | |
-| `employee_profiles.read` | see employees' code, notes, language, photos, identity details (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ |
-| `employee_profiles.manage` | add and edit employees, their photos (needs `employee_profiles.read`) | ✓ | ✓ | ✓ |
-| `employee_sizes.read` | see employees' size defaults (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ |
-| `employee_sizes.manage` | Edit Sizes, Save as Employee Default, sizes on Add and Edit (needs `employee_sizes.read`) | ✓ | ✓ | ✓ |
-| `employees.delete` | delete employees | ✓ | ✓ | |
-| `employees.merge` | Merge Employees: one person's two records made one (needs `employee_profiles.manage` and `employee_sizes.manage`; migration 0052) | ✓ | ✓ | |
-| `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | |
-| `item_prices.manage` | set and change an item's prices (needs `catalogue.manage`; migration 0038) | ✓ | ✓ | |
-| `item_sets.read` | see Item Sets (migration 0038; before it, every signed-in user) | ✓ | ✓ | ✓ |
-| `item_sets.manage` | add, edit, delete item sets (needs `item_sets.read`) | ✓ | ✓ | |
-| `orders.delete` | delete orders | | ✓ | |
-| `assets.manage` | add and edit Equipment & Furniture, give, return, Mark as Not Returned (migration 0029, SIM cards' split off in 0049; spec, open decision 5) | ✓ | ✓ | |
-| `sim_cards.read` | see SIM cards and who holds each (migration 0049; before it, every signed-in user) | ✓ | ✓ | ✓ |
-| `sim_cards.manage` | add, scan and edit SIMs, Change Status, give, return, Mark as Not Returned, their emails and PIN and PUK (needs `sim_cards.read`; migration 0049) | ✓ | ✓ | |
-| `dashboard.overview` | the Dashboard | ✓ | | |
-| `dashboard.manager` | the Manager Dashboard | | ✓ | |
-| `dashboard.employee` | the Employee Dashboard (the user's own orders) | | | ✓ |
+| Permission | Allows | Admin | Manager | Employee | Other built-in |
+| --- | --- | --- | --- | --- | --- |
+| `users.read` | list and look up users | ✓ | ✓ | | |
+| `users.manage` | add, edit, deactivate, reset, delete users (needs `users.read`) | ✓ | | | |
+| `roles.manage` | manage roles, and give any permission (needs `users.read`) | ✓ | | | |
+| `settings.manage` | change Settings | ✓ | | | |
+| `mail_templates.manage` | edit Mail Templates (migration 0040) | ✓ | | | |
+| `backups.read` | read Backups | ✓ | | | |
+| `audit.read` | read the Audit log | ✓ | | | |
+| `audit.export` | export the Audit log (needs `audit.read`; migration 0026) | ✓ | | | |
+| `security.read` | read Security: sign-ins, everyone's signed-in devices, the access review | ✓ | | | |
+| `system.read` | read System: the API, the database, the error list (migration 0025) | ✓ | | | |
+| `usage.read` | read Usage (migration 0027) | ✓ | | | |
+| `ai_usage.read` | read AI Usage (migration 0051) | ✓ | | | |
+| `apps.manage` | Manage apps: register, edit, move, retire, versions and channels (migration 0042) | ✓ | | | |
+| `apps.preview` | see App Launcher's apps in testing (migration 0042) | | | | Testers |
+| `employee_profiles.read` | see employees' code, notes, language, photos, identity details (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ | |
+| `employee_profiles.manage` | add and edit employees, their photos (needs `employee_profiles.read`) | ✓ | ✓ | ✓ | |
+| `employee_sizes.read` | see employees' size defaults (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ | |
+| `employee_sizes.manage` | Edit Sizes, Save as Employee Default, sizes on Add and Edit (needs `employee_sizes.read`) | ✓ | ✓ | ✓ | |
+| `employees.delete` | delete employees | ✓ | ✓ | | |
+| `employees.merge` | Merge Employees: one person's two records made one (needs `employee_profiles.manage` and `employee_sizes.manage`; migration 0052) | ✓ | ✓ | | |
+| `catalogue.manage` | add, edit, (de)activate, delete items | ✓ | ✓ | | |
+| `item_prices.manage` | set and change an item's prices (needs `catalogue.manage`; migration 0038) | ✓ | ✓ | | |
+| `item_sets.read` | see Item Sets (migration 0038; before it, every signed-in user) | ✓ | ✓ | ✓ | |
+| `item_sets.manage` | add, edit, delete item sets (needs `item_sets.read`) | ✓ | ✓ | | |
+| `orders.delete` | delete orders | | ✓ | | |
+| `assets.manage` | add and edit Equipment & Furniture, give, return, Mark as Not Returned (migration 0029, SIM cards' split off in 0049; spec, open decision 5) | ✓ | ✓ | | |
+| `sim_cards.read` | see SIM cards and who holds each (migration 0049; before it, every signed-in user) | ✓ | ✓ | ✓ | |
+| `sim_cards.manage` | add, scan and edit SIMs, Change Status, give, return, Mark as Not Returned, their emails, setting and forgetting PIN and PUK (needs `sim_cards.read`; migration 0049) | ✓ | ✓ | | |
+| `sim_codes.read` | Show PIN and PUK (sensitive; needs `sim_cards.read`; migration 0041) | ✓ | | | |
+| `equipment.read` | see Equipment & Furniture and who holds each; without it the API answers 404 for such an item (migration 0032) | | | | Equipment Assignments |
+| `personnel.documents.read` | see a person's identity documents, Show Document (sensitive; migration 0048, ADR 0007) | | | | Personnel Documents |
+| `personnel.documents.manage` | scan and save identity documents in Import Documents, link one to an employee, remove one, Mark Employment Ended, Legal Hold (needs `personnel.documents.read`) | | | | Personnel Documents |
+| `personnel.portraits.colorize` | Make Colour Photo (AI) on Import Documents (needs `personnel.documents.manage`) | | | | |
+| `dashboard.overview` | the Dashboard | ✓ | | | |
+| `dashboard.manager` | the Manager Dashboard | | ✓ | | |
+| `dashboard.employee` | the Employee Dashboard (the user's own orders) | | | ✓ | |
 
 Everything else a signed-in user does needs no permission.
 
@@ -78,9 +92,10 @@ Everything else a signed-in user does needs no permission.
 | `DELETE /api/v1/users/{id}` | `users.manage`, sensitive | soft delete; signs the user out everywhere |
 
 "Sensitive" (`requireSensitive`): the password was entered within `API_RECENT_SIGN_IN`
-(12h), else 403 `recent sign-in required` until it is confirmed at `POST /api/v1/auth/reauth`
-(session spec); and the user's roles still grant `users.manage`, read from the database,
-else 403. Sessions are ended through the `user.Sessions` interface (`WithSessions`).
+(12h), else 403 `recent sign-in required` until it is confirmed at `POST /api/v1/auth/reauth`;
+and the user's roles still grant the route's permission (`users.manage` here), read from the
+database, else 403. The other sensitive routes are listed in the session spec ("Recent
+sign-in"). Sessions are ended through the `user.Sessions` interface (`WithSessions`).
 
 `GET /health`, the confirmation routes and the sign-in routes are the only other unauthenticated routes.
 

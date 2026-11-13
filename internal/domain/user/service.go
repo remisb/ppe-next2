@@ -16,17 +16,26 @@ import (
 // Audit event names written by this service, all of entity type "user".
 // Password events record that it happened, never a value.
 const (
-	EventCreated         = "user.created"
-	EventUpdated         = "user.updated"
-	EventRolesChanged    = "user.roles_changed"
-	EventActivated       = "user.activated"
-	EventDeactivated     = "user.deactivated"
+	// EventCreated: name, email, role ids and activity; never the password.
+	EventCreated = "user.created"
+	// EventUpdated: the changed name or email from an edit, or the language
+	// the user set.
+	EventUpdated = "user.updated"
+	// EventRolesChanged: role_ids before and after.
+	EventRolesChanged = "user.roles_changed"
+	// EventActivated, EventDeactivated: an edit's change of activity.
+	EventActivated   = "user.activated"
+	EventDeactivated = "user.deactivated"
+	// EventPasswordChanged: the user changed their own password.
 	EventPasswordChanged = "user.password_changed"
-	EventPasswordReset   = "user.password_reset"
-	EventDeleted         = "user.deleted"
-	auditEntity          = "user"
+	// EventPasswordReset: someone who manages users set a new password.
+	EventPasswordReset = "user.password_reset"
+	// EventDeleted: a soft delete.
+	EventDeleted = "user.deleted"
+	auditEntity  = "user"
 )
 
+// event is an audit event on user id by actor.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (audit.Event, error) {
 	return audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
 }
@@ -34,28 +43,40 @@ func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time
 // Sessions ends a user's sign-ins (the session service, through an adapter in
 // cmd/api/checkers.go). reason is one of the End* values.
 type Sessions interface {
+	// EndAll ends every sign-in of userID but keep (uuid.Nil keeps none).
 	EndAll(ctx context.Context, userID, keep uuid.UUID, reason string) error
 }
 
 // Why a user's sign-ins end, as the session service records it.
 const (
+	// EndPasswordChanged: the user changed their own password.
 	EndPasswordChanged = "password_changed"
-	EndPasswordReset   = "password_reset"
-	EndDeactivated     = "deactivated"
-	EndDeleted         = "deleted"
+	// EndPasswordReset: someone else set a new password.
+	EndPasswordReset = "password_reset"
+	// EndDeactivated: the account was deactivated.
+	EndDeactivated = "deactivated"
+	// EndDeleted: the account was deleted.
+	EndDeleted = "deleted"
 )
 
+// noSessions ends nothing: the default without WithSessions.
 type noSessions struct{}
 
+// EndAll does nothing.
 func (noSessions) EndAll(context.Context, uuid.UUID, uuid.UUID, string) error { return nil }
 
 // noRoles knows no roles: every id is accepted and grants nothing, so nothing
 // is refused for permissions. Production always passes WithRoles.
 type noRoles struct{}
 
+// Permissions grants nothing.
 func (noRoles) Permissions(context.Context, []uuid.UUID) ([]role.Permission, error) { return nil, nil }
+
+// PermissionsOf grants nothing.
 func (noRoles) PermissionsOf(context.Context, uuid.UUID) ([]role.Permission, error) { return nil, nil }
-func (noRoles) Missing(context.Context, []uuid.UUID) ([]uuid.UUID, error)           { return nil, nil }
+
+// Missing accepts every id.
+func (noRoles) Missing(context.Context, []uuid.UUID) ([]uuid.UUID, error) { return nil, nil }
 
 // Service owns user policy: validation, IDs, timestamps and password hashing,
 // and who may give which roles to whom.
@@ -74,9 +95,13 @@ type Service struct {
 	dummyHash string
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for users and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithSessions ends a user's sign-ins when their password changes or the
@@ -96,6 +121,9 @@ func WithHasher(hash func(string) (string, error), verify func(hash, password st
 	return func(s *Service) { s.hash, s.verify = hash, verify }
 }
 
+// NewService is the user service over repo. Without WithRoles, WithSessions
+// and WithGuardRole it checks no permissions, ends no sign-ins and guards no
+// role.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{
 		repo:     repo,
@@ -113,16 +141,20 @@ func NewService(repo Repository, opts ...Option) *Service {
 	return s
 }
 
+// bcryptHash hashes pw at bcrypt's default cost.
 func bcryptHash(pw string) (string, error) {
 	b, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
 	return string(b), err
 }
 
+// bcryptVerify reports whether pw matches hash.
 func bcryptVerify(hash, pw string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)) == nil
 }
 
-// Create adds a user on behalf of actor.
+// Create adds a user on behalf of actor: active, in English, with
+// user.created. Every role must be live, and the actor may give only what
+// role.MayGrant allows (ErrNotPermitted).
 func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (User, error) {
 	if actor == uuid.Nil {
 		return User{}, fieldError("actor", "is required")
@@ -186,6 +218,8 @@ func (s *Service) mayGrant(ctx context.Context, actor uuid.UUID, roleIDs []uuid.
 	return nil
 }
 
+// create hashes the password and writes the new user, attributed to
+// actorFor(its own id).
 func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self uuid.UUID) uuid.UUID) (User, error) {
 	hash, err := s.hash(p.Password)
 	if err != nil {
@@ -218,14 +252,17 @@ func (s *Service) create(ctx context.Context, p CreateParams, actorFor func(self
 	return u, nil
 }
 
+// Get is the live user, or ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (User, error) {
 	return s.repo.Get(ctx, id)
 }
 
+// ByEmail is the live user with that email, whatever its case, or ErrNotFound.
 func (s *Service) ByEmail(ctx context.Context, email string) (User, error) {
 	return s.repo.ByEmail(ctx, normalizeEmail(email))
 }
 
+// List is every live user by name.
 func (s *Service) List(ctx context.Context) ([]User, error) {
 	return s.repo.List(ctx)
 }
@@ -350,16 +387,16 @@ func changedRoles(a, b []uuid.UUID) []uuid.UUID {
 	return out
 }
 
-// mayManage refuses managing user id (resetting their password, deleting
-// them) when the actor may not grant what their roles hold: a user who
-// manages users but not roles cannot take over an administrator's account.
 // MayManage is nil when actor may manage user id (ending their sessions on
-// Security, as well as the changes here): ErrNotPermitted when id holds
-// permissions actor does not, ErrNotFound when there is no such user.
+// Security, as well as resetting their password and deleting them here):
+// ErrNotPermitted when id holds permissions actor may not grant, so a user who
+// manages users but not roles cannot take over an administrator's account;
+// ErrNotFound when there is no such user.
 func (s *Service) MayManage(ctx context.Context, id, actor uuid.UUID) error {
 	return s.mayManage(ctx, id, actor)
 }
 
+// mayManage is MayManage.
 func (s *Service) mayManage(ctx context.Context, id, actor uuid.UUID) error {
 	u, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -368,8 +405,10 @@ func (s *Service) mayManage(ctx context.Context, id, actor uuid.UUID) error {
 	return s.mayGrant(ctx, actor, u.RoleIDs)
 }
 
-// SetPassword replaces a user's password without knowing the old one (admin
-// reset), and ends every sign-in of theirs.
+// SetPassword replaces a user's password without knowing the old one (a reset
+// by someone who manages users, who must be allowed to manage them), and ends
+// every sign-in of theirs. A uuid.Nil actor skips the check and is refused by
+// setPassword.
 func (s *Service) SetPassword(ctx context.Context, id uuid.UUID, password string, actor uuid.UUID) error {
 	if actor != uuid.Nil {
 		if err := s.mayManage(ctx, id, actor); err != nil {

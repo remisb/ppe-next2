@@ -22,16 +22,22 @@ type Repository interface {
 
 	// Create writes the user, the roles they hold, and ev.
 	Create(ctx context.Context, u User, ev audit.Event) error
+	// Get is the live user with their live roles, or ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (User, error)
-	// ByEmail matches case-insensitively among live users.
+	// ByEmail matches case-insensitively among live users, or ErrNotFound.
 	ByEmail(ctx context.Context, email string) (User, error)
+	// List is every live user by name, ignoring case.
 	List(ctx context.Context) ([]User, error)
 	// Update writes email, name, roles, is_active, updated_at and updated_by,
 	// and evs (none for none).
 	Update(ctx context.Context, u User, guard uuid.UUID, evs []audit.Event) error
+	// SetPasswordHash replaces a live user's password hash and writes ev, or
+	// is ErrNotFound.
 	SetPasswordHash(ctx context.Context, id uuid.UUID, hash string, at time.Time, by uuid.UUID, ev audit.Event) error
 	// SetLanguage sets a live user's interface language, or ErrNotFound.
 	SetLanguage(ctx context.Context, id uuid.UUID, lang string, at time.Time, by uuid.UUID, ev audit.Event) error
+	// Delete soft-deletes a live user and writes ev, or is ErrNotFound; their
+	// user_roles rows stay.
 	Delete(ctx context.Context, id uuid.UUID, at time.Time, by uuid.UUID, guard uuid.UUID, ev audit.Event) error
 }
 
