@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Limits of a role's text, in characters.
 const (
 	maxNameLen        = 100
 	maxDescriptionLen = 500
@@ -51,6 +52,8 @@ type Params struct {
 	Permissions []string
 }
 
+// Normalize trims the name, description and keys, and drops empty and
+// repeated keys.
 func (p *Params) Normalize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.Description = strings.TrimSpace(p.Description)

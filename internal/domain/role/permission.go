@@ -63,12 +63,16 @@ const (
 type Group string
 
 const (
+	// GroupAdministration is Administration's screens.
 	GroupAdministration Group = "administration"
 	// GroupLauncher is App Launcher's (ADR 0006): managing its list, and seeing apps in testing.
 	GroupLauncher Group = "launcher"
+	// GroupWorkwear is the staff app's: employees, the catalogue, item sets,
+	// orders and Company Assets.
 	GroupWorkwear Group = "workwear"
 	// GroupPersonnel is Personnel files' (ADR 0007): identity documents.
-	GroupPersonnel  Group = "personnel"
+	GroupPersonnel Group = "personnel"
+	// GroupDashboards is the three dashboards, one each.
 	GroupDashboards Group = "dashboards"
 )
 

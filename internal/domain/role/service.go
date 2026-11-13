@@ -10,7 +10,9 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// Audit events, entity type "role".
+// Audit events, entity type "role", each with {name, description,
+// permissions}: after for created, before and after for updated, before for
+// deleted.
 const (
 	auditEntity  = "role"
 	EventCreated = "role.created"
@@ -26,11 +28,16 @@ type Service struct {
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for roles and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the role service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -46,10 +53,12 @@ type snapshot struct {
 	Permissions []Permission `json:"permissions"`
 }
 
+// snapshotOf is r as its events record it.
 func snapshotOf(r Role) snapshot {
 	return snapshot{Name: r.Name, Description: r.Description, Permissions: r.Permissions}
 }
 
+// event is an audit event on role id by actor.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) (*audit.Event, error) {
 	ev, err := audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
 	if err != nil {
@@ -58,8 +67,11 @@ func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time
 	return &ev, nil
 }
 
+// Get is the live role, or ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Role, error) { return s.repo.Get(ctx, id) }
-func (s *Service) List(ctx context.Context) ([]Role, error)            { return s.repo.List(ctx) }
+
+// List is every live role, built-ins first, then by name.
+func (s *Service) List(ctx context.Context) ([]Role, error) { return s.repo.List(ctx) }
 
 // Permissions are what holding the roles ids grants: a user's, for their token.
 func (s *Service) Permissions(ctx context.Context, ids []uuid.UUID) ([]Permission, error) {
@@ -175,7 +187,8 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	})
 }
 
-// Delete soft-deletes a role no live user holds. Built-in roles stay.
+// Delete soft-deletes a role no live user holds (ErrInUse otherwise). Built-in
+// roles stay: Administrator is ErrBuiltIn, the others ErrInvalid.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")

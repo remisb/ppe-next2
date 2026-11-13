@@ -16,9 +16,11 @@ type Mutation func(cur Role) (Role, *audit.Event, error)
 // Repository stores roles with their permissions. Implementations translate
 // storage errors to this package's sentinels and never validate.
 type Repository interface {
+	// Create writes r, its permissions and ev; a live role's name is ErrNameTaken.
 	Create(ctx context.Context, r Role, ev *audit.Event) error
+	// Get is the live role with its permissions and user count, or ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (Role, error)
-	// List returns live roles: built-ins first (admin, manager, employee), then by name.
+	// List returns live roles: built-ins first (BuiltinKeys' order), then by name.
 	List(ctx context.Context) ([]Role, error)
 	// Update locks live role id, applies m and writes the role, its
 	// permissions and the event. A role being deleted is written with
@@ -26,7 +28,7 @@ type Repository interface {
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Role, error)
 	// Permissions are those of the live roles among ids, in catalogue order.
 	Permissions(ctx context.Context, ids []uuid.UUID) ([]Permission, error)
-	// OfUser returns the live roles user id holds.
+	// OfUser returns the live roles user id holds, in List's order.
 	OfUser(ctx context.Context, userID uuid.UUID) ([]Role, error)
 	// Missing returns the ids that name no live role.
 	Missing(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)

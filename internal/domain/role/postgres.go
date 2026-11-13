@@ -21,6 +21,7 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the role repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
@@ -31,9 +32,11 @@ const columns = `r.id, r.key, r.name, r.description, r.created_at, r.updated_at,
 	coalesce((SELECT array_agg(p.permission) FROM role_permissions p WHERE p.role_id = r.id), '{}'),
 	(SELECT count(*) FROM user_roles ur JOIN users u ON u.id = ur.user_id AND u.deleted_at IS NULL WHERE ur.role_id = r.id)`
 
-// builtinsFirst orders admin, manager, employee, equipment, then custom roles by name.
+// builtinsFirst orders the built-ins as BuiltinKeys does, then custom roles by name.
 const builtinsFirst = `ORDER BY array_position(ARRAY['admin','manager','employee','equipment','testers','personnel'], r.key) NULLS LAST, lower(r.name), r.id`
 
+// scan reads a row of columns, times in UTC, keeping only known permissions
+// and marking Administrator locked; no row is ErrNotFound.
 func scan(row pgx.Row) (Role, error) {
 	var r Role
 	var perms []string
@@ -51,6 +54,7 @@ func scan(row pgx.Row) (Role, error) {
 	return r, nil
 }
 
+// scanAll reads every row of rows.
 func scanAll(rows pgx.Rows) ([]Role, error) {
 	defer rows.Close()
 	out := make([]Role, 0)
@@ -64,6 +68,7 @@ func scanAll(rows pgx.Rows) ([]Role, error) {
 	return out, rows.Err()
 }
 
+// Create inserts the role, its permissions and ev in one transaction.
 func (p *PostgresRepository) Create(ctx context.Context, r Role, ev *audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, p.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO roles (id, key, name, description, created_at, updated_at,
@@ -78,10 +83,12 @@ func (p *PostgresRepository) Create(ctx context.Context, r Role, ev *audit.Event
 	}))
 }
 
+// Get reads the live role, or ErrNotFound.
 func (p *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Role, error) {
 	return scan(p.pool.QueryRow(ctx, `SELECT `+columns+` FROM roles r WHERE r.id = $1 AND r.deleted_at IS NULL`, id))
 }
 
+// List reads every live role, built-ins first.
 func (p *PostgresRepository) List(ctx context.Context) ([]Role, error) {
 	rows, err := p.pool.Query(ctx, `SELECT `+columns+` FROM roles r WHERE r.deleted_at IS NULL `+builtinsFirst)
 	if err != nil {
@@ -90,6 +97,8 @@ func (p *PostgresRepository) List(ctx context.Context) ([]Role, error) {
 	return scanAll(rows)
 }
 
+// Update locks the live role, reads it with its user count, applies m and
+// writes the role, its permissions again (unless deleted) and the event.
 func (p *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (Role, error) {
 	var out Role
 	err := pgx.BeginFunc(ctx, p.pool, func(tx pgx.Tx) error {
@@ -128,6 +137,7 @@ func (p *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
+// Permissions reads the union of the live roles' permissions among ids.
 func (p *PostgresRepository) Permissions(ctx context.Context, ids []uuid.UUID) ([]Permission, error) {
 	var perms []string
 	err := p.pool.QueryRow(ctx, `SELECT coalesce(array_agg(DISTINCT p.permission), '{}') FROM role_permissions p
@@ -138,6 +148,7 @@ func (p *PostgresRepository) Permissions(ctx context.Context, ids []uuid.UUID) (
 	return Known(perms), nil
 }
 
+// OfUser reads the live roles user id holds.
 func (p *PostgresRepository) OfUser(ctx context.Context, userID uuid.UUID) ([]Role, error) {
 	rows, err := p.pool.Query(ctx, `SELECT `+columns+` FROM roles r
 		JOIN user_roles ur ON ur.role_id = r.id AND ur.user_id = $1
@@ -148,6 +159,7 @@ func (p *PostgresRepository) OfUser(ctx context.Context, userID uuid.UUID) ([]Ro
 	return scanAll(rows)
 }
 
+// Missing reads the ids among ids that name no live role.
 func (p *PostgresRepository) Missing(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := p.pool.Query(ctx, `SELECT asked FROM unnest($1::uuid[]) AS asked
 		WHERE NOT EXISTS (SELECT 1 FROM roles r WHERE r.id = asked AND r.deleted_at IS NULL)`, ids)
@@ -180,11 +192,13 @@ func EnsureBuiltins(ctx context.Context, pool *pgxpool.Pool) error {
 	})
 }
 
+// writePermissions inserts role id's permissions.
 func writePermissions(ctx context.Context, tx pgx.Tx, id uuid.UUID, perms []Permission) error {
 	_, err := tx.Exec(ctx, `INSERT INTO role_permissions (role_id, permission) SELECT $1, unnest($2::text[])`, id, Strings(perms))
 	return err
 }
 
+// insertEvent inserts ev, when there is one.
 func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 	if ev == nil {
 		return nil
