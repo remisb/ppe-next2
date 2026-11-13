@@ -11,12 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// Length limits of a set's text, in bytes, and of its lines.
 const (
 	maxNameLen        = 200
 	maxDescriptionLen = 1000
 	maxLines          = 100
 )
 
+// ItemSet is a named list of catalogue items with default quantities, which
+// Create Order applies to an employee (Apply Item Set) while it is active.
 type ItemSet struct {
 	ID              uuid.UUID  `json:"id"`
 	Name            string     `json:"name"`
@@ -31,6 +34,7 @@ type ItemSet struct {
 	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
+// Deleted reports whether the set is soft-deleted.
 func (s ItemSet) Deleted() bool { return s.DeletedAt != nil }
 
 // Line references one catalogue item. DisplayOrder is the position in the set,
@@ -56,11 +60,15 @@ type Params struct {
 	Lines       []LineParams
 }
 
+// Normalize trims the name and description.
 func (p *Params) Normalize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.Description = strings.TrimSpace(p.Description)
 }
 
+// Validate normalizes p and checks every field: a name, at least one line and
+// at most maxLines, each item once, each quantity at least 1. Whether the
+// items exist is the service's question (CatalogueChecker).
 func (p *Params) Validate() error {
 	p.Normalize()
 	switch {

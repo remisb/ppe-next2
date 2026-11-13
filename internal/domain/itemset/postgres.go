@@ -20,13 +20,17 @@ type PostgresRepository struct {
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the item set repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the item_sets columns scan reads, in its order.
 const columns = `id, name, description, active, created_at, updated_at, deleted_at,
 	created_by_user_id, updated_by_user_id, deleted_by_user_id`
 
+// scan reads a set row without its lines (an empty slice), times in UTC; no
+// row is ErrNotFound.
 func scan(row pgx.Row) (ItemSet, error) {
 	var s ItemSet
 	err := row.Scan(&s.ID, &s.Name, &s.Description, &s.Active, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt,
@@ -70,6 +74,7 @@ func (r *PostgresRepository) withLines(ctx context.Context, sets []ItemSet) ([]I
 	return sets, rows.Err()
 }
 
+// query reads the sets sql selects, with their lines.
 func (r *PostgresRepository) query(ctx context.Context, sql string, args ...any) ([]ItemSet, error) {
 	rows, err := r.pool.Query(ctx, sql, args...)
 	if err != nil {
@@ -91,6 +96,7 @@ func (r *PostgresRepository) query(ctx context.Context, sql string, args ...any)
 	return r.withLines(ctx, out)
 }
 
+// Get reads the live set and its lines, or ErrNotFound.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (ItemSet, error) {
 	s, err := scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM item_sets WHERE id = $1 AND deleted_at IS NULL`, id))
 	if err != nil {
@@ -103,14 +109,17 @@ func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (ItemSet, er
 	return sets[0], nil
 }
 
+// List reads every live set by name.
 func (r *PostgresRepository) List(ctx context.Context) ([]ItemSet, error) {
 	return r.query(ctx, `SELECT `+columns+` FROM item_sets WHERE deleted_at IS NULL ORDER BY lower(name), id`)
 }
 
+// ListActive reads the live, active sets by name.
 func (r *PostgresRepository) ListActive(ctx context.Context) ([]ItemSet, error) {
 	return r.query(ctx, `SELECT `+columns+` FROM item_sets WHERE deleted_at IS NULL AND active ORDER BY lower(name), id`)
 }
 
+// Create inserts the set, its lines and ev in one transaction.
 func (r *PostgresRepository) Create(ctx context.Context, s ItemSet, ev audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `INSERT INTO item_sets (id, name, description, active, created_at, updated_at,
@@ -125,6 +134,8 @@ func (r *PostgresRepository) Create(ctx context.Context, s ItemSet, ev audit.Eve
 	}))
 }
 
+// Update locks the live set, reads its lines, applies m, writes the set,
+// replaces its lines (unless m deleted it) and inserts the events.
 func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutation) (ItemSet, error) {
 	var out ItemSet
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
@@ -175,6 +186,7 @@ func readLines(ctx context.Context, tx pgx.Tx, id uuid.UUID) ([]Line, error) {
 	})
 }
 
+// insertLines inserts s's lines.
 func insertLines(ctx context.Context, tx pgx.Tx, s ItemSet) error {
 	for _, l := range s.Lines {
 		if _, err := tx.Exec(ctx, `INSERT INTO item_set_lines (item_set_id, catalogue_item_id, default_quantity, display_order)
@@ -185,6 +197,10 @@ func insertLines(ctx context.Context, tx pgx.Tx, s ItemSet) error {
 	return nil
 }
 
+// translate maps Postgres errors to sentinels: a unique violation is the
+// name (ErrNameTaken), a line's item foreign key ErrUnknownItem, any other
+// foreign key the actor (ErrActorNotFound), a CHECK ErrInvalid naming the
+// constraint.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

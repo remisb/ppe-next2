@@ -16,12 +16,15 @@ stores sizes, prices or service periods.
 | `active` | Required in request bodies; only active sets appear in Create Order |
 | `lines` | ≥ 1; each item at most once; quantity ≥ 1. Request order is display order |
 
-Lines must reference live catalogue items (400 otherwise). Inactive items are allowed: a
-set can outlive an item's activation, and applying it flags that line instead.
+Lines must reference live catalogue items (`ErrUnknownItem`, 400 otherwise). Inactive items
+are allowed: a set can outlive an item's activation, and applying it flags that line instead.
+A set keeps a line whose item is deleted later: applying it flags the line `unavailable`, and
+the set's next save must leave it out. Deleting a set keeps its lines; its name, unique among
+live sets only (`item_sets_name_live_idx`), may be used again.
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/item-sets`, `/{id}` | `item_sets.read` (**See Item Sets**, migration 0038): every built-in role but Equipment Assignments |
+| `GET /api/v1/item-sets`, `/{id}` | `item_sets.read` (**See Item Sets**, migration 0038): of the built-in roles Administrator, Manager and Employee |
 | `GET /api/v1/item-sets/active` | any authenticated: Create Order offers the active sets to everyone |
 | `POST`, `PUT /{id}` (full replace incl. lines), `DELETE /{id}` (soft) | `item_sets.manage` (needs `item_sets.read`): Administrator, Manager |
 

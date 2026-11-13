@@ -13,8 +13,12 @@ import (
 
 // Audit event names and entity type written by this service.
 const (
+	// EventCreated: a new set; its after is the whole set (snapshotOf).
 	EventCreated = "item_set.created"
+	// EventUpdated: the changed fields before and after, the whole line list
+	// when any line changed.
 	EventUpdated = "item_set.updated"
+	// EventDeleted: a soft delete.
 	EventDeleted = "item_set.deleted"
 	auditEntity  = "item_set"
 )
@@ -25,6 +29,7 @@ type lineSnapshot struct {
 	DefaultQuantity int       `json:"default_quantity"`
 }
 
+// linesOf is set's lines as events record them.
 func linesOf(set ItemSet) []lineSnapshot {
 	out := make([]lineSnapshot, len(set.Lines))
 	for i, l := range set.Lines {
@@ -53,6 +58,7 @@ func change(cur, next ItemSet) (before, after map[string]any) {
 	return before, after
 }
 
+// event is one audit event on the set id by actor.
 func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time, before, after any) ([]audit.Event, error) {
 	ev, err := audit.New(s.newID(), &actor, name, auditEntity, id, at, before, after)
 	if err != nil {
@@ -61,6 +67,7 @@ func (s *Service) event(actor uuid.UUID, name string, id uuid.UUID, at time.Time
 	return []audit.Event{ev}, nil
 }
 
+// Service holds the Item Sets use cases.
 type Service struct {
 	repo    Repository
 	catalog CatalogueChecker
@@ -68,11 +75,17 @@ type Service struct {
 	newID   func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for sets and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
+// NewService is the item set service over repo, checking lines against the
+// catalogue through catalog.
 func NewService(repo Repository, catalog CatalogueChecker, opts ...Option) *Service {
 	s := &Service{repo: repo, catalog: catalog, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -81,7 +94,8 @@ func NewService(repo Repository, catalog CatalogueChecker, opts ...Option) *Serv
 	return s
 }
 
-// checkItems rejects lines naming items that are not live in the catalogue.
+// checkItems rejects lines naming items that are not live in the catalogue
+// (ErrUnknownItem, naming the first).
 // Inactive items are allowed: activation can change after the set is saved,
 // and applying the set flags such lines rather than dropping them.
 func (s *Service) checkItems(ctx context.Context, p Params) error {
@@ -99,6 +113,8 @@ func (s *Service) checkItems(ctx context.Context, p Params) error {
 	return nil
 }
 
+// Create is a new set with item_set.created; its lines must name live
+// catalogue items.
 func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (ItemSet, error) {
 	if actor == uuid.Nil {
 		return ItemSet{}, fieldError("actor", "is required")
@@ -124,14 +140,20 @@ func (s *Service) Create(ctx context.Context, p Params, actor uuid.UUID) (ItemSe
 	return set, nil
 }
 
+// Get is the live set with its lines, or ErrNotFound.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (ItemSet, error) { return s.repo.Get(ctx, id) }
-func (s *Service) List(ctx context.Context) ([]ItemSet, error)            { return s.repo.List(ctx) }
 
-// ListActive feeds the Item Set selector.
+// List is every live set, active or not, by name: the Item Sets screen.
+func (s *Service) List(ctx context.Context) ([]ItemSet, error) { return s.repo.List(ctx) }
+
+// ListActive feeds Create Order's Item Set selector, open to every signed-in
+// user.
 func (s *Service) ListActive(ctx context.Context) ([]ItemSet, error) { return s.repo.ListActive(ctx) }
 
 // Update replaces every field and the whole line list, recording what changed
-// (item_set.updated; nothing when nothing did).
+// (item_set.updated; nothing when nothing did). Every line must name a live
+// catalogue item, so a set holding a since-deleted item must leave it out
+// (ErrUnknownItem otherwise).
 func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid.UUID) (ItemSet, error) {
 	if actor == uuid.Nil {
 		return ItemSet{}, fieldError("actor", "is required")
@@ -156,6 +178,8 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	})
 }
 
+// Delete soft-deletes a set with item_set.deleted; its lines stay with it and
+// its name is free again.
 func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
