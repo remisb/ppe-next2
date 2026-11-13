@@ -148,7 +148,9 @@ fields the reader may see (`employee.Sight`). A merge is not undone in the app.
 
 An employee has any number of photos (`internal/domain/employeephoto`, migration 0037,
 `employee_photos`): a JPEG or PNG of at most 10 MB, its metadata removed but for orientation,
-kept in the files store (`API_FILES_TARGET`) under `employee-photos/<employee>/<photo>`.
+kept in the files store (`API_FILES_TARGET`) under `employee-photos/<employee>/<photo>.jpg` (or
+`.png`, by what the file is). Its name is the device's, without folders or odd characters, at most
+150 characters, with the real type's extension.
 
 - **Default.** At most one photo per employee is the default (a partial unique index). The
   first photo added becomes it; Make Default moves it; removing the default makes the oldest
@@ -156,16 +158,25 @@ kept in the files store (`API_FILES_TARGET`) under `employee-photos/<employee>/<
 - **Uses.** Each photo has none, one or several uses from a fixed list: `profile`, `id_badge`,
   `sizing`, `receipt` (`PHOTO_USES` in `@ppe/api-client`). They are optional and replaced as a set.
 - **Removal** is a soft delete; the file stays in the store.
+- **AI-coloured** (ADR 0007, PR-6, PR-7; migration 0051): Import Documents' Make Colour Photo (AI)
+  saves its photo with `ai_generated` and the person's consent, `verbal` or `written`; the API
+  keeps it as `consent` `{by, recorded_by_user_id, at}` (the uploader, the upload's time). Consent
+  is required for such a photo and refused for any other; it may never serve as `id_badge`, on
+  upload or later (400; also the table's CHECKs). The apps label it AI-coloured.
 - **Access.** The employee's profile: seen (the list and the picture) with
   `employee_profiles.read`; added, their uses, the default and removal with
   `employee_profiles.manage`. Import Documents adds a document's portrait as a photo, so adding
   one also takes `personnel.documents.manage` (ADR 0007; `router.restrictedAny`).
 - **Routes**, under `/api/v1/employee-photos/{employee id}` (under `/employees/{id}/…` they would
-  clash with `/employees/by-name/{q}`): `GET` lists (default first); `POST` multipart `file` and
-  any number of `uses`; `GET …/{photo}` the picture; `PUT …/{photo}` `{"uses": [...]}`;
-  `PUT …/{photo}/default`; `DELETE …/{photo}`. 413 too large, 415 not JPEG/PNG, 503 no storage.
-- **Audit** (on the employee): `employee.photo_added`, `photo_uses_changed`,
-  `photo_default_changed`, `photo_removed`.
+  clash with `/employees/by-name/{q}`): `GET` lists (default first); `POST` multipart `file`,
+  any number of `uses` and, for an AI-coloured photo, `ai_generated=true` and `consent`;
+  `GET …/{photo}` the picture (`private, max-age=3600`, `nosniff`); `PUT …/{photo}`
+  `{"uses": [...]}`; `PUT …/{photo}/default`; `DELETE …/{photo}`. 404 for a deleted employee or a
+  photo not theirs, 413 too large, 415 not JPEG/PNG (by its bytes), 503 no storage.
+- **Audit** (on the employee): `employee.photo_added` and `photo_removed` (the file's name, type,
+  size, SHA-256 and uses; an AI-coloured one's `ai_generated` and consent), `photo_uses_changed`
+  (before and after), `photo_default_changed` (also when the first photo or a removed default's
+  successor becomes the default).
 - **Adding by drag and drop** (web, `lib/photo-drop.ts`): JPEG or PNG files dropped on an
   employee's row in the Employees list, anywhere on the open employee, or on the Photos section
   are added as that employee's photos (several at once, one after another; a file that is not a

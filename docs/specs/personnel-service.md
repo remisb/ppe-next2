@@ -198,9 +198,10 @@ opened with the person's key until it goes (retention); the screen says so.
   the API applies the **luminance lock** (the input's CIELAB L, the answer's a\*b\*) before
   answering.
 - The app then saves it, or the grey portrait (FR-13), through the existing
-  `POST /api/v1/employee-photos/{employee}` with `ai_generated` and the person's `consent`
-  (`{"given": true, "by": "verbal" | "written", "recorded_by": user}`). The `id_badge` use is
-  refused for an AI photo (400).
+  `POST /api/v1/employee-photos/{employee}` with `ai_generated=true` and the person's `consent`
+  (`verbal` or `written`), kept as `{by, recorded_by_user_id, at}` (the uploader, the upload's
+  time). The `id_badge` use is refused for an AI photo (400); details in
+  [employee-service.md](employee-service.md), "Photos".
 
 ## Routes
 

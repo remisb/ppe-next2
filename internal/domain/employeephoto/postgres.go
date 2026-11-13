@@ -12,20 +12,25 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// PostgresRepository stores photos in employee_photos (migration 0037).
+// PostgresRepository stores photos in employee_photos (migration 0037;
+// ai_generated and consent 0051).
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
 
 var _ Repository = (*PostgresRepository)(nil)
 
+// NewPostgresRepository is the photos' repository over pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
+// columns are the employee_photos columns scan reads, in its order.
 const columns = `p.id, p.employee_id, p.object_key, p.file_name, p.content_type, p.size_bytes, p.sha256, p.uses,
 	p.is_default, p.uploaded_at, p.uploaded_by_user_id, p.ai_generated, p.consent`
 
+// scan reads a row of columns, its time in UTC and no uses as [];
+// no row is ErrNotFound.
 func scan(row pgx.Row) (Photo, error) {
 	var p Photo
 	err := row.Scan(&p.ID, &p.EmployeeID, &p.ObjectKey, &p.FileName, &p.ContentType, &p.SizeBytes, &p.SHA256, &p.Uses,
@@ -43,11 +48,13 @@ func scan(row pgx.Row) (Photo, error) {
 	return p, nil
 }
 
+// queryer is the pool or a transaction.
 type queryer interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
+// live reads the employee's live photos, oldest first.
 func live(ctx context.Context, q queryer, employeeID uuid.UUID) ([]Photo, error) {
 	rows, err := q.Query(ctx, `SELECT `+columns+` FROM employee_photos p
 		WHERE p.employee_id = $1 AND p.deleted_at IS NULL ORDER BY p.uploaded_at, p.id`, employeeID)
@@ -66,6 +73,8 @@ func live(ctx context.Context, q queryer, employeeID uuid.UUID) ([]Photo, error)
 	return out, rows.Err()
 }
 
+// exists is nil for a live employee, else ErrEmployeeNotFound; lock takes
+// the employee's row FOR UPDATE.
 func exists(ctx context.Context, q queryer, employeeID uuid.UUID, lock bool) error {
 	sql := `SELECT 1 FROM employees WHERE id = $1 AND deleted_at IS NULL`
 	if lock {
@@ -79,6 +88,7 @@ func exists(ctx context.Context, q queryer, employeeID uuid.UUID, lock bool) err
 	return err
 }
 
+// List reads the live employee's live photos, oldest first.
 func (r *PostgresRepository) List(ctx context.Context, employeeID uuid.UUID) ([]Photo, error) {
 	if err := exists(ctx, r.pool, employeeID, false); err != nil {
 		return nil, err
@@ -86,12 +96,16 @@ func (r *PostgresRepository) List(ctx context.Context, employeeID uuid.UUID) ([]
 	return live(ctx, r.pool, employeeID)
 }
 
+// Photo reads one live photo of a live employee, or ErrNotFound.
 func (r *PostgresRepository) Photo(ctx context.Context, employeeID, photoID uuid.UUID) (Photo, error) {
 	return scan(r.pool.QueryRow(ctx, `SELECT `+columns+` FROM employee_photos p
 		JOIN employees e ON e.id = p.employee_id
 		WHERE p.id = $1 AND p.employee_id = $2 AND p.deleted_at IS NULL AND e.deleted_at IS NULL`, photoID, employeeID))
 }
 
+// Apply locks the employee, reads their live photos, calls fn and upserts the
+// photos it returns (a new one inserted; an existing one's uses, default and
+// removal written) with its events, in one transaction.
 func (r *PostgresRepository) Apply(ctx context.Context, employeeID uuid.UUID, fn Change) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if err := exists(ctx, tx, employeeID, true); err != nil {
@@ -128,6 +142,8 @@ func (r *PostgresRepository) Apply(ctx context.Context, employeeID uuid.UUID, fn
 	}))
 }
 
+// translate maps a foreign key violation (an actor column naming no user) to
+// ErrActorNotFound.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {

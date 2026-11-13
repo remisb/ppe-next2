@@ -25,6 +25,7 @@ const (
 	UseReceipt = "receipt"  // the employee with the issued items
 )
 
+// uses is every use, in order.
 var uses = []string{UseProfile, UseIDBadge, UseSizing, UseReceipt}
 
 // Uses returns every use, in order.
@@ -69,15 +70,23 @@ type Consent struct {
 }
 
 var (
-	ErrNotFound         = errors.New("employee photo not found")
+	// ErrNotFound is no live photo by that id for the employee (404).
+	ErrNotFound = errors.New("employee photo not found")
+	// ErrEmployeeNotFound is no live employee by that id (404).
 	ErrEmployeeNotFound = errors.New("employee not found")
-	ErrInvalid          = errors.New("invalid employee photo")
-	ErrActorNotFound    = errors.New("acting user not found")
-	ErrFileTooLarge     = errors.New("photo is too large")
-	ErrFileType         = errors.New("photo must be a JPEG or PNG image")
-	ErrNoStorage        = errors.New("file storage is not set up")
+	// ErrInvalid is a field that breaks a rule (400); fieldError names it.
+	ErrInvalid = errors.New("invalid employee photo")
+	// ErrActorNotFound is an acting user who no longer exists (401).
+	ErrActorNotFound = errors.New("acting user not found")
+	// ErrFileTooLarge is a photo over MaxBytes (413).
+	ErrFileTooLarge = errors.New("photo is too large")
+	// ErrFileType is a file whose bytes are not a JPEG or PNG (415).
+	ErrFileType = errors.New("photo must be a JPEG or PNG image")
+	// ErrNoStorage is a service without a files store (503).
+	ErrNoStorage = errors.New("file storage is not set up")
 )
 
+// fieldError is ErrInvalid, naming the field and what is wrong with it.
 func fieldError(field, problem string) error {
 	return fmt.Errorf("%w: %s %s", ErrInvalid, field, problem)
 }

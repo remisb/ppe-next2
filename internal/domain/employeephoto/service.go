@@ -20,7 +20,8 @@ import (
 )
 
 // Audit event names. They are written on the employee, so they show in the
-// employee's Changes.
+// employee's Changes: added (with the file's facts, and an AI-coloured one's
+// consent), its uses changed, the default moved, removed.
 const (
 	EventAdded          = "employee.photo_added"
 	EventUsesChanged    = "employee.photo_uses_changed"
@@ -29,6 +30,8 @@ const (
 	auditEntity         = "employee"
 )
 
+// Service keeps employees' photos: the files in the store, their rows and
+// events through the repository.
 type Service struct {
 	repo  Repository
 	files files.Store
@@ -36,14 +39,19 @@ type Service struct {
 	newID func() uuid.UUID
 }
 
+// Option configures a Service.
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
+// WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithIDGenerator replaces uuid.New for new photos and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
 
 // WithFiles sets where photos are kept. Without it, uploads are ErrNoStorage.
 func WithFiles(store files.Store) Option { return func(s *Service) { s.files = store } }
 
+// NewService is the photos' service over repo; WithFiles gives it a store.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
@@ -52,6 +60,7 @@ func NewService(repo Repository, opts ...Option) *Service {
 	return s
 }
 
+// event is an audit event on the employee with only an after value.
 func (s *Service) event(actor uuid.UUID, name string, employeeID uuid.UUID, at time.Time, after any) (audit.Event, error) {
 	return audit.New(s.newID(), &actor, name, auditEntity, employeeID, at, nil, after)
 }
@@ -76,8 +85,10 @@ func (s *Service) List(ctx context.Context, employeeID uuid.UUID) ([]Photo, erro
 
 // Add keeps a JPEG or PNG of the employee, at most 10 MB, its metadata removed
 // but for which way up it is. The employee's first photo becomes the default.
-// The file is stored first, then its row and event, so a row never names a
-// file that is not there.
+// An AI-coloured photo needs the person's consent (verbal or written) and may
+// not serve as the ID badge; consent is refused for any other photo. The file
+// is stored first, then its row and event, so a row never names a file that
+// is not there.
 func (s *Service) Add(ctx context.Context, employeeID uuid.UUID, u Upload, usesIn []string, actor uuid.UUID) (Photo, error) {
 	if actor == uuid.Nil {
 		return Photo{}, fieldError("actor", "is required")
@@ -151,7 +162,8 @@ func (s *Service) Add(ctx context.Context, employeeID uuid.UUID, u Upload, usesI
 	return p, nil
 }
 
-// SetUses replaces the uses a photo serves; none clears them.
+// SetUses replaces the uses a photo serves; none clears them. An AI-coloured
+// photo may not be made the ID badge's.
 func (s *Service) SetUses(ctx context.Context, employeeID, photoID uuid.UUID, usesIn []string, actor uuid.UUID) (Photo, error) {
 	if actor == uuid.Nil {
 		return Photo{}, fieldError("actor", "is required")
@@ -268,10 +280,14 @@ func (s *Service) Open(ctx context.Context, employeeID, photoID uuid.UUID) (Phot
 	return p, r, nil
 }
 
+// indexOf is the position of photo id in ps, or -1.
 func indexOf(ps []Photo, id uuid.UUID) int {
 	return slices.IndexFunc(ps, func(p Photo) bool { return p.ID == id })
 }
 
+// photoFacts is a photo as photo_added and photo_removed record it: its
+// file's facts and uses, and for an AI-coloured one that it is and how the
+// person consented.
 func photoFacts(p Photo) map[string]any {
 	facts := map[string]any{"photo_id": p.ID, "file_name": p.FileName, "content_type": p.ContentType,
 		"size_bytes": p.SizeBytes, "sha256": p.SHA256, "uses": p.Uses}

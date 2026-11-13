@@ -14,7 +14,8 @@ import (
 // back with DeletedAt set; one that is not returned is left as it is.
 type Change func(cur []Photo) (next []Photo, evs []audit.Event, err error)
 
-// Repository is the persistence the service needs.
+// Repository keeps the photos' rows; the files are the service's (files.Store).
+// Implementations translate storage errors to this package's sentinels.
 type Repository interface {
 	// List is the employee's live photos, oldest first; ErrEmployeeNotFound for none.
 	List(ctx context.Context, employeeID uuid.UUID) ([]Photo, error)
@@ -25,5 +26,5 @@ type Repository interface {
 	Apply(ctx context.Context, employeeID uuid.UUID, fn Change) error
 }
 
-// ReadCloser is what Open returns.
+// ReadCloser is io.ReadCloser, the photo's file as Open returns it.
 type ReadCloser = io.ReadCloser

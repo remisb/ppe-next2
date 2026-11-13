@@ -12,6 +12,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
+// employeePhotoHandler serves employees' photos (docs/specs/employee-service.md, Photos).
 type employeePhotoHandler struct {
 	photos *employeephoto.Service
 }
@@ -32,6 +33,7 @@ func registerEmployeePhotoRoutes(rt *router, photos *employeephoto.Service) {
 	rt.restricted("DELETE /api/v1/employee-photos/{id}/{photoID}", h.remove, role.EmployeeProfilesManage)
 }
 
+// list answers the employee's photos, the default first.
 func (h *employeePhotoHandler) list(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDPath(r, "id")
 	if err != nil {
@@ -46,7 +48,9 @@ func (h *employeePhotoHandler) list(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ps)
 }
 
-// upload takes a multipart form with one "file" and any number of "uses".
+// upload takes a multipart form with one "file" and any number of "uses",
+// and for an AI-coloured photo ai_generated=true and consent (verbal or
+// written); it answers the photo (201).
 func (h *employeePhotoHandler) upload(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDPath(r, "id")
 	if err != nil {
@@ -112,6 +116,7 @@ func (h *employeePhotoHandler) file(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.Copy(w, body)
 }
 
+// photoUsesRequest is the uses a photo is to serve.
 type photoUsesRequest struct {
 	Uses []string `json:"uses"`
 }
@@ -140,6 +145,7 @@ func (h *employeePhotoHandler) update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, p)
 }
 
+// setDefault makes the photo the employee's default and answers it.
 func (h *employeePhotoHandler) setDefault(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
@@ -158,6 +164,7 @@ func (h *employeePhotoHandler) setDefault(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, p)
 }
 
+// remove takes the photo away; its file stays in the store.
 func (h *employeePhotoHandler) remove(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)
 	if err != nil {
@@ -175,6 +182,8 @@ func (h *employeePhotoHandler) remove(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// ids reads the employee's and the photo's ids from the path, answering a
+// bad one itself.
 func (h *employeePhotoHandler) ids(w http.ResponseWriter, r *http.Request) (id, photoID uuid.UUID, ok bool) {
 	var err error
 	if id, err = parseUUIDPath(r, "id"); err == nil {
