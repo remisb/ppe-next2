@@ -873,6 +873,7 @@ export type AuditEntityType =
   | 'mail_template'
   | 'app'
   | 'access_review'
+  | 'personnel_scan'
   | 'audit_log'
 
 /** Where a change was made, by a name the apps word themselves. */
@@ -1126,6 +1127,8 @@ export interface SystemStatus {
       error_events_deleted: number
       audit_events_deleted: number
       days_sealed: number
+      /** Kept scans erased once expired. */
+      scans_purged: number
       failed: boolean
     }
   }
@@ -1788,6 +1791,31 @@ export interface PersonnelRetention {
   employment_ended_on: string | null
   hold_until: string | null
   hold_reason: string | null
+}
+
+/** What names a kept scan, as Scan Document sends it; the MRZ lines are checked, never kept. */
+export interface ScanMetaInput {
+  surname: string
+  given_names: string
+  kind: IdentityDocumentKind
+  /** Letters and digits, or '' when not read. */
+  number: string
+  mrz?: string[]
+}
+
+/** A kept scan, as Recent scans lists it (its maker's alone; deleted at expires_at). */
+export interface KeptScan {
+  id: string
+  /** <Surname>_<Given>_<kind>.zip */
+  file_name: string
+  surname: string
+  given_names: string
+  kind: IdentityDocumentKind
+  number: string
+  pages: number
+  bytes: number
+  created_at: string
+  expires_at: string
 }
 
 // Settings → AI and AI Usage (ADR 0007, docs/specs/ai-usage-service.md).

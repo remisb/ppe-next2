@@ -16,6 +16,8 @@ import type {
   DocumentValidity,
   IdentityDocument,
   IdentityDocumentInput,
+  KeptScan,
+  ScanMetaInput,
   MrzIssue,
   Asset,
   AssetDetail,
@@ -501,6 +503,25 @@ export function createClient(options: ClientOptions) {
       /** Legal Hold until a date, with a reason; null clears it. */
       setHold: (employeeId: string, until: string | null, reason = '') =>
         request<PersonnelRetention>('PUT', `/api/v1/personnel/subjects/${seg(employeeId)}/hold`, { until, reason }),
+      /**
+       * Kept scans (Scan Document): one person's document pages kept as a zip for a few days,
+       * for the user who made them alone (personnel.documents.manage).
+       */
+      scans: {
+        /** Keeps the pages, in order, as a zip named from meta; at most 10 JPEGs of 5 MB and 2400 px. */
+        keep: (meta: ScanMetaInput, pages: Blob[]) => {
+          const body = new FormData()
+          body.append('scan', JSON.stringify(meta))
+          pages.forEach((page, i) => body.append(`page-${i + 1}`, page, `page-${i + 1}.jpg`))
+          return request<KeptScan>('POST', '/api/v1/personnel/scans', body)
+        },
+        /** The signed-in user's own scans not yet expired, newest first. */
+        list: () => request<KeptScan[]>('GET', '/api/v1/personnel/scans'),
+        /** The scan's zip and its file name (Download Archive; recorded). */
+        download: (id: string) =>
+          download(`/api/v1/personnel/scans/${seg(id)}/archive`).then((r) => ({ blob: r.blob, fileName: r.filename })),
+        remove: (id: string) => request<void>('DELETE', `/api/v1/personnel/scans/${seg(id)}`),
+      },
     },
 
     /** Settings → AI and AI Usage (ADR 0007). */

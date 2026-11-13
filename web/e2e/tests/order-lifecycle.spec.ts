@@ -4022,6 +4022,73 @@ test('Import Documents, AI colour photo: Settings → AI with a key, a portrait 
   }
 })
 
+test('Import Documents, Scan Document: photos straightened in perspective, kept as an archive, downloaded, removed, and handed to Import', async () => {
+  test.skip(!runsApp('docs-import'), 'Import Documents is not started (E2E_APPS)')
+  // Each photo is turned, its corners found and flattened, then read again: several seconds each.
+  test.setTimeout(300_000)
+  const specimen = (name: string) => join(repoRoot, 'web/e2e/fixtures/documents', name)
+  await page.goto('/apps/docs-import/scan')
+  await expect(page.getByRole('heading', { name: 'Scan Document' })).toBeVisible()
+  // The same passport twice: flat, and photographed sideways at a slant on a patterned table (fixtures/documents/make.ts).
+  await page.getByLabel('Choose Photos', { exact: true }).setInputFiles([specimen('passport-lt.jpg'), specimen('passport-lt-slanted.jpg')])
+  const pages = page.getByRole('region', { name: 'Pages' }).getByRole('listitem')
+  await expect(pages).toHaveCount(2)
+  await expect(page.getByText('Code lines read', { exact: true })).toHaveCount(2, { timeout: 240_000 })
+  // The perspective transform and the corner finding ran in their worker (behind Caddy, under the device policy).
+  expect(page.workers().map((w) => w.url())).toContainEqual(expect.stringMatching(/perspective\.worker/))
+  // The names and number read name the archive.
+  const details = page.getByRole('region', { name: 'Document' })
+  await expect(details.getByLabel('Surname')).toHaveValue('Pavyzdys')
+  await expect(details.getByLabel('Given names')).toHaveValue('Jonas')
+  await expect(details.getByLabel('Document number')).toHaveValue('91234567')
+  await expect(details).toContainText('Pavyzdys_Jonas_passport.zip')
+  // The slanted photo became an upright page of the passport's shape (125 × 88 mm).
+  const slanted = page.getByRole('img', { name: 'Page 2, flattened' })
+  const ratio = await slanted.evaluate((img: HTMLImageElement) => img.naturalWidth / img.naturalHeight)
+  expect(Math.abs(ratio / (125 / 88) - 1)).toBeLessThan(0.02)
+
+  // Adjust Corners: a corner moved with the keyboard, and the page made again from it.
+  const before = await slanted.getAttribute('src')
+  await pages.nth(1).getByRole('button', { name: 'Adjust Corners' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Adjust Corners' })
+  await expect(sheet.getByRole('img', { name: 'The photo, turned' })).toBeVisible()
+  await sheet.getByRole('button', { name: 'Top left corner' }).focus()
+  await page.keyboard.press('ArrowLeft')
+  await sheet.getByRole('button', { name: 'Done' }).click()
+  await expect(sheet).toBeHidden()
+  await expect.poll(() => slanted.getAttribute('src'), { timeout: 120_000 }).not.toBe(before)
+  await expect(page.getByText('Code lines read', { exact: true })).toHaveCount(2, { timeout: 120_000 })
+
+  // Download Archive: kept on the server, then downloaded under its name, the 2 pages inside.
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download Archive' }).click()
+  const download = await downloading
+  expect(download.suggestedFilename()).toBe('Pavyzdys_Jonas_passport.zip')
+  const zip = await readFile((await download.path())!)
+  const names = [...zip.toString('latin1').matchAll(/PK\x03\x04[\s\S]{26}(page-\d\d\.jpg)/g)].map((m) => m[1])
+  expect(names).toEqual(['page-01.jpg', 'page-02.jpg'])
+  await expect(page.getByText('The archive is kept for you in Recent scans')).toBeVisible()
+  // Recent scans: the maker's own, with its pages and when it goes; Remove asks first.
+  const recent = page.getByRole('region', { name: 'Recent scans' })
+  const row = recent.getByRole('listitem').filter({ hasText: 'Pavyzdys_Jonas_passport.zip' })
+  await expect(row).toContainText('2 pages')
+  await expect(row).toContainText(/Deleted in \d days|Deleted within a day/)
+  await row.getByRole('button', { name: 'Remove' }).click()
+  await expect(row).toContainText('Remove this archive from the server?')
+  await row.getByRole('button', { name: 'Remove' }).click()
+  await expect(recent.getByText('No archives kept.')).toBeVisible()
+
+  // Save to Personnel: the pages go to Import, which starts at Person with the passport's page placed and read.
+  await page.getByRole('button', { name: 'Save to Personnel' }).click()
+  await expect(page.getByRole('heading', { name: 'Whose document is it?' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Import to Personnel' })).toHaveAttribute('aria-current', 'page')
+  await page.getByRole('button', { name: 'New Employee from Document' }).click()
+  await expect(page.getByText('Code lines found. Read twice, the same both times.')).toBeVisible()
+  // This passport is on file already (the first Import Documents step): back to Person, nothing saved.
+  await page.getByRole('button', { name: 'Change' }).click()
+  await expect(page.getByRole('heading', { name: 'Whose document is it?' })).toBeVisible()
+})
+
 test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {
   test.skip(!caddyMode, 'published apps are served behind Caddy (E2E_WEB_SERVER=caddy)')
   test.skip(!runsApp('sim-scan'), 'Scan SIMs is not published (E2E_APPS)')

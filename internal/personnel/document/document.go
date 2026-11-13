@@ -159,8 +159,15 @@ func (p *SaveParams) Normalize() {
 const (
 	maxNameLen  = 100
 	maxTextLen  = 200
-	maxCopySize = 5 << 20
-	maxCopySide = 2400
+	maxCopySize = MaxCopySize
+	maxCopySide = MaxCopySide
+)
+
+// MaxCopySize and MaxCopySide limit every image Personnel files keeps (a
+// Document Copy, a kept scan's page): 5 MB, and 2400 px on its longer side.
+const (
+	MaxCopySize = 5 << 20
+	MaxCopySide = 2400
 )
 
 // Validate checks the params' shape; the MRZ's own rules are the parser's.

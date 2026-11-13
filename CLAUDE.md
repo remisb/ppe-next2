@@ -156,6 +156,15 @@ sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upk
 `API_OPENAI_BASE_URL`, then the luminance lock) is Import Documents' Make Colour Photo (AI) on the Portrait step, for
 `personnel.portraits.colorize` (no built-in role), with the person's consent; the photo is saved `ai_generated`, labelled
 AI-coloured in the staff app and never the ID badge's. e2e runs a fake OpenAI on 18095.
+**Scan Document** (plan FR-22), Import Documents' second tab beside **Import to Personnel** (`/scan`,
+`routes/scan`, rules `src/lib/scan.ts`, `page-box.ts`, `corners.ts`, the pipeline `make-page.ts`): up to 10 photos
+of one person's document, each turned the way up its MRZ reads (`readPhoto(…, { turns: true })`), its 4 corners found
+and flattened by a perspective transform (`@ppe/scan-kit/perspective`: our own edges, Hough lines guided by the MRZ
+band, a homography and warp, in a worker), with Turn Left/Right and Adjust Corners; **Download Archive** keeps the
+pages as a zip and downloads it, **Save to Personnel** hands them to Import. **Kept scans** (ADR 0007 amendment; spec
+"Kept scans" in `personnel-service.md`; migration 0053, `internal/personnel/scan`, `cmd/api/personnel-scan-routes.go`):
+the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, sealed under a per-scan data key in
+`personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins

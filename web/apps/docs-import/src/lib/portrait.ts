@@ -7,25 +7,11 @@
  */
 import type { BandPlace } from '@ppe/mrz/reader'
 
+import { DOC_MM, PORTRAIT_MM, TD3_BAND } from './document-geometry'
 import type { Box, DocType } from './flow'
 
 /** The portrait's width over its height, in pixels: ICAO's 35 × 45 mm, near enough 3:4. */
 export const PORTRAIT_RATIO = 3 / 4
-
-/** Each document's size, mm (ICAO). */
-const DOC_MM: Record<DocType, { w: number; h: number }> = { passport: { w: 125, h: 88 }, card: { w: 85.6, h: 54 } }
-
-/**
- * Where the portrait is on each document, mm from its top left: ICAO's zone
- * for it, a little generous so the whole face is in. A card's is on its front.
- */
-const PORTRAIT_MM: Record<DocType, { x: number; y: number; w: number }> = {
-  passport: { x: 5, y: 12, w: 35 },
-  card: { x: 3, y: 7.5, w: 27 },
-}
-
-/** A passport page's MRZ band, as the reader finds it: its centre, and its width with the reader's margins. */
-const TD3_BAND = { cx: 62.5, cy: 78, width: 44 * 2.54 + 4 }
 
 /** The portrait's height for a width, both fractions, in a picture of this aspect (width over height). */
 function heightFor(w: number, aspect: number): number {

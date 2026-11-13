@@ -29,6 +29,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/mrz"
+	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 )
@@ -100,6 +101,7 @@ var errorStatuses = []struct {
 	{asset.ErrActorNotFound, http.StatusUnauthorized},
 	{employeephoto.ErrActorNotFound, http.StatusUnauthorized},
 	{document.ErrActorNotFound, http.StatusUnauthorized},
+	{scan.ErrActorNotFound, http.StatusUnauthorized},
 
 	{user.ErrNotFound, http.StatusNotFound},
 	{role.ErrNotFound, http.StatusNotFound},
@@ -134,6 +136,11 @@ var errorStatuses = []struct {
 	{document.ErrCopyTooLarge, http.StatusRequestEntityTooLarge},
 	{document.ErrCopyNotJPEG, http.StatusUnsupportedMediaType},
 	{document.ErrNotConfigured, http.StatusServiceUnavailable},
+	{scan.ErrNotFound, http.StatusNotFound},
+	{scan.ErrTooManyPages, http.StatusRequestEntityTooLarge},
+	{scan.ErrPageTooLarge, http.StatusRequestEntityTooLarge},
+	{scan.ErrPageNotJPEG, http.StatusUnsupportedMediaType},
+	{scan.ErrNotConfigured, http.StatusServiceUnavailable},
 	{aiusage.ErrNoSecretsKey, http.StatusServiceUnavailable},
 	{aiusage.ErrNoKey, http.StatusConflict},
 	{aiusage.ErrKeyUnopenable, http.StatusConflict},
@@ -186,6 +193,7 @@ var errorStatuses = []struct {
 	{asset.ErrInvalid, http.StatusBadRequest},
 	{employeephoto.ErrInvalid, http.StatusBadRequest},
 	{document.ErrInvalid, http.StatusBadRequest},
+	{scan.ErrInvalid, http.StatusBadRequest},
 	{aiusage.ErrInvalid, http.StatusBadRequest},
 	{system.ErrNotFound, http.StatusNotFound},
 	{system.ErrInvalid, http.StatusBadRequest},

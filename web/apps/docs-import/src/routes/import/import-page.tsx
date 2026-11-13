@@ -1,5 +1,6 @@
 import type { IdentityDocument } from '@ppe/api-client'
 import type { Mrz } from '@ppe/mrz'
+import type { PhotoReading } from '@ppe/mrz/reader'
 import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { useEffect, useRef, useState } from 'react'
 
@@ -25,6 +26,13 @@ import { ReviewStep } from './review-step'
 
 export type Step = 'person' | 'capture' | 'review' | 'portrait' | 'done'
 
+/** Scan Document's pages handed over (Save to Personnel): the import starts from them, at Person. */
+export interface ImportStart {
+  type: DocType
+  /** The flattened pages, in order, each with its own reading when it has code lines. */
+  pages: { blob: Blob; reading?: PhotoReading }[]
+}
+
 /**
  * Import Documents' one screen: Person → Document (photos) → Review → Saved,
  * as steps of one state, never routes, so going back and forth never loses
@@ -34,17 +42,35 @@ export type Step = 'person' | 'capture' | 'review' | 'portrait' | 'done'
  * on Import Another and when the screen goes. Leaving with a document read
  * and not saved asks first.
  */
-export function ImportPage() {
+export function ImportPage({ start }: { start?: ImportStart } = {}) {
   const [step, setStep] = useState<Step>('person')
   const [holder, setHolder] = useState<Holder | null>(null)
-  const [type, setType] = useState<DocType>('passport')
+  const [type, setType] = useState<DocType>(start?.type ?? 'passport')
   const [photos, setPhotos] = useState<Photos>({})
-  const [draft, setDraft] = useState<Draft>(emptyDraft('passport'))
+  const [draft, setDraft] = useState<Draft>(emptyDraft(start?.type ?? 'passport'))
   const [reading, setReading] = useState(false)
   const [readerFailed, setReaderFailed] = useState(false)
   const [saved, setSaved] = useState<IdentityDocument | null>(null)
   const pictures = usePictureStore()
   const files = useRef(new Map<string, Blob>())
+
+  // Scan Document's pages, placed as photos taken here would be: the page or back by its code lines, the first
+  // page without them as a card's front. When the screen starts (a new hand-over starts a new screen); by fixed
+  // keys, so running again (React's StrictMode mounts twice, and the store forgets on unmount) keeps them again.
+  useEffect(() => {
+    if (!start) return
+    let placed: Photos = {}
+    start.pages.forEach((page, i) => {
+      const r = page.reading
+      const photo: Photo = { id: `start-${i}`, found: !!r?.found, agreed: !!r?.agreed, ...(r?.mrz ? { mrz: r.mrz } : {}), ...(r?.band ? { band: r.band } : {}) }
+      const slot = start.type === 'passport' ? (photo.found ? 'page' : undefined) : photo.found ? 'back' : 'front'
+      if (!slot || placed[slot]) return
+      pictures.keep(photo.id, page.blob)
+      files.current.set(photo.id, page.blob)
+      placed = placePhoto(start.type, placed, photo).photos
+    })
+    setPhotos(placed)
+  }, [start, pictures])
 
   const unsaved = step === 'capture' ? Object.keys(photos).length > 0 : step === 'review' || step === 'portrait'
   useEffect(() => {

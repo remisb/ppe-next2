@@ -33,6 +33,8 @@ type JobRun struct {
 	AuditEventsDeleted int64 `json:"audit_events_deleted"`
 	DaysSealed         int   `json:"days_sealed"`
 	DaysStamped        int   `json:"days_stamped"`
+	// ScansPurged are the kept scans that expired and were erased.
+	ScansPurged int `json:"scans_purged"`
 	// Failed is true when a part of it failed; the log says why.
 	Failed bool `json:"failed"`
 }
@@ -52,7 +54,8 @@ func (j *jobRuns) get() JobRun {
 //     figures and deletes old activity, for the Usage screen;
 //   - seals the audit days that have ended, purges audit events older than
 //     API_AUDIT_RETENTION (sealed days only), and verifies every seal, which
-//     the Overview reports on.
+//     the Overview reports on;
+//   - shreds personnel files whose retention has ended and erases expired kept scans.
 func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
@@ -131,6 +134,16 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			run.Failed = true
 		} else if res.Files > 0 {
 			logger.Info("personnel files shredded", slog.Int("files", res.Files))
+		}
+	}
+	// Kept scans past API_PERSONNEL_SCAN_DAYS are erased: their rows (and
+	// keys), then their objects.
+	if svc.scans != nil {
+		if run.ScansPurged, err = svc.scans.PurgeExpired(ctx, logger); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("kept scans purge failed", slog.Any("error", err))
+		} else if run.ScansPurged > 0 {
+			logger.Info("kept scans purged", slog.Int("scans", run.ScansPurged))
 		}
 	}
 	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {

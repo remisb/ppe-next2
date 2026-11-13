@@ -10,6 +10,8 @@ const shell = {
   notForYou: 'Reading identity documents needs the Personnel Documents role. Ask an administrator if you need it.',
   backToWorkwear: 'Back to Workwear & Equipment',
   signOut: 'Sign out',
+  importTab: 'Import to Personnel',
+  scanTab: 'Scan Document',
 }
 
 /** The steps, in order. */
@@ -232,4 +234,61 @@ const errors = {
   notConfigured: 'Personnel files is not set up on this server yet.',
 }
 
-export const en = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+/** Scan Document: one person's document photographed page by page, flattened, kept as an archive. */
+const scan = {
+  title: 'Scan Document',
+  description: "Photos of one person's passport or ID card. Each page is turned, its corners found and flattened. Download the pages as one archive, or save the document to Personnel.",
+  choosePhotos: 'Choose Photos',
+  takePhoto: 'Take Photo',
+  photosHint: 'Up to 10 photos: the page with the code lines and any other pages. Sideways and upside-down photos are turned.',
+  making: (done: number, all: number) => `Making pages: ${done} of ${all}…`,
+  tooMany: 'One archive holds 10 pages. The other photos were left out.',
+  detailsTitle: 'Document',
+  surname: 'Surname',
+  givenNames: 'Given names',
+  kind: 'Document type',
+  number: 'Document number',
+  readAgreed: 'Read from the code lines, the same twice.',
+  checkThis: 'Read from the code lines once: compare them with the document.',
+  notRead: 'No code lines read yet: type the surname.',
+  fileName: 'Archive name',
+  pagesTitle: 'Pages',
+  pageLabel: (n: number) => `Page ${n}`,
+  makingPage: 'Making the page…',
+  failed: 'This photo could not be made into a page. Remove it or take it again.',
+  checkCorners: 'Check corners',
+  checkCornersHint: "The page's edges were hard to find. Adjust Corners if the page is cut off or shows background.",
+  codeLines: 'Code lines read',
+  turnLeft: 'Turn Left',
+  turnRight: 'Turn Right',
+  adjustCorners: 'Adjust Corners',
+  remove: 'Remove',
+  addPhotos: 'Add Photos',
+  clear: 'Clear',
+  download: 'Download Archive',
+  downloading: 'Preparing the archive…',
+  saveToPersonnel: 'Save to Personnel',
+  keptNote: 'The archive is kept for you in Recent scans for a few days, then deleted.',
+  blockers: {
+    no_pages: 'Add a photo of the document.',
+    working: 'Wait until every page is made.',
+    surname: 'Type the surname: it names the archive.',
+  },
+  recentTitle: 'Recent scans',
+  recentHint: 'Your own archives. Each is deleted from the server a few days after it was made.',
+  recentEmpty: 'No archives kept.',
+  pages: (n: number) => (n === 1 ? '1 page' : `${n} pages`),
+  deletedIn: (days: number) => (days <= 1 ? 'Deleted within a day' : `Deleted in ${days} days`),
+  downloadAgain: 'Download',
+  removeAsk: 'Remove this archive from the server?',
+  removeYes: 'Remove',
+  cancel: 'Cancel',
+  cornersTitle: 'Adjust Corners',
+  cornersHint: "Drag each corner to the page's corner. With the keyboard: Tab to a corner, then the arrow keys (Shift moves further).",
+  cornerNames: ['Top left corner', 'Top right corner', 'Bottom right corner', 'Bottom left corner'] as [string, string, string, string],
+  photoAlt: 'The photo, turned',
+  pageAlt: (n: number) => `Page ${n}, flattened`,
+  cornersDone: 'Done',
+}
+
+export const en = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors, scan }

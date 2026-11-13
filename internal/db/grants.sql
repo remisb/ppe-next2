@@ -40,5 +40,7 @@ GRANT USAGE ON SCHEMA personnel TO ppe_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA personnel TO ppe_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA personnel GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ppe_app;
 REVOKE UPDATE ON personnel.subject_keys FROM ppe_app;
+-- A kept scan (migration 0053) is written once and deleted (Remove, or once it expires), never changed.
+REVOKE UPDATE ON personnel.scans FROM ppe_app;
 -- Other sessions' state on System (connections, the oldest transaction).
 GRANT pg_read_all_stats TO ppe_app;

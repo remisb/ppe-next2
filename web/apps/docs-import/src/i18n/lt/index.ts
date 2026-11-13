@@ -1,3 +1,5 @@
+import { plural } from '@ppe/i18n'
+
 import type { Messages } from '../index'
 
 const shell: Messages['shell'] = {
@@ -9,6 +11,8 @@ const shell: Messages['shell'] = {
   notForYou: 'Asmens dokumentams nuskaityti reikia rolės „Asmens dokumentai“. Jei jos reikia, kreipkitės į administratorių.',
   backToWorkwear: 'Grįžti į „Darbo drabužius ir įrangą“',
   signOut: 'Atsijungti',
+  importTab: 'Importuoti į asmens bylas',
+  scanTab: 'Nuskaityti dokumentą',
 }
 
 const steps: Messages['steps'] = {
@@ -220,4 +224,60 @@ const errors: Messages['errors'] = {
   notConfigured: 'Šiame serveryje asmens bylos dar neparuoštos.',
 }
 
-export const lt = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+const scan: Messages['scan'] = {
+  title: 'Nuskaityti dokumentą',
+  description: 'Vieno asmens paso ar asmens tapatybės kortelės nuotraukos. Kiekvienas puslapis pasukamas, randami jo kampai ir jis ištiesinamas. Atsisiųskite puslapius vienu archyvu arba išsaugokite dokumentą asmens bylose.',
+  choosePhotos: 'Pasirinkti nuotraukas',
+  takePhoto: 'Fotografuoti',
+  photosHint: 'Iki 10 nuotraukų: puslapis su kodo eilutėmis ir kiti puslapiai. Pasuktos ar apverstos nuotraukos atsukamos.',
+  making: (done: number, all: number) => `Ruošiami puslapiai: ${done} iš ${all}…`,
+  tooMany: 'Viename archyve telpa 10 puslapių. Kitos nuotraukos praleistos.',
+  detailsTitle: 'Dokumentas',
+  surname: 'Pavardė',
+  givenNames: 'Vardai',
+  kind: 'Dokumento tipas',
+  number: 'Dokumento numeris',
+  readAgreed: 'Nuskaityta iš kodo eilučių, abu kartus vienodai.',
+  checkThis: 'Kodo eilutės nuskaitytos vieną kartą: palyginkite su dokumentu.',
+  notRead: 'Kodo eilučių dar nenuskaityta: įveskite pavardę.',
+  fileName: 'Archyvo pavadinimas',
+  pagesTitle: 'Puslapiai',
+  pageLabel: (n: number) => `${n} puslapis`,
+  makingPage: 'Ruošiamas puslapis…',
+  failed: 'Iš šios nuotraukos puslapio padaryti nepavyko. Pašalinkite ją arba fotografuokite iš naujo.',
+  checkCorners: 'Patikrinkite kampus',
+  checkCornersHint: 'Puslapio kraštus rasti buvo sunku. Pataisykite kampus, jei puslapis nukirptas ar matosi fonas.',
+  codeLines: 'Kodo eilutės nuskaitytos',
+  turnLeft: 'Pasukti kairėn',
+  turnRight: 'Pasukti dešinėn',
+  adjustCorners: 'Pataisyti kampus',
+  remove: 'Pašalinti',
+  addPhotos: 'Pridėti nuotraukų',
+  clear: 'Išvalyti',
+  download: 'Atsisiųsti archyvą',
+  downloading: 'Ruošiamas archyvas…',
+  saveToPersonnel: 'Išsaugoti asmens bylose',
+  keptNote: 'Archyvas kelias dienas saugomas jums skiltyje „Naujausi nuskaitymai“, paskui ištrinamas.',
+  blockers: {
+    no_pages: 'Pridėkite dokumento nuotrauką.',
+    working: 'Palaukite, kol bus paruošti visi puslapiai.',
+    surname: 'Įveskite pavardę: pagal ją pavadinamas archyvas.',
+  },
+  recentTitle: 'Naujausi nuskaitymai',
+  recentHint: 'Jūsų archyvai. Kiekvienas ištrinamas iš serverio praėjus kelioms dienoms po jo sukūrimo.',
+  recentEmpty: 'Saugomų archyvų nėra.',
+  pages: (n: number) => plural(n, { one: '# puslapis', few: '# puslapiai', other: '# puslapių' }),
+  deletedIn: (days: number) => (days <= 1 ? 'Bus ištrintas per parą' : plural(days, { one: 'Bus ištrintas po # dienos', few: 'Bus ištrintas po # dienų', other: 'Bus ištrintas po # dienų' })),
+  downloadAgain: 'Atsisiųsti',
+  removeAsk: 'Pašalinti šį archyvą iš serverio?',
+  removeYes: 'Pašalinti',
+  cancel: 'Atšaukti',
+  cornersTitle: 'Pataisyti kampus',
+  cornersHint: 'Nutempkite kiekvieną kampą į puslapio kampą. Klaviatūra: Tab pereina prie kampo, rodyklės jį perkelia (su Shift – toliau).',
+  cornerNames: ['Viršutinis kairysis kampas', 'Viršutinis dešinysis kampas', 'Apatinis dešinysis kampas', 'Apatinis kairysis kampas'],
+  photoAlt: 'Pasukta nuotrauka',
+  pageAlt: (n: number) => `${n} puslapis, ištiesintas`,
+  cornersDone: 'Baigti',
+}
+
+export const lt = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors, scan }

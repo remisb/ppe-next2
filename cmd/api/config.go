@@ -17,6 +17,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
+	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 )
 
@@ -49,6 +50,9 @@ type config struct {
 	// file is kept before the upkeep shreds it (D3: Lithuania's personal-file
 	// period, 3 years).
 	PersonnelRetentionMonths int
+	// PersonnelScanDays is how many days Import Documents' kept scans stay on
+	// the server for the user who made them (internal/personnel/scan), 1 to 14.
+	PersonnelScanDays int
 	// SecretsKey seals the secrets an administrator enters in Settings, first
 	// the OpenAI API key (ADR 0007): 64 hex, with SecretsKeyID and
 	// SecretsPreviousKeys as the SIM codes key has. Optional: without it no
@@ -198,6 +202,9 @@ func loadConfig(args []string) (config, error) {
 		return c, err
 	}
 	if c.PersonnelRetentionMonths, err = envInt("API_PERSONNEL_RETENTION_MONTHS", 36); err != nil {
+		return c, err
+	}
+	if c.PersonnelScanDays, err = envInt("API_PERSONNEL_SCAN_DAYS", scan.DefaultDays); err != nil {
 		return c, err
 	}
 	c.SecretsKey = env("API_SECRETS_KEY", "")
@@ -454,6 +461,9 @@ func (c config) personnelKeyErrors() []error {
 	}
 	if c.PersonnelRetentionMonths < 12 || c.PersonnelRetentionMonths > 1200 {
 		errs = append(errs, errors.New("API_PERSONNEL_RETENTION_MONTHS must be from 12 to 1200"))
+	}
+	if c.PersonnelScanDays < scan.MinDays || c.PersonnelScanDays > scan.MaxDays {
+		errs = append(errs, fmt.Errorf("API_PERSONNEL_SCAN_DAYS must be from %d to %d", scan.MinDays, scan.MaxDays))
 	}
 	if c.PersonnelKeyID < 1 || c.PersonnelKeyID > math.MaxInt16 {
 		errs = append(errs, fmt.Errorf("API_PERSONNEL_KEY_ID must be from 1 to %d", math.MaxInt16))

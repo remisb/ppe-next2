@@ -87,7 +87,8 @@ func testPersonnelKeys(t *testing.T) document.Keys {
 }
 
 func TestPersonnelKeyErrors(t *testing.T) {
-	ok := config{JWTSecret: strings.Repeat("s", 32), SIMCodesKey: strings.Repeat("ab", 32), PersonnelKeyID: 1, PersonnelRetentionMonths: 36}
+	ok := config{JWTSecret: strings.Repeat("s", 32), SIMCodesKey: strings.Repeat("ab", 32), PersonnelKeyID: 1, PersonnelRetentionMonths: 36,
+		PersonnelScanDays: 3}
 	if errs := ok.personnelKeyErrors(); len(errs) != 0 {
 		t.Errorf("no personnel keys (off) = %v", errs)
 	}
@@ -107,6 +108,8 @@ func TestPersonnelKeyErrors(t *testing.T) {
 		"previous has the id":   func(c *config) { c.PersonnelPreviousKeys = "1:" + strings.Repeat("cd", 32) },
 		"previous is malformed": func(c *config) { c.PersonnelPreviousKeys = "x" },
 		"retention of 6 months": func(c *config) { c.PersonnelRetentionMonths = 6 },
+		"scans kept 0 days":     func(c *config) { c.PersonnelScanDays = 0 },
+		"scans kept 15 days":    func(c *config) { c.PersonnelScanDays = 15 },
 	} {
 		c := on
 		change(&c)

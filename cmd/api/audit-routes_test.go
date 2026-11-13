@@ -18,6 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
+	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
 )
 
@@ -34,6 +35,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		employeephoto.EventAdded, employeephoto.EventUsesChanged, employeephoto.EventDefaultChanged, employeephoto.EventRemoved,
 		document.EventRecorded, document.EventSuperseded, document.EventUpdated, document.EventShown, document.EventRemoved,
 		document.EventEmploymentEnded, document.EventEmploymentCleared, document.EventHoldSet, document.EventHoldCleared, document.EventFileShredded,
+		scan.EventKept, scan.EventDownloaded, scan.EventRemoved,
 		catalogue.EventCreated, catalogue.EventUpdated, catalogue.EventPriceChanged,
 		catalogue.EventActivated, catalogue.EventDeactivated, catalogue.EventDeleted, catalogue.EventPictureChanged,
 		itemset.EventCreated, itemset.EventUpdated, itemset.EventDeleted,

@@ -1,3 +1,5 @@
+import { plural } from '@ppe/i18n'
+
 import type { Messages } from '../index'
 
 const shell: Messages['shell'] = {
@@ -9,6 +11,8 @@ const shell: Messages['shell'] = {
   notForYou: 'Для чтения документов личности нужна роль «Личные документы». Обратитесь к администратору, если она вам нужна.',
   backToWorkwear: 'Вернуться в «Спецодежду и снаряжение»',
   signOut: 'Выйти',
+  importTab: 'Импорт в личное дело',
+  scanTab: 'Сканировать документ',
 }
 
 const steps: Messages['steps'] = {
@@ -220,4 +224,60 @@ const errors: Messages['errors'] = {
   notConfigured: 'Личные дела на этом сервере ещё не настроены.',
 }
 
-export const ru = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors }
+const scan: Messages['scan'] = {
+  title: 'Сканировать документ',
+  description: 'Фотографии паспорта или ID-карты одного человека. Каждая страница поворачивается, её углы находятся, и она выпрямляется. Скачайте страницы одним архивом или сохраните документ в личном деле.',
+  choosePhotos: 'Выбрать фото',
+  takePhoto: 'Сфотографировать',
+  photosHint: 'До 10 фото: страница с кодовыми строками и другие страницы. Повёрнутые и перевёрнутые фото поворачиваются.',
+  making: (done: number, all: number) => `Готовятся страницы: ${done} из ${all}…`,
+  tooMany: 'В одном архиве помещается 10 страниц. Остальные фото пропущены.',
+  detailsTitle: 'Документ',
+  surname: 'Фамилия',
+  givenNames: 'Имена',
+  kind: 'Тип документа',
+  number: 'Номер документа',
+  readAgreed: 'Прочитано из кодовых строк, оба раза одинаково.',
+  checkThis: 'Кодовые строки прочитаны один раз: сверьте с документом.',
+  notRead: 'Кодовые строки ещё не прочитаны: введите фамилию.',
+  fileName: 'Название архива',
+  pagesTitle: 'Страницы',
+  pageLabel: (n: number) => `Страница ${n}`,
+  makingPage: 'Готовится страница…',
+  failed: 'Из этого фото не удалось сделать страницу. Удалите его или сфотографируйте заново.',
+  checkCorners: 'Проверьте углы',
+  checkCornersHint: 'Края страницы найти было трудно. Поправьте углы, если страница обрезана или виден фон.',
+  codeLines: 'Кодовые строки прочитаны',
+  turnLeft: 'Повернуть влево',
+  turnRight: 'Повернуть вправо',
+  adjustCorners: 'Поправить углы',
+  remove: 'Удалить',
+  addPhotos: 'Добавить фото',
+  clear: 'Очистить',
+  download: 'Скачать архив',
+  downloading: 'Готовится архив…',
+  saveToPersonnel: 'Сохранить в личном деле',
+  keptNote: 'Архив несколько дней хранится для вас в «Недавних сканах», затем удаляется.',
+  blockers: {
+    no_pages: 'Добавьте фото документа.',
+    working: 'Подождите, пока будут готовы все страницы.',
+    surname: 'Введите фамилию: по ней называется архив.',
+  },
+  recentTitle: 'Недавние сканы',
+  recentHint: 'Ваши архивы. Каждый удаляется с сервера через несколько дней после создания.',
+  recentEmpty: 'Сохранённых архивов нет.',
+  pages: (n: number) => plural(n, { one: '# страница', few: '# страницы', many: '# страниц', other: '# страницы' }),
+  deletedIn: (days: number) => (days <= 1 ? 'Будет удалён в течение суток' : plural(days, { one: 'Будет удалён через # день', few: 'Будет удалён через # дня', many: 'Будет удалён через # дней', other: 'Будет удалён через # дня' })),
+  downloadAgain: 'Скачать',
+  removeAsk: 'Удалить этот архив с сервера?',
+  removeYes: 'Удалить',
+  cancel: 'Отмена',
+  cornersTitle: 'Поправить углы',
+  cornersHint: 'Перетащите каждый угол к углу страницы. С клавиатуры: Tab переходит к углу, стрелки двигают его (с Shift – дальше).',
+  cornerNames: ['Левый верхний угол', 'Правый верхний угол', 'Правый нижний угол', 'Левый нижний угол'],
+  photoAlt: 'Повёрнутое фото',
+  pageAlt: (n: number) => `Страница ${n}, выпрямленная`,
+  cornersDone: 'Готово',
+}
+
+export const ru = { shell, steps, person, capture, review, portrait, colour, blockers, problems, notes, fieldNames, kinds, sexes, takes, done, errors, scan }

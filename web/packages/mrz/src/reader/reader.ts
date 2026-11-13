@@ -14,6 +14,9 @@ import { findMrz, rgbaOf, type Rgba } from '../image.ts'
 import { readMrz } from '../lines.ts'
 import type { Mrz } from '../mrz.ts'
 import type { ImageRequest, ImageResponse } from './image-protocol.ts'
+import { firstTurn, turnedCanvas, type Turn } from './turns.ts'
+
+export { TURNS, type Turn } from './turns.ts'
 
 /** Every character an MRZ holds. */
 export const MRZ_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'
@@ -55,6 +58,16 @@ export interface PhotoReading {
   mrz?: Mrz
   /** Both reads gave the same valid lines (FR-4): the reading may be taken without a second look. */
   agreed: boolean
+  /**
+   * With `turns`: degrees clockwise the photo was turned to read it (the
+   * band's place is in the turned photo's fractions). 0 when nothing was found.
+   */
+  turn?: Turn
+}
+
+export interface ReadPhotoOptions {
+  /** Try the photo upside down and on each side too, when it does not read as it is (Scan Document). */
+  turns?: boolean
 }
 
 export interface MrzReaderOptions {
@@ -64,7 +77,7 @@ export interface MrzReaderOptions {
 
 export interface MrzReader {
   /** Reads a photo; today (ISO) is the organisation's, for the centuries and "expired". */
-  readPhoto(photo: Blob, today: string): Promise<PhotoReading>
+  readPhoto(photo: Blob, today: string, o?: ReadPhotoOptions): Promise<PhotoReading>
   /**
    * Reads a live frame (the guide frame's part of the picture) once: its MRZ
    * when every check digit passes, else undefined. The caller takes it once
@@ -101,21 +114,43 @@ export function createMrzReader(o: MrzReaderOptions): MrzReader {
     return { found: true as const, band, ...(r.mrz ? { mrz: r.mrz } : {}) }
   }
 
+  type BandRead = Awaited<ReturnType<typeof readBand>>
+
+  /** The photo read twice (FR-4), its first read given when already made. */
+  async function readTwice(canvas: HTMLCanvasElement, today: string, made?: BandRead): Promise<PhotoReading> {
+    const first = made ?? (await readBand(canvas, today))
+    if (!first.found) return { found: false, agreed: false }
+    const band = first.band
+    const second = await readBand(canvas, today, SECOND_K)
+    const a = first.mrz?.valid ? first.mrz : undefined
+    const b = second.found && second.mrz?.valid ? second.mrz : undefined
+    const agreed = !!a && !!b && a.lines.join('\n') === b.lines.join('\n')
+    // The valid reading, the first's when both are; else whatever the first gave, for the user to put right.
+    const mrz = a ?? b ?? first.mrz ?? (second.found ? second.mrz : undefined)
+    return { found: true, agreed, band, ...(mrz ? { mrz } : {}) }
+  }
+
   return {
-    async readPhoto(photo, today) {
+    async readPhoto(photo, today, o = {}) {
       const bitmap = await createImageBitmap(photo)
       const canvas = canvasOf(bitmap)
       bitmap.close()
-      const first = await readBand(canvas, today)
-      if (!first.found) return { found: false, agreed: false }
-      const band = first.band
-      const second = await readBand(canvas, today, SECOND_K)
-      const a = first.mrz?.valid ? first.mrz : undefined
-      const b = second.found && second.mrz?.valid ? second.mrz : undefined
-      const agreed = !!a && !!b && a.lines.join('\n') === b.lines.join('\n')
-      // The valid reading, the first's when both are; else whatever the first gave, for the user to put right.
-      const mrz = a ?? b ?? first.mrz ?? (second.found ? second.mrz : undefined)
-      return { found: true, agreed, band, ...(mrz ? { mrz } : {}) }
+      if (o.turns) {
+        // One read per turn to find the way up; the second read only on the turn taken.
+        const canvases = new Map<Turn, HTMLCanvasElement>()
+        const chosen = await firstTurn(
+          (turn) => {
+            const c = turnedCanvas(canvas, turn)
+            canvases.set(turn, c)
+            return readBand(c, today)
+          },
+          (r) => r.found && !!r.mrz?.valid,
+          (r) => r.found,
+        )
+        if (!chosen) return { found: false, agreed: false, turn: 0 }
+        return { ...(await readTwice(canvases.get(chosen.turn)!, today, chosen.result)), turn: chosen.turn }
+      }
+      return readTwice(canvas, today)
     },
     async readFrame(frame, today) {
       const r = await readBand(frame, today)

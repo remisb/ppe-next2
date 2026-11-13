@@ -34,6 +34,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
+	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
@@ -794,6 +795,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
+	svc.scans = scan.NewService(nil, document.Keys{}, nil)
 	svc.ai = newTestAI()
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -934,6 +936,10 @@ var policy = map[string]rule{
 	"GET /api/v1/personnel/subjects/{id}":                       {role.PersonnelDocumentsRead, "personnel"},
 	"PUT /api/v1/personnel/subjects/{id}/employment-ended":      {role.PersonnelDocumentsManage, "personnel"},
 	"PUT /api/v1/personnel/subjects/{id}/hold":                  {role.PersonnelDocumentsManage, "personnel"},
+	"POST /api/v1/personnel/scans":                              {role.PersonnelDocumentsManage, "personnel"},
+	"GET /api/v1/personnel/scans":                               {role.PersonnelDocumentsManage, "personnel"},
+	"GET /api/v1/personnel/scans/{id}/archive":                  {role.PersonnelDocumentsManage, "personnel"},
+	"DELETE /api/v1/personnel/scans/{id}":                       {role.PersonnelDocumentsManage, "personnel"},
 
 	"GET /api/v1/catalogue":                    {"", "any"},
 	"GET /api/v1/catalogue/active":             {"", "any"},

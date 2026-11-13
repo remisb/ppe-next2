@@ -13,7 +13,8 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
   the keys and blind indexes, Check, Save with its copies, the summary and validity, Show Document
   and its copies, Add to Employee Record later, Remove, the retention, Mark Employment Ended, Legal
   Hold and the shredding; `file.go`, `postgres_file.go`), `internal/personnel/colour` (the AI colour
-  photo, **built**), routes in `cmd/api/personnel-routes.go` and, for colouring,
+  photo, **built**), `internal/personnel/scan` (kept scans, **built**), routes in
+  `cmd/api/personnel-routes.go`, `cmd/api/personnel-scan-routes.go` and, for colouring,
   `cmd/api/ai-routes.go` (**built**), `@ppe/api-client`'s `personnel`. **To come:** the Overview
   item, `api -reseal-personnel-keys` and deleting every version of a shredded object.
 - **Keys:** optional. Without `API_PERSONNEL_KEY` and `API_PERSONNEL_INDEX_KEY` (both or neither,
@@ -23,7 +24,8 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 - **Migrations:** `0048_personnel` (schema `personnel`, its tables, the employee's `birth_date`,
   `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
   `ppe_app` the schema, but not UPDATE on `subject_keys`. `0051_ai_usage` adds `employee_photos`'
-  `ai_generated` and `consent` (with the colour photo; **built**).
+  `ai_generated` and `consent` (with the colour photo; **built**). `0053_personnel_scans` adds
+  `personnel.scans` (kept scans; `ppe_app` may not UPDATE it; **built**).
 - **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`; **built**); the staff
   app's employee page shows the **Identity** section (`components/identity-section.tsx`, its rules
   `lib/identity.ts`; **built**): the validity line for everyone, the documents and Show Document for
@@ -203,6 +205,46 @@ opened with the person's key until it goes (retention); the screen says so.
   time). The `id_badge` use is refused for an AI photo (400); details in
   [employee-service.md](employee-service.md), "Photos".
 
+### Kept scans (ADR 0007 amendment)
+
+Import Documents' **Scan Document** keeps one person's flattened document pages as a zip for the
+user who made it, `API_PERSONNEL_SCAN_DAYS` (3) days, so the work need not be done again.
+`internal/personnel/scan`, table `personnel.scans` (migration 0053).
+
+- **Keep** (`POST /api/v1/personnel/scans`, multipart: a `scan` part, JSON
+  `{"surname", "given_names", "kind", "number", "mrz"?}`, and the pages in order as `page-1` …
+  `page-10`; read through `MaxBytesReader`, 10 × 5 MB + 256 KB). Each page is a JPEG of at most
+  5 MB and 2400 px (`document.CheckJPEG`, `document.MaxCopySize`/`MaxCopySide`), 1 to 10 of them
+  (400 none, 413 more or too large, 415 not a JPEG). `kind` is `passport`, `id_card` or
+  `residence_permit`; the surname is required and must hold a letter; the number is letters and
+  digits (upper-cased) or empty. The MRZ lines, when sent, are re-read by
+  `internal/personnel/mrz`: they must be a document's MRZ and its code must match the kind (a
+  reading with problems is still kept); they are never kept.
+- **The zip** holds `page-01.jpg` … in the order sent, stored (no compression), dated 1980-01-01,
+  so the same pages make the same zip. Its **file name** is `<Surname>_<Given>_<kind>.zip`: spaces
+  as one underscore, letters (diacritics kept), digits and hyphens kept, everything else left out;
+  no given names, no part; kind words `passport`, `id-card`, `residence-permit`.
+- **Sealing:** a fresh data key per scan (`document.Keys.NewDataKey`, context
+  `ppe.personnel.scan_key.v1|<id>`), sealed by the master keyring with its `key_id`; the zip
+  (`…scan.v1|<id>`) and the meta, the file name included (`…scan_meta.v1|<id>`), sealed with it.
+  The object goes to `personnel-scans/{id}` first, then the row with `personnel.scan_kept`; a
+  failed row deletes the object. The row keeps the plain zip's `bytes` and `sha256`.
+- **List** (`GET /api/v1/personnel/scans`): the caller's own scans not expired, newest first,
+  their meta opened: `id`, `file_name`, `surname`, `given_names`, `kind`, `number`, `pages`,
+  `bytes`, `created_at`, `expires_at`; `[]` when none.
+- **Download Archive** (`GET /api/v1/personnel/scans/{id}/archive`): `application/zip`, the file
+  name in `Content-Disposition` alone (RFC 2231 `filename*` for a name beyond ASCII), `no-store`.
+  The zip's SHA-256 and size are checked (500 when they differ); `personnel.scan_downloaded` is
+  recorded before the answer.
+- **Remove** (`DELETE /api/v1/personnel/scans/{id}`, 204): deletes the row (and so the key) with
+  `personnel.scan_removed`, then the object.
+- **Only the uploader:** another user's scan, or an expired one, is 404 on download and remove,
+  and absent from the list, whatever their permissions.
+- **Expiry:** the upkeep (`cmd/api/jobs.go`, `scan.Service.PurgeExpired`, `JobRun.scans_purged`)
+  hard-deletes every row whose `expires_at` has passed, then their objects, best effort (logged).
+  No event: the expiry was known when the scan was kept. It runs again after a restore.
+- Without Personnel files' keys or a files store every route answers 503.
+
 ## Routes
 
 | Route | Permission | Notes |
@@ -220,11 +262,16 @@ opened with the person's key until it goes (retention); the screen says so.
 | `GET /api/v1/personnel/subjects/{employee}` | `personnel.documents.read` | the retention; 404 without a file |
 | `GET /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | `{available}`: whether to offer Make Colour Photo (AI) |
 | `POST /api/v1/personnel/portraits/colorize` | `personnel.portraits.colorize` | through AI usage |
+| `POST /api/v1/personnel/scans` | `personnel.documents.manage` | multipart; 400, 413, 415; `no-store` |
+| `GET /api/v1/personnel/scans` | `personnel.documents.manage` | the caller's own; `no-store` |
+| `GET /api/v1/personnel/scans/{id}/archive` | `personnel.documents.manage` | the zip; the caller's own; `no-store` |
+| `DELETE /api/v1/personnel/scans/{id}` | `personnel.documents.manage` | the caller's own |
 
 Every route goes into `routes_test.go`'s policy table; the errors into `errorStatuses`
 (`document.ErrDuplicate` 409 for either `DuplicateError`, `ErrEmployeeCodeTaken` 409,
 `ErrCopyTooLarge` 413, `ErrCopyNotJPEG` 415, `ErrNotConfigured` 503; `colour.ErrOff` 409,
-`ErrTooOften` 429, `ErrNotPortrait` 415). `@ppe/api-client` gains
+`ErrTooOften` 429, `ErrNotPortrait` 415; `scan.ErrNotFound` 404, `ErrTooManyPages` and
+`ErrPageTooLarge` 413, `ErrPageNotJPEG` 415, `ErrNotConfigured` 503). `@ppe/api-client` gains
 `personnel.*`. The app sends `X-PPE-App: docs-import`.
 
 ## Permissions and role
@@ -252,6 +299,10 @@ never a number, code, name from the document or image:
 `personnel.file_shredded`; `employee.photo_added` gains `ai_generated`. Each name goes into
 `audit.Events()` and `AUDIT_EVENTS`.
 
+Kept scans' events are on the scan (entity type `personnel_scan`, the Employees area), with its
+id and page count (`pages`) only: `personnel.scan_kept` (and `expires_at`),
+`personnel.scan_downloaded`, `personnel.scan_removed`.
+
 ## Configuration
 
 | Setting | Notes |
@@ -259,6 +310,7 @@ never a number, code, name from the document or image:
 | `API_PERSONNEL_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | the master keyring over the data keys (64 hex each); optional: without it (and the index key) Check, Save and Show Document and its copies answer 503; `api -reseal-personnel-keys` after a change is to come; kept offline (`docs/backups.md`) |
 | `API_PERSONNEL_INDEX_KEY` | the blind indexes' HMAC key (64 hex); never rotated in place |
 | `API_PERSONNEL_RETENTION_MONTHS` | 36 (D3); 12 to 1200, always checked |
+| `API_PERSONNEL_SCAN_DAYS` | 3; how long a kept scan stays, 1 to 14 (checked with the keys) |
 
 Each is read in `loadConfig` and checked in `validate`. AI settings are in
 [ai-usage-service.md](ai-usage-service.md).
@@ -276,6 +328,12 @@ Each is read in `loadConfig` and checked in `validate`. AI settings are in
   document and of one personal code on two employees; shredding: after the job, nothing opens
   and running it again changes nothing; a hold stops it (`TestPostgresShowRemoveAndShred`).
   `ClearEmployee` is `aiusage`'s Postgres test.
+- Kept scans: `internal/personnel/scan`'s service tests (keep, list only one's own, expired ones
+  hidden, open and its event, remove, the purge, the page limits and a non-JPEG, a changed object
+  refused, the object deleted when the row fails, the file name, the same zip for the same pages)
+  and Postgres tests (`TestPostgresKeepListOpenRemovePurge`, `ppe_app` may not update a row);
+  `TestPostgresPersonnelScansHTTP` keeps, lists, downloads and compares the zip with the pages,
+  another user's 404s, the events without a name or number.
 - Route policy (`routes_test.go`) for every route and the built-in roles.
 - e2e (phase 3): the specimen passport and ID card read from photos, checked, saved with
   copies, Show Document with Confirm your password, the employee's validity line.

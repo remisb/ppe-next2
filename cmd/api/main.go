@@ -42,6 +42,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/monitor"
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
+	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
@@ -161,6 +162,8 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc),
 		document.WithAIUsage(aiStore))
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
+	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, documentStore, scan.WithDays(cfg.PersonnelScanDays),
+		scan.WithLocation(loc))
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -267,6 +270,8 @@ type services struct {
 	documents *document.Service
 	// personnelRetentionMonths is API_PERSONNEL_RETENTION_MONTHS, for the upkeep.
 	personnelRetentionMonths int
+	// scans are Import Documents' kept scans (ADR 0007 amendment); run sets them.
+	scans *scan.Service
 	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
 	ai        *aiHandler
 	dashboard *dashboard.Service
@@ -346,6 +351,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
+	registerPersonnelScanRoutes(rt, svc.scans)
 	registerAIRoutes(rt, svc.ai, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)

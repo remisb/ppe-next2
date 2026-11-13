@@ -130,6 +130,8 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['issued_on', 'text'],
   ['expires_on', 'text'],
   ['copies', 'text'],
+  // A kept scan's (personnel.scan_kept …): its page count, never a name.
+  ['pages', 'text'],
   ['on_employee_record', 'bool'],
   ['birth_date_changed', 'changed'],
   ['nationality_changed', 'changed'],

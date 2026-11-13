@@ -8,7 +8,7 @@ type Area string
 // The areas; areas below lists the entity types each covers.
 const (
 	AreaUsers     Area = "users"     // users and roles
-	AreaEmployees Area = "employees" // employees, their merges, photos and identity documents
+	AreaEmployees Area = "employees" // employees, their merges, photos and identity documents, and kept scans
 	AreaCatalogue Area = "catalogue" // items and their pictures
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
@@ -37,7 +37,7 @@ var areas = []struct {
 	entities []string
 }{
 	{AreaUsers, []string{"user", "role"}},
-	{AreaEmployees, []string{"employee"}},
+	{AreaEmployees, []string{"employee", "personnel_scan"}},
 	{AreaCatalogue, []string{"catalogue_item", "catalogue_picture"}},
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
@@ -61,6 +61,7 @@ var events = []string{
 	"personnel.document_recorded", "personnel.document_superseded", "personnel.document_updated", "personnel.document_shown",
 	"personnel.document_removed", "personnel.employment_ended", "personnel.employment_end_cleared",
 	"personnel.hold_set", "personnel.hold_cleared", "personnel.file_shredded",
+	"personnel.scan_kept", "personnel.scan_downloaded", "personnel.scan_removed",
 	"catalogue.created", "catalogue.updated", "catalogue.price_changed",
 	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted", "catalogue.picture_changed",
 	"item_set.created", "item_set.updated", "item_set.deleted",

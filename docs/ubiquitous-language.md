@@ -1189,6 +1189,27 @@ Decided, being built; the app that reads them is **Import Documents** (docs-impo
   each time, hidden again after 60 s.
 - **UI:** Show Document.
 
+### Scan Document, Recent scans, Download Archive, Save to Personnel
+- **Brief:** Import Documents' second screen: one person's passport or ID card photographed page
+  by page, each page flattened, then downloaded as one archive or saved to their personnel file.
+- **Detail:** each photo becomes a **page** in the browser: turned the way up its MRZ reads, its
+  4 corners found and flattened (a perspective transform), drawn anew without the camera's
+  metadata. **Download Archive** keeps the pages on the server as a zip named after the person
+  and the kind (`Surname_Given_passport.zip`), sealed under the scan's own key, for its maker
+  alone, then deleted after `API_PERSONNEL_SCAN_DAYS` (3); **Recent scans** lists them.
+  **Save to Personnel** hands the pages to **Import to Personnel** (the first screen), which
+  saves the Identity Document as usual. The other screen is **Import to Personnel**.
+- **Code:** `web/apps/docs-import/src/routes/scan`, `@ppe/scan-kit/perspective`,
+  `internal/personnel/scan`, `personnel.scans`. **UI:** Scan Document, Recent scans, Download
+  Archive, Save to Personnel, Import to Personnel.
+
+### Adjust Corners, Check corners
+- **Brief:** moving a page's 4 corners by hand, and the mark on a page whose corners were hard
+  to find.
+- **Detail:** the corners are dragged, or moved with the arrow keys; the page is flattened
+  again from them. A page is marked **Check corners** when its edges were weakly found.
+- **UI:** Adjust Corners, Check corners; Turn Left, Turn Right.
+
 ### Mark Employment Ended, Legal Hold, retention
 - **Brief:** when the person's employment ended, which starts the clock; and a stop on it.
 - **Detail:** documents are kept while the person is employed and 3 years after (the personal
@@ -1368,6 +1389,9 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Issued on / Expires on / Place of Birth / Issuing Authority | Išduotas / Galioja iki / Gimimo vieta / Išdavusi institucija | Дата выдачи / Действует до / Место рождения / Орган, выдавший документ |
 | Add to Employee Record / Identity (section) | Įrašyti į darbuotojo duomenis / Asmens duomenys | Добавить в данные сотрудника / Личные данные |
 | Show Document | Rodyti dokumentą | Показать документ |
+| Import to Personnel / Scan Document / Recent scans | Importuoti į asmens bylas / Nuskaityti dokumentą / Naujausi nuskaitymai | Импорт в личное дело / Сканировать документ / Недавние сканы |
+| Download Archive / Save to Personnel | Atsisiųsti archyvą / Išsaugoti asmens bylose | Скачать архив / Сохранить в личном деле |
+| Adjust Corners / Check corners / Turn Left / Turn Right | Pataisyti kampus / Patikrinkite kampus / Pasukti kairėn / Pasukti dešinėn | Поправить углы / Проверьте углы / Повернуть влево / Повернуть вправо |
 | Mark Employment Ended / Employment ended / Legal Hold | Pažymėti darbo pabaigą / Darbas baigtas / Draudimas naikinti | Отметить окончание работы / Работа окончена / Запрет удаления |
 | Make Colour Photo (AI) / AI-coloured / AI colour photos | Sukurti spalvotą nuotrauką (DI) / Spalvinta DI / DI spalvotos nuotraukos | Сделать цветное фото (ИИ) / Раскрашено ИИ / Цветные фото с ИИ |
 | AI Usage / Monthly AI Budget / OpenAI API Key | DI naudojimas / Mėnesio DI biudžetas / OpenAI API raktas | Использование ИИ / Месячный бюджет ИИ / API-ключ OpenAI |

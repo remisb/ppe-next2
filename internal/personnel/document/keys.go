@@ -33,6 +33,10 @@ type Keys struct {
 // configured reports whether both keys are there (the index key 32 bytes).
 func (k Keys) configured() bool { return k.Master != nil && len(k.Index) == sealbox.KeySize }
 
+// Configured reports whether Personnel files has its keys, for the contexts
+// that seal with the master too (kept scans, internal/personnel/scan).
+func (k Keys) Configured() bool { return k.configured() }
+
 // The contexts each sealed value is bound to, so none opens in another row.
 func subjectKeyContext(employee uuid.UUID) []byte {
 	return []byte("ppe.personnel.subject_key.v1|" + employee.String())
@@ -61,11 +65,22 @@ func (k Keys) hmac(msg string) []byte {
 
 // newDataKey is a fresh data key for employee, and it sealed by the master.
 func (k Keys) newDataKey(employee uuid.UUID) (*sealbox.Box, []byte, int16, error) {
+	return k.NewDataKey(subjectKeyContext(employee))
+}
+
+// openDataKey opens employee's sealed data key.
+func (k Keys) openDataKey(employee uuid.UUID, sealed []byte, keyID int16) (*sealbox.Box, error) {
+	return k.OpenDataKey(sealed, keyID, subjectKeyContext(employee))
+}
+
+// NewDataKey is a fresh data key and it sealed by the master, bound to
+// context (what the key is for: a person, a kept scan), so it opens nowhere else.
+func (k Keys) NewDataKey(context []byte) (*sealbox.Box, []byte, int16, error) {
 	raw := make([]byte, sealbox.KeySize)
 	if _, err := rand.Read(raw); err != nil {
 		return nil, nil, 0, err
 	}
-	sealed, keyID, err := k.Master.Seal(raw, subjectKeyContext(employee))
+	sealed, keyID, err := k.Master.Seal(raw, context)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -73,9 +88,10 @@ func (k Keys) newDataKey(employee uuid.UUID) (*sealbox.Box, []byte, int16, error
 	return box, sealed, keyID, err
 }
 
-// openDataKey opens employee's sealed data key.
-func (k Keys) openDataKey(employee uuid.UUID, sealed []byte, keyID int16) (*sealbox.Box, error) {
-	raw, err := k.Master.Open(sealed, keyID, subjectKeyContext(employee))
+// OpenDataKey opens a data key NewDataKey sealed under context;
+// ErrUnopenable when it does not open (another key, another context, a changed byte).
+func (k Keys) OpenDataKey(sealed []byte, keyID int16, context []byte) (*sealbox.Box, error) {
+	raw, err := k.Master.Open(sealed, keyID, context)
 	if err != nil {
 		if errors.Is(err, sealbox.ErrOpen) {
 			return nil, ErrUnopenable
@@ -84,6 +100,10 @@ func (k Keys) openDataKey(employee uuid.UUID, sealed []byte, keyID int16) (*seal
 	}
 	return sealbox.New(raw)
 }
+
+// CheckJPEG is checkJPEG, for the images other parts of Personnel files keep
+// under the same rules (a kept scan's pages): ErrCopyNotJPEG when it is not one.
+func CheckJPEG(b []byte) error { return checkJPEG(b) }
 
 // checkJPEG: a Document Copy is a JPEG, read from its own bytes, at most
 // maxCopySide on its longer side (the phone re-encodes it so, without metadata).

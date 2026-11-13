@@ -160,3 +160,33 @@ What shapes it:
   the droplet lacks; the company chose OpenAI (D4). The luminance lock is kept either way.
 - **Keeping no copies, only the fields.** The data-minimising default the plan proposed;
   the company keeps them (D2), with the DPIA as the condition.
+
+## Amendment (2026-11-13): kept scans
+
+Import Documents gets a second mode, **Scan Document**: one person's passport or ID card photos
+are flattened in the browser (a perspective transform), read for the MRZ, and either saved to the
+Personnel file through the existing flow or downloaded as a zip named after the person and the
+document's kind. So that nobody does that work twice, the API keeps the zip for a short time.
+
+- **Kept for `API_PERSONNEL_SCAN_DAYS` (3) days, for the uploader alone.** Another user, an
+  administrator included, never lists, downloads or removes it (404, as if it were not there).
+  After the period the upkeep erases it; the uploader may Remove it earlier.
+- **Sealed under a key of its own.** Each scan has a fresh data key, sealed by the master keyring
+  `API_PERSONNEL_KEY` and bound to the scan's id. The zip (in the files store, `personnel-scans/{id}`)
+  and what names it (the names, the kind and number, the file name) are sealed with it; the row
+  holds the plain zip's size and SHA-256, checked on opening. Deleting the row is the erasure, a
+  hard delete as the shredding is: an object a versioned bucket still keeps never opens again.
+- **No name leaves the sealed values except as the download's file name**, in `Content-Disposition`
+  alone: never in a URL, a log line or an audit event. The events (`personnel.scan_kept`,
+  `personnel.scan_downloaded`, `personnel.scan_removed`) carry the scan's id and page count.
+- **Not tied to an employee.** A scan is the uploader's work in progress, not a Personnel file;
+  it is not on the employee's Changes, and the shredding does not look for it (it is gone within
+  days anyway).
+- **An exception to the docs-import plan's PR-1**, which keeps images in the screen's memory
+  until Save: a downloaded scan's pages leave the screen for the server, sealed, for these days.
+  The Save to Personnel ending still follows PR-1.
+
+The same permission as Save (`personnel.documents.manage`) covers it, and without Personnel
+files' keys it answers 503 like Save. The DPIA (Consequences) covers the kept scans too: the
+purpose is not redoing the scanning, the period is days. Rules in
+[personnel-service.md](../../specs/personnel-service.md), "Kept scans".
