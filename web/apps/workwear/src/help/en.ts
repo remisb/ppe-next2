@@ -308,7 +308,7 @@ export const en: Guide = {
           roles: ['admin', 'manager'],
         },
         {
-          p: "Each step opens when the one before it is done, and the line beside the button says what is left. Once the form is printed, the employee and date fold into one line; **Change** opens them again. Only an **Active** card in the office, with a phone number, can be given. If the form changes after printing, the tick is cleared: print it again and have it signed. Closed or reloaded after printing, Give SIM opens again with the details and the printed form. Furniture and other items are given without a form, in two steps.",
+          p: "Each step opens when the one before it is done, and the line beside the button says what is left. Once the form is printed, the employee and date fold into one line; **Change** opens them again. A card in the office can be given unless it is **Blocked**: a **Not Activated** card can go to the employee before the provider activates it, and once it is activated, change its status to **Active**. A card without a phone number yet can be given too; its form leaves the number blank. If the form changes after printing, the tick is cleared: print it again and have it signed. Closed or reloaded after printing, Give SIM opens again with the details and the printed form. Furniture and other items are given without a form, in two steps.",
           roles: ['admin', 'manager'],
         },
         {

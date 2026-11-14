@@ -311,7 +311,7 @@ export const lt: Guide = {
           roles: ['admin', 'manager'],
         },
         {
-          p: 'Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko nurodo, kas liko. Išspausdinus aktą, darbuotojas ir data sutraukiami į vieną eilutę; **Keisti** juos vėl atveria. Išduoti galima tik **Aktyvią** kortelę, esančią biure ir turinčią telefono numerį. Jei po spausdinimo aktas pasikeičia, žymė nuimama: atspausdinkite jį dar kartą ir duokite pasirašyti. Jei po spausdinimo langas uždaromas ar puslapis įkeliamas iš naujo, „Išduoti SIM“ vėl atsidaro su įvestais duomenimis ir atspausdintu aktu. Baldai ir kiti daiktai išduodami be akto, dviem žingsniais.',
+          p: 'Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko nurodo, kas liko. Išspausdinus aktą, darbuotojas ir data sutraukiami į vieną eilutę; **Keisti** juos vėl atveria. Išduoti galima biure esančią kortelę, nebent ji **Užblokuota**: **Neaktyvuotą** kortelę galima atiduoti darbuotojui dar prieš tiekėjui ją aktyvuojant, o kai ji aktyvuota, pakeiskite jos būseną į **Aktyvi**. Galima išduoti ir kortelę, kuri dar neturi telefono numerio: akte jis paliekamas tuščias. Jei po spausdinimo aktas pasikeičia, žymė nuimama: atspausdinkite jį dar kartą ir duokite pasirašyti. Jei po spausdinimo langas uždaromas ar puslapis įkeliamas iš naujo, „Išduoti SIM“ vėl atsidaro su įvestais duomenimis ir atspausdintu aktu. Baldai ir kiti daiktai išduodami be akto, dviem žingsniais.',
           roles: ['admin', 'manager'],
         },
         {
