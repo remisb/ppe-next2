@@ -39,7 +39,7 @@ stateDiagram-v2
 | — | Not Activated | Scan SIMs' Add | `POST /api/v1/assets/sim-cards/batch` | Every card of the batch, all or none; `asset.registered` each |
 | — | Active | Add SIM with Active chosen | `POST /api/v1/assets` | For a card that arrives already active |
 | — | any of the three | Go-live import | `api -import-sims` | Active and Available read as Active; Available with a holder is refused |
-| any | any other | Change Status | `PUT /api/v1/assets/{id}/status` | `assets.manage`; saved at once with no confirmation step; `asset.status_changed` with the old and new status |
+| any | any other | Change Status | `PUT /api/v1/assets/{id}/status` | `sim_cards.manage`; saved at once with no confirmation step; `asset.status_changed` with the old and new status |
 | any | the same | Change Status | as above | No-op: writes nothing |
 
 `connection_status` is stored on `assets` and limited to the three values by a CHECK. There
@@ -107,6 +107,27 @@ Not Returned on a card in the Office is 409 `ErrNotGiven`; marking a card alread
 409 `ErrAlreadyMarked`, so whereabouts cannot be changed (open decision 7). A partial unique
 index allows one open assignment per card, so two people giving it at once cannot both
 succeed.
+
+## What can be done in each state
+
+The diagrams above show how a card moves; this table shows what may be done to it in each state. The columns are where the card is; its status adds a condition inside a cell, and only to Give SIM and the two emails. ✓ is allowed, ✗ refused with the API's answer. *Not offered* is the screen's alone: the menu leaves the email out, but the API would prepare it. Every action except reading and Show PIN and PUK needs `sim_cards.manage`; without it the screen shows no control and the API answers 403. The last row is the one action a register row offers on a wide screen (`primaryAction` in `web/apps/workwear/src/lib/assets.ts`); the rest are under the row's ⋯ and on the card.
+
+| Action | In the Office | With an employee | Not Returned (with the employee or unknown) |
+| --- | --- | --- | --- |
+| Give SIM | ✓ unless Blocked: 409 `ErrBlocked` | ✗ 409 `ErrAlreadyGiven` | ✗ 409 `ErrAlreadyGiven` |
+| Register Return | ✗ 409 `ErrNotGiven` | ✓ | ✓ (the mark stays) |
+| Mark as Not Returned | ✗ 409 `ErrNotGiven` | ✓ | ✗ 409 `ErrAlreadyMarked` |
+| Print Form (the holder's form) | — (Give SIM prints the form to sign) | ✓; held since the import, it needs a Non-return Value (400) | ✓, as with an employee |
+| Upload Signed Form | earlier assignments only | ✓ when given on a form; 404 `ErrNoForm` held since the import | ✓, as with an employee |
+| Change Status | ✓ any status to any other | ✓ | ✓ |
+| Prepare Activation Email | ✓; not offered when Active | ✓; not offered when Active | ✓; not offered when Active |
+| Prepare Blocking Email | ✓; not offered when Blocked | ✓; not offered when Blocked | ✓; not offered when Blocked |
+| Edit | ✓ | ✓ | ✓ |
+| Add or clear PIN and PUK | ✓ | ✓ | ✓ |
+| Show PIN and PUK | ✓ with `sim_codes.read` and a recent sign-in; 404 with none | ✓, as in the Office | ✓, as in the Office |
+| The register row's button | Give SIM; Change Status when Blocked | Return | Return |
+
+Earlier assignments keep Print form again and Upload Signed Form (when given on a form) whatever the card's state. A Not Activated card may be given and stays Not Activated until Change Status (decided 2026-11-13).
 
 ## Assignment
 
@@ -179,7 +200,7 @@ stateDiagram-v2
 | From | To | Trigger | Route | Notes |
 | --- | --- | --- | --- | --- |
 | — | PIN and PUK kept | Scan SIMs' Add, a card whose back was read | `POST /api/v1/assets/sim-cards/batch` | Both or neither; sealed in the same transaction as the card; `asset.registered` says `"sim_codes": "set"` |
-| No PIN and PUK | PIN and PUK kept | Add PIN and PUK | `PUT /api/v1/assets/{id}/sim-codes` | `assets.manage`; PIN 4 to 8 digits, PUK 8; `asset.sim_codes_changed` `{"sim_codes": "set"}` |
+| No PIN and PUK | PIN and PUK kept | Add PIN and PUK | `PUT /api/v1/assets/{id}/sim-codes` | `sim_cards.manage`; PIN 4 to 8 digits, PUK 8; `asset.sim_codes_changed` `{"sim_codes": "set"}` |
 | PIN and PUK kept | PIN and PUK kept | Set again | as above | Replaces them; the same event |
 | PIN and PUK kept | No PIN and PUK | Clear | `DELETE /api/v1/assets/{id}/sim-codes` | `asset.sim_codes_changed` `{"sim_codes": "cleared"}`; 404 `ErrNoSIMCodes` with none |
 | PIN and PUK kept | PIN and PUK kept | Show PIN and PUK | `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read` and a recent sign-in; records `asset.sim_codes_shown` before answering, `no-store`; changes nothing. 404 with none, recording nothing |
