@@ -34,6 +34,7 @@ const entityLabel = `CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.first_name || ' ' || x.last_name FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.name FROM catalogue_items x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_picture' THEN (SELECT x.icon FROM catalogue_pictures x WHERE x.id = a.entity_id)
+		WHEN 'supplier' THEN (SELECT x.name FROM suppliers x WHERE x.id = a.entity_id)
 		WHEN 'item_set' THEN (SELECT x.name FROM item_sets x WHERE x.id = a.entity_id)
 		WHEN 'order' THEN (SELECT 'WE-' || CASE WHEN x.record_seq < 1000000 THEN lpad(x.record_seq::text, 6, '0')
 			ELSE x.record_seq::text END FROM orders x WHERE x.id = a.entity_id)
@@ -49,6 +50,7 @@ const entityLabel = `CASE a.entity_type
 const entityDeleted = `coalesce(CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.deleted_at IS NOT NULL FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.deleted_at IS NOT NULL FROM catalogue_items x WHERE x.id = a.entity_id)
+		WHEN 'supplier' THEN (SELECT x.deleted_at IS NOT NULL FROM suppliers x WHERE x.id = a.entity_id)
 		WHEN 'item_set' THEN (SELECT x.deleted_at IS NOT NULL FROM item_sets x WHERE x.id = a.entity_id)
 		WHEN 'order' THEN (SELECT x.deleted_at IS NOT NULL FROM orders x WHERE x.id = a.entity_id)
 		WHEN 'user' THEN (SELECT x.deleted_at IS NOT NULL FROM users x WHERE x.id = a.entity_id)

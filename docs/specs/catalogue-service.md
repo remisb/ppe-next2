@@ -3,7 +3,7 @@
 The only normal source of item name, details, size group, prices and service period.
 Package `internal/domain/catalogue`, routes in `cmd/api/catalogue-routes.go`, table from
 migration `0004_catalogue_items` (prices from `0021_purchase_price`, pictures from
-`0036_catalogue_pictures`). Manual §3.3 and §4.3.
+`0036_catalogue_pictures`, supplier from `0054_suppliers`). Manual §3.3 and §4.3.
 
 ## Pictures
 
@@ -38,6 +38,8 @@ the Audit log.
 | `active` | Required in request bodies. Inactive items disappear from Add Item but stay in order snapshots |
 | `display_rank` | Add Item sort key (ascending, then name). Default 1000. Give Safety shoes, Work jacket, Work trousers, Protective gloves, Safety helmet ranks 1–5 to get the manual's default ordering |
 | `icon` | The item's picture (see Pictures), which sets its size group. Optional in request bodies, omitted is `other`; the database refuses any other value (a foreign key to `catalogue_pictures`). Migration `0008` guessed it for existing items from their names; the item form guesses a new item's from its name (`guessIcon`) until someone picks one. Live data only: order snapshots copy the size group, not the picture |
+| `supplier_id` | The item's supplier, optional: a live supplier ([supplier-service.md](supplier-service.md)), else 400. `null` or left out in request bodies is none. A supplier deleted since reads as none |
+| `supplier_name` | The supplier's name, read with the item; response only |
 | `created_at`, `updated_at`, `created_by_user_id`, `updated_by_user_id`, `deleted_at`, `deleted_by_user_id` | Set by the service; response only |
 
 An item missing an accounting price or service period is valid in the catalogue but not *orderable*
@@ -86,7 +88,8 @@ Catalogue's move handle calls it (drag, or the arrow keys), only while no column
 `purchase_price_cents`, `accounting_price_cents`, `currency`, `service_period_months`; a
 change to any of them records it), `catalogue.activated`, `catalogue.deactivated`,
 `catalogue.updated` (the changed `name`, `details`, `icon` or `display_rank`,
-before/after; a picture change also records the `size_group` it brought), `catalogue.deleted`.
+before/after; a picture change also records the `size_group` it brought; a supplier change
+`supplier_id` and `supplier`, its name then), `catalogue.deleted`.
 One update records an event for each kind of change it makes, in that order: prices,
 activation, details. They read on the Audit log and the item's Changes
 ([audit-service.md](audit-service.md)).

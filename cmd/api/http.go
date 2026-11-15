@@ -25,6 +25,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
@@ -92,6 +93,7 @@ var errorStatuses = []struct {
 	{session.ErrInvalidToken, http.StatusUnauthorized},
 	{employee.ErrActorNotFound, http.StatusUnauthorized},
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
+	{supplier.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
@@ -108,6 +110,7 @@ var errorStatuses = []struct {
 	{session.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
+	{supplier.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrPictureNotFound, http.StatusNotFound},
 	{itemset.ErrNotFound, http.StatusNotFound},
 	{order.ErrNotFound, http.StatusNotFound},
@@ -159,6 +162,7 @@ var errorStatuses = []struct {
 	{role.ErrBuiltIn, http.StatusConflict},
 	{employee.ErrCodeTaken, http.StatusConflict},
 	{catalogue.ErrNameTaken, http.StatusConflict},
+	{supplier.ErrCodeTaken, http.StatusConflict},
 	{itemset.ErrNameTaken, http.StatusConflict},
 	{order.ErrPriceMissing, http.StatusConflict},
 	{order.ErrItemUnavailable, http.StatusConflict},
@@ -181,6 +185,7 @@ var errorStatuses = []struct {
 	{session.ErrInvalid, http.StatusBadRequest},
 	{employee.ErrInvalid, http.StatusBadRequest},
 	{catalogue.ErrInvalid, http.StatusBadRequest},
+	{supplier.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrUnknownItem, http.StatusBadRequest},
 	{order.ErrInvalid, http.StatusBadRequest},

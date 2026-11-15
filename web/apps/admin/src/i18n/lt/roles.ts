@@ -56,6 +56,7 @@ export const roles: RolesText = {
     'roles.manage': { label: 'Tvarkyti roles', grants: 'Pridėti, keisti ir trinti roles bei suteikti bet kokią teisę.' },
     'settings.manage': { label: 'Keisti nustatymus', grants: 'Įmonės pavadinimas, tiekėjo WhatsApp grupė ir SIM tiekėjai.' },
     'mail_templates.manage': { label: 'Keisti laiškų šablonus', grants: 'Programos ruošiamų laiškų tekstas, pvz., SIM aktyvavimo ir blokavimo laiškų.' },
+    'suppliers.manage': { label: 'Tvarkyti tiekėjus', grants: 'Pridėti, keisti ir ištrinti tiekėjus, iš kurių perkamos katalogo prekės.' },
     'backups.read': { label: 'Matyti atsargines kopijas', grants: 'Ar duomenų bazė kopijuojama, ir naujausios kopijos.' },
     'audit.read': { label: 'Matyti audito žurnalą', grants: 'Kiekvienas užfiksuotas pakeitimas visuose įrašuose: kas ir kada jį atliko.' },
     'audit.export': {

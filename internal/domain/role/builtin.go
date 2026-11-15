@@ -68,12 +68,12 @@ func BuiltinID(key string) uuid.UUID {
 // or added since (sim_codes.read, Administrator's: 0041; apps.manage, Administrator's: 0042;
 // sim_cards.read and sim_cards.manage, split off in 0049 like 0038's; the employee
 // profile and size pairs, split off in 0050; employees.merge, Administrator's and
-// Manager's: 0052);
+// Manager's: 0052; suppliers.manage, Administrator's: 0054);
 // TestSeededRolesKeepPolicy in cmd/api pins that. Manager and Employee may be
 // changed since; Administrator never is.
 var builtins = map[string][]Permission{
 	KeyAdmin: {
-		UsersRead, UsersManage, RolesManage, SettingsManage, MailTemplatesManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead, AIUsageRead,
+		UsersRead, UsersManage, RolesManage, SettingsManage, MailTemplatesManage, SuppliersManage, BackupsRead, AuditRead, AuditExport, SecurityRead, SystemRead, UsageRead, AIUsageRead,
 		AppsManage,
 		EmployeeProfilesRead, EmployeeProfilesManage, EmployeeSizesRead, EmployeeSizesManage,
 		EmployeesDelete, EmployeesMerge, CatalogueManage, ItemPricesManage, ItemSetsRead, ItemSetsManage, AssetsManage, SIMCardsRead, SIMCardsManage, SIMCodesRead,

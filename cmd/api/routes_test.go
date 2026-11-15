@@ -32,6 +32,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
@@ -523,6 +524,21 @@ func (stubCatalogue) UpdatePicture(context.Context, catalogue.Icon, catalogue.Pi
 	return catalogue.Picture{}, catalogue.ErrPictureNotFound
 }
 
+type stubSuppliers struct{}
+
+func (stubSuppliers) Create(_ context.Context, s supplier.Supplier, _ audit.Event) (supplier.Supplier, error) {
+	return s, nil
+}
+func (stubSuppliers) Get(context.Context, uuid.UUID) (supplier.Supplier, error) {
+	return supplier.Supplier{}, supplier.ErrNotFound
+}
+func (stubSuppliers) List(context.Context) ([]supplier.Supplier, error) {
+	return []supplier.Supplier{}, nil
+}
+func (stubSuppliers) Update(context.Context, uuid.UUID, supplier.Mutation) (supplier.Supplier, error) {
+	return supplier.Supplier{}, supplier.ErrNotFound
+}
+
 // stubAudit is an empty trail with no seals; it keeps the events written to
 // it (an export's record).
 type stubAudit struct{ written *[]audit.Event }
@@ -792,7 +808,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubSuppliers{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	svc.scans = scan.NewService(nil, document.Keys{}, nil)
@@ -953,6 +969,12 @@ var policy = map[string]rule{
 	"POST /api/v1/catalogue/{id}/deactivate":   {role.CatalogueManage, "managers"},
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
 	"POST /api/v1/catalogue/{id}/move":         {role.CatalogueManage, "managers"},
+
+	"GET /api/v1/suppliers":         {"", "any"},
+	"GET /api/v1/suppliers/{id}":    {"", "any"},
+	"POST /api/v1/suppliers":        {role.SuppliersManage, "admins"},
+	"PUT /api/v1/suppliers/{id}":    {role.SuppliersManage, "admins"},
+	"DELETE /api/v1/suppliers/{id}": {role.SuppliersManage, "admins"},
 
 	"GET /api/v1/item-sets":                         {role.ItemSetsRead, "staff"},
 	"GET /api/v1/item-sets/active":                  {"", "any"},

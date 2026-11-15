@@ -29,10 +29,12 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 // columns are an item's, read from items (i) joined to their pictures (p).
 const columns = `i.id, i.name, i.details, p.size_group, i.purchase_price_cents, i.accounting_price_cents, i.currency,
 	i.service_period_months, i.active, i.display_rank, i.icon, i.created_at, i.updated_at, i.deleted_at,
-	i.created_by_user_id, i.updated_by_user_id, i.deleted_by_user_id`
+	i.created_by_user_id, i.updated_by_user_id, i.deleted_by_user_id, s.id, s.name`
 
-// from joins each item to its picture, which gives its size group.
-const from = ` FROM catalogue_items i JOIN catalogue_pictures p ON p.icon = i.icon`
+// from joins each item to its picture, which gives its size group, and to its
+// supplier while that is live: a deleted supplier reads as none.
+const from = ` FROM catalogue_items i JOIN catalogue_pictures p ON p.icon = i.icon
+	LEFT JOIN suppliers s ON s.id = i.supplier_id AND s.deleted_at IS NULL`
 
 // selectorOrder is the display order: rank, then name, then id for ties.
 const selectorOrder = `ORDER BY i.display_rank, lower(i.name), i.id`
@@ -41,7 +43,8 @@ const selectorOrder = `ORDER BY i.display_rank, lower(i.name), i.id`
 func scan(row pgx.Row) (Item, error) {
 	var i Item
 	err := row.Scan(&i.ID, &i.Name, &i.Details, &i.SizeGroup, &i.PurchasePriceCents, &i.AccountingPriceCents, &i.Currency, &i.ServicePeriodMonths,
-		&i.Active, &i.DisplayRank, &i.Icon, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt, &i.CreatedByUserID, &i.UpdatedByUserID, &i.DeletedByUserID)
+		&i.Active, &i.DisplayRank, &i.Icon, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt, &i.CreatedByUserID, &i.UpdatedByUserID, &i.DeletedByUserID,
+		&i.SupplierID, &i.SupplierName)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
 	}
@@ -77,11 +80,11 @@ func (r *PostgresRepository) Create(ctx context.Context, i Item, ev *audit.Event
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO catalogue_items (id, name, details, accounting_price_cents, currency,
 				service_period_months, active, display_rank, icon, created_at, updated_at, created_by_user_id, updated_by_user_id,
-				purchase_price_cents)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+				purchase_price_cents, supplier_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
 			i.ID, i.Name, i.Details, i.AccountingPriceCents, i.Currency, i.ServicePeriodMonths,
 			i.Active, i.DisplayRank, i.Icon, i.CreatedAt, i.UpdatedAt, i.CreatedByUserID, i.UpdatedByUserID,
-			i.PurchasePriceCents); err != nil {
+			i.PurchasePriceCents, i.SupplierID); err != nil {
 			return err
 		}
 		if err := insertEvent(ctx, tx, ev); err != nil {
@@ -127,11 +130,11 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 			UPDATE catalogue_items SET name = $2, details = $3, accounting_price_cents = $4,
 				service_period_months = $5, active = $6, display_rank = $7, updated_at = $8,
 				updated_by_user_id = $9, deleted_at = $10, deleted_by_user_id = $11, icon = $12,
-				purchase_price_cents = $13
+				purchase_price_cents = $13, supplier_id = $14
 			WHERE id = $1`,
 			id, next.Name, next.Details, next.AccountingPriceCents, next.ServicePeriodMonths,
 			next.Active, next.DisplayRank, next.UpdatedAt, next.UpdatedByUserID, next.DeletedAt, next.DeletedByUserID, next.Icon,
-			next.PurchasePriceCents); err != nil {
+			next.PurchasePriceCents, next.SupplierID); err != nil {
 			return err
 		}
 		if err := audit.InsertAll(ctx, tx, evs); err != nil {
@@ -297,8 +300,8 @@ func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
 }
 
 // translate maps Postgres errors to sentinels: a unique violation is the
-// name (ErrNameTaken), the icon's foreign key an unknown pictogram
-// (ErrInvalid), any other foreign key the actor (ErrActorNotFound), a CHECK
+// name (ErrNameTaken), the icon's foreign key an unknown pictogram and the
+// supplier's an unknown supplier (ErrInvalid), any other foreign key the actor (ErrActorNotFound), a CHECK
 // ErrInvalid naming the constraint.
 func translate(err error) error {
 	var pgErr *pgconn.PgError
@@ -309,8 +312,11 @@ func translate(err error) error {
 	case "23505":
 		return ErrNameTaken
 	case "23503":
-		if pgErr.ConstraintName == "catalogue_items_icon_fkey" {
+		switch pgErr.ConstraintName {
+		case "catalogue_items_icon_fkey":
 			return fmt.Errorf("%w: icon is not a known pictogram", ErrInvalid)
+		case "catalogue_items_supplier_fkey":
+			return fmt.Errorf("%w: supplier_id is not a supplier", ErrInvalid)
 		}
 		return ErrActorNotFound
 	case "23514":

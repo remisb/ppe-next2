@@ -46,7 +46,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates', 'Manage apps']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates', 'Suppliers', 'Manage apps']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -732,6 +732,101 @@ test('Item Catalogue: a row opens the item beside the list, at its own address',
   await expect(pane.getByRole('heading', { name: 'Safety helmet' })).toBeVisible()
   await page.getByRole('button', { name: 'Close item' }).click()
   await expect(pane).toHaveCount(0)
+})
+
+test('Suppliers: an administrator adds and edits a supplier, Edit Item names it on an item, and deleting it leaves the item with none', async () => {
+  await openTab('Suppliers')
+  await expect(page.getByRole('heading', { name: 'Suppliers', exact: true })).toBeVisible()
+  await expect(page.getByText('No suppliers yet.')).toBeVisible()
+
+  // The internal code and name are required; a country is two letters, an email an address.
+  await page.getByRole('button', { name: 'Add Supplier' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add Supplier' })
+  await dialog.getByLabel('Country').fill('Lithuania')
+  await dialog.getByLabel('Email').fill('orders at example')
+  await dialog.getByRole('button', { name: 'Add Supplier' }).click()
+  await expect(dialog.getByText('Enter an internal code.')).toBeVisible()
+  await expect(dialog.getByText('Enter the company’s name.')).toBeVisible()
+  await expect(dialog.getByText('Enter a two-letter country code, such as LT.')).toBeVisible()
+  await expect(dialog.getByText('Enter an email address, such as orders@example.com.')).toBeVisible()
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('Darbo rūbai, UAB')
+  await dialog.getByLabel('Internal code').fill('SUP-1')
+  await dialog.getByLabel('Company code').fill('300000001')
+  await dialog.getByLabel('City').fill('Vilnius')
+  await dialog.getByLabel('Country').fill('lt')
+  await dialog.getByLabel('Email').fill('orders@example.com')
+  await dialog.getByLabel('Bank account').fill('lt12 1000 0111 0100 1000')
+  await dialog.getByRole('button', { name: 'Add Supplier' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole('status').filter({ hasText: 'Darbo rūbai, UAB added.' })).toBeVisible()
+  const row = page.getByRole('row', { name: /Darbo rūbai, UAB/ })
+  await expect(row).toContainText('SUP-1')
+  await expect(row).toContainText('Vilnius, LT')
+
+  // A code is unique whatever the case.
+  await page.getByRole('button', { name: 'Add Supplier' }).click()
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('Another company')
+  await dialog.getByLabel('Internal code').fill('sup-1')
+  await dialog.getByRole('button', { name: 'Add Supplier' }).click()
+  await expect(dialog.getByText('Another supplier has this code.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByRole('row', { name: /Another company/ })).toHaveCount(0)
+
+  // Edit keeps what it does not change: the IBAN as saved, without spaces.
+  await row.getByRole('button', { name: 'Edit Darbo rūbai, UAB' }).click()
+  const edit = page.getByRole('dialog', { name: 'Edit Darbo rūbai, UAB' })
+  await expect(edit.getByLabel('Bank account')).toHaveValue('LT121000011101001000')
+  await edit.getByLabel('City').fill('Kaunas')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(edit).toHaveCount(0)
+  await expect(row).toContainText('Kaunas, LT')
+  // The search reads the code, name and contact details.
+  const search = page.getByRole('searchbox', { name: 'Search suppliers' })
+  await search.fill('kaunas')
+  await expect(row).toBeVisible()
+  await search.fill('Klaipėda')
+  await expect(page.getByText('No suppliers match “Klaipėda”.')).toBeVisible()
+  await search.fill('')
+
+  // Edit Item names the supplier, which the item's facts and Changes then show.
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  const pane = page.getByRole('complementary', { name: 'Item' })
+  const details = page.getByLabel('Item details')
+  await expect(details).toContainText('No supplier')
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  const itemForm = page.getByRole('dialog', { name: 'Edit Item' })
+  await itemForm.getByLabel('Supplier', { exact: true }).selectOption({ label: 'Darbo rūbai, UAB (SUP-1)' })
+  await itemForm.getByRole('button', { name: 'Save' }).click()
+  await expect(itemForm).toHaveCount(0)
+  await expect(details).toContainText('Darbo rūbai, UAB')
+  const changes = page.getByRole('region', { name: 'Changes' })
+  const changesToggle = changes.getByRole('button', { name: 'Changes', exact: true })
+  await changesToggle.click()
+  await expect(changes.getByRole('listitem').first()).toContainText('Item details changed')
+  await expect(changes.getByRole('listitem').first()).toContainText('Darbo rūbai, UAB')
+  // Left closed, as later steps find it.
+  await changesToggle.click()
+  await expect(changesToggle).toHaveAttribute('aria-expanded', 'false')
+  await page.getByRole('button', { name: 'Close item' }).click()
+
+  // The supplier counts its item; deleting it asks first, naming what it leaves, and the item then has none.
+  await openTab('Suppliers')
+  await expect(row.getByRole('cell', { name: '1', exact: true })).toBeVisible()
+  let asked = ''
+  page.once('dialog', (d) => {
+    asked = d.message()
+    void d.accept()
+  })
+  await row.getByRole('button', { name: 'More actions for Darbo rūbai, UAB' }).click()
+  await page.getByRole('menuitem', { name: 'Delete supplier…' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Darbo rūbai, UAB deleted.' })).toBeVisible()
+  expect(asked).toBe('Delete Darbo rūbai, UAB? One catalogue item names it and will have no supplier.')
+  await expect(page.getByText('No suppliers yet.')).toBeVisible()
+  await openTab('Item Catalogue')
+  await page.getByRole('link', { name: 'Safety helmet' }).click()
+  await expect(details).toContainText('No supplier')
+  await page.getByRole('button', { name: 'Close item' }).click()
 })
 
 test('Create Order: add a new employee from Assigned to and apply the set', async () => {
@@ -3301,6 +3396,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
     '/admin/settings',
     '/admin/mail-templates',
     '/admin/mail-templates/sim.blocking',
+    '/admin/suppliers',
     '/admin/backups',
     '/account',
   ]) {

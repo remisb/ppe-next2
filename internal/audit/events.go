@@ -9,7 +9,7 @@ type Area string
 const (
 	AreaUsers     Area = "users"     // users and roles
 	AreaEmployees Area = "employees" // employees, their merges, photos and identity documents, and kept scans
-	AreaCatalogue Area = "catalogue" // items and their pictures
+	AreaCatalogue Area = "catalogue" // items, their pictures and suppliers
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
 	AreaAssets    Area = "assets"   // Company Assets
@@ -38,7 +38,7 @@ var areas = []struct {
 }{
 	{AreaUsers, []string{"user", "role"}},
 	{AreaEmployees, []string{"employee", "personnel_scan"}},
-	{AreaCatalogue, []string{"catalogue_item", "catalogue_picture"}},
+	{AreaCatalogue, []string{"catalogue_item", "catalogue_picture", "supplier"}},
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
@@ -64,6 +64,7 @@ var events = []string{
 	"personnel.scan_kept", "personnel.scan_downloaded", "personnel.scan_removed",
 	"catalogue.created", "catalogue.updated", "catalogue.price_changed",
 	"catalogue.activated", "catalogue.deactivated", "catalogue.deleted", "catalogue.picture_changed",
+	"supplier.created", "supplier.updated", "supplier.deleted",
 	"item_set.created", "item_set.updated", "item_set.deleted",
 	"order.ordered", "order.confirmation_link_created", "order.confirmation_link_opened", "order.given", "order.deleted",
 	"order.employee_merged",

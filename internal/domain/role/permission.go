@@ -44,12 +44,15 @@ const (
 	PersonnelPortraitsColorize Permission = "personnel.portraits.colorize"
 	SettingsManage             Permission = "settings.manage"
 	MailTemplatesManage        Permission = "mail_templates.manage"
-	BackupsRead                Permission = "backups.read"
-	AuditRead                  Permission = "audit.read"
-	AuditExport                Permission = "audit.export"
-	SecurityRead               Permission = "security.read"
-	SystemRead                 Permission = "system.read"
-	UsageRead                  Permission = "usage.read"
+	// SuppliersManage is Administration's Suppliers: the companies catalogue
+	// items are bought from (migration 0054). Everyone sees them.
+	SuppliersManage Permission = "suppliers.manage"
+	BackupsRead     Permission = "backups.read"
+	AuditRead       Permission = "audit.read"
+	AuditExport     Permission = "audit.export"
+	SecurityRead    Permission = "security.read"
+	SystemRead      Permission = "system.read"
+	UsageRead       Permission = "usage.read"
 	// AIUsageRead is the AI Usage screen (ADR 0007): every AI call, its tokens and cost.
 	AIUsageRead       Permission = "ai_usage.read"
 	AppsManage        Permission = "apps.manage"
@@ -91,6 +94,7 @@ var catalogue = []Info{
 	{RolesManage, GroupAdministration, []Permission{UsersRead}},
 	{SettingsManage, GroupAdministration, nil},
 	{MailTemplatesManage, GroupAdministration, nil},
+	{SuppliersManage, GroupAdministration, nil},
 	{BackupsRead, GroupAdministration, nil},
 	{AuditRead, GroupAdministration, nil},
 	{AuditExport, GroupAdministration, []Permission{AuditRead}},

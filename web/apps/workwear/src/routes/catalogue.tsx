@@ -380,6 +380,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   const [rank, setRank] = useState('1000')
   const [active, setActive] = useState(true)
   const [icon, setIcon] = useState<CatalogueIcon>('other')
+  // The supplier's id; '' for none.
+  const [supplierId, setSupplierId] = useState('')
   // A new item's picture follows its name until someone picks one.
   const [iconPicked, setIconPicked] = useState(false)
   const [error, setError] = useState<string>()
@@ -387,6 +389,8 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
   // The picture gives the item its size group; read afresh each time the form opens.
   const pictures = useLoad(() => (item === null ? Promise.resolve(undefined) : client.catalogue.pictures()), [item !== null])
   const pictureGroup = pictures.data?.find((p) => p.icon === icon)?.size_group
+  // The suppliers to choose from, read afresh each time the form opens.
+  const suppliers = useLoad(() => (item === null ? Promise.resolve([]) : client.suppliers.list()), [item !== null])
 
   useEffect(() => {
     setName(existing?.name ?? '')
@@ -397,6 +401,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
     setRank(existing?.display_rank.toString() ?? '1000')
     setActive(existing?.active ?? true)
     setIcon(existing?.icon ?? 'other')
+    setSupplierId(existing?.supplier_id ?? '')
     setIconPicked(existing !== undefined)
     setError(undefined)
   }, [item, existing])
@@ -422,6 +427,7 @@ export function ItemForm({ item, onClose, onSaved }: { item: CatalogueItem | 'ne
       active,
       display_rank: rankNum,
       icon,
+      supplier_id: supplierId || null,
     }
     setBusy(true)
     try {
@@ -457,6 +463,22 @@ footer={<FormSheetActions form="item-form" onCancel={onClose} busy={busy} disabl
           )}
         </Field>
         <Field label={t.catalogue.manufacturerModel}>{(p) => <Input {...controlProps(p)} value={details} onChange={(e) => setDetails(e.target.value)} />}</Field>
+        <Field label={t.catalogue.supplier} hint={t.catalogue.supplierHint} className="sm:col-span-2">
+          {(p) => (
+            <Select {...controlProps(p)} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="">{t.catalogue.noSupplier}</option>
+              {/* The item's own supplier stays offered while the list loads. */}
+              {existing?.supplier_id && !suppliers.data?.some((s) => s.id === existing.supplier_id) ? (
+                <option value={existing.supplier_id}>{existing.supplier_name ?? ''}</option>
+              ) : null}
+              {(suppliers.data ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.code})
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
         <Field label={t.catalogue.purchasePriceEuro} hint={canPrice ? t.catalogue.purchasePriceHint : t.catalogue.pricesNeedPermission} error={purchaseError}>
           {(p) => (
             <Input

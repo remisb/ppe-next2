@@ -63,6 +63,8 @@ export type Route =
   | { name: 'usage' }
   /** The organisation's settings (the company, the supplier's WhatsApp group, the SIM providers). */
   | { name: 'settings' }
+  /** The companies catalogue items are bought from. */
+  | { name: 'suppliers' }
   /** The templates of the emails the app prepares; key is the one open (/mail-templates/<key>). */
   | { name: 'mailTemplates'; key?: MailTemplateKey }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
@@ -80,6 +82,7 @@ const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'ma
   roles: '/roles',
   usage: '/usage',
   settings: '/settings',
+  suppliers: '/suppliers',
 }
 
 /** The permissions that open each screen (any one of them), in the Main navigation's order. */
@@ -93,6 +96,7 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'usage', permissions: ['usage.read'] },
   { name: 'settings', permissions: ['settings.manage'] },
   { name: 'mailTemplates', permissions: ['mail_templates.manage'] },
+  { name: 'suppliers', permissions: ['suppliers.manage'] },
   { name: 'apps', permissions: ['apps.manage'] },
 ]
 

@@ -239,6 +239,10 @@ export interface CatalogueItem {
   active: boolean
   display_rank: number
   icon: CatalogueIcon
+  /** The item's supplier; null for none (a supplier deleted since reads as none). */
+  supplier_id: string | null
+  /** Its supplier's name, read with the item. */
+  supplier_name: string | null
   created_at: string
   updated_at: string
 }
@@ -283,6 +287,38 @@ export interface CatalogueItemInput {
   display_rank?: number
   /** Omitted is 'other'. */
   icon?: CatalogueIcon
+  /** A live supplier, or null (omitted) for none. */
+  supplier_id?: string | null
+}
+
+/** The fields of a supplier a person sets (Add Supplier, Edit Supplier); every one is sent. */
+export interface SupplierInput {
+  /** Internal code, unique among suppliers whatever the case. */
+  code: string
+  name: string
+  /** The company's registration number. */
+  company_code: string
+  vat_code: string
+  address: string
+  city: string
+  postal_code: string
+  /** ISO 3166-1 alpha-2 (LT), or empty. */
+  country: string
+  contact_person: string
+  email: string
+  phone: string
+  website: string
+  bank_account: string
+  notes: string
+}
+
+/** A company catalogue items are bought from (GET /api/v1/suppliers). */
+export interface Supplier extends SupplierInput {
+  id: string
+  /** The live catalogue items naming it. */
+  item_count: number
+  created_at: string
+  updated_at: string
 }
 
 export interface ItemSetLine {
@@ -866,6 +902,7 @@ export type AuditEntityType =
   | 'employee'
   | 'catalogue_item'
   | 'catalogue_picture'
+  | 'supplier'
   | 'item_set'
   | 'order'
   | 'asset'

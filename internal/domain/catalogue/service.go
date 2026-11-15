@@ -37,11 +37,20 @@ const (
 	PictureEntity = "catalogue_picture"
 )
 
+// Suppliers is what the catalogue needs from the suppliers
+// (internal/domain/supplier): a live supplier's name.
+type Suppliers interface {
+	// SupplierName is the live supplier's name; ok is false when there is no
+	// live supplier with id.
+	SupplierName(ctx context.Context, id uuid.UUID) (name string, ok bool, err error)
+}
+
 // Service holds the Item Catalogue's use cases.
 type Service struct {
-	repo  Repository
-	now   func() time.Time
-	newID func() uuid.UUID
+	repo      Repository
+	suppliers Suppliers
+	now       func() time.Time
+	newID     func() uuid.UUID
 }
 
 // Option configures a Service.
@@ -52,6 +61,11 @@ func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = 
 
 // WithIDGenerator replaces uuid.New for items and events.
 func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
+
+// WithSuppliers checks an item's supplier against the suppliers and names it
+// in the item's events. Without it the database's foreign key alone refuses
+// an unknown supplier, and events record no supplier's name.
+func WithSuppliers(sup Suppliers) Option { return func(s *Service) { s.suppliers = sup } }
 
 // NewService is the catalogue service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
@@ -133,12 +147,17 @@ func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.U
 	if err := may.checkPrices(Item{}, Item{PurchasePriceCents: p.PurchasePriceCents, AccountingPriceCents: p.AccountingPriceCents}); err != nil {
 		return Item{}, err
 	}
+	supplierName, err := s.supplierName(ctx, p.SupplierID)
+	if err != nil {
+		return Item{}, err
+	}
 	now := s.now()
 	i := Item{
 		ID: s.newID(), Name: p.Name, Details: p.Details,
 		PurchasePriceCents: p.PurchasePriceCents, AccountingPriceCents: p.AccountingPriceCents,
 		Currency: CurrencyEUR, ServicePeriodMonths: p.ServicePeriodMonths,
 		Active: p.Active, DisplayRank: *p.DisplayRank, Icon: p.Icon,
+		SupplierID: p.SupplierID, SupplierName: supplierName,
 		CreatedAt: now, UpdatedAt: now, CreatedByUserID: actor, UpdatedByUserID: actor,
 	}
 	ev, err := s.event(actor, EventCreated, i.ID, now, nil, priceOf(i))
@@ -175,9 +194,16 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, may Rights
 	if err != nil {
 		return Item{}, err
 	}
+	supplierName, err := s.supplierName(ctx, p.SupplierID)
+	if err != nil {
+		return Item{}, err
+	}
 	return s.repo.Update(ctx, id, func(cur Item) (Item, []audit.Event, error) {
 		next := cur
 		next.Name, next.Details = p.Name, p.Details
+		if !eqPtr(cur.SupplierID, p.SupplierID) {
+			next.SupplierID, next.SupplierName = p.SupplierID, supplierName
+		}
 		if p.Icon != cur.Icon {
 			next.SizeGroup = groups[p.Icon]
 		}
@@ -204,6 +230,23 @@ func (s *Service) SetActive(ctx context.Context, id uuid.UUID, active bool, acto
 	})
 }
 
+// supplierName is the name of the live supplier id, nil for no id;
+// ErrInvalid when id names no live supplier. Without Suppliers it is nil, and
+// the database refuses an unknown id.
+func (s *Service) supplierName(ctx context.Context, id *uuid.UUID) (*string, error) {
+	if id == nil || s.suppliers == nil {
+		return nil, nil
+	}
+	name, ok, err := s.suppliers.SupplierName(ctx, *id)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fieldError("supplier_id", "is not a supplier")
+	}
+	return &name, nil
+}
+
 // sizeGroups maps each picture to its size group.
 func (s *Service) sizeGroups(ctx context.Context) (map[Icon]size.Group, error) {
 	pics, err := s.repo.Pictures(ctx)
@@ -218,7 +261,7 @@ func (s *Service) sizeGroups(ctx context.Context) (map[Icon]size.Group, error) {
 }
 
 // detailsChange is what catalogue.updated records: the changed descriptive
-// fields, before and after. The size group is the picture's, so it is
+// fields and supplier, before and after. The size group is the picture's, so it is
 // recorded only beside a new picture that brings another one.
 func detailsChange(cur, next Item) (before, after map[string]any) {
 	before, after = map[string]any{}, map[string]any{}
@@ -232,6 +275,9 @@ func detailsChange(cur, next Item) (before, after map[string]any) {
 	set("icon", cur.Icon != next.Icon, cur.Icon, next.Icon)
 	set("size_group", cur.Icon != next.Icon && cur.SizeGroup != next.SizeGroup, cur.SizeGroup, next.SizeGroup)
 	set("display_rank", cur.DisplayRank != next.DisplayRank, cur.DisplayRank, next.DisplayRank)
+	// The supplier by its id and its name then, so the Audit log can name it.
+	set("supplier_id", !eqPtr(cur.SupplierID, next.SupplierID), cur.SupplierID, next.SupplierID)
+	set("supplier", !eqPtr(cur.SupplierID, next.SupplierID), cur.SupplierName, next.SupplierName)
 	return before, after
 }
 

@@ -279,7 +279,7 @@ describe('lineFromCatalogue', () => {
   it('builds an unresolved line from catalogue data', () => {
     const l = lineFromCatalogue({
       id: 'i', name: 'Safety shoes', details: 'S3', size_group: 'SHOES', purchase_price_cents: null, accounting_price_cents: null, currency: 'EUR',
-      service_period_months: 12, active: true, display_rank: 1, icon: 'shoes', created_at: '', updated_at: '',
+      service_period_months: 12, active: true, display_rank: 1, icon: 'shoes', supplier_id: null, supplier_name: null, created_at: '', updated_at: '',
     })
     expect(l).toMatchObject({ size: null, size_missing: true, price_missing: true, unavailable: false, quantity: 1 })
     const o = addLines(emptyOrder, [l])

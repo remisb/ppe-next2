@@ -30,6 +30,11 @@ which maps every manual §7 rule and status transition to its tests. Administrat
 supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
 at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
 the same row holds the company's name (migration 0039), the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in (migrations 0031, 0033, 0034), listed on Settings; each provider is a row of `sim_providers` (migration 0039, going with the settings row) with the e-mail its SIM emails go to and the default plan Add SIM and Give SIM fill in (one plan for all until 0039).
+**Suppliers** (`internal/domain/supplier`, migration 0054, spec `docs/specs/supplier-service.md`): the companies
+catalogue items are bought from (internal code unique among live suppliers, name, company and VAT codes, address,
+contact, IBAN, notes), managed on Administration's **Suppliers** (`suppliers.manage`, Administrator), read by everyone;
+an item names one optionally (`catalogue_items.supplier_id`, chosen on Edit Item, checked through `catalogue.Suppliers`),
+and a deleted supplier reads as none (the catalogue's reads join live suppliers only).
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -60,7 +65,7 @@ permissions off wider access, granting them to every role that had it: **See Ite
 (`item_sets.read`; the active sets stay open for Create Order) and **Change Item prices**
 (`item_prices.manage`, needs `catalogue.manage`; `catalogue.Rights` refuses a price change
 without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates) on the staff app's origin, sharing its sign-in and
+Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates, Suppliers) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,

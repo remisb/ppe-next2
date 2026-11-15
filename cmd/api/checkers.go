@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 )
 
@@ -38,6 +39,22 @@ func (c catalogueChecker) MissingItems(ctx context.Context, ids []uuid.UUID) ([]
 		}
 	}
 	return missing, nil
+}
+
+// catalogueSuppliers answers catalogue.Suppliers.
+type catalogueSuppliers struct{ suppliers *supplier.Service }
+
+var _ catalogue.Suppliers = catalogueSuppliers{}
+
+func (c catalogueSuppliers) SupplierName(ctx context.Context, id uuid.UUID) (string, bool, error) {
+	s, err := c.suppliers.Get(ctx, id)
+	switch {
+	case errors.Is(err, supplier.ErrNotFound):
+		return "", false, nil
+	case err != nil:
+		return "", false, err
+	}
+	return s.Name, true, nil
 }
 
 // orderEmployees answers order.EmployeeReader.

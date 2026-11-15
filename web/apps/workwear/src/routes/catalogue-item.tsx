@@ -134,6 +134,7 @@ export function CatalogueItemDetail({
             {/* The pane is flat: its facts and lists sit between thin rules, no boxes. */}
             <FactGrid aria-label={t.catalogue.itemDetails} className="mb-4">
               <Fact label={t.catalogue.sizeGroup}>{sizeGroupLabel[i.size_group]}</Fact>
+              <Fact label={t.catalogue.supplier}>{i.supplier_name ?? t.catalogue.noSupplier}</Fact>
               <Fact label={t.catalogue.purchasePrice}>{formatEuro(i.purchase_price_cents)}</Fact>
               <Fact label={t.catalogue.accountingPrice}>{formatEuro(i.accounting_price_cents)}</Fact>
               <Fact label={t.catalogue.servicePeriod}>{formatMonths(i.service_period_months)}</Fact>

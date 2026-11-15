@@ -109,12 +109,16 @@ type Item struct {
 	Active               bool       `json:"active"`
 	DisplayRank          int        `json:"display_rank"`
 	Icon                 Icon       `json:"icon"`
-	CreatedAt            time.Time  `json:"created_at"`
-	UpdatedAt            time.Time  `json:"updated_at"`
-	DeletedAt            *time.Time `json:"deleted_at,omitempty"`
-	CreatedByUserID      uuid.UUID  `json:"created_by_user_id"`
-	UpdatedByUserID      uuid.UUID  `json:"updated_by_user_id"`
-	DeletedByUserID      *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	// SupplierID is the item's supplier, optional; SupplierName its name, read
+	// with the item. A supplier deleted since reads as none: both nil.
+	SupplierID      *uuid.UUID `json:"supplier_id"`
+	SupplierName    *string    `json:"supplier_name"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
+	CreatedByUserID uuid.UUID  `json:"created_by_user_id"`
+	UpdatedByUserID uuid.UUID  `json:"updated_by_user_id"`
+	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
 }
 
 // PriceEntry is one step of an item's price history, from its audit events:
@@ -159,6 +163,8 @@ type Params struct {
 	DisplayRank          *int
 	// Icon is the picture, which sets the size group; empty is IconOther.
 	Icon Icon
+	// SupplierID is the item's supplier, a live one; nil for none.
+	SupplierID *uuid.UUID
 }
 
 // Normalize trims the text, fills in the default display rank and puts the

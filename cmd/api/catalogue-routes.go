@@ -47,6 +47,8 @@ type catalogueRequest struct {
 	DisplayRank          *int   `json:"display_rank"`
 	// Icon is the picture, optional: omitted is "other".
 	Icon catalogue.Icon `json:"icon"`
+	// SupplierID is the item's supplier; null or omitted for none.
+	SupplierID *uuid.UUID `json:"supplier_id"`
 }
 
 // moveRequest puts the item in front of before_id in the display order, or
@@ -68,6 +70,7 @@ func (req catalogueRequest) params() (catalogue.Params, error) {
 		Name: req.Name, Details: req.Details,
 		PurchasePriceCents: req.PurchasePriceCents, AccountingPriceCents: req.AccountingPriceCents,
 		ServicePeriodMonths: req.ServicePeriodMonths, Active: active, DisplayRank: req.DisplayRank, Icon: req.Icon,
+		SupplierID: req.SupplierID,
 	}, nil
 }
 

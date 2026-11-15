@@ -39,6 +39,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
@@ -101,6 +102,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		employee.NewPostgresRepository(pool),
 		employeephoto.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
+		supplier.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
@@ -1565,6 +1567,89 @@ func TestPostgresSupplierChatHTTP(t *testing.T) {
 	}
 	if got := decode[chatJSON](t, api.do(t, "GET", "/api/v1/settings", staff, nil).Body.Bytes()); got.SupplierChat != nil {
 		t.Fatalf("cleared settings still have %v", *got.SupplierChat)
+	}
+}
+
+// TestPostgresSuppliersHTTP: an administrator manages suppliers, a manager
+// names one on an item, the Audit log names it, and a deleted one leaves its
+// items with none.
+func TestPostgresSuppliersHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, manager := api.userWith(t, role.KeyManager)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
+	type supplierJSON struct {
+		ID        string `json:"id"`
+		Code      string `json:"code"`
+		Name      string `json:"name"`
+		Country   string `json:"country"`
+		ItemCount int    `json:"item_count"`
+	}
+	type itemJSON struct {
+		ID           string  `json:"id"`
+		SupplierID   *string `json:"supplier_id"`
+		SupplierName *string `json:"supplier_name"`
+	}
+
+	body := map[string]string{"code": "SUP-1", "name": "Darbo rūbai, UAB", "country": "lt", "email": "orders@example.lt"}
+	if rec := api.do(t, "POST", "/api/v1/suppliers", manager, body); rec.Code != http.StatusForbidden {
+		t.Fatalf("manager POST = %d, want 403", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/suppliers", adminTok, map[string]any{"code": "X", "name": "X", "item_count": 3}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("a read-only field in the body = %d, want 400", rec.Code)
+	}
+	rec := api.do(t, "POST", "/api/v1/suppliers", adminTok, body)
+	sup := decode[supplierJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || sup.Country != "LT" {
+		t.Fatalf("admin POST = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/suppliers", adminTok, map[string]string{"code": "sup-1", "name": "Other"}); rec.Code != http.StatusConflict {
+		t.Fatalf("same code = %d, want 409", rec.Code)
+	}
+
+	// A manager names it on an item; everyone reads it with the item.
+	rec = api.do(t, "POST", "/api/v1/catalogue", manager, map[string]any{"name": "Boots", "active": true, "supplier_id": uuid.NewString()})
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("an unknown supplier = %d %s, want 400", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/catalogue", manager, map[string]any{"name": "Boots", "active": true, "supplier_id": sup.ID})
+	item := decode[itemJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || item.SupplierName == nil || *item.SupplierName != "Darbo rūbai, UAB" {
+		t.Fatalf("item with supplier = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/suppliers", staff, nil)
+	if list := decode[[]supplierJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(list) != 1 || list[0].ItemCount != 1 {
+		t.Fatalf("staff list = %d %s", rec.Code, rec.Body)
+	}
+
+	// Renamed, the item reads the new name; then deleted, it reads none.
+	if rec := api.do(t, "PUT", "/api/v1/suppliers/"+sup.ID, adminTok, map[string]string{"code": "SUP-1", "name": "Darbo rūbai"}); rec.Code != http.StatusOK {
+		t.Fatalf("admin PUT = %d %s", rec.Code, rec.Body)
+	}
+	if got := decode[itemJSON](t, api.do(t, "GET", "/api/v1/catalogue/"+item.ID, staff, nil).Body.Bytes()); got.SupplierName == nil || *got.SupplierName != "Darbo rūbai" {
+		t.Fatalf("item after rename = %+v", got)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/suppliers/"+sup.ID, manager, nil); rec.Code != http.StatusForbidden {
+		t.Fatalf("manager DELETE = %d, want 403", rec.Code)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/suppliers/"+sup.ID, adminTok, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("admin DELETE = %d %s", rec.Code, rec.Body)
+	}
+	if got := decode[itemJSON](t, api.do(t, "GET", "/api/v1/catalogue/"+item.ID, staff, nil).Body.Bytes()); got.SupplierID != nil || got.SupplierName != nil {
+		t.Fatalf("item after delete = %+v", got)
+	}
+	if rec := api.do(t, "GET", "/api/v1/suppliers/"+sup.ID, staff, nil); rec.Code != http.StatusNotFound {
+		t.Fatalf("deleted supplier = %d, want 404", rec.Code)
+	}
+
+	// The Audit log names the supplier, deleted, under the catalogue.
+	var events int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE entity_type = 'supplier' AND entity_id = $1`, sup.ID).Scan(&events); err != nil || events != 3 {
+		t.Fatalf("supplier events = %d, %v", events, err)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events?area=catalogue&entity_type=supplier&entity_id="+sup.ID, adminTok, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"entity_label":"Darbo rūbai"`) || !strings.Contains(rec.Body.String(), `"entity_deleted":true`) {
+		t.Fatalf("audit log = %d %s", rec.Code, rec.Body)
 	}
 }
 

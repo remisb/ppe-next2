@@ -173,3 +173,38 @@ func TestPostgresCatalogue(t *testing.T) {
 		t.Errorf("duplicate err = %v", err)
 	}
 }
+
+// An item's supplier reads with it while the supplier is live; a deleted one
+// reads as none, and the foreign key refuses an unknown one.
+func TestPostgresSupplier(t *testing.T) {
+	pool, actor := newTestPool(t)
+	svc := NewService(NewPostgresRepository(pool))
+	ctx := context.Background()
+
+	sup := uuid.New()
+	if _, err := pool.Exec(ctx, `INSERT INTO suppliers (id, code, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
+		VALUES ($1, 'SUP-1', 'Darbo rūbai', now(), now(), $2, $2)`, sup, actor); err != nil {
+		t.Fatal(err)
+	}
+	unknown := uuid.New()
+	if _, err := svc.Create(ctx, Params{Name: "Boots", Active: true, SupplierID: &unknown}, all, actor); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("unknown supplier: %v", err)
+	}
+	i, err := svc.Create(ctx, Params{Name: "Boots", Active: true, SupplierID: &sup}, all, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if i.SupplierID == nil || *i.SupplierID != sup || i.SupplierName == nil || *i.SupplierName != "Darbo rūbai" {
+		t.Fatalf("created with supplier %v %v", i.SupplierID, i.SupplierName)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE suppliers SET deleted_at = now(), deleted_by_user_id = $2 WHERE id = $1`, sup, actor); err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.Get(ctx, i.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.SupplierID != nil || got.SupplierName != nil {
+		t.Errorf("deleted supplier reads as %v %v", got.SupplierID, got.SupplierName)
+	}
+}

@@ -40,6 +40,7 @@ order:
 | `roles.manage` | manage roles, and give any permission (needs `users.read`) | ✓ | | | |
 | `settings.manage` | change Settings | ✓ | | | |
 | `mail_templates.manage` | edit Mail Templates (migration 0040) | ✓ | | | |
+| `suppliers.manage` | add, edit and delete Suppliers (migration 0054); everyone reads them | ✓ | | | |
 | `backups.read` | read Backups | ✓ | | | |
 | `audit.read` | read the Audit log | ✓ | | | |
 | `audit.export` | export the Audit log (needs `audit.read`; migration 0026) | ✓ | | | |

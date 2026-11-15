@@ -592,3 +592,61 @@ func TestMove(t *testing.T) {
 		}
 	}
 }
+
+// fakeSuppliers are the live suppliers by id.
+type fakeSuppliers map[uuid.UUID]string
+
+func (f fakeSuppliers) SupplierName(_ context.Context, id uuid.UUID) (string, bool, error) {
+	name, ok := f[id]
+	return name, ok, nil
+}
+
+func TestSupplier(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	a, b, gone := uuid.New(), uuid.New(), uuid.New()
+	svc := NewService(repo, WithSuppliers(fakeSuppliers{a: "Darbo rūbai", b: "Avalynė"}))
+
+	if _, err := svc.Create(ctx, Params{Name: "Boots", Active: true, SupplierID: &gone}, all, testActor); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("unknown supplier: %v", err)
+	}
+	i, err := svc.Create(ctx, Params{Name: "Boots", Active: true, SupplierID: &a}, all, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *i.SupplierID != a || *i.SupplierName != "Darbo rūbai" {
+		t.Errorf("created with supplier %v %v", i.SupplierID, i.SupplierName)
+	}
+
+	// Another supplier: catalogue.updated names both.
+	i, err = svc.Update(ctx, i.ID, Params{Name: "Boots", Active: true, SupplierID: &b}, all, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := repo.events[len(repo.events)-1]
+	var before, after map[string]any
+	_ = json.Unmarshal(ev.Before, &before)
+	_ = json.Unmarshal(ev.After, &after)
+	if ev.Event != EventUpdated || before["supplier"] != "Darbo rūbai" || after["supplier"] != "Avalynė" ||
+		before["supplier_id"] != a.String() || after["supplier_id"] != b.String() {
+		t.Errorf("event %s before %s after %s", ev.Event, ev.Before, ev.After)
+	}
+
+	// None.
+	n := len(repo.events)
+	i, err = svc.Update(ctx, i.ID, Params{Name: "Boots", Active: true}, all, testActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if i.SupplierID != nil || i.SupplierName != nil || len(repo.events) != n+1 {
+		t.Errorf("cleared: %v %v, %d events", i.SupplierID, i.SupplierName, len(repo.events)-n)
+	}
+	// Saving it as it is records nothing.
+	if _, err := svc.Update(ctx, i.ID, Params{Name: "Boots", Active: true}, all, testActor); err != nil || len(repo.events) != n+1 {
+		t.Errorf("unchanged: %v, %d events", err, len(repo.events)-n)
+	}
+	// Choosing the supplier needs no price rights.
+	if _, err := svc.Update(ctx, i.ID, Params{Name: "Boots", Active: true, SupplierID: &a}, Rights{}, testActor); err != nil {
+		t.Errorf("supplier without price rights: %v", err)
+	}
+}

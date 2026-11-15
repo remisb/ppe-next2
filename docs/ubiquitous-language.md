@@ -574,7 +574,21 @@ Rules for using it:
 ## 7. Supplier
 
 ### Supplier
-- **Brief:** the company the workwear is ordered from, over WhatsApp.
+- **Brief:** a company catalogue items are bought from: an internal code, its name and the
+  details an organisation is known by (company code, VAT code, address, contact, bank account).
+- **Detail:** an item has at most one, optionally. Administrators manage them on
+  Administration's **Suppliers**; Add Item and Edit Item choose one. Deleting a supplier
+  leaves its items with none; orders do not keep it. The WhatsApp group Copy for WhatsApp
+  opens is a separate setting (Supplier's WhatsApp group), not tied to a supplier record.
+- **Code:** `internal/domain/supplier`, table `suppliers`, `catalogue_items.supplier_id`,
+  permission `suppliers.manage`. **UI:** Suppliers, **Add Supplier**, **Edit**, **Delete
+  supplier…**, Supplier, No supplier.
+
+### Internal code (supplier)
+- **Brief:** the organisation's own short code for a supplier, unique among suppliers whatever
+  the case.
+- **Detail:** not the company code (the registry's number) nor the VAT code.
+- **Code:** `suppliers.code`. **UI:** Internal code.
 
 ### Copy for WhatsApp
 - **Brief:** copies the supplier message for an order, then offers to open the supplier's group.
@@ -1287,6 +1301,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Delete order… | Ištrinti užsakymą… | Удалить заказ… |
 | Copy for WhatsApp | Kopijuoti į WhatsApp | Копировать для WhatsApp |
 | Supplier's WhatsApp group | Tiekėjo WhatsApp grupė | Группа поставщика в WhatsApp |
+| Suppliers / Add Supplier / Delete supplier… | Tiekėjai / Pridėti tiekėją / Ištrinti tiekėją… | Поставщики / Добавить поставщика / Удалить поставщика… |
+| Supplier / No supplier | Tiekėjas / Tiekėjas nenurodytas | Поставщик / Поставщик не указан |
+| Internal code / Company code / VAT code | Vidinis kodas / Įmonės kodas / PVM mokėtojo kodas | Внутренний код / Код предприятия / Код плательщика НДС |
 | Edit Sizes | Keisti dydžius | Изменить размеры |
 | Save as Employee Default | Išsaugoti kaip numatytąjį | Сохранить как размер сотрудника |
 | Preferred language | Pageidaujama kalba | Предпочитаемый язык |

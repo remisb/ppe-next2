@@ -46,6 +46,7 @@ export const ADMINISTRATION_PERMISSIONS: readonly Permission[] = [
   'roles.manage',
   'settings.manage',
   'mail_templates.manage',
+  'suppliers.manage',
   'backups.read',
   'audit.read',
   'security.read',

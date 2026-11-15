@@ -51,6 +51,8 @@ import type {
   CatalogueItem,
   CatalogueItemInput,
   CataloguePicture,
+  Supplier,
+  SupplierInput,
   CataloguePictureInput,
   ClientErrorReport,
   ConfirmationLink,
@@ -556,6 +558,16 @@ export function createClient(options: ClientOptions) {
       pictures: () => request<CataloguePicture[]>('GET', '/api/v1/catalogue/pictures'),
       updatePicture: (icon: CatalogueIcon, input: CataloguePictureInput) =>
         request<CataloguePicture>('PUT', `/api/v1/catalogue/pictures/${seg(icon)}`, input),
+    },
+
+    /** The companies catalogue items are bought from: everyone reads, suppliers.manage changes them. */
+    suppliers: {
+      list: () => request<Supplier[]>('GET', '/api/v1/suppliers'),
+      get: (id: string) => request<Supplier>('GET', `/api/v1/suppliers/${seg(id)}`),
+      create: (input: SupplierInput) => request<Supplier>('POST', '/api/v1/suppliers', input),
+      update: (id: string, input: SupplierInput) => request<Supplier>('PUT', `/api/v1/suppliers/${seg(id)}`, input),
+      /** Its items keep no supplier from then on. */
+      remove: (id: string) => request<void>('DELETE', `/api/v1/suppliers/${seg(id)}`),
     },
 
     itemSets: {
