@@ -8,7 +8,6 @@ import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { ReviewList } from '@ppe/sim-scan/review-list'
 import { formatEuro } from '@ppe/i18n'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { ActionError, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
 import { formatDay, isoDay } from '@ppe/ui/lib/dates'
@@ -18,10 +17,11 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { usePhone } from '@/lib/phone'
 import { loadReaders } from '@/lib/readers'
 
-import { BatchCard, BatchForm } from './batch-card'
+import { BatchCard } from './batch-card'
 import { CardInProgress } from './card-in-progress'
 import { CardSheet } from './card-sheet'
 import { LiveScan } from './live-scan'
+import { PhoneBatchSheet } from './phone-batch-sheet'
 import { PhoneCamera } from './phone-camera'
 import { PhoneReview } from './phone-review'
 import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
@@ -410,7 +410,6 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             setCamera(false)
             void choosePhotos(files)
           }}
-          existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
           onRetry={() => setCameraKey((k) => k + 1)}
           onClose={() => setCamera(false)}
         />
@@ -422,7 +421,7 @@ export function ScanPage({ active = true }: { active?: boolean }) {
           card={cards[openCard]}
           marks={marks[openCard] ?? []}
           pictures={pictures.urls}
-          existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
+          provider={batch.provider}
           onChange={(patch) => dispatch({ type: 'update', index: openCard, patch })}
           onRemove={() => {
             dispatch({ type: 'remove', index: openCard })
@@ -432,20 +431,16 @@ export function ScanPage({ active = true }: { active?: boolean }) {
         />
       ) : null}
 
-      {phone ? (
-        <FormSheet open={batchSheet} onClose={() => setBatchSheet(false)} title={t.batch}>
-          {batchSheet ? (
-            <BatchForm
-              settings={settings}
-              batch={batch}
-              onSave={(b) => {
-                setBatch(b)
-                setBatchSheet(false)
-              }}
-              onCancel={batch.provider.trim() === '' ? undefined : () => setBatchSheet(false)}
-            />
-          ) : null}
-        </FormSheet>
+      {phone && batchSheet ? (
+        <PhoneBatchSheet
+          settings={settings}
+          batch={batch}
+          onSave={(b) => {
+            setBatch(b)
+            setBatchSheet(false)
+          }}
+          onClose={() => setBatchSheet(false)}
+        />
       ) : null}
     </>
   )

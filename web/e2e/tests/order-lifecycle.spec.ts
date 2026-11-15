@@ -3596,7 +3596,8 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   const photo = (name: string) => join(repoRoot, 'web/e2e/fixtures/sim-cards', name)
   const current = page.getByRole('region', { name: 'SIM 1' })
   // A phone scans with the camera, full screen, as a camera app: no card at a time there, and no Choose Photos
-  // while the camera can be used. Before the first card the camera shows what every SIM gets; where the camera
+  // while the camera can be used. Before the first card the camera shows what every SIM gets (the provider and plan,
+  // the value), with its edit button; where the camera
   // does not start (here, no camera is allowed), it offers photos instead.
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
@@ -3605,7 +3606,8 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(page.getByRole('button', { name: 'Choose Photos' })).toBeHidden()
   await page.getByRole('button', { name: 'Scan with the Camera' }).click()
   const phoneCamera = page.getByRole('dialog', { name: 'Scan SIMs' })
-  await expect(phoneCamera.getByText('Every SIM you scan gets')).toBeVisible()
+  await expect(phoneCamera.getByText('Telia · Biz 5 GB', { exact: true })).toBeVisible()
+  await expect(phoneCamera.getByText('Value €25.00')).toBeVisible()
   await expect(phoneCamera.getByRole('button', { name: /^Edit For every SIM: Telia/ })).toBeVisible()
   await expect(phoneCamera.getByRole('alert')).toBeVisible()
   await expect(phoneCamera.getByRole('button', { name: 'Choose Photos' })).toBeVisible()

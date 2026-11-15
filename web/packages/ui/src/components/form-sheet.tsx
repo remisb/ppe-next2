@@ -22,6 +22,15 @@ interface FormSheetProps {
   footer?: ReactNode
   /** Nearly the whole screen, at a fixed height its body fills: for a document such as a PDF preview. */
   wide?: boolean
+  /** Drawn before the title, on its line: a record's pictures, say. */
+  lead?: ReactNode
+  /**
+   * False leaves out the header's × for a sheet whose footer ends it (Done):
+   * Escape and a tap outside the sheet still close it.
+   */
+  closeButton?: boolean
+  /** False leaves out the rules under the header and above the footer, for a sheet that reads as one piece. */
+  rules?: boolean
 }
 
 /**
@@ -34,7 +43,7 @@ interface FormSheetProps {
  * platform gives modal semantics, focus containment, the top layer, and Escape
  * for free, and all four are easy to get subtly wrong by hand.
  */
-export function FormSheet({ open, onClose, title, description, info, children, footer, wide = false }: FormSheetProps) {
+export function FormSheet({ open, onClose, title, description, info, children, footer, wide = false, lead, closeButton = true, rules = true }: FormSheetProps) {
   const ref = useRef<HTMLDialogElement>(null)
   /*
    * Per instance, not a constant. `ResourceScreen` can mount two of these at
@@ -70,6 +79,8 @@ export function FormSheet({ open, onClose, title, description, info, children, f
   return (
     <dialog
       ref={ref}
+      // Without its ×, a tap outside the sheet (on the backdrop, which is the dialog's own box) closes it.
+      onClick={closeButton ? undefined : (e) => e.target === e.currentTarget && onClose()}
       aria-labelledby={titleId}
       aria-describedby={info ? infoId : undefined}
       className={cn(
@@ -89,8 +100,10 @@ export function FormSheet({ open, onClose, title, description, info, children, f
       <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30 md:hidden" />
       {/* h-full + min-h-0 so the body scrolls rather than the footer sliding off. */}
       <div className={cn('flex max-h-[inherit] flex-col', wide && 'min-h-0 flex-1')}>
-        <header className="flex items-start justify-between gap-4 border-b border-border px-4 pt-2 pb-3 md:p-4">
-          <div className="flex flex-col gap-1">
+        <header className={cn('flex items-start justify-between gap-4 px-4 pt-2 pb-3 md:p-4', rules && 'border-b border-border')}>
+          <div className="flex min-w-0 items-center gap-3">
+          {lead}
+          <div className="flex min-w-0 flex-col gap-1">
             <div className="flex items-center gap-1">
               <h2 id={titleId} className="text-lg font-semibold">
                 {title}
@@ -110,9 +123,12 @@ export function FormSheet({ open, onClose, title, description, info, children, f
               <p className="text-sm text-muted-foreground">{description}</p>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label={uiText().close}>
-            <X aria-hidden />
-          </Button>
+          </div>
+          {closeButton ? (
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={uiText().close}>
+              <X aria-hidden />
+            </Button>
+          ) : null}
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
@@ -120,7 +136,8 @@ export function FormSheet({ open, onClose, title, description, info, children, f
         {footer ? (
           <footer
             className={cn(
-              'flex flex-col-reverse gap-2 border-t border-border p-4',
+              'flex flex-col-reverse gap-2 p-4',
+              rules && 'border-t border-border',
               'sm:flex-row sm:justify-end',
               // Clears the home bar on a notched phone.
               'pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-4',

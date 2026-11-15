@@ -116,8 +116,8 @@ export function BatchFacts({ batch, className }: { batch: BatchSettings; classNa
 /**
  * The batch's form: the provider (its plan filled in with it), the plan, the
  * Non-return Value, the Received Date and the comment, with Save and, when
- * given, Cancel (Escape too). Its first field takes the focus. In For every
- * SIM, and in a sheet over the phone's camera (without its own heading there).
+ * given, Cancel (Escape too). Its first field takes the focus. For every SIM's
+ * form from 768px; a phone has PhoneBatchSheet.
  */
 export function BatchForm({
   settings,

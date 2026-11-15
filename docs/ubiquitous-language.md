@@ -837,12 +837,12 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   every SIM**, read only (a label and its value a line) until **Edit For every SIM** opens its form (**Save**,
   **Cancel**). A card read without its back is added without PIN and PUK (**No Back**). On a phone the
   camera is full screen, as a camera app (**Scan with the Camera**): the SIMs read so far above it, a tap
-  opening one to check or correct (**Remove**, **Done**), **Read Now** taking the next reading at once, the
+  opening one to check or correct (a bin, **Remove SIM N**, and **Done**), **Read Now** taking the next reading at once, the
   **Torch** where the phone has one, and the last card's picture with the count going back to the list.
 - **UI:** **Scan SIMs**, **SIM N** (the card being scanned), **Photo of the SIM No.**, **Photo
   of the PIN and PUK**, **Next SIM**, **Edit** (the card being scanned's values), **Camera**, **Stop Camera**, **Choose Photos**, **No
   Back**, **Clear List**, **Add N SIMs**; on a phone **Scan with the Camera**, **Close the camera**, **Read Now**,
-  **Torch**, **Review N SIMs**, **Change** (For every SIM, before the first card), **Try Again** (the camera not
+  **Torch**, **Review N SIMs**, **Edit For every SIM** (the pencil, before the first card), **Try Again** (the camera not
   allowed); the review's filters **All**, **To fix**, **No back**, and **Scan More** beside **Add N SIMs**.
 
 ### Equipment & Furniture
@@ -1367,7 +1367,7 @@ screens are built):
 | Scan SIMs / Camera / Stop Camera / Choose Photos | Skenuoti SIM / Kamera / Išjungti kamerą / Pasirinkti nuotraukas | Сканировать SIM / Камера / Выключить камеру / Выбрать фото |
 | Front / Back (a carrier's) / No Back | Priekis / Nugarėlė / Be nugarėlės | Лицевая / Обратная / Без обратной стороны |
 | Scan with the Camera / Close the camera / Read Now / Torch | Skenuoti kamera / Uždaryti kamerą / Nuskaityti dabar / Žibintuvėlis | Сканировать камерой / Закрыть камеру / Считать сейчас / Фонарик |
-| Review N SIMs / Every SIM you scan gets / Change | Peržiūrėti N SIM / Kiekviena nuskenuota SIM gaus / Keisti | Просмотреть N SIM / Каждая отсканированная SIM получит / Изменить |
+| Review N SIMs | Peržiūrėti N SIM | Просмотреть N SIM |
 | All / To fix / No back (the review's filters) / Try Again | Visos / Taisyti / Be nugarėlės / Bandyti dar kartą | Все / Исправить / Без обратной / Повторить |
 | For every SIM / Clear List / Add N SIMs | Visoms SIM / Išvalyti sąrašą / Pridėti N SIM | Для всех SIM / Очистить список / Добавить N SIM |
 | Photo of the SIM No. / Photo of the PIN and PUK / Next SIM | SIM Nr. nuotrauka / PIN ir PUK nuotrauka / Kita SIM | Фото № SIM / Фото PIN и PUK / Следующая SIM |

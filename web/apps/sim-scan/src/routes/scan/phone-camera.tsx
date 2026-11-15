@@ -3,13 +3,14 @@ import { formatEuro } from '@ppe/i18n'
 import { type BatchSettings, MAX_CARDS, type RowMark, type ScanCard, blocks, simKey, simScanText } from '@ppe/sim-scan'
 import { message } from '@ppe/sim-scan/review-list'
 import { Button } from '@ppe/ui/components/button'
-import { FormSheet } from '@ppe/ui/components/form-sheet'
+import { formatDay } from '@ppe/ui/lib/dates'
 import { cn } from '@ppe/ui/lib/utils'
-import { CameraOff, ChevronDown, CircleAlert, CircleCheck, Copy, ImagePlus, Info, Redo2, X, Zap } from 'lucide-react'
+import { CameraOff, ChevronDown, CircleAlert, Pencil, CircleCheck, Copy, ImagePlus, Info, Redo2, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
-import { BatchFacts, BatchForm } from './batch-card'
 import { CardSheet } from './card-sheet'
+import { PhoneBatchSheet } from './phone-batch-sheet'
 import { type Guide, useLiveScan } from './use-live-scan'
 
 /** A carrier's shape, ID-1 (85.6 × 54 mm), held across. */
@@ -49,7 +50,6 @@ export function PhoneCamera({
   onUpdate,
   onRemove,
   onChoosePhotos,
-  existingHref,
   onRetry,
   onClose,
 }: {
@@ -65,7 +65,6 @@ export function PhoneCamera({
   onRemove: (index: number) => void
   /** The camera did not start: photos chosen instead. */
   onChoosePhotos: (files: FileList | null) => void
-  existingHref: (id: string) => string
   /** Starts the camera again (the parent mounts it anew), after the user allowed it. */
   onRetry: () => void
   onClose: () => void
@@ -125,14 +124,41 @@ export function PhoneCamera({
         <section aria-label={t.cards(n)} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-2">
           {n === 0 ? (
             <div className="mt-auto flex flex-col gap-3 px-1 pt-2 pb-1">
-              <div className="flex flex-col gap-1.5 rounded-2xl border border-border bg-muted/60 py-2.5 pr-2 pl-4">
+              {/* What every SIM gets, in two lines: the provider and plan with the edit button, then the value and the received date. */}
+              <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted/60 py-2.5 pr-2 pl-4">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">{t.everySimGets}</span>
-                  <Button variant="outline" size="sm" className="rounded-full" onClick={() => setEditingBatch(true)}>
-                    {t.changeBatch}
+                  {batch.provider.trim() === '' ? (
+                    <span className="text-base font-semibold text-destructive">{t.providerRequired}</span>
+                  ) : (
+                    <span className="min-w-0 text-base font-semibold">{[batch.provider, batch.plan].filter((x) => x !== '').join(' · ')}</span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-11 shrink-0 rounded-full"
+                    aria-label={t.editBatch}
+                    title={t.editBatch}
+                    onClick={() => setEditingBatch(true)}
+                  >
+                    <Pencil aria-hidden className="size-4" />
                   </Button>
                 </div>
-                <BatchFacts batch={batch} className="pr-2" />
+                {batch.valueCents !== null || batch.receivedDate !== '' ? (
+                  <span className="pr-2 text-sm text-muted-foreground">
+                    {[
+                      batch.valueCents === null ? '' : t.valueLine(formatEuro(batch.valueCents)),
+                      batch.receivedDate === '' ? '' : t.receivedLine(formatDay(batch.receivedDate)),
+                    ]
+                      .filter((x) => x !== '')
+                      // Each part on one line: the line breaks between them, never inside a date or an amount.
+                      .map((part, i) => (
+                        <span key={part} className="whitespace-nowrap">
+                          {i > 0 ? ' · ' : ''}
+                          {part}
+                        </span>
+                      ))}
+                  </span>
+                ) : null}
               </div>
               <p className="text-sm text-muted-foreground">{t.firstHint}</p>
             </div>
@@ -301,35 +327,37 @@ export function PhoneCamera({
         </div>
       </div>
 
-      <FormSheet open={editingBatch} onClose={() => setEditingBatch(false)} title={t.batch}>
-        {editingBatch ? (
-          <BatchForm
-            settings={settings}
-            batch={batch}
-            onSave={(b) => {
-              onBatch(b)
-              setEditingBatch(false)
-            }}
-            onCancel={() => setEditingBatch(false)}
-          />
-        ) : null}
-      </FormSheet>
+      {editingBatch ? (
+        <PhoneBatchSheet
+          settings={settings}
+          batch={batch}
+          onSave={(b) => {
+            onBatch(b)
+            setEditingBatch(false)
+          }}
+          onClose={() => setEditingBatch(false)}
+        />
+      ) : null}
 
-      {open !== null && cards[open] ? (
+      {open !== null && cards[open]
+        ? createPortal(
         <CardSheet
           n={open + 1}
           card={cards[open]}
           marks={marks[open] ?? []}
           pictures={pictures}
-          existingHref={existingHref}
+          provider={batch.provider}
           onChange={(patch) => onUpdate(open, patch)}
           onRemove={() => {
             onRemove(open)
             setOpen(null)
           }}
           onClose={() => setOpen(null)}
-        />
-      ) : null}
+        />,
+            // Out of the camera's dark <dialog>, in the app's own theme, as For every SIM's sheet.
+            document.body,
+          )
+        : null}
     </dialog>
   )
 }

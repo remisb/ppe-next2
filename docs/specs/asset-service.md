@@ -214,15 +214,18 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
     full screen, as a camera app (`phone-camera.tsx`, a modal `<dialog>`: Escape and **Close the
     camera** end it). The newest SIMs are above the viewfinder as they are read, each a tap away
     from a sheet with its pictures and fields, to check it against the card and correct a value
-    read wrong, or **Remove** it (`card-sheet.tsx`); under it **Front** / **Back** says which side is
+    read wrong, or remove it (a bin, **Remove SIM N**; `card-sheet.tsx`); under it **Front** / **Back** says which side is
     awaited, and the controls are the last card's picture with the count (**Review N SIMs**, back
     to the list), **Read Now** and **No Back**, with the **Torch** on the picture where the camera
-    offers one (Chrome on Android). Before the first card it shows what every SIM gets, with
-    **Change** (the batch's form in a sheet). **Choose Photos** is not on a phone while the camera
+    offers one (Chrome on Android). Before the first card it shows what every SIM gets (the
+    provider and plan, then the value and the received date) with a pencil, **Edit For every
+    SIM** (the batch's form in a sheet). **Choose Photos** is not on a phone while the camera
     can be used; where it cannot start, the camera offers it instead, and where it was not allowed it
     says how to allow it (iPhone, Android) with **Try Again**.
-  - **Review on a phone** (`phone-review.tsx`): For every SIM is one line opening its form in a
-    sheet; the list's state under its count ("All ready to add", or how many to fix); filters for
+  - **Review on a phone** (`phone-review.tsx`): For every SIM is one line opening its sheet
+    (`phone-batch-sheet.tsx`, also the camera's pencil: the provider as a row of choices, its plan
+    filled in with it, then the plan, value, received date and comment as label and value rows to
+    tap and change, and Save; closing it keeps the batch as it was); the list's state under its count ("All ready to add", or how many to fix); filters for
     what is there (**All**, **To fix**, **No back**, with counts, `Segmented`); the SIMs to fix first,
     then the rest newest first, each row opening the same sheet as on the camera; **Scan More** and
     **Add N SIMs** in a bar pinned to the screen's bottom, the list dimmed while adding.
