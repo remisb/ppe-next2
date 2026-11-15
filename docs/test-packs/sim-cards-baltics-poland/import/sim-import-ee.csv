@@ -1,0 +1,22 @@
+sim_no,phone_no,provider,employee_name,connection_status
+8937201199000000010,+372 5836 7336,Telia EE,Mindaugas Vasiliauskas,Active
+8937 2011 9900 0000 028,+372 5580 4223,Telia EE,,Available
+8937201199000000036,,Telia EE,,Not Activated
+8937 2011 9900 0000 044,+372 5453 2305,Telia EE,,Active
+8937202199000000019,,Elisa EE,,Not Activated
+8937 2021 9900 0000 027,+372 5357 0095,Elisa EE,,Active
+8937202199000000035,+372 5314 6614,Elisa EE,,Available
+8937 2021 9900 0000 043,,Elisa EE,,Not Activated
+8937203199000000018,+372 5647 8105,Tele2 EE,,Available
+8937 2031 9900 0000 026,,Tele2 EE,,Not Activated
+8937203199000000034,+372 5383 7213,Tele2 EE,Aleksandr Ivanov,Active
+8937 2031 9900 0000 042,+372 5615 2009,Tele2 EE,,Available
+8937201199000000051,,Telia kõnekaart,,Not Activated
+8937 2011 9900 0000 069,+372 5683 9722,Telia kõnekaart,,Active
+8937201199000000077,+372 5118 6745,Telia kõnekaart,,Available
+8937202199000000050,+372 5331 5852,Elisa kõnekaart,Rasa Stankevičiūtė,Active
+8937 2021 9900 0000 068,+372 5326 1352,Elisa kõnekaart,,Available
+8937202199000000076,+372 5992 8698,Elisa kõnekaart,Mindaugas Vasiliauskas,Blocked
+8937203199000000059,,Smart,,Not Activated
+8937 2031 9900 0000 067,+372 5591 1612,Smart,,Active
+8937203199000000075,+372 5738 4007,Smart,,Available

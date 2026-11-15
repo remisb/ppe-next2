@@ -1,0 +1,92 @@
+plan_id,operator_id,brand_id,country_code,plan_name,segment,plan_type,data_gb,minutes,sms,eu_roaming_gb,monthly_price,monthly_price_ex_vat,currency,vat_rate_pct,contract_months,sim_fee,esim,ppe_plan_label,is_demo
+LT-TELIA-BIZ-S,LT-TELIA,TELIA-LT,LT,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,9.99,8.26,EUR,21,24,0,yes,Business S 10 GB,yes
+LT-TELIA-BIZ-M,LT-TELIA,TELIA-LT,LT,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,14.99,12.39,EUR,21,24,0,yes,Business M 30 GB,yes
+LT-TELIA-BIZ-L,LT-TELIA,TELIA-LT,LT,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,22.99,19.0,EUR,21,24,0,yes,Business L Unlimited,yes
+LT-TELIA-BIZ-DATA,LT-TELIA,TELIA-LT,LT,Business Data 100 GB (demo),business,postpaid,100,0,0,20,12.99,10.74,EUR,21,12,0,yes,Business Data 100 GB,yes
+LT-TELIA-BIZ-M2M,LT-TELIA,TELIA-LT,LT,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.02,1.67,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LT-TELIA-CON-5,LT-TELIA,TELIA-LT,LT,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,6.99,5.78,EUR,21,0,2.0,yes,Smart 5 GB,yes
+LT-TELIA-CON-UNL,LT-TELIA,TELIA-LT,LT,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,19.99,16.52,EUR,21,24,2.0,yes,Smart Unlimited,yes
+LT-BITE-BIZ-S,LT-BITE,BITE-LT,LT,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,8.99,7.43,EUR,21,24,0,yes,Business S 10 GB,yes
+LT-BITE-BIZ-M,LT-BITE,BITE-LT,LT,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,15.99,13.21,EUR,21,24,0,yes,Business M 30 GB,yes
+LT-BITE-BIZ-L,LT-BITE,BITE-LT,LT,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,23.99,19.83,EUR,21,24,0,yes,Business L Unlimited,yes
+LT-BITE-BIZ-DATA,LT-BITE,BITE-LT,LT,Business Data 100 GB (demo),business,postpaid,100,0,0,20,13.99,11.56,EUR,21,12,0,yes,Business Data 100 GB,yes
+LT-BITE-BIZ-M2M,LT-BITE,BITE-LT,LT,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,1.91,1.58,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LT-BITE-CON-5,LT-BITE,BITE-LT,LT,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,6.99,5.78,EUR,21,0,2.0,yes,Smart 5 GB,yes
+LT-BITE-CON-UNL,LT-BITE,BITE-LT,LT,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,18.99,15.69,EUR,21,24,2.0,yes,Smart Unlimited,yes
+LT-TELE2-BIZ-S,LT-TELE2,TELE2-LT,LT,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,9.08,EUR,21,24,0,yes,Business S 10 GB,yes
+LT-TELE2-BIZ-M,LT-TELE2,TELE2-LT,LT,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,15.99,13.21,EUR,21,24,0,yes,Business M 30 GB,yes
+LT-TELE2-BIZ-L,LT-TELE2,TELE2-LT,LT,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,22.99,19.0,EUR,21,24,0,yes,Business L Unlimited,yes
+LT-TELE2-BIZ-DATA,LT-TELE2,TELE2-LT,LT,Business Data 100 GB (demo),business,postpaid,100,0,0,20,12.99,10.74,EUR,21,12,0,yes,Business Data 100 GB,yes
+LT-TELE2-BIZ-M2M,LT-TELE2,TELE2-LT,LT,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.1,1.74,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LT-TELE2-CON-5,LT-TELE2,TELE2-LT,LT,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,6.99,5.78,EUR,21,0,2.0,yes,Smart 5 GB,yes
+LT-TELE2-CON-UNL,LT-TELE2,TELE2-LT,LT,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,18.99,15.69,EUR,21,24,2.0,yes,Smart Unlimited,yes
+LV-LMT-BIZ-S,LV-LMT,LMT,LV,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,9.08,EUR,21,24,0,yes,Business S 10 GB,yes
+LV-LMT-BIZ-M,LV-LMT,LMT,LV,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,15.99,13.21,EUR,21,24,0,yes,Business M 30 GB,yes
+LV-LMT-BIZ-L,LV-LMT,LMT,LV,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,20.99,17.35,EUR,21,24,0,yes,Business L Unlimited,yes
+LV-LMT-BIZ-DATA,LV-LMT,LMT,LV,Business Data 100 GB (demo),business,postpaid,100,0,0,20,14.99,12.39,EUR,21,12,0,yes,Business Data 100 GB,yes
+LV-LMT-BIZ-M2M,LV-LMT,LMT,LV,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.04,1.69,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LV-LMT-CON-5,LV-LMT,LMT,LV,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,7.99,6.6,EUR,21,0,2.12,yes,Smart 5 GB,yes
+LV-LMT-CON-UNL,LV-LMT,LMT,LV,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,19.99,16.52,EUR,21,24,2.12,yes,Smart Unlimited,yes
+LV-TELE2-BIZ-S,LV-TELE2,TELE2-LV,LV,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,9.08,EUR,21,24,0,yes,Business S 10 GB,yes
+LV-TELE2-BIZ-M,LV-TELE2,TELE2-LV,LV,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,14.99,12.39,EUR,21,24,0,yes,Business M 30 GB,yes
+LV-TELE2-BIZ-L,LV-TELE2,TELE2-LV,LV,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,21.99,18.17,EUR,21,24,0,yes,Business L Unlimited,yes
+LV-TELE2-BIZ-DATA,LV-TELE2,TELE2-LV,LV,Business Data 100 GB (demo),business,postpaid,100,0,0,20,13.99,11.56,EUR,21,12,0,yes,Business Data 100 GB,yes
+LV-TELE2-BIZ-M2M,LV-TELE2,TELE2-LV,LV,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,1.95,1.61,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LV-TELE2-CON-5,LV-TELE2,TELE2-LV,LV,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,7.99,6.6,EUR,21,0,2.12,yes,Smart 5 GB,yes
+LV-TELE2-CON-UNL,LV-TELE2,TELE2-LV,LV,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,21.99,18.17,EUR,21,24,2.12,yes,Smart Unlimited,yes
+LV-BITE-BIZ-S,LV-BITE,BITE-LV,LV,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,9.08,EUR,21,24,0,yes,Business S 10 GB,yes
+LV-BITE-BIZ-M,LV-BITE,BITE-LV,LV,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,16.99,14.04,EUR,21,24,0,yes,Business M 30 GB,yes
+LV-BITE-BIZ-L,LV-BITE,BITE-LV,LV,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,21.99,18.17,EUR,21,24,0,yes,Business L Unlimited,yes
+LV-BITE-BIZ-DATA,LV-BITE,BITE-LV,LV,Business Data 100 GB (demo),business,postpaid,100,0,0,20,12.99,10.74,EUR,21,12,0,yes,Business Data 100 GB,yes
+LV-BITE-BIZ-M2M,LV-BITE,BITE-LV,LV,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.05,1.69,EUR,21,12,0,no,IoT / M2M 500 MB,yes
+LV-BITE-CON-5,LV-BITE,BITE-LV,LV,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,7.99,6.6,EUR,21,0,2.12,yes,Smart 5 GB,yes
+LV-BITE-CON-UNL,LV-BITE,BITE-LV,LV,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,19.99,16.52,EUR,21,24,2.12,yes,Smart Unlimited,yes
+EE-TELIA-BIZ-S,EE-TELIA,TELIA-EE,EE,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,8.86,EUR,24,24,0,yes,Business S 10 GB,yes
+EE-TELIA-BIZ-M,EE-TELIA,TELIA-EE,EE,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,15.99,12.9,EUR,24,24,0,yes,Business M 30 GB,yes
+EE-TELIA-BIZ-L,EE-TELIA,TELIA-EE,EE,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,24.99,20.15,EUR,24,24,0,yes,Business L Unlimited,yes
+EE-TELIA-BIZ-DATA,EE-TELIA,TELIA-EE,EE,Business Data 100 GB (demo),business,postpaid,100,0,0,20,14.99,12.09,EUR,24,12,0,yes,Business Data 100 GB,yes
+EE-TELIA-BIZ-M2M,EE-TELIA,TELIA-EE,EE,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.38,1.92,EUR,24,12,0,no,IoT / M2M 500 MB,yes
+EE-TELIA-CON-5,EE-TELIA,TELIA-EE,EE,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,7.99,6.44,EUR,24,0,2.24,yes,Smart 5 GB,yes
+EE-TELIA-CON-UNL,EE-TELIA,TELIA-EE,EE,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,20.99,16.93,EUR,24,24,2.24,yes,Smart Unlimited,yes
+EE-ELISA-BIZ-S,EE-ELISA,ELISA-EE,EE,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,8.86,EUR,24,24,0,yes,Business S 10 GB,yes
+EE-ELISA-BIZ-M,EE-ELISA,ELISA-EE,EE,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,15.99,12.9,EUR,24,24,0,yes,Business M 30 GB,yes
+EE-ELISA-BIZ-L,EE-ELISA,ELISA-EE,EE,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,24.99,20.15,EUR,24,24,0,yes,Business L Unlimited,yes
+EE-ELISA-BIZ-DATA,EE-ELISA,ELISA-EE,EE,Business Data 100 GB (demo),business,postpaid,100,0,0,20,13.99,11.28,EUR,24,12,0,yes,Business Data 100 GB,yes
+EE-ELISA-BIZ-M2M,EE-ELISA,ELISA-EE,EE,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.35,1.9,EUR,24,12,0,no,IoT / M2M 500 MB,yes
+EE-ELISA-CON-5,EE-ELISA,ELISA-EE,EE,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,7.99,6.44,EUR,24,0,2.24,yes,Smart 5 GB,yes
+EE-ELISA-CON-UNL,EE-ELISA,ELISA-EE,EE,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,20.99,16.93,EUR,24,24,2.24,yes,Smart Unlimited,yes
+EE-TELE2-BIZ-S,EE-TELE2,TELE2-EE,EE,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,10.99,8.86,EUR,24,24,0,yes,Business S 10 GB,yes
+EE-TELE2-BIZ-M,EE-TELE2,TELE2-EE,EE,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,17.99,14.51,EUR,24,24,0,yes,Business M 30 GB,yes
+EE-TELE2-BIZ-L,EE-TELE2,TELE2-EE,EE,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,25.99,20.96,EUR,24,24,0,yes,Business L Unlimited,yes
+EE-TELE2-BIZ-DATA,EE-TELE2,TELE2-EE,EE,Business Data 100 GB (demo),business,postpaid,100,0,0,20,14.99,12.09,EUR,24,12,0,yes,Business Data 100 GB,yes
+EE-TELE2-BIZ-M2M,EE-TELE2,TELE2-EE,EE,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,2.19,1.77,EUR,24,12,0,no,IoT / M2M 500 MB,yes
+EE-TELE2-CON-5,EE-TELE2,TELE2-EE,EE,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,6.99,5.64,EUR,24,0,2.24,yes,Smart 5 GB,yes
+EE-TELE2-CON-UNL,EE-TELE2,TELE2-EE,EE,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,20.99,16.93,EUR,24,24,2.24,yes,Smart Unlimited,yes
+PL-PLUS-BIZ-S,PL-PLUS,PLUS,PL,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,33.99,27.63,PLN,23,24,0,yes,Business S 10 GB,yes
+PL-PLUS-BIZ-M,PL-PLUS,PLUS,PL,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,56.99,46.33,PLN,23,24,0,yes,Business M 30 GB,yes
+PL-PLUS-BIZ-L,PL-PLUS,PLUS,PL,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,82.99,67.47,PLN,23,24,0,yes,Business L Unlimited,yes
+PL-PLUS-BIZ-DATA,PL-PLUS,PLUS,PL,Business Data 100 GB (demo),business,postpaid,100,0,0,20,48.99,39.83,PLN,23,12,0,yes,Business Data 100 GB,yes
+PL-PLUS-BIZ-M2M,PL-PLUS,PLUS,PL,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,7.99,6.5,PLN,23,12,0,no,IoT / M2M 500 MB,yes
+PL-PLUS-CON-5,PL-PLUS,PLUS,PL,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,26.99,21.94,PLN,23,0,6.99,yes,Smart 5 GB,yes
+PL-PLUS-CON-UNL,PL-PLUS,PLUS,PL,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,65.99,53.65,PLN,23,24,6.99,yes,Smart Unlimited,yes
+PL-TMOBILE-BIZ-S,PL-TMOBILE,TMOBILE-PL,PL,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,34.99,28.45,PLN,23,24,0,yes,Business S 10 GB,yes
+PL-TMOBILE-BIZ-M,PL-TMOBILE,TMOBILE-PL,PL,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,55.99,45.52,PLN,23,24,0,yes,Business M 30 GB,yes
+PL-TMOBILE-BIZ-L,PL-TMOBILE,TMOBILE-PL,PL,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,83.99,68.28,PLN,23,24,0,yes,Business L Unlimited,yes
+PL-TMOBILE-BIZ-DATA,PL-TMOBILE,TMOBILE-PL,PL,Business Data 100 GB (demo),business,postpaid,100,0,0,20,46.99,38.2,PLN,23,12,0,yes,Business Data 100 GB,yes
+PL-TMOBILE-BIZ-M2M,PL-TMOBILE,TMOBILE-PL,PL,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,6.99,5.68,PLN,23,12,0,no,IoT / M2M 500 MB,yes
+PL-TMOBILE-CON-5,PL-TMOBILE,TMOBILE-PL,PL,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,26.99,21.94,PLN,23,0,6.99,yes,Smart 5 GB,yes
+PL-TMOBILE-CON-UNL,PL-TMOBILE,TMOBILE-PL,PL,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,69.99,56.9,PLN,23,24,6.99,yes,Smart Unlimited,yes
+PL-ORANGE-BIZ-S,PL-ORANGE,ORANGE-PL,PL,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,35.99,29.26,PLN,23,24,0,yes,Business S 10 GB,yes
+PL-ORANGE-BIZ-M,PL-ORANGE,ORANGE-PL,PL,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,56.99,46.33,PLN,23,24,0,yes,Business M 30 GB,yes
+PL-ORANGE-BIZ-L,PL-ORANGE,ORANGE-PL,PL,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,77.99,63.41,PLN,23,24,0,yes,Business L Unlimited,yes
+PL-ORANGE-BIZ-DATA,PL-ORANGE,ORANGE-PL,PL,Business Data 100 GB (demo),business,postpaid,100,0,0,20,43.99,35.76,PLN,23,12,0,yes,Business Data 100 GB,yes
+PL-ORANGE-BIZ-M2M,PL-ORANGE,ORANGE-PL,PL,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,6.99,5.68,PLN,23,12,0,no,IoT / M2M 500 MB,yes
+PL-ORANGE-CON-5,PL-ORANGE,ORANGE-PL,PL,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,25.99,21.13,PLN,23,0,6.99,yes,Smart 5 GB,yes
+PL-ORANGE-CON-UNL,PL-ORANGE,ORANGE-PL,PL,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,64.99,52.84,PLN,23,24,6.99,yes,Smart Unlimited,yes
+PL-PLAY-BIZ-S,PL-PLAY,PLAY,PL,Business S 10 GB (demo),business,postpaid,10,unlimited,unlimited,10,32.99,26.82,PLN,23,24,0,yes,Business S 10 GB,yes
+PL-PLAY-BIZ-M,PL-PLAY,PLAY,PL,Business M 30 GB (demo),business,postpaid,30,unlimited,unlimited,17,57.99,47.15,PLN,23,24,0,yes,Business M 30 GB,yes
+PL-PLAY-BIZ-L,PL-PLAY,PLAY,PL,Business L Unlimited (demo),business,postpaid,unlimited,unlimited,unlimited,25,78.99,64.22,PLN,23,24,0,yes,Business L Unlimited,yes
+PL-PLAY-BIZ-DATA,PL-PLAY,PLAY,PL,Business Data 100 GB (demo),business,postpaid,100,0,0,20,47.99,39.02,PLN,23,12,0,yes,Business Data 100 GB,yes
+PL-PLAY-BIZ-M2M,PL-PLAY,PLAY,PL,IoT / M2M 500 MB (demo),business,postpaid,0.5,0,100,0.5,6.99,5.68,PLN,23,12,0,no,IoT / M2M 500 MB,yes
+PL-PLAY-CON-5,PL-PLAY,PLAY,PL,Smart 5 GB (demo),consumer,postpaid,5,300,unlimited,5,25.99,21.13,PLN,23,0,6.99,yes,Smart 5 GB,yes
+PL-PLAY-CON-UNL,PL-PLAY,PLAY,PL,Smart Unlimited (demo),consumer,postpaid,unlimited,unlimited,unlimited,22,62.99,51.21,PLN,23,24,6.99,yes,Smart Unlimited,yes

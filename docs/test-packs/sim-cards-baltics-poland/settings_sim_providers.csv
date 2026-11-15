@@ -1,0 +1,27 @@
+name,email,default_plan,country_code,operator_id,prepaid
+Telia LT,sim-orders+telia-lt@example.com,Business S 10 GB,LT,LT-TELIA,no
+Bitė LT,sim-orders+bite-lt@example.com,Business S 10 GB,LT,LT-BITE,no
+Tele2 LT,sim-orders+tele2-lt@example.com,Business S 10 GB,LT,LT-TELE2,no
+LMT,sim-orders+lmt@example.com,Business S 10 GB,LV,LV-LMT,no
+Tele2 LV,sim-orders+tele2-lv@example.com,Business S 10 GB,LV,LV-TELE2,no
+Bite LV,sim-orders+bite-lv@example.com,Business S 10 GB,LV,LV-BITE,no
+Telia EE,sim-orders+telia-ee@example.com,Business S 10 GB,EE,EE-TELIA,no
+Elisa EE,sim-orders+elisa-ee@example.com,Business S 10 GB,EE,EE-ELISA,no
+Tele2 EE,sim-orders+tele2-ee@example.com,Business S 10 GB,EE,EE-TELE2,no
+Plus,sim-orders+plus@example.com,Business S 10 GB,PL,PL-PLUS,no
+T-Mobile PL,sim-orders+t-mobile-pl@example.com,Business S 10 GB,PL,PL-TMOBILE,no
+Orange PL,sim-orders+orange-pl@example.com,Business S 10 GB,PL,PL-ORANGE,no
+Play,sim-orders+play@example.com,Business S 10 GB,PL,PL-PLAY,no
+Ežys,sim-orders+ezys@example.com,Ežys prepaid,LT,LT-TELIA,yes
+Labas,sim-orders+labas@example.com,Labas prepaid,LT,LT-BITE,yes
+Pildyk,sim-orders+pildyk@example.com,Pildyk prepaid,LT,LT-TELE2,yes
+LMT Okarte,sim-orders+lmt-okarte@example.com,LMT Okarte prepaid,LV,LV-LMT,yes
+Zelta Zivtiņa,sim-orders+zelta-zivtina@example.com,Zelta Zivtiņa prepaid,LV,LV-TELE2,yes
+Bites Karte,sim-orders+bites-karte@example.com,Bites Karte prepaid,LV,LV-BITE,yes
+Telia kõnekaart,sim-orders+telia-konekaart@example.com,Telia kõnekaart prepaid,EE,EE-TELIA,yes
+Elisa kõnekaart,sim-orders+elisa-konekaart@example.com,Elisa kõnekaart prepaid,EE,EE-ELISA,yes
+Smart,sim-orders+smart@example.com,Smart prepaid,EE,EE-TELE2,yes
+Plush,sim-orders+plush@example.com,Plush prepaid,PL,PL-PLUS,yes
+Heyah,sim-orders+heyah@example.com,Heyah prepaid,PL,PL-TMOBILE,yes
+nju mobile,sim-orders+nju-mobile@example.com,nju mobile prepaid,PL,PL-ORANGE,yes
+Virgin Mobile,sim-orders+virgin-mobile@example.com,Virgin Mobile prepaid,PL,PL-PLAY,yes

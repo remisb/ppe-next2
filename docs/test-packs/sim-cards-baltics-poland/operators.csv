@@ -1,0 +1,14 @@
+operator_id,country_code,country,operator,legal_entity,mcc_mnc,network,website,ppe_provider_name,dialling_code,currency,vat_rate_pct,iccid_prefix
+LT-TELIA,LT,Lithuania,Telia,"Telia Lietuva, AB",246-01,MNO,https://www.telia.lt,Telia LT,+370,EUR,21,8937001
+LT-BITE,LT,Lithuania,Bitė,UAB Bitė Lietuva,246-02,MNO,https://www.bite.lt,Bitė LT,+370,EUR,21,8937002
+LT-TELE2,LT,Lithuania,Tele2,UAB Tele2,246-03,MNO,https://www.tele2.lt,Tele2 LT,+370,EUR,21,8937003
+LV-LMT,LV,Latvia,LMT,Latvijas Mobilais Telefons SIA,247-01,MNO,https://www.lmt.lv,LMT,+371,EUR,21,8937101
+LV-TELE2,LV,Latvia,Tele2,Tele2 SIA,247-02,MNO,https://www.tele2.lv,Tele2 LV,+371,EUR,21,8937102
+LV-BITE,LV,Latvia,Bite,Bite Latvija SIA,247-05,MNO,https://www.bite.lv,Bite LV,+371,EUR,21,8937105
+EE-TELIA,EE,Estonia,Telia,Telia Eesti AS,248-01,MNO,https://www.telia.ee,Telia EE,+372,EUR,24,8937201
+EE-ELISA,EE,Estonia,Elisa,Elisa Eesti AS,248-02,MNO,https://www.elisa.ee,Elisa EE,+372,EUR,24,8937202
+EE-TELE2,EE,Estonia,Tele2,Tele2 Eesti AS,248-03,MNO,https://www.tele2.ee,Tele2 EE,+372,EUR,24,8937203
+PL-PLUS,PL,Poland,Plus,Polkomtel sp. z o.o.,260-01,MNO,https://www.plus.pl,Plus,+48,PLN,23,894801
+PL-TMOBILE,PL,Poland,T-Mobile,T-Mobile Polska S.A.,260-02,MNO,https://www.t-mobile.pl,T-Mobile PL,+48,PLN,23,894802
+PL-ORANGE,PL,Poland,Orange,Orange Polska S.A.,260-03,MNO,https://www.orange.pl,Orange PL,+48,PLN,23,894803
+PL-PLAY,PL,Poland,Play,P4 sp. z o.o.,260-06,MNO,https://www.play.pl,Play,+48,PLN,23,894806

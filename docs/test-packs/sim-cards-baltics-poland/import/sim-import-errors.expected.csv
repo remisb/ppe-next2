@@ -1,0 +1,7 @@
+sim_no,phone_no,provider,employee_name,connection_status,problem
+8937002999000000014,+370 688 32413,Bitė LT,Jonas Petraitis,Available,Available with a holder is refused
+8937002999000000022,+370 696 84539,Bitė LT,Nobody Unknown,Active,no such employee
+8937105999000000010,+371 2790 5566,Bite LV,,Suspended,unknown status
+8937 0011 9900 0000 020,+371 2981 7649,Tele2 LV,,Active,SIM No. already registered (after the good import)
+8937203999000000011,+372 abc 1234,Tele2 EE,,Active,not a phone number
+8948019990000000011,+48 526 833 524,Polsat Box Go,,Active,"provider not in Settings: noted, not refused"

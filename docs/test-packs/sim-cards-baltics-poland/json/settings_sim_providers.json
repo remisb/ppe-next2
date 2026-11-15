@@ -1,0 +1,210 @@
+[
+  {
+    "name": "Telia LT",
+    "email": "sim-orders+telia-lt@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LT",
+    "operator_id": "LT-TELIA",
+    "prepaid": "no"
+  },
+  {
+    "name": "Bitė LT",
+    "email": "sim-orders+bite-lt@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LT",
+    "operator_id": "LT-BITE",
+    "prepaid": "no"
+  },
+  {
+    "name": "Tele2 LT",
+    "email": "sim-orders+tele2-lt@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LT",
+    "operator_id": "LT-TELE2",
+    "prepaid": "no"
+  },
+  {
+    "name": "LMT",
+    "email": "sim-orders+lmt@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LV",
+    "operator_id": "LV-LMT",
+    "prepaid": "no"
+  },
+  {
+    "name": "Tele2 LV",
+    "email": "sim-orders+tele2-lv@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LV",
+    "operator_id": "LV-TELE2",
+    "prepaid": "no"
+  },
+  {
+    "name": "Bite LV",
+    "email": "sim-orders+bite-lv@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "LV",
+    "operator_id": "LV-BITE",
+    "prepaid": "no"
+  },
+  {
+    "name": "Telia EE",
+    "email": "sim-orders+telia-ee@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "EE",
+    "operator_id": "EE-TELIA",
+    "prepaid": "no"
+  },
+  {
+    "name": "Elisa EE",
+    "email": "sim-orders+elisa-ee@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "EE",
+    "operator_id": "EE-ELISA",
+    "prepaid": "no"
+  },
+  {
+    "name": "Tele2 EE",
+    "email": "sim-orders+tele2-ee@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "EE",
+    "operator_id": "EE-TELE2",
+    "prepaid": "no"
+  },
+  {
+    "name": "Plus",
+    "email": "sim-orders+plus@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "PL",
+    "operator_id": "PL-PLUS",
+    "prepaid": "no"
+  },
+  {
+    "name": "T-Mobile PL",
+    "email": "sim-orders+t-mobile-pl@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "PL",
+    "operator_id": "PL-TMOBILE",
+    "prepaid": "no"
+  },
+  {
+    "name": "Orange PL",
+    "email": "sim-orders+orange-pl@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "PL",
+    "operator_id": "PL-ORANGE",
+    "prepaid": "no"
+  },
+  {
+    "name": "Play",
+    "email": "sim-orders+play@example.com",
+    "default_plan": "Business S 10 GB",
+    "country_code": "PL",
+    "operator_id": "PL-PLAY",
+    "prepaid": "no"
+  },
+  {
+    "name": "Ežys",
+    "email": "sim-orders+ezys@example.com",
+    "default_plan": "Ežys prepaid",
+    "country_code": "LT",
+    "operator_id": "LT-TELIA",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Labas",
+    "email": "sim-orders+labas@example.com",
+    "default_plan": "Labas prepaid",
+    "country_code": "LT",
+    "operator_id": "LT-BITE",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Pildyk",
+    "email": "sim-orders+pildyk@example.com",
+    "default_plan": "Pildyk prepaid",
+    "country_code": "LT",
+    "operator_id": "LT-TELE2",
+    "prepaid": "yes"
+  },
+  {
+    "name": "LMT Okarte",
+    "email": "sim-orders+lmt-okarte@example.com",
+    "default_plan": "LMT Okarte prepaid",
+    "country_code": "LV",
+    "operator_id": "LV-LMT",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Zelta Zivtiņa",
+    "email": "sim-orders+zelta-zivtina@example.com",
+    "default_plan": "Zelta Zivtiņa prepaid",
+    "country_code": "LV",
+    "operator_id": "LV-TELE2",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Bites Karte",
+    "email": "sim-orders+bites-karte@example.com",
+    "default_plan": "Bites Karte prepaid",
+    "country_code": "LV",
+    "operator_id": "LV-BITE",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Telia kõnekaart",
+    "email": "sim-orders+telia-konekaart@example.com",
+    "default_plan": "Telia kõnekaart prepaid",
+    "country_code": "EE",
+    "operator_id": "EE-TELIA",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Elisa kõnekaart",
+    "email": "sim-orders+elisa-konekaart@example.com",
+    "default_plan": "Elisa kõnekaart prepaid",
+    "country_code": "EE",
+    "operator_id": "EE-ELISA",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Smart",
+    "email": "sim-orders+smart@example.com",
+    "default_plan": "Smart prepaid",
+    "country_code": "EE",
+    "operator_id": "EE-TELE2",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Plush",
+    "email": "sim-orders+plush@example.com",
+    "default_plan": "Plush prepaid",
+    "country_code": "PL",
+    "operator_id": "PL-PLUS",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Heyah",
+    "email": "sim-orders+heyah@example.com",
+    "default_plan": "Heyah prepaid",
+    "country_code": "PL",
+    "operator_id": "PL-TMOBILE",
+    "prepaid": "yes"
+  },
+  {
+    "name": "nju mobile",
+    "email": "sim-orders+nju-mobile@example.com",
+    "default_plan": "nju mobile prepaid",
+    "country_code": "PL",
+    "operator_id": "PL-ORANGE",
+    "prepaid": "yes"
+  },
+  {
+    "name": "Virgin Mobile",
+    "email": "sim-orders+virgin-mobile@example.com",
+    "default_plan": "Virgin Mobile prepaid",
+    "country_code": "PL",
+    "operator_id": "PL-PLAY",
+    "prepaid": "yes"
+  }
+]

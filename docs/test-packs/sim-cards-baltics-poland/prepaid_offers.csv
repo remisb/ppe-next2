@@ -1,0 +1,66 @@
+offer_id,brand_id,operator_id,country_code,brand,offer_name,offer_type,data_gb,minutes,sms,validity_days,price,included_credit,currency,vat_rate_pct,eu_roaming,registration_required,esim,is_demo
+EZYS-START,EZYS,LT-TELIA,LT,Ežys,Starter pack (demo),starter,1,50,50,180,2.99,2.0,EUR,21,yes,yes,no,yes
+EZYS-D7,EZYS,LT-TELIA,LT,Ežys,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.95,0,EUR,21,yes,yes,no,yes
+EZYS-M30,EZYS,LT-TELIA,LT,Ežys,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,6.99,0,EUR,21,yes,yes,no,yes
+EZYS-UNL30,EZYS,LT-TELIA,LT,Ežys,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,11.99,0,EUR,21,yes,yes,no,yes
+EZYS-TOPUP10,EZYS,LT-TELIA,LT,Ežys,Top-up 10 (demo),top-up,0,0,0,180,10.0,10.0,EUR,21,n/a,yes,no,yes
+LABAS-START,LABAS,LT-BITE,LT,Labas,Starter pack (demo),starter,1,50,50,180,2.99,2.0,EUR,21,yes,yes,no,yes
+LABAS-D7,LABAS,LT-BITE,LT,Labas,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.96,0,EUR,21,yes,yes,no,yes
+LABAS-M30,LABAS,LT-BITE,LT,Labas,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,6.99,0,EUR,21,yes,yes,no,yes
+LABAS-UNL30,LABAS,LT-BITE,LT,Labas,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,10.99,0,EUR,21,yes,yes,no,yes
+LABAS-TOPUP10,LABAS,LT-BITE,LT,Labas,Top-up 10 (demo),top-up,0,0,0,180,10.0,10.0,EUR,21,n/a,yes,no,yes
+PILDYK-START,PILDYK,LT-TELE2,LT,Pildyk,Starter pack (demo),starter,1,50,50,180,2.87,2.0,EUR,21,yes,yes,no,yes
+PILDYK-D7,PILDYK,LT-TELE2,LT,Pildyk,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,21,yes,yes,no,yes
+PILDYK-M30,PILDYK,LT-TELE2,LT,Pildyk,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,6.99,0,EUR,21,yes,yes,no,yes
+PILDYK-UNL30,PILDYK,LT-TELE2,LT,Pildyk,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,11.99,0,EUR,21,yes,yes,no,yes
+PILDYK-TOPUP10,PILDYK,LT-TELE2,LT,Pildyk,Top-up 10 (demo),top-up,0,0,0,180,10.0,10.0,EUR,21,n/a,yes,no,yes
+OKARTE-START,OKARTE,LV-LMT,LV,LMT Okarte,Starter pack (demo),starter,1,50,50,180,2.99,2.12,EUR,21,yes,yes,no,yes
+OKARTE-D7,OKARTE,LV-LMT,LV,LMT Okarte,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,21,yes,yes,no,yes
+OKARTE-M30,OKARTE,LV-LMT,LV,LMT Okarte,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,7.99,0,EUR,21,yes,yes,no,yes
+OKARTE-UNL30,OKARTE,LV-LMT,LV,LMT Okarte,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,11.99,0,EUR,21,yes,yes,no,yes
+OKARTE-TOPUP10,OKARTE,LV-LMT,LV,LMT Okarte,Top-up 10 (demo),top-up,0,0,0,180,10.6,10.6,EUR,21,n/a,yes,no,yes
+ZZ-START,ZZ,LV-TELE2,LV,Zelta Zivtiņa,Starter pack (demo),starter,1,50,50,180,2.99,2.12,EUR,21,yes,yes,no,yes
+ZZ-D7,ZZ,LV-TELE2,LV,Zelta Zivtiņa,Data 7 days 10 GB (demo),bundle,10,0,0,7,3.0,0,EUR,21,yes,yes,no,yes
+ZZ-M30,ZZ,LV-TELE2,LV,Zelta Zivtiņa,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,6.99,0,EUR,21,yes,yes,no,yes
+ZZ-UNL30,ZZ,LV-TELE2,LV,Zelta Zivtiņa,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,11.99,0,EUR,21,yes,yes,no,yes
+ZZ-TOPUP10,ZZ,LV-TELE2,LV,Zelta Zivtiņa,Top-up 10 (demo),top-up,0,0,0,180,10.6,10.6,EUR,21,n/a,yes,no,yes
+BITE-KARTE-START,BITE-KARTE,LV-BITE,LV,Bites Karte,Starter pack (demo),starter,1,50,50,180,2.99,2.12,EUR,21,yes,yes,no,yes
+BITE-KARTE-D7,BITE-KARTE,LV-BITE,LV,Bites Karte,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,21,yes,yes,no,yes
+BITE-KARTE-M30,BITE-KARTE,LV-BITE,LV,Bites Karte,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,6.99,0,EUR,21,yes,yes,no,yes
+BITE-KARTE-UNL30,BITE-KARTE,LV-BITE,LV,Bites Karte,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,12.99,0,EUR,21,yes,yes,no,yes
+BITE-KARTE-TOPUP10,BITE-KARTE,LV-BITE,LV,Bites Karte,Top-up 10 (demo),top-up,0,0,0,180,10.6,10.6,EUR,21,n/a,yes,no,yes
+TELIA-EE-PP-START,TELIA-EE-PP,EE-TELIA,EE,Telia kõnekaart,Starter pack (demo),starter,1,50,50,180,2.99,2.24,EUR,24,yes,yes,yes,yes
+TELIA-EE-PP-D7,TELIA-EE-PP,EE-TELIA,EE,Telia kõnekaart,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,24,yes,yes,yes,yes
+TELIA-EE-PP-M30,TELIA-EE-PP,EE-TELIA,EE,Telia kõnekaart,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,7.99,0,EUR,24,yes,yes,yes,yes
+TELIA-EE-PP-UNL30,TELIA-EE-PP,EE-TELIA,EE,Telia kõnekaart,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,13.99,0,EUR,24,yes,yes,yes,yes
+TELIA-EE-PP-TOPUP10,TELIA-EE-PP,EE-TELIA,EE,Telia kõnekaart,Top-up 10 (demo),top-up,0,0,0,180,11.2,11.2,EUR,24,n/a,yes,yes,yes
+ELISA-EE-PP-START,ELISA-EE-PP,EE-ELISA,EE,Elisa kõnekaart,Starter pack (demo),starter,1,50,50,180,2.99,2.24,EUR,24,yes,yes,yes,yes
+ELISA-EE-PP-D7,ELISA-EE-PP,EE-ELISA,EE,Elisa kõnekaart,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,24,yes,yes,yes,yes
+ELISA-EE-PP-M30,ELISA-EE-PP,EE-ELISA,EE,Elisa kõnekaart,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,7.99,0,EUR,24,yes,yes,yes,yes
+ELISA-EE-PP-UNL30,ELISA-EE-PP,EE-ELISA,EE,Elisa kõnekaart,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,12.99,0,EUR,24,yes,yes,yes,yes
+ELISA-EE-PP-TOPUP10,ELISA-EE-PP,EE-ELISA,EE,Elisa kõnekaart,Top-up 10 (demo),top-up,0,0,0,180,11.2,11.2,EUR,24,n/a,yes,yes,yes
+SMART-EE-START,SMART-EE,EE-TELE2,EE,Smart,Starter pack (demo),starter,1,50,50,180,2.99,2.24,EUR,24,yes,yes,yes,yes
+SMART-EE-D7,SMART-EE,EE-TELE2,EE,Smart,Data 7 days 10 GB (demo),bundle,10,0,0,7,2.99,0,EUR,24,yes,yes,yes,yes
+SMART-EE-M30,SMART-EE,EE-TELE2,EE,Smart,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,7.99,0,EUR,24,yes,yes,yes,yes
+SMART-EE-UNL30,SMART-EE,EE-TELE2,EE,Smart,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,13.99,0,EUR,24,yes,yes,yes,yes
+SMART-EE-TOPUP10,SMART-EE,EE-TELE2,EE,Smart,Top-up 10 (demo),top-up,0,0,0,180,11.2,11.2,EUR,24,n/a,yes,yes,yes
+PLUSH-START,PLUSH,PL-PLUS,PL,Plush,Starter pack (demo),starter,1,50,50,180,10.99,7.2,PLN,23,yes,yes,yes,yes
+PLUSH-D7,PLUSH,PL-PLUS,PL,Plush,Data 7 days 10 GB (demo),bundle,10,0,0,7,9.99,0,PLN,23,yes,yes,yes,yes
+PLUSH-M30,PLUSH,PL-PLUS,PL,Plush,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,25.99,0,PLN,23,yes,yes,yes,yes
+PLUSH-UNL30,PLUSH,PL-PLUS,PL,Plush,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,41.99,0,PLN,23,yes,yes,yes,yes
+PLUSH-TOPUP10,PLUSH,PL-PLUS,PL,Plush,Top-up 10 (demo),top-up,0,0,0,180,36.0,36.0,PLN,23,n/a,yes,yes,yes
+HEYAH-START,HEYAH,PL-TMOBILE,PL,Heyah,Starter pack (demo),starter,1,50,50,180,11.99,7.2,PLN,23,yes,yes,yes,yes
+HEYAH-D7,HEYAH,PL-TMOBILE,PL,Heyah,Data 7 days 10 GB (demo),bundle,10,0,0,7,9.99,0,PLN,23,yes,yes,yes,yes
+HEYAH-M30,HEYAH,PL-TMOBILE,PL,Heyah,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,24.99,0,PLN,23,yes,yes,yes,yes
+HEYAH-UNL30,HEYAH,PL-TMOBILE,PL,Heyah,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,44.99,0,PLN,23,yes,yes,yes,yes
+HEYAH-TOPUP10,HEYAH,PL-TMOBILE,PL,Heyah,Top-up 10 (demo),top-up,0,0,0,180,36.0,36.0,PLN,23,n/a,yes,yes,yes
+NJU-START,NJU,PL-ORANGE,PL,nju mobile,Starter pack (demo),starter,1,50,50,180,11.99,7.2,PLN,23,yes,yes,yes,yes
+NJU-D7,NJU,PL-ORANGE,PL,nju mobile,Data 7 days 10 GB (demo),bundle,10,0,0,7,10.99,0,PLN,23,yes,yes,yes,yes
+NJU-M30,NJU,PL-ORANGE,PL,nju mobile,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,26.99,0,PLN,23,yes,yes,yes,yes
+NJU-UNL30,NJU,PL-ORANGE,PL,nju mobile,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,42.99,0,PLN,23,yes,yes,yes,yes
+NJU-TOPUP10,NJU,PL-ORANGE,PL,nju mobile,Top-up 10 (demo),top-up,0,0,0,180,36.0,36.0,PLN,23,n/a,yes,yes,yes
+VIRGIN-PL-START,VIRGIN-PL,PL-PLAY,PL,Virgin Mobile,Starter pack (demo),starter,1,50,50,180,10.99,7.2,PLN,23,yes,yes,yes,yes
+VIRGIN-PL-D7,VIRGIN-PL,PL-PLAY,PL,Virgin Mobile,Data 7 days 10 GB (demo),bundle,10,0,0,7,10.99,0,PLN,23,yes,yes,yes,yes
+VIRGIN-PL-M30,VIRGIN-PL,PL-PLAY,PL,Virgin Mobile,Month 20 GB (demo),bundle,20,unlimited,unlimited,30,24.99,0,PLN,23,yes,yes,yes,yes
+VIRGIN-PL-UNL30,VIRGIN-PL,PL-PLAY,PL,Virgin Mobile,Month Unlimited (demo),bundle,unlimited,unlimited,unlimited,30,40.99,0,PLN,23,yes,yes,yes,yes
+VIRGIN-PL-TOPUP10,VIRGIN-PL,PL-PLAY,PL,Virgin Mobile,Top-up 10 (demo),top-up,0,0,0,180,36.0,36.0,PLN,23,n/a,yes,yes,yes

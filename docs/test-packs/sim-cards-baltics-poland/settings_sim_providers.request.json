@@ -1,0 +1,136 @@
+{
+  "providers": [
+    {
+      "name": "Telia LT",
+      "email": "sim-orders+telia-lt@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Bitė LT",
+      "email": "sim-orders+bite-lt@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Tele2 LT",
+      "email": "sim-orders+tele2-lt@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "LMT",
+      "email": "sim-orders+lmt@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Tele2 LV",
+      "email": "sim-orders+tele2-lv@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Bite LV",
+      "email": "sim-orders+bite-lv@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Telia EE",
+      "email": "sim-orders+telia-ee@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Elisa EE",
+      "email": "sim-orders+elisa-ee@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Tele2 EE",
+      "email": "sim-orders+tele2-ee@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Plus",
+      "email": "sim-orders+plus@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "T-Mobile PL",
+      "email": "sim-orders+t-mobile-pl@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Orange PL",
+      "email": "sim-orders+orange-pl@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Play",
+      "email": "sim-orders+play@example.com",
+      "default_plan": "Business S 10 GB"
+    },
+    {
+      "name": "Ežys",
+      "email": "sim-orders+ezys@example.com",
+      "default_plan": "Ežys prepaid"
+    },
+    {
+      "name": "Labas",
+      "email": "sim-orders+labas@example.com",
+      "default_plan": "Labas prepaid"
+    },
+    {
+      "name": "Pildyk",
+      "email": "sim-orders+pildyk@example.com",
+      "default_plan": "Pildyk prepaid"
+    },
+    {
+      "name": "LMT Okarte",
+      "email": "sim-orders+lmt-okarte@example.com",
+      "default_plan": "LMT Okarte prepaid"
+    },
+    {
+      "name": "Zelta Zivtiņa",
+      "email": "sim-orders+zelta-zivtina@example.com",
+      "default_plan": "Zelta Zivtiņa prepaid"
+    },
+    {
+      "name": "Bites Karte",
+      "email": "sim-orders+bites-karte@example.com",
+      "default_plan": "Bites Karte prepaid"
+    },
+    {
+      "name": "Telia kõnekaart",
+      "email": "sim-orders+telia-konekaart@example.com",
+      "default_plan": "Telia kõnekaart prepaid"
+    },
+    {
+      "name": "Elisa kõnekaart",
+      "email": "sim-orders+elisa-konekaart@example.com",
+      "default_plan": "Elisa kõnekaart prepaid"
+    },
+    {
+      "name": "Smart",
+      "email": "sim-orders+smart@example.com",
+      "default_plan": "Smart prepaid"
+    },
+    {
+      "name": "Plush",
+      "email": "sim-orders+plush@example.com",
+      "default_plan": "Plush prepaid"
+    },
+    {
+      "name": "Heyah",
+      "email": "sim-orders+heyah@example.com",
+      "default_plan": "Heyah prepaid"
+    },
+    {
+      "name": "nju mobile",
+      "email": "sim-orders+nju-mobile@example.com",
+      "default_plan": "nju mobile prepaid"
+    },
+    {
+      "name": "Virgin Mobile",
+      "email": "sim-orders+virgin-mobile@example.com",
+      "default_plan": "Virgin Mobile prepaid"
+    }
+  ],
+  "default": "Telia LT",
+  "default_non_return_value_cents": 3000
+}

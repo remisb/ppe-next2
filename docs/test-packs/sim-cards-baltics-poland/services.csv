@@ -1,0 +1,157 @@
+service_id,operator_id,country_code,service_name,category,billing,price,price_ex_vat,currency,applies_to,is_demo
+LT-TELIA-DATA5,LT-TELIA,LT,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LT-TELIA-ROAM-EU10,LT-TELIA,LT,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELIA-ROAM-Z2,LT-TELIA,LT,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,9.99,8.26,EUR,"postpaid, prepaid",yes
+LT-TELIA-INTL100,LT-TELIA,LT,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELIA-ESIM,LT-TELIA,LT,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELIA-SIMREP,LT-TELIA,LT,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELIA-BLOCK,LT-TELIA,LT,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELIA-PORT,LT-TELIA,LT,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELIA-MULTI,LT-TELIA,LT,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.79,2.31,EUR,"postpaid, prepaid",yes
+LT-TELIA-APN-IP,LT-TELIA,LT,Private APN with fixed IP (demo),business,monthly,8.99,7.43,EUR,postpaid,yes
+LT-TELIA-BAR,LT-TELIA,LT,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LT-TELIA-SUPPORT,LT-TELIA,LT,Priority business support (demo),business,monthly,5.99,4.95,EUR,postpaid,yes
+LT-BITE-DATA5,LT-BITE,LT,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LT-BITE-ROAM-EU10,LT-BITE,LT,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-BITE-ROAM-Z2,LT-BITE,LT,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,8.99,7.43,EUR,"postpaid, prepaid",yes
+LT-BITE-INTL100,LT-BITE,LT,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-BITE-ESIM,LT-BITE,LT,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-BITE-SIMREP,LT-BITE,LT,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-BITE-BLOCK,LT-BITE,LT,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-BITE-PORT,LT-BITE,LT,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-BITE-MULTI,LT-BITE,LT,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.99,2.47,EUR,"postpaid, prepaid",yes
+LT-BITE-APN-IP,LT-BITE,LT,Private APN with fixed IP (demo),business,monthly,9.99,8.26,EUR,postpaid,yes
+LT-BITE-BAR,LT-BITE,LT,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LT-BITE-SUPPORT,LT-BITE,LT,Priority business support (demo),business,monthly,5.99,4.95,EUR,postpaid,yes
+LT-TELE2-DATA5,LT-TELE2,LT,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LT-TELE2-ROAM-EU10,LT-TELE2,LT,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELE2-ROAM-Z2,LT-TELE2,LT,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,8.99,7.43,EUR,"postpaid, prepaid",yes
+LT-TELE2-INTL100,LT-TELE2,LT,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELE2-ESIM,LT-TELE2,LT,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELE2-SIMREP,LT-TELE2,LT,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LT-TELE2-BLOCK,LT-TELE2,LT,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELE2-PORT,LT-TELE2,LT,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LT-TELE2-MULTI,LT-TELE2,LT,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.93,2.42,EUR,"postpaid, prepaid",yes
+LT-TELE2-APN-IP,LT-TELE2,LT,Private APN with fixed IP (demo),business,monthly,9.99,8.26,EUR,postpaid,yes
+LT-TELE2-BAR,LT-TELE2,LT,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LT-TELE2-SUPPORT,LT-TELE2,LT,Priority business support (demo),business,monthly,6.99,5.78,EUR,postpaid,yes
+LV-LMT-DATA5,LV-LMT,LV,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LV-LMT-ROAM-EU10,LV-LMT,LV,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-LMT-ROAM-Z2,LV-LMT,LV,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,9.99,8.26,EUR,"postpaid, prepaid",yes
+LV-LMT-INTL100,LV-LMT,LV,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-LMT-ESIM,LV-LMT,LV,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-LMT-SIMREP,LV-LMT,LV,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-LMT-BLOCK,LV-LMT,LV,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-LMT-PORT,LV-LMT,LV,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-LMT-MULTI,LV-LMT,LV,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.99,2.47,EUR,"postpaid, prepaid",yes
+LV-LMT-APN-IP,LV-LMT,LV,Private APN with fixed IP (demo),business,monthly,10.99,9.08,EUR,postpaid,yes
+LV-LMT-BAR,LV-LMT,LV,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LV-LMT-SUPPORT,LV-LMT,LV,Priority business support (demo),business,monthly,6.99,5.78,EUR,postpaid,yes
+LV-TELE2-DATA5,LV-TELE2,LV,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LV-TELE2-ROAM-EU10,LV-TELE2,LV,EU roaming extra 10 GB (demo),roaming,one-off,5.99,4.95,EUR,"postpaid, prepaid",yes
+LV-TELE2-ROAM-Z2,LV-TELE2,LV,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,9.99,8.26,EUR,"postpaid, prepaid",yes
+LV-TELE2-INTL100,LV-TELE2,LV,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-TELE2-ESIM,LV-TELE2,LV,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-TELE2-SIMREP,LV-TELE2,LV,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-TELE2-BLOCK,LV-TELE2,LV,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-TELE2-PORT,LV-TELE2,LV,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-TELE2-MULTI,LV-TELE2,LV,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.91,2.4,EUR,"postpaid, prepaid",yes
+LV-TELE2-APN-IP,LV-TELE2,LV,Private APN with fixed IP (demo),business,monthly,9.99,8.26,EUR,postpaid,yes
+LV-TELE2-BAR,LV-TELE2,LV,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LV-TELE2-SUPPORT,LV-TELE2,LV,Priority business support (demo),business,monthly,5.99,4.95,EUR,postpaid,yes
+LV-BITE-DATA5,LV-BITE,LV,Extra data 5 GB (demo),data add-on,one-off,3.99,3.3,EUR,"postpaid, prepaid",yes
+LV-BITE-ROAM-EU10,LV-BITE,LV,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-BITE-ROAM-Z2,LV-BITE,LV,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,10.99,9.08,EUR,"postpaid, prepaid",yes
+LV-BITE-INTL100,LV-BITE,LV,International calls 100 min (demo),calls,monthly,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-BITE-ESIM,LV-BITE,LV,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-BITE-SIMREP,LV-BITE,LV,SIM card replacement (demo),SIM,one-off,4.99,4.12,EUR,"postpaid, prepaid",yes
+LV-BITE-BLOCK,LV-BITE,LV,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-BITE-PORT,LV-BITE,LV,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+LV-BITE-MULTI,LV-BITE,LV,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.86,2.36,EUR,"postpaid, prepaid",yes
+LV-BITE-APN-IP,LV-BITE,LV,Private APN with fixed IP (demo),business,monthly,11.99,9.91,EUR,postpaid,yes
+LV-BITE-BAR,LV-BITE,LV,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+LV-BITE-SUPPORT,LV-BITE,LV,Priority business support (demo),business,monthly,5.99,4.95,EUR,postpaid,yes
+EE-TELIA-DATA5,EE-TELIA,EE,Extra data 5 GB (demo),data add-on,one-off,3.99,3.22,EUR,"postpaid, prepaid",yes
+EE-TELIA-ROAM-EU10,EE-TELIA,EE,EU roaming extra 10 GB (demo),roaming,one-off,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELIA-ROAM-Z2,EE-TELIA,EE,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,10.99,8.86,EUR,"postpaid, prepaid",yes
+EE-TELIA-INTL100,EE-TELIA,EE,International calls 100 min (demo),calls,monthly,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELIA-ESIM,EE-TELIA,EE,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELIA-SIMREP,EE-TELIA,EE,SIM card replacement (demo),SIM,one-off,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELIA-BLOCK,EE-TELIA,EE,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELIA-PORT,EE-TELIA,EE,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELIA-MULTI,EE-TELIA,EE,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.99,2.41,EUR,"postpaid, prepaid",yes
+EE-TELIA-APN-IP,EE-TELIA,EE,Private APN with fixed IP (demo),business,monthly,9.99,8.06,EUR,postpaid,yes
+EE-TELIA-BAR,EE-TELIA,EE,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+EE-TELIA-SUPPORT,EE-TELIA,EE,Priority business support (demo),business,monthly,6.99,5.64,EUR,postpaid,yes
+EE-ELISA-DATA5,EE-ELISA,EE,Extra data 5 GB (demo),data add-on,one-off,3.99,3.22,EUR,"postpaid, prepaid",yes
+EE-ELISA-ROAM-EU10,EE-ELISA,EE,EU roaming extra 10 GB (demo),roaming,one-off,4.99,4.02,EUR,"postpaid, prepaid",yes
+EE-ELISA-ROAM-Z2,EE-ELISA,EE,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,11.99,9.67,EUR,"postpaid, prepaid",yes
+EE-ELISA-INTL100,EE-ELISA,EE,International calls 100 min (demo),calls,monthly,4.99,4.02,EUR,"postpaid, prepaid",yes
+EE-ELISA-ESIM,EE-ELISA,EE,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-ELISA-SIMREP,EE-ELISA,EE,SIM card replacement (demo),SIM,one-off,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-ELISA-BLOCK,EE-ELISA,EE,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-ELISA-PORT,EE-ELISA,EE,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-ELISA-MULTI,EE-ELISA,EE,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,3.99,3.22,EUR,"postpaid, prepaid",yes
+EE-ELISA-APN-IP,EE-ELISA,EE,Private APN with fixed IP (demo),business,monthly,11.99,9.67,EUR,postpaid,yes
+EE-ELISA-BAR,EE-ELISA,EE,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+EE-ELISA-SUPPORT,EE-ELISA,EE,Priority business support (demo),business,monthly,5.99,4.83,EUR,postpaid,yes
+EE-TELE2-DATA5,EE-TELE2,EE,Extra data 5 GB (demo),data add-on,one-off,4.99,4.02,EUR,"postpaid, prepaid",yes
+EE-TELE2-ROAM-EU10,EE-TELE2,EE,EU roaming extra 10 GB (demo),roaming,one-off,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELE2-ROAM-Z2,EE-TELE2,EE,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,9.99,8.06,EUR,"postpaid, prepaid",yes
+EE-TELE2-INTL100,EE-TELE2,EE,International calls 100 min (demo),calls,monthly,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELE2-ESIM,EE-TELE2,EE,eSIM activation (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELE2-SIMREP,EE-TELE2,EE,SIM card replacement (demo),SIM,one-off,5.99,4.83,EUR,"postpaid, prepaid",yes
+EE-TELE2-BLOCK,EE-TELE2,EE,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELE2-PORT,EE-TELE2,EE,Number porting in (demo),number,one-off,0.0,0.0,EUR,"postpaid, prepaid",yes
+EE-TELE2-MULTI,EE-TELE2,EE,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,2.99,2.41,EUR,"postpaid, prepaid",yes
+EE-TELE2-APN-IP,EE-TELE2,EE,Private APN with fixed IP (demo),business,monthly,11.99,9.67,EUR,postpaid,yes
+EE-TELE2-BAR,EE-TELE2,EE,Barring of premium numbers (demo),business,monthly,0.0,0.0,EUR,postpaid,yes
+EE-TELE2-SUPPORT,EE-TELE2,EE,Priority business support (demo),business,monthly,6.99,5.64,EUR,postpaid,yes
+PL-PLUS-DATA5,PL-PLUS,PL,Extra data 5 GB (demo),data add-on,one-off,13.99,11.37,PLN,"postpaid, prepaid",yes
+PL-PLUS-ROAM-EU10,PL-PLUS,PL,EU roaming extra 10 GB (demo),roaming,one-off,16.99,13.81,PLN,"postpaid, prepaid",yes
+PL-PLUS-ROAM-Z2,PL-PLUS,PL,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,34.99,28.45,PLN,"postpaid, prepaid",yes
+PL-PLUS-INTL100,PL-PLUS,PL,International calls 100 min (demo),calls,monthly,16.99,13.81,PLN,"postpaid, prepaid",yes
+PL-PLUS-ESIM,PL-PLUS,PL,eSIM activation (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLUS-SIMREP,PL-PLUS,PL,SIM card replacement (demo),SIM,one-off,16.99,13.81,PLN,"postpaid, prepaid",yes
+PL-PLUS-BLOCK,PL-PLUS,PL,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLUS-PORT,PL-PLUS,PL,Number porting in (demo),number,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLUS-MULTI,PL-PLUS,PL,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,10.99,8.93,PLN,"postpaid, prepaid",yes
+PL-PLUS-APN-IP,PL-PLUS,PL,Private APN with fixed IP (demo),business,monthly,38.99,31.7,PLN,postpaid,yes
+PL-PLUS-BAR,PL-PLUS,PL,Barring of premium numbers (demo),business,monthly,0.0,0.0,PLN,postpaid,yes
+PL-PLUS-SUPPORT,PL-PLUS,PL,Priority business support (demo),business,monthly,19.99,16.25,PLN,postpaid,yes
+PL-TMOBILE-DATA5,PL-TMOBILE,PL,Extra data 5 GB (demo),data add-on,one-off,14.99,12.19,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-ROAM-EU10,PL-TMOBILE,PL,EU roaming extra 10 GB (demo),roaming,one-off,16.99,13.81,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-ROAM-Z2,PL-TMOBILE,PL,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,35.99,29.26,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-INTL100,PL-TMOBILE,PL,International calls 100 min (demo),calls,monthly,18.99,15.44,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-ESIM,PL-TMOBILE,PL,eSIM activation (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-SIMREP,PL-TMOBILE,PL,SIM card replacement (demo),SIM,one-off,19.99,16.25,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-BLOCK,PL-TMOBILE,PL,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-PORT,PL-TMOBILE,PL,Number porting in (demo),number,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-MULTI,PL-TMOBILE,PL,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,11.99,9.75,PLN,"postpaid, prepaid",yes
+PL-TMOBILE-APN-IP,PL-TMOBILE,PL,Private APN with fixed IP (demo),business,monthly,33.99,27.63,PLN,postpaid,yes
+PL-TMOBILE-BAR,PL-TMOBILE,PL,Barring of premium numbers (demo),business,monthly,0.0,0.0,PLN,postpaid,yes
+PL-TMOBILE-SUPPORT,PL-TMOBILE,PL,Priority business support (demo),business,monthly,22.99,18.69,PLN,postpaid,yes
+PL-ORANGE-DATA5,PL-ORANGE,PL,Extra data 5 GB (demo),data add-on,one-off,13.99,11.37,PLN,"postpaid, prepaid",yes
+PL-ORANGE-ROAM-EU10,PL-ORANGE,PL,EU roaming extra 10 GB (demo),roaming,one-off,17.99,14.63,PLN,"postpaid, prepaid",yes
+PL-ORANGE-ROAM-Z2,PL-ORANGE,PL,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,34.99,28.45,PLN,"postpaid, prepaid",yes
+PL-ORANGE-INTL100,PL-ORANGE,PL,International calls 100 min (demo),calls,monthly,18.99,15.44,PLN,"postpaid, prepaid",yes
+PL-ORANGE-ESIM,PL-ORANGE,PL,eSIM activation (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-ORANGE-SIMREP,PL-ORANGE,PL,SIM card replacement (demo),SIM,one-off,18.99,15.44,PLN,"postpaid, prepaid",yes
+PL-ORANGE-BLOCK,PL-ORANGE,PL,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-ORANGE-PORT,PL-ORANGE,PL,Number porting in (demo),number,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-ORANGE-MULTI,PL-ORANGE,PL,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,11.99,9.75,PLN,"postpaid, prepaid",yes
+PL-ORANGE-APN-IP,PL-ORANGE,PL,Private APN with fixed IP (demo),business,monthly,38.99,31.7,PLN,postpaid,yes
+PL-ORANGE-BAR,PL-ORANGE,PL,Barring of premium numbers (demo),business,monthly,0.0,0.0,PLN,postpaid,yes
+PL-ORANGE-SUPPORT,PL-ORANGE,PL,Priority business support (demo),business,monthly,19.99,16.25,PLN,postpaid,yes
+PL-PLAY-DATA5,PL-PLAY,PL,Extra data 5 GB (demo),data add-on,one-off,12.99,10.56,PLN,"postpaid, prepaid",yes
+PL-PLAY-ROAM-EU10,PL-PLAY,PL,EU roaming extra 10 GB (demo),roaming,one-off,18.99,15.44,PLN,"postpaid, prepaid",yes
+PL-PLAY-ROAM-Z2,PL-PLAY,PL,"Roaming outside the EU, 1 GB (UK, CH, US) (demo)",roaming,one-off,32.99,26.82,PLN,"postpaid, prepaid",yes
+PL-PLAY-INTL100,PL-PLAY,PL,International calls 100 min (demo),calls,monthly,18.99,15.44,PLN,"postpaid, prepaid",yes
+PL-PLAY-ESIM,PL-PLAY,PL,eSIM activation (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLAY-SIMREP,PL-PLAY,PL,SIM card replacement (demo),SIM,one-off,17.99,14.63,PLN,"postpaid, prepaid",yes
+PL-PLAY-BLOCK,PL-PLAY,PL,Block a lost or stolen SIM (demo),SIM,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLAY-PORT,PL-PLAY,PL,Number porting in (demo),number,one-off,0.0,0.0,PLN,"postpaid, prepaid",yes
+PL-PLAY-MULTI,PL-PLAY,PL,"MultiSIM (second SIM, same number) (demo)",SIM,monthly,9.99,8.12,PLN,"postpaid, prepaid",yes
+PL-PLAY-APN-IP,PL-PLAY,PL,Private APN with fixed IP (demo),business,monthly,36.99,30.07,PLN,postpaid,yes
+PL-PLAY-BAR,PL-PLAY,PL,Barring of premium numbers (demo),business,monthly,0.0,0.0,PLN,postpaid,yes
+PL-PLAY-SUPPORT,PL-PLAY,PL,Priority business support (demo),business,monthly,20.99,17.07,PLN,postpaid,yes
