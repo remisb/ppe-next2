@@ -373,6 +373,42 @@ for name, oid, bid, pre in providers:
     add_manual.append({"sim_no": iccid(oid, 3), "provider": name, "phone_no": phone(op_by_id[oid][1]),
                        "country_code": op_by_id[oid][1], "prepaid": "yes" if pre else "no"})
 
+# ---------- sample SIM cards: one physical SIM per brand, and an eSIM where its plan or offer has one
+# (generated after everything above, so the other files keep their numbers)
+ALNUM = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+sim_samples = []
+for b in BRANDS:
+    bid, oid = b[0], b[1]
+    op = op_by_id[oid]
+    cc = op[1]
+    provider = PREPAID_PROVIDER.get(bid, op[6])
+    if b[4] == "prepaid":
+        offer = next(x for x in prepaid if x["offer_id"] == f"{bid}-M30")
+        plan_name, plan_type, price_, cur, esim_ok = offer["offer_name"].replace(" (demo)", ""), "prepaid", offer["price"], offer["currency"], offer["esim"] == "yes"
+        plan_label = f"{b[2]} prepaid"
+    else:
+        code = "CON-UNL" if bid == "ORANGE-FLEX" else "BIZ-M"
+        plan = next(x for x in plans if x["plan_id"] == f"{oid}-{code}")
+        plan_name, plan_type, price_, cur, esim_ok = plan["ppe_plan_label"], "postpaid", plan["monthly_price"], plan["currency"], plan["esim"] == "yes"
+        plan_label = plan_name
+    kinds = ["SIM (triple-cut)"] + (["eSIM"] if esim_ok else [])
+    for form in kinds:
+        sim = iccid(oid, 4)
+        mnc = op[4].split("-")
+        sim_samples.append({
+            "sample_id": f"SS-{len(sim_samples) + 1:03d}", "brand_id": bid, "brand": b[2], "kind": b[3],
+            "operator": op[2], "operator_id": oid, "country_code": cc, "provider": provider,
+            "form": form, "sim_no": sim, "phone_no": phone(cc),
+            "pin": f"{rng.randint(0, 9999):04d}", "puk": f"{rng.randint(0, 99999999):08d}",
+            "pin2": f"{rng.randint(0, 9999):04d}", "puk2": f"{rng.randint(0, 99999999):08d}",
+            "imsi": mnc[0] + mnc[1] + "99" + f"{rng.randint(0, 99999999):08d}",
+            "esim_activation_code": ("LPA:1$smdp.example.com$" + "".join(rng.choice(ALNUM) for _ in range(25))) if form == "eSIM" else "",
+            "plan": plan_label, "plan_type": plan_type, "price": price_, "currency": cur,
+            "price_period": "per month" if plan_type == "postpaid" else "per 30 days",
+            "connection_status": "Not Activated", "demo_badge_color": b[9], "demo_badge_text": "".join(w[0] for w in b[2].replace("-", " ").split())[:3].upper(),
+            "is_demo": "yes",
+        })
+
 # ---------- write
 OUT.mkdir(parents=True, exist_ok=True)
 (OUT / "import").mkdir(exist_ok=True)
@@ -391,7 +427,7 @@ def write_csv(path, rows, cols=None, delim=",", bom=False):
 DATASETS = {
     "operators": operators, "brands": brands, "plans": plans, "prepaid_offers": prepaid,
     "services": services, "settings_sim_providers": settings_providers, "sim_cards": sim_cards,
-    "scan_cards": scan_cards, "add_sim_manual": add_manual, "test_cases": T,
+    "scan_cards": scan_cards, "add_sim_manual": add_manual, "test_cases": T, "sim_samples": sim_samples,
 }
 for name, rows in DATASETS.items():
     write_csv(OUT / f"{name}.csv", rows)
@@ -488,3 +524,67 @@ for (const c of CARDS) {
 </script></body></html>
 """
 (OUT / "scan_cards.html").write_text(CARDS_HTML.replace("__CARDS__", json.dumps(scan_cards, ensure_ascii=False)))
+
+# ---------- sample SIM cards: an import file and a printable page (front and back of each card)
+write_csv(OUT / "import" / "sim-import-samples.csv", sim_samples, IMPORT_COLS)
+SAMPLES_HTML = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Sample SIM cards</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body { font: 13px/1.35 system-ui, sans-serif; margin: 16px; color: #111; background: #fff }
+  h1 { font-size: 18px; margin: 0 0 4px } h2 { font-size: 15px; margin: 18px 0 8px } p.note { margin: 0 0 12px; color: #444; max-width: 70ch }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178mm, 1fr)); gap: 6mm }
+  .pair { display: grid; grid-template-columns: 85.6mm 85.6mm; gap: 4mm; break-inside: avoid }
+  .card { width: 85.6mm; height: 54mm; box-sizing: border-box; border: 1px solid #999; border-radius: 3.2mm; padding: 3mm; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 1.5mm; background: #fff }
+  .band { position: absolute; inset: 0 0 auto 0; height: 9mm; }
+  .top { position: relative; display: flex; align-items: center; gap: 2mm; color: #fff; height: 4mm; }
+  .badge { font-weight: 800; font-size: 11px; letter-spacing: .03em; }
+  .brand { font-weight: 700; font-size: 12px; }
+  .tag { margin-left: auto; font-size: 7px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+  .row { display: flex; gap: 3mm; align-items: center; margin-top: 3mm }
+  .chip { width: 11mm; height: 8.5mm; border-radius: 1.5mm; background: linear-gradient(135deg, #e7d27c, #b8962e); border: 1px solid #8a6d1d; position: relative; flex: none }
+  .chip::before { content: ""; position: absolute; inset: 2.6mm 0; border-top: 1px solid #8a6d1d; border-bottom: 1px solid #8a6d1d }
+  .chip::after { content: ""; position: absolute; inset: 0 4.2mm; border-left: 1px solid #8a6d1d; border-right: 1px solid #8a6d1d }
+  .meta { font-size: 9px; color: #333; line-height: 1.35 } .mono { font-family: ui-monospace, Menlo, monospace }
+  .codes { font: 600 11px/1.5 ui-monospace, Menlo, monospace }
+  .foot { margin-top: auto; font-size: 7.5px; color: #666 }
+  svg.sim { max-width: 100%; height: 11mm }
+  .qr { width: 22mm; height: 22mm; flex: none } .qr img, .qr canvas { width: 22mm !important; height: 22mm !important }
+  @media print { body { margin: 8mm } .noprint { display: none } }
+</style></head><body>
+<h1>Sample SIM cards</h1>
+<p class="note noprint">One sample SIM card for each brand of the test pack, and an eSIM where its plan or offer has one: the front with the
+SIM No. as Code 128 (an eSIM: its activation code as a QR code), the back with PIN, PUK, PIN2 and PUK2. Card size 85.6 × 54 mm.
+These are samples for testing PPE, not SIM cards: every number is invented, the eSIM codes point at example.com, and the colours
+are this pack's own, not the brands'.</p>
+<div id="out"></div>
+<script>
+const SAMPLES = __SAMPLES__;
+const COUNTRY = { LT: 'Lithuania', LV: 'Latvia', EE: 'Estonia', PL: 'Poland' };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const spaced = (s) => s.replace(/(.{4})/g, '$1 ').trim();
+const out = document.getElementById('out');
+for (const cc of ['LT', 'LV', 'EE', 'PL']) {
+  const h = document.createElement('h2'); h.textContent = COUNTRY[cc]; out.append(h);
+  const grid = document.createElement('div'); grid.className = 'grid'; out.append(grid);
+  for (const s of SAMPLES.filter((x) => x.country_code === cc)) {
+    const esim = s.form === 'eSIM';
+    const pair = document.createElement('div'); pair.className = 'pair';
+    const head = `<div class="band" style="background:${esc(s.demo_badge_color)}"></div><div class="top"><span class="badge">${esc(s.demo_badge_text)}</span><span class="brand">${esc(s.brand)}</span><span class="tag">Sample · not a SIM</span></div>`;
+    pair.innerHTML = `<div class="card">${head}
+        <div class="row">${esim ? '<div class="qr"></div>' : '<div class="chip"></div>'}<div class="meta"><b>${esc(s.form)}</b><br>${esc(s.plan)} · ${esc(s.plan_type)}<br>${esc(s.price)} ${esc(s.currency)} ${esc(s.price_period)}<br>Tel. <span class="mono">${esc(s.phone_no)}</span></div></div>
+        ${esim ? `<div class="meta mono">${esc(s.esim_activation_code)}</div><div class="meta mono">ICCID ${esc(spaced(s.sim_no))}</div>` : '<svg class="sim"></svg>'}
+        <div class="foot">${esc(s.sample_id)} · ${esc(s.operator)} ${esc(s.country_code)} · provider in PPE: ${esc(s.provider)}</div></div>
+      <div class="card">${head}
+        <div class="row"><div class="codes">PIN&nbsp; ${esc(s.pin)}<br>PUK&nbsp; ${esc(s.puk)}<br>PIN2 ${esc(s.pin2)}<br>PUK2 ${esc(s.puk2)}</div>
+        <div class="meta">IMSI <span class="mono">${esc(s.imsi)}</span><br>SIM No. <span class="mono">${esc(s.sim_no)}</span><br>Status: ${esc(s.connection_status)}</div></div>
+        <div class="foot">Customer service: sample only · ${esc(s.sample_id)}</div></div>`;
+    grid.append(pair);
+    if (esim) { try { new QRCode(pair.querySelector('.qr'), { text: s.esim_activation_code, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {} }
+    else { try { JsBarcode(pair.querySelector('svg.sim'), s.sim_no, { format: 'CODE128', height: 34, width: 1.3, fontSize: 10, margin: 0 }); } catch (e) {} }
+  }
+}
+</script></body></html>
+"""
+(OUT / "sim_samples.html").write_text(SAMPLES_HTML.replace("__SAMPLES__", json.dumps(sim_samples, ensure_ascii=False)))

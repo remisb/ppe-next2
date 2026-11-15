@@ -34,6 +34,8 @@ python3 -I docs/test-packs/sim-cards-baltics-poland/generate.py docs/test-packs/
 | `import/sim-import-errors.csv` | 6 | A file that must be refused (`.expected.csv` says why, per line) |
 | `scan_cards.csv`, `scan_cards.html` | 60 | Printable test carriers for Scan SIMs: 52 valid, 8 made to be marked |
 | `add_sim_manual.csv` | 26 | One SIM No. per provider for Add SIM by hand |
+| `sim_samples.csv`, `sim_samples.html` | 48 | A sample SIM card for each of the 27 brands, and an eSIM for the 21 whose plan or offer has one: SIM No., phone, PIN, PUK, PIN2, PUK2, IMSI, eSIM activation code, plan and price; the page prints them at card size (85.6 × 54 mm) with barcodes and QR codes |
+| `import/sim-import-samples.csv` | 48 | The samples as an import file, all Not Activated and in the Office |
 | `test_cases.csv` | 26 | The test cases: steps, expected result, data file, priority, role |
 | `json/` | – | Every dataset as JSON, and `all-data.json` with all of them |
 | `sql/sim_testpack.sql` | – | Every dataset as tables in a standalone schema `sim_testpack` (for reports; PPE never reads it) |
@@ -42,7 +44,8 @@ The countries' VAT: Lithuania 21 %, Latvia 21 %, Estonia 24 %, Poland 23 %. Poli
 are in PLN, the others in EUR.
 
 SIM No. blocks keep the files apart, so they never collide: `…1 99…` import files,
-`…2 99…` scan cards, `…3 99…` Add SIM by hand, `…9 99…` negative tests.
+`…2 99…` scan cards, `…3 99…` Add SIM by hand, `…4 99…` sample SIM cards, `…9 99…` negative tests.
+The samples' eSIM activation codes point at `smdp.example.com`, and their IMSIs have `99` after the network code.
 
 ## Setting up
 
