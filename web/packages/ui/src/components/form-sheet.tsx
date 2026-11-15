@@ -31,6 +31,8 @@ interface FormSheetProps {
   closeButton?: boolean
   /** False leaves out the rules under the header and above the footer, for a sheet that reads as one piece. */
   rules?: boolean
+  /** A control at the header's end, before the × (an Edit toggle, say). */
+  action?: ReactNode
 }
 
 /**
@@ -43,7 +45,7 @@ interface FormSheetProps {
  * platform gives modal semantics, focus containment, the top layer, and Escape
  * for free, and all four are easy to get subtly wrong by hand.
  */
-export function FormSheet({ open, onClose, title, description, info, children, footer, wide = false, lead, closeButton = true, rules = true }: FormSheetProps) {
+export function FormSheet({ open, onClose, title, description, info, children, footer, wide = false, lead, closeButton = true, rules = true, action }: FormSheetProps) {
   const ref = useRef<HTMLDialogElement>(null)
   /*
    * Per instance, not a constant. `ResourceScreen` can mount two of these at
@@ -124,6 +126,7 @@ export function FormSheet({ open, onClose, title, description, info, children, f
             ) : null}
           </div>
           </div>
+          {action}
           {closeButton ? (
             <Button variant="ghost" size="icon" onClick={onClose} aria-label={uiText().close}>
               <X aria-hidden />

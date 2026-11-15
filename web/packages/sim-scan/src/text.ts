@@ -13,6 +13,7 @@ const en = {
   // What the batch shares.
   batch: 'For every SIM',
   editBatch: 'Edit For every SIM',
+  editBatchValues: 'Edit plan, value, date and comment',
   saveBatch: 'Save',
   cancel: 'Cancel',
   provider: 'Provider',
@@ -140,6 +141,7 @@ const lt: SimScanText = {
   findDescription: 'Raskite SIM pagal numerį ir parodykite jos PIN ir PUK. Kiekvienas kartas įrašomas į Audito žurnalą.',
   batch: 'Visoms SIM',
   editBatch: 'Redaguoti „Visoms SIM“',
+  editBatchValues: 'Redaguoti planą, vertę, datą ir pastabą',
   saveBatch: 'Išsaugoti',
   cancel: 'Atšaukti',
   currentCard: (n: number) => `SIM Nr. ${n}`,
@@ -261,6 +263,7 @@ const ru: SimScanText = {
   findDescription: 'Найдите SIM по номеру и покажите её PIN и PUK. Каждый раз записывается в журнал аудита.',
   batch: 'Для всех SIM',
   editBatch: 'Изменить «Для всех SIM»',
+  editBatchValues: 'Изменить тариф, стоимость, дату и комментарий',
   saveBatch: 'Сохранить',
   cancel: 'Отмена',
   currentCard: (n: number) => `SIM № ${n}`,

@@ -224,8 +224,9 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
     says how to allow it (iPhone, Android) with **Try Again**.
   - **Review on a phone** (`phone-review.tsx`): For every SIM is one line opening its sheet
     (`phone-batch-sheet.tsx`, also the camera's pencil: the provider as a row of choices, its plan
-    filled in with it, then the plan, value, received date and comment as label and value rows to
-    tap and change, and Save; closing it keeps the batch as it was); the list's state under its count ("All ready to add", or how many to fix); filters for
+    filled in with it, always open to change; then the plan, value, received date and comment as
+    label and value rows, read only until the pencil at the title's end (**Edit plan, value, date
+    and comment**) turns them into fields; and Save; no ×, and closing it keeps the batch as it was); the list's state under its count ("All ready to add", or how many to fix); filters for
     what is there (**All**, **To fix**, **No back**, with counts, `Segmented`); the SIMs to fix first,
     then the rest newest first, each row opening the same sheet as on the camera; **Scan More** and
     **Add N SIMs** in a bar pinned to the screen's bottom, the list dimmed while adding.
