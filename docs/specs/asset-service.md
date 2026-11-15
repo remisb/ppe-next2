@@ -219,7 +219,20 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
     to the list), **Read Now** and **No Back**, with the **Torch** on the picture where the camera
     offers one (Chrome on Android). Before the first card it shows what every SIM gets, with
     **Change** (the batch's form in a sheet). **Choose Photos** is not on a phone while the camera
-    can be used; where it cannot start, the camera offers it instead.
+    can be used; where it cannot start, the camera offers it instead, and where it was not allowed it
+    says how to allow it (iPhone, Android) with **Try Again**.
+  - **Review on a phone** (`phone-review.tsx`): For every SIM is one line opening its form in a
+    sheet; the list's state under its count ("All ready to add", or how many to fix); filters for
+    what is there (**All**, **To fix**, **No back**, with counts, `Segmented`); the SIMs to fix first,
+    then the rest newest first, each row opening the same sheet as on the camera; **Scan More** and
+    **Add N SIMs** in a bar pinned to the screen's bottom, the list dimmed while adding.
+- **Ask first.** **Clear List** asks before dropping the list and its photos, and leaving with SIMs
+  not added asks too: a link out of the app (SIM Cards, Apps, a card's Open) with the app's own
+  question ("2 SIMs are not added yet. Leave and drop them?"), anything else (closing the tab) with
+  the browser's. Moving between the app's own tabs does not ask.
+- **Added** lists each SIM added, its inventory number and SIM No., each a link to its page, with
+  where it is and that its PIN and PUK are sealed; a refused batch says nothing was added and names
+  the SIM ("Nothing was added: SIM 3 was refused."), above the list on a phone.
   - **Choose Photos**, taken earlier: front and back, in the order taken; a photo's side is
     what is read on it, a back pairing with the front before it, or after it when the first
     photo is a back.
@@ -227,8 +240,8 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   (`CardFields`): the front's picture and **SIM No.** on one line; the back's picture, **PIN**
   and **PUK** on the next, each line's problems under it. The values are plain text, a dash
   for none, to take little room. Only the card being scanned is edited (**Edit** turns its
-  values into fields); a card in the list is not, except in a phone camera's sheet: elsewhere a
-  wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`@ppe/scan-kit`'s `barcode.worker.ts` and Tesseract's; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
+  values into fields); a card in the list is not, except in a phone's card sheet (from the camera
+  or the review): elsewhere a wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`@ppe/scan-kit`'s `barcode.worker.ts` and Tesseract's; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
   label's line, after it (`codesFromWords`); a carrier that prints a code under its label instead
   reads nothing on its back, and its PIN and PUK are typed (a known limit while there is one
   carrier layout; another provider's layout would be a hint per provider). Their files are the app's own

@@ -3654,6 +3654,17 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   // A card in the list is not edited, only removed.
   await expect(rows.nth(1).getByRole('button', { name: /^Edit/ })).toHaveCount(0)
   await expect(rows.nth(1).getByRole('textbox')).toHaveCount(0)
+  // On a phone the list is rows that open the card's sheet (the ones to fix first), with Add and Scan More in a bar at the bottom.
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expect(page.getByText('All ready to add')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Scan More' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add 2 SIMs' })).toBeInViewport()
+  await page.getByRole('button', { name: 'Check SIM 2' }).click()
+  const cardSheet = page.getByRole('dialog', { name: 'SIM 2' })
+  await expect(cardSheet.getByLabel('PIN', { exact: true })).toHaveValue('7051')
+  await cardSheet.getByRole('button', { name: 'Done' }).click()
+  await expect(cardSheet).toBeHidden()
+  await page.setViewportSize(desktop)
   // Scrolled, the screen's own header alone is at the top: the app's bar scrolls away (AppFrame).
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await expect
@@ -3686,7 +3697,18 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await nav.getByRole('link', { name: 'Scan', exact: true }).click()
   await expect(rows.nth(0).getByTestId('sim-no')).toHaveText('8937099000000000049')
   await expect(page.getByText('31597264', { exact: true })).toHaveCount(0)
+  // Leaving with SIMs not added asks first, and so does Clear List.
+  let asked = ''
+  page.once('dialog', (d) => {
+    asked = d.message()
+    void d.dismiss()
+  })
+  await page.getByRole('link', { name: 'SIM Cards', exact: true }).click()
+  await expect.poll(() => asked).toBe('1 SIM is not added yet. Leave and drop it?')
+  await expect(rows).toHaveCount(1)
+  page.once('dialog', (d) => void d.accept())
   await page.getByRole('button', { name: 'Clear List' }).click()
+  await expect(rows).toHaveCount(0)
 
   // In SIM Cards, the two cards as any SIM added: Not Activated, in the Office, the provider and plan chosen once.
   await page.goto('/assets/sim-cards')

@@ -1,25 +1,29 @@
 import type { AddedSim, Settings } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
-import { staffHref } from '@ppe/routing'
+import { basePath, staffHref } from '@ppe/routing'
 import { type BatchSettings, MAX_CARDS, type PictureRead, batchRequest, blocks, pairPhotos, simKey, simScanText } from '@ppe/sim-scan'
 import { cameraAvailable } from '@ppe/scan-kit/camera'
 import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { ReviewList } from '@ppe/sim-scan/review-list'
+import { formatEuro } from '@ppe/i18n'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
+import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { ActionError, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
-import { isoDay } from '@ppe/ui/lib/dates'
-import { Camera, CircleCheck, ImagePlus, Square } from 'lucide-react'
+import { formatDay, isoDay } from '@ppe/ui/lib/dates'
+import { Camera, CircleCheck, ImagePlus, Loader2, Pencil, Square } from 'lucide-react'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { usePhone } from '@/lib/phone'
 import { loadReaders } from '@/lib/readers'
 
-import { BatchCard } from './batch-card'
+import { BatchCard, BatchForm } from './batch-card'
 import { CardInProgress } from './card-in-progress'
+import { CardSheet } from './card-sheet'
 import { LiveScan } from './live-scan'
 import { PhoneCamera } from './phone-camera'
+import { PhoneReview } from './phone-review'
 import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
 
 /**
@@ -45,6 +49,13 @@ export function ScanPage({ active = true }: { active?: boolean }) {
   const pictures = usePictureStore()
   const [reading, setReading] = useState<{ done: number; all: number } | null>(null)
   const [camera, setCamera] = useState(false)
+  // Each Try Again mounts the phone's camera anew.
+  const [cameraKey, setCameraKey] = useState(0)
+  // A phone's card sheet (the list's row opened) and For every SIM's sheet.
+  const [openCard, setOpenCard] = useState<number | null>(null)
+  const [batchSheet, setBatchSheet] = useState(false)
+  // Set once the user agreed to leave, so the browser does not ask a second time.
+  const leaving = useRef(false)
   const phone = usePhone()
   // A phone scans in PhoneCamera, full screen; from 768px the camera is inline (LiveScan).
   const phoneCamera = camera && phone
@@ -90,13 +101,29 @@ export function ScanPage({ active = true }: { active?: boolean }) {
     dispatch({ type: 'released', ids: list.released })
   }, [list.released, pictures])
 
-  // Leaving with cards not yet added asks first.
+  // Leaving with cards not yet added asks first: a link out of the app (SIM Cards, Apps, a card's Open) with the
+  // app's own question, the browser's for the rest (closing the tab, typing an address).
   useEffect(() => {
     if (cards.length === 0) return
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!leaving.current) e.preventDefault()
+    }
+    const ask = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null
+      if (!a || (a.target !== '' && a.target !== '_self') || a.hasAttribute('download')) return
+      const to = new URL(a.href, window.location.href)
+      if (to.origin === window.location.origin && (to.pathname === basePath || to.pathname.startsWith(`${basePath}/`))) return
+      if (window.confirm(t.leaveQuestion(cards.length))) leaving.current = true
+      else e.preventDefault()
+    }
     window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [cards.length])
+    document.addEventListener('click', ask, true)
+    return () => {
+      window.removeEventListener('beforeunload', warn)
+      document.removeEventListener('click', ask, true)
+    }
+  }, [cards.length, t])
 
   // The API's check, a moment after the list or the settings change: it alone knows the register.
   // An answer to an earlier list is dropped (live): the list it was for has changed since.
@@ -161,6 +188,22 @@ export function ScanPage({ active = true }: { active?: boolean }) {
     }
   }
 
+  const n = cards.length
+  // On a phone with SIMs in the list, the camera is Scan More, in the bar at the thumb.
+  const phoneList = phone && n > 0
+  const summary = [batch.provider, batch.plan, batch.valueCents === null ? '' : formatEuro(batch.valueCents), batch.receivedDate === '' ? '' : formatDay(batch.receivedDate)]
+    .filter((x) => x !== '')
+    .join(' · ')
+  const openCamera = () => {
+    setAdded(null)
+    setCamera(true)
+  }
+  const clear = () => {
+    if (window.confirm(t.clearQuestion(n))) dispatch({ type: 'clear' })
+  }
+  const addDisabled = adding || toFix > 0 || batch.provider.trim() === ''
+  const refusal = <ActionError error={error} title={addErrorTitle(error)} />
+
   return (
     <>
       <PageHeader title={t.scanTitle} description={t.scanDescription} />
@@ -171,19 +214,44 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             <CircleCheck aria-hidden className="size-5 text-success" />
             {t.added(added.length)}
           </p>
-          <p className="font-mono text-sm">{added.map((s) => s.inventory_no).join(', ')}</p>
+          <p className="text-sm text-muted-foreground">{t.addedNote}</p>
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border md:max-w-xl">
+            {added.map((sim) => (
+              <li key={sim.id}>
+                <a href={staffHref(`/assets/sim-cards/${sim.id}`)} className="flex min-h-11 items-center gap-3 px-3 py-2 hover:bg-muted">
+                  <span className="w-24 shrink-0 font-mono text-sm font-semibold">{sim.inventory_no}</span>
+                  <span className="min-w-0 truncate font-mono text-sm text-muted-foreground">{sim.sim_no}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
           <div className="flex flex-wrap gap-2">
             <a href={staffHref('/assets/sim-cards')} className={buttonVariants()}>
               {t.openSimCards}
             </a>
-            <Button variant="outline" onClick={() => setAdded(null)}>
+            <Button variant="outline" onClick={phone ? openCamera : () => setAdded(null)}>
               {t.scanMore}
             </Button>
           </div>
         </section>
       ) : null}
 
-      <BatchCard settings={settings} batch={batch} onSave={setBatch} />
+      {phone ? (
+        <button
+          type="button"
+          aria-label={`${t.editBatch}: ${summary}`}
+          onClick={() => setBatchSheet(true)}
+          className="mb-5 flex min-h-12 w-full items-center gap-3 rounded-lg border border-border px-3 py-2 text-left"
+        >
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-xs text-muted-foreground">{t.batch}</span>
+            {batch.provider.trim() === '' ? <span className="text-sm text-destructive">{t.providerRequired}</span> : <span className="truncate text-sm">{summary}</span>}
+          </span>
+          <Pencil aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+      ) : (
+        <BatchCard settings={settings} batch={batch} onSave={setBatch} />
+      )}
 
       {!camera ? (
         <CardInProgress
@@ -196,21 +264,23 @@ export function ScanPage({ active = true }: { active?: boolean }) {
         />
       ) : null}
 
-      <section className="mb-6 flex flex-col gap-3">
+      <section className={cn('flex flex-col gap-3', phoneList && !photosOnPhone && !reading && list.notice === null ? 'hidden' : 'mb-6')}>
         <p className="text-sm text-muted-foreground max-md:hidden">{t.otherWays}</p>
         <p className="text-sm text-muted-foreground md:hidden">{t.waysOnPhone}</p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant={phone ? 'default' : camera ? 'secondary' : 'outline'}
-            onClick={() => {
-              setAdded(null)
-              setCamera((c) => !c)
-            }}
-            disabled={!cameraAvailable() || reading !== null}
-          >
-            {camera && !phone ? <Square aria-hidden className="size-4" /> : <Camera aria-hidden className="size-4" />}
-            {camera && !phone ? t.stopCamera : phone ? t.openCamera : t.camera}
-          </Button>
+          {phoneList ? null : (
+            <Button
+              variant={phone ? 'default' : camera ? 'secondary' : 'outline'}
+              onClick={() => {
+                setAdded(null)
+                setCamera((c) => !c)
+              }}
+              disabled={!cameraAvailable() || reading !== null}
+            >
+              {camera && !phone ? <Square aria-hidden className="size-4" /> : <Camera aria-hidden className="size-4" />}
+              {camera && !phone ? t.stopCamera : phone ? t.openCamera : t.camera}
+            </Button>
+          )}
           <Button
             variant="outline"
             className={photosOnPhone ? undefined : 'max-md:hidden'}
@@ -260,20 +330,28 @@ export function ScanPage({ active = true }: { active?: boolean }) {
 
       <section aria-labelledby="cards" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="cards" className="text-base font-semibold">
-            {t.cards(cards.length)}
-          </h2>
-          {cards.length > 0 ? (
-            <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'clear' })}>
+          <div className="flex flex-col">
+            <h2 id="cards" className="text-base font-semibold">
+              {t.cards(n)}
+            </h2>
+            {phoneList ? <span className={cn('text-sm', toFix > 0 ? 'text-destructive' : 'text-success')}>{toFix > 0 ? t.toFix(toFix) : t.allReady}</span> : null}
+          </div>
+          {n > 0 ? (
+            <Button variant="ghost" size="sm" onClick={clear} disabled={adding}>
               {t.removeAll}
             </Button>
           ) : null}
         </div>
-        {cards.length === 0 ? (
+        {phone ? refusal : null}
+        {n === 0 ? (
           <p className="text-sm text-muted-foreground">
             <span className={photosOnPhone ? undefined : 'max-md:hidden'}>{t.noCards}</span>
             {photosOnPhone ? null : <span className="md:hidden">{t.noCardsPhone}</span>}
           </p>
+        ) : phone ? (
+          <div aria-busy={adding} className={cn(adding && 'pointer-events-none opacity-50')}>
+            <PhoneReview cards={cards} marks={marks} pictures={pictures.urls} onOpen={setOpenCard} />
+          </div>
         ) : (
           <ReviewList
             cards={cards}
@@ -283,11 +361,29 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             onRemove={(index) => dispatch({ type: 'remove', index })}
           />
         )}
-        <ActionError error={error} title={addErrorTitle(error)} />
-        {cards.length > 0 ? (
+        {phone ? null : refusal}
+        {n > 0 && phone ? (
+          // Add and Scan More at the thumb: the bar is pinned to the screen's bottom, the list ending above it.
+          <>
+          <div aria-hidden className="h-32" />
+          <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 border-t border-border bg-background px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {toFix > 0 ? <p className="text-sm text-destructive">{t.fixFirst(toFix)}</p> : null}
+            <div className="flex gap-2">
+              <Button variant="outline" className="h-12" onClick={openCamera} disabled={adding || !cameraAvailable()}>
+                <Camera aria-hidden className="size-4" />
+                {t.scanMore}
+              </Button>
+              <Button className="h-12 flex-1" onClick={() => void add()} disabled={addDisabled}>
+                {adding ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
+                {adding ? t.adding : t.add(n)}
+              </Button>
+            </div>
+          </div>
+          </>
+        ) : n > 0 ? (
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => void add()} disabled={adding || toFix > 0 || batch.provider.trim() === ''}>
-              {adding ? t.adding : t.add(cards.length)}
+            <Button onClick={() => void add()} disabled={addDisabled}>
+              {adding ? t.adding : t.add(n)}
             </Button>
             {toFix > 0 ? <p className="text-sm text-destructive">{t.fixFirst(toFix)}</p> : null}
           </div>
@@ -296,6 +392,7 @@ export function ScanPage({ active = true }: { active?: boolean }) {
 
       {phoneCamera ? (
         <PhoneCamera
+          key={cameraKey}
           cards={cards}
           marks={marks}
           pictures={pictures.urls}
@@ -314,14 +411,47 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             void choosePhotos(files)
           }}
           existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
+          onRetry={() => setCameraKey((k) => k + 1)}
           onClose={() => setCamera(false)}
         />
+      ) : null}
+
+      {phone && !phoneCamera && openCard !== null && cards[openCard] ? (
+        <CardSheet
+          n={openCard + 1}
+          card={cards[openCard]}
+          marks={marks[openCard] ?? []}
+          pictures={pictures.urls}
+          existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
+          onChange={(patch) => dispatch({ type: 'update', index: openCard, patch })}
+          onRemove={() => {
+            dispatch({ type: 'remove', index: openCard })
+            setOpenCard(null)
+          }}
+          onClose={() => setOpenCard(null)}
+        />
+      ) : null}
+
+      {phone ? (
+        <FormSheet open={batchSheet} onClose={() => setBatchSheet(false)} title={t.batch}>
+          {batchSheet ? (
+            <BatchForm
+              settings={settings}
+              batch={batch}
+              onSave={(b) => {
+                setBatch(b)
+                setBatchSheet(false)
+              }}
+              onCancel={batch.provider.trim() === '' ? undefined : () => setBatchSheet(false)}
+            />
+          ) : null}
+        </FormSheet>
       ) : null}
     </>
   )
 }
 
-/** A refused batch names its row, as the list does: "SIM 3: …". */
+/** A refused batch says nothing was added and names its row, as the list does: "SIM 3". */
 function addErrorTitle(error: unknown): string | undefined {
-  return error instanceof ApiError && error.index !== undefined ? simScanText().currentCard(error.index + 1) : undefined
+  return error instanceof ApiError && error.index !== undefined ? simScanText().refused(error.index + 1) : undefined
 }

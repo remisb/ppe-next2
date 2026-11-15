@@ -25,6 +25,8 @@ export interface LiveScan {
   status: string
   /** The camera could not start: why, in words. */
   problem: string | null
+  /** It could not start because it was not allowed: the browser's or the phone's setting, which the user can change. */
+  denied: boolean
   /** The front just seen is already in the list, as this card (its index); not taken again. */
   duplicateOf: number | null
   /** A side was read a moment ago: the guide shows it. */
@@ -59,6 +61,7 @@ export function useLiveScan({
   const [step, setStep] = useState<{ side: 'front' } | { side: 'back'; simNo: string; front: Blob }>({ side: 'front' })
   const [status, setStatus] = useState<string>(t.aimFront)
   const [problem, setProblem] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const [duplicateOf, setDuplicateOf] = useState<number | null>(null)
   const [justRead, setJustRead] = useState(false)
   const [torch, setTorch] = useState<{ control: Torch; on: boolean }>({ control: torchOf(null), on: false })
@@ -142,7 +145,11 @@ export function useLiveScan({
           setStatus(t.readBack)
         })
       },
-      (e: unknown) => setProblem(e instanceof DOMException && e.name === 'NotAllowedError' ? t.cameraDenied : t.cameraFailed),
+      (e: unknown) => {
+        const refused = e instanceof DOMException && e.name === 'NotAllowedError'
+        setDenied(refused)
+        setProblem(refused ? t.cameraDenied : t.cameraFailed)
+      },
     )
     return () => {
       alive = false
@@ -157,6 +164,7 @@ export function useLiveScan({
     side: step.side,
     status,
     problem,
+    denied,
     duplicateOf,
     justRead,
     noBack: () => {

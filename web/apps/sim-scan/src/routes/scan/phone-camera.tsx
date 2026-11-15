@@ -5,7 +5,7 @@ import { message } from '@ppe/sim-scan/review-list'
 import { Button } from '@ppe/ui/components/button'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown, CircleAlert, CircleCheck, Copy, ImagePlus, Info, Redo2, X, Zap } from 'lucide-react'
+import { CameraOff, ChevronDown, CircleAlert, CircleCheck, Copy, ImagePlus, Info, Redo2, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { BatchFacts, BatchForm } from './batch-card'
@@ -50,6 +50,7 @@ export function PhoneCamera({
   onRemove,
   onChoosePhotos,
   existingHref,
+  onRetry,
   onClose,
 }: {
   cards: readonly ScanCard[]
@@ -65,6 +66,8 @@ export function PhoneCamera({
   /** The camera did not start: photos chosen instead. */
   onChoosePhotos: (files: FileList | null) => void
   existingHref: (id: string) => string
+  /** Starts the camera again (the parent mounts it anew), after the user allowed it. */
+  onRetry: () => void
   onClose: () => void
 }) {
   const t = simScanText()
@@ -183,13 +186,18 @@ export function PhoneCamera({
           <video ref={scan.video} className="size-full object-cover" playsInline muted />
           {scan.problem ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <p role="alert" className="text-sm">
+              <CameraOff aria-hidden className="size-10 text-muted-foreground" />
+              <p role="alert" className="text-sm font-medium">
                 {scan.problem}
               </p>
-              <Button variant="outline" onClick={() => photos.current?.click()}>
-                <ImagePlus aria-hidden className="size-4" />
-                {t.choosePhotos}
-              </Button>
+              {scan.denied ? <p className="text-xs text-muted-foreground">{t.cameraDeniedHow}</p> : null}
+              <div className="flex flex-wrap justify-center gap-2">
+                {scan.denied ? <Button onClick={onRetry}>{t.tryAgain}</Button> : null}
+                <Button variant="outline" onClick={() => photos.current?.click()}>
+                  <ImagePlus aria-hidden className="size-4" />
+                  {t.choosePhotos}
+                </Button>
+              </div>
               <input
                 ref={photos}
                 type="file"
