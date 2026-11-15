@@ -356,6 +356,12 @@ The workwear app is the reference.
   second button with the same name.
 - **Safe areas**: the viewport is `viewport-fit=cover`; bars pad with
   `env(safe-area-inset-*)`.
+- **On-screen keyboard**: it never covers a sheet's field or actions (Apple's Human Interface
+  Guidelines, Keyboards). `FormSheet` follows it (`@ppe/ui/lib/keyboard`'s `useKeyboard`, from
+  `window.visualViewport`, the same on an iPhone and on Android): while one is up the sheet slides
+  up above it by its height, shrinks to the height left when it does not fit (its body then
+  scrolls), and brings the focused field into view. A screen of its own with fields at the bottom
+  uses `useKeyboard` the same way; never a fixed bar that the keyboard would hide.
 
 ## Sign-in and password forms
 

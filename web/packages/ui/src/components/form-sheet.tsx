@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useRef } from 'react'
 
+import { useKeyboard } from '../lib/keyboard.ts'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
 import { Button } from './button'
@@ -48,6 +49,30 @@ interface FormSheetProps {
 export function FormSheet({ open, onClose, title, description, info, children, footer, wide = false, lead, closeButton = true, rules = true, action }: FormSheetProps) {
   const ref = useRef<HTMLDialogElement>(null)
   /*
+   * The on-screen keyboard never covers the sheet (Apple's Human Interface
+   * Guidelines, Keyboards: keep the field being typed in, and the sheet's
+   * actions, in view). While one is up the sheet slides up above it by its
+   * height; where what is left is too short, the sheet shrinks to it and its
+   * body scrolls, the field being typed in brought into view.
+   */
+  const keyboard = useKeyboard(open)
+  const lifted = keyboard.inset > 0
+  useEffect(() => {
+    const dialog = ref.current
+    if (!dialog || !lifted) return
+    const reveal = () => {
+      const field = document.activeElement
+      if (field instanceof HTMLElement && dialog.contains(field)) field.scrollIntoView({ block: 'nearest' })
+    }
+    // Once the sheet has moved (next frame), and again whenever another field takes the focus.
+    const frame = requestAnimationFrame(reveal)
+    dialog.addEventListener('focusin', reveal)
+    return () => {
+      cancelAnimationFrame(frame)
+      dialog.removeEventListener('focusin', reveal)
+    }
+  }, [lifted, keyboard.inset])
+  /*
    * Per instance, not a constant. `ResourceScreen` can mount two of these at
    * once — an edit sheet and a delete confirmation are independent state — and
    * two elements sharing one id makes `aria-labelledby` resolve to whichever
@@ -85,6 +110,7 @@ export function FormSheet({ open, onClose, title, description, info, children, f
       onClick={closeButton ? undefined : (e) => e.target === e.currentTarget && onClose()}
       aria-labelledby={titleId}
       aria-describedby={info ? infoId : undefined}
+      style={lifted ? { marginBottom: keyboard.inset, maxHeight: Math.max(0, keyboard.visibleHeight - 8) } : undefined}
       className={cn(
         // The phone form: full width, pinned to the bottom, rounded at the top.
         'w-full max-w-none m-0 mt-auto rounded-t-lg bg-card p-0 text-card-foreground',
@@ -92,6 +118,8 @@ export function FormSheet({ open, onClose, title, description, info, children, f
         // Slides up on a phone, fades and scales in from md; still for reduced motion.
         'open:animate-in open:duration-200 open:slide-in-from-bottom md:open:slide-in-from-bottom-0 md:open:fade-in-0 md:open:zoom-in-95',
         'motion-reduce:open:animate-none',
+        // Above the keyboard, and back down, with the keyboard's own short slide.
+        'motion-safe:transition-[margin-bottom,max-height] motion-safe:duration-250 motion-safe:ease-out',
         // From md: a centred dialog of bounded width.
         'md:m-auto md:max-w-2xl md:rounded-lg md:max-h-[85dvh]',
         // Wide: a fixed height, the grab handle above a column that fills the rest (flex only while open, so closed it stays hidden).
