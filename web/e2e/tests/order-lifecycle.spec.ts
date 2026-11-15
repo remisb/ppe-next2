@@ -3595,12 +3595,24 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   // only that, the card stays here, Next SIM dimmed, until the back's photo fills in its PIN and PUK.
   const photo = (name: string) => join(repoRoot, 'web/e2e/fixtures/sim-cards', name)
   const current = page.getByRole('region', { name: 'SIM 1' })
-  // A phone scans with the camera or chooses photos: no card at a time there.
+  // A phone scans with the camera, full screen, as a camera app: no card at a time there, and no Choose Photos
+  // while the camera can be used. Before the first card the camera shows what every SIM gets; where the camera
+  // does not start (here, no camera is allowed), it offers photos instead.
   const desktop = page.viewportSize()!
   await page.setViewportSize({ width: 375, height: 812 })
   await expect(current).toBeHidden()
-  await expect(page.getByText('Scan with the camera, card after card, or choose photos taken earlier.', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Camera' })).toBeVisible()
+  await expect(page.getByText('Scan the cards with the camera, card after card.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Choose Photos' })).toBeHidden()
+  await page.getByRole('button', { name: 'Scan with the Camera' }).click()
+  const phoneCamera = page.getByRole('dialog', { name: 'Scan SIMs' })
+  await expect(phoneCamera.getByText('Every SIM you scan gets')).toBeVisible()
+  await expect(phoneCamera.getByRole('button', { name: /^Edit For every SIM: Telia/ })).toBeVisible()
+  await expect(phoneCamera.getByRole('alert')).toBeVisible()
+  await expect(phoneCamera.getByRole('button', { name: 'Choose Photos' })).toBeVisible()
+  await expect(phoneCamera.getByRole('button', { name: 'Review 0 SIMs' })).toBeDisabled()
+  await expect(phoneCamera.getByRole('button', { name: 'No Back' })).toBeDisabled()
+  await phoneCamera.getByRole('button', { name: 'Close the camera' }).click()
+  await expect(phoneCamera).toBeHidden()
   await page.setViewportSize(desktop)
   await expect(current).toBeVisible()
   await expect(page.getByText('Or scan with the camera, card after card, or choose photos taken earlier.', { exact: true })).toBeVisible()

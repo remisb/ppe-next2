@@ -129,7 +129,7 @@ origin, reporting as `sim-scan`; its rules, readers, words and review list in
 (shared with docs-import), to merge into the staff app beside SIM Cards once it passes): newly
 received SIM cards read from their carriers in the browser (zxing-wasm for the SIM No.'s
 barcode, tesseract.js for the PIN and PUK; their files its build's own, under `readers/`), with
-the camera or from photos, checked in a review list (`POST /api/v1/assets/sim-cards/batch/check`)
+the camera (on a phone full screen, as a camera app: `phone-camera.tsx`) or from photos, checked in a review list (`POST /api/v1/assets/sim-cards/batch/check`)
 and added all or none (`…/batch`, `asset.Service.AddSIMs`, the import's core), and Show PIN and
 PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_codes.read`, a recent sign-in,
 `asset.sim_codes_shown`). PIN and PUK are sealed by the API (AES-256-GCM, `internal/sealbox`,

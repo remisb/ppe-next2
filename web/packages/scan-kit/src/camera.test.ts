@@ -1,6 +1,37 @@
 import { describe, expect, it } from 'vitest'
 
-import { guideCrop } from './camera.ts'
+import { guideCrop, torchOf } from './camera.ts'
+
+/** A stream with one video track, as torchOf reads it. */
+const stream = (caps: Record<string, unknown>, apply: (c: MediaTrackConstraints) => Promise<void> = async () => {}) =>
+  ({ getVideoTracks: () => [{ getCapabilities: () => caps, applyConstraints: apply }] }) as unknown as MediaStream
+
+describe('torchOf', () => {
+  it('offers no torch without a stream, or where the camera has none', async () => {
+    expect(torchOf(null).available).toBe(false)
+    const none = torchOf(stream({}))
+    expect(none.available).toBe(false)
+    expect(await none.set(true)).toBe(false)
+  })
+
+  it('turns the torch on and off through the track', async () => {
+    const asked: MediaTrackConstraints[] = []
+    const torch = torchOf(
+      stream({ torch: true }, async (c) => {
+        asked.push(c)
+      }),
+    )
+    expect(torch.available).toBe(true)
+    expect(await torch.set(true)).toBe(true)
+    expect(await torch.set(false)).toBe(true)
+    expect(asked).toEqual([{ advanced: [{ torch: true }] }, { advanced: [{ torch: false }] }])
+  })
+
+  it('says so when the camera refuses', async () => {
+    const torch = torchOf(stream({ torch: true }, () => Promise.reject(new Error('busy'))))
+    expect(await torch.set(true)).toBe(false)
+  })
+})
 
 /** A video element as guideCrop reads it: the stream's size and the element's box. */
 const video = (videoWidth: number, videoHeight: number, clientWidth: number, clientHeight: number) =>

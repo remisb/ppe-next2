@@ -54,6 +54,15 @@ describe('the scan list', () => {
     expect(scanList(two, { type: 'remove', index: 5 })).toBe(two)
   })
 
+  it('corrects a card’s values in place, keeping its pictures; an index that is gone changes nothing', () => {
+    const two = run({ type: 'add', cards: [card('a', A), card('b', B)] })
+    const s = scanList(two, { type: 'update', index: 1, patch: { pin: '1234', puk: '12345678' } })
+    expect(s.cards[1]).toEqual({ ...card('b', B), pin: '1234', puk: '12345678' })
+    expect(s.cards[0]).toBe(two.cards[0])
+    expect(s.released).toEqual([])
+    expect(scanList(two, { type: 'update', index: 5, patch: { pin: '1' } })).toBe(two)
+  })
+
   it('clears the list, its registered cards and the notice, letting every picture go', () => {
     const s = run(
       { type: 'add', cards: [card('a', A)], more: true },

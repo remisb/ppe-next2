@@ -8,15 +8,18 @@ import { usePictureStore } from '@ppe/scan-kit/pictures'
 import { ReviewList } from '@ppe/sim-scan/review-list'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { ActionError, PageHeader } from '@ppe/ui/components/states'
+import { cn } from '@ppe/ui/lib/utils'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { Camera, CircleCheck, ImagePlus, Square } from 'lucide-react'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
+import { usePhone } from '@/lib/phone'
 import { loadReaders } from '@/lib/readers'
 
 import { BatchCard } from './batch-card'
 import { CardInProgress } from './card-in-progress'
 import { LiveScan } from './live-scan'
+import { PhoneCamera } from './phone-camera'
 import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
 
 /**
@@ -29,7 +32,8 @@ import { emptyScanList, marksOf, newKey, scanList } from './scan-list'
  *
  * The list is a reducer (scan-list.ts) and its pictures a PictureStore
  * (@ppe/scan-kit/pictures); this file wires them to the readers, the API and the
- * screen's parts (batch-card, card-in-progress, live-scan).
+ * screen's parts (batch-card, card-in-progress, live-scan, and on a phone
+ * phone-camera: the camera full screen, as a camera app, its cards above it).
  */
 export function ScanPage({ active = true }: { active?: boolean }) {
   const { client } = useApi()
@@ -41,10 +45,15 @@ export function ScanPage({ active = true }: { active?: boolean }) {
   const pictures = usePictureStore()
   const [reading, setReading] = useState<{ done: number; all: number } | null>(null)
   const [camera, setCamera] = useState(false)
+  const phone = usePhone()
+  // A phone scans in PhoneCamera, full screen; from 768px the camera is inline (LiveScan).
+  const phoneCamera = camera && phone
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const [added, setAdded] = useState<AddedSim[] | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  // A phone with a camera scans with it: Choose Photos is there only when the camera cannot be used.
+  const photosOnPhone = !cameraAvailable()
 
   // Hidden behind PIN and PUK, the camera stops: nothing films a screen no one sees.
   useEffect(() => {
@@ -174,7 +183,7 @@ export function ScanPage({ active = true }: { active?: boolean }) {
         </section>
       ) : null}
 
-      <BatchCard settings={settings} batch={batch} onSave={setBatch} missingProvider={batch.provider.trim() === '' && cards.length > 0} />
+      <BatchCard settings={settings} batch={batch} onSave={setBatch} />
 
       {!camera ? (
         <CardInProgress
@@ -192,17 +201,22 @@ export function ScanPage({ active = true }: { active?: boolean }) {
         <p className="text-sm text-muted-foreground md:hidden">{t.waysOnPhone}</p>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant={camera ? 'secondary' : 'outline'}
+            variant={phone ? 'default' : camera ? 'secondary' : 'outline'}
             onClick={() => {
               setAdded(null)
               setCamera((c) => !c)
             }}
             disabled={!cameraAvailable() || reading !== null}
           >
-            {camera ? <Square aria-hidden className="size-4" /> : <Camera aria-hidden className="size-4" />}
-            {camera ? t.stopCamera : t.camera}
+            {camera && !phone ? <Square aria-hidden className="size-4" /> : <Camera aria-hidden className="size-4" />}
+            {camera && !phone ? t.stopCamera : phone ? t.openCamera : t.camera}
           </Button>
-          <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={reading !== null || camera}>
+          <Button
+            variant="outline"
+            className={photosOnPhone ? undefined : 'max-md:hidden'}
+            onClick={() => fileInput.current?.click()}
+            disabled={reading !== null || (camera && !phone)}
+          >
             <ImagePlus aria-hidden className="size-4" />
             {t.choosePhotos}
           </Button>
@@ -219,7 +233,7 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             }}
           />
         </div>
-        <p className="text-sm text-muted-foreground">{cameraAvailable() ? t.photosHint : t.cameraUnavailable}</p>
+        <p className={cn('text-sm text-muted-foreground', !photosOnPhone && 'max-md:hidden')}>{cameraAvailable() ? t.photosHint : t.cameraUnavailable}</p>
         {reading ? (
           <p role="status" className="text-sm">
             {t.readingPhotos(reading.done, reading.all)}
@@ -230,7 +244,7 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             {t.tooMany(MAX_CARDS)}
           </p>
         ) : null}
-        {camera ? (
+        {camera && !phone ? (
           <LiveScan
             known={cards.map((c) => simKey(c.simNo))}
             onCard={(card, frontBlob, backBlob) => {
@@ -256,7 +270,10 @@ export function ScanPage({ active = true }: { active?: boolean }) {
           ) : null}
         </div>
         {cards.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t.noCards}</p>
+          <p className="text-sm text-muted-foreground">
+            <span className={photosOnPhone ? undefined : 'max-md:hidden'}>{t.noCards}</span>
+            {photosOnPhone ? null : <span className="md:hidden">{t.noCardsPhone}</span>}
+          </p>
         ) : (
           <ReviewList
             cards={cards}
@@ -276,6 +293,30 @@ export function ScanPage({ active = true }: { active?: boolean }) {
           </div>
         ) : null}
       </section>
+
+      {phoneCamera ? (
+        <PhoneCamera
+          cards={cards}
+          marks={marks}
+          pictures={pictures.urls}
+          settings={settings}
+          batch={batch}
+          onBatch={setBatch}
+          onCard={(card, frontBlob, backBlob) => {
+            pictures.keep(card.front!, frontBlob)
+            if (backBlob && card.back) pictures.keep(card.back, backBlob)
+            dispatch({ type: 'add', cards: [card] })
+          }}
+          onUpdate={(index, patch) => dispatch({ type: 'update', index, patch })}
+          onRemove={(index) => dispatch({ type: 'remove', index })}
+          onChoosePhotos={(files) => {
+            setCamera(false)
+            void choosePhotos(files)
+          }}
+          existingHref={(id) => staffHref(`/assets/sim-cards/${id}`)}
+          onClose={() => setCamera(false)}
+        />
+      ) : null}
     </>
   )
 }

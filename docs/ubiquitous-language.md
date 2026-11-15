@@ -835,10 +835,14 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   photos (**Choose Photos**), checked in a list, then **Add N SIMs**.
 - **Detail:** a trial app at `/apps/sim-scan/` for now (ADR 0005, 0006); what the batch shares is **For
   every SIM**, read only (a label and its value a line) until **Edit For every SIM** opens its form (**Save**,
-  **Cancel**). A card read without its back is added without PIN and PUK (**No Back**).
+  **Cancel**). A card read without its back is added without PIN and PUK (**No Back**). On a phone the
+  camera is full screen, as a camera app (**Scan with the Camera**): the SIMs read so far above it, a tap
+  opening one to check or correct (**Remove**, **Done**), **Read Now** taking the next reading at once, the
+  **Torch** where the phone has one, and the last card's picture with the count going back to the list.
 - **UI:** **Scan SIMs**, **SIM N** (the card being scanned), **Photo of the SIM No.**, **Photo
   of the PIN and PUK**, **Next SIM**, **Edit** (the card being scanned's values), **Camera**, **Stop Camera**, **Choose Photos**, **No
-  Back**, **Clear List**, **Add N SIMs**.
+  Back**, **Clear List**, **Add N SIMs**; on a phone **Scan with the Camera**, **Close the camera**, **Read Now**,
+  **Torch**, **Review N SIMs**, **Change** (For every SIM, before the first card).
 
 ### Equipment & Furniture
 - **Brief:** assets of kind EQUIPMENT, each with a **category**: Computer, Phone, External
@@ -1361,6 +1365,8 @@ screens are built):
 | Add SIM / Add Asset | Pridėti SIM / Pridėti turtą | Добавить SIM / Добавить имущество |
 | Scan SIMs / Camera / Stop Camera / Choose Photos | Skenuoti SIM / Kamera / Išjungti kamerą / Pasirinkti nuotraukas | Сканировать SIM / Камера / Выключить камеру / Выбрать фото |
 | Front / Back (a carrier's) / No Back | Priekis / Nugarėlė / Be nugarėlės | Лицевая / Обратная / Без обратной стороны |
+| Scan with the Camera / Close the camera / Read Now / Torch | Skenuoti kamera / Uždaryti kamerą / Nuskaityti dabar / Žibintuvėlis | Сканировать камерой / Закрыть камеру / Считать сейчас / Фонарик |
+| Review N SIMs / Every SIM you scan gets / Change | Peržiūrėti N SIM / Kiekviena nuskenuota SIM gaus / Keisti | Просмотреть N SIM / Каждая отсканированная SIM получит / Изменить |
 | For every SIM / Clear List / Add N SIMs | Visoms SIM / Išvalyti sąrašą / Pridėti N SIM | Для всех SIM / Очистить список / Добавить N SIM |
 | Photo of the SIM No. / Photo of the PIN and PUK / Next SIM | SIM Nr. nuotrauka / PIN ir PUK nuotrauka / Kita SIM | Фото № SIM / Фото PIN и PUK / Следующая SIM |
 | PIN / PUK | PIN / PUK | PIN / PUK |

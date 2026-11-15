@@ -198,7 +198,7 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
 - **Reading.** A carrier's front has the SIM No. as a Code 128 barcode, beside a product code
   (EAN-13, the same on every card, never taken). Its back has the PIN, the PUK and the
   provider's customer service number, and no SIM No. Both are read in the browser, three ways:
-  - **A card at a time** (at the top, from 768px; a phone has the other two only): a photo of each side, **Photo of the SIM
+  - **A card at a time** (at the top, from 768px; a phone has the camera, below): a photo of each side, **Photo of the SIM
     No.** and **Photo of the PIN and PUK** (the phone's camera, `capture`, or a file), each read
     as it is taken. A photo fills the side read on it, whichever slot took it; a field still
     empty shows no error. Only once both photos are in and the SIM No., PIN and PUK are all
@@ -206,7 +206,20 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
     photos filled them, else with **Next SIM** once the user has typed what was not read (the
     card's fields open by themselves once both photos are in and something is still missing).
   - **Camera**, live: front, then back, card after card; a reading is taken once it is the
-    same twice in a row.
+    same twice in a row, or at once after **Read Now** (a photo is read once too, and the list
+    checks it: a SIM No. must pass its check digit). A front already in the list is not taken
+    again ("Already in the list as SIM N: not taken again."). Each reading beeps, buzzes where the
+    phone can, and turns the guide green for a moment.
+  - **On a phone** (below 768px) the camera is the way to scan: **Scan with the Camera** opens it
+    full screen, as a camera app (`phone-camera.tsx`, a modal `<dialog>`: Escape and **Close the
+    camera** end it). The newest SIMs are above the viewfinder as they are read, each a tap away
+    from a sheet with its pictures and fields, to check it against the card and correct a value
+    read wrong, or **Remove** it (`card-sheet.tsx`); under it **Front** / **Back** says which side is
+    awaited, and the controls are the last card's picture with the count (**Review N SIMs**, back
+    to the list), **Read Now** and **No Back**, with the **Torch** on the picture where the camera
+    offers one (Chrome on Android). Before the first card it shows what every SIM gets, with
+    **Change** (the batch's form in a sheet). **Choose Photos** is not on a phone while the camera
+    can be used; where it cannot start, the camera offers it instead.
   - **Choose Photos**, taken earlier: front and back, in the order taken; a photo's side is
     what is read on it, a back pairing with the front before it, or after it when the first
     photo is a back.
@@ -214,7 +227,8 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   (`CardFields`): the front's picture and **SIM No.** on one line; the back's picture, **PIN**
   and **PUK** on the next, each line's problems under it. The values are plain text, a dash
   for none, to take little room. Only the card being scanned is edited (**Edit** turns its
-  values into fields); a card in the list is not: a wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`@ppe/scan-kit`'s `barcode.worker.ts` and Tesseract's; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
+  values into fields); a card in the list is not, except in a phone camera's sheet: elsewhere a
+  wrong one is removed and scanned again. zxing-wasm reads the barcode and tesseract.js the PIN and PUK, each in a worker of its own (`@ppe/scan-kit`'s `barcode.worker.ts` and Tesseract's; the screen and the camera's picture never wait on them; a live frame's barcode is read at 1280 px), the PIN and PUK each the number on its
   label's line, after it (`codesFromWords`); a carrier that prints a code under its label instead
   reads nothing on its back, and its PIN and PUK are typed (a known limit while there is one
   carrier layout; another provider's layout would be a hint per provider). Their files are the app's own

@@ -23,6 +23,8 @@ export type ScanListAction =
   /** Cards read, in order: as many as there is room for are kept; `more` says photos were left unread too. */
   | { type: 'add'; cards: readonly ScanCard[]; more?: boolean }
   | { type: 'remove'; index: number }
+  /** A card's values corrected (a phone's card sheet): its pictures stay. */
+  | { type: 'update'; index: number; patch: Partial<Pick<ScanCard, 'simNo' | 'pin' | 'puk'>> }
   | { type: 'clear' }
   /** The API's check of `sent`, the cards as they were sent. */
   | { type: 'checked'; sent: readonly ScannedSimInput[]; problems: readonly SimProblem[] }
@@ -57,6 +59,10 @@ export function scanList(state: ScanList, action: ScanListAction): ScanList {
         cards: state.cards.filter((_, i) => i !== action.index),
         released: [...state.released, ...picturesOf([card])],
       }
+    }
+    case 'update': {
+      if (!state.cards[action.index]) return state
+      return { ...state, cards: state.cards.map((c, i) => (i === action.index ? { ...c, ...action.patch } : c)) }
     }
     case 'clear':
       return { cards: [], registered: new Map(), notice: null, released: [...state.released, ...picturesOf(state.cards)] }

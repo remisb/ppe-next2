@@ -66,6 +66,44 @@ export function eachFrame(video: HTMLVideoElement, fn: () => Promise<void>): () 
   }
 }
 
+/**
+ * The camera's torch, where the browser offers it (Chrome on Android: the
+ * track's `torch` capability; Safari on an iPhone has none). `available` says
+ * whether to show the control at all; `set` resolves false when the camera
+ * refused.
+ */
+export interface Torch {
+  available: boolean
+  set: (on: boolean) => Promise<boolean>
+}
+
+export function torchOf(stream: MediaStream | null | undefined): Torch {
+  const track = stream?.getVideoTracks()[0]
+  // `torch` is not in TypeScript's MediaTrackCapabilities yet.
+  const caps = (track?.getCapabilities?.() ?? {}) as { torch?: boolean }
+  if (!track || caps.torch !== true) return { available: false, set: async () => false }
+  return {
+    available: true,
+    set: async (on) => {
+      try {
+        await track.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] })
+        return true
+      } catch {
+        return false
+      }
+    },
+  }
+}
+
+/** A short buzz where the phone can (Android), with the beep: a reading was taken. */
+export function buzz(): void {
+  try {
+    navigator.vibrate?.(40)
+  } catch {
+    // No buzz is no matter.
+  }
+}
+
 /** A short beep: a reading was taken. */
 export function beep(): void {
   try {
