@@ -48,7 +48,8 @@ export function PhoneReview({
     const note = r.row.find((m) => !blocks(m))
     const said = r.problem ? message(r.problem) : r.card.unread ? t.problems.unread : note ? message(note) : `${t.pin} ${r.card.pin} · ${t.puk} ${r.card.puk}`
     return (
-      <li key={r.card.key}>
+      // Rows fade in as the list or its filter changes.
+      <li key={r.card.key} className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
         <button
           type="button"
           aria-label={t.checkCard(r.index + 1)}

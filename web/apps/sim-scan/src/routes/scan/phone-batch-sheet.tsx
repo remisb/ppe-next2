@@ -118,7 +118,7 @@ export function PhoneBatchSheet({
         </fieldset>
 
         {editing ? (
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 text-[15px]">
+          <dl key="edit" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 text-[15px] motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             <dt>
               <label htmlFor={`${id}-plan`} className="text-muted-foreground">
                 {t.plan}
@@ -172,7 +172,7 @@ export function PhoneBatchSheet({
           </dl>
         ) : (
           // View mode: each value as text at the row's end, the pencil above turning them into fields.
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 text-[15px]">
+          <dl key="view" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 text-[15px] motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             {[
               [t.plan, draft.plan],
               [t.nonReturnValue, valueText.trim() === '' ? '' : valueBad ? valueText : formatEuro(parseEuro(valueText))],

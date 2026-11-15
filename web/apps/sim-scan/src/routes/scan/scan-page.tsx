@@ -209,15 +209,16 @@ export function ScanPage({ active = true }: { active?: boolean }) {
       <PageHeader title={t.scanTitle} description={t.scanDescription} />
 
       {added ? (
-        <section className="mb-6 flex flex-col gap-3 border-y border-border py-4" aria-live="polite">
+        <section className="mb-6 flex flex-col gap-3 border-y border-border py-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300" aria-live="polite">
           <p className="flex items-center gap-2 font-medium">
-            <CircleCheck aria-hidden className="size-5 text-success" />
+            <CircleCheck aria-hidden className="size-5 text-success motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-50 motion-safe:duration-500" />
             {t.added(added.length)}
           </p>
           <p className="text-sm text-muted-foreground">{t.addedNote}</p>
           <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border md:max-w-xl">
-            {added.map((sim) => (
-              <li key={sim.id}>
+            {added.map((sim, i) => (
+              // The SIMs added appear one after another.
+              <li key={sim.id} className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:fill-mode-both" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
                 <a href={staffHref(`/assets/sim-cards/${sim.id}`)} className="flex min-h-11 items-center gap-3 px-3 py-2 hover:bg-muted">
                   <span className="w-24 shrink-0 font-mono text-sm font-semibold">{sim.inventory_no}</span>
                   <span className="min-w-0 truncate font-mono text-sm text-muted-foreground">{sim.sim_no}</span>
@@ -334,7 +335,12 @@ export function ScanPage({ active = true }: { active?: boolean }) {
             <h2 id="cards" className="text-base font-semibold">
               {t.cards(n)}
             </h2>
-            {phoneList ? <span className={cn('text-sm', toFix > 0 ? 'text-destructive' : 'text-success')}>{toFix > 0 ? t.toFix(toFix) : t.allReady}</span> : null}
+            {phoneList ? (
+              // The list's state changes with a small pop: to fix, or all ready.
+              <span key={toFix > 0 ? `fix${toFix}` : 'ready'} className={cn('text-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300', toFix > 0 ? 'text-destructive' : 'text-success')}>
+                {toFix > 0 ? t.toFix(toFix) : t.allReady}
+              </span>
+            ) : null}
           </div>
           {n > 0 ? (
             <Button variant="ghost" size="sm" onClick={clear} disabled={adding}>
@@ -373,7 +379,8 @@ export function ScanPage({ active = true }: { active?: boolean }) {
                 <Camera aria-hidden className="size-4" />
                 {t.scanMore}
               </Button>
-              <Button className="h-12 flex-1" onClick={() => void add()} disabled={addDisabled}>
+              {/* Add is ready: it swells once into place as the last problem goes. */}
+              <Button className={cn('h-12 flex-1', !addDisabled && 'motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300')} onClick={() => void add()} disabled={addDisabled}>
                 {adding ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
                 {adding ? t.adding : t.add(n)}
               </Button>

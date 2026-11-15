@@ -213,8 +213,8 @@ Newly received SIM cards are added in a batch from their carriers, so no SIM No.
   - **On a phone** (below 768px) the camera is the way to scan: **Scan with the Camera** opens it
     full screen, as a camera app (`phone-camera.tsx`, a modal `<dialog>`: Escape and **Close the
     camera** end it). The newest SIMs are above the viewfinder as they are read, each a tap away
-    from a sheet with its pictures and fields, to check it against the card and correct a value
-    read wrong, or remove it (a bin, **Remove SIM N**; `card-sheet.tsx`); under it **Front** / **Back** says which side is
+    from a sheet with its pictures and values, read only until its pencil (**Edit SIM No., PIN and
+    PUK**) turns them into fields (no keyboard before), to correct a value read wrong, or remove it (a bin, **Remove SIM N**; `card-sheet.tsx`); under it **Front** / **Back** says which side is
     awaited, and the controls are the last card's picture with the count (**Review N SIMs**, back
     to the list), **Read Now** and **No Back**, with the **Torch** on the picture where the camera
     offers one (Chrome on Android). Before the first card it shows what every SIM gets (the

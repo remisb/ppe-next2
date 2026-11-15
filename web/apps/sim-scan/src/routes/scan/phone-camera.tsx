@@ -166,7 +166,12 @@ export function PhoneCamera({
             <>
               <div className="mt-auto flex items-baseline justify-between px-1 pt-2 pb-2 text-sm">
                 <span className="text-muted-foreground">{t.cards(n)}</span>
-                {toFix > 0 ? <span className="font-medium text-destructive">{t.toFix(toFix)}</span> : null}
+                {/* A new count pops, once: the list just changed. */}
+                {toFix > 0 ? (
+                  <span key={toFix} className="font-medium text-destructive motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-125 motion-safe:duration-300">
+                    {t.toFix(toFix)}
+                  </span>
+                ) : null}
               </div>
               <ol className="flex flex-col gap-1">
                 {cards.slice(first).map((c, k) => {
@@ -177,7 +182,8 @@ export function PhoneCamera({
                   const newest = i === n - 1
                   const said = problem ? message(problem) : c.unread ? t.problems.unread : note ? message(note) : `${t.pin} ${c.pin} · ${t.puk} ${c.puk}`
                   return (
-                    <li key={c.key}>
+                    // A SIM just read slides up into the list, by the camera.
+                    <li key={c.key} className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300">
                       <button
                         type="button"
                         aria-label={t.checkCard(i + 1)}
@@ -241,7 +247,11 @@ export function PhoneCamera({
             <>
               <div
                 aria-hidden
-                className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                className={cn(
+                  'pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out',
+                  // A side read: the guide's corners turn green and swell for a moment.
+                  scan.justRead && 'motion-safe:scale-105',
+                )}
                 style={{ width: `min(88cqw, ${(70 * CARD).toFixed(2)}cqh)`, aspectRatio: `${CARD}` }}
               >
                 <span className={cn('absolute top-0 left-0 size-8 rounded-tl-2xl border-t-4 border-l-4 transition-colors', corner)} />
@@ -249,7 +259,10 @@ export function PhoneCamera({
                 <span className={cn('absolute bottom-0 left-0 size-8 rounded-bl-2xl border-b-4 border-l-4 transition-colors', corner)} />
                 <span className={cn('absolute right-0 bottom-0 size-8 rounded-br-2xl border-r-4 border-b-4 transition-colors', corner)} />
               </div>
-              <span className="absolute top-3 left-3 flex h-7 items-center gap-1.5 rounded-full bg-black/55 px-2.5 text-xs font-medium">
+              <span
+                key={back ? 'back' : 'front'}
+                className="absolute top-3 left-3 flex h-7 items-center gap-1.5 rounded-full bg-black/55 px-2.5 text-xs font-medium motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-200"
+              >
                 <span aria-hidden className={cn('size-2 rounded-full', back ? 'bg-warning' : 'bg-white')} />
                 {t.sideStep(n + 1, back)}
               </span>
@@ -266,7 +279,10 @@ export function PhoneCamera({
                 </button>
               ) : null}
               {scan.duplicateOf !== null ? (
-                <p role="alert" className="absolute inset-x-4 top-14 flex items-center gap-2.5 rounded-xl bg-warning px-3 py-2.5 text-sm font-semibold text-warning-foreground">
+                <p
+                  role="alert"
+                  className="absolute inset-x-4 top-14 flex items-center gap-2.5 rounded-xl bg-warning px-3 py-2.5 text-sm font-semibold text-warning-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
+                >
                   <Copy aria-hidden className="size-5 shrink-0" />
                   {t.notTakenAgain(scan.duplicateOf + 1)}
                 </p>
@@ -274,7 +290,7 @@ export function PhoneCamera({
               <p
                 role="status"
                 aria-live="polite"
-                className={cn('absolute inset-x-4 bottom-3 rounded-xl px-3 py-2 text-center text-sm leading-snug', scan.justRead ? 'bg-success/90 text-success-foreground' : 'bg-black/60')}
+                className={cn('absolute inset-x-4 bottom-3 rounded-xl px-3 py-2 text-center text-sm leading-snug transition-colors duration-300', scan.justRead ? 'bg-success/90 text-success-foreground' : 'bg-black/60')}
               >
                 {full ? t.tooMany(MAX_CARDS) : scan.status}
               </p>
@@ -283,8 +299,8 @@ export function PhoneCamera({
         </div>
 
         <div aria-hidden className="flex h-10 shrink-0 items-center justify-center gap-7 text-sm font-semibold tracking-wider uppercase">
-          <span className={back ? 'text-muted-foreground' : 'text-warning'}>{t.front}</span>
-          <span className={back ? 'text-warning' : 'text-muted-foreground'}>{t.back}</span>
+          <span className={cn('transition-colors duration-300', back ? 'text-muted-foreground' : 'text-warning')}>{t.front}</span>
+          <span className={cn('transition-colors duration-300', back ? 'text-warning' : 'text-muted-foreground')}>{t.back}</span>
         </div>
 
         <div className="grid h-28 shrink-0 grid-cols-3 items-center justify-items-center px-4 pb-3">
@@ -296,9 +312,15 @@ export function PhoneCamera({
             onClick={onClose}
             className="relative size-14 rounded-xl border-2 border-white bg-muted disabled:opacity-35"
           >
-            {lastPicture ? <img src={lastPicture} alt="" className="size-full rounded-[10px] object-cover" /> : null}
+            {lastPicture ? (
+              <img key={lastPicture} src={lastPicture} alt="" className="size-full rounded-[10px] object-cover motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300" />
+            ) : null}
             {n > 0 ? (
-              <span className="absolute -top-2 -right-2 flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-black tabular-nums">
+              // The count pops each time a SIM is added.
+              <span
+                key={n}
+                className="absolute -top-2 -right-2 flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-black tabular-nums motion-safe:animate-in motion-safe:zoom-in-150 motion-safe:duration-300"
+              >
                 {n}
               </span>
             ) : null}
@@ -309,7 +331,7 @@ export function PhoneCamera({
             title={t.readNow}
             disabled={scan.problem !== null || full}
             onClick={scan.readNow}
-            className="flex size-[78px] items-center justify-center rounded-full border-4 border-white p-1 disabled:opacity-35"
+            className="flex size-[78px] items-center justify-center rounded-full border-4 border-white p-1 disabled:opacity-35 motion-safe:transition-transform motion-safe:active:scale-90"
           >
             <span aria-hidden className={cn('size-full rounded-full transition-colors', scan.justRead ? 'bg-success' : 'bg-white')} />
           </button>

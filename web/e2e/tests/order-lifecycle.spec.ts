@@ -3663,7 +3663,12 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await expect(page.getByRole('button', { name: 'Add 2 SIMs' })).toBeInViewport()
   await page.getByRole('button', { name: 'Check SIM 2' }).click()
   const cardSheet = page.getByRole('dialog', { name: 'SIM 2' })
+  // Read only at first, no field to bring up the keyboard; the pencil turns the values into fields.
+  await expect(cardSheet.getByTestId('pin')).toHaveText('7051')
+  await expect(cardSheet.getByRole('textbox')).toHaveCount(0)
+  await cardSheet.getByRole('button', { name: 'Edit SIM No., PIN and PUK' }).click()
   await expect(cardSheet.getByLabel('PIN', { exact: true })).toHaveValue('7051')
+  await expect(cardSheet.getByLabel('SIM No.', { exact: true })).toBeFocused()
   await cardSheet.getByRole('button', { name: 'Done' }).click()
   await expect(cardSheet).toBeHidden()
   await page.setViewportSize(desktop)
