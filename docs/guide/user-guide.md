@@ -248,6 +248,10 @@ Each step opens when the one before it is done, and the line beside the button s
 
 ![A SIM's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
 
+**Show PIN and PUK**, the key among a SIM's actions, shows its PIN and PUK: the SIM's numbers, each code large with a button to copy it, and when it was recorded. Everyone who sees SIM cards has it, and no password is asked. Each time is recorded in the SIM's **Changes**, never the codes themselves. **Done** closes it; it also closes by itself after a minute, or when you leave the tab. On a SIM without PIN and PUK the key is greyed out.
+
+![Show PIN and PUK: the SIM's PIN and PUK, each with its copy button](../../web/apps/workwear/public/help-img/en/desktop/sim-codes.png)
+
 On an assignment with a form, the card's page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.
 
 *Administrators and managers only:*
@@ -278,9 +282,9 @@ The list below checks every SIM at once and says what needs fixing: a number tha
 
 ![Scan SIMs: the SIMs read from photos, checked before they are added](../../web/apps/workwear/public/help-img/en/desktop/sim-scan.png)
 
-*Administrators only:*
+*Administrators and managers only:*
 
-**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
+**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, as the key on a SIM in **SIM Cards** does; each time is recorded in its **Changes**, never the codes. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
 
 ## 13. Administration
 

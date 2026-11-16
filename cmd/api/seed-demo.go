@@ -59,6 +59,16 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return err
 	}
 
+	// PIN and PUK are sealed with the API's key; without one the demo's cards have none.
+	assetOpts := []asset.Option{}
+	if cfg.SIMCodesKey != "" {
+		keys, err := simCodesKeyring(cfg)
+		if err != nil {
+			return err
+		}
+		assetOpts = append(assetOpts, asset.WithSealer(keys))
+	}
+
 	clock := &seedClock{}
 	start := time.Now()
 	clock.daysAgo(start, loc, 150)
@@ -71,7 +81,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 			Catalogue: orderCatalogue{items},
 			ItemSets:  orderItemSets{sets},
 		}, order.WithLocation(loc), order.WithConfirmTTL(cfg.ConfirmTTL), order.WithClock(clock.now))
-		assets = asset.NewService(asset.NewPostgresRepository(pool), asset.WithLocation(loc), asset.WithClock(clock.now), asset.WithFiles(store))
+		assets = asset.NewService(asset.NewPostgresRepository(pool), append([]asset.Option{asset.WithLocation(loc), asset.WithClock(clock.now), asset.WithFiles(store)}, assetOpts...)...)
 	)
 
 	existingItems, err := items.List(ctx)
@@ -170,6 +180,8 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	sim3 := s.sim("SIM-000003", "8937 0102 7788 1200 015", "+370 655 21987", "Bitė", "Verslas 20 GB", asset.StatusActive)
 	sim4 := s.sim("SIM-000004", "8937 0102 7788 1200 016", "+370 655 21988", "Bitė", "Verslas 20 GB", asset.StatusActive)
 	s.sim("SIM-000005", "8937 0011 2233 4455 669", "+370 612 40120", "Telia", "Biz 10 GB", asset.StatusActive)
+	// Made-up PIN and PUK, as on a card's carrier, so Show PIN and PUK has something to show (the guide's shot).
+	s.simCodes(sim3, "4826", "31597264")
 	laptop := s.equipment("PC-000001", "Laptop Dell Latitude 5440", asset.CategoryComputer, "5CD3421K7Q", 90000)
 	s.equipment("PC-000002", "Laptop Dell Latitude 5440", asset.CategoryComputer, "5CD3421K9T", 90000)
 	phone := s.equipment("PH-000001", "Samsung Galaxy A55", asset.CategoryPhone, "R58X12AB34C", 35000)
@@ -452,6 +464,18 @@ func (s *seeder) giveBack(a asset.View) {
 	}
 	_, err := s.assets.Return(s.ctx, a.ID, asset.ReturnParams{}, s.actor)
 	s.fail("return "+a.InventoryNo, err)
+}
+
+// simCodes keeps a SIM card's PIN and PUK, when the API has the key to seal them.
+func (s *seeder) simCodes(a asset.View, pin, puk string) {
+	if s.err != nil {
+		return
+	}
+	err := s.assets.SetSIMCodes(s.ctx, a.ID, asset.SIMCodes{PIN: pin, PUK: puk}, s.actor)
+	if errors.Is(err, asset.ErrSIMCodesUnavailable) {
+		return
+	}
+	s.fail("PIN and PUK of "+a.InventoryNo, err)
 }
 
 func (s *seeder) status(a asset.View, st asset.Status) {

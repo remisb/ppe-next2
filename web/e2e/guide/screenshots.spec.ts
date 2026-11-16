@@ -228,6 +228,14 @@ test('company assets: the SIMs, a card, giving one', async () => {
   await openAssignments()
   await shot('asset')
 
+  // Show PIN and PUK on the same card: the demo gave SIM-000003 made-up codes (cmd/api/seed-demo.go).
+  await page.getByRole('button', { name: T.assets.showCodes }).click()
+  const codes = page.getByRole('dialog', { name: T.assets.codesTitle })
+  await expect(codes).toContainText('31597264')
+  await shot('sim-codes')
+  await codes.getByRole('button', { name: T.assets.codesDone }).click()
+  await expect(codes).toBeHidden()
+
   // A signed copy uploaded: SIM-000001's, scanned the day after it was given (cmd/api/seed-demo.go).
   await page.goto('/assets')
   await sim(sim1).click()

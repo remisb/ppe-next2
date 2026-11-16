@@ -72,12 +72,13 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['employee']))).toContain('Employee Dashboard')
   })
 
-  it('shows App Launcher and Scan SIMs to administrators and managers, who have several apps, and Show PIN and PUK to administrators', () => {
+  it('shows App Launcher and Scan SIMs to administrators and managers, who have several apps, and Show PIN and PUK to everyone who sees SIM cards', () => {
     for (const roles of [['admin'], ['manager']] as const) expect(ids(forRoles(guides.en, roles))).toEqual(expect.arrayContaining(['launcher', 'sim-scan']))
     expect(ids(forRoles(guides.en, ['employee']))).not.toContain('launcher')
     expect(ids(forRoles(guides.en, ['employee']))).not.toContain('sim-scan')
-    expect(words(forRoles(guides.en, ['admin']))).toContain('**Show PIN and PUK**')
-    expect(words(forRoles(guides.en, ['manager']))).not.toContain('**Show PIN and PUK**')
+    // WARE-37: the key on a SIM is for everyone who sees SIM cards, the Employee role included; no password is asked.
+    for (const roles of [['admin'], ['manager'], ['employee']] as const) expect(words(forRoles(guides.en, roles))).toContain('**Show PIN and PUK**')
+    expect(words(forRoles(guides.en, ['manager']))).not.toContain('asking for your password')
   })
 
   it('shows Company Assets to everyone, and giving, returns and Not Returned to those who manage assets', () => {

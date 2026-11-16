@@ -319,6 +319,10 @@ export const en: Guide = {
           roles: ['admin', 'manager'],
         },
         { shots: [{ name: 'asset', alt: "A SIM's page: its status, holder and assignments" }], roles: ['employee'] },
+        {
+          p: "**Show PIN and PUK**, the key among a SIM's actions, shows its PIN and PUK: the SIM's numbers, each code large with a button to copy it, and when it was recorded. Everyone who sees SIM cards has it, and no password is asked. Each time is recorded in the SIM's **Changes**, never the codes themselves. **Done** closes it; it also closes by itself after a minute, or when you leave the tab. On a SIM without PIN and PUK the key is greyed out.",
+        },
+        { shots: [{ name: 'sim-codes', alt: "Show PIN and PUK: the SIM's PIN and PUK, each with its copy button" }] },
         { p: 'On an assignment with a form, the card\'s page says **Signed Copy Uploaded**, with the scan to download, or **Signed Copy Missing**. The **Documents** filter finds the missing ones.' },
         { p: 'Once the employee has signed, scan or photograph the form and choose **Upload Signed Form** under its assignment: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
         { p: 'Once the employee has signed, choose **Upload Signed Form** under its assignment, then take a photo of the form or choose a file: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['phone'] },
@@ -358,8 +362,8 @@ export const en: Guide = {
         },
         { shots: [{ name: 'sim-scan', alt: 'Scan SIMs: the SIMs read from photos, checked before they are added' }] },
         {
-          p: '**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, after asking for your password if you entered it a while ago; each time is recorded in the **Audit log**. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list or in **Changes**. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.',
-          roles: ['admin'],
+          p: '**PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, as the key on a SIM in **SIM Cards** does; each time is recorded in its **Changes**, never the codes. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.',
+          roles: ['admin', 'manager'],
         },
       ],
     },

@@ -117,6 +117,7 @@ export type ShotName =
   | 'assets'
   | 'asset'
   | 'give-asset'
+  | 'sim-codes'
   | 'signed-copy'
   | 'overview'
   | 'users'
