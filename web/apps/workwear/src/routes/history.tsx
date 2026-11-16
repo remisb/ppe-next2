@@ -61,6 +61,8 @@ const historyColumns = (): SortColumn<HistorySort>[] => [
   { key: 'status', label: t.history.colStatus },
   { key: 'total', label: t.history.colTotal, kind: 'number' },
 ]
+/** Fixed column widths: the list keeps its layout across tabs, pages and filters. The employee takes the rest. */
+const historyWidths: Partial<Record<HistorySort, string>> = { record: 'w-32', date: 'w-40', status: 'w-32', total: 'w-28' }
 const newestFirst: SortState<HistorySort> = { key: 'date', dir: 'desc' }
 
 /**
@@ -324,6 +326,7 @@ export function History({
           */}
           <Table
             stack="list"
+            fixed
             stackBelow={selected ? 'sm' : 'lg'}
             busy={orders.loading}
             sortControl={<SortMenu columns={columns} {...sortProps} />}
@@ -332,7 +335,7 @@ export function History({
             <TableHeader>
               <TableRow>
                 {columns.map((c) => (
-                  <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} {...sortProps} />
+                  <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} className={historyWidths[c.key]} {...sortProps} />
                 ))}
               </TableRow>
             </TableHeader>

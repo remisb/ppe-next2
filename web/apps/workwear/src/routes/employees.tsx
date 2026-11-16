@@ -33,6 +33,9 @@ import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from 
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
+/** Fixed column widths; the name takes the rest. */
+const employeeWidths: Partial<Record<EmployeeSort, string>> = { code: 'w-32', height: 'w-24', clothing: 'w-40', shoes: 'w-32' }
+
 // A function, so the labels are read in the language in use.
 const employeeColumns = (): SortColumn<EmployeeSort>[] => [
   { key: 'name', label: t.employees.name, kind: 'text' },
@@ -209,13 +212,13 @@ export function Employees({
             A row opens the employee, whose page holds Edit Sizes, New order and
             Delete; the table keeps Edit Sizes and ⋯ on each row.
           */
-          <Table stack="list" stickyHead sortControl={<SortMenu columns={columns} {...sortProps} />}>
+          <Table stack="list" fixed stickyHead sortControl={<SortMenu columns={columns} {...sortProps} />}>
             <TableHeader>
               <TableRow>
                 {columns.map((c) => (
-                  <SortableHead key={c.key} column={c} {...sortProps} />
+                  <SortableHead key={c.key} column={c} className={employeeWidths[c.key]} {...sortProps} />
                 ))}
-                <TableHead className="text-right">{t.employees.actions}</TableHead>
+                <TableHead className="w-44 text-right">{t.employees.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -243,7 +246,7 @@ export function Employees({
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
                       <EmployeeAvatar employee={e} />
                     </TableCell>
-                    <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
+                    <TableCell className="font-medium whitespace-normal stacked:col-start-2 stacked:row-start-1 stacked:flex stacked:min-w-0 stacked:items-center stacked:justify-between stacked:gap-2">
                       <div className="flex items-center gap-3 stacked:contents">
                         {/* In the table the avatar leads the name; stacked, it has a cell of its own on the left. */}
                         <EmployeeAvatar employee={e} className="stacked:hidden" />
