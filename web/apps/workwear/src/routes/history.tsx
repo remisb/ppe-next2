@@ -336,7 +336,7 @@ export function History({
             <TableHeader>
               <TableRow>
                 {columns.map((c) => (
-                  <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} className={historyWidths[c.key]} {...sortProps} />
+                  <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} className={selected ? undefined : historyWidths[c.key]} {...sortProps} />
                 ))}
               </TableRow>
             </TableHeader>
