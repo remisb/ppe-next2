@@ -33,7 +33,6 @@ export const PERMISSIONS = [
   'assets.manage',
   'sim_cards.read',
   'sim_cards.manage',
-  'sim_codes.read',
   'equipment.read',
   'personnel.documents.read',
   'personnel.documents.manage',

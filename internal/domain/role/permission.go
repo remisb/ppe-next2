@@ -35,7 +35,6 @@ const (
 	AssetsManage   Permission = "assets.manage"
 	SIMCardsRead   Permission = "sim_cards.read"
 	SIMCardsManage Permission = "sim_cards.manage"
-	SIMCodesRead   Permission = "sim_codes.read"
 	EquipmentRead  Permission = "equipment.read"
 	// Personnel files (ADR 0007): see a person's identity documents and Show
 	// Document; scan and save them; colour a document's portrait with AI.
@@ -118,7 +117,6 @@ var catalogue = []Info{
 	{AssetsManage, GroupWorkwear, nil},
 	{SIMCardsRead, GroupWorkwear, nil},
 	{SIMCardsManage, GroupWorkwear, []Permission{SIMCardsRead}},
-	{SIMCodesRead, GroupWorkwear, []Permission{SIMCardsRead}},
 	{EquipmentRead, GroupWorkwear, nil},
 	{PersonnelDocumentsRead, GroupPersonnel, nil},
 	{PersonnelDocumentsManage, GroupPersonnel, []Permission{PersonnelDocumentsRead}},

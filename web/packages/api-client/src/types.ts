@@ -1419,6 +1419,8 @@ export interface Asset {
   open_assignment: AssetAssignment | null
   /** Giving it needs a signed form: SIM cards and computer equipment (spec, open decision 6). */
   needs_form: boolean
+  /** A SIM card whose PIN and PUK are kept, so Show PIN and PUK is offered (never the codes themselves). */
+  has_sim_codes: boolean
 }
 
 /** An asset's page: the asset and every assignment, newest first. */

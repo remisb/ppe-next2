@@ -317,4 +317,17 @@ export const assets: AssetsText = {
   nextOrPreviousCard: 'kita arba ankstesnė SIM',
   closeItem: 'Uždaryti daiktą',
   nextOrPreviousItem: 'kitas arba ankstesnis daiktas',
+  // Rodyti PIN ir PUK (WARE-37): raktas tarp SIM veiksmų ir jo atveriamas langas.
+  showCodes: 'Rodyti PIN ir PUK',
+  showingCodes: 'Rodomi PIN ir PUK…',
+  noCodes: 'Šios kortelės PIN ir PUK neįrašyti',
+  codesTitle: 'PIN ir PUK',
+  codesNoneNow: (number: string) => `${number} PIN ir PUK neįrašyti.`,
+  copyPin: 'Kopijuoti PIN',
+  copyPuk: 'Kopijuoti PUK',
+  pinCopied: 'PIN nukopijuotas.',
+  pukCopied: 'PUK nukopijuotas.',
+  codesRecorded: (time: string) => `Užfiksuota šios kortelės pakeitimuose ${time}.`,
+  codesCloseIn: (time: string) => `Užsidarys savaime po ${time}.`,
+  codesDone: 'Baigta',
 }

@@ -81,7 +81,7 @@ describe('tabs and filters', () => {
 const card = (over: Partial<Asset>): Asset => ({
   id: 'a', kind: 'SIM', category: null, inventory_no: 'SIM-000001', name: null, serial_no: null, sim_no: '0089370011', phone_no: null,
   provider: 'Telia', plan: null, non_return_value_cents: null, currency: 'EUR', connection_status: 'NOT_ACTIVATED', received_date: '2026-10-01',
-  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, ...over,
+  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, has_sim_codes: false, ...over,
 })
 
 describe('copying a SIM\'s numbers', () => {

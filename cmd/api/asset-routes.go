@@ -31,9 +31,10 @@ type assetHandler struct {
 // not found. A route that serves both kinds is open to any signed-in user to
 // read, or to either manage permission to write, and checks the asset's kind.
 // The return and the Not Returned mark act on the asset's open assignment, so
-// they are the asset's routes. Showing a SIM card's PIN and PUK is sensitive:
-// a recent sign-in, and sim_codes.read still granted now.
-func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
+// they are the asset's routes. Whoever sees SIM cards may show a card's PIN
+// and PUK (WARE-37, ADR 0005 amendment): no recent sign-in, each showing
+// recorded.
+func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service) {
 	h := &assetHandler{assets: assets, users: users}
 	managers := []role.Permission{role.SIMCardsManage, role.AssetsManage}
 	rt.authenticated("GET /api/v1/assets", h.list)
@@ -49,7 +50,7 @@ func registerAssetRoutes(rt *router, assets *asset.Service, users *user.Service,
 	// once, nothing written), then added all or none.
 	rt.restricted("POST /api/v1/assets/sim-cards/batch/check", h.checkSIMs, role.SIMCardsManage)
 	rt.restricted("POST /api/v1/assets/sim-cards/batch", h.addSIMs, role.SIMCardsManage)
-	rt.restricted("POST /api/v1/assets/{id}/sim-codes/show", sensitive(role.SIMCodesRead, h.seen(h.showSIMCodes)), role.SIMCodesRead)
+	rt.restricted("POST /api/v1/assets/{id}/sim-codes/show", h.seen(h.showSIMCodes), role.SIMCardsRead)
 	rt.restricted("PUT /api/v1/assets/{id}/sim-codes", h.changes(h.setSIMCodes), role.SIMCardsManage)
 	rt.restricted("DELETE /api/v1/assets/{id}/sim-codes", h.changes(h.clearSIMCodes), role.SIMCardsManage)
 	rt.restrictedAny("PUT /api/v1/assets/{id}", h.changes(h.update), managers...)

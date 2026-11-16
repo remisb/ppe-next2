@@ -13,7 +13,7 @@ import { ScanPage } from './routes/scan/scan-page'
 /*
  * The trial, in a small app's frame (@ppe/launcher's SignedIn and AppFrame):
  * its name, its two screens as tabs (Scan, which needs sim_cards.manage, and PIN
- * and PUK, which needs sim_codes.read), the way back to SIM Cards, App
+ * and PUK, which needs sim_cards.read), the way back to SIM Cards, App
  * Launcher and Sign out. It shares the staff app's sign-in, so signing in or
  * out here does so there too. Published under App Launcher (ADR 0006): off
  * Stable, the frame's stripe says which channel and version.
@@ -31,7 +31,7 @@ function Screens({ session }: { session: Session }) {
   const { route: asked, navigate } = useRouter()
   const tabs: { route: Route; label: string; shown: boolean }[] = [
     { route: { name: 'scan' }, label: t.shell.scan, shown: session.can('sim_cards.manage') },
-    { route: { name: 'find' }, label: t.shell.find, shown: session.can('sim_codes.read') },
+    { route: { name: 'find' }, label: t.shell.find, shown: session.can('sim_cards.read') },
   ]
   const shown = tabs.filter((x) => x.shown)
   const route = shown.find((x) => x.route.name === asked.name)?.route ?? shown[0]?.route

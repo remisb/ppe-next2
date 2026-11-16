@@ -134,6 +134,10 @@ type Asset struct {
 	CreatedByUserID     uuid.UUID  `json:"created_by_user_id"`
 	UpdatedByUserID     uuid.UUID  `json:"updated_by_user_id"`
 	DeletedByUserID     *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	// HasSIMCodes says whether a SIM card's PIN and PUK are kept (asset_sim_codes),
+	// so Show PIN and PUK is offered only for a card that has them. Read with the
+	// asset, never written by it; the codes themselves are only ever shown.
+	HasSIMCodes bool `json:"has_sim_codes"`
 }
 
 // Deleted says whether a is soft-deleted.

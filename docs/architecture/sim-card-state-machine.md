@@ -124,7 +124,7 @@ The diagrams above show how a card moves; this table shows what may be done to i
 | Prepare Blocking Email | ✓; not offered when Blocked | ✓; not offered when Blocked | ✓; not offered when Blocked |
 | Edit | ✓ | ✓ | ✓ |
 | Add or clear PIN and PUK | ✓ | ✓ | ✓ |
-| Show PIN and PUK | ✓ with `sim_codes.read` and a recent sign-in; 404 with none | ✓, as in the Office | ✓, as in the Office |
+| Show PIN and PUK | ✓ with `sim_cards.read` (the key among the card's actions); greyed out, and 404, with none | ✓, as in the Office | ✓, as in the Office |
 | The register row's button | Give SIM; Change Status when Blocked | Return | Return |
 
 Earlier assignments keep Print form again and Upload Signed Form (when given on a form) whatever the card's state. A Not Activated card may be given and stays Not Activated until Change Status (decided 2026-11-13).
@@ -203,7 +203,7 @@ stateDiagram-v2
 | No PIN and PUK | PIN and PUK kept | Add PIN and PUK | `PUT /api/v1/assets/{id}/sim-codes` | `sim_cards.manage`; PIN 4 to 8 digits, PUK 8; `asset.sim_codes_changed` `{"sim_codes": "set"}` |
 | PIN and PUK kept | PIN and PUK kept | Set again | as above | Replaces them; the same event |
 | PIN and PUK kept | No PIN and PUK | Clear | `DELETE /api/v1/assets/{id}/sim-codes` | `asset.sim_codes_changed` `{"sim_codes": "cleared"}`; 404 `ErrNoSIMCodes` with none |
-| PIN and PUK kept | PIN and PUK kept | Show PIN and PUK | `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read` and a recent sign-in; records `asset.sim_codes_shown` before answering, `no-store`; changes nothing. 404 with none, recording nothing |
+| PIN and PUK kept | PIN and PUK kept | Show PIN and PUK | `POST /api/v1/assets/{id}/sim-codes/show` | `sim_cards.read`; records `asset.sim_codes_shown` before answering, `no-store`; changes nothing. 404 with none, recording nothing |
 
 The state is whether the card has a row in `asset_sim_codes`: the PIN and PUK sealed together
 (AES-256-GCM under `API_SIM_CODES_KEY`), bound to the card's id. No event, error or log line

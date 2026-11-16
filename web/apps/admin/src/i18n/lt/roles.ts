@@ -116,15 +116,11 @@ export const roles: RolesText = {
     },
     'sim_cards.read': {
       label: 'Matyti SIM korteles',
-      grants: 'SIM kortelių ekraną, kiekvieną SIM ir pas ką ji yra: darbuotojų puslapiuose, paieškoje ir suvestinėse. Be šio leidimo SIM nematomos.',
+      grants: 'SIM kortelių ekraną, kiekvieną SIM ir pas ką ji yra: darbuotojų puslapiuose, paieškoje ir suvestinėse. Taip pat Rodyti PIN ir PUK, kiekvienas kartas užfiksuojamas. Be šio leidimo SIM nematomos.',
     },
     'sim_cards.manage': {
       label: 'Tvarkyti SIM',
       grants: 'Pridėti ir skenuoti SIM, jas keisti, keisti jų būseną, išduoti darbuotojams, registruoti grąžinimą ir paruošti jų laiškus. Reikia leidimo „Matyti SIM korteles“.',
-    },
-    'sim_codes.read': {
-      label: 'Rodyti PIN ir PUK',
-      grants: 'Matyti SIM PIN ir PUK, patvirtinus slaptažodį; kiekvienas kartas užfiksuojamas. Reikia leidimo „Matyti SIM korteles“.',
     },
     'equipment.read': {
       label: 'Matyti įrangą ir baldus',

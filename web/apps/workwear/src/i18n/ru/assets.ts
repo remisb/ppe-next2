@@ -317,4 +317,17 @@ export const assets: AssetsText = {
   nextOrPreviousCard: 'следующая или предыдущая SIM',
   closeItem: 'Закрыть предмет',
   nextOrPreviousItem: 'следующий или предыдущий предмет',
+  // Показать PIN и PUK (WARE-37): ключ среди действий SIM и окно, которое он открывает.
+  showCodes: 'Показать PIN и PUK',
+  showingCodes: 'Показываем PIN и PUK…',
+  noCodes: 'PIN и PUK этой карты не записаны',
+  codesTitle: 'PIN и PUK',
+  codesNoneNow: (number: string) => `У ${number} не записаны PIN и PUK.`,
+  copyPin: 'Копировать PIN',
+  copyPuk: 'Копировать PUK',
+  pinCopied: 'PIN скопирован.',
+  pukCopied: 'PUK скопирован.',
+  codesRecorded: (time: string) => `Записано в изменениях этой карты в ${time}.`,
+  codesCloseIn: (time: string) => `Закроется само через ${time}.`,
+  codesDone: 'Готово',
 }

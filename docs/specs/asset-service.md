@@ -299,12 +299,14 @@ under `API_SIM_CODES_KEY` (`internal/sealbox`), which the database and its backu
 hold, together in one value bound to the card's id, in `asset_sim_codes` (one row per card that
 has them). They are never in an asset's JSON, an event, an error or a log line.
 
-- **Show PIN and PUK** needs `sim_codes.read` (which needs `sim_cards.read`; the Administrator's
-  alone when installed), checked against the user's roles as they are now, and a **recent
-  sign-in** (`API_RECENT_SIGN_IN`): otherwise the app asks Confirm your password. Each Show
+- **Show PIN and PUK** needs `sim_cards.read`, as seeing the card does, and no recent sign-in
+  (WARE-37, ADR 0005 amendment; `sim_codes.read` was retired in migration 0055). An asset's
+  `has_sim_codes` says whether it has codes, so the staff app greys out its key (Show PIN and
+  PUK, among the SIM card's actions in the pane and on its page) for one without. Each Show
   records `asset.sim_codes_shown` (the SIM No., never the codes) before it answers, and the
   answer is `Cache-Control: no-store`. A card without codes is 404, recorded nothing. Shown codes
-  hide again after a minute, or as soon as the tab goes to the background.
+  hide again after a minute, or as soon as the tab goes to the background; in the staff app they
+  show in a window (a bottom sheet on a phone) with a copy button for each, closed by Done.
 - **Set** (`PUT …/sim-codes`, `{pin, puk}`) keeps them in place of any, and **clear**
   (`DELETE`) forgets them, each recording `asset.sim_codes_changed` with `{"sim_codes":
   "set"|"cleared"}`; both need `sim_cards.manage`, on SIM cards only. In the trial, Show PIN and
@@ -456,7 +458,7 @@ stays with its assignment when the asset later goes to someone else.
 | `POST /api/v1/assets` | `sim_cards.manage` or `assets.manage`, the body's kind's | Add SIM, Add Asset (201) |
 | `POST /api/v1/assets/sim-cards/batch/check` | `sim_cards.manage` | Scan SIMs' check: `{provider, plan?, non_return_value_cents?, received_date?, comment, cards: [{sim_no, pin, puk}]}`; `200 {problems: [{index, field, code, existing_id?, other?}]}`, every problem of every card, `[]` for none (codes `not_sim_no`, `check_digit`, `duplicate`, `registered`, `codes_incomplete`, `pin`, `puk`); a problem with what the cards share is a 400; writes nothing |
 | `POST /api/v1/assets/sim-cards/batch` | `sim_cards.manage` | Scan SIMs' Add, the same body: `201 {sims: [{id, inventory_no, sim_no}]}`, all or none; a refused card is a 400 or 409 with its `index` |
-| `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read`, a recent sign-in | Show PIN and PUK: `{pin, puk}`, `no-store`, records `asset.sim_codes_shown`; 404 without codes |
+| `POST /api/v1/assets/{id}/sim-codes/show` | `sim_cards.read` | Show PIN and PUK: `{pin, puk}`, `no-store`, records `asset.sim_codes_shown`; 404 without codes |
 | `PUT /api/v1/assets/{id}/sim-codes` | `sim_cards.manage` | keeps `{pin, puk}` (204), records `asset.sim_codes_changed` |
 | `DELETE /api/v1/assets/{id}/sim-codes` | `sim_cards.manage` | forgets them (204); 404 without codes |
 | `PUT /api/v1/assets/{id}` | the kind's manage permission | Edit, full replace of the details |

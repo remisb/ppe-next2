@@ -115,15 +115,11 @@ export const roles = {
     },
     'sim_cards.read': {
       label: 'See SIM Cards',
-      grants: 'The SIM Cards screen, each SIM and who holds it: on employee pages, in search and on the dashboards. Without it, SIMs are hidden.',
+      grants: 'The SIM Cards screen, each SIM and who holds it: on employee pages, in search and on the dashboards. Includes Show PIN and PUK, each time recorded. Without it, SIMs are hidden.',
     },
     'sim_cards.manage': {
       label: 'Manage SIMs',
       grants: 'Add and scan SIMs, edit them, change their status, give them to employees, register their return and prepare their emails. Needs See SIM Cards.',
-    },
-    'sim_codes.read': {
-      label: 'Show PIN and PUK',
-      grants: 'See a SIM’s PIN and PUK, after confirming the password; each time is recorded. Needs See SIM Cards.',
     },
     'equipment.read': {
       label: 'See Equipment & Furniture',
