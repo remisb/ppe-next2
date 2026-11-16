@@ -52,6 +52,8 @@ type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status
 /** Beside an open item the list keeps the columns that find the next one; the rest is in the pane. */
 const besideColumns: CatalogueSort[] = ['name', 'price', 'status']
 
+/** Fixed column widths; the details take the rest. */
+const catalogueWidths: Partial<Record<CatalogueSort, string>> = { name: 'w-48', group: 'w-32', price: 'w-24', period: 'w-28', status: 'w-44' }
 const columns = (): SortColumn<CatalogueSort>[] => [
   { key: 'name', label: t.catalogue.colItem, kind: 'text' },
   { key: 'details', label: t.catalogue.colDetails, kind: 'text' },
@@ -242,13 +244,13 @@ export function Catalogue({
               Incomplete or Inactive flagged. A row opens the item, whose page holds
               Edit and Deactivate; the table keeps Edit and ⋯ on each row.
             */
-            <Table stack="list" stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
+            <Table stack="list" fixed stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
               <TableHeader>
                 <TableRow>
                   {shownColumns.map((c) => (
-                    <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} {...sortProps} />
+                    <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} className={catalogueWidths[c.key]} {...sortProps} />
                   ))}
-                  {rowActions ? <TableHead className="text-right">{t.catalogue.actions}</TableHead> : null}
+                  {rowActions ? <TableHead className="w-36 text-right">{t.catalogue.actions}</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,7 +278,7 @@ export function Catalogue({
                           openItem(i.id)
                         }}
                       >
-                        <TableCell className="font-medium stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
+                        <TableCell className="font-medium whitespace-normal stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
                           <span className="flex items-center gap-3">
                             {canMove ? (
                               // The handle: press and move, or the arrow keys. Not on a stacked row, which only opens the item.
