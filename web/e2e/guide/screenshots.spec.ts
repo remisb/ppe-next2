@@ -205,6 +205,13 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await shot('backups')
 })
 
+test('suppliers', async () => {
+  // The suppliers the demo adds (cmd/api/seed-demo.go), each with the items that name it.
+  await page.goto('/admin/suppliers')
+  await expect(page.getByRole('row', { name: /UAB Darbo rūbai/ })).toBeVisible()
+  await shot('suppliers')
+})
+
 test('company assets: the SIMs, a card, giving one', async () => {
   // The demo's cards (cmd/api/seed-demo.go): SIM-000003 is not returned, SIM-000005 is Active in the office.
   // A SIM's row links from its phone number, which leads its link on every device.

@@ -17,6 +17,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 )
@@ -74,6 +75,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	clock.daysAgo(start, loc, 150)
 	var (
 		employees = employee.NewService(employee.NewPostgresRepository(pool), employee.WithClock(clock.now))
+		suppliers = supplier.NewService(supplier.NewPostgresRepository(pool), supplier.WithClock(clock.now))
 		items     = catalogue.NewService(catalogue.NewPostgresRepository(pool), catalogue.WithClock(clock.now))
 		sets      = itemset.NewService(itemset.NewPostgresRepository(pool), catalogueChecker{items}, itemset.WithClock(clock.now))
 		orders    = order.NewService(order.NewPostgresRepository(pool), order.Readers{
@@ -96,24 +98,42 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return fmt.Errorf("refusing to seed: the database already has %d catalogue items and %d employees", len(existingItems), len(existingEmployees))
 	}
 
-	s := seeder{ctx: ctx, actor: admin.ID, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
+	s := seeder{ctx: ctx, actor: admin.ID, suppliers: suppliers, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
 		today: func() string { return clock.now().In(loc).Format(time.DateOnly) }}
+
+	// Suppliers, made-up companies; each item below names the one chosen before it.
+	clothing := s.supplierOf(supplier.Params{Code: "DR-01", Name: "UAB Darbo rūbai", CompanyCode: "300000001", VATCode: "LT100000000017",
+		Address: "Pramonės g. 12", City: "Vilnius", PostalCode: "LT-11115", Country: "LT", ContactPerson: "Rasa Petrauskienė",
+		Email: "uzsakymai@darborubai.example", Phone: "+370 600 11111", Website: "https://darborubai.example",
+		BankAccount: "LT121000011101001000", Notes: "Orders by email; delivery in 5 working days."})
+	safety := s.supplierOf(supplier.Params{Code: "AP-02", Name: "UAB Apsaugos priemonės", CompanyCode: "300000002", VATCode: "LT100000000028",
+		Address: "Savanorių pr. 40", City: "Kaunas", PostalCode: "LT-44255", Country: "LT", ContactPerson: "Tomas Jonaitis",
+		Email: "prekyba@apsauga.example", Phone: "+370 600 22222"})
+	footwear := s.supplierOf(supplier.Params{Code: "DA-03", Name: "SIA Darba apavs", CompanyCode: "40000000003", VATCode: "LV40000000003",
+		Address: "Brīvības iela 101", City: "Rīga", PostalCode: "LV-1001", Country: "LV", Email: "orders@darbaapavs.example"})
 
 	// Catalogue, in the manual's default order; each item's size group is its
 	// picture's (migration 0036). Purchase price, then accounting price, in cents.
+	s.supplier = footwear
 	shoes := s.item("Safety shoes", "S3 SRC, steel toe cap", ptr[int64](4200), 5490, 12, 10, catalogue.IconShoes)
+	s.supplier = clothing
 	jacket := s.item("Work jacket", "Polyester/cotton, reflective strips", ptr[int64](6150), 7900, 24, 20, catalogue.IconJacket)
 	trousers := s.item("Work trousers", "Knee-pad pockets", ptr[int64](3480), 4550, 12, 30, catalogue.IconTrousers)
+	s.supplier = safety
 	gloves := s.item("Protective gloves", "Nitrile-coated, pair", ptr[int64](245), 320, 1, 40, catalogue.IconGloves)
 	helmet := s.item("Safety helmet", "EN 397, adjustable", ptr[int64](1390), 1800, 36, 50, catalogue.IconHelmet)
+	s.supplier = clothing
 	vest := s.item("Hi-vis vest", "Class 2, yellow", ptr[int64](720), 990, 12, 60, catalogue.IconVest)
+	s.supplier = safety
 	glasses := s.item("Safety glasses", "Anti-fog, clear lens", ptr[int64](480), 650, 12, 70, catalogue.IconGlasses)
 	// No purchase price: optional, so it can still be ordered.
 	s.item("Ear defenders", "SNR 30 dB", nil, 2200, 24, 80, catalogue.IconEar)
-	// No prices or service period yet: selectable, but Mark as Ordered refuses it.
+	// No supplier, no prices or service period yet: selectable, but Mark as Ordered refuses it.
+	s.supplier = nil
 	s.itemWith(catalogue.Params{Name: "Winter jacket", Details: "Insulated, waterproof", Active: true, DisplayRank: ptr(90),
 		Icon: catalogue.IconJacket})
 	// Inactive: hidden from Add Item, still in old snapshots.
+	s.supplier = clothing
 	s.itemWith(catalogue.Params{Name: "Rain coat", Details: "Discontinued model",
 		AccountingPriceCents: ptr[int64](2500), ServicePeriodMonths: ptr(24), Active: false, DisplayRank: ptr(100), Icon: catalogue.IconJacket})
 
@@ -228,8 +248,11 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 // seeder makes each call as the admin and keeps the first error, so the
 // script reads as a list of data rather than of error checks.
 type seeder struct {
-	ctx        context.Context
-	actor      uuid.UUID
+	ctx       context.Context
+	actor     uuid.UUID
+	suppliers *supplier.Service
+	// supplier is the one the next items name; nil for none.
+	supplier   *uuid.UUID
 	items      *catalogue.Service
 	employees  *employee.Service
 	sets       *itemset.Service
@@ -256,9 +279,22 @@ func (s *seeder) itemWith(p catalogue.Params) uuid.UUID {
 	if s.err != nil {
 		return uuid.Nil
 	}
+	if p.SupplierID == nil {
+		p.SupplierID = s.supplier
+	}
 	it, err := s.items.Create(s.ctx, p, catalogue.Rights{Prices: true}, s.actor)
 	s.fail("catalogue item "+p.Name, err)
 	return it.ID
+}
+
+// supplierOf adds a supplier and returns its id; nil after an earlier error.
+func (s *seeder) supplierOf(p supplier.Params) *uuid.UUID {
+	if s.err != nil {
+		return nil
+	}
+	sup, err := s.suppliers.Create(s.ctx, p, s.actor)
+	s.fail("supplier "+p.Name, err)
+	return &sup.ID
 }
 
 // set takes item/quantity pairs.

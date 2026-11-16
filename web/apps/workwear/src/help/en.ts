@@ -609,6 +609,7 @@ export const en: Guide = {
           p: '**⋯ → Delete supplier…** deletes one after asking first, and says how many items name it: they are left with no supplier. Orders are not changed. **⋯ → Changes** opens the **Audit log** for that supplier.',
         },
         { p: "An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone given **Manage Suppliers** on **Roles & permissions** sees this screen too." },
+        { shots: [{ name: 'suppliers', alt: 'Suppliers: each with its internal code, place, items and contact' }] },
       ],
     },
     {

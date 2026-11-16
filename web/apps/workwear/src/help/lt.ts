@@ -576,6 +576,7 @@ export const lt: Guide = {
           p: '**⋯ → Ištrinti tiekėją…** ištrina tiekėją, prieš tai paklausęs, ir nurodo, kiek prekių jam priskirta: jos lieka be tiekėjo. Užsakymai nesikeičia. **⋯ → Pakeitimai** atveria šio tiekėjo **Audito žurnalą**.',
         },
         { p: 'Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Šį ekraną mato ir tie, kuriems **Rolėse ir teisėse** suteikta teisė **Tvarkyti tiekėjus**.' },
+        { shots: [{ name: 'suppliers', alt: 'Tiekėjai: kiekvieno vidinis kodas, vieta, prekės ir kontaktai' }] },
       ],
     },
     {

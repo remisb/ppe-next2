@@ -138,6 +138,7 @@ export type ShotName =
   | 'palette'
   | 'launcher'
   | 'sim-scan'
+  | 'suppliers'
   | 'manage-apps'
 
 export interface Shot {
