@@ -588,3 +588,9 @@ export function documentsText(a: Pick<AssetAssignment, 'paper_form_signed' | 'si
   if (!a?.paper_form_signed) return null
   return a.signed_copy_uploaded ? t.assets.signedCopyUploaded : t.assets.signedCopyMissing
 }
+
+/** Seconds as m:ss, as a countdown reads: 60 is 1:00, 47 is 0:47. */
+export function minutesSeconds(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}

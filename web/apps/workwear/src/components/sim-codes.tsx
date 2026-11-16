@@ -9,6 +9,7 @@ import { KeyRound } from 'lucide-react'
 import { useCallback, useEffect, useId, useState } from 'react'
 
 import { t } from '@/i18n'
+import { minutesSeconds } from '@/lib/assets'
 
 /** How long shown codes stay on screen: they close by themselves after it, as in Scan SIMs. */
 export const CODES_SHOWN_SECONDS = 60
@@ -163,7 +164,7 @@ function SimCodesSheet({
             </div>
             <p className="text-xs text-muted-foreground">
               {t.assets.codesRecorded(formatTime(shownAt, timeZone))}{' '}
-              <span aria-hidden>{t.assets.codesCloseIn(`0:${String(left).padStart(2, '0')}`)}</span>
+              <span aria-hidden>{t.assets.codesCloseIn(minutesSeconds(left))}</span>
             </p>
             <p role="status" className="text-xs empty:hidden">
               {copied}
