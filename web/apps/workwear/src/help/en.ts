@@ -248,6 +248,7 @@ export const en: Guide = {
           p: "Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.",
         },
         { p: "An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. An open item shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when." },
+        { p: 'An item may name its **Supplier**, the company it is bought from. An open item shows it, or **No supplier**.' },
         {
           p: 'Click an item to open it beside the list. `J` and `K` move between items, and `Esc` closes it. An item without a price or service period is marked **Incomplete**; point at the mark to see which is missing.',
           devices: ['desktop'],
@@ -258,6 +259,7 @@ export const en: Guide = {
         },
         { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
         { p: 'You add and change items in **Item Catalogue**, and kits in **Item Sets**.', roles: ['admin', 'manager'] },
+        { p: "On **Add Item** and **Edit Item**, choose the **Supplier** from the list administrators keep in **Administration**, on **Suppliers**, or **No supplier**. A supplier deleted there leaves its items with none.", roles: ['admin', 'manager'] },
         {
           shots: [
             { name: 'catalogue', alt: 'The Item Catalogue' },
@@ -373,16 +375,16 @@ export const en: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: "**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**.",
+          p: "**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates**, **Suppliers** and **Manage apps**.",
         },
         {
-          p: 'Open it from **More**. It has a bar of its own at the bottom, with **Overview**, **Users**, **Audit** and **Security**. Its **More** holds **Roles & permissions**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**, then **Apps**, **Workwear & Equipment**, which takes you back, your account and **Sign out**.',
+          p: 'Open it from **More**. It has a bar of its own at the bottom, with **Overview**, **Users**, **Audit** and **Security**. Its **More** holds **Roles & permissions**, **System**, **Usage**, **Settings**, **Mail Templates**, **Suppliers** and **Manage apps**, then **Apps**, **Workwear & Equipment**, which takes you back, your account and **Sign out**.',
           devices: ['phone'],
         },
         { p: 'Open it with **Admin** at the foot of the rail. It has a rail of its own; **Workwear**, at its foot, takes you back.', devices: ['tablet'] },
         { p: 'Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.', devices: ['desktop'] },
         {
-          p: 'You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.',
+          p: 'You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or suppliers, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.',
         },
       ],
     },
@@ -590,6 +592,23 @@ export const en: Guide = {
         },
         { p: 'A card already registered keeps its provider, even one you remove from the list, and its non-return value.' },
         { shots: [{ name: 'sim-providers', alt: 'Settings: the SIM providers, one of them the default, and the default non-return value' }] },
+      ],
+    },
+    {
+      id: 'suppliers',
+      title: 'Suppliers',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: "**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**.",
+        },
+        {
+          p: "**Add Supplier** adds one. Its **Internal code**, your own short code for it, and its **Name** are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the **Company code** and **VAT code**, the **Bank account** (IBAN), the address with a two-letter **Country**, such as LT, the contact person, email, phone, website and notes. **Edit** changes it; every item from that supplier shows the change.",
+        },
+        {
+          p: '**⋯ → Delete supplier…** deletes one after asking first, and says how many items name it: they are left with no supplier. Orders are not changed. **⋯ → Changes** opens the **Audit log** for that supplier.',
+        },
+        { p: "An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone given **Manage Suppliers** on **Roles & permissions** sees this screen too." },
       ],
     },
     {

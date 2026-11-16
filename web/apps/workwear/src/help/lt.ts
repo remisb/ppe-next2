@@ -251,6 +251,7 @@ export const lt: Guide = {
           p: 'Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.',
         },
         { p: 'Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Atidarytoje prekėje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.' },
+        { p: 'Prekė gali nurodyti savo **Tiekėją** – įmonę, iš kurios ji perkama. Atidarytoje prekėje jis matyti, arba rašoma **Tiekėjas nenurodytas**.' },
         {
           p: 'Spustelėjus prekę, ji atsidaro šalia sąrašo. `J` ir `K` pereina tarp prekių, o `Esc` prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; užvedę žymeklį ant žymos, matysite, ko trūksta.',
           devices: ['desktop'],
@@ -261,6 +262,7 @@ export const lt: Guide = {
         },
         { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.' },
         { p: 'Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.', roles: ['admin', 'manager'] },
+        { p: 'Languose **Pridėti prekę** ir **Redaguoti prekę** pasirinkite **Tiekėją** iš sąrašo, kurį administratoriai tvarko **Administravime**, ekrane **Tiekėjai**, arba **Tiekėjas nenurodytas**. Ten ištrynus tiekėją, jo prekės lieka be tiekėjo.', roles: ['admin', 'manager'] },
         {
           shots: [
             { name: 'catalogue', alt: 'Prekių katalogas' },
@@ -375,11 +377,11 @@ export const lt: Guide = {
       title: 'Administravimas',
       roles: ['admin'],
       blocks: [
-        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**.' },
-        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**, toliau **Programos**, **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.' },
+        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**, toliau **Programos**, **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Atidarykite jį mygtuku **Admin.** juostos apačioje. Jis turi savo juostą; **Drabužiai** jos apačioje grąžina atgal.', devices: ['tablet'] },
         { p: 'Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.', devices: ['desktop'] },
-        { p: 'Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.' },
+        { p: 'Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.' },
       ],
     },
     {
@@ -557,6 +559,23 @@ export const lt: Guide = {
         },
         { p: 'Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš sąrašo, kaip ir savo negrąžinimo vertės.' },
         { shots: [{ name: 'sim-providers', alt: 'Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė' }] },
+      ],
+    },
+    {
+      id: 'suppliers',
+      title: 'Tiekėjai',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**.',
+        },
+        {
+          p: '**Pridėti tiekėją** prideda naują. Privalomi jo **Vidinis kodas** (jūsų pačių trumpas kodas) ir **Pavadinimas**; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: **Įmonės kodą** ir **PVM mokėtojo kodą**, **Banko sąskaitą** (IBAN), adresą su dviejų raidžių **Šalimi**, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. **Redaguoti** jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.',
+        },
+        {
+          p: '**⋯ → Ištrinti tiekėją…** ištrina tiekėją, prieš tai paklausęs, ir nurodo, kiek prekių jam priskirta: jos lieka be tiekėjo. Užsakymai nesikeičia. **⋯ → Pakeitimai** atveria šio tiekėjo **Audito žurnalą**.',
+        },
+        { p: 'Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Šį ekraną mato ir tie, kuriems **Rolėse ir teisėse** suteikta teisė **Tvarkyti tiekėjus**.' },
       ],
     },
     {

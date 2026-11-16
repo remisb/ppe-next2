@@ -78,6 +78,7 @@ export type SectionId =
   | 'backups'
   | 'usage'
   | 'settings'
+  | 'suppliers'
   | 'manage-apps'
   | 'account'
   | 'install'
