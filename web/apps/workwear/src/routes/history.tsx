@@ -326,7 +326,8 @@ export function History({
           */}
           <Table
             stack="list"
-            fixed
+            // Beside an open order the short columns already fit one line a row; widths come from their content there.
+            fixed={!selected}
             stackBelow={selected ? 'sm' : 'lg'}
             busy={orders.loading}
             sortControl={<SortMenu columns={columns} {...sortProps} />}
