@@ -1,6 +1,6 @@
 # ADR 0005: SIM cards' PIN and PUK sealed by the app, and Scan SIMs as a trial app
 
-- **Status:** accepted (built 2026-10-29); since 2026-11-04 Scan SIMs is a published app at
+- **Status:** accepted (built 2026-10-29); decision 2 amended 2026-11-16 (WARE-37, at the end); since 2026-11-04 Scan SIMs is a published app at
   `/apps/sim-scan/` (ADR 0006 phase 3): its policy is the `device` profile's, and `/sim-scan/…`
   redirects there
 - **Date:** 2026-10-29
@@ -90,3 +90,28 @@ Three constraints shape this:
   `VITE_HTTPS=1 pnpm --dir apps/sim-scan dev`, or staging.
 - **Card photos are never committed.** The real ones hold real codes. The e2e step reads
   synthetic carriers with made-up numbers (`web/e2e/fixtures/sim-cards`).
+
+## Amendment, 2026-11-16: Show PIN and PUK for whoever sees SIM cards (WARE-37)
+
+Decision 2 is replaced. The office asked for the codes where the cards are, the staff app's
+SIM card (the pane beside SIM Cards and the card's own page), for everyone who works with
+SIM cards, without a password each time; and never written into a card's comment.
+
+- **Showing goes with seeing.** `POST /api/v1/assets/{id}/sim-codes/show` takes
+  `sim_cards.read`, the permission that shows the card at all, and no recent sign-in. The
+  separate `sim_codes.read` is retired (migration 0055 removes its rows; the catalogue no
+  longer has it). The built-in Employee role has `sim_cards.read`, so its holders may show
+  codes too.
+- **Each showing is still recorded and never cached.** `asset.sim_codes_shown` is written
+  before the answer, which is `no-store`; the codes are asked for only on the click.
+- **An asset says whether it has codes** (`has_sim_codes`, an `EXISTS` over
+  `asset_sim_codes`), so the key is greyed out on a card without them. The codes themselves
+  are still never in an asset's JSON.
+- **The staff app's key** (`components/sim-codes.tsx`) opens a window with the codes, their
+  copy buttons and when it was recorded; it closes after a minute, when the tab goes to the
+  background, or on Done, and the codes leave the page with it.
+
+What this gives up: the recent sign-in no longer stands between an unattended, signed-in
+browser and the codes, and fewer people are kept from them. The audit trail (the card's
+Changes and the Audit log) is what remains to see who looked.
+

@@ -26,6 +26,7 @@ import { usePrintStoredForm } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SignedCopies } from '@/components/signed-copies'
+import { SimCodesKey } from '@/components/sim-codes'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
 import { categoryLabel, formatDay, locationText, managePermission, primaryAction, simCopyText, todayIn } from '@/lib/assets'
@@ -81,6 +82,8 @@ export function AssetDetail({
   const [sheet, setSheet] = useState<AssetSheet>(null)
   const [editing, setEditing] = useState(false)
   const [message, setMessage] = useState('')
+  // Each Show PIN and PUK is recorded: the Changes load again after one.
+  const [codesShown, setCodesShown] = useState(0)
   const action = useAction()
   const { printHeldForm, printing } = usePrintStoredForm()
 
@@ -88,6 +91,8 @@ export function AssetDetail({
   const sim = a?.kind !== 'EQUIPMENT'
   // A SIM changes with Manage SIMs, an item with Manage Equipment & Furniture.
   const canManage = a ? can(managePermission(a.kind)) : false
+  // Whoever sees SIM cards may show a card's PIN and PUK (WARE-37).
+  const canShowCodes = sim && can('sim_cards.read')
   // Beside the register, the register loads both again (refresh); on its own, the page loads the asset.
   const changed = () => (onChanged ? onChanged() : asset.reload())
   const changeStatus = (next: ConnectionStatus) =>
@@ -145,23 +150,37 @@ export function AssetDetail({
                 )
               }
               actions={
-                canManage ? (
+                canManage || canShowCodes ? (
                   <>
-                    {primaryAction(a) === 'give' ? (
+                    {canManage && primaryAction(a) === 'give' ? (
                       <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
                     ) : null}
-                    {primaryAction(a) === 'return' ? (
+                    {canManage && primaryAction(a) === 'return' ? (
                       <ReturnButton kind={a.kind} onClick={() => setSheet({ kind: 'return', asset: a })} />
                     ) : null}
-                    <AssetMoreActions
-                      asset={a}
-                      onStatus={(next) => void changeStatus(next)}
-                      onEdit={() => setEditing(true)}
-                      onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                      onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
-                      onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
-                      onPrintForm={() => void action.run(() => printHeldForm(a))}
-                    />
+                    {canShowCodes ? (
+                      <SimCodesKey
+                        asset={a}
+                        timeZone={tz}
+                        onShown={() => setCodesShown((n) => n + 1)}
+                        onMissing={(m) => {
+                          setMessage(m)
+                          changed()
+                        }}
+                        onError={action.fail}
+                      />
+                    ) : null}
+                    {canManage ? (
+                      <AssetMoreActions
+                        asset={a}
+                        onStatus={(next) => void changeStatus(next)}
+                        onEdit={() => setEditing(true)}
+                        onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
+                        onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
+                        onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
+                        onPrintForm={() => void action.run(() => printHeldForm(a))}
+                      />
+                    ) : null}
                   </>
                 ) : undefined
               }
@@ -293,7 +312,7 @@ export function AssetDetail({
               )}
             </DisclosureSection>
 
-            <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
+            <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at, codesShown]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
             {printing}
             <AssetSheets

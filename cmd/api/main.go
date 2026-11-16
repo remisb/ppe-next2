@@ -354,7 +354,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
-	registerAssetRoutes(rt, svc.assets, svc.users, sensitive)
+	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerPersonnelScanRoutes(rt, svc.scans)
 	registerAIRoutes(rt, svc.ai, sensitive)

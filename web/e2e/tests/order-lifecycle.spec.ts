@@ -3823,6 +3823,24 @@ test('Scan SIMs: photos of the cards read into a list, checked, added at once, t
   await openSection(/^Changes/)
   await expect(page.getByText('PIN and PUK shown')).toBeVisible()
   await expect(page.getByText('4826')).toHaveCount(0)
+
+  // In the staff app the card's key shows them too (WARE-37): asked for on the click, so recorded again, with no
+  // password asked; Done takes them off the page. A card without them has the key greyed out.
+  await page.getByRole('button', { name: 'Show PIN and PUK' }).click()
+  const codes = page.getByRole('dialog', { name: 'PIN and PUK' })
+  await expect(codes).toContainText('SIM-')
+  await expect(codes).toContainText('8937099000000000049')
+  await expect(codes).toContainText('4826')
+  await expect(codes).toContainText('31597264')
+  await expect(codes.getByRole('button', { name: 'Copy PUK' })).toBeVisible()
+  await codes.getByRole('button', { name: 'Done' }).click()
+  await expect(codes).toBeHidden()
+  await expect(page.getByText('31597264')).toHaveCount(0)
+  await expect(page.getByText('PIN and PUK shown')).toHaveCount(2)
+  // The SIM added by hand on Add SIM, earlier, has none.
+  await page.goto('/assets/sim-cards')
+  await page.getByRole('row', { name: /0089370011/ }).getByRole('link').first().click()
+  await expect(page.getByRole('button', { name: 'Show PIN and PUK' })).toBeDisabled()
 })
 
 test('Import Documents: a passport and an ID card read from photos, checked and saved to Personnel files', async () => {

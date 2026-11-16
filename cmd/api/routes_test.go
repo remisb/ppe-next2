@@ -1020,7 +1020,7 @@ var policy = map[string]rule{
 	"POST /api/v1/assets":                                                       {"", "managers"},
 	"POST /api/v1/assets/sim-cards/batch/check":                                 {role.SIMCardsManage, "managers"},
 	"POST /api/v1/assets/sim-cards/batch":                                       {role.SIMCardsManage, "managers"},
-	"POST /api/v1/assets/{id}/sim-codes/show":                                   {role.SIMCodesRead, "admins"},
+	"POST /api/v1/assets/{id}/sim-codes/show":                                   {role.SIMCardsRead, "staff"},
 	"PUT /api/v1/assets/{id}/sim-codes":                                         {role.SIMCardsManage, "managers"},
 	"DELETE /api/v1/assets/{id}/sim-codes":                                      {role.SIMCardsManage, "managers"},
 	"PUT /api/v1/assets/{id}":                                                   {"", "managers"},

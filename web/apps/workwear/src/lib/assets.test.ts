@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { t } from '@/i18n'
 
-import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, providerPlan, withSimProvider, mailAddresses, mailtoHref, holderText, locationText, newSimInput, noAssetFilters, simCardsReportQuery, simDraftOf, todayIn } from './assets'
+import { MAX_SIGNED_COPY_BYTES, forgetAllPrinted, forgetPrinted, recallPrinted, rememberPrinted, assetQuery, documentsText, filterCount, signedCopyProblem, simCopyText, assetTabs, registerTile, tabCountQuery, tabCounts, chooseTab, tabPressed, countedTabs, uploadRefusal, checkEquipmentDraft, emptyEquipmentDraft, looksLikeAssetNumber, canMarkNotReturned, checkSimDraft, emptyGiveDraft, formInput, formKey, formatDay, giveBlock, primaryAction, chooseTile, emptySimDraft, providerOptions, providerPlan, withSimProvider, mailAddresses, mailtoHref, holderText, locationText, newSimInput, noAssetFilters, simCardsReportQuery, simDraftOf, todayIn, minutesSeconds } from './assets'
 
 describe('tabs and filters', () => {
   it("a dashboard's tile sets the place and keeps the status: In Office + Blocked (§3)", () => {
@@ -81,7 +81,7 @@ describe('tabs and filters', () => {
 const card = (over: Partial<Asset>): Asset => ({
   id: 'a', kind: 'SIM', category: null, inventory_no: 'SIM-000001', name: null, serial_no: null, sim_no: '0089370011', phone_no: null,
   provider: 'Telia', plan: null, non_return_value_cents: null, currency: 'EUR', connection_status: 'NOT_ACTIVATED', received_date: '2026-10-01',
-  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, ...over,
+  comment: '', created_at: '', updated_at: '', location: 'OFFICE', open_assignment: null, needs_form: true, has_sim_codes: false, ...over,
 })
 
 describe('copying a SIM\'s numbers', () => {
@@ -366,5 +366,15 @@ describe('signed copies', () => {
     expect(uploadRefusal(413)).toBe(t.assets.fileTooLarge)
     expect(uploadRefusal(503)).toBe(t.assets.noStorage)
     expect(uploadRefusal(500)).toBeNull()
+  })
+})
+
+describe('Show PIN and PUK countdown', () => {
+  it('reads as m:ss, starting at a whole minute', () => {
+    expect(minutesSeconds(60)).toBe('1:00')
+    expect(minutesSeconds(59)).toBe('0:59')
+    expect(minutesSeconds(7)).toBe('0:07')
+    expect(minutesSeconds(0)).toBe('0:00')
+    expect(minutesSeconds(-3)).toBe('0:00')
   })
 })

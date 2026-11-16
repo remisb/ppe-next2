@@ -838,7 +838,7 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
 - **Brief:** a SIM card's PIN and PUK, as printed on the back of its **carrier** (the plastic
   card the SIM is snapped out of).
 - **Detail:** kept sealed (ADR 0005), never shown until someone with **Show PIN and PUK**
-  (`sim_codes.read`) asks, each time recorded. The SIM No. is an **ICCID** in the code and the
+  (whoever sees SIM cards, `sim_cards.read`, since WARE-37) asks, each time recorded. The SIM No. is an **ICCID** in the code and the
   docs: 89 and 17 more digits, sometimes the filler F; the screens say **SIM No.**, never ICCID.
 - **UI:** **Show PIN and PUK**, **Hide**, **Add PIN and PUK**, **Save PIN and PUK**. "PIN" and
   "PUK" are the same in every language.

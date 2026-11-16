@@ -121,7 +121,7 @@ tr:last-child td{border-bottom:0}
     <tr><td>Prepare Blocking Email</td><td>✓; not offered when Blocked</td><td>✓; not offered when Blocked</td><td>✓; not offered when Blocked</td></tr>
     <tr><td>Edit</td><td>✓</td><td>✓</td><td>✓</td></tr>
     <tr><td>Add or clear PIN and PUK</td><td>✓</td><td>✓</td><td>✓</td></tr>
-    <tr><td>Show PIN and PUK</td><td>✓ with <code>sim_codes.read</code> and a recent sign-in; 404 with none</td><td>✓, as in the Office</td><td>✓, as in the Office</td></tr>
+    <tr><td>Show PIN and PUK</td><td>✓ with <code>sim_cards.read</code> (the key among the card&#39;s actions); greyed out, and 404, with none</td><td>✓, as in the Office</td><td>✓, as in the Office</td></tr>
     <tr><td>The register row's button</td><td>Give SIM; Change Status when Blocked</td><td>Return</td><td>Return</td></tr>
   </tbody>
 </table>
@@ -169,7 +169,7 @@ tr:last-child td{border-bottom:0}
     <tr><td>No PIN and PUK</td><td>PIN and PUK kept</td><td>Add PIN and PUK</td><td><code>PUT /api/v1/assets/{id}/sim-codes</code></td><td><code>sim_cards.manage</code>; PIN 4 to 8 digits, PUK 8; <code>asset.sim_codes_changed</code> <code>{"sim_codes": "set"}</code></td></tr>
     <tr><td>PIN and PUK kept</td><td>PIN and PUK kept</td><td>Set again</td><td>as above</td><td>Replaces them; the same event</td></tr>
     <tr><td>PIN and PUK kept</td><td>No PIN and PUK</td><td>Clear</td><td><code>DELETE /api/v1/assets/{id}/sim-codes</code></td><td><code>asset.sim_codes_changed</code> <code>{"sim_codes": "cleared"}</code>; 404 <code>ErrNoSIMCodes</code> with none</td></tr>
-    <tr><td>PIN and PUK kept</td><td>PIN and PUK kept</td><td>Show PIN and PUK</td><td><code>POST /api/v1/assets/{id}/sim-codes/show</code></td><td><code>sim_codes.read</code> and a recent sign-in; records <code>asset.sim_codes_shown</code> before answering, <code>no-store</code>; changes nothing. 404 with none, recording nothing</td></tr>
+    <tr><td>PIN and PUK kept</td><td>PIN and PUK kept</td><td>Show PIN and PUK</td><td><code>POST /api/v1/assets/{id}/sim-codes/show</code></td><td><code>sim_cards.read</code>; records <code>asset.sim_codes_shown</code> before answering, <code>no-store</code>; changes nothing. 404 with none, recording nothing</td></tr>
   </tbody>
 </table>
 </div>

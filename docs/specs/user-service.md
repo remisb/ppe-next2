@@ -62,9 +62,8 @@ order:
 | `item_sets.manage` | add, edit, delete item sets (needs `item_sets.read`) | ✓ | ✓ | | |
 | `orders.delete` | delete orders | | ✓ | | |
 | `assets.manage` | add and edit Equipment & Furniture, give, return, Mark as Not Returned (migration 0029, SIM cards' split off in 0049; spec, open decision 5) | ✓ | ✓ | | |
-| `sim_cards.read` | see SIM cards and who holds each (migration 0049; before it, every signed-in user) | ✓ | ✓ | ✓ | |
+| `sim_cards.read` | see SIM cards and who holds each, and Show PIN and PUK (migration 0049; before it, every signed-in user; Show PIN and PUK since 0055, when `sim_codes.read` was retired) | ✓ | ✓ | ✓ | |
 | `sim_cards.manage` | add, scan and edit SIMs, Change Status, give, return, Mark as Not Returned, their emails, setting and forgetting PIN and PUK (needs `sim_cards.read`; migration 0049) | ✓ | ✓ | | |
-| `sim_codes.read` | Show PIN and PUK (sensitive; needs `sim_cards.read`; migration 0041) | ✓ | | | |
 | `equipment.read` | see Equipment & Furniture and who holds each; without it the API answers 404 for such an item (migration 0032) | | | | Equipment Assignments |
 | `personnel.documents.read` | see a person's identity documents, Show Document (sensitive; migration 0048, ADR 0007) | | | | Personnel Documents |
 | `personnel.documents.manage` | scan and save identity documents in Import Documents, link one to an employee, remove one, Mark Employment Ended, Legal Hold (needs `personnel.documents.read`) | | | | Personnel Documents |

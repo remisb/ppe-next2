@@ -2074,8 +2074,9 @@ func TestPostgresAuditExportHTTP(t *testing.T) {
 	}
 }
 
-// Scan SIMs over HTTP: the batch checked, then added; Show PIN and PUK for
-// a recent sign-in only, never cached, recorded without the codes.
+// Scan SIMs over HTTP: the batch checked, then added; a card says whether it
+// has PIN and PUK; Show PIN and PUK for whoever sees SIM cards, however long
+// ago they signed in (WARE-37), never cached, recorded without the codes.
 func TestPostgresScanSIMsHTTP(t *testing.T) {
 	api, pool := newPostgresAPI(t)
 	_, mgr := api.userWith(t, role.KeyManager)
@@ -2103,12 +2104,20 @@ func TestPostgresScanSIMsHTTP(t *testing.T) {
 	if problems := decode[map[string][]map[string]any](t, rec.Body.Bytes())["problems"]; len(problems) != 1 || problems[0]["code"] != "registered" || problems[0]["existing_id"] != id {
 		t.Errorf("check against the register = %s", rec.Body)
 	}
-	if rec := api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil); strings.Contains(rec.Body.String(), "93691381") {
-		t.Errorf("the asset answer holds the PUK: %s", rec.Body)
+	if rec := api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil); strings.Contains(rec.Body.String(), "93691381") ||
+		!strings.Contains(rec.Body.String(), `"has_sim_codes":true`) {
+		t.Errorf("the asset answer holds the PUK or no has_sim_codes: %s", rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/assets/"+sims[1]["id"], mgr, nil); !strings.Contains(rec.Body.String(), `"has_sim_codes":false`) {
+		t.Errorf("a card without codes: %s", rec.Body)
 	}
 
-	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", mgr, nil); rec.Code != http.StatusForbidden {
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", mgr, nil); rec.Code != http.StatusOK {
 		t.Errorf("a manager's Show = %d", rec.Code)
+	}
+	_, staff := api.userWith(t, role.KeyEmployee)
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", staff, nil); rec.Code != http.StatusOK {
+		t.Errorf("the Employee role's Show = %d", rec.Code)
 	}
 	rec = api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", admin, nil)
 	if c := decode[map[string]string](t, rec.Body.Bytes()); rec.Code != http.StatusOK || c["pin"] != "0306" || c["puk"] != "93691381" ||
@@ -2121,9 +2130,8 @@ func TestPostgresScanSIMsHTTP(t *testing.T) {
 	}
 	claims.AuthTime = jwt.NewNumericDate(time.Now().Add(-13 * time.Hour))
 	stale := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), claims)
-	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", stale, nil); rec.Code != http.StatusForbidden ||
-		!strings.Contains(rec.Body.String(), "recent sign-in required") {
-		t.Errorf("Show with a stale sign-in = %d %s", rec.Code, rec.Body)
+	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/sim-codes/show", stale, nil); rec.Code != http.StatusOK {
+		t.Errorf("Show with a sign-in 13 hours old = %d %s", rec.Code, rec.Body)
 	}
 	other := sims[1]["id"]
 	if rec := api.do(t, "POST", "/api/v1/assets/"+other+"/sim-codes/show", admin, nil); rec.Code != http.StatusNotFound {

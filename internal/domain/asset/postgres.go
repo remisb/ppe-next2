@@ -35,7 +35,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 const assetColumns = `a.id, a.kind, a.category, a.inventory_no, a.name, a.serial_no, a.sim_no, a.phone_no, a.provider, a.plan,
 	a.non_return_value_cents, a.currency, a.connection_status, a.received_date::text, a.comment, a.written_off_at,
 	a.written_off_by_user_id, a.created_at, a.updated_at, a.deleted_at, a.created_by_user_id, a.updated_by_user_id,
-	a.deleted_by_user_id`
+	a.deleted_by_user_id, EXISTS (SELECT 1 FROM asset_sim_codes sc WHERE sc.asset_id = a.id)`
 
 // assignmentColumns are an assignment's columns (alias o, its employee e),
 // the holder's name and whether a signed copy exists, in nullAssignment's order.
@@ -58,7 +58,7 @@ func assetDest(a *Asset) []any {
 	return []any{&a.ID, &a.Kind, &a.Category, &a.InventoryNo, &a.Name, &a.SerialNo, &a.SimNo, &a.PhoneNo, &a.Provider, &a.Plan,
 		&a.NonReturnValueCents, &a.Currency, &a.ConnectionStatus, &a.ReceivedDate, &a.Comment, &a.WrittenOffAt,
 		&a.WrittenOffByUserID, &a.CreatedAt, &a.UpdatedAt, &a.DeletedAt, &a.CreatedByUserID, &a.UpdatedByUserID,
-		&a.DeletedByUserID}
+		&a.DeletedByUserID, &a.HasSIMCodes}
 }
 
 // nullAssignment scans an assignment that a LEFT JOIN may leave out.

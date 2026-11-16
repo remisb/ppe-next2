@@ -41,7 +41,7 @@ in one batch. A second screen finds a SIM and shows its PIN and PUK.
 | Screen | Address | Permission | What it does |
 | --- | --- | --- | --- |
 | **Scan** | `/apps/sim-scan/` | `assets.manage` | What the batch shares (For every SIM), one card at a time (desktop and tablet), live camera, Choose Photos, the review list, and Add N SIMs |
-| **PIN and PUK** | `/apps/sim-scan/find` | `sim_codes.read` | Find a SIM by part of its number, Show PIN and PUK (audited, recent sign-in), Add PIN and PUK |
+| **PIN and PUK** | `/apps/sim-scan/find` | `sim_cards.read` (was `sim_codes.read` until 0055) | Find a SIM by part of its number, Show PIN and PUK (audited), Add PIN and PUK |
 
 A user who has neither permission sees "Scan SIMs is for those who manage Company Assets"
 (`app.tsx` `NotForYou`).
@@ -192,7 +192,7 @@ well: the list shows marks at once, and the API remains the authority.
 | --- | --- | --- |
 | `POST /api/v1/assets/sim-cards/batch/check` | `assets.manage` | `checkBatch` (shared fields, 1–100 cards, normalises them), then each card's own problems, duplicates within the batch, and `SIMOwners` for cards already registered. Writes nothing |
 | `POST /api/v1/assets/sim-cards/batch` | `assets.manage` | `AddSIMs`: re-checks everything and returns `ImportRowError{Index}` for the first bad card. `registerSIMs` numbers the cards from the SIM counter, seals the codes and builds the `asset.registered` events (with `"sim_codes":"set"`). `ImportSIMs` writes them all in **one transaction**, all or none |
-| `POST /api/v1/assets/{id}/sim-codes/show` | `sim_codes.read` + `sensitive` | Needs a recent sign-in and the permission checked against the user's roles now. Records `asset.sim_codes_shown` (SIM No. only) **before** it answers, with `no-store` |
+| `POST /api/v1/assets/{id}/sim-codes/show` | `sim_cards.read` | Since WARE-37 (migration 0055) no recent sign-in and no permission of its own. Records `asset.sim_codes_shown` (SIM No. only) **before** it answers, with `no-store` |
 | `PUT` / `DELETE /api/v1/assets/{id}/sim-codes` | `assets.manage` | Seal or forget the codes. Records `asset.sim_codes_changed` with `set` or `cleared` |
 
 **Sealing** (`internal/sealbox`). A sealed value is

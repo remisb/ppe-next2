@@ -338,6 +338,19 @@ export const assets = {
   nextOrPreviousCard: 'next or previous SIM',
   closeItem: 'Close item',
   nextOrPreviousItem: 'next or previous item',
+  // Show PIN and PUK (WARE-37): the key in a SIM's actions and the window it opens.
+  showCodes: 'Show PIN and PUK',
+  showingCodes: 'Showing PIN and PUK…',
+  noCodes: 'No PIN and PUK recorded for this card',
+  codesTitle: 'PIN and PUK',
+  codesNoneNow: (number: string) => `${number} has no PIN and PUK recorded.`,
+  copyPin: 'Copy PIN',
+  copyPuk: 'Copy PUK',
+  pinCopied: 'PIN copied.',
+  pukCopied: 'PUK copied.',
+  codesRecorded: (time: string) => `Recorded in this card’s Changes at ${time}.`,
+  codesCloseIn: (time: string) => `Closes by itself in ${time}.`,
+  codesDone: 'Done',
 }
 
 export type AssetsText = typeof assets
