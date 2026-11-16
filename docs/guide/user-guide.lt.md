@@ -248,6 +248,10 @@ Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko n
 
 ![SIM puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
 
+**Rodyti PIN ir PUK**, raktas tarp SIM veiksmų, parodo jos PIN ir PUK: SIM numerius, kiekvieną kodą dideliais skaitmenimis su mygtuku jam nukopijuoti ir kada tai įrašyta. Jį turi visi, kurie mato SIM korteles, ir slaptažodžio neprašoma. Kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne patys kodai. **Baigta** jį uždaro; jis užsidaro ir pats po minutės arba išėjus iš skirtuko. SIM be PIN ir PUK raktas pilkas ir neveikia.
+
+![Rodyti PIN ir PUK: SIM PIN ir PUK, kiekvienas su kopijavimo mygtuku](../../web/apps/workwear/public/help-img/lt/desktop/sim-codes.png)
+
 Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.
 
 *Tik administratoriams ir vadovams:*
@@ -278,9 +282,9 @@ Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeri
 
 ![Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant](../../web/apps/workwear/public/help-img/lt/desktop/sim-scan.png)
 
-*Tik administratoriams:*
+*Tik administratoriams ir vadovams:*
 
-**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
+**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, kaip ir raktas prie SIM ekrane **SIM kortelės**; kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne kodai. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
 
 ## 13. Administravimas
 

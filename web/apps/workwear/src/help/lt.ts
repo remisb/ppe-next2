@@ -322,6 +322,10 @@ export const lt: Guide = {
           roles: ['admin', 'manager'],
         },
         { shots: [{ name: 'asset', alt: 'SIM puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
+        {
+          p: '**Rodyti PIN ir PUK**, raktas tarp SIM veiksmų, parodo jos PIN ir PUK: SIM numerius, kiekvieną kodą dideliais skaitmenimis su mygtuku jam nukopijuoti ir kada tai įrašyta. Jį turi visi, kurie mato SIM korteles, ir slaptažodžio neprašoma. Kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne patys kodai. **Baigta** jį uždaro; jis užsidaro ir pats po minutės arba išėjus iš skirtuko. SIM be PIN ir PUK raktas pilkas ir neveikia.',
+        },
+        { shots: [{ name: 'sim-codes', alt: 'Rodyti PIN ir PUK: SIM PIN ir PUK, kiekvienas su kopijavimo mygtuku' }] },
         { p: 'Išdavimo su aktu kortelės puslapyje rašoma **Pasirašyta kopija įkelta**, su skenuota kopija atsisiųsti, arba **Trūksta pasirašytos kopijos**. Filtras **Dokumentai** randa trūkstamas.' },
         { p: 'Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo išdavimu pasirinkite **Įkelti pasirašytą aktą**: PDF, JPEG arba PNG failą iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
         { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
@@ -361,8 +365,8 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'sim-scan', alt: 'Skenuoti SIM: iš nuotraukų nuskaitytos SIM, patikrintos prieš pridedant' }] },
         {
-          p: '**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, paprašęs slaptažodžio, jei jį įvedėte seniau; kiekvienas kartas įrašomas į **Audito žurnalas**. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše ar **Pakeitimai**. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.',
-          roles: ['admin'],
+          p: '**PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, kaip ir raktas prie SIM ekrane **SIM kortelės**; kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne kodai. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.',
+          roles: ['admin', 'manager'],
         },
       ],
     },
