@@ -25,6 +25,9 @@ import { InControl } from './tooltip.tsx'
  * container would hold the heads instead of the window. `busy`: the rows are
  * loading again (a filter or a page changed) and stay on screen dimmed, with
  * `aria-busy`, until the new ones come (guidelines, "Loading").
+ * `fixed`: the columns keep the widths their heads give (`w-*`, the one left
+ * without a width taking the rest), whatever the rows hold, so a list does not
+ * reflow when its tab, filter or page changes.
  */
 type Stack = boolean | "grid" | "list"
 const StackContext = React.createContext<Stack>(false)
@@ -37,8 +40,9 @@ function Table({
   sortControl,
   stickyHead = false,
   busy = false,
+  fixed = false,
   ...props
-}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode; stickyHead?: boolean; busy?: boolean }) {
+}: React.ComponentProps<"table"> & { stack?: Stack; stackBelow?: "sm" | "md" | "lg"; sortControl?: React.ReactNode; stickyHead?: boolean; busy?: boolean; fixed?: boolean }) {
   return (
     <StackContext value={stack}>
     <StickyContext value={stickyHead}>
@@ -50,7 +54,7 @@ function Table({
         <table
           data-slot="table"
           aria-busy={busy || undefined}
-          className={cn("w-full caption-bottom text-sm [&>tbody]:transition-opacity aria-busy:[&>tbody]:opacity-50", stack && "stacked:block", className)}
+          className={cn("w-full caption-bottom text-sm [&>tbody]:transition-opacity aria-busy:[&>tbody]:opacity-50", fixed && "table-fixed", stack && "stacked:block", className)}
           {...props}
         />
       </div>
