@@ -452,19 +452,19 @@ export function Assets({
                     </>
                   ) : (
                     <>
-                      <SortableHead column={column('inventory')} className="w-36" {...sortProps} />
+                      <SortableHead column={column('inventory')} className="w-32" {...sortProps} />
                       <SortableHead column={column('name')} {...sortProps} />
-                      {beside ? null : <TableHead className="w-36">{t.assets.colSerialNo}</TableHead>}
-                      <SortableHead column={column('holder')} className="w-48" {...sortProps} />
+                      {beside ? null : <TableHead className="w-28">{t.assets.colSerialNo}</TableHead>}
+                      <SortableHead column={column('holder')} className="w-40" {...sortProps} />
                     </>
                   )}
                   {beside ? null : (
                     <>
-                      <SortableHead column={column('given')} className="w-32" {...sortProps} />
-                      <TableHead className="w-36">{t.assets.colDocuments}</TableHead>
+                      <SortableHead column={column('given')} className="w-28" {...sortProps} />
+                      <TableHead className="w-28">{t.assets.colDocuments}</TableHead>
                       {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
-                      <TableHead className={cn('w-56', sim && 'hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
-                      {canManage ? <TableHead className="w-32 text-right">{t.assets.actions}</TableHead> : null}
+                      <TableHead className={cn(sim && 'w-56 hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
+                      {canManage ? <TableHead className="w-36 text-right">{t.assets.actions}</TableHead> : null}
                     </>
                   )}
                 </TableRow>
