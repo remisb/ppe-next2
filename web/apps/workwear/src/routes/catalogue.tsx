@@ -53,7 +53,7 @@ type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status
 const besideColumns: CatalogueSort[] = ['name', 'price', 'status']
 
 /** Fixed column widths; the details take the rest. */
-const catalogueWidths: Partial<Record<CatalogueSort, string>> = { name: 'w-48', group: 'w-32', price: 'w-24', period: 'w-28', status: 'w-44' }
+const catalogueWidths: Partial<Record<CatalogueSort, string>> = { name: 'w-44', group: 'w-32', price: 'w-24', period: 'w-36', status: 'w-44' }
 const columns = (): SortColumn<CatalogueSort>[] => [
   { key: 'name', label: t.catalogue.colItem, kind: 'text' },
   { key: 'details', label: t.catalogue.colDetails, kind: 'text' },
@@ -250,7 +250,7 @@ export function Catalogue({
                   {shownColumns.map((c) => (
                     <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} className={catalogueWidths[c.key]} {...sortProps} />
                   ))}
-                  {rowActions ? <TableHead className="w-36 text-right">{t.catalogue.actions}</TableHead> : null}
+                  {rowActions ? <TableHead className="w-32 text-right">{t.catalogue.actions}</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
