@@ -2,6 +2,9 @@
 
 How the system is divided and why.
 
+- [C4 model](c4-model.md) (and [`.html`](c4/out/index.html)): system context, containers,
+  the API's components and production deployment, generated from one model
+  (`c4/model.mjs`); how it was produced and how to regenerate it.
 - [Context map](context-map.md): the bounded contexts, what each owns, and how they depend
   on each other.
 - [Order ER diagram](order-er-diagram.md) (and [`.html`](order-er-diagram.html)): the Order
